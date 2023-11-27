@@ -31,7 +31,7 @@ import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.jetbrains.AwsToolkit
-import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.LegacyManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
@@ -447,7 +447,7 @@ class CodeWhispererTelemetryServiceTest {
             disposableRule.disposable
         )
 
-        val mockSsoConnection = mock<ManagedBearerSsoConnection> {
+        val mockSsoConnection = mock<LegacyManagedBearerSsoConnection> {
             on { this.startUrl } doReturn if (isProTier) "fake sso url" else SONO_URL
         }
 

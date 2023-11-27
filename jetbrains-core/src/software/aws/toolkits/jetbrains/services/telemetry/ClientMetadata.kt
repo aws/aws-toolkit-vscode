@@ -17,7 +17,7 @@ data class ClientMetadata(
     val parentProduct: String = ApplicationNamesInfo.getInstance().fullProductNameWithEdition,
     val parentProductVersion: String = ApplicationInfo.getInstance().build.baselineVersion.toString(),
     val os: String = SystemInfo.OS_NAME,
-    val osVersion: String = SystemInfo.OS_VERSION
+    val osVersion: String = SystemInfo.OS_VERSION,
 ) {
     companion object {
         val DEFAULT_METADATA = ClientMetadata()

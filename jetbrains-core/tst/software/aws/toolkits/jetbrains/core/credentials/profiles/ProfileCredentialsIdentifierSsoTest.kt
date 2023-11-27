@@ -46,7 +46,9 @@ class ProfileCredentialsIdentifierSsoTest {
         mockClientManager.create<SsoOidcClient>()
 
         // IllegalStateException instead of more general base Exception so we know if the type changes
-        val exception = assertThrows<IllegalStateException> { InteractiveBearerTokenProvider("", "us-east-1", emptyList(), cache = cache).resolveToken() }
+        val exception = assertThrows<IllegalStateException> {
+            InteractiveBearerTokenProvider("", "us-east-1", emptyList(), cache = cache, id = "test").resolveToken()
+        }
         assertThat(sut.handleValidationException(exception)).isNotNull()
     }
 

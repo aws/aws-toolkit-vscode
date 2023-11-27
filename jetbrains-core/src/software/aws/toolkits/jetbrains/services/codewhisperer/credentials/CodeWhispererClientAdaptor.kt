@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntime
 import software.amazon.awssdk.services.codewhispererruntime.model.CompletionType
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.Dimension
 import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableCustomizationsRequest
@@ -31,7 +32,6 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
-import software.aws.toolkits.jetbrains.core.credentials.CredentialManager.Companion.CREDENTIALS_CHANGED
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
@@ -41,7 +41,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
-import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.isTelemetryEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.transform
 import software.aws.toolkits.jetbrains.settings.AwsSettings
@@ -54,6 +53,7 @@ import kotlin.reflect.jvm.isAccessible
 
 // TODO: move this file to package "/client"
 // As the connection is project-level, we need to make this project-level too
+@Deprecated("Methods can throw a NullPointerException if callee does not check if connection is valid")
 interface CodeWhispererClientAdaptor : Disposable {
     val project: Project
 
@@ -110,6 +110,8 @@ interface CodeWhispererClientAdaptor : Disposable {
         language: CodeWhispererProgrammingLanguage,
         codeScanJobId: String?
     ): SendTelemetryEventResponse
+
+    fun sendMetricDataTelemetry(eventName: String, metadata: Map<String, Any?>): SendTelemetryEventResponse
 
     companion object {
         fun getInstance(project: Project): CodeWhispererClientAdaptor = project.service()
@@ -304,6 +306,19 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
         requestBuilder.optOutPreference(getTelemetryOptoutPreference())
     }
 
+    override fun sendMetricDataTelemetry(eventName: String, metadata: Map<String, Any?>): SendTelemetryEventResponse =
+        bearerClient().sendTelemetryEvent { requestBuilder ->
+            requestBuilder.telemetryEvent { telemetryEventBuilder ->
+                telemetryEventBuilder.metricData { metricBuilder ->
+                    metricBuilder.metricName(eventName)
+                    metricBuilder.metricValue(1.0)
+                    metricBuilder.timestamp(Instant.now())
+                    metricBuilder.dimensions(metadata.filter { it.value != null }.map { Dimension.builder().name(it.key).value(it.value.toString()).build() })
+                }
+                requestBuilder.optOutPreference(getTelemetryOptoutPreference())
+            }
+        }
+
     private fun getTelemetryOptoutPreference() =
         if (AwsSettings.getInstance().isTelemetryEnabled) {
             OptOutPreference.OPTIN
@@ -329,8 +344,6 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
      */
     open fun getBearerClient(oldProviderIdToRemove: String = ""): CodeWhispererRuntimeClient? {
         myBearerClient = null
-        ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED)
-            .providerRemoved(oldProviderIdToRemove)
 
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
         connection as? AwsBearerTokenConnection ?: run {
@@ -353,7 +366,6 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
 
 class MockCodeWhispererClientAdaptor(override val project: Project) : CodeWhispererClientAdaptorImpl(project) {
     override fun getBearerClient(oldProviderIdToRemove: String): CodeWhispererRuntimeClient = project.awsClient()
-
     override fun dispose() {}
 }
 

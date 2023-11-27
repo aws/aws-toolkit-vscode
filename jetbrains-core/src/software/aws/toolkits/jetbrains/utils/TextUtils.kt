@@ -7,7 +7,7 @@ import com.intellij.lang.Language
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.diff.impl.patch.PatchReader
 import com.intellij.openapi.diff.impl.patch.TextFilePatch
-import com.intellij.openapi.diff.impl.patch.apply.GenericPatchApplier
+import com.intellij.openapi.diff.impl.patch.apply.PlainSimplePatchApplier
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiFileFactory
@@ -88,6 +88,5 @@ fun generateUnifiedPatch(patch: String, filePath: String): TextFilePatch {
 
 fun applyPatch(patch: String, fileContent: String, filePath: String): String? {
     val unifiedPatch = generateUnifiedPatch(patch, filePath)
-    val appliedSomehowPatch = GenericPatchApplier.apply(fileContent, unifiedPatch.hunks)
-    return appliedSomehowPatch?.patchedText
+    return PlainSimplePatchApplier.apply(fileContent, unifiedPatch.hunks)
 }

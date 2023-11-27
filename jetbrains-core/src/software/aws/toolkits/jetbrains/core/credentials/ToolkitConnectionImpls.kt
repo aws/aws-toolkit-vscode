@@ -13,16 +13,50 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBe
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.ProfileSdkTokenProviderWrapper
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
-class ManagedBearerSsoConnection(
+/**
+ * An SSO bearer connection created through a `sso-session` declaration in a user's ~/.aws/config
+ */
+class ProfileSsoManagedBearerSsoConnection(
+    id: String,
+    val configSessionName: String,
+    startUrl: String,
+    region: String,
+    scopes: List<String>,
+    cache: DiskCache = diskCache,
+) : ManagedBearerSsoConnection(
+    startUrl,
+    region,
+    scopes,
+    cache,
+    id,
+    ToolkitBearerTokenProvider.diskSessionDisplayName(configSessionName)
+)
+
+/**
+ * An SSO bearer connection created through [loginSso]
+ */
+class LegacyManagedBearerSsoConnection(
+    startUrl: String,
+    region: String,
+    scopes: List<String>,
+    cache: DiskCache = diskCache,
+) : ManagedBearerSsoConnection(
+    startUrl,
+    region,
+    scopes,
+    cache,
+    ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region),
+    ToolkitBearerTokenProvider.ssoDisplayName(startUrl)
+)
+
+sealed class ManagedBearerSsoConnection(
     override val startUrl: String,
     override val region: String,
     override val scopes: List<String>,
     cache: DiskCache = diskCache,
-    id: String? = null,
-    label: String? = null
+    override val id: String,
+    override val label: String
 ) : BearerSsoConnection, Disposable {
-    override val id: String = id ?: ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
-    override val label: String = label ?: ToolkitBearerTokenProvider.ssoDisplayName(startUrl)
 
     private val provider =
         tokenConnection(

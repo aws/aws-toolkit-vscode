@@ -41,6 +41,7 @@ import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
+import software.aws.toolkits.jetbrains.core.credentials.ProfileSsoManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
@@ -54,9 +55,9 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow
+import software.aws.toolkits.jetbrains.core.explorer.cwqTab.nodes.CodeWhispererExplorerRootNode
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.CawsServiceNode
-import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.CodeWhispererExplorerRootNode
 import software.aws.toolkits.jetbrains.core.gettingstarted.SourceOfEntry
 import software.aws.toolkits.jetbrains.core.gettingstarted.deleteSsoConnectionCW
 import software.aws.toolkits.jetbrains.core.gettingstarted.deleteSsoConnectionExplorer
@@ -70,7 +71,6 @@ import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsFor
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
 import software.aws.toolkits.jetbrains.services.caws.CawsResources
 import software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererEditorProvider
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI
 import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.jetbrains.utils.ui.editorNotificationCompoundBorder
@@ -196,7 +196,7 @@ class GettingStartedPanel(
                             // CodeWhisperer auth bullets
                             cell(
                                 PanelAuthBullets(
-                                    message("codewhisperer.learn_page.header.title"),
+                                    message("aws.codewhispererq.tab.title"),
                                     listOf(
                                         AuthPanelBullet(
                                             true,
@@ -735,23 +735,20 @@ class GettingStartedPanel(
                 panel {
                     indent {
                         row {
-                            label(message("codewhisperer.learn_page.header.title"))
+                            label(message("aws.codewhispererq.tab.title"))
                                 .applyToComponent {
                                     font = PANEL_TITLE_FONT
                                 }
                         }
 
-                        image("/gettingstarted/codewhisperer.png")
+                        image("/gettingstarted/q.png")
 
                         row {
                             text(message("codewhisperer.gettingstarted.panel.comment"))
                         }
 
                         row {
-                            browserLink(message("codewhisperer.gettingstarted.panel.learn_more"), url = CODEWHISPERER_LEARN_MORE_URI)
-                                .actionListener { event, component ->
-                                    UiTelemetry.click(project, "auth_CodeWhispererDocumentation")
-                                }
+                            text(message("codewhisperer.gettingstarted.panel.learn_more.with.q"))
                         }
                         panelNotConnected = panel {
                             row {
@@ -840,7 +837,7 @@ class GettingStartedPanel(
                                 link(message("toolkit.login.aws_builder_id.already_connected.reconnect")) {
                                     val validConnection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER)
                                     val connection = validConnection.activeConnectionBearer
-                                    if (connection != null) {
+                                    if (connection is ProfileSsoManagedBearerSsoConnection) {
                                         if (validConnection.connectionType == ActiveConnectionType.IAM_IDC) {
                                             val confirmDeletion = MessageDialogBuilder.okCancel(
                                                 message("gettingstarted.auth.idc.sign.out.confirmation.title"),
@@ -928,7 +925,7 @@ class GettingStartedPanel(
                                 link(message("toolkit.login.aws_builder_id.already_connected.reconnect")) {
                                     val validConnection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER)
                                     val connection = validConnection.activeConnectionBearer
-                                    if (connection != null) {
+                                    if (connection is ProfileSsoManagedBearerSsoConnection) {
                                         if (validConnection.connectionType == ActiveConnectionType.IAM_IDC) {
                                             val confirmDeletion = MessageDialogBuilder.okCancel(
                                                 message("gettingstarted.auth.idc.sign.out.confirmation.title"),
@@ -991,7 +988,7 @@ class GettingStartedPanel(
                     .withHeader(message("codewhisperer.explorer.tooltip.title"))
                     .withPosition(Balloon.Position.above)
 
-                showGotIt(AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID, CodeWhispererExplorerRootNode.NODE_NAME, tooltip)
+                showGotIt(AwsToolkitExplorerToolWindow.CODEWHISPERER_Q_TAB_ID, CodeWhispererExplorerRootNode.NODE_NAME, tooltip)
             } else {
                 controlPanelVisibility(panelConnectionInProgress, revertToPanel)
             }

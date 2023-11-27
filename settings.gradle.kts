@@ -47,6 +47,7 @@ include("jetbrains-rider")
 include("intellij")
 include("ui-tests")
 include("detekt-rules")
+include("mynah-ui")
 
 plugins {
     id("com.gradle.enterprise").version("3.4.1")

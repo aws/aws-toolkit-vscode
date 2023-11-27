@@ -10,7 +10,8 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
-import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
+import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
@@ -64,10 +65,16 @@ class DefaultConnectionPinningManager :
 
     override fun getPinnedConnection(feature: FeatureWithPinnedConnection): ToolkitConnection? =
         pinnedConnections[feature.featureId].let { connection ->
-            if (connection == null || ToolkitAuthManager.getInstance().getConnection(connection.id) == null) {
+            if (connection == null) {
                 null
             } else {
-                connection
+                // fetch connection again in case it is no longer valid
+                val connectionInstance = ToolkitAuthManager.getInstance().getConnection(connection.id)
+                if (connectionInstance == null || !feature.supportsConnectionType(connectionInstance)) {
+                    null
+                } else {
+                    connection
+                }
             }
         }
 
@@ -82,17 +89,41 @@ class DefaultConnectionPinningManager :
     }
 
     override fun pinFeatures(oldConnection: ToolkitConnection?, newConnection: ToolkitConnection, features: List<FeatureWithPinnedConnection>) {
-        val featuresString = if (features.size == 1) {
-            features.first().featureName
-        } else {
-            "${features.dropLast(1).joinToString(",") { it.featureName }} and ${features.last().featureName}"
+        // pin to newConnection if the feature is supported, otherwise stay with old connection
+        val newConnectionFeatures = mutableListOf<FeatureWithPinnedConnection>()
+        val oldConnectionFeatures = mutableListOf<FeatureWithPinnedConnection>()
+        features.forEach {
+            if (it.supportsConnectionType(newConnection)) {
+                newConnectionFeatures.add(it)
+            } else if (oldConnection != null && it.supportsConnectionType(oldConnection)) {
+                oldConnectionFeatures.add(it)
+            } else {
+                LOG.error { "Feature '$it' does not support either old: '$oldConnection' or new: '$newConnection'" }
+            }
         }
 
-        val connectionToPin = if (oldConnection is AwsBearerTokenConnection) oldConnection else newConnection
-        features.forEach {
-            setPinnedConnection(it, connectionToPin)
+        val pinConnections = { featuresToPin: List<FeatureWithPinnedConnection>, connectionToPin: ToolkitConnection ->
+            val featuresString = if (featuresToPin.size == 1) {
+                featuresToPin.first().featureName
+            } else {
+                "${featuresToPin.dropLast(1).joinToString(",") { it.featureName }} and ${featuresToPin.last().featureName}"
+            }
+
+            featuresToPin.forEach {
+                setPinnedConnection(it, connectionToPin)
+            }
+            notifyInfo(message("credentials.switch.notification.title", featuresString, connectionToPin.label))
         }
-        notifyInfo(message("credentials.switch.notification.title", featuresString, connectionToPin.label))
+
+        if (newConnectionFeatures.isNotEmpty()) {
+            pinConnections(newConnectionFeatures, newConnection)
+        }
+
+        if (oldConnectionFeatures.isNotEmpty()) {
+            if (oldConnection != null) {
+                pinConnections(oldConnectionFeatures, oldConnection)
+            }
+        }
     }
 
     override fun getState() = ConnectionPinningManagerState(
@@ -111,6 +142,10 @@ class DefaultConnectionPinningManager :
     }
 
     override fun dispose() {}
+
+    companion object {
+        private val LOG = getLogger<DefaultConnectionPinningManager>()
+    }
 }
 
 data class ConnectionPinningManagerState(

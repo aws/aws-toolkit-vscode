@@ -39,6 +39,7 @@ import software.aws.toolkits.core.utils.Waiters.waitUntil
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.MockClientManager
+import software.aws.toolkits.jetbrains.core.credentials.LegacyManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
@@ -169,7 +170,7 @@ class DevEnvConnectTest : AfterAllCallback {
 
         // can probably abstract this out as an extension
         // force auth to complete now
-        connection = ManagedBearerSsoConnection(SONO_URL, SONO_REGION, listOf("codecatalyst:read_write"))
+        connection = LegacyManagedBearerSsoConnection(SONO_URL, SONO_REGION, listOf("codecatalyst:read_write"))
         Disposer.register(disposable, connection)
         // pin connection to avoid dialog prompt
         ConnectionPinningManager.getInstance().setPinnedConnection(CodeCatalystConnection.getInstance(), connection)

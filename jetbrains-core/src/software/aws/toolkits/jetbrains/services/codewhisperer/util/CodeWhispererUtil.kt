@@ -17,12 +17,12 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.maybeReauthProviderIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
-import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
+import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererLoginLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererSsoLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.ConnectWithAwsToContinueActionError
@@ -208,7 +208,7 @@ object CodeWhispererUtil {
         val tokenProvider = tokenProvider(project) ?: return false
         return maybeReauthProviderIfNeeded(project, tokenProvider, isBuilderId = tokenConnection(project).isSono()) {
             runInEdt {
-                project.refreshDevToolTree()
+                project.refreshCwQTree()
                 if (!CodeWhispererService.hasReAuthPromptBeenShown()) {
                     notifyConnectionExpiredRequestReauth(project)
                 }
@@ -262,7 +262,7 @@ object CodeWhispererUtil {
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
         if (connection !is ManagedBearerSsoConnection) return
         ApplicationManager.getApplication().executeOnPooledThread {
-            loginSso(project, connection.startUrl, connection.region, connection.scopes)
+            reauthConnectionIfNeeded(project, connection)
         }
     }
 

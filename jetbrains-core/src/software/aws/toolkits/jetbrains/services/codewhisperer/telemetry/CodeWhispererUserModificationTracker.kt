@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.telemetry
+
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.service
@@ -16,9 +17,12 @@ import info.debatty.java.stringsimilarity.Levenshtein
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
+import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.InsertedCodeModificationEntry
 import software.aws.toolkits.jetbrains.settings.AwsSettings
+import software.aws.toolkits.telemetry.AmazonqTelemetry
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererRuntime
@@ -30,8 +34,12 @@ import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 
+interface UserModificationTrackingEntry {
+    val time: Instant
+}
+
 data class AcceptedSuggestionEntry(
-    val time: Instant,
+    override val time: Instant,
     val vFile: VirtualFile?,
     val range: RangeMarker,
     val suggestion: String,
@@ -44,10 +52,10 @@ data class AcceptedSuggestionEntry(
     val codewhispererRuntime: CodewhispererRuntime?,
     val codewhispererRuntimeSource: String?,
     val connection: ToolkitConnection?
-)
+) : UserModificationTrackingEntry
 
 class CodeWhispererUserModificationTracker(private val project: Project) : Disposable {
-    private val acceptedSuggestions = LinkedBlockingDeque<AcceptedSuggestionEntry>(DEFAULT_MAX_QUEUE_SIZE)
+    private val acceptedSuggestions = LinkedBlockingDeque<UserModificationTrackingEntry>(DEFAULT_MAX_QUEUE_SIZE)
     private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, this)
 
     private val isShuttingDown = AtomicBoolean(false)
@@ -64,7 +72,7 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
 
     private fun isTelemetryEnabled(): Boolean = AwsSettings.getInstance().isTelemetryEnabled
 
-    fun enqueue(event: AcceptedSuggestionEntry) {
+    fun enqueue(event: UserModificationTrackingEntry) {
         if (!isTelemetryEnabled()) {
             return
         }
@@ -80,13 +88,17 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
                 return
             }
 
-            val copyList = LinkedBlockingDeque<AcceptedSuggestionEntry>()
+            val copyList = LinkedBlockingDeque<UserModificationTrackingEntry>()
 
             val currentTime = Instant.now()
             for (acceptedSuggestion in acceptedSuggestions) {
                 if (Duration.between(acceptedSuggestion.time, currentTime).seconds > DEFAULT_MODIFICATION_INTERVAL_IN_SECONDS) {
                     LOG.debug { "Passed $DEFAULT_MODIFICATION_INTERVAL_IN_SECONDS for $acceptedSuggestion" }
-                    emitTelemetryOnSuggestion(acceptedSuggestion)
+                    when (acceptedSuggestion) {
+                        is AcceptedSuggestionEntry -> emitTelemetryOnSuggestion(acceptedSuggestion)
+                        is InsertedCodeModificationEntry -> emitTelemetryOnChatCodeInsert(acceptedSuggestion)
+                        else -> {}
+                    }
                 } else {
                     copyList.add(acceptedSuggestion)
                 }
@@ -96,6 +108,24 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
             acceptedSuggestions.addAll(copyList)
         } finally {
             scheduleCodeWhispererTracker()
+        }
+    }
+
+    private fun emitTelemetryOnChatCodeInsert(insertedCode: InsertedCodeModificationEntry) {
+        try {
+            val file = insertedCode.vFile
+            if (file == null || (!file.isValid)) throw Exception("Record OnChatCodeInsert - invalid file")
+
+            val document = runReadAction {
+                FileDocumentManager.getInstance().getDocument(file)
+            }
+            val currentString = document?.getText(
+                TextRange(insertedCode.range.startOffset, insertedCode.range.endOffset)
+            )
+            val modificationPercentage = checkDiff(currentString?.trim(), insertedCode.originalString.trim())
+            sendModificationWithChatTelemetry(insertedCode, modificationPercentage)
+        } catch (e: Exception) {
+            sendModificationWithChatTelemetry(insertedCode, 1.0)
         }
     }
 
@@ -163,7 +193,22 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
         )
     }
 
-    // temp disable user modfication event for further discussion on metric calculation
+    private fun sendModificationWithChatTelemetry(insertedCode: InsertedCodeModificationEntry, percentage: Double) {
+        AmazonqTelemetry.modifyCode(
+            cwsprChatConversationId = insertedCode.conversationId,
+            cwsprChatMessageId = insertedCode.messageId,
+            cwsprChatModificationPercentage = percentage
+        )
+
+        val metadata: Map<String, Any?> = mapOf(
+            "cwsprChatConversationId" to insertedCode.conversationId,
+            "cwsprChatMessageId" to insertedCode.messageId,
+            "cwsprChatModificationPercentage" to percentage
+        )
+        CodeWhispererClientAdaptor.getInstance(project).sendMetricDataTelemetry("amazonq_modifyCode", metadata)
+    }
+
+// temp disable user modfication event for further discussion on metric calculation
 //    private fun sendUserModificationTelemetryToServiceAPI(
 //        suggestion: AcceptedSuggestionEntry,
 //        modificationPercentage: Double

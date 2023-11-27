@@ -17,8 +17,7 @@ import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.loginSso
-import software.aws.toolkits.jetbrains.core.credentials.reauthConnection
+import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderExtension
 
 class CodeWhispererUtilTest {
@@ -38,8 +37,7 @@ class CodeWhispererUtilTest {
 
     @Test
     fun `reconnectCodeWhisperer respects connection settings`() {
-        mockkStatic(::loginSso)
-        mockkStatic(::reauthConnection)
+        mockkStatic(::reauthConnectionIfNeeded)
         val mockConnectionManager = mockk<ToolkitConnectionManager>(relaxed = true)
         val mockConnection = mockk<ManagedBearerSsoConnection>()
         projectExtension.project.replaceService(ToolkitConnectionManager::class.java, mockConnectionManager, disposableExtension.disposable)
@@ -56,7 +54,7 @@ class CodeWhispererUtilTest {
         CodeWhispererUtil.reconnectCodeWhisperer(projectExtension.project)
 
         verify {
-            loginSso(projectExtension.project, startUrl, region, scopes)
+            reauthConnectionIfNeeded(projectExtension.project, mockConnection)
         }
     }
 }

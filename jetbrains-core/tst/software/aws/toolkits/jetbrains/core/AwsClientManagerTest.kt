@@ -29,10 +29,13 @@ import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
+import software.amazon.awssdk.core.client.builder.SdkAsyncClientBuilder
+import software.amazon.awssdk.core.client.builder.SdkSyncClientBuilder
 import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption
 import software.amazon.awssdk.core.client.config.SdkClientOption
 import software.amazon.awssdk.core.signer.Signer
 import software.amazon.awssdk.http.SdkHttpClient
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.ConnectionSettings
@@ -145,12 +148,30 @@ class AwsClientManagerTest {
     }
 
     @Test
-    fun httpClientIsSharedAcrossClients() {
+    fun `http client is shared across sync clients`() {
         val sut = getClientManager()
         val dummy = sut.getClient<DummyServiceClient>(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
         val secondDummy = sut.getClient<SecondDummyServiceClient>(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
 
         assertThat(dummy.httpClient.delegate).isSameAs(secondDummy.httpClient.delegate)
+    }
+
+    @Test
+    fun `async http clients is not shared across sync http clients`() {
+        val sut = getClientManager()
+        val dummy = sut.getClient<DummyServiceClient>(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
+        val asyncDummy = sut.getClient<DummyServiceAsyncClient>(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
+
+        assertThat(dummy.httpClient.delegate).isNotSameAs(asyncDummy.httpClient)
+    }
+
+    @Test
+    fun `http client is not shared across async clients`() {
+        val sut = getClientManager()
+        val dummy = sut.getClient<DummyServiceAsyncClient>(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
+        val secondDummy = sut.getClient<DummyServiceAsyncClient>(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
+
+        assertThat(dummy.httpClient).isNotSameAs(secondDummy.httpClient)
     }
 
     @Test
@@ -299,6 +320,14 @@ class AwsClientManagerTest {
     // Test against real version so bypass ServiceManager for the client manager
     private fun getClientManager() = AwsClientManager()
 
+    class DummyServiceAsyncClient(val httpClient: SdkAsyncHttpClient) : TestClient() {
+        companion object {
+            @Suppress("unused")
+            @JvmStatic
+            fun builder() = DummyServiceAsyncClientBuilder()
+        }
+    }
+
     class DummyServiceClient(val httpClient: SdkHttpClient) : TestClient() {
         companion object {
             @Suppress("unused")
@@ -307,7 +336,15 @@ class AwsClientManagerTest {
         }
     }
 
-    class DummyServiceClientBuilder : TestClientBuilder<DummyServiceClientBuilder, DummyServiceClient>() {
+    class DummyServiceAsyncClientBuilder : TestAsyncClientBuilder<DummyServiceAsyncClientBuilder, DummyServiceAsyncClient>() {
+        override fun serviceName(): String = "DummyService"
+
+        override fun signingName(): String = serviceName()
+
+        override fun buildClient() = DummyServiceAsyncClient(asyncClientConfiguration().option(SdkClientOption.ASYNC_HTTP_CLIENT))
+    }
+
+    class DummyServiceClientBuilder : TestSyncClientBuilder<DummyServiceClientBuilder, DummyServiceClient>() {
         override fun serviceName(): String = "DummyService"
 
         override fun signingName(): String = serviceName()
@@ -348,7 +385,7 @@ class AwsClientManagerTest {
     }
 
     class SecondDummyServiceClientBuilder :
-        TestClientBuilder<SecondDummyServiceClientBuilder, SecondDummyServiceClient>() {
+        TestSyncClientBuilder<SecondDummyServiceClientBuilder, SecondDummyServiceClient>() {
         override fun serviceName(): String = "SecondDummyService"
 
         override fun signingName(): String = serviceName()
@@ -383,6 +420,12 @@ class AwsClientManagerTest {
             val SERVICE_METADATA_ID = "DummyService"
         }
     }
+
+    abstract class TestAsyncClientBuilder<B, C> : TestClientBuilder<B, C>(), SdkAsyncClientBuilder<B, C>
+        where B : AwsClientBuilder<B, C>, B : SdkAsyncClientBuilder<B, C>
+
+    abstract class TestSyncClientBuilder<B, C> : TestClientBuilder<B, C>(), SdkSyncClientBuilder<B, C>
+        where B : AwsClientBuilder<B, C>, B : SdkSyncClientBuilder<B, C>
 
     abstract class TestClientBuilder<B : AwsClientBuilder<B, C>, C> : AwsDefaultClientBuilder<B, C>() {
         init {

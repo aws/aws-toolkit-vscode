@@ -42,6 +42,8 @@ interface BearerTokenProvider : SdkTokenProvider, SdkAutoCloseable, ToolkitBeare
      */
     fun currentToken(): AccessToken?
 
+    fun refresh(): AccessToken
+
     /**
      * @return The authentication state of [currentToken]
      */
@@ -82,10 +84,10 @@ class InteractiveBearerTokenProvider(
     startUrl: String,
     region: String,
     scopes: List<String>,
-    id: String? = null,
+    id: String,
     cache: DiskCache = diskCache
 ) : BearerTokenProvider, BearerTokenLogoutSupport, Disposable {
-    override val id = id ?: ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
+    override val id = id
     override val displayName = ToolkitBearerTokenProvider.ssoDisplayName(startUrl)
 
     private val ssoOidcClient: SsoOidcClient = buildUnmanagedSsoOidcClient(region)
@@ -120,9 +122,7 @@ class InteractiveBearerTokenProvider(
         val token = if (Duration.between(Instant.now(), lastToken.expiresAt) > Duration.ofMinutes(30)) {
             lastToken
         } else {
-            accessTokenProvider.refreshToken(lastToken).also {
-                this.lastToken.set(it)
-            }
+            refresh()
         }
 
         return RefreshResult.builder(token)
@@ -143,6 +143,16 @@ class InteractiveBearerTokenProvider(
     }
 
     override fun currentToken() = lastToken.get()
+
+    /**
+     * Only use if you know what you're doing.
+     */
+    override fun refresh(): AccessToken {
+        val lastToken = lastToken.get() ?: error("Token refresh started before session initialized")
+        return accessTokenProvider.refreshToken(lastToken).also {
+            this.lastToken.set(it)
+        }
+    }
 
     override fun invalidate() {
         accessTokenProvider.invalidate()
@@ -191,6 +201,10 @@ class ProfileSdkTokenProviderWrapper(private val sessionName: String, region: St
             refreshToken = it.refreshToken(),
             expiresAt = it.expirationTime().orElseThrow()
         )
+    }
+
+    override fun refresh(): AccessToken {
+        error("Not yet implemented")
     }
 
     override fun close() {

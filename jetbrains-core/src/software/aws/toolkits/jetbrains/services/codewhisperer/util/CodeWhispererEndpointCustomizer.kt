@@ -16,6 +16,7 @@ import software.amazon.awssdk.core.retry.RetryPolicy
 import software.amazon.awssdk.http.SdkHttpRequest
 import software.amazon.awssdk.services.codewhisperer.CodeWhispererClientBuilder
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClientBuilder
+import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClientBuilder
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClient
 import software.aws.toolkits.core.ToolkitClientCustomizer
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
@@ -34,7 +35,7 @@ class CodeWhispererEndpointCustomizer : ToolkitClientCustomizer {
         builder: AwsClientBuilder<*, *>,
         clientOverrideConfiguration: ClientOverrideConfiguration.Builder
     ) {
-        if (builder is CodeWhispererRuntimeClientBuilder) {
+        if (builder is CodeWhispererRuntimeClientBuilder || builder is CodeWhispererStreamingAsyncClientBuilder) {
             builder
                 .endpointOverride(URI.create(CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT))
                 .region(CodeWhispererConstants.Config.BearerClientRegion)

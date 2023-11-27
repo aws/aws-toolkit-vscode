@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.status
 
 import com.intellij.icons.AllIcons
+import com.intellij.ide.DataManager
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -18,6 +19,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererNodeActionGroup
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStateChangeListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
@@ -80,7 +82,13 @@ class CodeWhispererStatusBarWidget(project: Project) :
         if (isCodeWhispererExpired(project)) {
             JBPopupFactory.getInstance().createConfirmation(message("codewhisperer.statusbar.popup.title"), { reconnectCodeWhisperer(project) }, 0)
         } else {
-            null
+            JBPopupFactory.getInstance().createActionGroupPopup(
+                "CodeWhisperer",
+                CodeWhispererNodeActionGroup(),
+                DataManager.getInstance().getDataContext(myStatusBar?.component),
+                JBPopupFactory.ActionSelectionAid.MNEMONICS,
+                false
+            )
         }
 
     override fun getSelectedValue(): String = CodeWhispererModelConfigurator.getInstance().activeCustomization(project).let {

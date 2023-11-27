@@ -27,6 +27,8 @@ import javax.swing.JLabel
 import javax.swing.JTextArea
 
 private const val GROUP_DISPLAY_ID = "AWS Toolkit"
+private const val GROUP_DISPLAY_ID_STICKY = "aws.toolkit_sticky"
+
 private val LOG = getLogger<AwsToolkit>()
 
 fun Throwable.notifyError(title: String = "", project: Project? = null, stripHtml: Boolean = true) {
@@ -50,6 +52,38 @@ private fun notify(type: NotificationType, title: String, content: String = "", 
     }
     notify(notification, project)
 }
+
+private fun notifySticky(type: NotificationType, title: String, content: String = "", project: Project? = null, notificationActions: Collection<AnAction>) {
+    val notification = Notification(GROUP_DISPLAY_ID_STICKY, title, content, type)
+    notificationActions.forEach {
+        notification.addAction(if (it !is NotificationAction) createNotificationExpiringAction(it) else it)
+    }
+    notify(notification, project)
+}
+
+fun notifyStickyInfo(
+    title: String,
+    content: String = "",
+    project: Project? = null,
+    notificationActions: Collection<AnAction> = listOf(),
+    stripHtml: Boolean = true
+) = notifySticky(NotificationType.INFORMATION, title, getCleanedContent(content, stripHtml), project, notificationActions)
+
+fun notifyStickyWarn(
+    title: String,
+    content: String = "",
+    project: Project? = null,
+    notificationActions: Collection<AnAction> = listOf(),
+    stripHtml: Boolean = true
+) = notifySticky(NotificationType.WARNING, title, getCleanedContent(content, stripHtml), project, notificationActions)
+
+fun notifyStickyError(
+    title: String,
+    content: String = "",
+    project: Project? = null,
+    notificationActions: Collection<AnAction> = listOf(),
+    stripHtml: Boolean = true
+) = notifySticky(NotificationType.ERROR, title, getCleanedContent(content, stripHtml), project, notificationActions)
 
 fun notifyInfo(title: String, content: String = "", project: Project? = null, listener: NotificationListener? = null, stripHtml: Boolean = true) =
     notify(Notification(GROUP_DISPLAY_ID, title, getCleanedContent(content, stripHtml), NotificationType.INFORMATION, listener), project)

@@ -10,6 +10,7 @@ import software.amazon.awssdk.auth.token.signer.aws.BearerTokenSigner
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
+import software.amazon.awssdk.core.client.builder.SdkSyncClientBuilder
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
 import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption
 import software.amazon.awssdk.core.retry.RetryMode
@@ -148,9 +149,14 @@ abstract class ToolkitClientManager {
 
         @Suppress("UNCHECKED_CAST")
         return builder
-            .httpClient(sdkHttpClient())
             .region(region)
             .apply {
+                if (this is SdkSyncClientBuilder<*, *>) {
+                    // async clients use CRT, and keeps trying to shut down our apache client even though it doesn't respect our client settings
+                    // so only set this for sync clients
+                    httpClient(sdkHttpClient())
+                }
+
                 val clientOverrideConfig = ClientOverrideConfiguration.builder()
 
                 if (credProvider != null) {

@@ -14,7 +14,8 @@ import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.AbstractA
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.ActionGroupOnRightClick
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.PinnedConnectionNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
-import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.ActionProvider
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.buildActionList
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.CodeWhispererReconnectNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.CustomizationNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.FreeTierUsageLimitHitNode
@@ -38,11 +39,8 @@ class CodeWhispererServiceNode(
 ) : AbstractActionTreeNode(project, value, null), ActionGroupOnRightClick, PinnedConnectionNode {
     private val nodeProject
         get() = myProject
-    private val pauseCodeWhispererNode by lazy { PauseCodeWhispererNode(nodeProject) }
-    private val resumeCodeWhispererNode by lazy { ResumeCodeWhispererNode(nodeProject) }
     private val whatIsCodeWhispererNode by lazy { WhatIsCodeWhispererNode(nodeProject) }
     private val getStartedCodeWhispererNode by lazy { GetStartedNode(nodeProject) }
-    private val openCodeReferenceNode by lazy { OpenCodeReferenceNode(nodeProject) }
     private val runCodeScanNode by lazy { RunCodeScanNode(nodeProject) }
     private val codeWhispererReconnectNode by lazy { CodeWhispererReconnectNode(nodeProject) }
     private val freeTierUsageLimitHitNode by lazy {
@@ -55,8 +53,15 @@ class CodeWhispererServiceNode(
 
         FreeTierUsageLimitHitNode(nodeProject, formatter.format(date))
     }
-    private val customizationNode by lazy { CustomizationNode(nodeProject) }
-    private val learnCodeWhispererNode by lazy { LearnCodeWhispererNode(nodeProject) }
+    private val actionProvider by lazy {
+        object : ActionProvider<AbstractTreeNode<*>> {
+            override val pause = PauseCodeWhispererNode(nodeProject)
+            override val resume = ResumeCodeWhispererNode(nodeProject)
+            override val openCodeReference = OpenCodeReferenceNode(nodeProject)
+            override val customize = CustomizationNode(nodeProject)
+            override val learn = LearnCodeWhispererNode(nodeProject)
+        }
+    }
 
     override fun onDoubleClick(event: MouseEvent) {}
 
@@ -69,30 +74,17 @@ class CodeWhispererServiceNode(
         val activeConnectionType = manager.checkActiveCodeWhispererConnectionType(project)
 
         return when (activeConnectionType) {
-            CodeWhispererLoginType.Logout -> listOf(whatIsCodeWhispererNode, getStartedCodeWhispererNode)
+            CodeWhispererLoginType.Logout -> listOf(getStartedCodeWhispererNode, whatIsCodeWhispererNode)
             CodeWhispererLoginType.Expired -> listOf(codeWhispererReconnectNode, whatIsCodeWhispererNode)
 
-            // We only show this customization node to SSO users who are in CodeWhisperer Gated Preview list
             else -> {
                 if (manager.isSuspended(nodeProject)) {
-                    listOf(freeTierUsageLimitHitNode, runCodeScanNode, openCodeReferenceNode)
-                } else if (manager.isAutoEnabled()) {
-                    if (activeConnectionType == CodeWhispererLoginType.SSO &&
-                        CodeWhispererModelConfigurator.getInstance().shouldDisplayCustomNode(nodeProject)
-                    ) {
-                        listOf(pauseCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, customizationNode, learnCodeWhispererNode)
-                    } else {
-                        listOf(pauseCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, learnCodeWhispererNode)
-                    }
-                } else {
-                    if (activeConnectionType == CodeWhispererLoginType.SSO &&
-                        CodeWhispererModelConfigurator.getInstance().shouldDisplayCustomNode(nodeProject)
-                    ) {
-                        listOf(resumeCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, customizationNode, learnCodeWhispererNode)
-                    } else {
-                        listOf(resumeCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, learnCodeWhispererNode)
-                    }
+                    return listOf(freeTierUsageLimitHitNode, runCodeScanNode, actionProvider.openCodeReference)
                 }
+
+                return buildActionList(nodeProject, actionProvider) + listOf(
+                    runCodeScanNode,
+                )
             }
         }
     }

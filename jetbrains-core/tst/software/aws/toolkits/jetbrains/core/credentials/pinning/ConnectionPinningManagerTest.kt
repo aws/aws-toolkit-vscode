@@ -43,18 +43,24 @@ class ConnectionPinningManagerTest {
         val feature = object : FeatureWithPinnedConnection {
             override val featureId = "mockId"
             override val featureName = "mockFeature"
-            override fun supportsConnectionType(connection: ToolkitConnection) = true
+            override fun supportsConnectionType(connection: ToolkitConnection) = connection.id == "oldConn"
         }
 
         val oldConnection = mock<AwsBearerTokenConnection> {
-            on { id } doReturn "connId"
+            on { id } doReturn "oldConn"
         }
+
+        val newConnection = mock<AwsBearerTokenConnection> {
+            on { id } doReturn "newConn"
+        }
+
         val mockAuthManager = mock<ToolkitAuthManager> {
-            whenever(it.getConnection(any())).thenReturn(oldConnection)
+            on { it.getConnection("oldConn") }.thenReturn(oldConnection)
+            on { it.getConnection("newConn") }.thenReturn(newConnection)
         }
         ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, mockAuthManager, disposableRule.disposable)
 
-        sut.pinFeatures(oldConnection, mock<AwsBearerTokenConnection>(), listOf(feature))
+        sut.pinFeatures(oldConnection, newConnection, listOf(feature))
 
         assertThat(sut.getPinnedConnection(feature)).isEqualTo(oldConnection)
     }
@@ -82,6 +88,33 @@ class ConnectionPinningManagerTest {
     }
 
     @Test
+    fun `pins to old if new connection does not support feature`() {
+        val oldConnection = mock<AwsBearerTokenConnection> {
+            on { id } doReturn "oldConn"
+        }
+
+        val newConnection = mock<AwsBearerTokenConnection> {
+            on { id } doReturn "newConn"
+        }
+
+        val feature = object : FeatureWithPinnedConnection {
+            override val featureId = "mockId"
+            override val featureName = "mockFeature"
+            override fun supportsConnectionType(connection: ToolkitConnection) = connection.id == "oldConn"
+        }
+
+        val mockAuthManager = mock<ToolkitAuthManager> {
+            on { it.getConnection("oldConn") }.thenReturn(oldConnection)
+            on { it.getConnection("newConn") }.thenReturn(newConnection)
+        }
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, mockAuthManager, disposableRule.disposable)
+
+        sut.pinFeatures(oldConnection, newConnection, listOf(feature))
+
+        assertThat(sut.getPinnedConnection(feature)).isEqualTo(oldConnection)
+    }
+
+    @Test
     fun `switching connection from unsupported feature pins connection to new connection`() {
         val oldConnectionId = "connId"
 
@@ -100,7 +133,8 @@ class ConnectionPinningManagerTest {
             on { id } doReturn "newId"
         }
         val mockAuthManager = mock<ToolkitAuthManager> {
-            whenever(it.getConnection(any())).thenReturn(oldConnection)
+            on { it.getConnection(oldConnectionId) }.thenReturn(oldConnection)
+            on { it.getConnection("newId") }.thenReturn(newConnection)
         }
         ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, mockAuthManager, disposableRule.disposable)
 
@@ -119,6 +153,26 @@ class ConnectionPinningManagerTest {
         val connection = mock<AwsBearerTokenConnection> {
             on { id } doReturn "connId"
         }
+
+        sut.setPinnedConnection(feature, connection)
+
+        assertThat(sut.getPinnedConnection(feature)).isNull()
+    }
+
+    @Test
+    fun `pinned connection returns null if connection is not valid for feature`() {
+        val feature = object : FeatureWithPinnedConnection {
+            override val featureId = "mockId"
+            override val featureName = "mockFeature"
+            override fun supportsConnectionType(connection: ToolkitConnection) = false
+        }
+        val connection = mock<AwsBearerTokenConnection> {
+            on { id } doReturn "connId"
+        }
+        val mockAuthManager = mock<ToolkitAuthManager> {
+            whenever(it.getConnection(any())).thenReturn(connection)
+        }
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, mockAuthManager, disposableRule.disposable)
 
         sut.setPinnedConnection(feature, connection)
 

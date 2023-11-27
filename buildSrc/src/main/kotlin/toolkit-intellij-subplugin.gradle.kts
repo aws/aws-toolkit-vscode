@@ -1,7 +1,6 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import org.eclipse.jgit.api.Git
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension.Output
 import org.jetbrains.intellij.tasks.DownloadRobotServerPluginTask
@@ -15,7 +14,6 @@ import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension
 import software.aws.toolkits.gradle.isCi
-import java.io.IOException
 
 val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intellijToolkit")
 
@@ -59,6 +57,11 @@ configurations {
         exclude(group = "org.jetbrains.kotlinx")
 
         // Exclude dependencies we don't use to make plugin smaller
+        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
+    }
+
+    testRuntimeClasspath {
+        // Conflicts with CRT in test classpath
         exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
     }
 

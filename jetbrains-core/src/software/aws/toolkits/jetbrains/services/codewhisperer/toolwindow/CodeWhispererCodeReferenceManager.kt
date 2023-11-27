@@ -24,9 +24,11 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.awt.RelativePoint
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
 import software.amazon.awssdk.services.codewhispererruntime.model.Reference
+import software.amazon.awssdk.services.codewhispererruntime.model.Span
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.getPopupPositionAboveText
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.getRelativePathToContentRoot
 import software.aws.toolkits.jetbrains.services.codewhisperer.layout.CodeWhispererLayoutConfig.horizontalPanelConstraints
+import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.EDITOR_CODE_REFERENCE_HOVER
 import software.aws.toolkits.resources.message
@@ -62,13 +64,10 @@ class CodeWhispererCodeReferenceManager(private val project: Project) {
         toolWindow?.show()
     }
 
-    fun insertCodeReference(states: InvocationContext, selectedIndex: Int) {
-        val (requestContext, _, recommendationContext) = states
-        val (_, editor, _, caretPosition) = requestContext
-        val (_, detail, reformattedDetail) = recommendationContext.details[selectedIndex]
+    fun insertCodeReference(originalCode: String, references: List<Reference>, editor: Editor, caretPosition: CaretPosition, detail: Completion?) {
         val startOffset = caretPosition.offset
         val relativePath = getRelativePathToContentRoot(editor)
-        reformattedDetail.references().forEachIndexed { i, reference ->
+        references.forEachIndexed { i, reference ->
             val start = startOffset + reference.recommendationContentSpan().start()
             val end = startOffset + reference.recommendationContentSpan().end()
             val lineNums = getReferenceLineNums(editor, start, end)
@@ -76,7 +75,11 @@ class CodeWhispererCodeReferenceManager(private val project: Project) {
             // There is an unformatted recommendation(directly from response) and reformatted one. We want to get
             // the line number, start/end offset of the reformatted one because it's the one inserted to the editor.
             // However, the one that shows in the tool window record should show the original recommendation, as below.
-            val originalContentLines = getOriginalContentLines(detail, i)
+            val originalContentLines = if (detail != null) {
+                getOriginalContentLines(detail, i)
+            } else {
+                getOriginalContentLines(originalCode, reference.recommendationContentSpan())
+            }
 
             codeReferenceComponents.contentPanel.apply {
                 add(
@@ -100,6 +103,13 @@ class CodeWhispererCodeReferenceManager(private val project: Project) {
         }
     }
 
+    fun insertCodeReference(states: InvocationContext, selectedIndex: Int) {
+        val (requestContext, _, recommendationContext) = states
+        val (_, editor, _, caretPosition) = requestContext
+        val (_, detail, reformattedDetail) = recommendationContext.details[selectedIndex]
+        insertCodeReference(detail.content(), reformattedDetail.references(), editor, caretPosition, detail)
+    }
+
     fun getReferenceLineNums(editor: Editor, start: Int, end: Int): String {
         val startLine = editor.document.getLineNumber(start)
         val endLine = editor.document.getLineNumber(end)
@@ -113,10 +123,13 @@ class CodeWhispererCodeReferenceManager(private val project: Project) {
 
     fun getOriginalContentLines(detail: Completion, i: Int): List<String> {
         val originalSpan = detail.references()[i].recommendationContentSpan()
-        return detail.content()
+        return getOriginalContentLines(detail.content(), originalSpan)
+    }
+
+    private fun getOriginalContentLines(originalCode: String, originalSpan: Span): List<String> =
+        originalCode
             .substring(originalSpan.start(), originalSpan.end())
             .split("\n")
-    }
 
     private fun insertHighLightContext(editor: Editor, start: Int, end: Int, reference: Reference) {
         val codeContent = editor.document.getText(TextRange.create(start, end))

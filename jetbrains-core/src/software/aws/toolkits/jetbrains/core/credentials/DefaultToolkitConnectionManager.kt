@@ -109,8 +109,12 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
                 FeatureWithPinnedConnection.EP_NAME.forEachExtensionSafe {
                     if (!pinningManager.isFeaturePinned(it) &&
                         (
-                            (oldConnection == null && it.supportsConnectionType(newConnection)) ||
-                                (oldConnection != null && it.supportsConnectionType(oldConnection) != it.supportsConnectionType(newConnection))
+                            (
+                                oldConnection == null && it.supportsConnectionType(newConnection)
+                                ) ||
+                                (
+                                    oldConnection != null && it.supportsConnectionType(oldConnection) != it.supportsConnectionType(newConnection)
+                                    )
                             )
                     ) {
                         featuresToPin.add(it)

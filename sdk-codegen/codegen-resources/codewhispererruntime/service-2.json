@@ -76,6 +76,36 @@
                 {"shape":"AccessDeniedException"}
             ]
         },
+        "GetTransformation":{
+            "name":"GetTransformation",
+            "http":{
+                "method":"POST",
+                "requestUri":"/"
+            },
+            "input":{"shape":"GetTransformationRequest"},
+            "output":{"shape":"GetTransformationResponse"},
+            "errors":[
+                {"shape":"ThrottlingException"},
+                {"shape":"InternalServerException"},
+                {"shape":"ValidationException"},
+                {"shape":"AccessDeniedException"}
+            ]
+        },
+        "GetTransformationPlan":{
+            "name":"GetTransformationPlan",
+            "http":{
+                "method":"POST",
+                "requestUri":"/"
+            },
+            "input":{"shape":"GetTransformationPlanRequest"},
+            "output":{"shape":"GetTransformationPlanResponse"},
+            "errors":[
+                {"shape":"ThrottlingException"},
+                {"shape":"InternalServerException"},
+                {"shape":"ValidationException"},
+                {"shape":"AccessDeniedException"}
+            ]
+        },
         "ListAvailableCustomizations":{
             "name":"ListAvailableCustomizations",
             "http":{
@@ -102,6 +132,21 @@
             "errors":[
                 {"shape":"ThrottlingException"},
                 {"shape":"ResourceNotFoundException"},
+                {"shape":"InternalServerException"},
+                {"shape":"ValidationException"},
+                {"shape":"AccessDeniedException"}
+            ]
+        },
+        "ListFeatureEvaluations":{
+            "name":"ListFeatureEvaluations",
+            "http":{
+                "method":"POST",
+                "requestUri":"/"
+            },
+            "input":{"shape":"ListFeatureEvaluationsRequest"},
+            "output":{"shape":"ListFeatureEvaluationsResponse"},
+            "errors":[
+                {"shape":"ThrottlingException"},
                 {"shape":"InternalServerException"},
                 {"shape":"ValidationException"},
                 {"shape":"AccessDeniedException"}
@@ -140,6 +185,36 @@
                 {"shape":"AccessDeniedException"}
             ],
             "idempotent":true
+        },
+        "StartTransformation":{
+            "name":"StartTransformation",
+            "http":{
+                "method":"POST",
+                "requestUri":"/"
+            },
+            "input":{"shape":"StartTransformationRequest"},
+            "output":{"shape":"StartTransformationResponse"},
+            "errors":[
+                {"shape":"ThrottlingException"},
+                {"shape":"InternalServerException"},
+                {"shape":"ValidationException"},
+                {"shape":"AccessDeniedException"}
+            ]
+        },
+        "StopTransformation":{
+            "name":"StopTransformation",
+            "http":{
+                "method":"POST",
+                "requestUri":"/"
+            },
+            "input":{"shape":"StopTransformationRequest"},
+            "output":{"shape":"StopTransformationResponse"},
+            "errors":[
+                {"shape":"ThrottlingException"},
+                {"shape":"InternalServerException"},
+                {"shape":"ValidationException"},
+                {"shape":"AccessDeniedException"}
+            ]
         }
     },
     "shapes":{
@@ -165,11 +240,58 @@
                 "BuiltJars"
             ]
         },
+        "AssistantResponseMessage":{
+            "type":"structure",
+            "required":["content"],
+            "members":{
+                "messageId":{"shape":"AssistantResponseMessageMessageIdString"},
+                "content":{"shape":"AssistantResponseMessageContentString"},
+                "supplementaryWebLinks":{"shape":"SupplementaryWebLinks"},
+                "references":{"shape":"References"},
+                "followupPrompt":{"shape":"FollowupPrompt"}
+            }
+        },
+        "AssistantResponseMessageContentString":{
+            "type":"string",
+            "max":4096,
+            "min":0,
+            "sensitive":true
+        },
+        "AssistantResponseMessageMessageIdString":{
+            "type":"string",
+            "max":128,
+            "min":0
+        },
         "Base64EncodedPaginationToken":{
             "type":"string",
             "max":2048,
             "min":1,
             "pattern":"(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?"
+        },
+        "Boolean":{
+            "type":"boolean",
+            "box":true
+        },
+        "ChatHistory":{
+            "type":"list",
+            "member":{"shape":"ChatMessage"},
+            "max":10,
+            "min":0
+        },
+        "ChatMessage":{
+            "type":"structure",
+            "members":{
+                "userInputMessage":{"shape":"UserInputMessage"},
+                "assistantResponseMessage":{"shape":"AssistantResponseMessage"}
+            },
+            "union":true
+        },
+        "ChatTriggerType":{
+            "type":"string",
+            "enum":[
+                "MANUAL",
+                "DIAGNOSTIC"
+            ]
         },
         "CodeAnalysisFindingsSchema":{
             "type":"string",
@@ -192,12 +314,43 @@
                 "timestamp"
             ],
             "members":{
-                "customizationArn":{"shape":"ResourceArn"},
+                "customizationArn":{"shape":"CustomizationArn"},
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
-                "acceptedCharacterCount":{"shape":"SensitiveInteger"},
-                "totalCharacterCount":{"shape":"SensitiveInteger"},
+                "acceptedCharacterCount":{"shape":"PrimitiveInteger"},
+                "totalCharacterCount":{"shape":"PrimitiveInteger"},
                 "timestamp":{"shape":"Timestamp"}
             }
+        },
+        "CodeGenerationId":{
+            "type":"string",
+            "max":128,
+            "min":1
+        },
+        "CodeGenerationStatus":{
+            "type":"structure",
+            "required":[
+                "status",
+                "currentStage"
+            ],
+            "members":{
+                "status":{"shape":"CodeGenerationWorkflowStatus"},
+                "currentStage":{"shape":"CodeGenerationWorkflowStage"}
+            }
+        },
+        "CodeGenerationWorkflowStage":{
+            "type":"string",
+            "enum":[
+                "InitialCodeGeneration",
+                "CodeRefinement"
+            ]
+        },
+        "CodeGenerationWorkflowStatus":{
+            "type":"string",
+            "enum":[
+                "InProgress",
+                "Complete",
+                "Failed"
+            ]
         },
         "CodeScanEvent":{
             "type":"structure",
@@ -237,8 +390,7 @@
             "enum":[
                 "BLOCK",
                 "LINE"
-            ],
-            "sensitive":true
+            ]
         },
         "Completions":{
             "type":"list",
@@ -254,18 +406,57 @@
             },
             "exception":true
         },
+        "ContentChecksumType":{
+            "type":"string",
+            "enum":["SHA_256"]
+        },
+        "ContextTruncationScheme":{
+            "type":"string",
+            "enum":[
+                "ANALYSIS",
+                "GUMBY"
+            ]
+        },
+        "ConversationId":{
+            "type":"string",
+            "max":128,
+            "min":1
+        },
+        "ConversationState":{
+            "type":"structure",
+            "required":[
+                "currentMessage",
+                "chatTriggerType"
+            ],
+            "members":{
+                "conversationId":{"shape":"ConversationId"},
+                "history":{"shape":"ChatHistory"},
+                "currentMessage":{"shape":"ChatMessage"},
+                "chatTriggerType":{"shape":"ChatTriggerType"}
+            }
+        },
         "CreateUploadUrlRequest":{
             "type":"structure",
-            "required":["contentMd5"],
             "members":{
                 "contentMd5":{"shape":"CreateUploadUrlRequestContentMd5String"},
-                "artifactType":{"shape":"ArtifactType"}
+                "contentChecksum":{"shape":"CreateUploadUrlRequestContentChecksumString"},
+                "contentChecksumType":{"shape":"ContentChecksumType"},
+                "artifactType":{"shape":"ArtifactType"},
+                "uploadIntent":{"shape":"UploadIntent"},
+                "uploadContext":{"shape":"UploadContext"}
             }
+        },
+        "CreateUploadUrlRequestContentChecksumString":{
+            "type":"string",
+            "max":512,
+            "min":1,
+            "sensitive":true
         },
         "CreateUploadUrlRequestContentMd5String":{
             "type":"string",
             "max":128,
-            "min":1
+            "min":1,
+            "sensitive":true
         },
         "CreateUploadUrlResponse":{
             "type":"structure",
@@ -279,14 +470,28 @@
                 "kmsKeyArn":{"shape":"ResourceArn"}
             }
         },
+        "CursorState":{
+            "type":"structure",
+            "members":{
+                "position":{"shape":"Position"},
+                "range":{"shape":"Range"}
+            },
+            "union":true
+        },
         "Customization":{
             "type":"structure",
             "required":["arn"],
             "members":{
-                "arn":{"shape":"ResourceArn"},
+                "arn":{"shape":"CustomizationArn"},
                 "name":{"shape":"CustomizationName"},
                 "description":{"shape":"Description"}
             }
+        },
+        "CustomizationArn":{
+            "type":"string",
+            "max":950,
+            "min":0,
+            "pattern":"$|^arn:[-.a-z0-9]{1,63}:codewhisperer:([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
         },
         "CustomizationName":{
             "type":"string",
@@ -301,11 +506,135 @@
         "Description":{
             "type":"string",
             "max":256,
+            "min":0,
+            "pattern":"[\\sa-zA-Z0-9_-]*"
+        },
+        "Diagnostic":{
+            "type":"structure",
+            "members":{
+                "textDocumentDiagnostic":{"shape":"TextDocumentDiagnostic"},
+                "runtimeDiagnostic":{"shape":"RuntimeDiagnostic"}
+            },
+            "union":true
+        },
+        "DiagnosticSeverity":{
+            "type":"string",
+            "enum":[
+                "ERROR",
+                "WARNING",
+                "INFORMATION",
+                "HINT"
+            ]
+        },
+        "Dimension":{
+            "type":"structure",
+            "members":{
+                "name":{"shape":"DimensionNameString"},
+                "value":{"shape":"DimensionValueString"}
+            }
+        },
+        "DimensionList":{
+            "type":"list",
+            "member":{"shape":"Dimension"},
+            "max":30,
+            "min":0
+        },
+        "DimensionNameString":{
+            "type":"string",
+            "max":255,
+            "min":1,
+            "pattern":"[-a-zA-Z0-9._]*"
+        },
+        "DimensionValueString":{
+            "type":"string",
+            "max":1024,
+            "min":1,
+            "pattern":"[-a-zA-Z0-9._]*"
+        },
+        "DocumentSymbol":{
+            "type":"structure",
+            "required":[
+                "name",
+                "type"
+            ],
+            "members":{
+                "name":{"shape":"DocumentSymbolNameString"},
+                "type":{"shape":"SymbolType"},
+                "source":{"shape":"DocumentSymbolSourceString"}
+            }
+        },
+        "DocumentSymbolNameString":{
+            "type":"string",
+            "max":256,
+            "min":1
+        },
+        "DocumentSymbolSourceString":{
+            "type":"string",
+            "max":256,
+            "min":1
+        },
+        "DocumentSymbols":{
+            "type":"list",
+            "member":{"shape":"DocumentSymbol"},
+            "max":1000,
             "min":0
         },
         "Double":{
             "type":"double",
             "box":true
+        },
+        "EditorState":{
+            "type":"structure",
+            "members":{
+                "document":{"shape":"TextDocument"},
+                "cursorState":{"shape":"CursorState"}
+            }
+        },
+        "FeatureEvaluation":{
+            "type":"structure",
+            "required":[
+                "feature",
+                "variation",
+                "value"
+            ],
+            "members":{
+                "feature":{"shape":"FeatureName"},
+                "variation":{"shape":"FeatureVariation"},
+                "value":{"shape":"FeatureValue"}
+            }
+        },
+        "FeatureEvaluationsList":{
+            "type":"list",
+            "member":{"shape":"FeatureEvaluation"},
+            "max":50,
+            "min":0
+        },
+        "FeatureName":{
+            "type":"string",
+            "max":128,
+            "min":1,
+            "pattern":"[-a-zA-Z0-9._]*"
+        },
+        "FeatureValue":{
+            "type":"structure",
+            "members":{
+                "boolValue":{"shape":"Boolean"},
+                "doubleValue":{"shape":"Double"},
+                "longValue":{"shape":"Long"},
+                "stringValue":{"shape":"FeatureValueStringType"}
+            },
+            "union":true
+        },
+        "FeatureValueStringType":{
+            "type":"string",
+            "max":512,
+            "min":0
+        },
+        "FeatureVariation":{
+            "type":"string",
+            "max":128,
+            "min":1,
+            "pattern":"[-a-zA-Z0-9._]*"
         },
         "FileContext":{
             "type":"structure",
@@ -340,6 +669,20 @@
             "min":0,
             "sensitive":true
         },
+        "FollowupPrompt":{
+            "type":"structure",
+            "required":["content"],
+            "members":{
+                "content":{"shape":"FollowupPromptContentString"},
+                "userIntent":{"shape":"UserIntent"}
+            }
+        },
+        "FollowupPromptContentString":{
+            "type":"string",
+            "max":4096,
+            "min":0,
+            "sensitive":true
+        },
         "GenerateCompletionsRequest":{
             "type":"structure",
             "required":["fileContext"],
@@ -349,7 +692,9 @@
                 "nextToken":{"shape":"GenerateCompletionsRequestNextTokenString"},
                 "referenceTrackerConfiguration":{"shape":"ReferenceTrackerConfiguration"},
                 "supplementalContexts":{"shape":"SupplementalContextList"},
-                "customizationArn":{"shape":"ResourceArn"}
+                "customizationArn":{"shape":"CustomizationArn"},
+                "optOutPreference":{"shape":"OptOutPreference"},
+                "userContext":{"shape":"UserContext"}
             }
         },
         "GenerateCompletionsRequestMaxResultsInteger":{
@@ -362,13 +707,14 @@
             "type":"string",
             "max":2048,
             "min":0,
-            "pattern":"(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?"
+            "pattern":"(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?",
+            "sensitive":true
         },
         "GenerateCompletionsResponse":{
             "type":"structure",
             "members":{
                 "completions":{"shape":"Completions"},
-                "nextToken":{"shape":"String"}
+                "nextToken":{"shape":"SensitiveString"}
             }
         },
         "GetCodeAnalysisRequest":{
@@ -388,8 +734,45 @@
             "required":["status"],
             "members":{
                 "status":{"shape":"CodeAnalysisStatus"},
-                "errorMessage":{"shape":"String"}
+                "errorMessage":{"shape":"SensitiveString"}
             }
+        },
+        "GetTransformationPlanRequest":{
+            "type":"structure",
+            "required":["transformationJobId"],
+            "members":{
+                "transformationJobId":{"shape":"TransformationJobId"}
+            }
+        },
+        "GetTransformationPlanResponse":{
+            "type":"structure",
+            "required":["transformationPlan"],
+            "members":{
+                "transformationPlan":{"shape":"TransformationPlan"}
+            }
+        },
+        "GetTransformationRequest":{
+            "type":"structure",
+            "required":["transformationJobId"],
+            "members":{
+                "transformationJobId":{"shape":"TransformationJobId"}
+            }
+        },
+        "GetTransformationResponse":{
+            "type":"structure",
+            "required":["transformationJob"],
+            "members":{
+                "transformationJob":{"shape":"TransformationJob"}
+            }
+        },
+        "IdeCategory":{
+            "type":"string",
+            "enum":[
+                "JETBRAINS",
+                "VSCODE"
+            ],
+            "max":64,
+            "min":1
         },
         "IdempotencyToken":{
             "type":"string",
@@ -413,6 +796,10 @@
             "member":{"shape":"Import"},
             "max":10,
             "min":0
+        },
+        "Integer":{
+            "type":"integer",
+            "box":true
         },
         "InternalServerException":{
             "type":"structure",
@@ -467,16 +854,63 @@
             "required":["codeAnalysisFindings"],
             "members":{
                 "nextToken":{"shape":"PaginationToken"},
-                "codeAnalysisFindings":{"shape":"String"}
+                "codeAnalysisFindings":{"shape":"SensitiveString"}
             }
+        },
+        "ListFeatureEvaluationsRequest":{
+            "type":"structure",
+            "required":["userContext"],
+            "members":{
+                "userContext":{"shape":"UserContext"}
+            }
+        },
+        "ListFeatureEvaluationsResponse":{
+            "type":"structure",
+            "required":["featureEvaluations"],
+            "members":{
+                "featureEvaluations":{"shape":"FeatureEvaluationsList"}
+            }
+        },
+        "Long":{
+            "type":"long",
+            "box":true
+        },
+        "MetricData":{
+            "type":"structure",
+            "required":[
+                "metricName",
+                "metricValue",
+                "timestamp"
+            ],
+            "members":{
+                "metricName":{"shape":"MetricDataMetricNameString"},
+                "metricValue":{"shape":"Double"},
+                "timestamp":{"shape":"Timestamp"},
+                "dimensions":{"shape":"DimensionList"}
+            }
+        },
+        "MetricDataMetricNameString":{
+            "type":"string",
+            "max":1024,
+            "min":1,
+            "pattern":"[-a-zA-Z0-9._]*"
+        },
+        "OperatingSystem":{
+            "type":"string",
+            "enum":[
+                "MAC",
+                "WINDOWS",
+                "LINUX"
+            ],
+            "max":64,
+            "min":1
         },
         "OptOutPreference":{
             "type":"string",
             "enum":[
                 "OPTIN",
                 "OPTOUT"
-            ],
-            "sensitive":true
+            ]
         },
         "PaginationToken":{
             "type":"string",
@@ -484,11 +918,23 @@
             "min":1,
             "pattern":"\\S+"
         },
+        "Position":{
+            "type":"structure",
+            "required":[
+                "line",
+                "character"
+            ],
+            "members":{
+                "line":{"shape":"Integer"},
+                "character":{"shape":"Integer"}
+            }
+        },
         "PreSignedUrl":{
             "type":"string",
             "max":2048,
             "min":1
         },
+        "PrimitiveInteger":{"type":"integer"},
         "ProgrammingLanguage":{
             "type":"structure",
             "required":["languageName"],
@@ -500,7 +946,22 @@
             "type":"string",
             "max":128,
             "min":1,
-            "pattern":"(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql)"
+            "pattern":"(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql|json|yaml|vue|tf)"
+        },
+        "ProgressUpdates":{
+            "type":"list",
+            "member":{"shape":"TransformationProgressUpdate"}
+        },
+        "Range":{
+            "type":"structure",
+            "required":[
+                "start",
+                "end"
+            ],
+            "members":{
+                "start":{"shape":"Position"},
+                "end":{"shape":"Position"}
+            }
         },
         "RecommendationsWithReferencesPreference":{
             "type":"string",
@@ -549,7 +1010,8 @@
         "ResourceArn":{
             "type":"string",
             "max":1224,
-            "min":0
+            "min":0,
+            "pattern":"arn:([-.a-z0-9]{1,63}:){2}([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
         },
         "ResourceNotFoundException":{
             "type":"structure",
@@ -558,6 +1020,31 @@
                 "message":{"shape":"String"}
             },
             "exception":true
+        },
+        "RuntimeDiagnostic":{
+            "type":"structure",
+            "required":[
+                "source",
+                "severity",
+                "message"
+            ],
+            "members":{
+                "source":{"shape":"RuntimeDiagnosticSourceString"},
+                "severity":{"shape":"DiagnosticSeverity"},
+                "message":{"shape":"RuntimeDiagnosticMessageString"}
+            }
+        },
+        "RuntimeDiagnosticMessageString":{
+            "type":"string",
+            "max":1024,
+            "min":0,
+            "sensitive":true
+        },
+        "RuntimeDiagnosticSourceString":{
+            "type":"string",
+            "max":1024,
+            "min":0,
+            "sensitive":true
         },
         "SendTelemetryEventRequest":{
             "type":"structure",
@@ -568,7 +1055,8 @@
                     "idempotencyToken":true
                 },
                 "telemetryEvent":{"shape":"TelemetryEvent"},
-                "optOutPreference":{"shape":"OptOutPreference"}
+                "optOutPreference":{"shape":"OptOutPreference"},
+                "userContext":{"shape":"UserContext"}
             }
         },
         "SendTelemetryEventResponse":{
@@ -576,12 +1064,8 @@
             "members":{
             }
         },
-        "SensitiveDouble":{
-            "type":"double",
-            "sensitive":true
-        },
-        "SensitiveInteger":{
-            "type":"integer",
+        "SensitiveString":{
+            "type":"string",
             "sensitive":true
         },
         "Span":{
@@ -630,13 +1114,50 @@
             "members":{
                 "jobId":{"shape":"StartCodeAnalysisResponseJobIdString"},
                 "status":{"shape":"CodeAnalysisStatus"},
-                "errorMessage":{"shape":"String"}
+                "errorMessage":{"shape":"SensitiveString"}
             }
         },
         "StartCodeAnalysisResponseJobIdString":{
             "type":"string",
             "max":256,
             "min":1
+        },
+        "StartTransformationRequest":{
+            "type":"structure",
+            "required":[
+                "workspaceState",
+                "transformationSpec"
+            ],
+            "members":{
+                "workspaceState":{"shape":"WorkspaceState"},
+                "transformationSpec":{"shape":"TransformationSpec"}
+            }
+        },
+        "StartTransformationResponse":{
+            "type":"structure",
+            "required":["transformationJobId"],
+            "members":{
+                "transformationJobId":{"shape":"TransformationJobId"}
+            }
+        },
+        "StepId":{
+            "type":"string",
+            "max":126,
+            "min":1
+        },
+        "StopTransformationRequest":{
+            "type":"structure",
+            "required":["transformationJobId"],
+            "members":{
+                "transformationJobId":{"shape":"TransformationJobId"}
+            }
+        },
+        "StopTransformationResponse":{
+            "type":"structure",
+            "required":["transformationStatus"],
+            "members":{
+                "transformationStatus":{"shape":"TransformationStatus"}
+            }
         },
         "String":{"type":"string"},
         "SuggestionState":{
@@ -646,8 +1167,7 @@
                 "REJECT",
                 "DISCARD",
                 "EMPTY"
-            ],
-            "sensitive":true
+            ]
         },
         "SupplementalContext":{
             "type":"structure",
@@ -678,15 +1198,104 @@
             "max":5,
             "min":0
         },
+        "SupplementaryWebLink":{
+            "type":"structure",
+            "required":[
+                "url",
+                "title"
+            ],
+            "members":{
+                "url":{"shape":"SupplementaryWebLinkUrlString"},
+                "title":{"shape":"SupplementaryWebLinkTitleString"},
+                "snippet":{"shape":"SupplementaryWebLinkSnippetString"}
+            }
+        },
+        "SupplementaryWebLinkSnippetString":{
+            "type":"string",
+            "max":1024,
+            "min":1,
+            "sensitive":true
+        },
+        "SupplementaryWebLinkTitleString":{
+            "type":"string",
+            "max":1024,
+            "min":1,
+            "sensitive":true
+        },
+        "SupplementaryWebLinkUrlString":{
+            "type":"string",
+            "max":1024,
+            "min":1,
+            "sensitive":true
+        },
+        "SupplementaryWebLinks":{
+            "type":"list",
+            "member":{"shape":"SupplementaryWebLink"},
+            "max":10,
+            "min":0
+        },
+        "SymbolType":{
+            "type":"string",
+            "enum":[
+                "DECLARATION",
+                "USAGE"
+            ]
+        },
         "TelemetryEvent":{
             "type":"structure",
             "members":{
                 "userTriggerDecisionEvent":{"shape":"UserTriggerDecisionEvent"},
                 "codeCoverageEvent":{"shape":"CodeCoverageEvent"},
                 "userModificationEvent":{"shape":"UserModificationEvent"},
-                "codeScanEvent":{"shape":"CodeScanEvent"}
+                "codeScanEvent":{"shape":"CodeScanEvent"},
+                "metricData":{"shape":"MetricData"}
             },
             "union":true
+        },
+        "TextDocument":{
+            "type":"structure",
+            "required":["relativeFilePath"],
+            "members":{
+                "relativeFilePath":{"shape":"TextDocumentRelativeFilePathString"},
+                "programmingLanguage":{"shape":"ProgrammingLanguage"},
+                "text":{"shape":"TextDocumentTextString"},
+                "documentSymbols":{"shape":"DocumentSymbols"}
+            }
+        },
+        "TextDocumentDiagnostic":{
+            "type":"structure",
+            "required":[
+                "document",
+                "range",
+                "source",
+                "severity",
+                "message"
+            ],
+            "members":{
+                "document":{"shape":"TextDocument"},
+                "range":{"shape":"Range"},
+                "source":{"shape":"SensitiveString"},
+                "severity":{"shape":"DiagnosticSeverity"},
+                "message":{"shape":"TextDocumentDiagnosticMessageString"}
+            }
+        },
+        "TextDocumentDiagnosticMessageString":{
+            "type":"string",
+            "max":1024,
+            "min":0,
+            "sensitive":true
+        },
+        "TextDocumentRelativeFilePathString":{
+            "type":"string",
+            "max":4096,
+            "min":1,
+            "sensitive":true
+        },
+        "TextDocumentTextString":{
+            "type":"string",
+            "max":10240,
+            "min":0,
+            "sensitive":true
         },
         "ThrottlingException":{
             "type":"structure",
@@ -695,18 +1304,206 @@
                 "message":{"shape":"String"}
             },
             "exception":true,
-            "retryable":{"throttling":false}
+            "retryable":{"throttling":true}
         },
         "Timestamp":{"type":"timestamp"},
+        "TransformationJob":{
+            "type":"structure",
+            "members":{
+                "jobId":{"shape":"TransformationJobId"},
+                "transformationSpec":{"shape":"TransformationSpec"},
+                "status":{"shape":"TransformationStatus"},
+                "reason":{"shape":"String"},
+                "creationTime":{"shape":"Timestamp"},
+                "startExecutionTime":{"shape":"Timestamp"},
+                "endExecutionTime":{"shape":"Timestamp"}
+            }
+        },
+        "TransformationJobId":{
+            "type":"string",
+            "max":128,
+            "min":1
+        },
+        "TransformationLanguage":{
+            "type":"string",
+            "enum":[
+                "JAVA_8",
+                "JAVA_11",
+                "JAVA_17"
+            ]
+        },
+        "TransformationPlan":{
+            "type":"structure",
+            "required":["transformationSteps"],
+            "members":{
+                "transformationSteps":{"shape":"TransformationSteps"}
+            }
+        },
+        "TransformationProgressUpdate":{
+            "type":"structure",
+            "required":[
+                "name",
+                "status"
+            ],
+            "members":{
+                "name":{"shape":"String"},
+                "status":{"shape":"TransformationProgressUpdateStatus"},
+                "description":{"shape":"String"},
+                "startTime":{"shape":"Timestamp"},
+                "endTime":{"shape":"Timestamp"}
+            }
+        },
+        "TransformationProgressUpdateStatus":{
+            "type":"string",
+            "enum":[
+                "IN_PROGRESS",
+                "COMPLETED",
+                "FAILED"
+            ]
+        },
+        "TransformationProjectState":{
+            "type":"structure",
+            "members":{
+                "language":{"shape":"TransformationLanguage"}
+            }
+        },
+        "TransformationSpec":{
+            "type":"structure",
+            "members":{
+                "transformationType":{"shape":"TransformationType"},
+                "source":{"shape":"TransformationProjectState"},
+                "target":{"shape":"TransformationProjectState"}
+            }
+        },
+        "TransformationStatus":{
+            "type":"string",
+            "enum":[
+                "CREATED",
+                "ACCEPTED",
+                "REJECTED",
+                "STARTED",
+                "PREPARING",
+                "PREPARED",
+                "PLANNING",
+                "PLANNED",
+                "TRANSFORMING",
+                "TRANSFORMED",
+                "FAILED",
+                "COMPLETED",
+                "PARTIALLY_COMPLETED",
+                "STOPPING",
+                "STOPPED"
+            ]
+        },
+        "TransformationStep":{
+            "type":"structure",
+            "required":[
+                "id",
+                "name",
+                "description",
+                "status"
+            ],
+            "members":{
+                "id":{"shape":"StepId"},
+                "name":{"shape":"String"},
+                "description":{"shape":"String"},
+                "status":{"shape":"TransformationStepStatus"},
+                "progressUpdates":{"shape":"ProgressUpdates"},
+                "startTime":{"shape":"Timestamp"},
+                "endTime":{"shape":"Timestamp"}
+            }
+        },
+        "TransformationStepStatus":{
+            "type":"string",
+            "enum":[
+                "CREATED",
+                "COMPLETED",
+                "PARTIALLY_COMPLETED",
+                "STOPPED",
+                "FAILED"
+            ]
+        },
+        "TransformationSteps":{
+            "type":"list",
+            "member":{"shape":"TransformationStep"}
+        },
+        "TransformationType":{
+            "type":"string",
+            "enum":["LANGUAGE_UPGRADE"]
+        },
         "UUID":{
             "type":"string",
             "max":36,
             "min":36
         },
+        "UploadContext":{
+            "type":"structure",
+            "members":{},
+            "union":true
+        },
         "UploadId":{
             "type":"string",
             "max":128,
             "min":1
+        },
+        "UploadIntent":{
+            "type":"string",
+            "enum":[
+                "TRANSFORMATION"
+            ]
+        },
+        "UserContext":{
+            "type":"structure",
+            "required":[
+                "ideCategory",
+                "operatingSystem",
+                "product"
+            ],
+            "members":{
+                "ideCategory":{"shape":"IdeCategory"},
+                "operatingSystem":{"shape":"OperatingSystem"},
+                "product":{"shape":"UserContextProductString"}
+            }
+        },
+        "UserContextProductString":{
+            "type":"string",
+            "max":128,
+            "min":1,
+            "pattern":"[-a-zA-Z0-9._]*"
+        },
+        "UserInputMessage":{
+            "type":"structure",
+            "required":["content"],
+            "members":{
+                "content":{"shape":"UserInputMessageContentString"},
+                "userInputMessageContext":{"shape":"UserInputMessageContext"},
+                "userIntent":{"shape":"UserIntent"}
+            }
+        },
+        "UserInputMessageContentString":{
+            "type":"string",
+            "max":4096,
+            "min":0,
+            "sensitive":true
+        },
+        "UserInputMessageContext":{
+            "type":"structure",
+            "members":{
+                "editorState":{"shape":"EditorState"},
+                "diagnostic":{"shape":"Diagnostic"}
+            }
+        },
+        "UserIntent":{
+            "type":"string",
+            "enum":[
+                "SUGGEST_ALTERNATE_IMPLEMENTATION",
+                "APPLY_COMMON_BEST_PRACTICES",
+                "IMPROVE_CODE",
+                "SHOW_EXAMPLES",
+                "CITE_SOURCES",
+                "EXPLAIN_LINE_BY_LINE",
+                "EXPLAIN_CODE_SELECTION"
+            ]
         },
         "UserModificationEvent":{
             "type":"structure",
@@ -721,8 +1518,8 @@
                 "sessionId":{"shape":"UUID"},
                 "requestId":{"shape":"UUID"},
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
-                "modificationPercentage":{"shape":"SensitiveDouble"},
-                "customizationArn":{"shape":"ResourceArn"},
+                "modificationPercentage":{"shape":"Double"},
+                "customizationArn":{"shape":"CustomizationArn"},
                 "timestamp":{"shape":"Timestamp"}
             }
         },
@@ -740,23 +1537,40 @@
             "members":{
                 "sessionId":{"shape":"UUID"},
                 "requestId":{"shape":"UUID"},
-                "customizationArn":{"shape":"ResourceArn"},
+                "customizationArn":{"shape":"CustomizationArn"},
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
                 "completionType":{"shape":"CompletionType"},
                 "suggestionState":{"shape":"SuggestionState"},
-                "recommendationLatencyMilliseconds":{"shape":"SensitiveDouble"},
+                "recommendationLatencyMilliseconds":{"shape":"Double"},
                 "timestamp":{"shape":"Timestamp"},
-                "suggestionReferenceCount":{"shape":"SensitiveInteger"},
-                "generatedLine":{"shape":"SensitiveInteger"}
+                "suggestionReferenceCount":{"shape":"PrimitiveInteger"},
+                "generatedLine":{"shape":"PrimitiveInteger"}
             }
         },
         "ValidationException":{
             "type":"structure",
             "required":["message"],
             "members":{
-                "message":{"shape":"String"}
+                "message":{"shape":"String"},
+                "reason":{"shape":"ValidationExceptionReason"}
             },
             "exception":true
+        },
+        "ValidationExceptionReason":{
+            "type":"string",
+            "enum":["INVALID_CONVERSATION_ID"]
+        },
+        "WorkspaceState":{
+            "type":"structure",
+            "required":[
+                "uploadId",
+                "programmingLanguage"
+            ],
+            "members":{
+                "uploadId":{"shape":"UploadId"},
+                "programmingLanguage":{"shape":"ProgrammingLanguage"},
+                "contextTruncationScheme":{"shape":"ContextTruncationScheme"}
+            }
         }
     }
 }

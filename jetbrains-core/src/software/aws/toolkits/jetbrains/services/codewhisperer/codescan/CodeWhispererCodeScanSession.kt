@@ -216,7 +216,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
         uploadArtifactToS3(url, createUploadUrlResponse.uploadId(), zipFile, fileMd5, createUploadUrlResponse.kmsKeyArn())
         createUploadUrlResponse
     } catch (e: Exception) {
-        LOG.debug { "Security scan failed. Something went wrong uploading artifacts: ${e.message}" }
+        LOG.error { "Security scan failed. Something went wrong uploading artifacts: ${e.message}" }
         throw e
     }
 

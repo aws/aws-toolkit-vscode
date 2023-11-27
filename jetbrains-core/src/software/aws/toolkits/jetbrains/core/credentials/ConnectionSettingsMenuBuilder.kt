@@ -13,11 +13,9 @@ import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.MessageDialogBuilder
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
-import software.aws.toolkits.jetbrains.core.gettingstarted.deleteSsoConnectionCW
+import software.aws.toolkits.jetbrains.core.credentials.actions.SsoLogoutAction
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.resources.message
@@ -244,25 +242,13 @@ class ConnectionSettingsMenuBuilder private constructor() {
             addAll(
                 object : DumbAwareAction(message("credentials.individual_identity.reconnect")) {
                     override fun actionPerformed(e: AnActionEvent) {
-                        reauthProviderIfNeeded(e.project, value)
+                        reauthConnectionIfNeeded(e.project, value)
+
+                        ToolkitConnectionManager.getInstance(e.project).switchConnection(value)
                     }
                 },
 
-                object : DumbAwareAction(message("credentials.individual_identity.signout")) {
-                    override fun actionPerformed(e: AnActionEvent) {
-                        val settings = identitySelectionSettings as? ActionsIdentitySelectionSettings
-                        if (value.startUrl != SONO_URL) {
-                            val confirmDeletion = MessageDialogBuilder.okCancel(
-                                message("gettingstarted.auth.idc.sign.out.confirmation.title"),
-                                message("gettingstarted.auth.idc.sign.out.confirmation")
-                            ).yesText(message("general.confirm")).ask(settings?.project)
-                            if (confirmDeletion) {
-                                deleteSsoConnectionCW(value)
-                            }
-                        }
-                        logoutFromSsoConnection(settings?.project, value)
-                    }
-                }
+                SsoLogoutAction(value)
             )
         }
     }

@@ -9,8 +9,7 @@ import com.intellij.openapi.actionSystem.UpdateInBackground
 import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
-import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
-import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindowDataKeys
+import software.aws.toolkits.jetbrains.core.explorer.ExplorerTreeToolWindowDataKeys
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.PinnedConnectionNode
 import software.aws.toolkits.resources.message
 
@@ -25,15 +24,14 @@ class UnpinConnectionAction : AnAction(), DumbAware, UpdateInBackground {
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        val project = e.project ?: return
         val feature = feature(e) ?: return
         ConnectionPinningManager.getInstance().setPinnedConnection(feature, null)
 
-        DevToolsToolWindow.getInstance(project).redrawContent()
+        e.getData(ExplorerTreeToolWindowDataKeys.REFRESH_CALLBACK)?.invoke()
     }
 
     private fun feature(e: AnActionEvent): FeatureWithPinnedConnection? {
-        val nodes = e.getData(DevToolsToolWindowDataKeys.SELECTED_NODES)
+        val nodes = e.getData(ExplorerTreeToolWindowDataKeys.SELECTED_NODES)
         if (nodes == null || nodes.size != 1) {
             return null
         }

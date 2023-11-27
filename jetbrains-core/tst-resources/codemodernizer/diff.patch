@@ -1,0 +1,27 @@
+diff --git a/src/Main.java b/src/Main.java
+--- a/src/Main.java	(revision 8cb3e8a5d5833441227fcf319bbb72fac8dc047e)
++++ b/src/Main.java	(date 1696422021225)
+@@ -1,10 +1,20 @@
+
+
+ public class Main {
++    // CodeWhisperers Modernizer extracted these Strings when performing the upgrade from JDK 8 to JDK 17 because XYZ
++    private static final String welcomeMessage = "Hello and welcome but this should be edited!";
+     public static void main(String[] args) {
+-        System.out.printf("Hello and welcome!");
++        runMain();
++    }
++
++    /**
++     * CodeWhisperers Modernizer extracted this function when performing the upgrade from JDK 8 to JDK 17 because XYZ
++     */
++    public static void runMain(){
++        System.out.printf(welcomeMessage);
++        // Press ⌃R or click the green arrow button in the gutter to run the code.
+         for (int i = 1; i <= 5; i++) {
+-            System.out.println("i = " + i);
++            System.out.println(welcomeMessage + i);
+         }
+     }
+ }
+\ No newline at end of file

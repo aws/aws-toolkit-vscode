@@ -95,7 +95,7 @@ class DefaultToolkitConnectionManagerTest {
 
     @Test
     fun `switch connection to null will fall back to IAM credential if applicable`() {
-        val bearerConnection = ManagedBearerSsoConnection(aString(), "us-east-1", emptyList())
+        val bearerConnection = LegacyManagedBearerSsoConnection(aString(), "us-east-1", emptyList())
         configureSut(sut, bearerConnection)
 
         sut.switchConnection(null)

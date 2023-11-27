@@ -16,6 +16,15 @@ val CODEWHISPERER_SCOPES = listOf(
     "codewhisperer:analysis",
 )
 
+val Q_SCOPES = listOf(
+    "codewhisperer:conversations",
+    "codewhisperer:transformations"
+)
+
+val Q_SCOPES_UNAVAILABLE_BUILDER_ID = listOf(
+    "codewhisperer:transformations"
+)
+
 val CODECATALYST_SCOPES = listOf(
     "codecatalyst:read_write"
 )

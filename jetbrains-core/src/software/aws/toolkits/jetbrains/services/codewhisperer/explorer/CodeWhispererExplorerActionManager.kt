@@ -19,7 +19,7 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererCon
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
-import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
+import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
@@ -42,7 +42,7 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
         if (!suspendedConnections.add(startUrl)) {
             return
         }
-        project.refreshDevToolTree()
+        project.refreshCwQTree()
     }
 
     private fun getCodeWhispererConnectionStartUrl(project: Project): String {
@@ -104,7 +104,7 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
         setAutoEnabled(isAutoEnabled)
         val autoSuggestionState = if (isAutoEnabled) CodeWhispererConstants.AutoSuggestion.ACTIVATED else CodeWhispererConstants.AutoSuggestion.DEACTIVATED
         AwsTelemetry.modifySetting(project, settingId = CodeWhispererConstants.AutoSuggestion.SETTING_ID, settingState = autoSuggestionState)
-        project.refreshDevToolTree()
+        project.refreshCwQTree()
     }
 
     @Deprecated("Accountless credential will be removed soon")

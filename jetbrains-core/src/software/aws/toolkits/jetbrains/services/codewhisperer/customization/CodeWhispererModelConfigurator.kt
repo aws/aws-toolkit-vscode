@@ -21,7 +21,7 @@ import com.intellij.util.xmlb.annotations.Property
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
+import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.calculateIfIamIdentityCenterConnection
@@ -229,7 +229,7 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
                     ApplicationManager.getApplication().executeOnPooledThread {
                         // will update devTool tree
                         listCustomizations(project, passive = true)
-                        project.refreshDevToolTree()
+                        project.refreshCwQTree()
                     }
 
                     false
@@ -241,7 +241,7 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
                             // will update devTool tree
                             val updatedValue = listCustomizations(project, passive = true) != null
                             if (updatedValue != cachedValue) {
-                                project.refreshDevToolTree()
+                                project.refreshCwQTree()
                             }
                         }
                     }

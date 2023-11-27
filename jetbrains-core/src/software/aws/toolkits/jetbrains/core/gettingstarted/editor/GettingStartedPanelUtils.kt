@@ -15,6 +15,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.lazyIsUnauthedBearerConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.gettingstarted.SourceOfEntry
@@ -29,7 +30,8 @@ enum class ActiveConnectionType {
 
 enum class BearerTokenFeatureSet {
     CODEWHISPERER,
-    CODECATALYST
+    CODECATALYST,
+    Q
 }
 
 fun controlPanelVisibility(currentPanel: Panel, newPanel: Panel) {
@@ -82,14 +84,18 @@ fun checkBearerConnectionValidity(project: Project, source: BearerTokenFeatureSe
     val connections = ToolkitAuthManager.getInstance().listConnections().filterIsInstance<AwsBearerTokenConnection>()
     if (connections.isEmpty()) return ActiveConnection.NotConnected
 
-    val activeConnection = if (source == BearerTokenFeatureSet.CODEWHISPERER) {
-        ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
-    } else if (source == BearerTokenFeatureSet.CODECATALYST) {
-        ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeCatalystConnection.getInstance())
-    } else {
-        ToolkitConnectionManager.getInstance(project).activeConnection()
-    }
-    if (activeConnection == null) return ActiveConnection.NotConnected
+    val activeConnection = when (source) {
+        BearerTokenFeatureSet.CODEWHISPERER -> ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(
+            CodeWhispererConnection.getInstance()
+        )
+        BearerTokenFeatureSet.CODECATALYST -> ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(
+            CodeCatalystConnection.getInstance()
+        )
+        BearerTokenFeatureSet.Q -> ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(
+            QConnection.getInstance()
+        )
+    } ?: return ActiveConnection.NotConnected
+
     activeConnection as AwsBearerTokenConnection
     val connectionType = if (activeConnection.startUrl == SONO_URL) ActiveConnectionType.BUILDER_ID else ActiveConnectionType.IAM_IDC
     return if (activeConnection.lazyIsUnauthedBearerConnection()) {
@@ -119,8 +125,19 @@ fun isCredentialSso(providerId: String): ActiveConnectionType {
     return if (profileName in ssoSessionIds) ActiveConnectionType.IAM_IDC else ActiveConnectionType.IAM
 }
 
-fun getSourceOfEntry(sourceOfEntry: SourceOfEntry, isStartup: Boolean = false, connectionInitiatedFromExplorer: Boolean = false): String {
-    val src = if (connectionInitiatedFromExplorer) SourceOfEntry.EXPLORER.toString() else sourceOfEntry.toString()
+fun getSourceOfEntry(
+    sourceOfEntry: SourceOfEntry,
+    isStartup: Boolean = false,
+    connectionInitiatedFromExplorer: Boolean = false,
+    connectionInitiatedFromQChatPanel: Boolean = false
+): String {
+    val src = if (connectionInitiatedFromExplorer) {
+        SourceOfEntry.EXPLORER.toString()
+    } else if (connectionInitiatedFromQChatPanel) {
+        SourceOfEntry.AMAZONQ_CHAT_PANEL.toString()
+    } else {
+        sourceOfEntry.toString()
+    }
     val source = if (isStartup) SourceOfEntry.FIRST_STARTUP.toString() else src
     return if (System.getenv(CawsConstants.CAWS_ENV_ID_VAR) != null) "REMOTE_$source" else source
 }

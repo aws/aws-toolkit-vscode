@@ -28,6 +28,7 @@ import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 
@@ -42,6 +43,20 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
                 }
 
                 override fun providerRemoved(providerId: String) {
+                    invalidateSdks(providerId)
+                }
+            }
+        )
+
+        busConnection.subscribe(
+            BearerTokenProviderListener.TOPIC,
+            object : BearerTokenProviderListener {
+                override fun onChange(providerId: String) {
+                    // otherwise we potentially cache the provider with the wrong token
+                    invalidateSdks(providerId)
+                }
+
+                override fun invalidate(providerId: String) {
                     invalidateSdks(providerId)
                 }
             }

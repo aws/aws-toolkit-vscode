@@ -129,7 +129,7 @@ fun loginSso(project: Project?, startUrl: String, region: String, requestedScope
     val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
 
     val manager = ToolkitAuthManager.getInstance()
-    val allScopes = requestedScopes.toMutableList()
+    val allScopes = requestedScopes.toMutableSet()
     return manager.getConnection(connectionId)?.let { connection ->
         val logger = getLogger<ToolkitAuthManager>()
         // requested Builder ID, but one already exists
@@ -182,7 +182,7 @@ fun loginSso(project: Project?, startUrl: String, region: String, requestedScope
             ManagedSsoProfile(
                 region,
                 startUrl,
-                allScopes.toSet().toList()
+                allScopes.toList()
             )
         )
 
@@ -197,7 +197,7 @@ fun loginSso(project: Project?, startUrl: String, region: String, requestedScope
 
 @VisibleForTesting
 internal fun reauthConnection(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
-    val provider = reauthProviderIfNeeded(project, connection)
+    val provider = reauthConnectionIfNeeded(project, connection)
 
     ToolkitConnectionManager.getInstance(project).switchConnection(connection)
 
@@ -228,15 +228,15 @@ fun AwsBearerTokenConnection.lazyIsUnauthedBearerConnection(): Boolean {
             return true
         }
 
-        // or state is not authorized
-        return provider.state() == BearerTokenAuthState.NOT_AUTHENTICATED
+        // or token can't be used directly without interaction
+        return provider.state() != BearerTokenAuthState.AUTHORIZED
     }
 
     // not a bearer token provider
     return false
 }
 
-fun reauthProviderIfNeeded(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
+fun reauthConnectionIfNeeded(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
     val tokenProvider = (connection.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider
 
     return reauthProviderIfNeeded(project, tokenProvider, connection.isSono())
