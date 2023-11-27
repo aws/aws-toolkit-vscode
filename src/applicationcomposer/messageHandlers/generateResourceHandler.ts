@@ -151,7 +151,7 @@ async function generateResource(prompt: string) {
 
         return {
             chatResponse: response,
-            references: supplementaryWebLinks,
+            references: [],
             metadata: {
                 ...metadata,
                 conversationId,
