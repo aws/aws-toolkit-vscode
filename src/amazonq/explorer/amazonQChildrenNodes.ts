@@ -55,7 +55,7 @@ export const switchToAmazonQNode = () =>
 export const enableAmazonQNode = () =>
     // Simply trigger re-auth to obtain the proper scopes- same functionality as if requested in the chat window.
     reconnect.build(placeholder, cwTreeNodeSource).asTreeNode({
-        label: localize('AWS.amazonq.enable', 'Enable Amazon Q (Preview)'),
+        label: localize('AWS.amazonq.enable', 'Enable'),
         iconPath: getIcon('vscode-debug-start'),
         contextValue: 'awsEnableAmazonQ',
     })
