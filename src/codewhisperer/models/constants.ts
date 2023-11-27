@@ -6,7 +6,6 @@
 /**
  * SDK Client
  */
-
 export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
 export const region = 'us-east-1'
