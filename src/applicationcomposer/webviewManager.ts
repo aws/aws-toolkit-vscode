@@ -15,7 +15,7 @@ const localize = nls.loadMessageBundle()
 // Change this to true for local dev
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
-const cdn = 'https://dwuw1icz2q5c3.cloudfront.net' // Gamma
+const cdn = 'https://ide-toolkits.app-composer.aws.dev'
 
 const enabledFeatures = ['ide-only', 'anything-resource', 'sfnV2', 'starling']
 
