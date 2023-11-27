@@ -3856,13 +3856,13 @@
                 "command": "aws.codeWhisperer",
                 "key": "alt+c",
                 "mac": "alt+c",
-                "when": "editorTextFocus && CODEWHISPERER_ENABLED"
+                "when": "editorTextFocus && CODEWHISPERER_ENABLED || isCloud9 && editorTextFocus"
             },
             {
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED || isCloud9 && suggestWidgetVisible && !editorReadonly"
             },
             {
                 "key": "right",
