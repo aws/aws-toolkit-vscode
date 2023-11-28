@@ -1,0 +1,8 @@
+{
+  "date" : "2023-11-28",
+  "version" : "2.0",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Support for Amazon Q, your generative AI–powered assistant designed for work that can be tailored to your business, code, data, and operations."
+  } ]
+}

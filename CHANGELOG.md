@@ -1,3 +1,8 @@
+# _1.89_ (2023-11-26)
+- **(Feature)** CodeWhisperer: Uses Generative AI and automated reasoning to rewrite lines of code flagged for security vulnerabilities during a security scan.
+- **(Feature)** CodeWhisperer now supports new IaC languages: JSON, YAML and Terraform.
+- **(Feature)** CodeWhisperer security scans support typescript, csharp, json, yaml, tf and hcl files.
+
 # _1.88_ (2023-11-17)
 - **(Bug Fix)** Fix issue where the toolkit calls the wrong CodeCatalyst service endpoint
 
