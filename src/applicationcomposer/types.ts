@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 export type WebviewContext = {
     panel: vscode.WebviewPanel
     textDocument: vscode.TextDocument
-    disposables?: vscode.Disposable[]
+    disposables: vscode.Disposable[]
     workSpacePath: string
     defaultTemplatePath: string
     defaultTemplateName: string
