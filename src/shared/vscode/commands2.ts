@@ -33,7 +33,7 @@ type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) =>
  * **So as a workaround**, commands who meet the above criteria should
  * - have this type as their first arg as a placeholder
  * - When executing the command from within the code, pass in {@link placeholder} as the first arg.
- * - In the command check if the first arg is NOT `undefined`, and if so you will need to
+ * - In the command check if the first arg !== {@link placeholder}, and if so you will need to
  *   set values for the other args since they will not exist.
  */
 export type VsCodeCommandArg = typeof placeholder
@@ -130,9 +130,7 @@ export class Commands {
 
     public constructor(private readonly commands = vscode.commands) {}
 
-    /**
-     * Returns a {@link Command} if the ID is currently registered within VS Code.
-     */
+    /** See {@link Commands.get}. */
     public async get(id: string): Promise<Command | undefined> {
         const registeredCommands = await this.commands.getCommands()
 
@@ -146,12 +144,20 @@ export class Commands {
         }
     }
 
-    /**
-     * Registers a new command with the VS Code API.
-     *
-     * @param info command id (string) or {@link CommandInfo} object
-     * @param callback command implementation
-     */
+    /** See {@link Commands.tryExecute}. */
+    public async tryExecute<T extends Callback = Callback>(
+        id: string,
+        ...args: Parameters<T>
+    ): Promise<ReturnType<T> | undefined> {
+        const cmd = this.resources.get(id)
+        if (!cmd) {
+            getLogger().debug('command not found: "%s"', id)
+            return undefined
+        }
+        return this.commands.executeCommand<ReturnType<T>>(id, ...args)
+    }
+
+    /** See {@link Commands.register}. */
     public register<T extends Callback>(
         info: string | Omit<CommandInfo<T>, 'args' | 'label'>,
         callback: T
@@ -167,12 +173,7 @@ export class Commands {
         return this.addResource(resource).register()
     }
 
-    /**
-     * Declares the _intent_ to register a command.
-     *
-     * Forward declaration adds one level of indirection. This allows for explicit annotation of
-     * not just the command signature but also its immediate dependencies.
-     */
+    /** See {@link Commands.declare}. */
     public declare<T extends Callback, D extends any[]>(
         id: string | Omit<CommandInfo<T>, 'args' | 'label'>,
         factory: CommandFactory<T, D>
@@ -182,25 +183,7 @@ export class Commands {
         return this.addResource(new CommandResource(resource, this.commands))
     }
 
-    /**
-     * Convenience method to declare commands directly from a class.
-     *
-     * Mostly used when many commands are associated with the same long-lived context.
-     * Functions are currently bound at declaration time for simplicity, though this
-     * may change in the future.
-     *
-     * #### Example
-     * ```ts
-     * class Foo {
-     *     public square(n: number): number {
-     *         return n * n
-     *     }
-     * }
-     *
-     * const square = Commands.instance.from(Foo).declareSquare('aws.square')
-     * await square.register(new Foo()).execute(5)
-     * ```
-     */
+    /** See {@link Commands.from}. */
     public from<T>(target: new (...args: any[]) => T): Declarables<T> {
         type Id = Parameters<Declare<T, Callback>>[0]
         const result = {} as Record<string, Declare<T, Callback>>
@@ -231,28 +214,53 @@ export class Commands {
         return resource
     }
 
-    /**
-     * The default instance of {@link Commands}.
-     */
+    /** Default instance of {@link Commands}. */
     public static readonly instance = new Commands()
 
     /**
-     * Returns {@link Commands.get} using the default instance.
+     * Returns a {@link Command} if the ID is currently registered within VS Code.
      */
     public static readonly get = this.instance.get.bind(this.instance)
 
     /**
-     * Returns {@link Commands.register} using the default instance.
+     * Executes a command if it exists, else does nothing.
+     */
+    public static readonly tryExecute = this.instance.tryExecute.bind(this.instance)
+
+    /**
+     * Registers a new command with the VS Code API.
+     *
+     * @param info command id (string) or {@link CommandInfo} object
+     * @param callback command implementation
      */
     public static readonly register = this.instance.register.bind(this.instance)
 
     /**
-     * Returns {@link Commands.declare} using the default instance.
+     * Declares the _intent_ to register a command.
+     *
+     * Forward declaration adds one level of indirection. This allows for explicit annotation of
+     * not just the command signature but also its immediate dependencies.
      */
     public static readonly declare = this.instance.declare.bind(this.instance)
 
     /**
-     * Returns {@link Commands.from} using the default instance.
+     * Convenience method to declare commands directly from a class.
+     *
+     * Mostly used when many commands are associated with the same long-lived context.
+     * Functions are currently bound at declaration time for simplicity, though this
+     * may change in the future.
+     *
+     * #### Example
+     * ```ts
+     * class Foo {
+     *     public square(n: number): number {
+     *         return n * n
+     *     }
+     * }
+     *
+     * const square = Commands.instance.from(Foo).declareSquare('aws.square')
+     * await square.register(new Foo()).execute(5)
+     * ```
      */
     public static readonly from = this.instance.from.bind(this.instance)
 }

@@ -10,8 +10,9 @@ import { Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
+import { startTransformByQWithProgress, confirmStopTransformByQ } from './startTransformByQ'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { CodeScanIssue, codeScanState, CodeSuggestionsState } from '../models/model'
+import { CodeScanIssue, codeScanState, CodeSuggestionsState, transformByQState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -36,6 +37,7 @@ export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
     (suggestionState: CodeSuggestionsState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
+        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         telemetry.aws_modifySetting.emit({
             settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
             settingState: isSuggestionsEnabled
@@ -51,6 +53,7 @@ export const enableCodeSuggestions = Commands.declare(
         async (isAuto: boolean = true) => {
             await CodeSuggestionsState.instance.setSuggestionsEnabled(isAuto)
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.disconnected', false)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             if (!isCloud9()) {
                 await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
@@ -92,6 +95,39 @@ export const showSecurityScan = Commands.declare(
                 vscode.window.showInformationMessage('Open a valid file to scan.')
             }
         }
+)
+
+export const transformTreeNode = 'qTreeNode'
+export const showTransformByQ = Commands.declare(
+    { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
+    (context: ExtContext) => async (source: string) => {
+        if (AuthUtil.instance.isConnectionExpired()) {
+            await AuthUtil.instance.notifyReauthenticate()
+        }
+
+        if (transformByQState.isNotStarted()) {
+            startTransformByQWithProgress()
+        } else if (transformByQState.isCancelled()) {
+            vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
+        } else if (transformByQState.isRunning()) {
+            await confirmStopTransformByQ(transformByQState.getJobId())
+        }
+        // emit telemetry if clicked from tree node
+        if (source === transformTreeNode) {
+            telemetry.ui_click.emit({
+                elementId: 'amazonq_transform',
+                passive: false,
+            })
+        }
+        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    }
+)
+
+export const showTransformationHub = Commands.declare(
+    { id: 'aws.amazonq.showTransformationHub', compositeKey: { 0: 'source' } },
+    () => async (source: string) => {
+        await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
+    }
 )
 
 export const selectCustomizationPrompt = Commands.declare(
@@ -263,6 +299,15 @@ export const applySecurityFix = Commands.declare(
         }
     }
 )
+
+/**
+ * Forces focus to Amazon Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
+ * Used on first load, and any time we want to directly populate chat.
+ */
+export async function focusAmazonQPanel(): Promise<void> {
+    // VS Code-owned command: "View: Show Amazon Q"
+    await vscode.commands.executeCommand('workbench.view.extension.amazonq')
+}
 
 export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.codewhisperer.signout', compositeKey: { 1: 'source' } },

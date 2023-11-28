@@ -54,6 +54,8 @@ import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
 import { activate as activateRedshift } from './redshift/activation'
 import { CredentialsStore } from './auth/credentials/store'
+import { activate as activateCWChat } from './amazonq/activation'
+import { activate as activateQGumby } from './amazonqGumby/activation'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
@@ -222,14 +224,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
-        await activateCodeWhisperer(extContext)
-
         await activateAwsExplorer({
             context: extContext,
             regionProvider,
             toolkitOutputChannel,
             remoteInvokeOutputChannel,
         })
+
+        await activateCodeWhisperer(extContext)
 
         await activateAppRunner(extContext)
 
@@ -259,6 +261,11 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateEcs(extContext)
 
         await activateSchemas(extContext)
+
+        if (!isCloud9()) {
+            await activateCWChat(extContext.extensionContext)
+            await activateQGumby(extContext)
+        }
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 

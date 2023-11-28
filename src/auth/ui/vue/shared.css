@@ -15,18 +15,8 @@ button,
     background-color: var(--vscode-sideBar-background);
 }
 
-.centered-items {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
 .main-text-color {
     color: var(--vscode-foreground);
-}
-
-.sub-text-color {
-    color: var(--vscode-descriptionForeground);
 }
 
 .text-link-color {

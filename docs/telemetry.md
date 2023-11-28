@@ -59,7 +59,7 @@ function setupThing() {
 }
 ```
 
-Here we emitted a final metric based on the failure or success of the entire execution.
+Here we emitted a final metric based on the failure or success of the entire execution. Each metric is discrete and immediately gets sent to the telemetry service.
 
 <br>
 
@@ -89,19 +89,23 @@ function setupThing() {
     // Start the run() for metric_setupThing
     telemetry.metric_setupThing.run(span => {
         // Update the metric with initial attributes
-        span.record({result: 'Failed', reason: 'This is the start so it is not successful yet'})
+        span.record({sessionId: '123456'}) // now no matter where the control flow exits after this line in this method, this attribute will always be set
         ...
         setupStep2()
         ...
-        // Update the metric with the final success attributes since it made it to the end
-        span.record({result: 'Succeeded', ...})
+
+        if (userInput.CancelSelected) {
+            // By setting the `cancelled` attribute to true, the `result` attribute will be set to Cancelled
+            throw new ToolkitError("Thing has been cancelled", { cancelled: true})
+        }
     })
-    // At this point the final values from the `record()` calls are used to emit a the final metric
+    // At this point the final values from the `record()` calls are used to emit a the final metric.
+    // If no exceptions have been thrown, the `result` attribute is automatically set to Success.
 }
 
 function setupStep2() {
     try {
-        // do work
+        // Do work
     }
     catch (e) {
         // Here we can update the metric with more specific information regarding the failure.
@@ -114,8 +118,10 @@ function setupStep2() {
         // Keep in mind record() must be run inside the callback argument of run() for
         // the attributes of that specific metric to be updated.
         telemetry.metric_setupThing.record({
-            reason: 'Something failed in setupStep2()'
+            workDone: // ...
         })
+        // If this exception is allowed to propogate to the `run()`, then the `result` will be automatically set to Failed and the `reason` to the `code` set here
+        throw new ToolkitError(e as Error, { code: "SomethingWentWrongInStep2"})
     }
 }
 ```
@@ -127,8 +133,9 @@ Finally, if `setupStep2()` was the thing that failed we would see a metric like:
 ```
 {
     "metadata.metricName": "metric_setupThing",
+    "sessionId": "123456",
     "result": "Failed",
-    "reason": "Something failed in setupStep2()",
+    "reason": "SomethingWentWrongInStep2",
     ...
 }
 ```

@@ -1,5 +1,5 @@
 <template>
-    <NotificationContainer type="Success">
+    <NotificationContainer type="Success" v-on:close-notification="closeMessage()">
         <template v-slot:message-slot>
             <div style="display: flex; flex-direction: row">
                 IAM Credentials detected, select one in the&nbsp;<a
@@ -21,6 +21,8 @@ import { Notifications } from './notifications.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
+const notificationController = Notifications.instance
+
 export default defineComponent({
     name: 'CredentialsNotification',
     components: { NotificationContainer },
@@ -32,6 +34,9 @@ export default defineComponent({
         showConnectionQuickPick() {
             client.showConnectionQuickPick()
             client.emitUiClick('auth_openConnectionSelector')
+        },
+        closeMessage() {
+            notificationController.clearCredentialsNotification()
         },
     },
 })
