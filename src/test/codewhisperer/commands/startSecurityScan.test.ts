@@ -271,8 +271,6 @@ describe('startSecurityScan', function () {
             codewhispererCodeScanTotalIssues: 1,
             codewhispererCodeScanIssuesWithFixes: 0,
             codewhispererCodeScanLines: 188,
-            codewhispererCodeScanSrcPayloadBytes: 5675,
-            codewhispererCodeScanSrcZipFileBytes: 4455,
         } as CodewhispererSecurityScan)
     })
 })
