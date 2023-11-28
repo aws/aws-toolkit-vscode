@@ -1,0 +1,18 @@
+{
+	"date": "2023-11-28",
+	"version": "2.0.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer status bar showing even when not in use"
+		},
+		{
+			"type": "Feature",
+			"description": "Auth: Delete SSO connections from quickpick with button on hover"
+		},
+		{
+			"type": "Feature",
+			"description": "Support for Amazon Q, your generative AI–powered assistant designed for work that can be tailored to your business, code, data, and operations."
+		}
+	]
+}

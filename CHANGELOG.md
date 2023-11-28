@@ -1,3 +1,9 @@
+## 2.0.0 2023-11-28
+
+- **Bug Fix** CodeWhisperer status bar showing even when not in use
+- **Feature** Auth: Delete SSO connections from quickpick with button on hover
+- **Feature** Support for Amazon Q, your generative AI–powered assistant designed for work that can be tailored to your business, code, data, and operations.
+
 ## 1.100.0 2023-11-26
 
 - **Bug Fix** Fix a not connected error when starting connection to CodeCatalyst Dev Environment from link
