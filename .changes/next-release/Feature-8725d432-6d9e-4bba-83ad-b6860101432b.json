@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "AWS Application Composer is now available from the AWS Toolkit for Visual Studio Code. Visualize and design AWS CloudFormation and AWS SAM applications from your local machine. Use integrations with featured services such as Amazon CodeWhisperer, AWS Step Functions, and AWS SAM to improve your development experience."
+}
