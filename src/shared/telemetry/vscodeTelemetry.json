@@ -54,6 +54,16 @@
             "description": "The id of the detector which produced the code scan issue"
         },
         {
+            "name": "hasChatAuth",
+            "type": "boolean",
+            "description": "Whether the user has access to CodeWhisperer Chat"
+        },
+        {
+            "name": "resourceType",
+            "type": "string",
+            "description": "CloudFormation resource type"
+        },
+        {
             "name": "cwsprChatTriggerInteraction",
             "type": "string",
             "allowedValues": ["hotkeys", "click", "contextMenu"],
@@ -512,6 +522,31 @@
         {
             "name": "sam_openConfigUi",
             "description": "Called after opening the SAM Config UI"
+        },
+        {
+            "name": "appcomposer_openTemplate",
+            "description": "Called after opening a template",
+            "metadata": [{ "type": "hasChatAuth" }]
+        },
+        {
+            "name": "appcomposer_generateClicked",
+            "description": "Called after generating a standard resource template partial",
+            "metadata": [{ "type": "resourceType" }]
+        },
+        {
+            "name": "appcomposer_regenerateClicked",
+            "description": "Called after regenerating a standard resource template partial",
+            "metadata": [{ "type": "resourceType" }]
+        },
+        {
+            "name": "appcomposer_generateAccepted",
+            "description": "Called after accepting a generative AI suggestion",
+            "metadata": [{ "type": "resourceType" }]
+        },
+        {
+            "name": "appcomposer_generateRejected",
+            "description": "Called after rejecting a generative AI suggestion",
+            "metadata": [{ "type": "resourceType" }]
         },
         {
             "name": "codewhisperer_codeScanIssueHover",
