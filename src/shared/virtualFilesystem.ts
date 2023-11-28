@@ -24,7 +24,7 @@ export interface FileProvider {
  * Bare-bones file system to support in-memory operations on single documents.
  * Does not support directories.
  */
-export class VirualFileSystem implements vscode.FileSystemProvider {
+export class VirtualFileSystem implements vscode.FileSystemProvider {
     private readonly _onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>()
     public readonly onDidChangeFile = this._onDidChangeFile.event
     private readonly fileProviders: Record<string, FileProvider | undefined> = {}

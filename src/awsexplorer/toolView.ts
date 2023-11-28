@@ -8,18 +8,10 @@ import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceT
 import { isCloud9 } from '../shared/extensionUtilities'
 import { debounce } from '../shared/utilities/functionUtils'
 
-export interface RootNode<T = unknown> extends TreeNode<T> {
-    /**
-     * An optional event to signal that this node's visibility has changed.
-     */
-    readonly onDidChangeVisibility?: vscode.Event<void>
-
-    /**
-     * Determines whether this node should be rendered in the tree view.
-     *
-     * If not implemented, it is assumed that the node is always visible.
-     */
-    canShow?(): Promise<boolean> | boolean
+export interface ToolView {
+    nodes: TreeNode[]
+    view: string
+    refreshCommands: ((provider: ResourceTreeDataProvider) => void)[]
 }
 
 /**
@@ -29,15 +21,16 @@ export interface RootNode<T = unknown> extends TreeNode<T> {
  * Components placed under this view do not strictly need to be 'local'. They just need to place greater
  * emphasis on the developer's local development environment.
  */
-export function createLocalExplorerView(rootNodes: RootNode[]): vscode.TreeView<TreeNode> {
-    const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => getChildren(rootNodes) })
-    const view = vscode.window.createTreeView('aws.developerTools', { treeDataProvider })
-
-    rootNodes.forEach(node => node.onDidChangeVisibility?.(() => treeDataProvider.refresh(node)))
+export function createToolView(viewNode: ToolView): vscode.TreeView<TreeNode> {
+    const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => getChildren(viewNode.nodes) })
+    for (const refreshCommand of viewNode.refreshCommands ?? []) {
+        refreshCommand(treeDataProvider)
+    }
+    const view = vscode.window.createTreeView(viewNode.view, { treeDataProvider })
 
     // Cloud9 will only refresh when refreshing the entire tree
     if (isCloud9()) {
-        rootNodes.forEach(node => {
+        viewNode.nodes.forEach(node => {
             // Refreshes are delayed to guard against excessive calls to `getTreeItem` and `getChildren`
             // The 10ms delay is arbitrary. A single event loop may be good enough in many scenarios.
             const refresh = debounce(() => treeDataProvider.refresh(node), 10)
@@ -49,12 +42,12 @@ export function createLocalExplorerView(rootNodes: RootNode[]): vscode.TreeView<
     return view
 }
 
-async function getChildren(roots: RootNode[]) {
+async function getChildren(roots: TreeNode[]) {
     const nodes: TreeNode[] = []
 
     for (const node of roots) {
-        if (!node.canShow || (await node.canShow())) {
-            nodes.push(node)
+        if (node.getChildren) {
+            nodes.push(...(await node.getChildren()))
         }
     }
 

@@ -102,7 +102,7 @@ export function removeAnsi(text: string): string {
 /**
  * Hashes are not guaranteed to be stable across toolkit versions. We may change the implementation.
  */
-export function getStringHash(text: string): string {
+export function getStringHash(text: string | Buffer): string {
     const hash = crypto.createHash('sha256')
 
     hash.update(text)

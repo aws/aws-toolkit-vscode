@@ -48,7 +48,7 @@ import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthSource } from './ui/vue/show'
 import { getLogger } from '../shared/logger'
-import { isValidCodeWhispererConnection } from '../codewhisperer/util/authUtil'
+import { isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
@@ -84,14 +84,20 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
     })
 }
 
-const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
+const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | TreeNode | unknown) => {
     telemetry.ui_click.emit({ elementId: 'devtools_connectToAws' })
 
-    if (auth instanceof Auth) {
-        return promptAndUseConnection(auth)
-    } else {
-        return promptAndUseConnection(getResourceFromTreeNode(auth, Instance(Auth)))
+    if (!(auth instanceof Auth)) {
+        try {
+            auth = getResourceFromTreeNode(auth, Instance(Auth))
+        } catch {
+            // Fall back in case this command is called from something in package.json.
+            // If so, then the value of auth will be unusable.
+            auth = Auth.instance
+        }
     }
+
+    return promptAndUseConnection(auth as Auth)
 })
 
 export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
@@ -320,6 +326,11 @@ export async function tryAddCredentials(
 const getConnectionIcon = (conn: Connection) =>
     conn.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')
 
+const deleteConnection = 'Delete Connection'
+export const createDeleteConnectionButton: () => vscode.QuickInputButton = () => {
+    return { tooltip: deleteConnection, iconPath: getIcon('vscode-trash') }
+}
+
 export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
     const addNewConnection = {
         label: codicon`${getIcon('vscode-plus')} Add New Connection`,
@@ -334,8 +345,16 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
             ? localize('aws.auth.promptConnection.iam.placeholder', 'Select an IAM credential')
             : localize('aws.auth.promptConnection.all.placeholder', 'Select a connection')
 
+    const refreshPrompter = () => {
+        // This function should not return a promise, or else tests fail.
+
+        prompter.clearAndLoadItems(loadItems()).catch(e => {
+            getLogger().error(`Auth: Failed loading connections in quickpick: %s`, e)
+            throw e
+        })
+    }
     const refreshButton = createRefreshButton()
-    refreshButton.onClick = () => void prompter.clearAndLoadItems(loadItems())
+    refreshButton.onClick = refreshPrompter
 
     // Place add/edit connection items at the bottom, then sort 'sso' connections
     // first, then valid connections, then finally the item label
@@ -369,6 +388,19 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
         },
     })
 
+    prompter.quickPick.onDidTriggerItemButton(async e => {
+        // User wants to delete a specific connection
+        if (e.button.tooltip === deleteConnection) {
+            const conn = e.item.data as Connection
+
+            // Set prompter in to a busy state so that
+            // tests must wait for refresh to fully complete
+            prompter.busy = true
+            await auth.deleteConnection(conn)
+            refreshPrompter()
+        }
+    })
+
     return prompter
 
     async function* loadItems(): AsyncGenerator<
@@ -391,11 +423,14 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
 
     function toPickerItem(conn: Connection): DataQuickPickItem<Connection> {
         const state = auth.getConnectionState(conn)
+        // Only allow SSO connections to be deleted
+        const deleteButton: vscode.QuickInputButton[] = conn.type === 'sso' ? [createDeleteConnectionButton()] : []
         if (state === 'valid') {
             return {
                 data: conn,
                 label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
                 description: getConnectionDescription(conn),
+                buttons: [...deleteButton],
             }
         }
 
@@ -413,6 +448,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
             data: conn,
             invalidSelection: state !== 'authenticating',
             label: codicon`${getIcon('vscode-error')} ${conn.label}`,
+            buttons: [...deleteButton],
             description:
                 state === 'authenticating'
                     ? 'authenticating...'
@@ -590,7 +626,7 @@ export async function hasSso(
     return (await findSsoConnections(kind, allConnections)).length > 0
 }
 
-async function findSsoConnections(
+export async function findSsoConnections(
     kind: SsoKind = 'any',
     allConnections = () => Auth.instance.listConnections()
 ): Promise<SsoConnection[]> {
@@ -598,7 +634,7 @@ async function findSsoConnections(
     switch (kind) {
         case 'codewhisperer':
             predicate = (conn?: Connection) => {
-                return isIdcSsoConnection(conn) && isValidCodeWhispererConnection(conn)
+                return isIdcSsoConnection(conn) && isValidCodeWhispererCoreConnection(conn)
             }
             break
         case 'codecatalyst':
@@ -635,7 +671,7 @@ async function findBuilderIdConnections(
     switch (kind) {
         case 'codewhisperer':
             predicate = (conn?: Connection) => {
-                return isBuilderIdConnection(conn) && isValidCodeWhispererConnection(conn)
+                return isBuilderIdConnection(conn) && isValidCodeWhispererCoreConnection(conn)
             }
             break
         case 'codecatalyst':

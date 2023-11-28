@@ -337,7 +337,6 @@ describe('CodeWhisperer-basicCommands', function () {
                 ])
                 e.dispose() // skip needing to select an item to continue
             })
-
             await listCodeWhispererCommands.execute()
         })
 

@@ -3,7 +3,9 @@ node_modules/**
 src/shared/telemetry/clienttelemetry.d.ts
 src/codewhisperer/client/codewhispererclient.d.ts
 src/codewhisperer/client/codewhispereruserclient.d.ts
+src/amazonqFeatureDev/client/featuredevproxyclient.d.ts
 **/*.gen.ts
 src/testFixtures/**
 dist/**
 types/*.d.ts
+src.gen/**

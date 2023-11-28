@@ -40,7 +40,10 @@ const vueConfig = {
     ...baseConfig,
     name: 'vue',
     target: 'web',
-    entry: createVueEntries(),
+    entry: {
+        ...createVueEntries(),
+        'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
+    },
     output: {
         ...baseConfig.output,
         libraryTarget: 'this',
@@ -58,7 +61,9 @@ const vueConfig = {
             {
                 test: /\.(png|jpg|gif|svg)$/,
                 use: 'file-loader',
-            }
+            },
+            // sass loaders for Mynah
+            { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'] }
         ),
     },
     plugins: (baseConfig.plugins ?? []).concat(new VueLoaderPlugin()),
@@ -71,6 +76,9 @@ const vueHotReload = {
     devServer: {
         static: {
             directory: path.resolve(__dirname, 'dist'),
+        },
+        headers: {
+            'Access-Control-Allow-Origin': '*',
         },
         // This is not ideal, but since we're only running the server locally it's not too bad
         // The webview debugger tries to establish a websocket with a GUID as its origin, so not much of a workaround

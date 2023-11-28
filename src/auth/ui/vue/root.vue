@@ -13,10 +13,10 @@
     />
     <img
         v-show="false"
-        src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
+        src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhispererChat.gif"
     />
 
-    <div :style="{ display: 'flex', flexDirection: 'column', gap: '1.2em', maxWidth: `${maxWidth}px` }">
+    <div :style="{ display: 'flex', flexDirection: 'column', gap: '1.2em', width: '100em' }">
         <!-- Logo + Title -->
         <div>
             <div style="display: flex; justify-content: left; align-items: center; gap: 0.5vw">
@@ -30,6 +30,7 @@
                         viewBox="0 0 50 30"
                     >
                         <path
+                            id="logo-text"
                             d="M14.09,10.85a4.7,4.7,0,0,0,.19,1.48,7.73,7.73,0,0,0,.54,1.19.77.77,0,0,1,.12.38.64.64,0,0,1-.32.49l-1,.7a.83.83,0,0,1-.44.15.69.69,0,0,1-.49-.23,3.8,3.8,0,0,1-.6-.77q-.25-.42-.51-1a6.14,6.14,0,0,1-4.89,2.3,4.54,4.54,0,0,1-3.32-1.19,4.27,4.27,0,0,1-1.22-3.2A4.28,4.28,0,0,1,3.61,7.75,6.06,6.06,0,0,1,7.69,6.46a12.47,12.47,0,0,1,1.76.13q.92.13,1.91.36V5.73a3.65,3.65,0,0,0-.79-2.66A3.81,3.81,0,0,0,7.86,2.3a7.71,7.71,0,0,0-1.79.22,12.78,12.78,0,0,0-1.79.57,4.55,4.55,0,0,1-.58.22l-.26,0q-.35,0-.35-.52V2a1.09,1.09,0,0,1,.12-.58,1.2,1.2,0,0,1,.47-.35A10.88,10.88,0,0,1,5.77.32,10.19,10.19,0,0,1,8.36,0a6,6,0,0,1,4.35,1.35,5.49,5.49,0,0,1,1.38,4.09ZM7.34,13.38a5.36,5.36,0,0,0,1.72-.31A3.63,3.63,0,0,0,10.63,12,2.62,2.62,0,0,0,11.19,11a5.63,5.63,0,0,0,.16-1.44v-.7a14.35,14.35,0,0,0-1.53-.28,12.37,12.37,0,0,0-1.56-.1,3.84,3.84,0,0,0-2.47.67A2.34,2.34,0,0,0,5,11a2.35,2.35,0,0,0,.61,1.76A2.4,2.4,0,0,0,7.34,13.38Zm13.35,1.8a1,1,0,0,1-.64-.16,1.3,1.3,0,0,1-.35-.65L15.81,1.51a3,3,0,0,1-.15-.67.36.36,0,0,1,.41-.41H17.7a1,1,0,0,1,.65.16,1.4,1.4,0,0,1,.33.65l2.79,11,2.59-11A1.17,1.17,0,0,1,24.39.6a1.1,1.1,0,0,1,.67-.16H26.4a1.1,1.1,0,0,1,.67.16,1.17,1.17,0,0,1,.32.65L30,12.39,32.88,1.25A1.39,1.39,0,0,1,33.22.6a1,1,0,0,1,.65-.16h1.54a.36.36,0,0,1,.41.41,1.36,1.36,0,0,1,0,.26,3.64,3.64,0,0,1-.12.41l-4,12.86a1.3,1.3,0,0,1-.35.65,1,1,0,0,1-.64.16H29.25a1,1,0,0,1-.67-.17,1.26,1.26,0,0,1-.32-.67L25.67,3.64,23.11,14.34a1.26,1.26,0,0,1-.32.67,1,1,0,0,1-.67.17Zm21.36.44a11.28,11.28,0,0,1-2.56-.29,7.44,7.44,0,0,1-1.92-.67,1,1,0,0,1-.61-.93v-.84q0-.52.38-.52a.9.9,0,0,1,.31.06l.42.17a8.77,8.77,0,0,0,1.83.58,9.78,9.78,0,0,0,2,.2,4.48,4.48,0,0,0,2.43-.55,1.76,1.76,0,0,0,.86-1.57,1.61,1.61,0,0,0-.45-1.16A4.29,4.29,0,0,0,43,9.22l-2.41-.76A5.15,5.15,0,0,1,38,6.78a3.94,3.94,0,0,1-.83-2.41,3.7,3.7,0,0,1,.45-1.85,4.47,4.47,0,0,1,1.19-1.37A5.27,5.27,0,0,1,40.51.29,7.4,7.4,0,0,1,42.6,0a8.87,8.87,0,0,1,1.12.07q.57.07,1.08.19t.95.26a4.27,4.27,0,0,1,.7.29,1.59,1.59,0,0,1,.49.41.94.94,0,0,1,.15.55v.79q0,.52-.38.52a1.76,1.76,0,0,1-.64-.2,7.74,7.74,0,0,0-3.2-.64,4.37,4.37,0,0,0-2.21.47,1.6,1.6,0,0,0-.79,1.48,1.58,1.58,0,0,0,.49,1.18,4.94,4.94,0,0,0,1.83.92L44.55,7a5.08,5.08,0,0,1,2.57,1.6A3.76,3.76,0,0,1,47.9,11a4.21,4.21,0,0,1-.44,1.93,4.4,4.4,0,0,1-1.21,1.47,5.43,5.43,0,0,1-1.85.93A8.25,8.25,0,0,1,42.05,15.62Z"
                         />
                         <path
@@ -77,9 +78,18 @@
             <div style="font-size: 1.6rem; font-weight: bold">Sign in to Get Started</div>
             <hr style="margin: 1em 0 1em 0; border-color: var(--vscode-textBlockQuote-border)" />
             <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 1em">
-                <CodeWhispererContent :state="serviceItemsAuthStatus['codewhisperer']"></CodeWhispererContent>
-                <AwsExplorerContent :state="serviceItemsAuthStatus['awsExplorer']"></AwsExplorerContent>
-                <CodeCatalystContent :state="serviceItemsAuthStatus['codecatalyst']"></CodeCatalystContent>
+                <CodeWhispererContent
+                    :state="serviceItemsAuthStatus['codewhisperer']"
+                    :is-active="panelActivityState.isActive['codewhisperer']"
+                ></CodeWhispererContent>
+                <AwsExplorerContent
+                    :state="serviceItemsAuthStatus['awsExplorer']"
+                    :is-active="panelActivityState.isActive['awsExplorer']"
+                ></AwsExplorerContent>
+                <CodeCatalystContent
+                    :state="serviceItemsAuthStatus['codecatalyst']"
+                    :is-active="panelActivityState.isActive['codecatalyst']"
+                ></CodeCatalystContent>
             </div>
         </div>
     </div>
@@ -99,8 +109,11 @@ import { Notifications } from './notifications/notifications.vue'
 import AwsExplorerContent from './featurePanel/awsExplorerContent.vue'
 import CodeCatalystContent from './featurePanel/codeCatalystContent.vue'
 import CodeWhispererContent from './featurePanel/codeWhispererContent.vue'
+import { PanelActivityState } from './featurePanel/baseServiceItemContent.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
+
+const panelActivityState = PanelActivityState.instance
 
 export default defineComponent({
     components: {
@@ -115,11 +128,12 @@ export default defineComponent({
         return {
             serviceItemsAuthStatus: serviceItemsAuthStatus,
             notifications: Notifications.instance,
-            maxWidth: undefined as typeof undefined | number,
+            panelActivityState: panelActivityState,
         }
     },
     async created() {
-        this.scalePage()
+        // Sets size that all uses of `em` and `rem` in CSS are relative to
+        this.setRelativeSize()
 
         // TODO: Due to design constraints, we determine the existing Auths in the frontend code
         //       since we have all the classes that figure this out in vue. If eventually we are able
@@ -130,7 +144,7 @@ export default defineComponent({
         await showFoundExistingCredentials(this.notifications)
     },
     mounted() {
-        window.addEventListener('resize', this.scalePage)
+        panelActivityState.setupInitialActivePanel()
     },
     computed: {},
     methods: {
@@ -168,46 +182,12 @@ export default defineComponent({
             client.openFeedbackForm()
         },
         /**
-         * A mediocre attempt at scaling the content when the webview
-         * stretches or the user zooms in/out. The goal is to keep
-         * all the content in frame withtout having to scroll.
+         * IMPORTANT: This is the root of all sizing (em, rem)
+         * Here we set the size that all references of rem and em
+         * are relative to
          */
-        scalePage() {
-            this.adjustAspectRatio()
-
-            /**
-             * The font size we want is 14px. But when the user zooms in/out
-             * the font size does not change respective to the zoom.
-             * {@link window.devicePixelRatio} helps us scale the font size
-             * relative to the zoom.
-             */
-            document.documentElement.style.fontSize = `${14 / window.devicePixelRatio}px`
-        },
-        /**
-         * If the aspect ratio of the webview becomes too wide the
-         * content becomes stretched and ugly. This adjusts the width
-         * of the content container to keep the aspect ratio below the
-         * {@link maxAspectRatio}
-         */
-        adjustAspectRatio() {
-            /**
-             * **Are you trying to modify this?**
-             *
-             * At the moment of writing this there are 3 panels,
-             * so the current aspect ratio looks nice.
-             * If this changes we will want to adjust the aspect ratio
-             * to fit whatever the new content is.
-             */
-            const maxAspectRatio = 5 / 4
-
-            const currentAspectRatio = window.innerWidth / window.innerHeight
-            if (currentAspectRatio > maxAspectRatio) {
-                // Dervived from: AspectRatio = Width / Height
-                let newMaxWidth = window.innerHeight * maxAspectRatio
-                this.maxWidth = newMaxWidth
-            } else {
-                this.maxWidth = window.innerWidth
-            }
+        setRelativeSize() {
+            document.documentElement.style.fontSize = '14px'
         },
     },
 })
@@ -215,7 +195,13 @@ export default defineComponent({
 
 <style>
 #logo {
-    fill: var(--vscode-foreground);
+    fill: var(--vscode-button-foreground);
     padding-top: 0.2em;
+}
+body.vscode-dark #logo-text {
+    fill: white;
+}
+body.vscode-light #logo-text {
+    fill: #232f3e; /* squid ink */
 }
 </style>

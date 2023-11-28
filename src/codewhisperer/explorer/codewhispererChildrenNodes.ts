@@ -5,7 +5,7 @@
 
 import vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
-import { codicon, getIcon } from '../../shared/icons'
+import { addColor, codicon, getIcon } from '../../shared/icons'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -117,8 +117,8 @@ export function createSignIn(type: 'item'): DataQuickPickItem<'signIn'>
 export function createSignIn(type: 'tree'): TreeNode<Command>
 export function createSignIn(type: 'item' | 'tree'): DataQuickPickItem<'signIn'> | TreeNode<Command>
 export function createSignIn(type: 'item' | 'tree'): any {
-    const label = localize('AWS.codewhisperer.signInNode.label', 'Start')
-    const icon = getIcon('vscode-debug-start')
+    const label = localize('AWS.codewhisperer.signInNode.label', 'Sign in to get started')
+    const icon = getIcon('vscode-account')
 
     switch (type) {
         case 'tree':
@@ -139,8 +139,8 @@ export function createReconnect(type: 'item'): DataQuickPickItem<'reconnect'>
 export function createReconnect(type: 'tree'): TreeNode<Command>
 export function createReconnect(type: 'item' | 'tree'): DataQuickPickItem<'reconnect'> | TreeNode<Command>
 export function createReconnect(type: 'item' | 'tree'): any {
-    const label = localize('AWS.codewhisperer.reconnectNode.label', 'Reconnect')
-    const icon = getIcon('vscode-debug-start')
+    const label = localize('AWS.codewhisperer.reconnectNode.label', 'Re-authenticate to connect')
+    const icon = addColor(getIcon('vscode-debug-disconnect'), 'notificationsErrorIcon.foreground')
 
     switch (type) {
         case 'tree':
@@ -161,7 +161,7 @@ export function createLearnMore(type: 'item'): DataQuickPickItem<'learnMore'>
 export function createLearnMore(type: 'tree'): TreeNode<Command>
 export function createLearnMore(type: 'item' | 'tree'): DataQuickPickItem<'learnMore'> | TreeNode<Command>
 export function createLearnMore(type: 'item' | 'tree'): any {
-    const label = localize('AWS.codewhisperer.learnMoreNode.label', 'Learn More about CodeWhisperer')
+    const label = localize('AWS.codewhisperer.learnMoreNode.label', 'Learn more about CodeWhisperer')
     const icon = getIcon('vscode-question')
 
     switch (type) {

@@ -36,13 +36,17 @@ function getJsSdkVersion(): string {
     const json = fs.readFileSync(path.resolve(repoRoot, 'package-lock.json')).toString()
     const packageLock = JSON.parse(json)
 
-    return packageLock['dependencies']['aws-sdk']['version']
+    return packageLock['packages']['node_modules/aws-sdk']['version']
 }
 
 async function cloneJsSdk(dir: string): Promise<void> {
     // Output stderr while it clones so it doesn't look frozen
     return new Promise<void>((resolve, reject) => {
-        const tag = `v${getJsSdkVersion()}`
+        const sdkversion = getJsSdkVersion()
+        if (!sdkversion) {
+            throw new Error('failed to get sdk version from package-lock.json')
+        }
+        const tag = `v${sdkversion}`
 
         const gitHead = child_process.spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'])
 
@@ -236,6 +240,10 @@ ${fileContents}
         {
             serviceJsonPath: 'src/codewhisperer/client/user-service-2.json',
             serviceName: 'CodeWhispererUserClient',
+        },
+        {
+            serviceJsonPath: 'src/amazonqFeatureDev/client/codewhispererruntime-2022-11-11.json',
+            serviceName: 'FeatureDevProxyClient',
         },
     ]
     await generateServiceClients(serviceClientDefinitions)
