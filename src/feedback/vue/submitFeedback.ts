@@ -63,9 +63,11 @@ export class FeedbackWebview extends VueWebview {
     }
 }
 
+type FeedbackId = 'AWS Toolkit' | 'CodeWhisperer' | 'Amazon Q' | 'Application Composer'
+
 export const submitFeedback = Commands.declare(
     { id: 'aws.submitFeedback', autoconnect: false },
-    (context: ExtContext) => async (_: VsCodeCommandArg, id: 'AWS Toolkit' | 'CodeWhisperer' | 'Amazon Q') => {
+    (context: ExtContext) => async (_: VsCodeCommandArg, id: FeedbackId) => {
         if (_ !== placeholder) {
             // No args exist, we must supply them
             id = 'AWS Toolkit'
