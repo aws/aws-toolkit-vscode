@@ -70,7 +70,11 @@ export class FeatureDevClient {
         try {
             const client = await this.getClient()
             getLogger().debug(`Executing createTaskAssistConversation with {}`)
-            const { conversationId } = await client.createTaskAssistConversation().promise()
+            const { conversationId, $response } = await client.createTaskAssistConversation().promise()
+            getLogger().debug(`${featureName}: Created conversation: %O`, {
+                conversationId,
+                requestId: $response.requestId,
+            })
             return conversationId
         } catch (e) {
             getLogger().error(
@@ -99,9 +103,17 @@ export class FeatureDevClient {
             }
             getLogger().debug(`Executing createUploadUrl with %O`, omit(params, 'contentChecksum'))
             const response = await client.createUploadUrl(params).promise()
+            getLogger().debug(`${featureName}: Created upload url: %O`, {
+                uploadId: response.uploadId,
+                requestId: response.$response.requestId,
+            })
             return response
         } catch (e: any) {
-            getLogger().error(`${featureName}: failed to generate presigned url: ${(e as Error).message}`)
+            getLogger().error(
+                `${featureName}: failed to generate presigned url: ${(e as Error).message} RequestId: ${
+                    (e as any).requestId
+                }`
+            )
             if (e.code === 'ValidationException' && e.message.includes('Invalid contentLength')) {
                 throw new ContentLengthError()
             }
@@ -125,6 +137,9 @@ export class FeatureDevClient {
             }
             getLogger().debug(`Executing generateTaskAssistPlan with %O`, params)
             const response = await streamingClient.generateTaskAssistPlan(params)
+            getLogger().debug(`${featureName}: Generated plan: %O`, {
+                requestId: response.$metadata.requestId,
+            })
             if (!response.planningResponseStream) {
                 return undefined
             }

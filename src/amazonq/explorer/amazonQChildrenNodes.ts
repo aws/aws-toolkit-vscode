@@ -5,12 +5,19 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { Commands } from '../../shared/vscode/commands2'
+import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
-import { focusAmazonQPanel, showTransformByQ } from '../../codewhisperer/commands/basicCommands'
+import {
+    focusAmazonQPanel,
+    reconnect,
+    showTransformByQ,
+    transformTreeNode,
+} from '../../codewhisperer/commands/basicCommands'
 import { transformByQState } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { amazonQHelpUrl } from '../../shared/constants'
+import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -25,13 +32,32 @@ export const createLearnMoreNode = () =>
         contextValue: 'awsAmazonQLearnMoreNode',
     })
 
-export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => focusAmazonQPanel)
+export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => () => {
+    telemetry.ui_click.emit({
+        elementId: 'amazonq_switchToQChat',
+        passive: false,
+    })
+    focusAmazonQPanel()
+})
 
 export const switchToAmazonQNode = () =>
     switchToAmazonQCommand.build().asTreeNode({
         label: 'Switch to Q Chat',
         iconPath: getIcon('vscode-comment'),
         contextValue: 'awsToAmazonQChatNode',
+    })
+
+/*
+ * This node is meant to be displayed when the user's active connection is missing scopes required for Amazon Q.
+ * For example, users with active CodeWhisperer connections who updates to a toolkit version with Amazon Q (Preview)
+ * will be missing these scopes.
+ */
+export const enableAmazonQNode = () =>
+    // Simply trigger re-auth to obtain the proper scopes- same functionality as if requested in the chat window.
+    reconnect.build(placeholder, cwTreeNodeSource).asTreeNode({
+        label: localize('AWS.amazonq.enable', 'Enable Amazon Q (Preview)'),
+        iconPath: getIcon('vscode-debug-start'),
+        contextValue: 'awsEnableAmazonQ',
     })
 
 export const createTransformByQ = () => {
@@ -54,7 +80,7 @@ export const createTransformByQ = () => {
     } else if (transformByQState.isNotStarted()) {
         status = ''
     }
-    return showTransformByQ.build('qTreeNode').asTreeNode({
+    return showTransformByQ.build(transformTreeNode).asTreeNode({
         label: status !== '' ? `${prefix} Transform [Job status: ` + status + `]` : `Transform`,
         iconPath: transformByQState.getIconForButton(),
         tooltip: `${prefix} Transform`,

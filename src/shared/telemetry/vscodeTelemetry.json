@@ -227,6 +227,11 @@
             "description": "A string ID for the current job running"
         },
         {
+            "name": "codeTransform_SourceJavaVersion",
+            "type": "string",
+            "description": "The Java version of the project the customer has selected to transform"
+        },
+        {
             "name": "codeTransform_ResultStatusMessage",
             "type": "string",
             "description": "A general string field to represent the ending status of the job"
@@ -247,11 +252,6 @@
             "description": "A general string field to represent the IDE session from when users start the transformation process"
         },
         {
-            "name": "codeTransform_RunTimeLatency",
-            "type": "int",
-            "description": "A millisecond value of the total runtime latency"
-        },
-        {
             "name": "codeTransform_ApiName",
             "type": "string",
             "description": "Names of allowed API calls in Gumby",
@@ -264,6 +264,12 @@
                 "CreateUploadUrl",
                 "ExportResultArchive"
             ]
+        },
+        {
+            "name": "codeTransform_ProjectType",
+            "type": "string",
+            "description": "The type of the project the user calls transform on",
+            "allowedValues": ["maven", "gradle", "unknown"]
         }
     ],
     "metrics": [
@@ -796,24 +802,8 @@
             ]
         },
         {
-            "name": "codeTransform_logRuntimeError",
-            "passive": true,
-            "description": "A general logging measure for all runtime errors.",
-            "metadata": [
-                {
-                    "type": "codeTransform_SessionId",
-                    "required": true
-                },
-                {
-                    "type": "codeTransform_RuntimeErrorId",
-                    "required": true
-                }
-            ]
-        },
-        {
-            "name": "codeTransform_logApiError",
-            "passive": true,
-            "description": "A general logging measure for all client side API errors.",
+            "name": "amazonq_codeTransformInvoke",
+            "description": "The user selects code transform on an open project",
             "metadata": [
                 {
                     "type": "codeTransform_SessionId",
@@ -821,37 +811,64 @@
                 },
                 {
                     "type": "codeTransform_ApiName",
-                    "required": true
+                    "required": false
                 },
                 {
                     "type": "codeTransform_ApiErrorId",
-                    "required": true
+                    "required": false
                 },
                 {
                     "type": "codeTransform_JobId",
+                    "required": false
+                },
+                {
+                    "type": "codeTransform_ProjectType",
+                    "required": false
+                },
+                {
+                    "type": "codeTransform_SourceJavaVersion",
+                    "required": false
+                },
+                {
+                    "type": "codeTransform_ResultStatusMessage",
+                    "required": false
+                },
+                {
+                    "type": "duration",
+                    "required": true
+                },
+                {
+                    "type": "result",
+                    "required": true
+                },
+                {
+                    "type": "reason",
                     "required": false
                 }
             ]
         },
         {
-            "name": "codeTransform_totalRunTime",
-            "passive": true,
-            "description": "The code transformation is only available when a valid Java project and valid build configuration is found in the workspace.",
+            "name": "amazonq_codeTransformReview",
+            "description": "The user reviews the proposed results of a code transformation",
             "metadata": [
                 {
                     "type": "codeTransform_SessionId",
                     "required": true
                 },
                 {
-                    "type": "codeTransform_RunTimeLatency",
-                    "required": true
-                },
-                {
-                    "type": "codeTransform_ResultStatusMessage",
-                    "required": true
-                },
-                {
                     "type": "codeTransform_JobId",
+                    "required": true
+                },
+                {
+                    "type": "codeTransform_ApiName",
+                    "required": false
+                },
+                {
+                    "type": "result",
+                    "required": true
+                },
+                {
+                    "type": "reason",
                     "required": false
                 }
             ]

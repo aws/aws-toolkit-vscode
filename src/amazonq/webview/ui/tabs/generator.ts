@@ -32,13 +32,13 @@ export class TabDataGenerator {
     private tabWelcomeMessage: Map<TabType, string> = new Map([
         [
             'unknown',
-            `Hi, I am Amazon Q. I can answer your software development questions. 
+            `Hi, I'm Amazon Q. I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
         You can enter \`/\` to see a list of quick actions.`,
         ],
         [
             'cwc',
-            `Hi, I am Amazon Q (Preview). I can answer your software development questions. 
+            `Hi, I'm Amazon Q. I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
         You can enter \`/\` to see a list of quick actions.`,
         ],
@@ -46,9 +46,9 @@ export class TabDataGenerator {
             'featuredev',
             `Welcome to /dev. 
 
-Here I can provide a plan for a code change specific to your project. What would you like to plan?
+I can help you create a plan or define an approach to development. I'll reference and make suggestions based on your open project.
 
-Coming soon: code suggestions across files to implement the plan.
+_Coming soon_: I'll provide code suggestions to help you implement the plan.
 `,
         ],
     ])

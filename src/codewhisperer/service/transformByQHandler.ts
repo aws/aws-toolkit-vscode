@@ -19,7 +19,7 @@ import AdmZip from 'adm-zip'
 import fetch from '../../common/request'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { ToolkitError } from '../../shared/errors'
 
 /* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
@@ -70,6 +70,7 @@ export async function getValidModules() {
     }
     let containsSupportedJava = false // workspace must contain Java 8 or Java 11 code for this to be true
     let containsPomXml = false // workspace must contain a 'pom.xml' file for this to be true
+    let failureReason = 'NoJavaProjectsAvailable'
     for (const folder of folders) {
         const compiledJavaFiles = await vscode.workspace.findFiles(
             new vscode.RelativePattern(folder, '**/*.class'),
@@ -83,11 +84,9 @@ export async function getValidModules() {
         const baseCommand = 'javap'
         const args = ['-v', classFilePath]
         const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
+
         if (spawnResult.error || spawnResult.status !== 0) {
-            telemetry.codeTransform_logRuntimeError.emit({
-                codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransform_RuntimeErrorId: 'cannotRunJavaShellCommand',
-            })
+            failureReason = 'CouldNotRunJavaCommand'
             continue // if cannot get Java version, move on to other projects in workspace
         }
         const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
@@ -107,6 +106,7 @@ export async function getValidModules() {
             1
         )
         if (buildFile.length < 1) {
+            checkIfGradle(folder)
             continue
         } else {
             containsPomXml = true
@@ -115,11 +115,15 @@ export async function getValidModules() {
     }
     if (!containsSupportedJava) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
-        throw Error('No Java projects found')
+        throw new ToolkitError('No Java projects found', { code: failureReason })
     }
     if (!containsPomXml) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
-        throw Error('No build file found')
+        throw new ToolkitError('No build file found', { code: 'CouldNotFindPomXml' })
+    } else {
+        telemetry.amazonq_codeTransformInvoke.record({
+            codeTransform_ProjectType: 'maven',
+        })
     }
     return validModules
 }
@@ -165,13 +169,11 @@ export async function stopJob(jobId: string) {
             })
         } catch (err) {
             const errorMessage = 'Error stopping job'
-            telemetry.codeTransform_logApiError.emit({
-                codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+            telemetry.amazonq_codeTransformInvoke.record({
                 codeTransform_ApiName: 'StopTransformation',
-                codeTransform_ApiErrorId: 'cannotStopJob',
-                codeTransform_JobId: jobId,
             })
             getLogger().error(errorMessage)
+            throw new ToolkitError(errorMessage, { cause: err as Error })
         }
     }
 }
@@ -223,10 +225,6 @@ function getProjectDependencies(modulePath: string): string[] {
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: false, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        telemetry.codeTransform_logRuntimeError.emit({
-            codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransform_RuntimeErrorId: 'cannotRunMavenShellCommand',
-        })
         vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage, { modal: true })
         getLogger().error('Error in running Maven command:')
         // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
@@ -235,7 +233,7 @@ function getProjectDependencies(modulePath: string): string[] {
         } else {
             getLogger().error(spawnResult.stdout)
         }
-        throw Error('Maven Dependency Error')
+        throw new ToolkitError('Maven Dependency Error', { code: 'CannotRunMavenShellCommand' })
     }
 
     return [folderPath, folderName]
@@ -259,8 +257,8 @@ export async function zipCode(modulePath: string) {
         mavenFailed = true
     }
 
-    const dependencyFolderPath = dependencyFolderInfo[0]
-    const dependencyFolderName = dependencyFolderInfo[1]
+    const dependencyFolderPath = !mavenFailed ? dependencyFolderInfo[0] : ''
+    const dependencyFolderName = !mavenFailed ? dependencyFolderInfo[1] : ''
 
     await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
@@ -277,8 +275,12 @@ export async function zipCode(modulePath: string) {
     await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
+    let dependencyFiles: string[] = []
     if (!mavenFailed) {
-        const dependencyFiles = getFilesRecursively(dependencyFolderPath)
+        dependencyFiles = getFilesRecursively(dependencyFolderPath)
+    }
+
+    if (!mavenFailed && dependencyFiles.length > 0) {
         for (const file of dependencyFiles) {
             const relativePath = path.relative(dependencyFolderPath, file)
             const paddedPath = path.join(`dependencies/${dependencyFolderName}`, relativePath)
@@ -380,4 +382,22 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
         }
     }
     return status
+}
+
+async function checkIfGradle(folder: vscode.WorkspaceFolder) {
+    const gradleBuildFiles = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(folder, '**/build.gradle'),
+        '**/node_modules/**',
+        1
+    )
+
+    if (gradleBuildFiles.length > 1) {
+        telemetry.amazonq_codeTransformInvoke.record({
+            codeTransform_ProjectType: 'gradle',
+        })
+    } else {
+        telemetry.amazonq_codeTransformInvoke.record({
+            codeTransform_ProjectType: 'unknown',
+        })
+    }
 }

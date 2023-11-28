@@ -1,8 +1,8 @@
 {
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
-    "description": "Including CodeWhisperer, CodeCatalyst, and support for Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "2.0.0-SNAPSHOT",
+    "description": "Including Amazon Q, CodeWhisperer, CodeCatalyst, and support for Lambda, S3, CloudWatch Logs, and many other services",
+    "version": "2.1.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -3894,13 +3894,13 @@
                 "command": "aws.codeWhisperer",
                 "key": "alt+c",
                 "mac": "alt+c",
-                "when": "editorTextFocus && CODEWHISPERER_ENABLED"
+                "when": "editorTextFocus && CODEWHISPERER_ENABLED || isCloud9 && editorTextFocus"
             },
             {
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED || isCloud9 && suggestWidgetVisible && !editorReadonly"
             },
             {
                 "key": "right",

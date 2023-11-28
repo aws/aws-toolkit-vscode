@@ -6,7 +6,6 @@
 /**
  * SDK Client
  */
-
 export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
 export const region = 'us-east-1'
@@ -344,7 +343,7 @@ export const transformationJobPollingIntervalSeconds = 10
 
 export const transformationJobTimeoutSeconds = 72000
 
-export const progressIntervalMs = 3000
+export const progressIntervalMs = 1000
 
 export const targetLanguages = ['Java']
 

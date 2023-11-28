@@ -8,6 +8,7 @@ import globals from '../../shared/extensionGlobals'
 import path from 'path'
 import { MessagePublisher } from '../messages/messagePublisher'
 import { focusAmazonQPanel } from '../../codewhisperer/commands/basicCommands'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublisher: MessagePublisher<any>): void {
     const panel = vscode.window.createWebviewPanel(
@@ -29,25 +30,38 @@ export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublis
     // Handle messages from the webview
     panel.webview.onDidReceiveMessage(
         message => {
-            switch (message.command) {
-                case 'sendToQ':
-                    focusAmazonQPanel().then(() => {
-                        cwcWebViewToAppsPublisher.publish({
-                            type: 'onboarding-page-cwc-button-clicked',
-                            command: 'onboarding-page-interaction',
+            telemetry.ui_click.run(() => {
+                switch (message.command) {
+                    case 'sendToQ':
+                        telemetry.record({ elementId: 'amazonq_meet_askq' })
+                        focusAmazonQPanel().then(() => {
+                            cwcWebViewToAppsPublisher.publish({
+                                type: 'onboarding-page-cwc-button-clicked',
+                                command: 'onboarding-page-interaction',
+                            })
                         })
-                    })
 
-                    return
+                        return
 
-                case 'goToHelp':
-                    vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
-                    return
-            }
+                    case 'goToHelp':
+                        telemetry.record({ elementId: 'amazonq_tryExamples' })
+                        vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
+                        return
+                }
+            })
         },
         undefined,
         context.subscriptions
     )
+
+    // user closes webview
+    // does this fire on IDE shutdown?
+    panel.onDidDispose(() => {
+        telemetry.ui_click.emit({
+            elementId: 'amazonq_closeWebview',
+            passive: true,
+        })
+    })
 }
 
 function getWebviewContent(webview: vscode.Webview): string {
@@ -189,7 +203,7 @@ function getWebviewContent(webview: vscode.Webview): string {
             <div id="wrapper">
                 <div id="content">
                     <img id="qLogo" src="${logo}"/>
-                    <h1 id="header">Amazon Q is a generative AI-powered conversational assistant in public preview.</h1>
+                    <h1 id="header">Hello! I'm Amazon Q, your generative AI assistant.</h1>
                     <div id="buttonContainer">
                         <button id="sendToQButton">Ask a question</button>
                     </div>

@@ -52,6 +52,7 @@ import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
+import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -232,6 +233,13 @@ export class AuthWebview extends VueWebview {
                 (e instanceof ToolkitError && (CancellationError.isUserCancelled(e.cause) || e.cancelled === true))
             ) {
                 return { id: userCancelled, text: 'Setup cancelled.' }
+            }
+
+            if (e instanceof ToolkitError && e.cause instanceof InvalidGrantException) {
+                return {
+                    id: 'invalidGrantException',
+                    text: 'Permissions for this service may not be enabled by your SSO Admin, or the selected region may not be supported.',
+                }
             }
 
             if (
@@ -655,6 +663,7 @@ export type AuthUiClick =
     | 'auth_infoIAMIdentityCenter'
     | 'auth_learnMoreAWSResources'
     | 'auth_learnMoreCodeWhisperer'
+    | 'auth_learnMoreAmazonQ'
     | 'auth_learnMoreCodeCatalyst'
     | 'auth_learnMoreBuilderId'
     | 'auth_learnMoreProfessionalTierCodeWhisperer'

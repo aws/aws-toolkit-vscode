@@ -257,56 +257,68 @@ export class ProposedTransformationExplorer {
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
-            vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.PreparingReview)
-            telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
-            const pathToArchive = path.join(
-                ProposedTransformationExplorer.TmpDir,
-                transformByQState.getJobId(),
-                'ExportResultsArchive.zip'
-            )
-            const cwStreamingClient = await this.featureDevClient.getStreamingClient()
-            try {
-                await downloadExportResultArchive(
-                    cwStreamingClient,
-                    {
-                        exportId: transformByQState.getJobId(),
-                        exportIntent: ExportIntent.TRANSFORMATION,
-                    },
-                    pathToArchive
+            telemetry.amazonq_codeTransformReview.run(async span => {
+                vscode.commands.executeCommand(
+                    'setContext',
+                    'gumby.reviewState',
+                    TransformByQReviewStatus.PreparingReview
                 )
-            } catch (error) {
-                // This allows the customer to retry the download
-                vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
-                const errorMessage = 'There was a problem fetching the transformed code.'
-                telemetry.codeTransform_logApiError.emit({
-                    codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
-                    codeTransform_ApiName: 'ExportResultArchive',
-                    codeTransform_ApiErrorId: 'cannotDownloadExportResultArchive',
+                span.record({
                     codeTransform_JobId: transformByQState.getJobId(),
+                    codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
                 })
-                throw new ToolkitError(errorMessage)
-            }
-            const pathContainingArchive = path.dirname(pathToArchive)
-            const zip = new AdmZip(pathToArchive)
-            zip.extractAllTo(pathContainingArchive)
+                telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
+                const pathToArchive = path.join(
+                    ProposedTransformationExplorer.TmpDir,
+                    transformByQState.getJobId(),
+                    'ExportResultsArchive.zip'
+                )
+                const cwStreamingClient = await this.featureDevClient.getStreamingClient()
+                try {
+                    await downloadExportResultArchive(
+                        cwStreamingClient,
+                        {
+                            exportId: transformByQState.getJobId(),
+                            exportIntent: ExportIntent.TRANSFORMATION,
+                        },
+                        pathToArchive
+                    )
+                } catch (error) {
+                    // This allows the customer to retry the download
+                    vscode.commands.executeCommand(
+                        'setContext',
+                        'gumby.reviewState',
+                        TransformByQReviewStatus.NotStarted
+                    )
+                    const errorMessage = 'There was a problem fetching the transformed code.'
+                    span.record({
+                        codeTransform_ApiName: 'ExportResultArchive',
+                    })
+                    throw new ToolkitError(errorMessage)
+                }
+                const pathContainingArchive = path.dirname(pathToArchive)
+                const zip = new AdmZip(pathToArchive)
+                zip.extractAllTo(pathContainingArchive)
 
-            diffModel.parseDiff(
-                path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
-                path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSourceDir),
-                transformByQState.getModulePath()
-            )
+                diffModel.parseDiff(
+                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
+                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSourceDir),
+                    transformByQState.getModulePath()
+                )
 
-            vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.InReview)
-            transformDataProvider.refresh()
+                vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.InReview)
+                transformDataProvider.refresh()
 
-            transformByQState.setSummaryFilePath(
-                path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
-            )
+                transformByQState.setSummaryFilePath(
+                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
+                )
 
-            await vscode.window.showInformationMessage(
-                'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.',
-                { modal: true }
-            )
+                await vscode.window.showInformationMessage(
+                    'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.',
+                    { modal: true }
+                )
+                await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
+            })
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
