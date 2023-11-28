@@ -98,6 +98,7 @@ export const platformLanguageIds = [
     'terragrunt',
     'packer',
     'plaintext',
+    'jsonc',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
