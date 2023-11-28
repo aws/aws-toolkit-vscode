@@ -82,6 +82,7 @@ export class ApplicationComposer {
                 handleMessage(message, {
                     panel: panel,
                     textDocument: textDocument,
+                    disposables: this.disposables,
                     workSpacePath: this.workSpacePath,
                     defaultTemplatePath: this.defaultTemplatePath,
                     defaultTemplateName: this.defaultTemplateName,

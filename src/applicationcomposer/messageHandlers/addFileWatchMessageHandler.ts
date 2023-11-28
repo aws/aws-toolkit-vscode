@@ -23,6 +23,7 @@ export async function addFileWatchMessageHandler(request: AddFileWatchRequestMes
         const filePath = context.defaultTemplatePath
         const fileName = context.defaultTemplateName
         const fileWatch = vscode.workspace.createFileSystemWatcher(filePath)
+        context.disposables.push(fileWatch)
 
         fileWatch.onDidChange(async () => {
             const fileContents = (await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))).toString()
