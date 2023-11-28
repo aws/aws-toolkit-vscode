@@ -74,6 +74,15 @@ export interface FileChangedMessage extends Message {
     fileContents: string
 }
 
+export interface DeployRequestMessage extends Message {
+    eventId: string
+}
+
+export interface DeployResponseMessage extends Message {
+    eventId: string
+    isSuccess: boolean
+}
+
 export interface RequestMessage extends Message {
     command: Command
 }

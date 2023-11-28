@@ -523,6 +523,14 @@
             "metadata": [{ "type": "hasChatAuth" }]
         },
         {
+            "name": "appcomposer_deployClicked",
+            "description": "Called after clicking the Sync button"
+        },
+        {
+            "name": "appcomposer_deployCompleted",
+            "description": "Called after a Composer-triggered SAM Sync completes"
+        },
+        {
             "name": "appcomposer_generateClicked",
             "description": "Called after generating a standard resource template partial",
             "metadata": [{ "type": "resourceType" }]

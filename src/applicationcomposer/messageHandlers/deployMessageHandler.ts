@@ -4,8 +4,31 @@
  */
 
 import vscode from 'vscode'
-import { WebviewContext } from '../types'
+import { Command, DeployRequestMessage, DeployResponseMessage, MessageType, WebviewContext } from '../types'
+import { SamSyncResult } from '../../shared/sam/sync'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
-export function deployMessageHandler(context: WebviewContext) {
-    vscode.commands.executeCommand('aws.samcli.sync')
+export async function deployMessageHandler(message: DeployRequestMessage, context: WebviewContext) {
+    // SAM already handles success/failure, so we only log that the user clicked the deploy button
+    telemetry.appcomposer_deployClicked.emit()
+    const args = context.textDocument.uri
+    /* TODO Rework this command so that a failure case is returned
+     * We don't want to override the SAM Sync telemetry. The SAM telemetry catches all errors,
+     * so we instead check for an undefined response to determine failure. The downside is that
+     * we don't get failure reasons.
+     */
+    const result = (await vscode.commands.executeCommand('aws.samcli.sync', args)) as SamSyncResult
+    if (result?.isSuccess) {
+        vscode.window.showInformationMessage('SAM Sync succeeded!')
+        telemetry.appcomposer_deployCompleted.emit({ result: 'Succeeded' })
+    } else {
+        telemetry.appcomposer_deployCompleted.emit({ result: 'Failed' })
+    }
+    const response: DeployResponseMessage = {
+        command: Command.DEPLOY,
+        messageType: MessageType.RESPONSE,
+        eventId: message.eventId,
+        isSuccess: result?.isSuccess,
+    }
+    context.panel.webview.postMessage(response)
 }

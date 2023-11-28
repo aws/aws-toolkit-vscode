@@ -528,8 +528,12 @@ export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | unde
     return baseParams
 }
 
+export type SamSyncResult = {
+    isSuccess: boolean
+}
+
 export function registerSync() {
-    async function runSync(deployType: SyncParams['deployType'], arg?: unknown) {
+    async function runSync(deployType: SyncParams['deployType'], arg?: unknown): Promise<SamSyncResult> {
         telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly' })
 
         const connection = Auth.instance.activeConnection
@@ -550,6 +554,9 @@ export function registerSync() {
 
         try {
             await runSamSync({ ...params, connection })
+            return {
+                isSuccess: true,
+            }
         } catch (err) {
             throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
         }

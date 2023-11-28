@@ -16,6 +16,7 @@ import {
     AddFileWatchRequestMessage,
     GenerateResourceRequestMessage,
     MessageType,
+    DeployRequestMessage,
 } from './types'
 import { saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler'
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
@@ -33,7 +34,7 @@ export async function handleMessage(message: unknown, context: WebviewContext) {
     if (messageType === MessageType.REQUEST) {
         switch (command) {
             case Command.INIT:
-                await initMessageHandler(context)
+                void initMessageHandler(context)
                 break
             case Command.LOAD_FILE:
                 void loadFileMessageHandler(message as LoadFileRequestMessage, context)
@@ -45,7 +46,7 @@ export async function handleMessage(message: unknown, context: WebviewContext) {
                 void addFileWatchMessageHandler(message as AddFileWatchRequestMessage, context)
                 break
             case Command.DEPLOY:
-                deployMessageHandler(context)
+                void deployMessageHandler(message as DeployRequestMessage, context)
                 break
             case Command.GENERATE_RESOURCE:
                 void generateResourceHandler(message as GenerateResourceRequestMessage, context)
