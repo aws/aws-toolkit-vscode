@@ -13,7 +13,7 @@
     />
     <img
         v-show="false"
-        src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
+        src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhispererChat.gif"
     />
 
     <div :style="{ display: 'flex', flexDirection: 'column', gap: '1.2em', width: '100em' }">

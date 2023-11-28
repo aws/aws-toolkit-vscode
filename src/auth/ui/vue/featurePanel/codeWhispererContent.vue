@@ -5,8 +5,8 @@
 
             <img
                 class="feature-panel-image"
-                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
-                alt="CodeWhisperer example GIF"
+                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhispererChat.gif"
+                alt="CodeWhisperer Chat example GIF"
             />
 
             <div class="feature-panel-container-description">

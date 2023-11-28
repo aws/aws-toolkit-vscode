@@ -178,6 +178,6 @@ describe('Add Connection webview', function () {
 
         assert(await fs.fileExists(Uri.joinPath(marketplaceImagesRoot, 'CC_dev_env.gif')))
         assert(await fs.fileExists(Uri.joinPath(marketplaceImagesRoot, 'awsExplorer.gif')))
-        assert(await fs.fileExists(Uri.joinPath(marketplaceImagesRoot, 'codewhisperer.gif')))
+        assert(await fs.fileExists(Uri.joinPath(marketplaceImagesRoot, 'codewhispererChat.gif')))
     })
 })
