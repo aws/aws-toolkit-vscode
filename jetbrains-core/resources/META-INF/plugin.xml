@@ -7,7 +7,7 @@
     <version>1.0</version>
 
     <description><![CDATA[
-<h3><a href="https://aws.amazon.com/q">Amazon Q (preview)</a>
+<h3><a href="https://aws.amazon.com/q">Amazon Q (preview)</a></h3>
 <p>Amazon Q is an interactive, generative AI-powered assistant that gives you expert guidance when building, troubleshooting, and transforming applications on AWS.</p>
 
 <p>Amazon Q can help you with the following:</p>
@@ -31,7 +31,8 @@
         Refactor code
     </li>
 </ul>
-<img src="https://raw.githubusercontent.com/aws/aws-toolkit-jetbrains/main/marketplaceGifs/amazonQ.gif" width="100vw"></img>
+<img src="https://raw.githubusercontent.com/aws/aws-toolkit-jetbrains/main/marketplaceGifs/amazonQ.gif"></img>
+
 <h3><a href="https://aws.amazon.com/codewhisperer/">Amazon CodeWhisperer</a></h3>
 <p>An AI powered productivity tool for the IDE.</p>
 
