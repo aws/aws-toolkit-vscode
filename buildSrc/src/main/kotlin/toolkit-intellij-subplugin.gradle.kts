@@ -125,7 +125,7 @@ tasks.withType<PatchPluginXmlTask>().all {
 if (!project.isCi()){
     val buildMetadata = buildMetadata()
     tasks.withType<PatchPluginXmlTask>().all {
-        version.set(intellij.version.map { "$it+$buildMetadata" })
+        version.set("${project.version}+$buildMetadata")
     }
 
     tasks.buildPlugin {
