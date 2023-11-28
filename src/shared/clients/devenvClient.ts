@@ -11,7 +11,7 @@ import { getCodeCatalystDevEnvId } from '../vscode/env'
 import { ExtensionUserActivity } from '../extensionUtilities'
 
 const environmentAuthToken = '__MDE_ENV_API_AUTHORIZATION_TOKEN'
-const environmentEndpoint = 'http://127.0.0.1:1339'
+const environmentEndpoint = process.env['__MDE_ENVIRONMENT_API'] ?? 'http://127.0.0.1:1339'
 
 /**
  * Client to the MDE quasi-IMDS localhost endpoint.
