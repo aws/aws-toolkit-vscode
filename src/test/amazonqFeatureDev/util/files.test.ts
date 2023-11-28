@@ -7,30 +7,12 @@ import vscode from 'vscode'
 import * as path from 'path'
 import sinon from 'sinon'
 import assert from 'assert'
-import { collectFiles, prepareRepoData } from '../../../amazonqFeatureDev/util/files'
+import { prepareRepoData } from '../../../amazonqFeatureDev/util/files'
 import { createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../testUtil'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
+import AdmZip from 'adm-zip'
 
 describe('file utils', () => {
-    describe('collectFiles', function () {
-        it('returns all files in the workspace', async function () {
-            // these variables are a manual selection of settings for the test in order to test the collectFiles function
-            const fileAmount = 2
-            const fileNamePrefix = 'file'
-            const fileContent = 'test content'
-
-            const workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
-            sinon.stub(vscode.workspace, 'workspaceFolders').value([workspace])
-
-            const result = await collectFiles(workspace.uri.fsPath, false)
-            assert.strictEqual(result.length, fileAmount)
-            for (let i = 0; i < fileAmount; i++) {
-                assert.strictEqual(result[i].filePath.includes(fileNamePrefix), true)
-                assert.strictEqual(result[i].fileContent, fileContent)
-            }
-        })
-    })
-
     describe('prepareRepoData', function () {
         it('returns files in the workspace as a zip', async function () {
             // these variables are a manual selection of settings for the test in order to test the collectFiles function
@@ -47,114 +29,125 @@ describe('file utils', () => {
             assert.strictEqual(result.zipFileChecksum.length, 44)
             assert.strictEqual(telemetry.repositorySize, 24)
         })
-    })
 
-    it('returns all files in the workspace not excluded by gitignore', async function () {
-        // these variables are a manual selection of settings for the test in order to test the collectFiles function
-        const fileAmount = 3
-        const fileNamePrefix = 'file'
-        const fileContent = 'test content'
+        it('returns all files in the workspace not excluded by gitignore', async function () {
+            // these variables are a manual selection of settings for the test in order to test the collectFiles function
+            const fileAmount = 3
+            const fileNamePrefix = 'file'
+            const fileContent = 'test content'
 
-        const workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
+            const workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
 
-        const writeFile = (pathParts: string[], fileContent: string) => {
-            toFile(fileContent, workspace.uri.fsPath, ...pathParts)
-        }
+            const writeFile = (pathParts: string[], fileContent: string) => {
+                toFile(fileContent, workspace.uri.fsPath, ...pathParts)
+            }
 
-        sinon.stub(vscode.workspace, 'workspaceFolders').value([workspace])
-        const gitignoreContent = `file2
-        # different formats of prefixes
-        /build
-        node_modules
+            sinon.stub(vscode.workspace, 'workspaceFolders').value([workspace])
+            const gitignoreContent = `file2
+            # different formats of prefixes
+            /build
+            node_modules
+    
+            #some comment
+    
+            range_file[0-5]
+            `
+            writeFile(['.gitignore'], gitignoreContent)
 
-        #some comment
+            writeFile(['build', `ignored1`], fileContent)
+            writeFile(['build', `ignored2`], fileContent)
 
-        range_file[0-5]
-        `
-        writeFile(['.gitignore'], gitignoreContent)
+            writeFile(['node_modules', `ignored1`], fileContent)
+            writeFile(['node_modules', `ignored2`], fileContent)
 
-        writeFile(['build', `ignored1`], fileContent)
-        writeFile(['build', `ignored2`], fileContent)
+            writeFile([`range_file0`], fileContent)
+            writeFile([`range_file9`], fileContent)
 
-        writeFile(['node_modules', `ignored1`], fileContent)
-        writeFile(['node_modules', `ignored2`], fileContent)
+            const gitignore2 = 'folder1\n'
+            writeFile(['src', '.gitignore'], gitignore2)
+            writeFile(['src', 'folder2', 'a.js'], fileContent)
 
-        writeFile([`range_file0`], fileContent)
-        writeFile([`range_file9`], fileContent)
+            const gitignore3 = `negate_test*
+            !negate_test[0-5]`
+            writeFile(['src', 'folder3', '.gitignore'], gitignore3)
+            writeFile(['src', 'folder3', 'negate_test1'], fileContent)
+            writeFile(['src', 'folder3', 'negate_test6'], fileContent)
 
-        const gitignore2 = 'folder1\n'
-        writeFile(['src', '.gitignore'], gitignore2)
-        writeFile(['src', 'folder2', 'a.js'], fileContent)
+            const result = await prepareRepoData(workspace.uri.fsPath, new TelemetryHelper())
+            const zip = new AdmZip(result.zipFileBuffer)
+            const sortedResult = zip
+                .getEntries()
+                .sort((l, r) => l.entryName.localeCompare(r.entryName))
+                .map(entry => {
+                    return {
+                        filePath: entry.entryName,
+                        fileContent: entry.getData().toString(),
+                    }
+                })
 
-        const gitignore3 = `negate_test*
-        !negate_test[0-5]`
-        writeFile(['src', 'folder3', '.gitignore'], gitignore3)
-        writeFile(['src', 'folder3', 'negate_test1'], fileContent)
-        writeFile(['src', 'folder3', 'negate_test6'], fileContent)
+            // non-posix filePath check here is important.
+            assert.deepStrictEqual(
+                [
+                    {
+                        filePath: './.gitignore',
+                        fileContent: gitignoreContent,
+                    },
+                    {
+                        filePath: './file1',
+                        fileContent: 'test content',
+                    },
+                    {
+                        filePath: './file3',
+                        fileContent: 'test content',
+                    },
+                    {
+                        filePath: './range_file9',
+                        fileContent: 'test content',
+                    },
+                    {
+                        filePath: path.join('src', '.gitignore'),
+                        fileContent: gitignore2,
+                    },
+                    {
+                        filePath: path.join('src', 'folder2', 'a.js'),
+                        fileContent: fileContent,
+                    },
+                    {
+                        filePath: path.join('src', 'folder3', '.gitignore'),
+                        fileContent: gitignore3,
+                    },
+                    {
+                        filePath: path.join('src', 'folder3', 'negate_test1'),
+                        fileContent: fileContent,
+                    },
+                ],
+                sortedResult
+            )
+        })
 
-        const result = await collectFiles(workspace.uri.fsPath, true)
-        result.sort((l, r) => l.filePath.localeCompare(r.filePath))
+        it('does not return license files', async function () {
+            const workspace = await createTestWorkspaceFolder()
 
-        // non-posix filePath check here is important.
-        assert.deepStrictEqual(
-            [
-                {
-                    filePath: '.gitignore',
-                    fileContent: gitignoreContent,
-                },
-                {
-                    filePath: 'file1',
-                    fileContent: 'test content',
-                },
-                {
-                    filePath: 'file3',
-                    fileContent: 'test content',
-                },
-                {
-                    filePath: 'range_file9',
-                    fileContent: 'test content',
-                },
-                {
-                    filePath: path.join('src', '.gitignore'),
-                    fileContent: gitignore2,
-                },
-                {
-                    filePath: path.join('src', 'folder2', 'a.js'),
-                    fileContent: fileContent,
-                },
-                {
-                    filePath: path.join('src', 'folder3', '.gitignore'),
-                    fileContent: gitignore3,
-                },
-                {
-                    filePath: path.join('src', 'folder3', 'negate_test1'),
-                    fileContent: fileContent,
-                },
-            ],
-            result
-        )
-    })
+            sinon.stub(vscode.workspace, 'workspaceFolders').value([workspace])
 
-    it('does not return license files', async function () {
-        const workspace = await createTestWorkspaceFolder()
+            const fileContent = ''
+            for (const fmt of ['txt', 'md']) {
+                // root license files
+                toFile(fileContent, workspace.uri.fsPath, `license.${fmt}`)
+                toFile(fileContent, workspace.uri.fsPath, `License.${fmt}`)
+                toFile(fileContent, workspace.uri.fsPath, `LICENSE.${fmt}`)
 
-        sinon.stub(vscode.workspace, 'workspaceFolders').value([workspace])
+                // nested license files
+                toFile(fileContent, workspace.uri.fsPath, 'src', `license.${fmt}`)
+                toFile(fileContent, workspace.uri.fsPath, 'src', `License.${fmt}`)
+                toFile(fileContent, workspace.uri.fsPath, 'src', `LICENSE.${fmt}`)
+            }
 
-        const fileContent = ''
-        for (const fmt of ['txt', 'md']) {
-            // root license files
-            toFile(fileContent, workspace.uri.fsPath, `license.${fmt}`)
-            toFile(fileContent, workspace.uri.fsPath, `License.${fmt}`)
-            toFile(fileContent, workspace.uri.fsPath, `LICENSE.${fmt}`)
+            const result = await prepareRepoData(workspace.uri.fsPath, new TelemetryHelper())
+            const zip = new AdmZip(result.zipFileBuffer)
+            const sortedResult = zip.getEntries().sort((l, r) => l.entryName.localeCompare(r.entryName))
 
-            // nested license files
-            toFile(fileContent, workspace.uri.fsPath, 'src', `license.${fmt}`)
-            toFile(fileContent, workspace.uri.fsPath, 'src', `License.${fmt}`)
-            toFile(fileContent, workspace.uri.fsPath, 'src', `LICENSE.${fmt}`)
-        }
-
-        const result = await collectFiles(workspace.uri.fsPath, true)
-
-        assert.deepStrictEqual([], result)
+            assert.deepStrictEqual([], sortedResult)
+        })
     })
 })

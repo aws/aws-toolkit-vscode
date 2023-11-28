@@ -55,27 +55,6 @@ async function filterOutGitignoredFiles(rootPath: string, files: Uri[]): Promise
     return gitIgnoreFilter.filterFiles(files)
 }
 
-// TODO: remove any
-export async function collectFiles(rootPath: string, respectGitIgnore: boolean = true): Promise<any[]> {
-    const allFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(rootPath, '**'), getExcludePattern())
-    const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
-
-    const storage = []
-    for (const file of files) {
-        const fileContent = await SystemUtilities.readFile(file)
-        const relativePath = getWorkspaceRelativePath(file.fsPath)
-
-        if (relativePath) {
-            storage.push({
-                // The LLM doesn't need absolute paths, only relative from the project
-                filePath: relativePath,
-                fileContent: fileContent,
-            })
-        }
-    }
-    return storage
-}
-
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
 
 /**

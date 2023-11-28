@@ -52,7 +52,6 @@ export interface SessionStateConfig {
 
 export interface SessionStateAction {
     task: string
-    files: any[] // TODO: remove any
     msg: string
     messenger: Messenger
     telemetry: TelemetryHelper

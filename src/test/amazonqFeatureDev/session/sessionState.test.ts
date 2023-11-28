@@ -19,7 +19,6 @@ const mockSessionStateAction = (msg?: string): SessionStateAction => {
     return {
         task: 'test-task',
         msg: msg ?? 'test-msg',
-        files: [],
         messenger: new Messenger(
             new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>()))
         ),

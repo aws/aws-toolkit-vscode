@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { collectFiles } from '../util/files'
 import { ConversationNotStartedState, PrepareRefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
@@ -93,10 +92,7 @@ export class Session {
     }
 
     private async nextInteraction(msg: string) {
-        const files = await collectFiles(this.config.sourceRoot)
-
         const resp = await this.state.interact({
-            files,
             task: this.task,
             msg,
             messenger: this.messenger,
