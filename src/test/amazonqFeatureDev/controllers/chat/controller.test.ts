@@ -144,19 +144,18 @@ describe('Controller', () => {
                 messengerFactory: sinon.stub().returns(messenger),
             })
             sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(undefined)
-            const messengerSpy = sinon.spy(messenger, 'sendAnswer')
+            const answerSpy = sinon.spy(messenger, 'sendAnswer')
+            const systemPromptSpy = sinon.spy(messenger, 'sendSystemPrompt')
 
             await modifyDefaultSourceFolder(controllerSetup.emitters, controllerSetup.session, '../../')
             assert.deepStrictEqual(
-                messengerSpy.calledWith({
-                    type: 'answer',
+                answerSpy.calledWith({
                     message: new SelectedFolderNotInWorkspaceFolderError().message,
                 }),
                 true
             )
             assert.deepStrictEqual(
-                messengerSpy.calledWith({
-                    type: 'system-prompt',
+                systemPromptSpy.calledWith({
                     followUps: sinon.match.any,
                 }),
                 true

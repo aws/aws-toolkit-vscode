@@ -165,8 +165,7 @@ export class FeatureDevController {
         } catch (err: any) {
             if (err instanceof ContentLengthError) {
                 messenger.sendErrorMessage(err.message, this.retriesRemaining(session))
-                messenger.sendAnswer({
-                    type: 'system-prompt',
+                messenger.sendSystemPrompt({
                     followUps: [
                         {
                             pillText: 'Select files for context',
@@ -196,7 +195,6 @@ export class FeatureDevController {
         const messenger = this.messengerFactory(tabID)
 
         messenger.sendAnswer({
-            type: 'answer',
             message: 'Ok, let me create a plan. This may take a few minutes.',
         })
 
@@ -208,15 +206,13 @@ export class FeatureDevController {
         messenger.sendUpdatePlaceholder('Add more detail to iterate on the implementation plan')
 
         // Resolve the "..." with the content
-        messenger.sendAnswer({
+        messenger.sendAnswerPart({
             message: interactions.content,
-            type: 'answer-part',
             canBeVoted: true,
         })
 
-        // Follow up with action items and complete the request stream
-        messenger.sendAnswer({
-            type: 'system-prompt', // show the followups on the right side
+        // Follow up with action items on right side and complete the request stream
+        messenger.sendSystemPrompt({
             followUps: this.getFollowUpOptions(session.state.phase),
         })
 
@@ -290,11 +286,9 @@ export class FeatureDevController {
 
         if (uri instanceof vscode.Uri && !vscode.workspace.getWorkspaceFolder(uri)) {
             messenger.sendAnswer({
-                type: 'answer',
                 message: new SelectedFolderNotInWorkspaceFolderError().message,
             })
-            messenger.sendAnswer({
-                type: 'system-prompt',
+            messenger.sendSystemPrompt({
                 followUps: [
                     {
                         pillText: 'Select files for context',
@@ -310,7 +304,6 @@ export class FeatureDevController {
             session.config.sourceRoot = uri.fsPath
             messenger.sendAnswer({
                 message: `Changed source root to: ${session.config.sourceRoot}`,
-                type: 'answer',
             })
         }
     }
@@ -326,7 +319,6 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         const messenger = this.messengerFactory(message.tabID)
 
         messenger.sendAnswer({
-            type: 'answer',
             message: examples,
         })
     }
@@ -397,7 +389,6 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         const messenger = this.messengerFactory(message.tabID)
 
         messenger.sendAnswer({
-            type: 'answer',
             message: 'Follow instructions to re-authenticate ...',
         })
 
@@ -427,7 +418,6 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         const messenger = this.messengerFactory(message.tabID)
 
         messenger.sendAnswer({
-            type: 'answer',
             message: 'What change would you like to discuss?',
         })
         messenger.sendUpdatePlaceholder('Briefly describe a task or issue')

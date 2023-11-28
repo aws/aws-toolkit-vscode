@@ -29,9 +29,33 @@ export function createMessengerFactory(publisher: MessagePublisher<any>): Messen
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher, private readonly tabID: string) {}
 
-    public sendAnswer(params: {
+    // For sending a generic message/resolving answer streams
+    public sendAnswer(params: { message?: string; followUps?: ChatItemFollowUp[]; canBeVoted?: boolean }) {
+        this.sendChatMessage({
+            type: 'answer',
+            ...params,
+        })
+    }
+
+    // For resolving an open answer stream with content
+    public sendAnswerPart(params: { message?: string; followUps?: ChatItemFollowUp[]; canBeVoted?: boolean }) {
+        this.sendChatMessage({
+            type: 'answer-part',
+            ...params,
+        })
+    }
+
+    // For showing information on the right side
+    public sendSystemPrompt(params: { message?: string; followUps?: ChatItemFollowUp[]; canBeVoted?: boolean }) {
+        this.sendChatMessage({
+            type: 'system-prompt',
+            ...params,
+        })
+    }
+
+    private sendChatMessage(params: {
         message?: string
-        type: 'answer' | 'answer-part' | 'answer-stream' | 'system-prompt'
+        type: 'answer' | 'answer-part' | 'system-prompt'
         followUps?: ChatItemFollowUp[]
         canBeVoted?: boolean
     }) {
@@ -58,9 +82,8 @@ export class Messenger {
                     this.tabID
                 )
             )
-            this.sendAnswer({
+            this.sendSystemPrompt({
                 message: undefined,
-                type: 'system-prompt',
                 followUps: [
                     {
                         pillText: 'Send feedback',
@@ -94,9 +117,8 @@ export class Messenger {
                 break
         }
 
-        this.sendAnswer({
+        this.sendSystemPrompt({
             message: undefined,
-            type: 'system-prompt',
             followUps: [
                 {
                     pillText: 'Retry',
