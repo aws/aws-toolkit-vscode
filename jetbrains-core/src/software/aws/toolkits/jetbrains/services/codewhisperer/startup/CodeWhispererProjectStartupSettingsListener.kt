@@ -16,7 +16,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
-import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
+import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
@@ -70,7 +70,7 @@ class CodeWhispererProjectStartupSettingsListener(private val project: Project) 
             CodeWhispererModelConfigurator.getInstance().shouldDisplayCustomNode(project, forceUpdate = true)
         }
 
-        project.refreshDevToolTree()
+        project.refreshCwQTree()
     }
 
     override fun onChange(providerId: String) {
@@ -86,7 +86,7 @@ class CodeWhispererProjectStartupSettingsListener(private val project: Project) 
                 return
             }
 
-            project.refreshDevToolTree()
+            project.refreshCwQTree()
         }
     }
 }

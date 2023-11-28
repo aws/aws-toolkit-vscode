@@ -49,7 +49,7 @@ import software.aws.toolkits.jetbrains.core.credentials.diskCache
 import software.aws.toolkits.jetbrains.core.credentials.profiles.Ec2MetadataConfigProvider.getEc2MedataEndpoint
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.SSO_SESSION_SECTION_NAME
-import software.aws.toolkits.jetbrains.core.credentials.reauthProviderIfNeeded
+import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.ProfilesNotification
@@ -112,7 +112,7 @@ class ProfileCredentialsIdentifierSso internal constructor(
                                     scopes = session.scopes.toList()
                                 )
                             )
-                            reauthProviderIfNeeded(e.project, connection)
+                            reauthConnectionIfNeeded(e.project, connection)
                             RefreshConnectionAction().actionPerformed(e)
                         }
                     }

@@ -15,3 +15,22 @@ stale_outputs_checked
 
 # dotnet version
 global.json
+
+# local dev files
+unload-PythonCore-*
+unload-aws.toolkit-*
+jetbrains-core/bin/
+jetbrains-ultimate/bin/
+resources/bin/
+core/bin
+jetbrains-gateway/bin
+jetbrains-rider/bin
+sdk-codegen/bin
+ui-tests/bin
+
+#CodeWhispererChat
+
+/jetbrains-rider/testData/NuGet.config
+/jetbrains-core/ui/package-lock.json
+node_modules
+package-lock.json

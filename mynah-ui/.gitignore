@@ -1,0 +1,11 @@
+node_modules
+build
+gradle_build
+out
+dist
+../src/software/aws/toolkits/jetbrains/mynah/ui/assets/js
+.vscode-test/
+*.vsix
+binaries/darwin/*.zip
+binaries/linux-x64/*.tar.gz
+.DS_Store

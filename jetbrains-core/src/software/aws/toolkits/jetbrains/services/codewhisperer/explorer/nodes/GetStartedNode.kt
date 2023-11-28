@@ -9,7 +9,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
-import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
+import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
+import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsForCodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupActivity
@@ -19,9 +20,9 @@ import java.awt.event.MouseEvent
 
 class GetStartedNode(nodeProject: Project) : CodeWhispererActionNode(
     nodeProject,
-    message("codewhisperer.explorer.enable"),
+    message("q.sign.in"),
     0,
-    AllIcons.Actions.Execute
+    AllIcons.CodeWithMe.CwmAccess
 ) {
     override fun onDoubleClick(event: MouseEvent) {
         enableCodeWhisperer(project)
@@ -37,12 +38,13 @@ class GetStartedNode(nodeProject: Project) : CodeWhispererActionNode(
     private fun enableCodeWhisperer(project: Project) {
         val connectionManager = ToolkitConnectionManager.getInstance(project)
         connectionManager.activeConnectionForFeature(CodeWhispererConnection.getInstance())?.let {
-            project.refreshDevToolTree()
+            project.refreshCwQTree()
+            reauthConnectionIfNeeded(project, it)
         } ?: run {
             runInEdt {
                 // Start from scratch if no active connection
                 if (requestCredentialsForCodeWhisperer(project)) {
-                    project.refreshDevToolTree()
+                    project.refreshCwQTree()
                 }
             }
         }

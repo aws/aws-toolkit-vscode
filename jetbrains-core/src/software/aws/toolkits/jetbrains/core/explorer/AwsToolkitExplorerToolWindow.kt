@@ -18,8 +18,8 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.ui.components.BorderLayoutPanel
-import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.jetbrains.core.credentials.CredsComboBoxActionGroup
+import software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
 import software.aws.toolkits.resources.message
 import java.awt.Component
@@ -35,8 +35,10 @@ class AwsToolkitExplorerToolWindow(
     private val tabPane = JBTabbedPane()
 
     private val tabComponents = mapOf<String, () -> Component>(
-        DEVTOOLS_TAB_ID to { DevToolsToolWindow.getInstance(project) },
-        EXPLORER_TAB_ID to { ExplorerToolWindow.getInstance(project) }
+        CODEWHISPERER_Q_TAB_ID to { CodewhispererQToolWindow.getInstance(project) },
+        EXPLORER_TAB_ID to { ExplorerToolWindow.getInstance(project) },
+        DEVTOOLS_TAB_ID to { DevToolsToolWindow.getInstance(project) }
+
     )
 
     init {
@@ -120,14 +122,13 @@ class AwsToolkitExplorerToolWindow(
     }
 
     override fun loadState(state: AwsToolkitExplorerToolWindowState) {
-        state.selectedTab?.let {
-            selectTab(it)
-        }
+        selectTab(message("aws.codewhispererq.tab.title"))
     }
 
     companion object {
         val EXPLORER_TAB_ID = message("explorer.toolwindow.title")
         val DEVTOOLS_TAB_ID = message("aws.developer.tools.tab.title")
+        val CODEWHISPERER_Q_TAB_ID = message("aws.codewhispererq.tab.title")
 
         fun getInstance(project: Project) = project.service<AwsToolkitExplorerToolWindow>()
 

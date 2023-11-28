@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+        "esModuleInterop": true,
+		"module": "commonjs",
+		"target": "ES2019",
+		"lib": ["ES2020", "es5", "es6", "dom"],
+		"outDir": "out",
+		"sourceMap": true,
+		"strict": true,
+        "typeRoots": [
+            "./node_modules/@types"
+        ],
+		"strictPropertyInitialization": false
+	},
+	"exclude": ["build", "out", "node_modules", ".vscode-test"]
+}

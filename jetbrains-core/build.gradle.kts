@@ -135,7 +135,10 @@ dependencies {
     api(libs.aws.secretsmanager)
     api(libs.aws.sns)
     api(libs.aws.sqs)
+    api(libs.aws.services)
 
+    implementation(project(":mynah-ui"))
+    implementation(libs.aws.crt)
     implementation(libs.bundles.jackson)
     implementation(libs.zjsonpatch)
     implementation(libs.commonmark)

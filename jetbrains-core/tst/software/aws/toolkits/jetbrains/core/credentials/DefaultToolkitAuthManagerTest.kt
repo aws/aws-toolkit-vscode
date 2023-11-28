@@ -358,7 +358,7 @@ class DefaultToolkitAuthManagerTest {
             assertThat(sut.listConnections()).hasSize(1)
             verify(connectionManager).switchConnection(any())
 
-            val expectedConnection = ManagedBearerSsoConnection(
+            val expectedConnection = LegacyManagedBearerSsoConnection(
                 "foo",
                 "us-east-1",
                 listOf("scope1", "scope2")
@@ -382,7 +382,7 @@ class DefaultToolkitAuthManagerTest {
         val authManager: ToolkitAuthManager = mock()
         ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, authManager, disposableRule.disposable)
 
-        val connection = ManagedBearerSsoConnection("startUrl000", "us-east-1", listOf())
+        val connection = LegacyManagedBearerSsoConnection("startUrl000", "us-east-1", listOf())
 
         var messageReceived = 0
         var callbackInvoked = 0

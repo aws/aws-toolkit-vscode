@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAwareAction
 import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
+import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.telemetry.UiTelemetry
 
 class SonoLogin : DumbAwareAction(AllIcons.Actions.Execute) {
@@ -16,6 +17,7 @@ class SonoLogin : DumbAwareAction(AllIcons.Actions.Execute) {
         UiTelemetry.click(project, elementId = "auth_start_CodeCatalyst")
         ApplicationManager.getApplication().executeOnPooledThread {
             SonoCredentialManager.loginSono(project)
+            project.refreshDevToolTree()
         }
     }
 }

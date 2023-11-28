@@ -32,7 +32,6 @@ import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.NonOpaquePanel
-import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
@@ -68,6 +67,7 @@ import software.aws.toolkits.jetbrains.core.gettingstarted.rolePopupFromConnecti
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceResourceTypeNode
 import software.aws.toolkits.jetbrains.ui.CenteredInfoPanel
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.UiTelemetry
 import java.awt.Component
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -170,33 +170,44 @@ class ExplorerToolWindow(private val project: Project) :
     }
 
     private fun connectionChanged(newConnection: ToolkitConnection?) {
-        val credentialstate = accountSettingsManager.connectionState
+        val connectionState = accountSettingsManager.connectionState
+
+        fun drawConnectionManagerPanel() {
+            runInEdt {
+                treePanelWrapper.setContent(
+                    when (connectionState) {
+                        is ConnectionState.ValidConnection -> {
+                            invalidateTree()
+                            awsTreePanel
+                        }
+                        else -> createInfoPanel(connectionState)
+                    }
+                )
+            }
+        }
 
         when (newConnection) {
             is AwsConnectionManagerConnection -> {
-                runInEdt {
-                    treePanelWrapper.setContent(
-                        when (credentialstate) {
-                            is ConnectionState.ValidConnection -> {
-                                invalidateTree()
-                                awsTreePanel
-                            }
-                            else -> createInfoPanel(credentialstate)
-                        }
-                    )
-                }
+                drawConnectionManagerPanel()
             }
 
             null -> {
-                runInEdt {
-                    treePanelWrapper.setContent(
-                        CenteredInfoPanel().apply {
-                            addLine(message("gettingstarted.explorer.new.setup.info"))
-                            addDefaultActionButton(message("gettingstarted.explorer.new.setup")) {
-                                GettingStartedPanel.openPanel(project)
+                // double check that we don't already have iam creds because the ToolkitConnectionListener can fire last, leading to weird state
+                // where we show "setup" button instead of explorer tree
+                if (CredentialManager.getInstance().getCredentialIdentifiers().isNotEmpty()) {
+                    drawConnectionManagerPanel()
+                    UiTelemetry.click(project, "ExplorerToolWindow_raceConditionHit")
+                } else {
+                    runInEdt {
+                        treePanelWrapper.setContent(
+                            CenteredInfoPanel().apply {
+                                addLine(message("gettingstarted.explorer.new.setup.info"))
+                                addDefaultActionButton(message("gettingstarted.explorer.new.setup")) {
+                                    GettingStartedPanel.openPanel(project)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
 

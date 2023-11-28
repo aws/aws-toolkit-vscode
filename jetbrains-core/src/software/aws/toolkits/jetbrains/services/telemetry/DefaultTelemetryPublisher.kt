@@ -18,7 +18,6 @@ import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
-import kotlin.streams.toList
 
 class DefaultTelemetryPublisher(
     private val clientMetadata: ClientMetadata = ClientMetadata.DEFAULT_METADATA,

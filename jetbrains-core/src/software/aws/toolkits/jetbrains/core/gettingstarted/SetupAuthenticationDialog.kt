@@ -26,9 +26,12 @@ import org.jetbrains.annotations.VisibleForTesting
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.profiles.Profile
+import software.amazon.awssdk.profiles.internal.ProfileFileReader
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sts.StsClient
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -38,6 +41,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.UserConfigSsoSessionProfile
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
+import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES_UNAVAILABLE_BUILDER_ID
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getSourceOfEntry
@@ -110,6 +114,8 @@ enum class SourceOfEntry {
     CODEWHISPERER,
     EXPLORER,
     FIRST_STARTUP,
+    Q,
+    AMAZONQ_CHAT_PANEL,
     UNKNOWN;
     override fun toString(): String {
         val value = this.name.lowercase()
@@ -138,7 +144,8 @@ class SetupAuthenticationDialog(
     private val sourceOfEntry: SourceOfEntry,
     private val featureId: FeatureId,
     private val isFirstInstance: Boolean = false,
-    private val connectionInitiatedFromExplorer: Boolean = false
+    private val connectionInitiatedFromExplorer: Boolean = false,
+    private val connectionInitiatedFromQChatPanel: Boolean = false
 ) : DialogWrapper(project) {
     private val rootTabPane = JBTabbedPane()
     private val idcTab = idcTab()
@@ -267,19 +274,11 @@ class SetupAuthenticationDialog(
             SetupAuthenticationTabs.IDENTITY_CENTER -> {
                 authType = CredentialSourceId.IamIdentityCenter
                 val profileName = state.idcTabState.profileName
-                if (configFilesFacade.readSsoSessions().containsKey(profileName)) {
-                    Messages.showErrorDialog(project, message("gettingstarted.setup.iam.session.exists", profileName), title)
-                    AuthTelemetry.addConnection(
-                        project,
-                        source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer),
-                        featureId = featureId,
-                        credentialSourceId = CredentialSourceId.IamIdentityCenter,
-                        isAggregated = false,
-                        attempts = attempts + 1,
-                        result = Result.Failed,
-                        reason = "DuplicateSessionName"
-                    )
-                    attempts += 1
+                // we have this check here so we blow up early if user has an invalid config file
+                try {
+                    configFilesFacade.readSsoSessions()
+                } catch (e: Exception) {
+                    handleConfigFacadeError(e)
                     return
                 }
 
@@ -294,15 +293,14 @@ class SetupAuthenticationDialog(
                     Messages.showErrorDialog(project, it, title)
                     AuthTelemetry.addConnection(
                         project,
-                        source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer),
+                        source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer, connectionInitiatedFromQChatPanel),
                         featureId = featureId,
                         credentialSourceId = CredentialSourceId.IamIdentityCenter,
                         isAggregated = false,
-                        attempts = attempts + 1,
+                        attempts = ++attempts,
                         result = Result.Failed,
                         reason = "ConnectionUnsuccessful"
                     )
-                    attempts += 1
                 } ?: return
 
                 if (!promptForIdcPermissionSet) {
@@ -329,13 +327,21 @@ class SetupAuthenticationDialog(
 
             SetupAuthenticationTabs.BUILDER_ID -> {
                 authType = CredentialSourceId.AwsId
-                loginSso(project, SONO_URL, SONO_REGION, scopes)
+                val newScopes = if (featureId == FeatureId.Q || featureId == FeatureId.Codewhisperer) scopes - Q_SCOPES_UNAVAILABLE_BUILDER_ID else scopes
+                loginSso(project, SONO_URL, SONO_REGION, newScopes)
             }
 
             SetupAuthenticationTabs.IAM_LONG_LIVED -> {
                 authType = CredentialSourceId.SharedCredentials
                 val profileName = state.iamTabState.profileName
-                if (configFilesFacade.readAllProfiles().containsKey(profileName)) {
+                val existingProfiles = try {
+                    configFilesFacade.readAllProfiles()
+                } catch (e: Exception) {
+                    handleConfigFacadeError(e)
+                    return
+                }
+
+                if (existingProfiles.containsKey(profileName)) {
                     Messages.showErrorDialog(project, message("gettingstarted.setup.iam.profile.exists", profileName), title)
                     AuthTelemetry.addConnection(
                         project,
@@ -343,11 +349,10 @@ class SetupAuthenticationDialog(
                         featureId = featureId,
                         credentialSourceId = CredentialSourceId.SharedCredentials,
                         isAggregated = false,
-                        attempts = attempts + 1,
+                        attempts = ++attempts,
                         result = Result.Failed,
                         reason = "DuplicateProfileName"
                     )
-                    attempts += 1
                     return
                 }
 
@@ -370,11 +375,10 @@ class SetupAuthenticationDialog(
                         featureId = featureId,
                         credentialSourceId = CredentialSourceId.SharedCredentials,
                         isAggregated = false,
-                        attempts = attempts + 1,
+                        attempts = ++attempts,
                         result = Result.Failed,
                         reason = "InvalidCredentials"
                     )
-                    attempts += 1
                     return
                 }
 
@@ -473,5 +477,33 @@ class SetupAuthenticationDialog(
                 .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
                 .bindText(state.iamTabState::secretKey)
         }
+    }
+
+    private fun handleConfigFacadeError(e: Exception) {
+        // we'll consider nested exceptions and exception loops to be out of scope
+        val (errorTemplate, errorType) = if (e.stackTrace.any { it.className == ProfileFileReader::class.java.canonicalName }) {
+            "gettingstarted.auth.config.issue" to "ConfigParseError"
+        } else {
+            "codewhisperer.credential.login.exception.general" to e::class.java.name
+        }
+
+        AuthTelemetry.addConnection(
+            project,
+            source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer, connectionInitiatedFromQChatPanel),
+            featureId = featureId,
+            credentialSourceId = CredentialSourceId.IamIdentityCenter,
+            isAggregated = false,
+            attempts = ++attempts,
+            result = Result.Failed,
+            reason = errorType
+        )
+
+        val error = message(errorTemplate, e.localizedMessage ?: e::class.java.name)
+        LOG.error(e) { error }
+        Messages.showErrorDialog(project, error, title)
+    }
+
+    companion object {
+        private val LOG = getLogger<SetupAuthenticationDialog>()
     }
 }

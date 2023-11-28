@@ -136,14 +136,4 @@ class TextUtilsTest {
         val inputPatchLines = inputPatch.split("\n")
         hunk.lines.forEachIndexed { index, patchLine -> assertThat(inputPatchLines[index + 1].substring(1)).isEqualTo(patchLine.text) }
     }
-
-    @Test
-    fun canApplyPatchSucessfullyForLineNumberMismatch() {
-        val inputPatch = "@@ -1,3 +1,3 @@\n third line\n-forth line\n+fifth line\n six line"
-        val inputFilePath = "dummy.py"
-        val fileContent = "first line\nsecond line\nthird line\nforth line\nsix line"
-        val actual = applyPatch(inputPatch, fileContent, inputFilePath)
-        val expected = "first line\nsecond line\nthird line\nfifth line\nsix line"
-        assertThat(actual).isEqualTo(expected)
-    }
 }

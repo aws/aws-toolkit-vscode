@@ -19,7 +19,7 @@ import org.mockito.kotlin.whenever
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.LegacyManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.MockToolkitAuthManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
@@ -198,7 +198,7 @@ class CodeWhispererExplorerActionManagerTest {
             )
         )
 
-        val myConnection = ManagedBearerSsoConnection(
+        val myConnection = LegacyManagedBearerSsoConnection(
             startUrl,
             "us-east-1",
             CODEWHISPERER_SCOPES,

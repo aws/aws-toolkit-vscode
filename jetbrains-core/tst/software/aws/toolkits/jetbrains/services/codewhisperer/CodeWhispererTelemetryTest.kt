@@ -10,6 +10,7 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.testFramework.TestActionEvent
 import com.intellij.testFramework.replaceService
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
@@ -52,6 +53,8 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestU
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.Pause
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.Resume
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.PauseCodeWhispererNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.ResumeCodeWhispererNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
@@ -762,7 +765,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     }
 
     @Test
-    fun `test toggle autoSugestion will emit autoSuggestionActivation telemetry`() {
+    fun `test toggle autoSugestion will emit autoSuggestionActivation telemetry (explorer)`() {
         val metricCaptor = argumentCaptor<MetricEvent>()
         doNothing().`when`(batcher).enqueue(metricCaptor.capture())
 
@@ -776,6 +779,35 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         )
 
         ResumeCodeWhispererNode(projectRule.project).onDoubleClick(mock())
+        assertEventsContainsFieldsAndCount(
+            metricCaptor.allValues,
+            awsModifySetting,
+            1,
+            "settingId" to CodeWhispererConstants.AutoSuggestion.SETTING_ID,
+            "settingState" to CodeWhispererConstants.AutoSuggestion.ACTIVATED
+        )
+        assertEventsContainsFieldsAndCount(
+            metricCaptor.allValues,
+            awsModifySetting,
+            2,
+        )
+    }
+
+    @Test
+    fun `test toggle autoSugestion will emit autoSuggestionActivation telemetry (popup)`() {
+        val metricCaptor = argumentCaptor<MetricEvent>()
+        doNothing().`when`(batcher).enqueue(metricCaptor.capture())
+
+        Pause().actionPerformed(TestActionEvent { projectRule.project })
+        assertEventsContainsFieldsAndCount(
+            metricCaptor.allValues,
+            awsModifySetting,
+            1,
+            "settingId" to CodeWhispererConstants.AutoSuggestion.SETTING_ID,
+            "settingState" to CodeWhispererConstants.AutoSuggestion.DEACTIVATED
+        )
+
+        Resume().actionPerformed(TestActionEvent { projectRule.project })
         assertEventsContainsFieldsAndCount(
             metricCaptor.allValues,
             awsModifySetting,

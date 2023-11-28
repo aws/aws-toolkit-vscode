@@ -19,6 +19,6 @@ class CodeWhispererProvideFeedbackAction :
     ),
     DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
-        FeedbackDialog(e.getRequiredData(LangDataKeys.PROJECT), isCodeWhisperer = true).showAndGet()
+        FeedbackDialog(e.getRequiredData(LangDataKeys.PROJECT), productName = "CodeWhisperer").showAndGet()
     }
 }

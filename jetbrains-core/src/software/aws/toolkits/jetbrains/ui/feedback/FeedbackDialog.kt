@@ -46,7 +46,7 @@ class FeedbackDialog(
     val project: Project,
     initialSentiment: Sentiment = Sentiment.POSITIVE,
     initialComment: String = "",
-    val isCodeWhisperer: Boolean = false
+    val productName: String = "Toolkit"
 ) : DialogWrapper(project) {
     private val coroutineScope = projectCoroutineScope(project)
     private var sentiment = initialSentiment
@@ -55,10 +55,9 @@ class FeedbackDialog(
     private var commentText: String = initialComment
     private lateinit var comment: Cell<JBTextArea>
     private var lengthLimitLabel = JBLabel(message("feedback.comment.textbox.initial.length")).also { it.foreground = UIUtil.getLabelInfoForeground() }
-    private val productName = if (!isCodeWhisperer) "Toolkit" else "CodeWhisperer"
 
     private val dialogPanel = panel {
-        if (!isCodeWhisperer) {
+        if (isToolkit()) {
             row {
                 text(message("feedback.initial.help.text"))
             }
@@ -98,7 +97,11 @@ class FeedbackDialog(
                 }
             }.bind({ sentiment }, { sentiment = it })
 
-            row(message("feedback.comment.textbox.title", productName)) {}
+            if (isAmazonQ()) {
+                row(message("feedback.comment.textbox.title.amazonq")) {}
+            } else {
+                row(message("feedback.comment.textbox.title", productName)) {}
+            }
             row { comment(message("feedback.customer.alert.info")) }
             row {
                 comment = textArea().rows(6).columns(52).bindText(::commentText).applyToComponent {
@@ -116,6 +119,7 @@ class FeedbackDialog(
             }
         }
     }
+
     override fun createCenterPanel() = dialogPanel
 
     override fun doCancelAction() {
@@ -134,11 +138,17 @@ class FeedbackDialog(
             coroutineScope.launch {
                 val edtContext = getCoroutineUiContext()
                 try {
-                    if (isCodeWhisperer) {
+                    if (isCodeWhisperer()) {
                         TelemetryService.getInstance().sendFeedback(
                             sentiment,
                             "CodeWhisperer onboarding: $commentText",
                             mapOf(FEEDBACK_SOURCE to "CodeWhisperer onboarding")
+                        )
+                    } else if (isAmazonQ()) {
+                        TelemetryService.getInstance().sendFeedback(
+                            sentiment,
+                            "Amazon Q onboarding: $commentText",
+                            mapOf(FEEDBACK_SOURCE to "Amazon Q onboarding")
                         )
                     } else {
                         TelemetryService.getInstance().sendFeedback(sentiment, commentText)
@@ -146,10 +156,12 @@ class FeedbackDialog(
                     withContext(edtContext) {
                         close(OK_EXIT_CODE)
                     }
-                    val notificationTitle = if (!isCodeWhisperer) {
-                        message("aws.notification.title")
-                    } else {
+                    val notificationTitle = if (isCodeWhisperer()) {
                         message("aws.notification.title.codewhisperer")
+                    } else if (isAmazonQ()) {
+                        message("aws.notification.title.amazonq")
+                    } else {
+                        message("aws.notification.title")
                     }
                     notifyInfo(notificationTitle, message("feedback.submit_success"), project)
                 } catch (e: Exception) {
@@ -190,14 +202,25 @@ class FeedbackDialog(
 
     init {
         super.init()
-        title = message("feedback.title", productName)
+        if (isAmazonQ()) {
+            title = message("feedback.title.amazonq")
+        } else {
+            title = message("feedback.title", productName)
+        }
         setOKButtonText(message("feedback.submit_button"))
     }
 
-    override fun getHelpId(): String? = if (!isCodeWhisperer) {
+    override fun getHelpId(): String? = if (isToolkit()) {
         HelpIds.AWS_TOOLKIT_GETTING_STARTED.id
-    } else
+    } else if (isCodeWhisperer()) {
         HelpIds.CODEWHISPERER_TOKEN.id
+    } else {
+        null
+    }
+
+    private fun isCodeWhisperer(): Boolean = (productName == "CodeWhisperer")
+    private fun isAmazonQ(): Boolean = (productName == "Amazon Q")
+    private fun isToolkit(): Boolean = (productName == "Toolkit")
 
     @TestOnly
     fun getFeedbackDialog() = dialogPanel

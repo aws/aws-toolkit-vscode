@@ -23,7 +23,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.IOException
-import java.lang.IndexOutOfBoundsException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
@@ -232,7 +231,7 @@ internal class JavaCodeScanSessionConfig(
     /**
      * Get source files for import statement. If the import is a star import, include all the files in the package directory.
      */
-    private fun getSourceFilesForImport(currentFile: VirtualFile, importPath: String): List<VirtualFile> {
+    fun getSourceFilesForImport(currentFile: VirtualFile, importPath: String): List<VirtualFile> {
         val importedFile = getImportedFile(currentFile, importPath) ?: return listOf()
         if (!importedFile.isDirectory) {
             return listOf(importedFile)

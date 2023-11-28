@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.toolwindow
 
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.wm.RegisterToolWindowTask
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.testFramework.ProjectRule
@@ -52,12 +53,14 @@ class ToolkitToolWindowTest {
         val tab2 = sut.addTab("Tab2", JLabel().also { it.text = "Hello" })
         assertThat(jbToolWindowManager.getToolWindow(sut.toolWindowId)?.contentManager?.contentCount).isEqualTo(2)
 
-        sut.removeContent(tab)
+        runInEdt {
+            sut.removeContent(tab)
 
-        assertThat(jbToolWindowManager.getToolWindow(sut.toolWindowId)?.contentManager).satisfies {
-            it!!
-            assertThat(it.contentCount).isEqualTo(1)
-            assertThat(it.getContent(0)).isEqualTo(tab2)
+            assertThat(jbToolWindowManager.getToolWindow(sut.toolWindowId)?.contentManager).satisfies {
+                it!!
+                assertThat(it.contentCount).isEqualTo(1)
+                assertThat(it.getContent(0)).isEqualTo(tab2)
+            }
         }
     }
 

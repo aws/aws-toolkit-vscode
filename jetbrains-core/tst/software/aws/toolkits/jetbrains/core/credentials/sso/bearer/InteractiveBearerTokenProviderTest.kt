@@ -233,7 +233,8 @@ class InteractiveBearerTokenProviderTest {
         startUrl = startUrl,
         region = region,
         scopes = scopes,
-        cache = diskCache
+        cache = diskCache,
+        id = "test"
     )
 
     private fun stubClientRegistration() {

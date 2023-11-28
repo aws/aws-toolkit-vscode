@@ -14,7 +14,7 @@ import org.junit.Test
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.LegacyManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
@@ -61,7 +61,7 @@ class CodeWhispererUtilTest {
         val modificationTracker = SimpleModificationTracker()
         val oldCount = modificationTracker.modificationCount
 
-        val ssoConn = ManagedBearerSsoConnection(startUrl = "fake url", region = "us-east-1", scopes = CODEWHISPERER_SCOPES)
+        val ssoConn = LegacyManagedBearerSsoConnection(startUrl = "fake url", region = "us-east-1", scopes = CODEWHISPERER_SCOPES)
 
         runIfIdcConnectionOrTelemetryEnabled(ssoConn) { modificationTracker.incModificationCount() }
 
@@ -74,7 +74,7 @@ class CodeWhispererUtilTest {
         val modificationTracker = SimpleModificationTracker()
         val oldCount = modificationTracker.modificationCount
 
-        val builderIdConn = ManagedBearerSsoConnection(startUrl = SONO_URL, region = SONO_REGION, scopes = CODEWHISPERER_SCOPES)
+        val builderIdConn = LegacyManagedBearerSsoConnection(startUrl = SONO_URL, region = SONO_REGION, scopes = CODEWHISPERER_SCOPES)
         AwsSettings.getInstance().isTelemetryEnabled = false
         runIfIdcConnectionOrTelemetryEnabled(builderIdConn) { modificationTracker.incModificationCount() }
 

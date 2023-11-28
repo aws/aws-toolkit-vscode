@@ -3,22 +3,20 @@
 
 package software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes
 
-import com.intellij.ide.DataManager
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import com.intellij.ui.SimpleTextAttributes
 import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
+import software.aws.toolkits.jetbrains.core.explorer.actions.AnActionTreeNode
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.OpenWorkspaceInGateway
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.resources.message
-import java.awt.event.MouseEvent
 
 class CawsRootNode(private val nodeProject: Project) : AbstractTreeNode<String>(nodeProject, CawsServiceNode.NODE_NAME), PinnedConnectionNode {
     override fun getChildren(): Collection<AbstractTreeNode<*>> {
@@ -34,18 +32,7 @@ class CawsRootNode(private val nodeProject: Project) : AbstractTreeNode<String>(
                 return@mapNotNull null
             }
 
-            object : AbstractActionTreeNode(nodeProject, it.templatePresentation.text, it.templatePresentation.icon) {
-                override fun onDoubleClick(event: MouseEvent) {
-                    val e = AnActionEvent.createFromInputEvent(
-                        event,
-                        ToolkitPlaces.DEVTOOLS_TOOL_WINDOW,
-                        it.templatePresentation.clone(),
-                        DataManager.getInstance().getDataContext(event.component)
-                    )
-
-                    it.actionPerformed(e)
-                }
-            }
+            AnActionTreeNode(project, ToolkitPlaces.DEVTOOLS_TOOL_WINDOW, it)
         }
     }
 

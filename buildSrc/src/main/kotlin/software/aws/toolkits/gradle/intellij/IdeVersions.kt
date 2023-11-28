@@ -108,7 +108,7 @@ object IdeVersions {
             ),
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,
-                sdkVersion = "2023.2",
+                sdkVersion = "2023.2.2",
                 plugins = commonPlugins + listOf(
                     "java",
                     "com.intellij.gradle",
@@ -119,7 +119,7 @@ object IdeVersions {
             ),
             ultimate = ProductProfile(
                 sdkFlavor = IdeFlavor.IU,
-                sdkVersion = "2023.2",
+                sdkVersion = "2023.2.2",
                 plugins = commonPlugins + listOf(
                     "JavaScript",
                     // Transitive dependency needed for javascript

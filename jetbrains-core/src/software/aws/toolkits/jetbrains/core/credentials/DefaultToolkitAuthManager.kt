@@ -10,7 +10,6 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.util.Disposer
 import software.aws.toolkits.core.credentials.SsoSessionIdentifier
-import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -53,7 +52,17 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
                     }
 
                     override fun ssoSessionModified(identifier: SsoSessionIdentifier) {
-                        ssoSessionRemoved(identifier)
+                        transientConnections.removeAll { connection ->
+                            (connection.id == identifier.id).also {
+                                if (it && connection is Disposable) {
+                                    // don't invalidate because we kill the token we just retrieved
+                                    ApplicationManager.getApplication().messageBus.syncPublisher(BearerTokenProviderListener.TOPIC)
+                                        .onChange(connection.id)
+                                    Disposer.dispose(connection)
+                                }
+                            }
+                        }
+
                         ssoSessionAdded(identifier)
                     }
 
@@ -193,7 +202,7 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
 
     private fun connectionFromProfile(profile: AuthProfile): ToolkitConnection = when (profile) {
         is ManagedSsoProfile -> {
-            ManagedBearerSsoConnection(
+            LegacyManagedBearerSsoConnection(
                 startUrl = profile.startUrl,
                 region = profile.ssoRegion,
                 scopes = profile.scopes
@@ -201,12 +210,12 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
         }
 
         is UserConfigSsoSessionProfile -> {
-            ManagedBearerSsoConnection(
+            ProfileSsoManagedBearerSsoConnection(
                 startUrl = profile.startUrl,
                 region = profile.ssoRegion,
                 scopes = profile.scopes,
                 id = profile.id,
-                label = ToolkitBearerTokenProvider.diskSessionDisplayName(profile.configSessionName)
+                configSessionName = profile.configSessionName
             )
         }
 

@@ -18,6 +18,11 @@ class ToolkitToolWindowListener(project: Project) {
             actionManager.getAction("aws.toolkit.showFeedback")
         )
     }
+    private val cwQActions by lazy {
+        listOf(
+            actionManager.getAction("aws.toolkit.showFeedback")
+        )
+    }
 
     fun tabChanged(tabName: String) {
         // compiler can't smart cast since property is lazy and therefore has a custom getter
@@ -27,6 +32,8 @@ class ToolkitToolWindowListener(project: Project) {
                     it.setTitleActions(explorerActions)
                 } else if (tabName == message("aws.developer.tools.tab.title")) {
                     it.setTitleActions(developerToolsActions)
+                } else if (tabName == message("aws.codewhispererq.tab.title")) {
+                    it.setTitleActions(cwQActions)
                 }
             }
         }

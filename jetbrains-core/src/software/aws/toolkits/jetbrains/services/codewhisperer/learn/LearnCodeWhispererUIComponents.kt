@@ -235,7 +235,7 @@ object LearnCodeWhispererUIComponents {
         add(
             ActionLink(message("codewhisperer.learn_page.resources.feedback")) {
                 UiTelemetry.click(project, "codewhisperer_Resources_Feedback")
-                FeedbackDialog(project, isCodeWhisperer = true).showAndGet()
+                FeedbackDialog(project, productName = "CodeWhisperer").showAndGet()
             },
             inlineLabelConstraints
         )

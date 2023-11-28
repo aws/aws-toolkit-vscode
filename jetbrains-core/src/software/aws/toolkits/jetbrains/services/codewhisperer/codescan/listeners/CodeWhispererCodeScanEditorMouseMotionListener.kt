@@ -290,13 +290,7 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
                 val document = FileDocumentManager.getInstance().getDocument(issue.file) ?: return@runWriteCommandAction
 
                 val documentContent = document.text
-                val updatedContent = applyPatch(issue.suggestedFixes[0].code, documentContent, issue.file.name)
-                if (updatedContent == null) {
-                    hidePopup()
-                    notifyError(message("codewhisperer.codescan.fix_applied_fail"))
-                    throw Error("Failed to get updated content from applying diff patch")
-                    return@runWriteCommandAction
-                }
+                val updatedContent = applyPatch(issue.suggestedFixes[0].code, documentContent, issue.file.name) ?: return@runWriteCommandAction
                 document.replaceString(document.getLineStartOffset(0), document.getLineEndOffset(document.lineCount - 1), updatedContent)
                 PsiDocumentManager.getInstance(issue.project).commitDocument(document)
                 notifyInfo(
@@ -306,6 +300,7 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
                 hidePopup()
             }
         } catch (err: Error) {
+            notifyError(message("codewhisperer.codescan.fix_applied_fail", err))
             LOG.error { "Apply fix command failed. $err" }
             CodeWhispererTelemetryService.getInstance().sendCodeScanIssueApplyFixEvent(issue, Result.Failed, err.message)
         }

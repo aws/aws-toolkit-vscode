@@ -48,7 +48,8 @@ class InteractiveBearerTokenProviderIntegrationTest {
             startUrl = SONO_URL,
             region = SONO_REGION,
             scopes = testScopes,
-            cache = diskCache
+            cache = diskCache,
+            id = "test"
         )
 
         sut.reauthenticate()
@@ -68,7 +69,8 @@ class InteractiveBearerTokenProviderIntegrationTest {
             startUrl = SONO_URL,
             region = SONO_REGION,
             scopes = testScopes,
-            cache = diskCache
+            cache = diskCache,
+            id = "test"
         )
 
         assertThat(sut.resolveToken()).satisfies {
