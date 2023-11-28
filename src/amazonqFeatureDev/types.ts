@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import type { CancellationTokenSource } from 'vscode'
-import { Messenger } from './controllers/chat/messenger/messenger'
 import { FeatureDevClient } from './client/featureDev'
 import { featureDevScheme } from './constants'
 import { TelemetryHelper } from './util/telemetryHelper'
@@ -54,7 +53,6 @@ export interface SessionStateAction {
     task: string
     files: any[] // TODO: remove any
     msg: string
-    messenger: Messenger
     telemetry: TelemetryHelper
 }
 

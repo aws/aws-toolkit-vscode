@@ -8,9 +8,6 @@ import assert from 'assert'
 import sinon from 'sinon'
 import { RefinementState, PrepareRefinementState } from '../../../amazonqFeatureDev/session/sessionState'
 import { SessionStateConfig, SessionStateAction } from '../../../amazonqFeatureDev/types'
-import { Messenger } from '../../../amazonqFeatureDev/controllers/chat/messenger/messenger'
-import { AppToWebViewMessageDispatcher } from '../../../amazonqFeatureDev/views/connector/connector'
-import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { FeatureDevClient } from '../../../amazonqFeatureDev/client/featureDev'
 import { PrepareRepoFailedError } from '../../../amazonqFeatureDev/errors'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
@@ -20,9 +17,6 @@ const mockSessionStateAction = (msg?: string): SessionStateAction => {
         task: 'test-task',
         msg: msg ?? 'test-msg',
         files: [],
-        messenger: new Messenger(
-            new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>()))
-        ),
         telemetry: new TelemetryHelper(),
     }
 }

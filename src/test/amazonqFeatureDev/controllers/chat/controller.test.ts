@@ -8,7 +8,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import sinon from 'sinon'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
-import { ControllerSetup, createController } from '../../utils'
+import { ControllerSetup, createController, createTestMessengerFactory } from '../../utils'
 import { ChatControllerEventEmitters } from '../../../../amazonqFeatureDev/controllers/chat/controller'
 import { FollowUpTypes, createUri } from '../../../../amazonqFeatureDev/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
@@ -136,12 +136,19 @@ describe('Controller', () => {
         }
 
         it('fails if selected folder is not under a workspace folder', async () => {
+            const messenger = createTestMessengerFactory()(tabID)
+            controllerSetup = await createController({
+                conversationID,
+                tabID,
+                uploadID,
+                messengerFactory: sinon.stub().returns(messenger),
+            })
             sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(undefined)
-            const messengerSpy = sinon.spy(controllerSetup.messenger, 'sendAnswer')
+            const messengerSpy = sinon.spy(messenger, 'sendAnswer')
+
             await modifyDefaultSourceFolder(controllerSetup.emitters, controllerSetup.session, '../../')
             assert.deepStrictEqual(
                 messengerSpy.calledWith({
-                    tabID,
                     type: 'answer',
                     message: new SelectedFolderNotInWorkspaceFolderError().message,
                 }),
@@ -149,7 +156,6 @@ describe('Controller', () => {
             )
             assert.deepStrictEqual(
                 messengerSpy.calledWith({
-                    tabID,
                     type: 'system-prompt',
                     followUps: sinon.match.any,
                 }),

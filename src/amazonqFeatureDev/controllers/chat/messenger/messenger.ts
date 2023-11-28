@@ -18,15 +18,21 @@ import {
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
+import { MessagePublisher } from '../../../../amazonq/messages/messagePublisher'
+
+export type MessengerFactory = (tabID: string) => Messenger
+
+export function createMessengerFactory(publisher: MessagePublisher<any>): MessengerFactory {
+    return (tabID: string) => new Messenger(new AppToWebViewMessageDispatcher(publisher), tabID)
+}
 
 export class Messenger {
-    public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
+    public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher, private readonly tabID: string) {}
 
     public sendAnswer(params: {
         message?: string
         type: 'answer' | 'answer-part' | 'answer-stream' | 'system-prompt'
         followUps?: ChatItemFollowUp[]
-        tabID: string
         canBeVoted?: boolean
     }) {
         this.dispatcher.sendChatMessage(
@@ -38,18 +44,18 @@ export class Messenger {
                     relatedSuggestions: undefined,
                     canBeVoted: params.canBeVoted ?? false,
                 },
-                params.tabID
+                this.tabID
             )
         )
     }
 
-    public sendErrorMessage(errorMessage: string, tabID: string, retries: number, phase?: SessionStatePhase) {
+    public sendErrorMessage(errorMessage: string, retries: number, phase?: SessionStatePhase) {
         if (retries === 0) {
             this.dispatcher.sendErrorMessage(
                 new ErrorMessage(
                     `Sorry, we're unable to provide a response at this time. Please try again later or share feedback with our team to help us troubleshoot.`,
                     errorMessage,
-                    tabID
+                    this.tabID
                 )
             )
             this.sendAnswer({
@@ -62,7 +68,6 @@ export class Messenger {
                         status: 'info',
                     },
                 ],
-                tabID,
             })
             return
         }
@@ -73,7 +78,7 @@ export class Messenger {
                     new ErrorMessage(
                         `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
                         errorMessage,
-                        tabID
+                        this.tabID
                     )
                 )
                 break
@@ -83,7 +88,7 @@ export class Messenger {
                     new ErrorMessage(
                         `Sorry, we encountered a problem when processing your request.`,
                         errorMessage,
-                        tabID
+                        this.tabID
                     )
                 )
                 break
@@ -99,20 +104,19 @@ export class Messenger {
                     status: 'warning',
                 },
             ],
-            tabID,
         })
     }
 
-    public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
-        this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, inProgress, message))
+    public sendAsyncEventProgress(inProgress: boolean, message: string | undefined) {
+        this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(this.tabID, inProgress, message))
     }
 
-    public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {
-        this.dispatcher.sendPlaceholder(new UpdatePlaceholderMessage(tabID, newPlaceholder))
+    public sendUpdatePlaceholder(newPlaceholder: string) {
+        this.dispatcher.sendPlaceholder(new UpdatePlaceholderMessage(this.tabID, newPlaceholder))
     }
 
-    public sendChatInputEnabled(tabID: string, enabled: boolean) {
-        this.dispatcher.sendChatInputEnabled(new ChatInputEnabledMessage(tabID, enabled))
+    public sendChatInputEnabled(enabled: boolean) {
+        this.dispatcher.sendChatInputEnabled(new ChatInputEnabledMessage(this.tabID, enabled))
     }
 
     public sendAuthenticationUpdate(featureDevEnabled: boolean, authenticatingTabIDs: string[]) {
@@ -121,7 +125,7 @@ export class Messenger {
         )
     }
 
-    public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
+    public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState) {
         let authType: AuthFollowUpType = 'full-auth'
         let message = reauthenticateText
         if (credentialState.amazonQ === 'disconnected') {
@@ -139,7 +143,7 @@ export class Messenger {
             message = expiredText
         }
 
-        this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, tabID))
+        this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, this.tabID))
     }
 
     public openNewTask() {

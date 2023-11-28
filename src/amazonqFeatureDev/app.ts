@@ -9,8 +9,7 @@ import { ChatControllerEventEmitters, FeatureDevController } from './controllers
 import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
 import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import { MessageListener } from '../amazonq/messages/messageListener'
-import { Messenger } from './controllers/chat/messenger/messenger'
-import { AppToWebViewMessageDispatcher } from './views/connector/connector'
+import { createMessengerFactory } from './controllers/chat/messenger/messenger'
 import { ChatSessionStorage } from './storages/chatSession'
 import { AuthUtil, getChatAuthState } from '../codewhisperer/util/authUtil'
 import { debounce } from 'lodash'
@@ -29,12 +28,12 @@ export function init(appContext: AmazonQAppInitContext) {
         insertCodeAtPositionClicked: new vscode.EventEmitter<any>(),
     }
 
-    const messenger = new Messenger(new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher()))
-    const sessionStorage = new ChatSessionStorage(messenger)
+    const messengerFactory = createMessengerFactory(appContext.getAppsToWebViewMessagePublisher())
+    const sessionStorage = new ChatSessionStorage(messengerFactory)
 
     new FeatureDevController(
         featureDevChatControllerEventEmitters,
-        messenger,
+        messengerFactory,
         sessionStorage,
         appContext.onDidChangeAmazonQVisibility.event
     )
@@ -63,7 +62,8 @@ export function init(appContext: AmazonQAppInitContext) {
             authenticatingSessions.forEach(session => (session.isAuthenticating = false))
         }
 
-        messenger.sendAuthenticationUpdate(authenticated, authenticatingSessionIDs)
+        // sendAuthenticationUpdate doesn't require a tabID so we leave it blank
+        messengerFactory('').sendAuthenticationUpdate(authenticated, authenticatingSessionIDs)
     }, 500)
 
     AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(() => {

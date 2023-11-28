@@ -17,7 +17,7 @@ import { Session } from '../../session/session'
 import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { FollowUpTypes, SessionStatePhase } from '../../types'
-import { Messenger } from './messenger/messenger'
+import { MessengerFactory } from './messenger/messenger'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
@@ -42,18 +42,16 @@ export interface ChatControllerEventEmitters {
 
 type OpenDiffMessage = { tabID: string; messageId: string; filePath: string; deleted: boolean }
 export class FeatureDevController {
-    private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
     private authController: AuthController
     private contentController: EditorContentController
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
-        messenger: Messenger,
+        private readonly messengerFactory: MessengerFactory,
         sessionStorage: ChatSessionStorage,
         onDidChangeAmazonQVisibility: vscode.Event<boolean>
     ) {
-        this.messenger = messenger
         this.sessionStorage = sessionStorage
         this.authController = new AuthController()
         this.contentController = new EditorContentController()
@@ -128,8 +126,10 @@ export class FeatureDevController {
 
     // TODO add type
     private async processUserChatMessage(message: any) {
+        const messenger = this.messengerFactory(message.tabID)
+
         if (message.message === undefined) {
-            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0)
+            messenger.sendErrorMessage('chatMessage should be set', 0)
             return
         }
 
@@ -151,7 +151,7 @@ export class FeatureDevController {
 
             const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
-                this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                messenger.sendAuthNeededExceptionMessage(authState)
                 session.isAuthenticating = true
                 return
             }
@@ -164,10 +164,9 @@ export class FeatureDevController {
             }
         } catch (err: any) {
             if (err instanceof ContentLengthError) {
-                this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
-                this.messenger.sendAnswer({
+                messenger.sendErrorMessage(err.message, this.retriesRemaining(session))
+                messenger.sendAnswer({
                     type: 'system-prompt',
-                    tabID: message.tabID,
                     followUps: [
                         {
                             pillText: 'Select files for context',
@@ -180,16 +179,11 @@ export class FeatureDevController {
                 const errorMessage = createUserFacingErrorMessage(
                     `${featureName} request failed: ${err.cause?.message ?? err.message}`
                 )
-                this.messenger.sendErrorMessage(
-                    errorMessage,
-                    message.tabID,
-                    this.retriesRemaining(session),
-                    session?.state.phase
-                )
+                messenger.sendErrorMessage(errorMessage, this.retriesRemaining(session), session?.state.phase)
             }
 
             // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(message.tabID, false)
+            messenger.sendChatInputEnabled(false)
         }
     }
 
@@ -199,42 +193,43 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
-        this.messenger.sendAnswer({
+        const messenger = this.messengerFactory(tabID)
+
+        messenger.sendAnswer({
             type: 'answer',
-            tabID,
             message: 'Ok, let me create a plan. This may take a few minutes.',
         })
 
         // Ensure that the loading icon stays showing
-        this.messenger.sendAsyncEventProgress(tabID, true, undefined)
+        messenger.sendAsyncEventProgress(true, undefined)
 
-        this.messenger.sendUpdatePlaceholder(tabID, 'Generating implementation plan ...')
+        messenger.sendUpdatePlaceholder('Generating implementation plan ...')
         const interactions = await session.send(message)
-        this.messenger.sendUpdatePlaceholder(tabID, 'Add more detail to iterate on the implementation plan')
+        messenger.sendUpdatePlaceholder('Add more detail to iterate on the implementation plan')
 
         // Resolve the "..." with the content
-        this.messenger.sendAnswer({
+        messenger.sendAnswer({
             message: interactions.content,
             type: 'answer-part',
-            tabID: tabID,
             canBeVoted: true,
         })
 
         // Follow up with action items and complete the request stream
-        this.messenger.sendAnswer({
+        messenger.sendAnswer({
             type: 'system-prompt', // show the followups on the right side
             followUps: this.getFollowUpOptions(session.state.phase),
-            tabID: tabID,
         })
 
         // Unlock the prompt again so that users can iterate
-        this.messenger.sendAsyncEventProgress(tabID, false, undefined)
+        messenger.sendAsyncEventProgress(false, undefined)
     }
 
     private async retryRequest(message: any) {
+        const messenger = this.messengerFactory(message.tabID)
+
         let session
         try {
-            this.messenger.sendAsyncEventProgress(message.tabID, true, undefined)
+            messenger.sendAsyncEventProgress(true, undefined)
 
             session = await this.sessionStorage.getSession(message.tabID)
 
@@ -247,18 +242,17 @@ export class FeatureDevController {
                 tabID: message.tabID,
             })
         } catch (err: any) {
-            this.messenger.sendErrorMessage(
+            messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to retry request: ${err.message}`),
-                message.tabID,
                 this.retriesRemaining(session),
                 session?.state.phase
             )
         } finally {
             // Finish processing the event
-            this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
+            messenger.sendAsyncEventProgress(false, undefined)
 
             // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(message.tabID, false)
+            messenger.sendChatInputEnabled(false)
         }
     }
 
@@ -284,6 +278,8 @@ export class FeatureDevController {
     }
 
     private async modifyDefaultSourceFolder(message: any) {
+        const messenger = this.messengerFactory(message.tabID)
+
         const session = await this.sessionStorage.getSession(message.tabID)
 
         const uri = await createSingleFileDialog({
@@ -293,13 +289,11 @@ export class FeatureDevController {
         }).prompt()
 
         if (uri instanceof vscode.Uri && !vscode.workspace.getWorkspaceFolder(uri)) {
-            this.messenger.sendAnswer({
-                tabID: message.tabID,
+            messenger.sendAnswer({
                 type: 'answer',
                 message: new SelectedFolderNotInWorkspaceFolderError().message,
             })
-            this.messenger.sendAnswer({
-                tabID: message.tabID,
+            messenger.sendAnswer({
                 type: 'system-prompt',
                 followUps: [
                     {
@@ -314,10 +308,9 @@ export class FeatureDevController {
 
         if (uri && uri instanceof vscode.Uri) {
             session.config.sourceRoot = uri.fsPath
-            this.messenger.sendAnswer({
+            messenger.sendAnswer({
                 message: `Changed source root to: ${session.config.sourceRoot}`,
                 type: 'answer',
-                tabID: message.tabID,
             })
         }
     }
@@ -330,9 +323,10 @@ You can use /dev to:
 
 To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 `
-        this.messenger.sendAnswer({
+        const messenger = this.messengerFactory(message.tabID)
+
+        messenger.sendAnswer({
             type: 'answer',
-            tabID: message.tabID,
             message: examples,
         })
     }
@@ -375,6 +369,8 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
     }
 
     private async tabOpened(message: any) {
+        const messenger = this.messengerFactory(message.tabID)
+
         let session: Session | undefined
         try {
             session = await this.sessionStorage.getSession(message.tabID)
@@ -382,14 +378,13 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 
             const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
-                this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                messenger.sendAuthNeededExceptionMessage(authState)
                 session.isAuthenticating = true
                 return
             }
         } catch (err: any) {
-            this.messenger.sendErrorMessage(
+            messenger.sendErrorMessage(
                 createUserFacingErrorMessage(err.message),
-                message.tabID,
                 this.retriesRemaining(session),
                 session?.state.phase
             )
@@ -399,14 +394,15 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
     private authClicked(message: any) {
         this.authController.handleAuth(message.authType)
 
-        this.messenger.sendAnswer({
+        const messenger = this.messengerFactory(message.tabID)
+
+        messenger.sendAnswer({
             type: 'answer',
-            tabID: message.tabID,
             message: 'Follow instructions to re-authenticate ...',
         })
 
         // Explicitly ensure the user goes through the re-authenticate flow
-        this.messenger.sendChatInputEnabled(message.tabID, false)
+        messenger.sendChatInputEnabled(false)
     }
 
     private tabClosed(message: any) {
@@ -428,12 +424,13 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         // Re-run the opening flow, where we check auth + create a session
         await this.tabOpened(message)
 
-        this.messenger.sendAnswer({
+        const messenger = this.messengerFactory(message.tabID)
+
+        messenger.sendAnswer({
             type: 'answer',
-            tabID: message.tabID,
             message: 'What change would you like to discuss?',
         })
-        this.messenger.sendUpdatePlaceholder(message.tabID, 'Briefly describe a task or issue')
+        messenger.sendUpdatePlaceholder('Briefly describe a task or issue')
     }
 
     private sendFeedback() {

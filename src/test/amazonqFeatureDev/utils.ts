@@ -6,18 +6,24 @@
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { MessagePublisher } from '../../amazonq/messages/messagePublisher'
-import { Messenger } from '../../amazonqFeatureDev/controllers/chat/messenger/messenger'
-import { AppToWebViewMessageDispatcher } from '../../amazonqFeatureDev/views/connector/connector'
+import {
+    Messenger,
+    MessengerFactory,
+    createMessengerFactory,
+} from '../../amazonqFeatureDev/controllers/chat/messenger/messenger'
 import { ChatControllerEventEmitters, FeatureDevController } from '../../amazonqFeatureDev/controllers/chat/controller'
 import { ChatSessionStorage } from '../../amazonqFeatureDev/storages/chatSession'
 import { Session } from '../../amazonqFeatureDev/session/session'
 import { createSessionConfig } from '../../amazonqFeatureDev/session/sessionConfigFactory'
 import { createTestWorkspaceFolder } from '../testUtil'
 
-export function createMessenger(): Messenger {
-    return new Messenger(
-        new AppToWebViewMessageDispatcher(new MessagePublisher(sinon.createStubInstance(vscode.EventEmitter)))
-    )
+export function createTestMessengerFactory() {
+    return createMessengerFactory(new MessagePublisher(sinon.createStubInstance(vscode.EventEmitter)))
+}
+
+export function createMessenger(tabID: string): Messenger {
+    const messengerFactory = createTestMessengerFactory()
+    return messengerFactory(tabID)
 }
 
 export function createMockChatEmitters(): ChatControllerEventEmitters {
@@ -46,18 +52,20 @@ export async function createController({
     tabID,
     conversationID,
     uploadID,
+    messengerFactory = createTestMessengerFactory(),
 }: {
     tabID: string
     conversationID: string
     uploadID: string
+    messengerFactory?: MessengerFactory
 }): Promise<ControllerSetup> {
-    const messenger = createMessenger()
+    const messenger = createMessenger(tabID)
 
     // Create a new workspace root
     const testWorkspaceFolder = await createTestWorkspaceFolder()
     sinon.stub(vscode.workspace, 'workspaceFolders').value([testWorkspaceFolder])
 
-    const sessionStorage = new ChatSessionStorage(messenger)
+    const sessionStorage = new ChatSessionStorage(messengerFactory)
     const sessionConfig = await createSessionConfig()
 
     const session = new Session(sessionConfig, messenger, tabID)
@@ -70,7 +78,7 @@ export async function createController({
 
     new FeatureDevController(
         mockChatControllerEventEmitters,
-        messenger,
+        messengerFactory,
         sessionStorage,
         sinon.createStubInstance(vscode.EventEmitter).event
     )

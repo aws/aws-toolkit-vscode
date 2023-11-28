@@ -3,18 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Messenger } from '../controllers/chat/messenger/messenger'
+import { MessengerFactory } from '../controllers/chat/messenger/messenger'
 import { Session } from '../session/session'
 import { createSessionConfig } from '../session/sessionConfigFactory'
 
 export class ChatSessionStorage {
     private sessions: Map<string, Session> = new Map()
 
-    constructor(private readonly messenger: Messenger) {}
+    constructor(private readonly messengerFactory: MessengerFactory) {}
 
     private async createSession(tabID: string): Promise<Session> {
         const sessionConfig = await createSessionConfig()
-        const session = new Session(sessionConfig, this.messenger, tabID)
+        const messenger = this.messengerFactory(tabID)
+        const session = new Session(sessionConfig, messenger, tabID)
         this.sessions.set(tabID, session)
         return session
     }

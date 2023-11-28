@@ -47,7 +47,7 @@ export class Session {
 
             telemetry.amazonq_startChat.emit({ amazonqConversationId: this.conversationId, value: 1 })
 
-            this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
+            this.messenger.sendAsyncEventProgress(true, undefined)
         }
     }
 
@@ -99,7 +99,6 @@ export class Session {
             files,
             task: this.task,
             msg,
-            messenger: this.messenger,
             telemetry: this.telemetry,
         })
 
