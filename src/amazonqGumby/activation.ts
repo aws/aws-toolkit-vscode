@@ -32,7 +32,7 @@ export async function activate(context: ExtContext) {
             if (transformByQState.isRunning()) {
                 confirmStopTransformByQ(transformByQState.getJobId())
             } else {
-                vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
+                vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage, { modal: true })
             }
         }),
 

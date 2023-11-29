@@ -271,7 +271,7 @@ export async function zipCode(modulePath: string) {
     throwIfCancelled()
 
     let dependencyFiles: string[] = []
-    if (!mavenFailed) {
+    if (!mavenFailed && fs.existsSync(dependencyFolderPath)) {
         dependencyFiles = getFilesRecursively(dependencyFolderPath)
     }
 

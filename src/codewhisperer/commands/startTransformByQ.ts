@@ -84,8 +84,7 @@ async function pickProject(
         totalSteps: DropdownStep.STEP_1,
         placeholder: CodeWhispererConstants.selectModulePrompt,
         items: validProjects!,
-        shouldResume: () => Promise.resolve(true),
-        ignoreFocusOut: false,
+        shouldResume: () => Promise.resolve(false),
     })
     state.project = pick
     transformByQState.setProjectName(he.encode(state.project.label)) // encode to avoid HTML injection risk
@@ -296,7 +295,11 @@ export async function startTransformByQ() {
                 )
             }
             if (transformByQState.isSucceeded()) {
-                vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompleted)
+                vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompleted, { modal: true })
+            } else if (transformByQState.isPartiallySucceeded()) {
+                vscode.window.showInformationMessage(CodeWhispererConstants.transformByQPartiallyCompletedMessage, {
+                    modal: true,
+                })
             }
             await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
             clearInterval(intervalId)
