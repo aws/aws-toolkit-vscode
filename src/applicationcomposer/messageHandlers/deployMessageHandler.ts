@@ -10,7 +10,9 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function deployMessageHandler(message: DeployRequestMessage, context: WebviewContext) {
     // SAM already handles success/failure, so we only log that the user clicked the deploy button
-    telemetry.appcomposer_deployClicked.emit()
+    telemetry.appcomposer_deployClicked.emit({
+        result: 'Succeeded',
+    })
     const args = context.textDocument.uri
     /* TODO Rework this command so that a failure case is returned
      * We don't want to override the SAM Sync telemetry. The SAM telemetry catches all errors,

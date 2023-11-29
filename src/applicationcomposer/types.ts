@@ -42,6 +42,21 @@ export enum MessageType {
     BROADCAST = 'BROADCAST',
 }
 
+enum TelemetryType {
+    GENERATE_CLICKED = 'GENERATE_CLICKED',
+    REGENERATE_CLICKED = 'REGENERATE_CLICKED',
+    GENERATE_ACCEPTED = 'GENERATE_ACCEPTED',
+    GENERATE_REJECTED = 'GENERATE_REJECTED',
+    INVALID_GENERATION = 'INVALID_GENERATION',
+    POST_PROCESS = 'POST_PROCESS',
+    CUSTOMER_READY = 'CUSTOMER_READY',
+    FPS = 'FPS',
+    ADD_RESOURCE = 'ADD_RESOURCE',
+    ADD_CONNECTION = 'ADD_CONNECTION',
+    OPEN_WFS = 'OPEN_WFS',
+    CLOSE_WFS = 'CLOSE_WFS',
+}
+
 export interface InitResponseMessage extends Message {
     templateFileName: string
     templateFilePath: string
@@ -121,8 +136,8 @@ export interface LogMessage extends Message {
 
 export interface EmitTelemetryMessage extends Message {
     eventId?: string
-    eventType: 'GENERATE_CLICKED' | 'REGENERATE_CLICKED' | 'GENERATE_ACCEPTED' | 'GENERATE_REJECTED'
-    resourceId: string
+    eventType: TelemetryType
+    metadata?: string
 }
 
 export interface ReferenceDetails {
