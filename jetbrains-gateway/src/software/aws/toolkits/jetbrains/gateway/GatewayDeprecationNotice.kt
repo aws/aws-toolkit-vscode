@@ -13,6 +13,7 @@ import software.aws.toolkits.resources.message
 class GatewayDeprecationNotice : AppLifecycleListener {
     override fun welcomeScreenDisplayed() {
         super.welcomeScreenDisplayed()
+        if (ApplicationInfo.getInstance().build.productCode != "GW") return
         if (ApplicationInfo.getInstance().build.baselineVersion >= MIN_VERSION) {
             return
         }
