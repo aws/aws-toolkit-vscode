@@ -17,7 +17,7 @@ export async function deployMessageHandler(message: DeployRequestMessage, contex
      * so we instead check for an undefined response to determine failure. The downside is that
      * we don't get failure reasons.
      */
-    const result = (await vscode.commands.executeCommand('aws.samcli.sync', args)) as SamSyncResult
+    const result = (await vscode.commands.executeCommand('aws.samcli.sync', args, false)) as SamSyncResult
     if (result?.isSuccess) {
         vscode.window.showInformationMessage('SAM Sync succeeded!')
         telemetry.appcomposer_deployCompleted.emit({ result: 'Succeeded' })
