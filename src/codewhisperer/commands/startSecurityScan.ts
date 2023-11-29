@@ -183,7 +183,7 @@ export async function startSecurityScan(
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
         codeScanTelemetryEntry.codewhispererCodeScanIssuesWithFixes = withFixes
         throwIfCancelled()
-        getLogger().verbose(`Security scan totally found ${total} issues.`)
+        getLogger().verbose(`Security scan totally found ${total} issues. ${withFixes} of them have fixes.`)
         if (isCloud9()) {
             securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
             vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
@@ -235,8 +235,7 @@ export async function emitCodeScanTelemetry(editor: vscode.TextEditor, codeScanT
         )
         codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = projectSize
     }
-    // TODO: should be removed. Added this to pass tests
-    telemetry.codewhisperer_securityScan.emit({ ...codeScanTelemetryEntry, codewhispererCodeScanIssuesWithFixes: 1 })
+    telemetry.codewhisperer_securityScan.emit(codeScanTelemetryEntry)
 }
 
 export function errorPromptHelper(error: Error) {

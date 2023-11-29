@@ -303,7 +303,7 @@ export class ProposedTransformationExplorer {
                 diffModel.parseDiff(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSourceDir),
-                    transformByQState.getModulePath()
+                    transformByQState.getProjectPath()
                 )
 
                 vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.InReview)

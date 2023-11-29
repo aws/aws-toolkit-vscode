@@ -256,8 +256,8 @@ export class ZipManifest {
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
 
-    private moduleName: string = ''
-    private modulePath: string = ''
+    private projectName: string = ''
+    private projectPath: string = ''
 
     private jobId: string = ''
 
@@ -296,12 +296,12 @@ export class TransformByQState {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
     }
 
-    public getModuleName() {
-        return this.moduleName
+    public getProjectName() {
+        return this.projectName
     }
 
-    public getModulePath() {
-        return this.modulePath
+    public getProjectPath() {
+        return this.projectPath
     }
 
     public getJobId() {
@@ -360,12 +360,12 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
     }
 
-    public setModuleName(name: string) {
-        this.moduleName = name
+    public setProjectName(name: string) {
+        this.projectName = name
     }
 
-    public setModulePath(path: string) {
-        this.modulePath = path
+    public setProjectPath(path: string) {
+        this.projectPath = path
     }
 
     public setJobId(id: string) {
