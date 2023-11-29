@@ -5,6 +5,8 @@
 
 import * as vscode from 'vscode'
 import { CodeScanIssue, AggregatedCodeScanIssue } from '../models/model'
+import { SecurityIssueHoverProvider } from './securityIssueHoverProvider'
+import { SecurityIssueCodeActionProvider } from './securityIssueCodeActionProvider'
 
 interface SecurityScanRender {
     securityDiagnosticCollection: vscode.DiagnosticCollection | undefined
@@ -26,6 +28,8 @@ export function initSecurityScanRender(
         updateSecurityDiagnosticCollection(securityRecommendation)
     })
     securityScanRender.initialized = true
+    SecurityIssueHoverProvider.instance.issues = securityRecommendationList
+    SecurityIssueCodeActionProvider.instance.issues = securityRecommendationList
 }
 
 export function updateSecurityDiagnosticCollection(securityRecommendation: AggregatedCodeScanIssue) {
@@ -43,7 +47,7 @@ export function createSecurityDiagnostic(securityIssue: CodeScanIssue) {
     const range = new vscode.Range(securityIssue.startLine, 0, securityIssue.endLine, 0)
     const securityDiagnostic: vscode.Diagnostic = new vscode.Diagnostic(
         range,
-        securityIssue.comment,
+        securityIssue.title,
         vscode.DiagnosticSeverity.Warning
     )
     securityDiagnostic.source = 'Detected by CodeWhisperer '

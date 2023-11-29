@@ -12,8 +12,8 @@ import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import {
-    ssoAccountAccessScopes,
-    codecatalystScopes,
+    scopesSsoAccountAccess,
+    scopesCodeCatalyst,
     SsoConnection,
     Connection,
     isBuilderIdConnection,
@@ -23,6 +23,7 @@ import {
     isIdcSsoConnection,
 } from '../auth/connection'
 import { createBuilderIdConnection } from '../auth/utils'
+import { builderIdStartUrl } from '../auth/sso/model'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -41,7 +42,7 @@ export class CodeCatalystAuthStorage {
 
 export const onboardingUrl = vscode.Uri.parse('https://codecatalyst.aws/onboarding/view')
 
-export const defaultScopes = [...ssoAccountAccessScopes, ...codecatalystScopes]
+export const defaultScopes = [...scopesSsoAccountAccess, ...scopesCodeCatalyst]
 
 export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection =>
     isSsoConnection(conn) && !isValidCodeCatalystConnection(conn)
@@ -143,6 +144,13 @@ export class CodeCatalystAuthenticationProvider {
 
         type ConnectionFlowEvent = Partial<MetricShapes[MetricName]> & {
             readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade' // eslint-disable-line @typescript-eslint/naming-convention
+        }
+
+        const existingBuilderId = (await this.auth.listConnections()).find(isBuilderIdConnection)
+        if (isValidCodeCatalystConnection(existingBuilderId)) {
+            // A Builder ID with the correct scopes already exists so we can use this immediately
+            await this.secondaryAuth.useNewConnection(existingBuilderId)
+            return this.activeConnection!
         }
 
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
@@ -257,6 +265,19 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         return this.secondaryAuth.useNewConnection(conn)
+    }
+
+    /**
+     * Try to ensure a specific connection is active.
+     */
+    public async tryConnectTo(connection: { startUrl: string; region: string }) {
+        if (!this.isConnectionValid() || connection.startUrl !== this.activeConnection!.startUrl) {
+            if (connection.startUrl === builderIdStartUrl) {
+                await this.connectToAwsBuilderId()
+            } else {
+                await this.connectToEnterpriseSso(connection.startUrl, connection.region)
+            }
+        }
     }
 
     public async isConnectionOnboarded(conn: SsoConnection, recheck = false) {

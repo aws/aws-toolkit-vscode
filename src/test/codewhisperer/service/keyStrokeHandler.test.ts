@@ -114,6 +114,14 @@ describe('keyStrokeHandler', function () {
                     shouldInvoke: true,
                 },
                 {
+                    rightContext: ')',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: ')    ',
+                    shouldInvoke: true,
+                },
+                {
                     rightContext: ' add',
                     shouldInvoke: true,
                 },

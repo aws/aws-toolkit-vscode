@@ -21,6 +21,12 @@ coverage:
                     - src/codewhisperer/*
                 flags:
                     - 'codewhisperer'
+            amazonqFeatureDev:
+                target: 70%
+                paths:
+                    - src/amazonqFeatureDev/*
+                flags:
+                    - 'amazonqFeatureDev'
         patch: no
         changes: no
 
@@ -33,3 +39,6 @@ flags:
     codewhisperer:
         paths:
             - src/codewhisperer/
+    amazonqFeatureDev:
+        paths:
+            - src/amazonqFeatureDev/

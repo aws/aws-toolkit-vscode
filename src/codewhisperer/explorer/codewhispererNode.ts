@@ -18,14 +18,13 @@ import {
     createSeparator,
 } from './codewhispererChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
-import { RootNode } from '../../awsexplorer/localExplorer'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
-import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { CodeSuggestionsState } from '../models/model'
 
-export class CodeWhispererNode implements RootNode {
+export class CodeWhispererNode implements TreeNode {
     public readonly id = 'codewhisperer'
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
@@ -151,17 +150,19 @@ let _codewhispererNode: CodeWhispererNode
 export function getCodewhispererNode(): CodeWhispererNode {
     return (_codewhispererNode ??= new CodeWhispererNode())
 }
-export const refreshCodeWhisperer = Commands.register(
-    { id: 'aws.codeWhisperer.refresh', logging: false },
-    (showFreeTierLimitNode = false) => {
+export const refreshCodeWhisperer = (provider?: ResourceTreeDataProvider) =>
+    Commands.register({ id: 'aws.codeWhisperer.refresh', logging: false }, (showFreeTierLimitNode = false) => {
         getCodewhispererNode().updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
         getCodewhispererNode().refresh()
-    }
-)
+        if (provider) {
+            provider.refresh()
+        }
+    })
 
-export const refreshCodeWhispererRootNode = Commands.register(
-    { id: 'aws.codeWhisperer.refreshRootNode', logging: false },
-    () => {
+export const refreshCodeWhispererRootNode = (provider?: ResourceTreeDataProvider) =>
+    Commands.register({ id: 'aws.codeWhisperer.refreshRootNode', logging: false }, () => {
         getCodewhispererNode().refreshRootNode()
-    }
-)
+        if (provider) {
+            provider.refresh()
+        }
+    })

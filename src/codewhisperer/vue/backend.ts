@@ -15,6 +15,9 @@ import { FileSystemCommon } from '../../srcShared/fs'
 import { getLogger } from '../../shared/logger'
 import { PromptSettings } from '../../shared/settings'
 import { CodeWhispererSource } from '../commands/types'
+import { submitFeedback } from '../../feedback/vue/submitFeedback'
+import { placeholder } from '../../shared/vscode/commands2'
+
 export type OSType = 'Mac' | 'RestOfOS'
 export class CodeWhispererWebview extends VueWebview {
     public readonly id = 'CodeWhispererWebview'
@@ -90,7 +93,7 @@ export class CodeWhispererWebview extends VueWebview {
 
     //This function opens the Feedback CodeWhisperer page in the webview
     async openFeedBack(): Promise<void> {
-        vscode.commands.executeCommand('aws.submitFeedback', 'CodeWhisperer')
+        submitFeedback.execute(placeholder, 'CodeWhisperer')
     }
 
     //------Telemetry------
