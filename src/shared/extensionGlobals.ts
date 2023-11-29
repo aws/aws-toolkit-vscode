@@ -109,11 +109,14 @@ interface ToolkitGlobals {
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
     telemetry: TelemetryService & { logger: TelemetryLogger }
-    templateRegistry: CloudFormationTemplateRegistry
+    /** template.yaml registry. _Avoid_ calling this until it is actually needed (for SAM features). */
+    templateRegistry: Promise<CloudFormationTemplateRegistry>
     schemaService: SchemaService
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
     uriHandler: UriHandler
+    /** An id to differentiate the current machine being run on. Can help distinguish a remote from a local machine.  */
+    machineId: string
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.

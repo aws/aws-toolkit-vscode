@@ -19,15 +19,16 @@ import { keys, selectFrom } from '../shared/utilities/tsUtils'
 const testTempDirs: string[] = []
 
 /**
- * Writes the string form of `o` to `filepath` as UTF-8 text.
+ * Writes the string form of `o` to `filePathParts` as UTF-8 text.
  *
- * Creates parent directories in `filepath`, if necessary.
+ * Creates parent directories in `filePathParts`, if necessary.
  */
-export function toFile(o: any, filepath: string) {
+export function toFile(o: any, ...filePathParts: string[]) {
     const text = o ? o.toString() : ''
-    const dir = path.dirname(filepath)
+    const filePath = path.join(...filePathParts)
+    const dir = path.dirname(filePath)
     fsextra.mkdirpSync(dir)
-    fsextra.writeFileSync(filepath, text, 'utf8')
+    fsextra.writeFileSync(filePath, text, 'utf8')
 }
 
 /**
@@ -74,6 +75,34 @@ export async function createTestFile(fileName: string): Promise<vscode.Uri> {
     const tempFilePath = path.join(tempFolder, fileName)
     fs.writeFileSync(tempFilePath, '')
     return vscode.Uri.file(tempFilePath)
+}
+
+/**
+ * Creates a temporary workspace with test files in it.
+ *
+ * @param n number of temporary test files to create in the workspace
+ * @param opts allows to pass options to have a custom fileName and/or file content and also to add a file with an exclusion pattern from src/shared/fs/watchedFiles.ts
+ * @returns the path to the workspace folder
+ */
+export async function createTestWorkspace(
+    n: number,
+    opts: { fileNamePrefix?: string; fileContent?: string }
+): Promise<vscode.WorkspaceFolder> {
+    const workspace = await createTestWorkspaceFolder()
+
+    if (n <= 0) {
+        throw new Error('test file numbers cannot be less or equal to zero')
+    }
+
+    const fileNamePrefix = opts?.fileNamePrefix ?? 'test-file-'
+    const fileContent = opts?.fileContent ?? ''
+
+    do {
+        const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}`)
+        fs.writeFileSync(tempFilePath, fileContent)
+    } while (--n > 0)
+
+    return workspace
 }
 
 export async function deleteTestTempDirs(): Promise<void> {
@@ -125,11 +154,17 @@ export function createExecutableFile(filepath: string, contents: string): void {
 }
 
 /**
- * Installs a fake clock, making sure to set a flag to clear real timers.
+ * Installs a fake clock in place of `globals.clock` and allows you to
+ * control time in tests.
  *
- * Always uses the extension-scoped clock instead of the real one.
+ * **Implementations must use `globals.clock` for this to work.**
  *
- * **Implementations must use `globals.clock` to be correctly tested**
+ * @example
+ * new globals.clock.Date() // Use this
+ * new Date() // Not this
+ *
+ * globals.clock.setTimeout(...) // Use this
+ * setTimeout(...) // Not this
  */
 export function installFakeClock(): FakeTimers.InstalledClock {
     return FakeTimers.withGlobal(globals.clock).install({

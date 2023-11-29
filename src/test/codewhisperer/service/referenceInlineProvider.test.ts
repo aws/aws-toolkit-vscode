@@ -11,7 +11,7 @@ describe('referenceInlineProvider', function () {
         resetCodeWhispererGlobalVariables()
     })
     describe('setInlineReference', async function () {
-        it('Reference codelens message should contain license name and CodeWhisperer reference log', function () {
+        it('Reference codelens message should contain license name and Code Reference Log', function () {
             const referenceInlineProvider = new ReferenceInlineProvider()
             const fakeReferences = [
                 {
@@ -26,7 +26,7 @@ describe('referenceInlineProvider', function () {
             ]
             referenceInlineProvider.setInlineReference(1, `def two_sum(nums, target):`, fakeReferences)
             assert.ok(referenceInlineProvider.refs[0].includes(`TEST_LICENSE`))
-            assert.ok(referenceInlineProvider.refs[0].includes(`reference log`))
+            assert.ok(referenceInlineProvider.refs[0].includes(`Reference Log`))
         })
     })
 })

@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { IotThingFolderNode } from '../explorer/iotThingFolderNode'
 
@@ -17,7 +16,7 @@ import { IotThingFolderNode } from '../explorer/iotThingFolderNode'
  * Creates the thing.
  * Refreshes the node.
  */
-export async function createThingCommand(node: IotThingFolderNode, commands = Commands.vscode()): Promise<void> {
+export async function createThingCommand(node: IotThingFolderNode): Promise<void> {
     getLogger().debug('CreateThing called for: %O', node)
 
     const thingName = await vscode.window.showInputBox({
@@ -43,7 +42,7 @@ export async function createThingCommand(node: IotThingFolderNode, commands = Co
     }
 
     //Refresh the Things Folder node
-    await node.refreshNode(commands)
+    await node.refreshNode()
 }
 
 /**

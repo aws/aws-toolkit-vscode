@@ -170,7 +170,7 @@ export class DefaultIotClient {
         const describedCerts = iotPrincipals.map(async iotPrincipal => {
             const principalArn = parse(iotPrincipal)
             const certIdFound = principalArn.resource.match(certArnResourcePattern)
-            if (principalArn.service != iotServiceArn || !certIdFound) {
+            if (principalArn.service !== iotServiceArn || !certIdFound) {
                 return undefined
             }
             const certId = certIdFound[1]
@@ -178,7 +178,7 @@ export class DefaultIotClient {
         })
 
         const resolvedCerts = (await Promise.all(describedCerts))
-            .filter(cert => cert?.certificateDescription != undefined)
+            .filter(cert => cert?.certificateDescription !== undefined)
             .map(cert => cert?.certificateDescription as Iot.CertificateDescription)
 
         const response: ListThingCertificatesResponse = { certificates: resolvedCerts, nextToken: nextToken }

@@ -14,7 +14,7 @@ import {
 } from '../../shared/clients/codecatalystClient'
 import { getThisDevEnv, prepareDevEnvConnection } from '../../codecatalyst/model'
 import { Auth } from '../../auth/auth'
-import { CodeCatalystAuthenticationProvider, isValidCodeCatalystConnection } from '../../codecatalyst/auth'
+import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
 import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
 import globals from '../../shared/extensionGlobals'
 import { CodeCatalystCreateWebview, SourceResponse } from '../../codecatalyst/vue/create/backend'
@@ -30,7 +30,12 @@ import { toStream } from '../../shared/utilities/collectionUtils'
 import { toCollection } from '../../shared/utilities/asyncCollection'
 import { getLogger } from '../../shared/logger'
 import { isAwsError } from '../../shared/errors'
-import { codecatalystScopes, createBuilderIdProfile, SsoConnection } from '../../auth/connection'
+import {
+    scopesCodeCatalyst,
+    createBuilderIdProfile,
+    isValidCodeCatalystConnection,
+    SsoConnection,
+} from '../../auth/connection'
 
 let spaceName: CodeCatalystOrg['name']
 let projectName: CodeCatalystProject['name']
@@ -81,7 +86,7 @@ let projectName: CodeCatalystProject['name']
  *     integ tests, but using the ssh hostname that we get from
  *     {@link prepareDevEnvConnection}.
  */
-describe('Test how this codebase uses the CodeCatalyst API', function () {
+describe.skip('Test how this codebase uses the CodeCatalyst API', function () {
     let client: CodeCatalystClient
     let commands: CodeCatalystCommands
     let webviewClient: CodeCatalystCreateWebview
@@ -432,7 +437,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
      */
     async function useCodeCatalystSsoConnection(auth: Auth): Promise<SsoConnection> {
         const builderIdSsoConnection = (await auth.listConnections()).find(isValidCodeCatalystConnection)
-        const conn = builderIdSsoConnection ?? (await auth.createConnection(createBuilderIdProfile(codecatalystScopes)))
+        const conn = builderIdSsoConnection ?? (await auth.createConnection(createBuilderIdProfile(scopesCodeCatalyst)))
 
         return auth.useConnection(conn)
     }

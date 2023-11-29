@@ -25,12 +25,12 @@ import {
 import { getImportCount } from './importAdderUtil'
 import { CodeWhispererSettings } from './codewhispererSettings'
 import { CodeWhispererUserGroupSettings } from './userGroupUtil'
-import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
 import { getSelectedCustomization } from './customizationUtil'
 import { AuthUtil } from './authUtil'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { session } from './codeWhispererSession'
+import { CodeWhispererSupplementalContext } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -119,7 +119,7 @@ export class TelemetryHelper {
     }
 
     public recordUserDecisionTelemetryForEmptyList(
-        requestId: string,
+        requestIdList: string[],
         sessionId: string,
         paginationIndex: number,
         languageId: string,
@@ -127,7 +127,7 @@ export class TelemetryHelper {
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         telemetry.codewhisperer_userDecision.emit({
-            codewhispererRequestId: requestId,
+            codewhispererRequestId: requestIdList[0],
             codewhispererSessionId: sessionId ? sessionId : undefined,
             codewhispererPaginationProgress: paginationIndex,
             codewhispererTriggerType: this.triggerType,
@@ -157,7 +157,7 @@ export class TelemetryHelper {
      */
 
     public recordUserDecisionTelemetry(
-        requestId: string,
+        requestIdList: string[],
         sessionId: string,
         recommendations: RecommendationsList,
         acceptIndex: number,
@@ -178,7 +178,8 @@ export class TelemetryHelper {
                 recommendationSuggestionState?.set(i, 'Empty')
             }
             const event: CodewhispererUserDecision = {
-                codewhispererRequestId: requestId,
+                // TODO: maintain a list of RecommendationContexts with both recommendation and requestId in it, instead of two separate list items.
+                codewhispererRequestId: requestIdList[i],
                 codewhispererSessionId: sessionId ? sessionId : undefined,
                 codewhispererPaginationProgress: paginationIndex,
                 codewhispererTriggerType: this.triggerType,
@@ -204,14 +205,14 @@ export class TelemetryHelper {
         const referenceCount = this.getAggregatedSuggestionReferenceCount(events)
 
         // aggregate user decision events at requestId level
-        const aggregatedEvent = this.aggregateUserDecisionByRequest(events, requestId, sessionId)
+        const aggregatedEvent = this.aggregateUserDecisionByRequest(events, requestIdList[0], sessionId)
         if (aggregatedEvent) {
             this.sessionDecisions.push(aggregatedEvent)
         }
 
         // TODO: use a ternary for this
         let acceptedRecommendationContent
-        if (acceptIndex != -1 && recommendations[acceptIndex] != undefined) {
+        if (acceptIndex !== -1 && recommendations[acceptIndex] !== undefined) {
             acceptedRecommendationContent = recommendations[acceptIndex].content
         } else {
             acceptedRecommendationContent = ''
@@ -220,7 +221,7 @@ export class TelemetryHelper {
         // after we have all request level user decisions, aggregate them at session level and send
         if (
             this.isRequestCancelled ||
-            (this.lastRequestId && this.lastRequestId === requestId) ||
+            (this.lastRequestId && this.lastRequestId === requestIdList[requestIdList.length - 1]) ||
             (this.sessionDecisions.length && this.sessionDecisions.length === this.numberOfRequests)
         ) {
             this.sendUserTriggerDecisionTelemetry(
@@ -248,10 +249,10 @@ export class TelemetryHelper {
             codewhispererSessionId: sessionId,
             codewhispererFirstRequestId: this.sessionInvocations[0].codewhispererRequestId ?? requestId,
             credentialStartUrl: events[0].credentialStartUrl,
-            codewhispererCompletionType: this.getAggregatedCompletionType(events),
             codewhispererLanguage: events[0].codewhispererLanguage,
             codewhispererGettingStartedTask: session.taskType,
             codewhispererTriggerType: events[0].codewhispererTriggerType,
+            codewhispererCompletionType: events[0].codewhispererCompletionType,
             codewhispererSuggestionCount: events.length,
             codewhispererAutomatedTriggerType: serviceInvocation.codewhispererAutomatedTriggerType,
             codewhispererLineNumber: serviceInvocation.codewhispererLineNumber,
@@ -284,7 +285,7 @@ export class TelemetryHelper {
         // TODO: add partial acceptance related metrics
         const autoTriggerType = this.sessionDecisions[0].codewhispererAutomatedTriggerType
         const language = this.sessionDecisions[0].codewhispererLanguage
-        const aggregatedCompletionType = this.getAggregatedCompletionType(this.sessionDecisions)
+        const aggregatedCompletionType = this.sessionDecisions[0].codewhispererCompletionType
         const aggregatedSuggestionState = this.getAggregatedSuggestionState(this.sessionDecisions)
         const selectedCustomization = getSelectedCustomization()
         const generatedLines =
@@ -348,7 +349,9 @@ export class TelemetryHelper {
                         requestId: this.sessionDecisions[0].codewhispererFirstRequestId,
                         customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
-                            languageName: this.sessionDecisions[0].codewhispererLanguage,
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(
+                                this.sessionDecisions[0].codewhispererLanguage
+                            ),
                         },
                         completionType: this.getSendTelemetryCompletionType(aggregatedCompletionType),
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
@@ -435,13 +438,6 @@ export class TelemetryHelper {
         this.timeToFirstRecommendation = 0
         this.classifierResult = undefined
         this.classifierThreshold = undefined
-    }
-
-    private getAggregatedCompletionType(
-        // if there is any Block completion within the session, mark the session as Block completion
-        events: CodewhispererUserDecision[] | CodewhispererUserTriggerDecision[]
-    ): CodewhispererCompletionType {
-        return events.some(e => e.codewhispererCompletionType === 'Block') ? 'Block' : 'Line'
     }
 
     private getSendTelemetryCompletionType(completionType: CodewhispererCompletionType) {
@@ -581,12 +577,20 @@ export class TelemetryHelper {
     }
     public sendCodeScanEvent(languageId: string, jobId: string) {
         getLogger().debug(`start sendCodeScanEvent: jobId: "${jobId}", languageId: "${languageId}"`)
+
+        let codewhispererRuntimeLanguage: string = languageId
+        if (codewhispererRuntimeLanguage === 'jsx') {
+            codewhispererRuntimeLanguage = 'javascript'
+        } else if (codewhispererRuntimeLanguage === 'tsx') {
+            codewhispererRuntimeLanguage = 'typescript'
+        }
+
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
                     codeScanEvent: {
                         programmingLanguage: {
-                            languageName: languageId,
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(languageId as CodewhispererLanguage),
                         },
                         codeScanJobId: jobId,
                         timestamp: new Date(Date.now()),

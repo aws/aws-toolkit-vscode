@@ -97,7 +97,7 @@ export class RedshiftNotebookController {
                     records.push(...result.statementResultResponse.Records)
                 } else {
                     return new vscode.NotebookCellOutput([
-                        vscode.NotebookCellOutputItem.text('No records.', 'text/plain'),
+                        vscode.NotebookCellOutputItem.text('Query completed — No rows returned.', 'text/plain'),
                     ])
                 }
             } while (nextToken)
@@ -133,7 +133,7 @@ export class RedshiftNotebookController {
             tableHtml += '<tr>'
             for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
                 let cellValue: undefined
-                if (Object.keys(row[columnIndex])[0] != 'isNull') {
+                if (Object.keys(row[columnIndex])[0] !== 'isNull') {
                     cellValue = Object.values(row[columnIndex])[0]
                 }
                 tableHtml += `<td>${cellValue}</td>`

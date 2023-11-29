@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { IotThingNode } from '../explorer/iotThingNode'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
@@ -24,11 +23,7 @@ export type CertGen = typeof getCertList
  * Attaches the certificate.
  * Refreshes the thing node.
  */
-export async function attachCertificateCommand(
-    node: IotThingNode,
-    promptFun = promptForCert,
-    commands = Commands.vscode()
-): Promise<void> {
+export async function attachCertificateCommand(node: IotThingNode, promptFun = promptForCert): Promise<void> {
     getLogger().debug('AttachCertificate called for %O', node)
 
     const thingName = node.thing.name
@@ -52,7 +47,7 @@ export async function attachCertificateCommand(
     getLogger().debug('Attached certificate %O', cert.certificateId)
 
     //Refresh the Thing node
-    await node.refreshNode(commands)
+    await node.refreshNode()
 }
 
 /**
@@ -94,5 +89,5 @@ async function* getCertList(iot: IotClient) {
             return
         }
         yield filteredCerts.map(cert => ({ label: cert.certificateId!, data: cert }))
-    } while (marker != undefined)
+    } while (marker !== undefined)
 }

@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import { UnknownError } from '../../shared/errors'
 import { AuthType } from '../auth'
-import { isSsoConnection, SsoConnection, hasScopes } from '../connection'
+import { SsoConnection, hasScopes, isAnySsoConnection } from '../connection'
 
 export function validateSsoUrl(auth: AuthType, url: string, requiredScopes?: string[]) {
     const urlFormatError = validateSsoUrlFormat(url)
@@ -28,7 +28,7 @@ export async function validateIsNewSsoUrlAsync(
     requiredScopes?: string[]
 ): Promise<string | undefined> {
     return auth.listConnections().then(conns => {
-        return validateIsNewSsoUrl(url, requiredScopes, conns.filter(isSsoConnection))
+        return validateIsNewSsoUrl(url, requiredScopes, conns.filter(isAnySsoConnection))
     })
 }
 

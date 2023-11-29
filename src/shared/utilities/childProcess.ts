@@ -296,7 +296,7 @@ export class ChildProcess {
         ChildProcess.runningProcesses.set(pid, this)
 
         const timeoutListener = options?.timeout?.token.onCancellationRequested(({ agent }) => {
-            const message = agent == 'user' ? 'Cancelled: ' : 'Timed out: '
+            const message = agent === 'user' ? 'Cancelled: ' : 'Timed out: '
             this.log.verbose(`${message}${this.toString(options?.logging === 'noparams')}`)
             errorHandler(new CancellationError(agent), true)
         })

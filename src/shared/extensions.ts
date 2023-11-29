@@ -48,4 +48,4 @@ export interface ExtContext {
 /**
  * Version of the .vsix produced by package.ts with the --debug option.
  */
-export const extensionAlphaVersion = '1.99.0-SNAPSHOT'
+export const extensionAlphaVersion = '99.0.0-SNAPSHOT'

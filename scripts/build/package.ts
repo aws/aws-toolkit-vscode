@@ -6,7 +6,7 @@
 //
 // Creates an artifact that can be given to users for testing alpha/beta builds:
 //
-//     aws-toolkit-vscode-1.999.0-xxxxxxxxxxxx.vsix
+//     aws-toolkit-vscode-99.0.0-xxxxxxxxxxxx.vsix
 //
 // Where `xxxxxxxxxxxx` is the first 12 characters of the commit hash that produced the artifact
 //
@@ -121,7 +121,7 @@ function main() {
             const versionSuffix = getVersionSuffix(args.feature)
             const version = packageJson.version
             // Setting the version to an arbitrarily high number stops VSC from auto-updating the beta extension
-            const betaOrDebugVersion = `1.999.0${versionSuffix}`
+            const betaOrDebugVersion = `99.0.0${versionSuffix}`
             if (isBeta() || args.debug) {
                 packageJson.version = betaOrDebugVersion
             } else {

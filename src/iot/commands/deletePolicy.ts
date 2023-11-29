@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { IotPolicyWithVersionsNode } from '../explorer/iotPolicyNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 
@@ -19,10 +18,7 @@ import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utili
  * Deletes the policy.
  * Refreshes the parent node.
  */
-export async function deletePolicyCommand(
-    node: IotPolicyWithVersionsNode,
-    commands = Commands.vscode()
-): Promise<void> {
+export async function deletePolicyCommand(node: IotPolicyWithVersionsNode): Promise<void> {
     getLogger().debug('DeletePolicy called for %O', node)
 
     const policyName = node.policy.name
@@ -57,7 +53,7 @@ export async function deletePolicyCommand(
         for await (const _version of versions) {
             numVersions++
         }
-        if (numVersions != 1) {
+        if (numVersions !== 1) {
             getLogger().error(`Policy ${policyName} has non-default versions`)
             vscode.window.showErrorMessage(
                 localize('AWS.iot.deletePolicy.versionError', 'Policy {0} has non-default versions', policyName)
@@ -76,5 +72,5 @@ export async function deletePolicyCommand(
     }
 
     //Refresh the Policy Folder node
-    await node.parent.refreshNode(commands)
+    await node.parent.refreshNode()
 }

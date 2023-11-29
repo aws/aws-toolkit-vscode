@@ -16,6 +16,7 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ssoAuthHelpUrl } from '../../shared/constants'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { ToolkitError } from '../../shared/errors'
+import { isCloud9 } from '../../shared/extensionUtilities'
 
 export interface SsoToken {
     /**
@@ -117,7 +118,10 @@ export async function openSsoPortalLink(startUrl: string, authorization: Authori
 
     async function showLoginNotification() {
         const name = startUrl === builderIdStartUrl ? localizedText.builderId() : localizedText.iamIdentityCenterFull()
-        const title = localize('AWS.auth.loginWithBrowser.messageTitle', 'Confirm Code for {0}', name)
+        // C9 doesn't support `detail` field with modals so we need to put it all in the `title`
+        const title = isCloud9()
+            ? `Confirm Code "${authorization.userCode}" for ${name} in the browser.`
+            : localize('AWS.auth.loginWithBrowser.messageTitle', 'Confirm Code for {0}', name)
         const detail = localize(
             'AWS.auth.loginWithBrowser.messageDetail',
             'Confirm this code in the browser: {0}',

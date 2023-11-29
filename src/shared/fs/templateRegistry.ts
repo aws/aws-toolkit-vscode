@@ -5,59 +5,40 @@
 
 import * as vscode from 'vscode'
 import { readFileSync } from 'fs'
-import { CloudFormation } from '../cloudformation/cloudformation'
+import * as CloudFormation from '../cloudformation/cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
 import { dotNetRuntimes, goRuntimes, javaRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
-import { NoopWatcher, WatchedFiles, WatchedItem } from './watchedFiles'
+import { WatchedFiles, WatchedItem } from './watchedFiles'
 import { getLogger } from '../logger'
 import globals from '../extensionGlobals'
-import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
-import { sleep } from '../utilities/timeoutUtils'
+import { Timeout } from '../utilities/timeoutUtils'
 import { localize } from '../utilities/vsCodeUtils'
 import { PerfLog } from '../logger/logger'
+import { showMessageWithCancel } from '../utilities/messages'
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
-    protected name: string = 'CloudFormationTemplateRegistry'
+    public name: string = 'CloudFormationTemplateRegistry'
+
     protected async process(uri: vscode.Uri, contents?: string): Promise<CloudFormation.Template | undefined> {
         // P0: Assume all template.yaml/yml files are CFN templates and assign correct JSON schema.
         // P1: Alter registry functionality to search ALL YAML files and apply JSON schemas + add to registry based on validity
 
-        let template: CloudFormation.Template | undefined
-        const path = normalizeVSCodeUri(uri)
-        try {
-            if (isUntitledScheme(uri)) {
-                if (!contents) {
-                    // this error technically just throw us into the catch so the error message isn't used
-                    throw new Error('Contents must be defined for untitled uris')
-                }
-                template = await CloudFormation.loadByContents(contents, false)
-            } else {
-                template = await CloudFormation.load(path, false)
-            }
-        } catch (e) {
+        const r = await CloudFormation.tryLoad(uri, contents)
+        if (r.kind === undefined) {
             globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined })
             return undefined
         }
 
-        // same heuristic used by cfn-lint team:
-        // https://github.com/aws-cloudformation/aws-cfn-lint-visual-studio-code/blob/629de0bac4f36cfc6534e409a6f6766a2240992f/client/src/yaml-support/yaml-schema.ts#L39-L51
-        if (template.AWSTemplateFormatVersion || template.Resources) {
-            if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
-                // apply serverless schema
-                globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'sam' })
-            } else {
-                // apply cfn schema
-                globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'cfn' })
-            }
-
-            return template
+        if (r.kind === 'sam') {
+            globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'sam' })
+        } else if (r.kind === 'cfn') {
+            globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'cfn' })
         }
 
-        globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined })
-        return undefined
+        return r.template
     }
 
     // handles delete case
@@ -81,59 +62,61 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
 export class AsyncCloudFormationTemplateRegistry {
     /** Setup of the registry can take a while, this property indicates it is done */
     private isSetup = false
-    /** The message that is shown to the user to indicate the registry is being set up */
-    private setupProgressMessage: Thenable<void> | undefined = undefined
+    private setupPromise: Thenable<CloudFormationTemplateRegistry> | undefined
 
     /**
      * @param asyncSetupFunc registry setup that will be run async
      */
     constructor(
         private readonly instance: CloudFormationTemplateRegistry,
-        asyncSetupFunc: (instance: CloudFormationTemplateRegistry) => Promise<void>
-    ) {
-        const perflog = new PerfLog('cfn: template registry setup')
-        asyncSetupFunc(instance).then(() => {
-            this.isSetup = true
-            perflog.done()
-        })
-    }
+        private readonly asyncSetupFunc: (
+            instance: CloudFormationTemplateRegistry,
+            cancelSetup: Timeout,
+            onItem?: (total: number, i: number, cancelled: boolean) => void
+        ) => Promise<CloudFormationTemplateRegistry>
+    ) {}
 
     /**
-     * Returns the initial registry instance if setup has completed, otherwise
-     * returning a temporary instance and showing a progress message to the user
-     * to indicate setup is in progress.
+     * Returns the initial registry instance if setup has completed, otherwise returns a temporary
+     * instance and shows a progress message ("Scanning...") until setup is done.
      */
-    getInstance(): CloudFormationTemplateRegistry {
+    async getInstance(): Promise<CloudFormationTemplateRegistry> {
         if (this.isSetup) {
             return this.instance
         }
-
-        // Show user a message indicating setup is in progress
-        if (this.setupProgressMessage === undefined) {
-            this.setupProgressMessage = vscode.window.withProgress(
-                {
-                    location: vscode.ProgressLocation.Notification,
-                    title: localize(
-                        'AWS.codelens.waitingForTemplateRegistry',
-                        'Scanning CloudFormation templates... (except paths configured in [search.exclude](command:workbench.action.openSettings?"@id:search.exclude"))'
-                    ),
-                    cancellable: true,
-                },
-                async (progress, token) => {
-                    token.onCancellationRequested(() => {
-                        // Allows for new message to be created if templateRegistry variable attempted to be used again
-                        this.setupProgressMessage = undefined
-                    })
-                    getLogger().debug('cfn: getInstance() requested, still initializing')
-                    while (!this.isSetup) {
-                        await sleep(2000)
-                    }
-                    getLogger().debug('cfn: getInstance() ready')
-                }
-            )
+        if (this.setupPromise) {
+            getLogger().debug('%s: getInstance() requested, still initializing', this.instance.name)
+            return this.setupPromise
         }
 
-        return new NoopWatcher() as unknown as CloudFormationTemplateRegistry
+        // Show a "Scanning..." progress message until setup is done.
+        const cancelSetup = new Timeout(30 * 60 * 1000) // 30 min
+        const msg = localize(
+            'AWS.codelens.waitingForTemplateRegistry',
+            'Scanning CloudFormation templates (except [search.exclude](command:workbench.action.openSettings?"@id:search.exclude"))'
+        )
+        const progress = await showMessageWithCancel(msg, cancelSetup)
+
+        const perf = new PerfLog(`${this.instance.name}: template registry setup`)
+        this.setupPromise = this.asyncSetupFunc(this.instance, cancelSetup, (total: number, i: number) => {
+            if (cancelSetup.completed) {
+                getLogger().debug('%s: getInstance() cancelled', this.instance.name)
+                return
+            }
+            if (total !== 0) {
+                progress.report({ increment: 100 * (1 / total), message: i.toString() })
+            }
+        })
+
+        this.setupPromise.then(() => {
+            if (perf) {
+                perf.done()
+            }
+            this.isSetup = true
+            cancelSetup.dispose()
+        })
+
+        return this.setupPromise
     }
 }
 
@@ -147,7 +130,7 @@ export class AsyncCloudFormationTemplateRegistry {
 export function getResourcesForHandler(
     filepath: string,
     handler: string,
-    unfilteredTemplates: WatchedItem<CloudFormation.Template>[] = globals.templateRegistry.registeredItems
+    unfilteredTemplates: WatchedItem<CloudFormation.Template>[]
 ): { templateDatum: WatchedItem<CloudFormation.Template>; name: string; resourceData: CloudFormation.Resource }[] {
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
     const o = unfilteredTemplates.map(templateDatum => {

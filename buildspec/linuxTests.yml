@@ -13,43 +13,22 @@ phases:
         runtime-versions:
             nodejs: 16
         commands:
-            # Without this, "Unable to locate package libatk1.0-0".
-            - '>/dev/null apt-get -yqq update'
-            # Dependencies for running vscode.
-            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libasound2 libasound2-plugins'
-            # Prepare env for unprivileged user.
-            - |
-                mkdir -p ~codebuild-user
-                chown -R codebuild-user:codebuild-user /tmp ~codebuild-user .
-                chmod +x ~codebuild-user
-                ls -ld ~codebuild-user
+            - bash buildspec/shared/linux-install.sh
 
     pre_build:
-        env:
-            variables:
-                HOME: /home/codebuild-user
         commands:
-            # CodeBuild ignores the env.variables.HOME declaration above? :(
             - export HOME=/home/codebuild-user
-            # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
-            # Should only affect tests run through IDEs team-hosted CodeBuild.
-            - |
-                if [ "$TOOLKITS_CODEARTIFACT_DOMAIN" ] && [ "$TOOLKITS_CODEARTIFACT_REPO" ] && [ "$TOOLKITS_ACCOUNT_ID" ]; then
-                    if aws codeartifact login --tool npm --domain "$TOOLKITS_CODEARTIFACT_DOMAIN" --domain-owner "$TOOLKITS_ACCOUNT_ID" --repository "$TOOLKITS_CODEARTIFACT_REPO" > /dev/null 2>&1; then
-                        echo "Connected to CodeArtifact"
-                    else
-                        echo "CodeArtifact connection failed. Falling back to npm"
-                    fi
-                fi
-            - npm ci
+            - bash buildspec/shared/linux-pre_build.sh
 
     build:
-        env:
-            variables:
-                HOME: /home/codebuild-user
         commands:
-            # CodeBuild ignores the env.variables.HOME declaration above? :(
             - export HOME=/home/codebuild-user
+            # TODO: remove this after lint.yml is enabled in codebuild.
+            - |
+                if [ "$VSCODE_TEST_VERSION" = 'insiders' ] ; then
+                    npm run testCompile
+                    npm run lint
+                fi
             - xvfb-run npm test --silent
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site

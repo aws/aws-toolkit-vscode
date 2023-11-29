@@ -66,7 +66,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
         this.disposables.push(this._onDidChangeCodeLenses)
         this.disposables.push(
             workspace.onDidSaveTextDocument(async document => {
-                if (!registry.getRegisteredItem(document.fileName)) {
+                if (!registry.getItem(document.fileName)) {
                     return
                 }
 
@@ -110,7 +110,8 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
 export function registerDevfileWatcher(devenvClient: DevEnvClient): vscode.Disposable {
     const registry = new DevfileRegistry()
     const codelensProvider = new DevfileCodeLensProvider(registry, devenvClient)
-    registry.addWatchPattern(devfileGlobPattern)
+    registry.addWatchPatterns([devfileGlobPattern])
+    registry.rebuild()
 
     const codelensDisposable = vscode.languages.registerCodeLensProvider(
         {

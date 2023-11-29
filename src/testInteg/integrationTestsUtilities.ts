@@ -34,13 +34,6 @@ export async function configureAwsToolkitExtension(): Promise<void> {
     await configAws.update('samcli.enableCodeLenses', true, false)
 }
 
-export async function configurePythonExtension(): Promise<void> {
-    const configPy = vscode.workspace.getConfiguration('python')
-    // Disable linting to silence some of the Python extension's log spam
-    await configPy.update('linting.pylintEnabled', false, false)
-    await configPy.update('linting.enabled', false, false)
-}
-
 // Installs tools that the Go extension wants (it complains a lot if we don't)
 // Had to dig around for the commands used by the Go extension.
 // Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goTools.ts#L211

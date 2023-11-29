@@ -10,7 +10,7 @@ import {
 } from '../../shared/telemetry/telemetry.gen'
 import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
-import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
+import { CodeWhispererSupplementalContext } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -19,6 +19,7 @@ class CodeWhispererSession {
 
     // Per-session states
     sessionId = ''
+    requestIdList: string[] = []
     startPos = new Position(0, 0)
     leftContextOfCurrentLine = ''
     requestContext: {

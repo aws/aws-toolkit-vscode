@@ -14,13 +14,11 @@ import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/teleme
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
 import { session } from '../util/codeWhispererSession'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
-import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -119,10 +117,10 @@ export class KeyStrokeHandler {
             // we do not want to trigger when there is immediate right context on the same line
             // with "}" being an exception because of IDE auto-complete
             if (
-                CodeWhispererUserGroupSettings.getUserGroup() === CodeWhispererConstants.UserGroup.RightContext &&
                 rightContextAtCurrentLine.length &&
                 !rightContextAtCurrentLine.startsWith(' ') &&
-                rightContextAtCurrentLine.trim() !== '}'
+                rightContextAtCurrentLine.trim() !== '}' &&
+                rightContextAtCurrentLine.trim() !== ')'
             ) {
                 return
             }
@@ -212,7 +210,6 @@ export class KeyStrokeHandler {
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = false
             }
         } else if (isInlineCompletionEnabled()) {
-            TelemetryHelper.instance.setInvokeSuggestionStartTime()
             await InlineCompletionService.instance.getPaginatedRecommendation(
                 client,
                 editor,

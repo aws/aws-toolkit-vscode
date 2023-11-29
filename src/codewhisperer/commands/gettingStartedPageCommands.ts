@@ -3,16 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { CommandDeclarations, Commands } from '../../shared/vscode/commands2'
-import { showCodeWhispererWebview, CodeWhispererSource } from '../vue/backend'
+import { CommandDeclarations, Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
+import { showCodeWhispererWebview } from '../vue/backend'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { PromptSettings } from '../../shared/settings'
+import { CodeWhispererSource } from './types'
 /**
  * The methods with backend logic for the Codewhisperer Getting Started Page commands.
  */
 export class CodeWhispererCommandBackend {
     constructor(private readonly extContext: vscode.ExtensionContext) {}
-    public async showGettingStartedPage(source: CodeWhispererSource) {
+    public async showGettingStartedPage(_: VsCodeCommandArg, source: CodeWhispererSource) {
+        if (_ !== undefined) {
+            source = 'vscodeComponent'
+        }
+
         const prompts = PromptSettings.instance
         //To check the condition If the user has already seen the welcome message
         if (!(await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage'))) {

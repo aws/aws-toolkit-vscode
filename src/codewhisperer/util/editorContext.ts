@@ -11,13 +11,12 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
-import {
-    CodeWhispererSupplementalContext,
-    fetchSupplementalContext,
-} from './supplementalContext/supplementalContextUtil'
+import { fetchSupplementalContext } from './supplementalContext/supplementalContextUtil'
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
+import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
+import { CodeWhispererSupplementalContext } from '../models/model'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -40,13 +39,33 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
             document.positionAt(offset + CodeWhispererConstants.charactersLimit)
         )
     )
+    if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
+        return {
+            filename: getFileNameForRequest(editor),
+            programmingLanguage: {
+                languageName: 'plaintext',
+            },
+            leftFileContent: caretLeftFileContext,
+            rightFileContent: caretRightFileContext,
+        } as codewhispererClient.FileContext
+    }
+
+    if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
+        return {
+            filename: getFileNameForRequest(editor),
+            programmingLanguage: {
+                languageName: 'plaintext',
+            },
+            leftFileContent: caretLeftFileContext,
+            rightFileContent: caretRightFileContext,
+        } as codewhispererClient.FileContext
+    }
 
     return {
         filename: getFileNameForRequest(editor),
         programmingLanguage: {
             languageName:
-                runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(editor.document.languageId) ??
-                editor.document.languageId,
+                runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId,
         },
         leftFileContent: caretLeftFileContext,
         rightFileContent: caretRightFileContext,
@@ -175,12 +194,12 @@ export function validateRequest(
     req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
 ): boolean {
     const isLanguageNameValid = !(
-        req.fileContext.programmingLanguage.languageName == undefined ||
+        req.fileContext.programmingLanguage.languageName === undefined ||
         req.fileContext.programmingLanguage.languageName.length < 1 ||
         req.fileContext.programmingLanguage.languageName.length > 128 ||
         !runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName)
     )
-    const isFileNameValid = !(req.fileContext.filename == undefined || req.fileContext.filename.length < 1)
+    const isFileNameValid = !(req.fileContext.filename === undefined || req.fileContext.filename.length < 1)
     const isFileContextValid = !(
         req.fileContext.leftFileContent.length > CodeWhispererConstants.charactersLimit ||
         req.fileContext.rightFileContent.length > CodeWhispererConstants.charactersLimit

@@ -27,7 +27,7 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 const localize = nls.loadMessageBundle()
 
 function validateCommand(command: string): string | undefined {
-    if (command == '') {
+    if (command === '') {
         return localize('AWS.apprunner.command.invalid', 'Command cannot be empty')
     }
 

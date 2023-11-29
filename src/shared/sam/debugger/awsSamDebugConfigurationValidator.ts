@@ -7,8 +7,8 @@ import * as vscode from 'vscode'
 import * as fs from 'fs'
 import * as path from 'path'
 import { samImageLambdaRuntimes, samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
-import { CloudFormation } from '../../cloudformation/cloudformation'
-import { localize } from '../../utilities/vsCodeUtils'
+import * as CloudFormation from '../../cloudformation/cloudformation'
+import { localize, replaceVscodeVars } from '../../utilities/vsCodeUtils'
 import {
     awsSamDebugRequestTypes,
     awsSamDebugTargetTypes,
@@ -19,7 +19,7 @@ import {
     API_TARGET_TYPE,
 } from './awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
-import globals from '../../extensionGlobals'
+import { CloudFormationTemplateRegistry } from '../../fs/templateRegistry'
 
 export interface ValidationResult {
     isValid: boolean
@@ -27,7 +27,7 @@ export interface ValidationResult {
 }
 
 export interface AwsSamDebugConfigurationValidator {
-    validate(config: AwsSamDebuggerConfiguration): ValidationResult
+    validate(config: AwsSamDebuggerConfiguration, registry: CloudFormationTemplateRegistry): Promise<ValidationResult>
 }
 
 export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConfigurationValidator {
@@ -36,7 +36,11 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
     /**
      * Validates debug configuration properties.
      */
-    public validate(config: AwsSamDebuggerConfiguration, resolveVars?: boolean): ValidationResult {
+    public async validate(
+        config: AwsSamDebuggerConfiguration,
+        registry: CloudFormationTemplateRegistry,
+        resolveVars?: boolean
+    ): Promise<ValidationResult> {
         let rv: ValidationResult = { isValid: false, message: undefined }
         if (resolveVars) {
             config = doTraverseAndReplace(config, this.workspaceFolder?.uri.fsPath ?? '')
@@ -63,12 +67,20 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             config.invokeTarget.target === TEMPLATE_TARGET_TYPE ||
             config.invokeTarget.target === API_TARGET_TYPE
         ) {
-            let cfnTemplate
+            let cfnTemplate: CloudFormation.Template | undefined
             if (config.invokeTarget.templatePath) {
-                const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.templatePath)
+                // TODO: why wasn't ${workspaceFolder} resolved before now?
+                const resolvedPath = replaceVscodeVars(
+                    config.invokeTarget.templatePath,
+                    this.workspaceFolder?.uri.fsPath
+                )
                 // Normalize to absolute path for use in the runner.
+                const fullpath = tryGetAbsolutePath(this.workspaceFolder, resolvedPath)
                 config.invokeTarget.templatePath = fullpath
-                cfnTemplate = globals.templateRegistry.getRegisteredItem(fullpath)?.item
+                // Forcefully add to the registry in case the registry scan somehow missed the file. #2614
+                // If the user (launch config) gave an explicit path we should always "find" it.
+                const uri = vscode.Uri.file(fullpath)
+                cfnTemplate = (await registry.addItem(uri, true))?.item
             }
             rv = this.validateTemplateConfig(config, config.invokeTarget.templatePath, cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {

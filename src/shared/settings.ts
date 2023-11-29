@@ -5,15 +5,19 @@
 
 import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
+import * as codecatalyst from './clients/codecatalystClient'
 import { getLogger } from './logger'
 import { cast, FromDescriptor, Record, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
-import { ClassToInterfaceType, keys } from './utilities/tsUtils'
+import { assertHasProps, ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isNameMangled } from './vscode/env'
-import { once } from './utilities/functionUtils'
+import { once, onceChanged } from './utilities/functionUtils'
 import { ToolkitError } from './errors'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
+
+/** Used by isValid(). Must be something that's defined in our package.json. */
+const testSetting = 'aws.samcli.lambdaTimeout'
 
 /**
  * A class for manipulating VS Code user settings (from all extensions).
@@ -65,13 +69,12 @@ export class Settings {
     /**
      * Attempts to write to the settings.
      *
-     * Settings can only be written to so long as a extension contributes the specified key
-     * in their `package.json`. If no contribution exists, then the write will fail, causing
-     * this method to return false.
+     * Settings can only be written if the extension contributes the specified key in its
+     * `package.json`, else the write will fail and this method will return false.
      *
-     * Writing to settings may fail if the user does not have write permissions, or if some
-     * requirement is not met. For example, the `vscode.ConfigurationTarget.Workspace` target
-     * requires a workspace.
+     * Writing to settings may fail if the user does not have write permissions, or settings.json is
+     * corrupted, or some other requirement is not met (for example, the
+     * `vscode.ConfigurationTarget.Workspace` target requires a workspace).
      */
     public async update(key: string, value: unknown): Promise<boolean> {
         try {
@@ -82,6 +85,50 @@ export class Settings {
             getLogger().warn('settings: failed to update "%s": %s', key, (e as Error).message)
 
             return false
+        }
+    }
+
+    /**
+     * Checks that user `settings.json` actually works. #3910
+     *
+     * Note: This checks that we can actually "roundtrip" (read and write) settings. vscode notifies
+     * the user if settings.json is complete nonsense, but silently fails if there are only
+     * "recoverable" JSON syntax errors.
+     */
+    public async isValid(): Promise<'ok' | 'invalid' | 'nowrite'> {
+        const key = testSetting
+        const config = this.getConfig()
+        const tempValOld = 1234 // Legacy temp value we are migrating from.
+        const tempVal = 91234 // Temp value used to check that read/write works.
+        const defaultVal = settingsProps[key].default
+
+        try {
+            const userVal = config.get<number>(key)
+            // Try to write a temporary "sentinel" value to settings.json.
+            await config.update(key, tempVal, this.updateTarget)
+            if (userVal === undefined || [defaultVal, tempValOld, tempVal].includes(userVal)) {
+                // Avoid polluting the user's settings.json.
+                await config.update(key, undefined, this.updateTarget)
+            } else {
+                // Restore the user's actual setting value.
+                await config.update(key, userVal, this.updateTarget)
+            }
+
+            return 'ok'
+        } catch (e) {
+            const err = e as Error
+            // If anything tries to update an unwritable settings.json, vscode will thereafter treat
+            // it as an "unsaved" file. #4043
+            if (err.message.includes('EACCES') || err.message.includes('the file has unsaved changes')) {
+                const logMsg = 'settings: unwritable settings.json: %s'
+                getLogger().warn(logMsg, err.message)
+                return 'nowrite'
+            }
+
+            const logMsg = 'settings: invalid settings.json: %s'
+            getLogger().error(logMsg, err.message)
+
+            return 'invalid'
         }
     }
 
@@ -342,7 +389,9 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
                 }
 
                 for (const key of props.filter(isDifferent)) {
-                    this.log('key "%s" changed', key)
+                    if (`${section}.${key}` !== testSetting) {
+                        this.log('key "%s" changed', key)
+                    }
                     emitter.fire({ key })
                 }
             })
@@ -360,22 +409,22 @@ export interface TypedSettings<T extends Record<string, any>> extends Omit<Reset
     /**
      * Gets the value stored at `key`.
      *
-     * This will always return the expected type, otherwise an error is thrown.
+     * Always returns the expected type, or throws an error.
      */
     get<K extends keyof T>(key: K, defaultValue?: T[K]): T[K]
 
     /**
      * Updates the value stored at `key`.
      *
-     * Errors are always handled, so any issues will cause this method to return `false`.
+     * Errors are caught and silently logged, and return `false`.
      */
     update<K extends keyof T>(key: K, value: T[K]): Promise<boolean>
 
     /**
      * Deletes a key from the settings.
      *
-     * This is equivalent to setting the value to `undefined`, though keeping the two
-     * concepts separate helps with catching unexpected behavior.
+     * Equivalent to setting the value to `undefined`, but keeping the two concepts separate helps
+     * with catching unexpected behavior.
      */
     delete(key: keyof T): Promise<boolean>
 
@@ -612,7 +661,7 @@ const devSettings = {
     telemetryUserPool: String,
     renderDebugDetails: Boolean,
     endpoints: Record(String, String),
-    cawsStage: String,
+    codecatalystService: Record(String, String),
     ssoCacheDirectory: String,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
@@ -672,6 +721,28 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         return Object.keys(this.activeSettings).length > 0
     }
 
+    public getCodeCatalystConfig(
+        defaultConfig: codecatalyst.CodeCatalystConfig
+    ): Readonly<codecatalyst.CodeCatalystConfig> {
+        const devSetting = 'codecatalystService'
+        const devConfig = this.get(devSetting, {})
+
+        if (Object.keys(devConfig).length === 0) {
+            this.logCodeCatalystConfigOnce('default')
+            return defaultConfig
+        }
+
+        try {
+            // The configuration in dev settings should explicitly override the entire default configuration.
+            assertHasProps(devConfig, ...Object.keys(defaultConfig))
+        } catch (err) {
+            throw ToolkitError.chain(err, `Dev setting '${devSetting}' has missing or invalid properties.`)
+        }
+
+        this.logCodeCatalystConfigOnce(JSON.stringify(devConfig, undefined, 4))
+        return devConfig as unknown as codecatalyst.CodeCatalystConfig
+    }
+
     public override get<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {
         if (!this.isSet(key)) {
             this.unset(key)
@@ -698,6 +769,10 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
             this.onDidChangeActiveSettingsEmitter.fire()
         }
     }
+
+    private logCodeCatalystConfigOnce = onceChanged(val => {
+        getLogger().info(`using CodeCatalyst service configuration: ${val}`)
+    })
 
     static #instance: DevSettings
 

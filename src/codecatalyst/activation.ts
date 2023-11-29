@@ -17,12 +17,13 @@ import { watchRestartingDevEnvs } from './reconnect'
 import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, placeholder } from '../shared/vscode/commands2'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { isDevenvVscode } from './utils'
 import { getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
 import { InactivityMessage, shouldTrackUserActivity } from './devEnv'
+import { showManageConnections } from '../auth/ui/vue/show'
 
 const localize = nls.loadMessageBundle()
 
@@ -34,14 +35,18 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const commands = new CodeCatalystCommands(authProvider)
     const remoteSourceProvider = new CodeCatalystRemoteSourceProvider(commands, authProvider)
 
+    await authProvider.restore()
+
     ctx.extensionContext.subscriptions.push(
         uriHandlers.register(ctx.uriHandler, CodeCatalystCommands.declared),
-        ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands))
+        ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands)),
+        Commands.register('aws.codecatalyst.manageConnections', () => {
+            showManageConnections.execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
+        }),
+        Commands.register('aws.codecatalyst.signout', () => {
+            return authProvider.secondaryAuth.deleteConnection()
+        })
     )
-
-    Commands.register('aws.codecatalyst.removeConnection', () => {
-        authProvider.removeSavedConnection()
-    })
 
     if (!isCloud9()) {
         GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then(disposable => {

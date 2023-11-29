@@ -26,7 +26,7 @@ import * as picker from '../../../shared/ui/picker'
 import { addCodiconToString } from '../../../shared/utilities/textUtilities'
 import { sampleRequestPath } from '../../constants'
 import { tryGetAbsolutePath } from '../../../shared/utilities/workspaceUtils'
-import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { openLaunchJsonFile } from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { getSampleLambdaPayloads } from '../../utils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
@@ -94,7 +94,7 @@ export class SamInvokeWebview extends VueWebview {
         }
         const uri = workspaceFolder.uri
         const launchConfig = new LaunchConfiguration(uri)
-        const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
+        const pickerItems = await getLaunchConfigQuickPickItems(launchConfig, uri)
         if (pickerItems.length === 0) {
             pickerItems.push({
                 index: -1,
@@ -161,7 +161,7 @@ export class SamInvokeWebview extends VueWebview {
     public async getTemplate() {
         const items: (vscode.QuickPickItem & { templatePath: string })[] = []
         const noTemplate = 'NOTEMPLATEFOUND'
-        for (const template of globals.templateRegistry.registeredItems) {
+        for (const template of (await globals.templateRegistry).items) {
             const resources = template.item.Resources
             if (resources) {
                 for (const resource of Object.keys(resources)) {
@@ -227,6 +227,7 @@ export class SamInvokeWebview extends VueWebview {
             return
         }
         const launchConfig = new LaunchConfiguration(uri)
+        const launchConfigItems = await getLaunchConfigQuickPickItems(launchConfig, uri)
         const pickerItems = [
             {
                 label: addCodiconToString(
@@ -236,7 +237,7 @@ export class SamInvokeWebview extends VueWebview {
                 index: -1,
                 alwaysShow: true,
             },
-            ...getLaunchConfigQuickPickItems(launchConfig, uri),
+            ...launchConfigItems,
         ]
 
         const qp = picker.createQuickPick({
@@ -343,24 +344,29 @@ function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri
     return undefined
 }
 
-function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: vscode.Uri): LaunchConfigPickItem[] {
+async function getLaunchConfigQuickPickItems(
+    launchConfig: LaunchConfiguration,
+    uri: vscode.Uri
+): Promise<LaunchConfigPickItem[]> {
     const existingConfigs = launchConfig.getDebugConfigurations()
     const samValidator = new DefaultAwsSamDebugConfigurationValidator(vscode.workspace.getWorkspaceFolder(uri))
-    return existingConfigs
-        .map((val, index) => {
-            return {
-                config: val,
-                index,
-            }
-        })
-        .filter(o => samValidator.validate(o.config as any as AwsSamDebuggerConfiguration, true)?.isValid)
-        .map(val => {
-            return {
-                index: val.index,
-                label: val.config.name,
-                config: val.config as AwsSamDebuggerConfiguration,
-            }
-        })
+    const registry = await globals.templateRegistry
+    const mapped = existingConfigs.map((val, index) => {
+        return {
+            config: val as AwsSamDebuggerConfiguration,
+            index: index,
+            label: val.name,
+        }
+    })
+    // XXX: can't use filter() with async predicate.
+    const filtered: LaunchConfigPickItem[] = []
+    for (const c of mapped) {
+        const valid = await samValidator.validate(c.config, registry, true)
+        if (valid?.isValid) {
+            filtered.push(c)
+        }
+    }
+    return filtered
 }
 
 export function finalizeConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamDebuggerConfiguration {

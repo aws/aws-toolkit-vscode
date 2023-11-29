@@ -27,6 +27,7 @@ import {
     getToolkitEnvironmentDetails,
     initializeComputeRegion,
     isCloud9,
+    isSageMaker,
     showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
@@ -53,6 +54,8 @@ import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
 import { activate as activateRedshift } from './redshift/activation'
 import { CredentialsStore } from './auth/credentials/store'
+import { activate as activateCWChat } from './amazonq/activation'
+import { activate as activateQGumby } from './amazonqGumby/activation'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
@@ -69,17 +72,22 @@ import { Auth } from './auth/auth'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 import { isUserCancelledError, resolveErrorMessageToDisplay, ToolkitError } from './shared/errors'
 import { Logging } from './shared/logger/commands'
-import { showMessageWithUrl } from './shared/utilities/messages'
+import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
 import { registerWebviewErrorHandler } from './webviews/server'
 import { initializeManifestPaths } from './extensionShared'
+import { ChildProcess } from './shared/utilities/childProcess'
+import { initializeNetworkAgent } from './codewhisperer/client/agent'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
+    initializeNetworkAgent()
     await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
+
     initialize(context)
+    globals.machineId = await getMachineId()
     initializeManifestPaths(context)
 
     const toolkitOutputChannel = vscode.window.createOutputChannel(
@@ -133,8 +141,8 @@ export async function activate(context: vscode.ExtensionContext) {
         const settings = Settings.instance
         const experiments = Experiments.instance
 
-        await initializeCredentials(context, awsContext, loginManager)
         await activateTelemetry(context, awsContext, settings)
+        await initializeCredentials(context, awsContext, loginManager)
 
         experiments.onDidChange(({ key }) => {
             telemetry.aws_experimentActivation.run(span => {
@@ -209,11 +217,12 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
-        await codecatalyst.activate(extContext)
+        // do not enable codecatalyst for sagemaker
+        if (!isSageMaker()) {
+            await codecatalyst.activate(extContext)
+        }
 
         await activateCloudFormationTemplateRegistry(context)
-
-        await activateCodeWhisperer(extContext)
 
         await activateAwsExplorer({
             context: extContext,
@@ -221,6 +230,8 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitOutputChannel,
             remoteInvokeOutputChannel,
         })
+
+        await activateCodeWhisperer(extContext)
 
         await activateAppRunner(extContext)
 
@@ -251,13 +262,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSchemas(extContext)
 
+        if (!isCloud9()) {
+            await activateCWChat(extContext.extensionContext)
+            await activateQGumby(extContext)
+        }
+
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
         await activateRedshift(extContext)
 
         showWelcomeMessage(context)
 
-        recordToolkitInitialization(activationStartedOn, getLogger())
+        const settingsValid = await checkSettingsHealth(settings)
+        recordToolkitInitialization(activationStartedOn, settingsValid, getLogger())
 
         if (!isReleaseVersion()) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
@@ -303,12 +320,16 @@ function makeEndpointsProvider() {
     }
 }
 
-function recordToolkitInitialization(activationStartedOn: number, logger?: Logger) {
+function recordToolkitInitialization(activationStartedOn: number, settingsValid: boolean, logger?: Logger) {
     try {
         const activationFinishedOn = Date.now()
         const duration = activationFinishedOn - activationStartedOn
 
-        telemetry.toolkit_init.emit({ duration })
+        if (settingsValid) {
+            telemetry.toolkit_init.emit({ duration })
+        } else {
+            telemetry.toolkit_init.emit({ duration, result: 'Failed', reason: 'UserSettings' })
+        }
     } catch (err) {
         logger?.error(err as Error)
     }
@@ -391,6 +412,36 @@ export function logAndShowWebviewError(err: unknown, webviewId: string, command:
     const detailedError = ToolkitError.chain(err, `Webview backend command failed: "${command}()"`)
     const userFacingError = ToolkitError.chain(detailedError, 'Webview error')
     logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error')
+}
+
+async function checkSettingsHealth(settings: Settings): Promise<boolean> {
+    const r = await settings.isValid()
+    switch (r) {
+        case 'invalid': {
+            const msg = 'Failed to access settings. Check settings.json for syntax errors.'
+            const openSettingsItem = 'Open settings.json'
+            showViewLogsMessage(msg, 'error', [openSettingsItem]).then(async resp => {
+                if (resp === openSettingsItem) {
+                    vscode.commands.executeCommand('workbench.action.openSettingsJson')
+                }
+            })
+            return false
+        }
+        // Don't show a message for 'nowrite' because:
+        //  - settings.json may intentionally be readonly. #4043
+        //  - vscode will show its own error if settings.json cannot be written.
+        //
+        // Note: isValid() already logged a warning.
+        case 'nowrite':
+        case 'ok':
+        default:
+            return true
+    }
+}
+
+async function getMachineId(): Promise<string> {
+    const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
+    return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }
 
 // Unique extension entrypoint names, so that they can be obtained from the webpack bundle

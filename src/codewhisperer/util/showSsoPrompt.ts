@@ -15,27 +15,15 @@ import { ToolkitError } from '../../shared/errors'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { isIamConnection } from '../../auth/connection'
 import { createBuilderIdItem, createSsoItem, createIamItem } from '../../auth/utils'
+import { Commands } from '../../shared/vscode/commands2'
 
-export const showConnectionPrompt = async () => {
-    // Skip this prompt on C9 because:
-    // * The UI looks bad with C9's style of pickers
-    // * C9 will always start with _some_ form of auth so this prompt is less common
-    if (isCloud9()) {
-        if (isCloud9('classic')) {
-            const iamConn = (await AuthUtil.instance.auth.listConnections()).find(isIamConnection)
-            if (iamConn) {
-                await AuthUtil.instance.auth.useConnection(iamConn)
-            }
-        } else {
-            await AuthUtil.instance.connectToAwsBuilderId()
-        }
+export const showCodeWhispererConnectionPrompt = async () => {
+    const items = isCloud9('classic')
+        ? [createSsoItem(), createCodeWhispererIamItem()]
+        : [createBuilderIdItem(), createSsoItem(), createCodeWhispererIamItem()]
 
-        return
-    }
-
-    const resp = await showQuickPick([createBuilderIdItem(), createSsoItem(), createCodeWhispererIamItem()], {
+    const resp = await showQuickPick(items, {
         title: 'CodeWhisperer: Add Connection to AWS',
         placeholder: 'Select a connection option to start using CodeWhisperer',
         buttons: createCommonButtons() as vscode.QuickInputButton[],
@@ -65,6 +53,7 @@ export async function awsIdSignIn() {
         throw ToolkitError.chain(e, failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
     }
     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    await Commands.tryExecute('aws.amazonq.refresh')
     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
 }
 

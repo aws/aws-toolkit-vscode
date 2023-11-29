@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getLogger } from '../../shared/logger'
-import { Commands } from '../../shared/vscode/commands'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
@@ -25,8 +24,7 @@ const PEM_FILE_ENCODING = 'ascii'
 export async function createCertificateCommand(
     node: IotCertsFolderNode,
     promptFunc = promptForSaveLocation,
-    saveFunc = saveCredentials,
-    commands = Commands.vscode()
+    saveFunc = saveCredentials
 ): Promise<void> {
     getLogger().debug('CreateCertificate called for %O', node)
 
@@ -75,7 +73,7 @@ export async function createCertificateCommand(
     }
 
     //Refresh the Certificate Folder node
-    await node.refreshNode(commands)
+    await node.refreshNode()
 }
 
 /**
@@ -89,7 +87,7 @@ async function promptForSaveLocation(): Promise<vscode.Uri | undefined> {
         canSelectMany: false,
     })
 
-    if (!folderLocation || folderLocation.length == 0) {
+    if (!folderLocation || folderLocation.length === 0) {
         return undefined
     }
 

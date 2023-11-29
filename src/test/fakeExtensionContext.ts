@@ -20,7 +20,6 @@ import {
 import { DefaultTelemetryService } from '../shared/telemetry/telemetryService'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
 import { UriHandler } from '../shared/vscode/uriHandler'
-import { FakeEnvironmentVariableCollection } from './fake/fakeEnvironmentVariableCollection'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
@@ -53,11 +52,11 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public storagePath: string | undefined
     public logPath: string = ''
     public extensionUri: vscode.Uri = vscode.Uri.file(this._extensionPath)
-    public environmentVariableCollection: vscode.EnvironmentVariableCollection = new FakeEnvironmentVariableCollection()
+    public environmentVariableCollection: any //vscode.EnvironmentVariableCollection = {} as vscode.EnvironmentVariableCollection
     public storageUri: vscode.Uri | undefined
     public logUri: vscode.Uri = vscode.Uri.file('file://fake/log/uri')
     public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test
-    public secrets = new SecretStorage()
+    public secrets = new FakeSecretStorage()
 
     public extension: vscode.Extension<any> = {
         activate: async () => undefined,
@@ -121,7 +120,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const awsContext = new FakeAwsContext()
         const samCliContext = () => {
             return {
-                invoker: new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
+                invoker: new TestSamCliProcessInvoker((_spawnOptions, _args: any[]): ChildProcessResult => {
                     return new FakeChildProcessResult({})
                 }),
                 validator: new FakeSamCliValidator(minSamCliVersionForGoSupport),
@@ -154,7 +153,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
 
 export class FakeMemento implements vscode.Memento {
     public constructor(private readonly _storage: FakeMementoStorage = {}) {}
-    public setKeysForSync(keys: readonly string[]): void {
+    public setKeysForSync(_keys: readonly string[]): void {
         // TODO(jmkeyes): implement this?
     }
     public keys(): readonly string[] {
@@ -172,7 +171,7 @@ export class FakeMemento implements vscode.Memento {
     }
 }
 
-class SecretStorage implements vscode.SecretStorage {
+export class FakeSecretStorage implements vscode.SecretStorage {
     private _onDidChange = new vscode.EventEmitter<vscode.SecretStorageChangeEvent>()
     public readonly onDidChange = this._onDidChange.event
 

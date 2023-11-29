@@ -36,7 +36,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
     if (!config.baseBuildDir) {
         throw Error('invalid state: config.baseBuildDir was not set')
     }
-    config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
+    config.codeRoot = (await getCodeRoot(config.workspaceFolder, config))!
     // TODO: avoid the reassignment
     // TODO: walk the tree to find .sln, .csproj ?
     const originalCodeRoot = config.codeRoot
@@ -129,7 +129,7 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
 
         let installCommand: string
         let installArgs: string[]
-        if (os.platform() == 'win32') {
+        if (os.platform() === 'win32') {
             const windir = process.env['WINDIR']
             if (!windir) {
                 throw new Error('Environment variable `WINDIR` not defined')
@@ -187,7 +187,7 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
 async function downloadInstallScript(debuggerPath: string): Promise<string> {
     let installScriptUrl: string
     let installScriptPath: string
-    if (os.platform() == 'win32') {
+    if (os.platform() === 'win32') {
         installScriptUrl = 'https://aka.ms/getvsdbgps1'
         installScriptPath = path.join(debuggerPath, 'installVsdbgScript.ps1')
     } else {
@@ -225,7 +225,7 @@ export async function makeDotnetDebugConfiguration(
     config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))
     await ensureDir(config.debuggerPath)
 
-    const isImageLambda = isImageLambdaConfig(config)
+    const isImageLambda = await isImageLambdaConfig(config)
 
     if (isImageLambda && !config.noDebug) {
         config.containerEnvVars = {

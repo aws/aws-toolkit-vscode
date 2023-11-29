@@ -24,6 +24,7 @@ import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
 import { getTestWindow, resetTestWindow } from './shared/vscode/window'
 import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
+import { TelemetryDebounceInfo } from '../shared/vscode/commands2'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -33,6 +34,7 @@ const maxTestDuration = 30_000
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
 let openExternalStub: sinon.SinonStub<Parameters<(typeof vscode)['env']['openExternal']>, Thenable<boolean>>
+// let executeCommandSpy: sinon.SinonSpy | undefined
 
 export async function mochaGlobalSetup(this: Mocha.Runner) {
     // Clean up and set up test logs
@@ -62,7 +64,7 @@ export const mochaHooks = {
     async beforeEach(this: Mocha.Context) {
         // Set every test up so that TestLogger is the logger used by toolkit code
         testLogger = setupTestLogger()
-        globals.templateRegistry = new CloudFormationTemplateRegistry()
+        globals.templateRegistry = (async () => new CloudFormationTemplateRegistry())()
         globals.codelensRootRegistry = new CodelensRootRegistry()
 
         // In general, we do not want to "fake" the `vscode` API. The only exception is for things
@@ -81,11 +83,12 @@ export const mochaHooks = {
         globals.telemetry.telemetryEnabled = true
         globals.telemetry.clearRecords()
         globals.telemetry.logger.clear()
+        TelemetryDebounceInfo.instance.clear()
         ;(globals.context as FakeExtensionContext).globalState = new FakeMemento()
 
         await testUtil.closeAllEditors()
     },
-    afterEach(this: Mocha.Context) {
+    async afterEach(this: Mocha.Context) {
         if (openExternalStub.called && openExternalStub.returned(sinon.match.typeOf('undefined'))) {
             throw new Error(
                 `Test called openExternal(${
@@ -98,9 +101,12 @@ export const mochaHooks = {
         teardownTestLogger(this.currentTest?.fullTitle() as string)
         testLogger = undefined
         resetTestWindow()
-        globals.templateRegistry.dispose()
+        const r = await globals.templateRegistry
+        r.dispose()
         globals.codelensRootRegistry.dispose()
         globalSandbox.restore()
+
+        // executeCommandSpy = undefined
     },
 }
 
@@ -162,3 +168,14 @@ export function assertLogsContain(text: string, exactMatch: boolean, severity: L
 export function getOpenExternalStub(): typeof openExternalStub {
     return openExternalStub
 }
+
+// /**
+//  * Returns a spy for `vscode.commands.executeCommand()`.
+//  *
+//  * Opt-in per test, because most tests should test application state instead of spies.
+//  * Global `afterEach` automatically calls `globalSandbox.restore()` after the test run.
+//  */
+// export function stubVscodeExecuteCommand() {
+//     executeCommandSpy = executeCommandSpy ?? globalSandbox.spy(vscode.commands, 'executeCommand')
+//     return executeCommandSpy
+// }

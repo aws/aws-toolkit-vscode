@@ -11,7 +11,7 @@ import { S3Client, File, Folder, Bucket } from '../../../shared/clients/s3Client
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
-import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
+import { TestSettings } from '../../utilities/testSettingsConfiguration'
 
 describe('S3FolderNode', function () {
     const bucketName = 'bucket-name'
@@ -22,12 +22,9 @@ describe('S3FolderNode', function () {
     const folder: Folder = { name: 'folder', path, arn: 'arn' }
     const subFolder: Folder = { name: 'subFolder', path: 'subPath', arn: 'subArn' }
     const maxResults = 200
-    const workspace = new FakeWorkspace({
-        section: 'aws',
-        configuration: { key: 's3.maxItemsPerPage', value: maxResults },
-    })
 
     let s3: S3Client
+    let config: TestSettings
 
     function assertFolderNode(node: AWSTreeNodeBase | LoadMoreNode, expectedFolder: Folder): void {
         assert.ok(node instanceof S3FolderNode, `Node ${node} should be a Folder Node`)
@@ -46,8 +43,10 @@ describe('S3FolderNode', function () {
         assertFolderNode((node as MoreResultsNode).parent, folder)
     }
 
-    beforeEach(function () {
+    beforeEach(async () => {
         s3 = mock()
+        config = new TestSettings()
+        await config.getSection('aws').update('s3.maxItemsPerPage', maxResults)
     })
 
     describe('getChildren', function () {
@@ -60,7 +59,7 @@ describe('S3FolderNode', function () {
                 continuationToken: undefined,
             })
 
-            const node = new S3FolderNode(bucket, folder, instance(s3), workspace)
+            const node = new S3FolderNode(bucket, folder, instance(s3), config)
             const [subFolderNode, fileNode, ...otherNodes] = await node.getChildren()
 
             assertFolderNode(subFolderNode, subFolder)
@@ -77,7 +76,7 @@ describe('S3FolderNode', function () {
                 continuationToken,
             })
 
-            const node = new S3FolderNode(bucket, folder, instance(s3), workspace)
+            const node = new S3FolderNode(bucket, folder, instance(s3), config)
             const [subFolderNode, fileNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
             assertFolderNode(subFolderNode, subFolder)

@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { CloudFormation } from '../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../shared/cloudformation/cloudformation'
 import {
     AwsSamDebuggerConfiguration,
     awsSamDebugTargetTypes,
@@ -100,10 +100,10 @@ export interface PipeTransport {
  * - For "code" configs this is the `projectRoot` field.
  * - For "template" configs this is the `CodeUri` field in the template.
  */
-export function getCodeRoot(
+export async function getCodeRoot(
     folder: vscode.WorkspaceFolder | undefined,
     config: AwsSamDebuggerConfiguration
-): string | undefined {
+): Promise<string | undefined> {
     switch (config.invokeTarget.target) {
         case 'code': {
             const codeInvoke = config.invokeTarget as CodeTargetProperties
@@ -112,11 +112,11 @@ export function getCodeRoot(
         case 'api':
         case 'template': {
             const templateInvoke = config.invokeTarget as TemplateTargetProperties
-            const template = getTemplate(folder, config)
+            const template = await getTemplate(folder, config)
             if (!template) {
                 return undefined
             }
-            const templateResource = getTemplateResource(folder, config)
+            const templateResource = await getTemplateResource(folder, config)
             if (!templateResource?.Properties) {
                 return undefined
             }
@@ -142,10 +142,10 @@ export function getCodeRoot(
 /**
  * Gets the lambda handler name specified in the given config.
  */
-export function getHandlerName(
+export async function getHandlerName(
     folder: vscode.WorkspaceFolder | undefined,
     config: AwsSamDebuggerConfiguration
-): string {
+): Promise<string> {
     switch (config.invokeTarget.target) {
         case 'code': {
             const codeInvoke = config.invokeTarget as CodeTargetProperties
@@ -153,11 +153,11 @@ export function getHandlerName(
         }
         case 'api':
         case 'template': {
-            const template = getTemplate(folder, config)
+            const template = await getTemplate(folder, config)
             if (!template) {
                 return ''
             }
-            const templateResource = getTemplateResource(folder, config)
+            const templateResource = await getTemplateResource(folder, config)
             if (CloudFormation.isImageLambdaResource(templateResource?.Properties)) {
                 return config.invokeTarget.logicalId
             }
@@ -184,16 +184,16 @@ export function getHandlerName(
 }
 
 /** Gets a template object from the given config. */
-export function getTemplate(
+export async function getTemplate(
     folder: vscode.WorkspaceFolder | undefined,
     config: AwsSamDebuggerConfiguration
-): CloudFormation.Template | undefined {
+): Promise<CloudFormation.Template | undefined> {
     if (!['api', 'template'].includes(config.invokeTarget.target)) {
         return undefined
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
     const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
-    const cfnTemplate = globals.templateRegistry.getRegisteredItem(fullPath)?.item
+    const cfnTemplate = (await globals.templateRegistry).getItem(fullPath)?.item
     return cfnTemplate
 }
 
@@ -201,15 +201,15 @@ export function getTemplate(
  * Gets the template resources object specified by the `logicalId`
  * field (if the config has `target=template` or `target=api`).
  */
-export function getTemplateResource(
+export async function getTemplateResource(
     folder: vscode.WorkspaceFolder | undefined,
     config: AwsSamDebuggerConfiguration
-): CloudFormation.Resource | undefined {
+): Promise<CloudFormation.Resource | undefined> {
     if (!['api', 'template'].includes(config.invokeTarget.target)) {
         return undefined
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
-    const cfnTemplate = getTemplate(folder, config)
+    const cfnTemplate = await getTemplate(folder, config)
     if (!cfnTemplate) {
         throw Error(`template not found (not registered?): ${templateInvoke.templatePath}`)
     }
@@ -231,8 +231,8 @@ export function getTemplateResource(
  *
  * Intended for use only by the language-specific `makeConfig` functions.
  */
-export function isImageLambdaConfig(config: SamLaunchRequestArgs): boolean {
-    const templateResource = getTemplateResource(config.workspaceFolder, config)
+export async function isImageLambdaConfig(config: SamLaunchRequestArgs): Promise<boolean> {
+    const templateResource = await getTemplateResource(config.workspaceFolder, config)
 
     return CloudFormation.isImageLambdaResource(templateResource?.Properties)
 }

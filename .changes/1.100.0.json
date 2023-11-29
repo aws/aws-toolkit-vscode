@@ -1,0 +1,26 @@
+{
+	"date": "2023-11-26",
+	"version": "1.100.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix a not connected error when starting connection to CodeCatalyst Dev Environment from link"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer supports Json, yaml and Tf"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer security scans support typescript, csharp, json, yaml, tf and hcl files."
+		},
+		{
+			"type": "Feature",
+			"description": "Auth: Redesign Add Connection page to show all options at once"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Uses Generative AI and automated reasoning to rewrite lines of code flagged for security vulnerabilities during a security scan."
+		}
+	]
+}

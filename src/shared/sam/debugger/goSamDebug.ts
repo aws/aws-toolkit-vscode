@@ -115,7 +115,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     // We want to persist the binary we build since it takes a non-trivial amount of time to build
     config.debuggerPath = path.join(globals.context.globalStorageUri.fsPath, 'debuggers', 'delve')
 
-    const isImageLambda = isImageLambdaConfig(config)
+    const isImageLambda = await isImageLambdaConfig(config)
 
     // Reference: https://github.com/aws/aws-sam-cli/blob/4543732bf3c0da3b57fe1e5aa43ce3f41d2bd0ba/samcli/local/docker/lambda_debug_settings.py#L94-L103
     // These are the default settings. For some reason SAM CLI is not setting them even if the container
@@ -175,21 +175,21 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     // Go from trying to find the manifest file and uses GOPATH provided below.
     installOptions.env!['GO111MODULE'] = 'off'
 
+    function getDelveVersion(repo: string, silent: boolean): string {
+        try {
+            return execFileSync('git', ['-C', repo, 'describe', '--tags', '--abbrev=0']).toString().trim()
+        } catch (e) {
+            if (!silent) {
+                throw e
+            }
+            return ''
+        }
+    }
+
     // It's fine if we can't get the latest Delve version, the Toolkit will use the last built one instead
     try {
         const goPath: string = JSON.parse(execFileSync('go', ['env', '-json']).toString()).GOPATH
         let repoPath: string = path.join(goPath, 'src', delveRepo)
-
-        function getDelveVersion(repo: string, silent: boolean): string {
-            try {
-                return execFileSync('git', ['-C', repo, 'describe', '--tags', '--abbrev=0']).toString().trim()
-            } catch (e) {
-                if (!silent) {
-                    throw e
-                }
-                return ''
-            }
-        }
 
         if (!getDelveVersion(repoPath, true)) {
             getLogger('channel').info(

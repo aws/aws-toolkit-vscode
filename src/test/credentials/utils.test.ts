@@ -5,7 +5,10 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { ExtensionUse } from '../../auth/utils'
+import { BuilderIdKind, ExtensionUse, SsoKind, hasBuilderId, hasIamCredentials, hasSso } from '../../auth/utils'
+import { Connection, SsoConnection, scopesCodeCatalyst } from '../../auth/connection'
+import { builderIdConnection, iamConnection, ssoConnection } from './testUtil'
+import { amazonQScopes } from '../../codewhisperer/util/authUtil'
 
 describe('ExtensionUse.isFirstUse()', function () {
     let fakeState: vscode.Memento
@@ -61,4 +64,107 @@ describe('ExtensionUse.isFirstUse()', function () {
     function nextExtensionStartup() {
         return new ExtensionUse()
     }
+})
+
+type SsoTestCase = { kind: SsoKind; connections: Connection[]; expected: boolean }
+type BuilderIdTestCase = { kind: BuilderIdKind; connections: Connection[]; expected: boolean }
+
+describe('connection exists funcs', function () {
+    const cwIdcConnection: SsoConnection = { ...ssoConnection, scopes: amazonQScopes, label: 'codeWhispererSso' }
+    const cwBuilderIdConnection: SsoConnection = {
+        ...builderIdConnection,
+        scopes: amazonQScopes,
+        label: 'codeWhispererBuilderId',
+    }
+    const ccBuilderIdConnection: SsoConnection = {
+        ...builderIdConnection,
+        scopes: scopesCodeCatalyst,
+        label: 'codeCatalystBuilderId',
+    }
+    const ssoConnections: Connection[] = [
+        ssoConnection,
+        builderIdConnection,
+        cwIdcConnection,
+        cwBuilderIdConnection,
+        ccBuilderIdConnection,
+    ]
+    const allConnections = [iamConnection, ...ssoConnections]
+
+    describe('ssoExists()', function () {
+        const anyCases: SsoTestCase[] = [
+            { connections: [ssoConnection], expected: true },
+            { connections: allConnections, expected: true },
+            { connections: [], expected: false },
+            { connections: [iamConnection], expected: false },
+        ].map(c => {
+            return { ...c, kind: 'any' }
+        })
+        const cwIdcCases: SsoTestCase[] = [
+            { connections: [cwIdcConnection], expected: true },
+            { connections: allConnections, expected: true },
+            { connections: [], expected: false },
+            { connections: allConnections.filter(c => c !== cwIdcConnection), expected: false },
+        ].map(c => {
+            return { ...c, kind: 'codewhisperer' }
+        })
+        const allCases = [...anyCases, ...cwIdcCases]
+
+        allCases.forEach(args => {
+            it(`ssoExists() returns '${args.expected}' when kind '${args.kind}' given [${args.connections
+                .map(c => c.label)
+                .join(', ')}]`, async function () {
+                assert.strictEqual(await hasSso(args.kind, async () => args.connections), args.expected)
+            })
+        })
+    })
+
+    describe('builderIdExists()', function () {
+        const cwBuilderIdCases: BuilderIdTestCase[] = [
+            { connections: [cwBuilderIdConnection], expected: true },
+            { connections: allConnections, expected: true },
+            { connections: [], expected: false },
+            { connections: allConnections.filter(c => c !== cwBuilderIdConnection), expected: false },
+        ].map(c => {
+            return { ...c, kind: 'codewhisperer' }
+        })
+
+        const ccBuilderIdCases: BuilderIdTestCase[] = [
+            { connections: [ccBuilderIdConnection], expected: true },
+            { connections: allConnections, expected: true },
+            { connections: [], expected: false },
+            { connections: allConnections.filter(c => c !== ccBuilderIdConnection), expected: false },
+        ].map(c => {
+            return { ...c, kind: 'codecatalyst' }
+        })
+
+        const allCases = [...cwBuilderIdCases, ...ccBuilderIdCases]
+
+        allCases.forEach(args => {
+            it(`builderIdExists() returns '${args.expected}' when kind '${args.kind}' given [${args.connections
+                .map(c => c.label)
+                .join(', ')}]`, async function () {
+                assert.strictEqual(await hasBuilderId(args.kind, async () => args.connections), args.expected)
+            })
+        })
+    })
+
+    describe('credentialExists()', function () {
+        const cases: [Connection[], boolean][] = [
+            [[iamConnection], true],
+            [allConnections, true],
+            [[], false],
+            [allConnections.filter(c => c !== iamConnection), false],
+        ]
+
+        cases.forEach(args => {
+            it(`credentialExists() returns '${args[1]}' given [${args[0]
+                .map(c => c.label)
+                .join(', ')}]`, async function () {
+                const connections = args[0]
+                const expected = args[1]
+
+                assert.strictEqual(await hasIamCredentials(async () => connections), expected)
+            })
+        })
+    })
 })

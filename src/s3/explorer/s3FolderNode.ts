@@ -15,9 +15,10 @@ import { ChildNodeLoader } from '../../awsexplorer/childNodeLoader'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { S3FileNode } from './s3FileNode'
 import { inspect } from 'util'
-import { Workspace } from '../../shared/vscode/workspace'
 import { getLogger } from '../../shared/logger'
 import { getIcon } from '../../shared/icons'
+import { Settings } from '../../shared/settings'
+import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 
 /**
  * Represents a folder in an S3 bucket that may contain subfolders and/or objects.
@@ -29,7 +30,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         public readonly bucket: Bucket,
         public readonly folder: Folder,
         public readonly s3: S3Client,
-        private readonly workspace = Workspace.vscode()
+        protected readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         super(folder.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = folder.path
@@ -100,6 +101,6 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     }
 
     private getMaxItemsPerPage(): number | undefined {
-        return this.workspace.getConfiguration('aws').get<number>('s3.maxItemsPerPage')
+        return this.settings.getSection('aws').get<number>('s3.maxItemsPerPage')
     }
 }

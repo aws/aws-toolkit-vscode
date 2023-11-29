@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
+import * as actualFs from 'fs'
+import { isCloud9 } from '../shared/extensionUtilities'
+import { ToolkitError } from '../shared/errors'
 
 const fs = vscode.workspace.fs
 type Uri = vscode.Uri
@@ -34,8 +37,17 @@ export class FileSystemCommon {
     }
 
     async mkdir(path: Uri | string): Promise<void> {
-        path = FileSystemCommon.getUri(path)
-        return fs.createDirectory(path)
+        const uriPath = FileSystemCommon.getUri(path)
+
+        // Certain URIs are not supported with vscode.workspace.fs in C9
+        // so revert to using `fs` which works.
+        if (isCloud9()) {
+            return actualFs.mkdir(uriPath.fsPath, { recursive: true }, err => {
+                throw new ToolkitError(`Failed mkdir() in Cloud9: ${uriPath.fsPath}: ${err}`)
+            })
+        }
+
+        return fs.createDirectory(uriPath)
     }
 
     async readFile(path: Uri | string): Promise<Uint8Array> {

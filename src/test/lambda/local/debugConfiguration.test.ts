@@ -17,7 +17,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import * as path from 'path'
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
 import { getArchitecture, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
-import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import globals from '../../../shared/extensionGlobals'
 import { Runtime } from '../../../shared/telemetry/telemetry'
 
@@ -132,13 +132,13 @@ describe('isImageLambdaConfig', function () {
             name: 'It was me, fakeWorkspaceFolder!',
             index: 0,
         }
-        registry = globals.templateRegistry
+        registry = await globals.templateRegistry
         appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
     })
 
     it('true for Image-backed template', async function () {
         const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-image-sam-app/template.yaml'))
-        await registry.addItemToRegistry(templatePath)
+        await registry.addItem(templatePath)
 
         const input = {
             name: 'fake-launch-config',
@@ -162,12 +162,12 @@ describe('isImageLambdaConfig', function () {
             },
         } as SamLaunchRequestArgs
 
-        assert.strictEqual(isImageLambdaConfig(input), true)
+        assert.strictEqual(await isImageLambdaConfig(input), true)
     })
 
     it('false for ZIP-backed template', async function () {
         const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-        await registry.addItemToRegistry(templatePath)
+        await registry.addItem(templatePath)
 
         const input = {
             name: 'fake-launch-config',
@@ -191,7 +191,7 @@ describe('isImageLambdaConfig', function () {
             },
         } as SamLaunchRequestArgs
 
-        assert.strictEqual(isImageLambdaConfig(input), false)
+        assert.strictEqual(await isImageLambdaConfig(input), false)
     })
 
     it('false for code-type', async function () {
@@ -214,7 +214,7 @@ describe('isImageLambdaConfig', function () {
             },
         } as SamLaunchRequestArgs
 
-        assert.strictEqual(isImageLambdaConfig(input), false)
+        assert.strictEqual(await isImageLambdaConfig(input), false)
     })
 })
 

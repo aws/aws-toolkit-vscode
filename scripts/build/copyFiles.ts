@@ -28,6 +28,7 @@ interface CopyTask {
 const tasks: CopyTask[] = [
     { target: path.join('src', 'templates') },
     { target: path.join('src', 'test', 'shared', 'cloudformation', 'yaml') },
+    { target: path.join('src', 'test', 'codewhisperer', 'service', 'resources') },
     { target: path.join('src', 'testFixtures') },
 
     // SSM
@@ -52,6 +53,16 @@ const tasks: CopyTask[] = [
     {
         target: path.join('node_modules', 'vue', 'dist', 'vue.global.prod.js'),
         destination: path.join('libs', 'vue.min.js'),
+    },
+
+    // Mynah
+    {
+        target: path.join('node_modules', '@aws', 'fully-qualified-names', 'node', 'aws_fully_qualified_names_bg.wasm'),
+        destination: path.join('src', 'aws_fully_qualified_names_bg.wasm'),
+    },
+    {
+        target: path.join('node_modules', 'web-tree-sitter', 'tree-sitter.wasm'),
+        destination: path.join('src', 'tree-sitter.wasm'),
     },
 ]
 

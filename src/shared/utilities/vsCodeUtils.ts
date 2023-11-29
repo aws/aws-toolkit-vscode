@@ -12,6 +12,7 @@ import { CancellationError, Timeout, waitTimeout } from './timeoutUtils'
 import { telemetry } from '../telemetry/telemetry'
 import * as semver from 'semver'
 import { isNonNullable } from './tsUtils'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -175,10 +176,11 @@ export function isUntitledScheme(uri: vscode.Uri): boolean {
  * "/" and "*" chars are trimmed from `dirs` items, and the final glob is defined such that the
  * directories and their contents are matched any _any_ depth.
  *
- * Example: `['foo', '**\/bar/'] => "**\/{foo,bar}/"`
+ * Example: `['foo', '**\/bar/'] => "["foo", "bar"]"`
  */
-export function globDirs(dirs: string[]): string {
-    const excludePatternsStr = dirs.reduce((prev, current) => {
+export function globDirPatterns(dirs: string[]): string[] {
+    //The patterns themselves are not useful, but with postformating like "**/${pattern}/" they become glob dir patterns
+    return dirs.map(current => {
         // Trim all "*" and "/" chars.
         // Note that the replace() patterns and order is intentionaly so that "**/*foo*/**" yields "*foo*".
         const scrubbed = current
@@ -186,11 +188,8 @@ export function globDirs(dirs: string[]): string {
             .replace(/^[/\\]*/, '')
             .replace(/\**$/, '')
             .replace(/[/\\]*$/, '')
-        const comma = prev === '' ? '' : ','
-        return `${prev}${comma}${scrubbed}`
-    }, '')
-    const excludePattern = `**/{${excludePatternsStr}}/`
-    return excludePattern
+        return scrubbed
+    })
 }
 
 // If the VSCode URI is not a file then return the string representation, otherwise normalize the filesystem path
@@ -225,4 +224,18 @@ export async function openUrl(url: vscode.Uri): Promise<boolean> {
         }
         return didOpen
     })
+}
+
+export function isToolkitActive(): boolean {
+    return isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)
+}
+
+/**
+ * Replaces magic vscode variables in a (launch config) user value.
+ */
+export function replaceVscodeVars(val: string, workspaceFolder?: string): string {
+    if (!workspaceFolder) {
+        return val
+    }
+    return val.replace('${workspaceFolder}', workspaceFolder)
 }

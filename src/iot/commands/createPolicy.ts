@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import { getLogger } from '../../shared/logger'
-import { Commands } from '../../shared/vscode/commands'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
@@ -14,11 +13,7 @@ import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
 /**
  * Creates a policy from a policy document.
  */
-export async function createPolicyCommand(
-    node: IotPolicyFolderNode,
-    getPolicyDoc = getPolicyDocument,
-    commands = Commands.vscode()
-): Promise<void> {
+export async function createPolicyCommand(node: IotPolicyFolderNode, getPolicyDoc = getPolicyDocument): Promise<void> {
     getLogger().debug('CreatePolicy called for %O', node)
 
     const data = await getPolicyDoc()
@@ -49,7 +44,7 @@ export async function createPolicyCommand(
     }
 
     //Refresh the Policy Folder node
-    await node.refreshNode(commands)
+    await node.refreshNode()
 }
 
 export async function getPolicyDocument(): Promise<Buffer | undefined> {
@@ -60,7 +55,7 @@ export async function getPolicyDocument(): Promise<Buffer | undefined> {
         filters: { JSON: ['json'] },
     })
 
-    if (!fileLocation || fileLocation.length == 0) {
+    if (!fileLocation || fileLocation.length === 0) {
         getLogger().info('CreatePolicy canceled: No document selected')
         return undefined
     }

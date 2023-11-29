@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
 import { captureEventOnce } from '../testUtil'
@@ -17,8 +17,8 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SharedCredentialsProviderFactory } from '../../auth/providers/sharedCredentialsProviderFactory'
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
-import { Connection, isIamConnection, isSsoConnection, ssoAccountAccessScopes } from '../../auth/connection'
-import { AuthNode, promptForConnection } from '../../auth/utils'
+import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
+import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -243,7 +243,7 @@ describe('Auth', function () {
     })
 
     describe('Linked Connections', function () {
-        const linkedSsoProfile = createSsoProfile({ scopes: ssoAccountAccessScopes })
+        const linkedSsoProfile = createSsoProfile({ scopes: scopesSsoAccountAccess })
         const accountRoles = [
             { accountId: '1245678910', roleName: 'foo' },
             { accountId: '9876543210', roleName: 'foo' },
@@ -353,7 +353,7 @@ describe('Auth', function () {
         })
 
         describe('Multiple Connections', function () {
-            const otherProfile = createBuilderIdProfile({ scopes: ssoAccountAccessScopes })
+            const otherProfile = createBuilderIdProfile({ scopes: scopesSsoAccountAccess })
 
             // Equivalent profiles from multiple sources is a fairly rare situation right now
             // Ideally they would be de-duped although the implementation can be tricky
@@ -370,7 +370,7 @@ describe('Auth', function () {
             })
 
             it('does not stop discovery if one connection fails', async function () {
-                const otherProfile = createBuilderIdProfile({ scopes: ssoAccountAccessScopes })
+                const otherProfile = createBuilderIdProfile({ scopes: scopesSsoAccountAccess })
                 await auth.createConnection(linkedSsoProfile)
                 await auth.createConnection(otherProfile)
                 auth.ssoClient.listAccounts.onFirstCall().rejects(new Error('No access'))
@@ -497,6 +497,34 @@ describe('Auth', function () {
             await auth.useConnection(conn)
             assert.strictEqual((await promptForConnection(auth))?.id, conn.id)
             assert.strictEqual(getTestWindow().shownQuickPicks.length, 1, 'Two pickers should not be shown')
+        })
+
+        it('deletes a connection', async function () {
+            const deleteButton = createDeleteConnectionButton()
+            getTestWindow().onDidShowQuickPick(async picker => {
+                await picker.untilReady()
+                assert.strictEqual(picker.items.length, 3)
+
+                // Delete first connection
+                picker.pressItemButton(/IAM Identity Center/, deleteButton)
+                await picker.untilReady()
+                assert.strictEqual(picker.items.length, 2)
+
+                // Delete second connection
+                picker.pressItemButton(/IAM Identity Center/, deleteButton)
+                await picker.untilReady()
+                assert.strictEqual(picker.items.length, 1)
+
+                picker.pressButton('Exit')
+            })
+
+            // Add 2 connections
+            await auth.createConnection(ssoProfile)
+            await auth.createConnection(scopedSsoProfile)
+            assert.strictEqual((await auth.listConnections()).length, 2)
+
+            await assert.rejects(() => promptForConnection(auth), isUserCancelledError)
+            assert.strictEqual((await auth.listConnections()).length, 0)
         })
     })
 })

@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../shared/ui/prompter'
@@ -27,8 +26,7 @@ export type PolicyGen = typeof getPolicyList
  */
 export async function attachPolicyCommand(
     node: IotThingCertNode | IotCertWithPoliciesNode,
-    promptFun = promptForPolicy,
-    commands = Commands.vscode()
+    promptFun = promptForPolicy
 ): Promise<void> {
     getLogger().debug('AttachPolicy called for %O', node)
 
@@ -53,8 +51,8 @@ export async function attachPolicyCommand(
     /* Refresh both things and certificates nodes so the status is updated in
      * both trees. */
     const baseNode = getBaseNode(node)
-    await baseNode.thingFolderNode?.refreshNode(commands)
-    await baseNode.certFolderNode?.refreshNode(commands)
+    await baseNode.thingFolderNode?.refreshNode()
+    await baseNode.certFolderNode?.refreshNode()
 }
 
 /**
@@ -104,5 +102,5 @@ async function* getPolicyList(iot: IotClient) {
             return
         }
         yield filteredPolicies.map(policy => ({ label: policy.policyName!, data: policy }))
-    } while (marker != undefined)
+    } while (marker !== undefined)
 }

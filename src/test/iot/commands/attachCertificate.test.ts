@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import * as vscode from 'vscode'
+import * as sinon from 'sinon'
 import { Iot } from 'aws-sdk'
 import { attachCertificateCommand, CertGen } from '../../../iot/commands/attachCertificate'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../../shared/ui/prompter'
 import globals from '../../../shared/extensionGlobals'
@@ -22,6 +22,8 @@ describe('attachCertCommand', function () {
     let certs: Iot.Certificate[]
     let thingNode: IotThingNode
     let selection: number = 0
+    let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
 
     const prompt: (iot: IotClient, certFetch: CertGen) => Promise<PromptResult<Iot.Certificate>> = async (
         iot,
@@ -36,6 +38,9 @@ describe('attachCertCommand', function () {
     }
 
     beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+
         iot = mock()
         thingNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, instance(iot))
         certs = [
@@ -55,24 +60,26 @@ describe('attachCertCommand', function () {
         ]
     })
 
+    afterEach(function () {
+        sandbox.restore()
+    })
+
     it('attaches selected certificate', async function () {
+        // const executeCommand = stubVscodeExecuteCommand()
         selection = 0
-        const commands = new FakeCommands()
         when(iot.listCertificates(anything())).thenResolve({ certificates: certs })
-        await attachCertificateCommand(thingNode, prompt, commands)
+        await attachCertificateCommand(thingNode, prompt)
 
         verify(iot.attachThingPrincipal(deepEqual({ thingName, principal: 'arn1' }))).once()
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [thingNode])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', thingNode)
     })
 
     it('shows an error message if certificates are not fetched', async function () {
         when(iot.listCertificates(anything())).thenReject(new Error('Expected failure'))
 
         selection = -1
-        const commands = new FakeCommands()
-        await attachCertificateCommand(thingNode, prompt, commands)
+        await attachCertificateCommand(thingNode, prompt)
 
         verify(iot.attachThingPrincipal(anything())).never()
 
@@ -80,7 +87,7 @@ describe('attachCertCommand', function () {
             .getFirstMessage()
             .assertError(/Failed to retrieve certificate/)
 
-        assert.strictEqual(commands.command, undefined)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message if attaching certificate fails', async function () {
@@ -88,25 +95,23 @@ describe('attachCertCommand', function () {
         when(iot.listCertificates(anything())).thenResolve({ certificates: certs })
         when(iot.attachThingPrincipal(anything())).thenReject(new Error('Expected failure'))
 
-        const commands = new FakeCommands()
-        await attachCertificateCommand(thingNode, prompt, commands)
+        await attachCertificateCommand(thingNode, prompt)
 
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to attach certificate cert2/)
 
-        assert.strictEqual(commands.command, undefined)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('Does nothing if no certificate is chosen', async function () {
         selection = -1
         when(iot.listCertificates(anything())).thenResolve({ certificates: certs })
 
-        const commands = new FakeCommands()
-        await attachCertificateCommand(thingNode, prompt, commands)
+        await attachCertificateCommand(thingNode, prompt)
 
         verify(iot.attachThingPrincipal(anything())).never()
 
-        assert.strictEqual(commands.command, undefined)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 })

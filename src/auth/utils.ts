@@ -32,18 +32,23 @@ import { SectionName, StaticProfile } from './credentials/types'
 import { throwOnInvalidCredentials } from './credentials/validation'
 import {
     Connection,
+    SsoConnection,
     createBuilderIdProfile,
     createSsoProfile,
     defaultSsoRegion,
+    isAnySsoConnection,
+    isIdcSsoConnection,
     isBuilderIdConnection,
-    isSsoConnection,
+    isIamConnection,
+    isValidCodeCatalystConnection,
 } from './connection'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, placeholder, vscodeComponent } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthSource } from './ui/vue/show'
 import { getLogger } from '../shared/logger'
+import { isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
@@ -57,7 +62,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Pro
     if (resp === 'addNewConnection') {
         // TODO: Cannot call function directly due to circular dependency. Refactor to fix this.
         const source: AuthSource = 'addConnectionQuickPick' // enforcing type sanity check
-        vscode.commands.executeCommand(showConnectionsPageCommand, source)
+        vscode.commands.executeCommand(showConnectionsPageCommand, placeholder, source)
         return undefined
     }
 
@@ -79,14 +84,20 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
     })
 }
 
-const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
+const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | TreeNode | unknown) => {
     telemetry.ui_click.emit({ elementId: 'devtools_connectToAws' })
 
-    if (auth instanceof Auth) {
-        return promptAndUseConnection(auth)
-    } else {
-        return promptAndUseConnection(getResourceFromTreeNode(auth, Instance(Auth)))
+    if (!(auth instanceof Auth)) {
+        try {
+            auth = getResourceFromTreeNode(auth, Instance(Auth))
+        } catch {
+            // Fall back in case this command is called from something in package.json.
+            // If so, then the value of auth will be unusable.
+            auth = Auth.instance
+        }
     }
+
+    return promptAndUseConnection(auth as Auth)
 })
 
 export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
@@ -144,7 +155,7 @@ export const createIamItem = () =>
     } as DataQuickPickItem<'iam'>)
 
 export async function createStartUrlPrompter(title: string, requiredScopes?: string[]) {
-    const existingConnections = (await Auth.instance.listConnections()).filter(isSsoConnection)
+    const existingConnections = (await Auth.instance.listConnections()).filter(isAnySsoConnection)
 
     function validateSsoUrl(url: string) {
         const urlFormatError = validateSsoUrlFormat(url)
@@ -315,6 +326,11 @@ export async function tryAddCredentials(
 const getConnectionIcon = (conn: Connection) =>
     conn.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')
 
+const deleteConnection = 'Delete Connection'
+export const createDeleteConnectionButton: () => vscode.QuickInputButton = () => {
+    return { tooltip: deleteConnection, iconPath: getIcon('vscode-trash') }
+}
+
 export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
     const addNewConnection = {
         label: codicon`${getIcon('vscode-plus')} Add New Connection`,
@@ -329,8 +345,16 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
             ? localize('aws.auth.promptConnection.iam.placeholder', 'Select an IAM credential')
             : localize('aws.auth.promptConnection.all.placeholder', 'Select a connection')
 
+    const refreshPrompter = () => {
+        // This function should not return a promise, or else tests fail.
+
+        prompter.clearAndLoadItems(loadItems()).catch(e => {
+            getLogger().error(`Auth: Failed loading connections in quickpick: %s`, e)
+            throw e
+        })
+    }
     const refreshButton = createRefreshButton()
-    refreshButton.onClick = () => void prompter.clearAndLoadItems(loadItems())
+    refreshButton.onClick = refreshPrompter
 
     // Place add/edit connection items at the bottom, then sort 'sso' connections
     // first, then valid connections, then finally the item label
@@ -364,6 +388,19 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
         },
     })
 
+    prompter.quickPick.onDidTriggerItemButton(async e => {
+        // User wants to delete a specific connection
+        if (e.button.tooltip === deleteConnection) {
+            const conn = e.item.data as Connection
+
+            // Set prompter in to a busy state so that
+            // tests must wait for refresh to fully complete
+            prompter.busy = true
+            await auth.deleteConnection(conn)
+            refreshPrompter()
+        }
+    })
+
     return prompter
 
     async function* loadItems(): AsyncGenerator<
@@ -386,11 +423,14 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
 
     function toPickerItem(conn: Connection): DataQuickPickItem<Connection> {
         const state = auth.getConnectionState(conn)
+        // Only allow SSO connections to be deleted
+        const deleteButton: vscode.QuickInputButton[] = conn.type === 'sso' ? [createDeleteConnectionButton()] : []
         if (state === 'valid') {
             return {
                 data: conn,
                 label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
                 description: getConnectionDescription(conn),
+                buttons: [...deleteButton],
             }
         }
 
@@ -408,6 +448,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
             data: conn,
             invalidSelection: state !== 'authenticating',
             label: codicon`${getIcon('vscode-error')} ${conn.label}`,
+            buttons: [...deleteButton],
             description:
                 state === 'authenticating'
                     ? 'authenticating...'
@@ -485,7 +526,8 @@ export const login = Commands.register('aws.login', async () => {
     const auth = Auth.instance
     const connections = await auth.listConnections()
     if (connections.length === 0) {
-        return vscode.commands.executeCommand(showConnectionsPageCommand)
+        const source: AuthSource = vscodeComponent
+        return vscode.commands.executeCommand(showConnectionsPageCommand, placeholder, source)
     } else {
         return switchConnections.execute(auth)
     }
@@ -519,7 +561,12 @@ export class AuthNode implements TreeNode<Auth> {
 
         if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
-            item.command = { title: 'Add Connection', command: showConnectionsPageCommand }
+            const source: AuthSource = 'authNode'
+            item.command = {
+                title: 'Add Connection',
+                command: showConnectionsPageCommand,
+                arguments: [placeholder, source],
+            }
 
             return item
         }
@@ -556,6 +603,86 @@ export class AuthNode implements TreeNode<Auth> {
             item.description = text
         }
     }
+}
+
+export async function hasIamCredentials(
+    allConnections = () => Auth.instance.listAndTraverseConnections().promise()
+): Promise<boolean> {
+    return (await allConnections()).some(isIamConnection)
+}
+
+export type SsoKind = 'any' | 'codewhisperer' | 'codecatalyst'
+
+/**
+ * Returns true if an Identity Center SSO connection exists.
+ *
+ * @param kind A specific kind of Identity Center SSO connection that must exist.
+ * @param allConnections func to get all connections that exist
+ */
+export async function hasSso(
+    kind: SsoKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<boolean> {
+    return (await findSsoConnections(kind, allConnections)).length > 0
+}
+
+export async function findSsoConnections(
+    kind: SsoKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<SsoConnection[]> {
+    let predicate: (c?: Connection) => boolean
+    switch (kind) {
+        case 'codewhisperer':
+            predicate = (conn?: Connection) => {
+                return isIdcSsoConnection(conn) && isValidCodeWhispererCoreConnection(conn)
+            }
+            break
+        case 'codecatalyst':
+            predicate = (conn?: Connection) => {
+                return isIdcSsoConnection(conn) && isValidCodeCatalystConnection(conn)
+            }
+            break
+        case 'any':
+            predicate = isIdcSsoConnection
+    }
+    return (await allConnections()).filter(predicate).filter(isIdcSsoConnection)
+}
+
+export type BuilderIdKind = 'any' | 'codewhisperer' | 'codecatalyst'
+
+/**
+ * Returns true if a Builder ID connection exists.
+ *
+ * @param kind A Builder ID connection that has the scopes of this kind.
+ * @param allConnections func to get all connections that exist
+ */
+export async function hasBuilderId(
+    kind: BuilderIdKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<boolean> {
+    return (await findBuilderIdConnections(kind, allConnections)).length > 0
+}
+
+async function findBuilderIdConnections(
+    kind: BuilderIdKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<SsoConnection[]> {
+    let predicate: (c?: Connection) => boolean
+    switch (kind) {
+        case 'codewhisperer':
+            predicate = (conn?: Connection) => {
+                return isBuilderIdConnection(conn) && isValidCodeWhispererCoreConnection(conn)
+            }
+            break
+        case 'codecatalyst':
+            predicate = (conn?: Connection) => {
+                return isBuilderIdConnection(conn) && isValidCodeCatalystConnection(conn)
+            }
+            break
+        case 'any':
+            predicate = isBuilderIdConnection
+    }
+    return (await allConnections()).filter(predicate).filter(isAnySsoConnection)
 }
 
 /**

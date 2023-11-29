@@ -39,7 +39,6 @@ describe('awsFiletypes', function () {
     })
 
     it('emit telemetry when opened by user', async function () {
-        await globals.templateRegistry.addItemToRegistry(cfnUri!)
         await vscode.commands.executeCommand('vscode.open', cfnUri)
         await vscode.commands.executeCommand('vscode.open', awsConfigUri)
         await vscode.workspace.openTextDocument({
@@ -61,16 +60,13 @@ describe('awsFiletypes', function () {
 
         assert(r, 'did not emit expected telemetry')
         assert(r.length === 3, 'emitted file_editAwsFile too many times')
-        const m1filetype = r[0].Metadata?.find(o => o.Key === 'awsFiletype')?.Value
-        const m2filetype = r[1].Metadata?.find(o => o.Key === 'awsFiletype')?.Value
-        const m3filetype = r[2].Metadata?.find(o => o.Key === 'awsFiletype')?.Value
-        assert.strictEqual(m1filetype, 'cloudformationSam')
-        assert.strictEqual(m2filetype, 'awsCredentials')
-        assert.strictEqual(m3filetype, 'ssmDocument')
+        const metrics = r.map(o => o.Metadata?.find(o => o.Key === 'awsFiletype')?.Value)
+        // The order is arbitrary (decided by vscode event system).
+        metrics.sort()
+        assert.deepStrictEqual(metrics, ['awsCredentials', 'cloudformationSam', 'ssmDocument'])
     })
 
     it('emit telemetry exactly once per filetype in a given flush window', async function () {
-        await globals.templateRegistry.addItemToRegistry(cfnUri!)
         await vscode.commands.executeCommand('vscode.open', cfnUri)
         async function getMetrics() {
             return await waitUntil(

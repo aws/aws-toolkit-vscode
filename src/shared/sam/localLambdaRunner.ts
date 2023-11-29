@@ -26,7 +26,7 @@ import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
 import { ChildProcess } from '../utilities/childProcess'
 import { SamCliSettings } from './cli/samCliSettings'
-import { CloudFormation } from '../cloudformation/cloudformation'
+import * as CloudFormation from '../cloudformation/cloudformation'
 import { sleep } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, UnknownError } from '../errors'
@@ -243,7 +243,8 @@ async function invokeLambdaHandler(
             debugArgs: config.debugArgs,
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
-            skipPullImage: config.sam?.skipNewImageCheck ?? (isImageLambdaConfig(config) || config.sam?.containerBuild),
+            skipPullImage:
+                config.sam?.skipNewImageCheck ?? ((await isImageLambdaConfig(config)) || config.sam?.containerBuild),
             parameterOverrides: config.parameterOverrides,
             name: config.name,
         }

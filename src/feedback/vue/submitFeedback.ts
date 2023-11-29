@@ -12,6 +12,7 @@ import { TelemetryService } from '../../shared/telemetry/telemetryService'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { Commands, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
 
 export interface FeedbackMessage {
     comment: string
@@ -62,9 +63,20 @@ export class FeedbackWebview extends VueWebview {
     }
 }
 
+export const submitFeedback = Commands.declare(
+    { id: 'aws.submitFeedback', autoconnect: false },
+    (context: ExtContext) => async (_: VsCodeCommandArg, id: 'AWS Toolkit' | 'CodeWhisperer' | 'Amazon Q') => {
+        if (_ !== placeholder) {
+            // No args exist, we must supply them
+            id = 'AWS Toolkit'
+        }
+        await showFeedbackView(context, id)
+    }
+)
+
 let activeWebview: VueWebviewPanel | undefined
 
-export async function submitFeedback(context: ExtContext, feedbackName: string) {
+export async function showFeedbackView(context: ExtContext, feedbackName: string) {
     const Panel = VueWebview.compilePanel(FeedbackWebview)
     activeWebview ??= new Panel(context.extensionContext, globals.telemetry, feedbackName)
 

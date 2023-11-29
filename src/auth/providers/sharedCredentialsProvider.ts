@@ -31,7 +31,7 @@ import {
 } from '../credentials/sharedCredentials'
 import { builderIdStartUrl } from '../sso/model'
 import { SectionName, SharedCredentialsKeys } from '../credentials/types'
-import { SsoProfile, hasScopes, ssoAccountAccessScopes } from '../connection'
+import { SsoProfile, hasScopes, scopesSsoAccountAccess } from '../connection'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',
@@ -150,7 +150,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
             return {
                 type: 'sso',
-                scopes: ssoAccountAccessScopes,
+                scopes: scopesSsoAccountAccess,
                 startUrl: this.profile[SharedCredentialsKeys.SSO_START_URL],
                 ssoRegion: this.profile[SharedCredentialsKeys.SSO_REGION] ?? defaultRegion,
             }
@@ -348,7 +348,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     private makeSsoCredentaislProvider() {
         const ssoProfile = this.getSsoProfileFromProfile()
-        if (!hasScopes(ssoProfile, ssoAccountAccessScopes)) {
+        if (!hasScopes(ssoProfile, scopesSsoAccountAccess)) {
             throw new Error(`Session for "${this.profileName}" is missing required scope: sso:account:access`)
         }
 

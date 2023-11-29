@@ -7,19 +7,17 @@ import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-import { AwsContext } from '../../shared/awsContext'
 import { DefaultSsmDocumentClient, SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { ssmJson, ssmYaml } from '../../shared/constants'
 
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
-import { RegionProvider } from '../../shared/regions/regionProvider'
 import { PublishSSMDocumentWizard, PublishSSMDocumentWizardResponse } from '../wizards/publishDocumentWizard'
 import { showConfirmationMessage } from '../util/util'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result, SsmOperation } from '../../shared/telemetry/telemetry'
 
-export async function publishSSMDocument(awsContext: AwsContext, regionProvider: RegionProvider): Promise<void> {
+export async function publishSSMDocument(): Promise<void> {
     const logger: Logger = getLogger()
 
     const textDocument = vscode.window.activeTextEditor?.document
@@ -51,9 +49,9 @@ export async function publishSSMDocument(awsContext: AwsContext, regionProvider:
 
     try {
         const response = await new PublishSSMDocumentWizard().run()
-        if (response?.action == 'Create') {
+        if (response?.action === 'Create') {
             await createDocument(response, textDocument)
-        } else if (response?.action == 'Update') {
+        } else if (response?.action === 'Update') {
             await updateDocument(response, textDocument)
         }
     } catch (err) {

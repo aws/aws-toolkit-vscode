@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { cdkDocumentationUrl } from '../../shared/constants'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../shared/treeview/utils'
 import { localize, openUrl } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands2'
@@ -47,7 +47,13 @@ export class CdkRootNode implements TreeNode {
 }
 
 export const cdkNode = new CdkRootNode()
-export const refreshCdkExplorer = Commands.register('aws.cdk.refresh', cdkNode.refresh.bind(cdkNode))
+export const refreshCdkExplorer = (provider?: ResourceTreeDataProvider) =>
+    Commands.register('aws.cdk.refresh', () => {
+        cdkNode.refresh()
+        if (provider) {
+            provider.refresh()
+        }
+    })
 
 Commands.register('aws.cdk.viewDocs', () => {
     openUrl(vscode.Uri.parse(cdkDocumentationUrl))

@@ -30,8 +30,10 @@ jobs:
             - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
+            - name: Disable engine-strict check
+              run: sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node-version }}
             # - if: github.event_name == 'schedule'
@@ -67,7 +69,7 @@ jobs:
                   echo "tagname=$TAG_NAME" >> $GITHUB_OUTPUT
                   echo "version=$(grep -m 1 version package.json | grep -o '[0-9][^\"]\+' | sed 's/-SNAPSHOT//')" >> $GITHUB_OUTPUT
                   echo 'changes<<EOF' >> $GITHUB_OUTPUT
-                  head -14 CHANGELOG.md >> $GITHUB_OUTPUT
+                  cat CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print; exit if $. == 2' >> $GITHUB_OUTPUT
                   echo 'EOF' >> $GITHUB_OUTPUT
 
     publish:
@@ -81,6 +83,9 @@ jobs:
             FEAT_NAME: ${{ needs.package.outputs.feature }}
             TAG_NAME: ${{ needs.package.outputs.tagname }}
             AWS_TOOLKIT_VERSION: ${{ needs.package.outputs.version }}
+            # Used in release_notes.md
+            BRANCH: ${{ github.ref_name }}
+            # Used in release_notes.md
             AWS_TOOLKIT_CHANGES: ${{ needs.package.outputs.changes }}
         permissions:
             contents: write
@@ -88,6 +93,8 @@ jobs:
             # Must perform checkout first, it deletes the target directory
             # before running, thus would delete the downloaded artifacts.
             - uses: actions/checkout@v4
+            - name: Disable engine-strict check
+              run: sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - uses: actions/download-artifact@v3
             - name: Delete existing prerelease
               # "prerelease" (main branch) or "pre-<feature>"

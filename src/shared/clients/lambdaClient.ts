@@ -11,8 +11,13 @@ import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type LambdaClient = ClassToInterfaceType<DefaultLambdaClient>
+
 export class DefaultLambdaClient {
-    public constructor(public readonly regionCode: string) {}
+    private readonly defaultTimeoutInMs: number
+
+    public constructor(public readonly regionCode: string) {
+        this.defaultTimeoutInMs = 5 * 60 * 1000 // 5 minutes (SDK default is 2 minutes)
+    }
 
     public async deleteFunction(name: string): Promise<void> {
         const sdkClient = await this.createSdkClient()
@@ -116,6 +121,10 @@ export class DefaultLambdaClient {
     }
 
     private async createSdkClient(): Promise<Lambda> {
-        return await globals.sdkClientBuilder.createAwsService(Lambda, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(
+            Lambda,
+            { httpOptions: { timeout: this.defaultTimeoutInMs } },
+            this.regionCode
+        )
     }
 }

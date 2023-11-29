@@ -1,51 +1,65 @@
-.auth-form {
+.auth-container {
     display: flex;
     flex-direction: column;
+    text-align: center;
+    color: var(--vscode-button-foreground);
+
+    gap: 0.6em;
+}
+
+.disabled-form {
+    pointer-events: none;
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+
+/* The immediate children of the auth-container */
+.auth-container > * {
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-form-container {
+    display: flex;
+    flex-direction: column;
+
+    background-color: var(--vscode-quickInput-background);
+
     text-align: left;
-    color: var(--vscode-foreground);
 
-    padding: 10px;
+    padding: 1em;
+
+    gap: 0.6em;
+
+    border-radius: 0.5rem;
 }
 
-/* A grouping of related elements in an auth form */
-.auth-form .form-section {
-    margin-top: 15px;
-
+.auth-form-container > * {
     display: flex;
     flex-direction: column;
+    gap: 0.4em;
 }
 
-/* Consistent margins between the elements of a grouping of elements */
-.auth-form .form-section > * {
-    margin-top: 3px;
-}
-
-/* Consistent margins between the elements of a grouping of elements */
-.auth-form .form-section > button {
-    margin-top: 3px;
-}
-
-.auth-form-title {
-    font-size: 14px;
+.auth-container-title {
+    font-size: 1.2rem;
     font-weight: bold;
 }
 
 .input-title {
-    font-size: 12px;
+    font-size: 1rem;
 }
 
-.small-description {
-    font-size: 10px;
+.form-description-color {
     color: var(--vscode-descriptionForeground);
 }
 
-.edit-icon {
-    color: #0078d7;
+.input-description-small {
+    font-size: 0.8rem;
 }
 
 .error-text {
     color: #f14c4c;
-    font-size: 12px;
+    font-size: 0.8rem;
 }
 
 input[data-invalid='true'] {
@@ -61,7 +75,21 @@ input[data-invalid='true']:focus {
     outline: none !important;
 }
 
+.auth-container input {
+    font-size: 1rem;
+    padding: 0.5em;
+}
+
 /* Remove underline from anchor elements */
 a {
     text-decoration: none;
+}
+
+.auth-container-icon {
+    color: var(--vscode-button-foreground);
+}
+
+.low-priority-button {
+    background-color: var(--vscode-textSeparator-foreground);
+    border-color: var(--vscode-textSeparator-foreground);
 }

@@ -32,6 +32,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
+import { DependencyGraphConstants } from '../util/dependencyGraph/dependencyGraph'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
@@ -81,6 +82,7 @@ export async function startSecurityScan(
         codeScanServiceInvocationsDuration: 0,
         result: 'Succeeded',
         codewhispererCodeScanTotalIssues: 0,
+        codewhispererCodeScanIssuesWithFixes: 0,
         credentialStartUrl: AuthUtil.instance.startUrl,
     }
     try {
@@ -89,7 +91,7 @@ export async function startSecurityScan(
          * Step 1: Generate context truncations
          */
         throwIfCancelled()
-        const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor.document.languageId)
+        const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor)
         if (dependencyGraph === undefined) {
             throw new Error(`"${editor.document.languageId}" is not supported for security scan.`)
         }
@@ -109,6 +111,13 @@ export async function startSecurityScan(
             uri,
             CodeWhispererConstants.contextTruncationTimeoutSeconds
         )
+        // Check for file extension to send the telemetry language, Reason:- VSCode treats hcl and tf as "plaintext" instead of "tf"
+        if (
+            editor.document.fileName.endsWith(DependencyGraphConstants.hclExt) ||
+            editor.document.fileName.endsWith(DependencyGraphConstants.tfExt)
+        ) {
+            codeScanTelemetryEntry.codewhispererLanguage = 'tf' satisfies CodeWhispererConstants.PlatformLanguageId
+        }
         codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
         getLogger().verbose(`Complete project context processing.`)
         codeScanTelemetryEntry.codewhispererCodeScanSrcPayloadBytes = truncation.srcPayloadSizeInBytes
@@ -137,7 +146,7 @@ export async function startSecurityScan(
          */
         throwIfCancelled()
         serviceInvocationStartTime = performance.now()
-        const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
+        const scanJob = await createScanJob(client, artifactMap, codeScanTelemetryEntry.codewhispererLanguage)
         if (scanJob.status === 'Failed') {
             throw new Error(scanJob.errorMessage)
         }
@@ -164,12 +173,17 @@ export async function startSecurityScan(
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPath
         )
-        const total = securityRecommendationCollection.reduce((accumulator, current) => {
-            return accumulator + current.issues.length
-        }, 0)
+        const { total, withFixes } = securityRecommendationCollection.reduce(
+            (accumulator, current) => ({
+                total: accumulator.total + current.issues.length,
+                withFixes: accumulator.withFixes + current.issues.filter(i => i.suggestedFixes.length > 0).length,
+            }),
+            { total: 0, withFixes: 0 }
+        )
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
+        codeScanTelemetryEntry.codewhispererCodeScanIssuesWithFixes = withFixes
         throwIfCancelled()
-        getLogger().verbose(`Security scan totally found ${total} issues.`)
+        getLogger().verbose(`Security scan totally found ${total} issues. ${withFixes} of them have fixes.`)
         if (isCloud9()) {
             securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
             vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
@@ -246,7 +260,7 @@ function populateCodeScanLogStream(scannedFiles: Set<string>) {
     // Clear log
     securityScanOutputChannel.clear()
     const numScannedFiles = scannedFiles.size
-    if (numScannedFiles == 1) {
+    if (numScannedFiles === 1) {
         codeScanLogger.verbose(`${numScannedFiles} file was scanned during the last Security Scan.`)
     } else {
         codeScanLogger.verbose(`${numScannedFiles} files were scanned during the last Security Scan.`)

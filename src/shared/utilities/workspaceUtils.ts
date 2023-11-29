@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
 import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
@@ -98,7 +99,7 @@ export async function findParentProjectFile(
         return undefined
     }
 
-    const workspaceProjectFiles = globals.codelensRootRegistry.registeredItems
+    const workspaceProjectFiles = globals.codelensRootRegistry.items
         .filter(item => item.item.match(projectFile))
         .map(item => item.path)
 
@@ -159,6 +160,33 @@ export function getWorkspaceRelativePath(
     for (const folder of override.workspaceFolders) {
         if (isInDirectory(folder.uri.fsPath, childPath)) {
             return path.relative(folder.uri.fsPath, childPath)
+        }
+    }
+}
+
+/**
+ * Returns a path to the folder containing the file, if the file is in any of the workspaces
+ * Returns undefined if there are no applicable workspace folders.
+ * @param childPath Path to derive path from
+ */
+export function getWorkspaceParentDirectory(
+    childPath: string,
+    args: {
+        workspaceFolders?: readonly vscode.WorkspaceFolder[]
+    } = {
+        workspaceFolders: vscode.workspace.workspaceFolders,
+    }
+): string | undefined {
+    if (!args.workspaceFolders) {
+        return
+    }
+    const parentFolder = path.dirname(childPath)
+    for (const folder of args.workspaceFolders) {
+        if (
+            pathutils.areEqual(folder.uri.fsPath, folder.uri.fsPath, parentFolder) ||
+            isInDirectory(folder.uri.fsPath, parentFolder)
+        ) {
+            return parentFolder
         }
     }
 }
