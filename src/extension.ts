@@ -266,9 +266,8 @@ export async function activate(context: vscode.ExtensionContext) {
         if (!isCloud9()) {
             await activateCWChat(extContext.extensionContext)
             await activateQGumby(extContext)
+            await activateApplicationComposer(context)
         }
-
-        await activateApplicationComposer(context)
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
