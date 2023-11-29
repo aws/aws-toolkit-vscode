@@ -574,37 +574,19 @@ async function closeActiveEditor() {
 
 async function typing(editor: vscode.TextEditor, s: string) {
     const initialContent = editor.document.getText()
-    for (const char of s) {
-        await typeAChar(editor, char)
-    }
+    const positionBefore = editor.document.offsetAt(editor.selection.active)
 
-    assertTextEditorContains(initialContent + s)
-}
-
-async function backspace(editor: vscode.TextEditor) {
-    return vscode.commands.executeCommand('deleteLeft')
-}
-
-async function typeAChar(editor: vscode.TextEditor, s: string) {
-    if (s.length !== 1) {
-        throw new Error('only single char is allowed')
-    }
     await editor.edit(edit => {
         edit.insert(editor.selection.active, s)
     })
 
-    const positionBefore = editor.selection.active
+    assertTextEditorContains(initialContent + s)
+    const positionAfter = editor.document.offsetAt(editor.selection.active)
+    assert.strictEqual(positionAfter, positionBefore + s.length)
+}
 
-    let positionAfter: vscode.Position
-    if (s === '\n') {
-        positionAfter = positionBefore.translate(1)
-    } else {
-        positionAfter = positionBefore.translate(0, s.length)
-    }
-
-    editor.selection = new vscode.Selection(positionAfter, positionAfter)
-
-    assert.ok(positionAfter.isAfter(positionBefore))
+async function backspace(editor: vscode.TextEditor) {
+    return vscode.commands.executeCommand('deleteLeft')
 }
 
 function aResponse(
