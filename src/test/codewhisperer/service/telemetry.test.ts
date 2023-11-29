@@ -581,6 +581,7 @@ async function typing(editor: vscode.TextEditor, s: string) {
     })
 
     assertTextEditorContains(initialContent + s)
+    await sleep(50)
     const positionAfter = editor.document.offsetAt(editor.selection.active)
     assert.strictEqual(positionAfter, positionBefore + s.length)
 }
