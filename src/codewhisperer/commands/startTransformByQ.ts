@@ -20,7 +20,8 @@ import {
     pollTransformationJob,
     convertToTimeString,
     convertDateToTimestamp,
-    getValidModules,
+    getOpenProjects,
+    validateProjectSelection,
 } from '../service/transformByQHandler'
 import { QuickPickItem } from 'vscode'
 import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
@@ -59,51 +60,58 @@ interface UserInputState {
     totalSteps: number
     targetLanguage: QuickPickItem
     targetVersion: QuickPickItem
-    module: QuickPickItem
+    project: QuickPickItem
 }
 
-async function collectInputs(validModules: vscode.QuickPickItem[] | undefined) {
+async function collectInputs(validProjects: vscode.QuickPickItem[] | undefined) {
     // const targetLanguages: QuickPickItem[] = CodeWhispererConstants.targetLanguages.map(label => ({ label }))
     const state = {} as Partial<UserInputState>
     // only supporting target language of Java and target version of JDK17 for now, so skip to pickModule prompt
     transformByQState.setTargetJDKVersionToJDK17()
-    await MultiStepInputFlowController.run(input => pickModule(input, state, validModules))
+    await MultiStepInputFlowController.run(input => pickProject(input, state, validProjects))
     // await MultiStepInputFlowController.run(input => pickTargetLanguage(input, state, targetLanguages, validModules))
     return state as UserInputState
 }
 
-async function pickModule(
+async function pickProject(
     input: MultiStepInputFlowController,
     state: Partial<UserInputState>,
-    validModules: vscode.QuickPickItem[] | undefined
+    validProjects: vscode.QuickPickItem[] | undefined
 ) {
     const pick = await input.showQuickPick({
         title: CodeWhispererConstants.transformByQWindowTitle,
         step: DropdownStep.STEP_1,
         totalSteps: DropdownStep.STEP_1,
         placeholder: CodeWhispererConstants.selectModulePrompt,
-        items: validModules!,
+        items: validProjects!,
         shouldResume: () => Promise.resolve(true),
         ignoreFocusOut: false,
     })
-    state.module = pick
-    transformByQState.setModuleName(he.encode(state.module.label)) // encode to avoid HTML injection risk
+    state.project = pick
+    transformByQState.setProjectName(he.encode(state.project.label)) // encode to avoid HTML injection risk
 }
 
 export async function startTransformByQ() {
     await telemetry.amazonq_codeTransformInvoke.run(async span => {
         span.record({ codeTransform_SessionId: codeTransformTelemetryState.getSessionId() })
-        let validModules: vscode.QuickPickItem[] | undefined
+
+        let openProjects: vscode.QuickPickItem[] = []
         try {
-            validModules = await getValidModules()
+            openProjects = await getOpenProjects()
         } catch (err) {
-            getLogger().error('Failed to get valid modules: ', err)
+            getLogger().error('Failed to get open projects: ', err)
+            throw err
+        }
+        const state = await collectInputs(openProjects)
+
+        try {
+            await validateProjectSelection(state.project)
+        } catch (err) {
+            getLogger().error('Selected project is not Java 8, not Java 11, or does not use Maven', err)
             throw err
         }
 
         span.record({ codeTransform_SourceJavaVersion: transformByQState.getSourceJDKVersion() })
-
-        const state = await collectInputs(validModules)
 
         const selection = await vscode.window.showWarningMessage(
             CodeWhispererConstants.dependencyDisclaimer,
@@ -116,7 +124,7 @@ export async function startTransformByQ() {
         }
 
         transformByQState.setToRunning()
-        transformByQState.setModulePath(state.module.description!)
+        transformByQState.setProjectPath(state.project.description!)
         sessionPlanProgress['uploadCode'] = StepProgress.Pending
         sessionPlanProgress['buildCode'] = StepProgress.Pending
         sessionPlanProgress['transformCode'] = StepProgress.Pending
@@ -146,7 +154,7 @@ export async function startTransformByQ() {
             throwIfCancelled()
             try {
                 // TODO: we want to track zip failures separately from uploadPayload failures
-                const payloadFileName = await zipCode(state.module.description!)
+                const payloadFileName = await zipCode(state.project.description!)
                 await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
                 uploadId = await uploadPayload(payloadFileName)
             } catch (error) {
@@ -277,11 +285,11 @@ export async function startTransformByQ() {
             vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
             const durationInMs = new Date().getTime() - startTime.getTime()
 
-            if (state.module) {
+            if (state.project) {
                 sessionJobHistory = processHistory(
                     sessionJobHistory,
                     convertDateToTimestamp(startTime),
-                    transformByQState.getModuleName(),
+                    transformByQState.getProjectName(),
                     transformByQState.getStatus(),
                     convertToTimeString(durationInMs),
                     transformByQState.getJobId()
