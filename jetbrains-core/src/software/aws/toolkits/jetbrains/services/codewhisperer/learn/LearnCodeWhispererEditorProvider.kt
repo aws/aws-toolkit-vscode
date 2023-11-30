@@ -11,7 +11,6 @@ import com.intellij.openapi.fileEditor.FileEditorProvider
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
@@ -30,7 +29,6 @@ class LearnCodeWhispererEditorProvider : FileEditorProvider, DumbAware {
 
     companion object {
         private val LOG = getLogger<LearnCodeWhispererEditorProvider>()
-        val NEW_ONBOARDING_UX_KEY = Key.create<Boolean>("NEW_ONBOARDING_UX")
 
         // Will be called every time the getting started page is opened
         fun openEditor(project: Project) {
@@ -38,11 +36,6 @@ class LearnCodeWhispererEditorProvider : FileEditorProvider, DumbAware {
 
             val virtualFile = LearnCodeWhispererVirtualFile()
 
-            // The "hasShown" status will be passed as local states to the page rendering process each time
-            virtualFile.putUserData(
-                NEW_ONBOARDING_UX_KEY,
-                CodeWhispererExplorerActionManager.getInstance().hasShownNewOnboardingPage()
-            )
             runInEdt {
                 try {
                     FileEditorManager.getInstance(project).openFileEditor(OpenFileDescriptor(project, virtualFile), true)

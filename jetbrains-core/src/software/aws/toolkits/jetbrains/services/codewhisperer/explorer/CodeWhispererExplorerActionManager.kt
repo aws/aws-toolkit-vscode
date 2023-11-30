@@ -56,10 +56,6 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
         actionState.value[CodeWhispererExploreStateType.IsAutoEnabled] = isAutoEnabled
     }
 
-    fun hasShownOldOnboardingPage(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.HasShownHowToUseCodeWhisperer, false)
-
-    fun hasShownNewOnboardingPage(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.HasShownNewOnboardingPage, false)
-
     fun setHasShownNewOnboardingPage(hasShownNewOnboardingPage: Boolean) {
         actionState.value[CodeWhispererExploreStateType.HasShownNewOnboardingPage] = hasShownNewOnboardingPage
     }

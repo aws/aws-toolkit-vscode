@@ -21,10 +21,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererActivationChangedListener
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
-import software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererEditorProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarWidgetFactory
 import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager
@@ -71,13 +68,6 @@ class CodeWhispererProjectStartupSettingsListener(private val project: Project) 
         }
 
         project.refreshCwQTree()
-    }
-
-    override fun onChange(providerId: String) {
-        if (CodeWhispererExplorerActionManager.getInstance().hasShownNewOnboardingPage() || isCodeWhispererExpired(project)) {
-            return
-        }
-        LearnCodeWhispererEditorProvider.openEditor(project)
     }
 
     override fun refreshUi() {
