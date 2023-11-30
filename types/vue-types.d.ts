@@ -11,3 +11,8 @@ declare module '*.vue' {
     const Component: ReturnType<typeof defineComponent>
     export default Component
 }
+
+declare module '*.svg' {
+    const content: React.FunctionComponent<React.SVGAttributes<SVGElement>>
+    export default content
+}

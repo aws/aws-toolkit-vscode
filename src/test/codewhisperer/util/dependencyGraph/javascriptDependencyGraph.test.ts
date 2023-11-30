@@ -16,7 +16,9 @@ describe('javascriptDependencyGraph', function () {
     const workspaceFolder = getTestWorkspaceFolder()
     const appRoot = join(workspaceFolder, 'js-plain-sam-app')
     const appCodePath = join(appRoot, 'src', 'app.js')
-
+    const javascriptDependencyGraph = new JavascriptDependencyGraph(
+        'javascript' satisfies CodeWhispererConstants.PlatformLanguageId
+    )
     describe('parseImport', function () {
         beforeEach(function () {
             sinon.stub(fs, 'existsSync').returns(true)
@@ -25,7 +27,6 @@ describe('javascriptDependencyGraph', function () {
             sinon.restore()
         })
         it('Should parse and generate dependencies ', function () {
-            const javascriptDependencyGraph = new JavascriptDependencyGraph(CodeWhispererConstants.javascript)
             const dependencies = javascriptDependencyGraph.parseImport("import * as app from './app'", [
                 'dirPath1',
                 'dirPath2',
@@ -37,7 +38,9 @@ describe('javascriptDependencyGraph', function () {
 
     describe('getDependencies', function () {
         it('Should return expected dependencies', function () {
-            const javascriptDependencyGraph = new JavascriptDependencyGraph(CodeWhispererConstants.javascript)
+            const javascriptDependencyGraph = new JavascriptDependencyGraph(
+                'javascript' satisfies CodeWhispererConstants.PlatformLanguageId
+            )
             const dependencies = javascriptDependencyGraph.getDependencies(vscode.Uri.parse(appCodePath), [
                 "import * as app from './app'",
             ])
@@ -48,7 +51,6 @@ describe('javascriptDependencyGraph', function () {
 
     describe('searchDependency', function () {
         it('Should search dependencies and return expected picked source file', async function () {
-            const javascriptDependencyGraph = new JavascriptDependencyGraph(CodeWhispererConstants.javascript)
             const sourceFiles = await javascriptDependencyGraph.searchDependency(vscode.Uri.parse(appCodePath))
             assert.strictEqual(sourceFiles.size, 1)
             const [firstFile] = sourceFiles
@@ -58,7 +60,6 @@ describe('javascriptDependencyGraph', function () {
 
     describe('generateTruncation', function () {
         it('Should generate and return expected truncation', async function () {
-            const javascriptDependencyGraph = new JavascriptDependencyGraph(CodeWhispererConstants.javascript)
             const truncation = await javascriptDependencyGraph.generateTruncation(vscode.Uri.file(appCodePath))
             assert.ok(truncation.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(truncation.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))

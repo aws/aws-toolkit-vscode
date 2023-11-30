@@ -6,7 +6,6 @@
 /**
  * SDK Client
  */
-
 export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
 export const region = 'us-east-1'
@@ -25,6 +24,10 @@ export const idleTimerPollPeriod = 25 // milliseconds
 export const showRecommendationTimerPollPeriod = 25
 
 export const specialCharactersList = ['{', '[', '(', ':', '\t', '\n']
+
+export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AWS::', 'Description']
+
+export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
 export const normalTextChangeRegex = /[A-Za-z0-9]/g
 
@@ -65,24 +68,7 @@ export const completionDetail = 'CodeWhisperer'
  */
 export const codewhisperer = 'CodeWhisperer'
 
-/**
- * Supported languages
- */
-export const java = 'java'
-
-export const python = 'python'
-
-export const javascript = 'javascript'
-
-export const typescript = 'typescript'
-
-export const jsx = 'javascriptreact'
-
-export const tsx = 'typescriptreact'
-
-export const plaintext = 'plaintext'
-
-// use vscode languageId here
+// use vscode languageId here / Supported languages
 export const platformLanguageIds = [
     'java',
     'python',
@@ -104,6 +90,14 @@ export const platformLanguageIds = [
     'sh', // Cloud9 reports bash files with this language-id
     'sql',
     'golang', // Cloud9 reports Go files with this language-id
+    'json',
+    'yaml',
+    'tf',
+    'hcl',
+    'terraform',
+    'terragrunt',
+    'packer',
+    'plaintext',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
@@ -176,10 +170,10 @@ export const suggestionShowDelay = 250
 // add 200ms more delay on top of inline default 30-50ms
 export const inlineSuggestionShowDelay = 200
 
-export const referenceLog = 'CodeWhisperer Reference Log'
+export const referenceLog = 'Code Reference Log'
 
 export const suggestionDetailReferenceText = (licenses: string) =>
-    `Reference code under ${licenses}. View full details in CodeWhisperer reference log.`
+    `Reference code under ${licenses}. View full details in Code Reference Log.`
 
 export const hoverInlayText = (licenseName: string | undefined, repository: string | undefined) =>
     `Reference code under the ${licenseName} license from repository ${repository}`
@@ -203,7 +197,13 @@ export const referenceLogPromptTextEnterpriseSSO =
  */
 export const codeScanJavaPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
+export const codeScanCsharpPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
+
 export const codeScanPythonPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const codeScanCFPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const codeScanTerraformPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
 export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
@@ -256,7 +256,7 @@ export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
 
-export const connectionExpired = `Connection expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
+export const connectionExpired = `Connection expired. To continue using Amazon Q/CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
 
 export const DoNotShowAgain = `Don\'t Show Again`
 
@@ -276,6 +276,103 @@ export const newCustomizationMessage = 'You have access to new CodeWhisperer cus
 
 export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVAILABLE'
 
+// Transform by Q
+
+export const selectTargetLanguagePrompt = 'Select the target language'
+
+export const selectTargetVersionPrompt = 'Select the target version'
+
+export const selectModulePrompt = 'Select the module you want to transform'
+
+export const transformByQWindowTitle = 'Transform'
+
+export const stopTransformByQMessage = 'Stop Transformation?'
+
+export const stoppingTransformByQMessage = 'Stopping Transformation...'
+
+export const transformByQFailedMessage = 'Transformation failed'
+
+export const transformByQCancelledMessage = 'Transformation cancelled'
+
+export const transformByQCompleted = 'Transformation completed'
+
+export const noPomXmlFoundMessage =
+    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations. Be sure to also build your project.'
+
+export const noOngoingJobMessage = 'No job is in-progress at the moment'
+
+export const jobInProgressMessage = 'Job is already in-progress'
+
+export const cancellationInProgressMessage = 'Cancellation is in-progress'
+
+export const noSupportedJavaProjectsFoundMessage =
+    'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11. Be sure to also build your project.'
+
+export const dependencyDisclaimer =
+    'Please confirm you are ready to proceed with the transformation. Amazon Q will upload the application code and its dependency binaries from your machine to start the upgrade. If you have not yet compiled the application on your local machine, please do so once before starting the upgrade. Install Maven to ensure all module dependencies are picked for Transformation.'
+
+export const dependencyFolderName = 'transformation_dependencies_temp_'
+
+export const dependencyErrorMessage =
+    'Failed to execute Maven. It is possible that the upload does not include all dependencies.'
+
+export const planIntroductionMessage =
+    'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'
+
+export const planDisclaimerMessage = '**Proposed transformation changes** \n\n\n'
+
+export const JDK8VersionNumber = '52'
+
+export const JDK11VersionNumber = '55'
+
+export const numMillisecondsPerSecond = 1000
+
+export const transformByQStateRunningMessage = 'running'
+
+export const transformByQStateCancellingMessage = 'cancelling'
+
+export const transformByQStateFailedMessage = 'failed'
+
+export const transformByQStateSucceededMessage = 'succeeded'
+
+export const transformByQStatePartialSuccessMessage = 'partially succeeded'
+
+export const transformByQStoppedState = 'STOPPED'
+
+export const transformationJobPollingIntervalSeconds = 10
+
+export const transformationJobTimeoutSeconds = 72000
+
+export const progressIntervalMs = 1000
+
+export const targetLanguages = ['Java']
+
+export const targetVersions = new Map<string, string[]>([['Java', ['JDK17']]])
+
+export const defaultLanguage = 'Java'
+
+export const contentChecksumType = 'SHA_256'
+
+export const uploadIntent = 'TRANSFORMATION'
+
+export const transformationType = 'LANGUAGE_UPGRADE'
+
+// when in one of these states, we can definitely say the plan is available
+// in other states, we keep polling/waiting
+export const validStatesForGettingPlan = ['COMPLETED', 'PARTIALLY_COMPLETED', 'PLANNED', 'TRANSFORMING', 'TRANSFORMED']
+
+export const failureStates = ['FAILED', 'STOPPING', 'STOPPED', 'REJECTED']
+
+// similarly, when in one of these states, we can stop polling, and if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
+export const validStatesForCheckingDownloadUrl = [
+    'COMPLETED',
+    'PARTIALLY_COMPLETED',
+    'FAILED',
+    'STOPPING',
+    'STOPPED',
+    'REJECTED',
+]
+
 export enum UserGroup {
     Classifier = 'Classifier',
     CrossFile = 'CrossFile',
@@ -286,6 +383,12 @@ export enum UserGroup {
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 
 export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
+
+export const codeFixAppliedSuccessMessage = 'Code fix was applied. Run a security scan to validate the fix.'
+
+export const codeFixAppliedFailedMessage = 'Failed to apply suggested code fix.'
+
+export const runSecurityScanButtonTitle = 'Run security scan'
 
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,

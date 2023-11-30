@@ -9,7 +9,7 @@ import { ExtContext } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { DevSettings } from '../shared/settings'
-import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
+import { FileProvider, VirtualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
@@ -18,6 +18,8 @@ import { watchBetaVSIX } from './beta'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { entries } from '../shared/utilities/tsUtils'
 import { isReleaseVersion } from '../shared/vscode/env'
+import { isAnySsoConnection } from '../auth/connection'
+import { Auth } from '../auth/auth'
 
 interface MenuOption {
     readonly label: string
@@ -63,6 +65,16 @@ const menuOptions: Record<string, MenuOption> = {
         description: 'AWS Toolkit',
         detail: 'Shows various state (including environment variables)',
         executor: showGlobalState,
+    },
+    deleteSsoConnections: {
+        label: 'Auth: Delete SSO Connections',
+        detail: 'Deletes all SSO Connections the extension is using.',
+        executor: deleteSsoConnections,
+    },
+    expireSsoConnections: {
+        label: 'Auth: Expire SSO Connections',
+        detail: 'Force expires all SSO Connections, in to a "needs reauthentication" state.',
+        executor: expireSsoConnections,
     },
 }
 
@@ -178,7 +190,7 @@ interface Tab {
 class ObjectEditor {
     private static readonly scheme = 'aws-dev'
 
-    private readonly fs = new VirualFileSystem()
+    private readonly fs = new VirtualFileSystem()
     private readonly tabs: Map<string, Tab> = new Map()
 
     public constructor(private readonly context: vscode.ExtensionContext) {
@@ -266,6 +278,20 @@ async function openStorageFromInput() {
     if (response) {
         return openStorageCommand.execute(response.target, response.key)
     }
+}
+
+async function deleteSsoConnections() {
+    const conns = Auth.instance.listConnections()
+    const ssoConns = (await conns).filter(isAnySsoConnection)
+    await Promise.all(ssoConns.map(conn => Auth.instance.deleteConnection(conn)))
+    vscode.window.showInformationMessage(`Deleted: ${ssoConns.map(c => c.startUrl).join(', ')}`)
+}
+
+async function expireSsoConnections() {
+    const conns = Auth.instance.listConnections()
+    const ssoConns = (await conns).filter(isAnySsoConnection)
+    await Promise.all(ssoConns.map(conn => Auth.instance.expireConnection(conn)))
+    vscode.window.showInformationMessage(`Expired: ${ssoConns.map(c => c.startUrl).join(', ')}`)
 }
 
 async function showGlobalState() {

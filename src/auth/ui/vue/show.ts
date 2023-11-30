@@ -30,12 +30,12 @@ import {
     showRegionPrompter,
     promptAndUseConnection,
     ExtensionUse,
-    showConnectionsPageCommand,
     addConnection,
     hasIamCredentials,
     hasBuilderId,
     hasSso,
     BuilderIdKind,
+    findSsoConnections,
 } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
@@ -47,11 +47,12 @@ import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
+import { amazonQChatSource, cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../../shared/vscode/commands2'
-import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
-import { throttle } from 'lodash'
+import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
+import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -62,7 +63,7 @@ export class AuthWebview extends VueWebview {
     /** If the backend needs to tell the frontend to select/show a specific service to the user */
     public readonly onDidSelectService = new vscode.EventEmitter<ServiceItemId>()
 
-    constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider) {
+    constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider, readonly auth = Auth.instance) {
         super()
     }
 
@@ -107,28 +108,24 @@ export class AuthWebview extends VueWebview {
         return hasIamCredentials()
     }
 
-    isCredentialConnected(): boolean {
-        const conn = Auth.instance.activeConnection
+    async isExplorerConnected(type: 'idc' | 'iam') {
+        if (type === 'idc') {
+            // Explorer only cares a valid IdC exists, it doesn't have to be
+            // in use since we really just want the credentials derived from it.
+            const idcConns = await findSsoConnections('any')
+            const validIdcConns = idcConns.filter(conn => {
+                return this.auth.getConnectionState(conn) === 'valid'
+            })
+            return validIdcConns.length > 0
+        } else {
+            const conn = this.auth.activeConnection
 
-        if (!conn) {
-            return false
+            if (!conn) {
+                return false
+            }
+
+            return conn.type === 'iam' && this.auth.getConnectionState(conn) === 'valid'
         }
-        // Maybe need to use SecondaryAuth registerAuthListener()
-        /**
-         *
-         * When a Builder ID is active and cred is not, the BID is
-         * the main active connection. BID's are saveable and checked
-         * by registerAuthListenter().
-         *
-         * What this means is that when creds are activated they become
-         * the main Auth.instance.activeConnection and BID is a secondary
-         * one.
-         *
-         * TODO: Show the quickpick and tell them to pick a credentials
-         * connection to use.
-         *
-         */
-        return conn.type === 'iam' && conn.state === 'valid'
     }
 
     async getAuthenticatedCredentialsError(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
@@ -175,12 +172,16 @@ export class AuthWebview extends VueWebview {
         vscode.commands.executeCommand('aws.explorer.focus')
     }
 
-    async showCodeWhispererNode(): Promise<void> {
-        vscode.commands.executeCommand('aws.developerTools.showCodeWhisperer')
+    async showCodeWhispererView(): Promise<void> {
+        vscode.commands.executeCommand('aws.codewhisperer.focus')
     }
 
     async showCodeCatalystNode(): Promise<void> {
-        vscode.commands.executeCommand('aws.developerTools.showCodeCatalyst')
+        vscode.commands.executeCommand('aws.codecatalyst.maybeFocus')
+    }
+
+    async showAmazonQChat(): Promise<void> {
+        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
     }
 
     async getIdentityCenterRegion(): Promise<Region | undefined> {
@@ -232,6 +233,13 @@ export class AuthWebview extends VueWebview {
                 (e instanceof ToolkitError && (CancellationError.isUserCancelled(e.cause) || e.cancelled === true))
             ) {
                 return { id: userCancelled, text: 'Setup cancelled.' }
+            }
+
+            if (e instanceof ToolkitError && e.cause instanceof InvalidGrantException) {
+                return {
+                    id: 'invalidGrantException',
+                    text: 'Permissions for this service may not be enabled by your SSO Admin, or the selected region may not be supported.',
+                }
             }
 
             if (
@@ -356,11 +364,12 @@ export class AuthWebview extends VueWebview {
         Auth.instance.onDidUpdateConnection(awsExplorerConnectionChanged)
 
         /**
-         * Multiple events can be received in rapid succession
-         * so we throttle all subsequent events after the first.
+         * Multiple events can be received in rapid succession and if
+         * we execute on the first one it is possible to get a stale
+         * state.
          */
         function createThrottle(callback: () => void) {
-            return throttle(callback, 500, { leading: true })
+            return debounce(callback, 500)
         }
     }
 
@@ -392,7 +401,7 @@ export class AuthWebview extends VueWebview {
     }
 
     openFeedbackForm() {
-        submitFeedback.execute('AWS Toolkit')
+        submitFeedback.execute(placeholder, 'AWS Toolkit')
     }
 
     // -------------------- Telemetry Stuff --------------------
@@ -654,6 +663,7 @@ export type AuthUiClick =
     | 'auth_infoIAMIdentityCenter'
     | 'auth_learnMoreAWSResources'
     | 'auth_learnMoreCodeWhisperer'
+    | 'auth_learnMoreAmazonQ'
     | 'auth_learnMoreCodeCatalyst'
     | 'auth_learnMoreBuilderId'
     | 'auth_learnMoreProfessionalTierCodeWhisperer'
@@ -664,6 +674,7 @@ export type AuthUiClick =
     | 'auth_openConnectionSelector'
     | 'auth_openAWSExplorer'
     | 'auth_openCodeWhisperer'
+    | 'auth_amazonQChat'
     | 'auth_openCodeCatalyst'
     | 'auth_editCredentials'
     | 'auth_codewhisperer_signoutBuilderId'
@@ -695,13 +706,14 @@ export const AuthSources = {
     vscodeComponent: vscodeComponent,
     cwQuickPick: cwQuickPickSource,
     cwTreeNode: cwTreeNodeSource,
+    amazonQChat: amazonQChatSource,
     authNode: 'authNode',
 } as const
 
 export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]
 
 export const showManageConnections = Commands.declare(
-    { id: showConnectionsPageCommand, compositeKey: { 1: 'source' } },
+    { id: 'aws.auth.manageConnections', compositeKey: { 1: 'source' } },
     (context: vscode.ExtensionContext) => (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
         if (_ !== placeholder) {
             source = 'vscodeComponent'

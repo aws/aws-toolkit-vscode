@@ -18,14 +18,6 @@ import {
 import { getTelemetryReason, getTelemetryResult } from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
 
-/**
- *
- *
- * For information on how to use "span" related code see docs/telemetry.md
- *
- *
- */
-
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
     require('async_hooks').AsyncLocalStorage ??
     class<T> {
@@ -92,6 +84,13 @@ function getValidatedState(state: Partial<MetricBase>, definition: MetricDefinit
     return missingFields.length !== 0 ? Object.assign({ missingFields }, state) : state
 }
 
+/**
+ * A span represents a "unit of work" captured for logging/telemetry.
+ * It can contain other spans recursively, then it's called a "trace" or "flow".
+ * https://opentelemetry.io/docs/concepts/signals/traces/
+ *
+ * See also: docs/telemetry.md
+ */
 export class TelemetrySpan<T extends MetricBase = MetricBase> {
     #startTime?: Date
 
@@ -218,6 +217,10 @@ export class TelemetryTracer extends TelemetryBase {
      * State that is applied to all new spans within the current or subsequent executions.
      */
     public get attributes(): Readonly<Attributes> | undefined {
+        return this._attributes
+    }
+
+    private get _attributes(): Attributes | undefined {
         return this.#context.getStore()?.attributes
     }
 
@@ -226,15 +229,15 @@ export class TelemetryTracer extends TelemetryBase {
      *
      * This is merged in with the current state present in each span, **overwriting**
      * any existing values for a given key. New spans are initialized with {@link attributes}
-     * but that may be overriden on subsequent writes.
+     * but that may be overridden on subsequent writes.
      *
      * Callers must already be within an execution context for this to have any effect.
      */
     public record(data: Attributes): void {
         this.activeSpan?.record(data)
 
-        if (this.attributes) {
-            Object.assign(this.attributes, data)
+        if (this._attributes) {
+            Object.assign(this._attributes, data)
         }
     }
 
