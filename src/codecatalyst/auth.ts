@@ -12,8 +12,8 @@ import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import {
-    ssoAccountAccessScopes,
-    codecatalystScopes,
+    scopesSsoAccountAccess,
+    scopesCodeCatalyst,
     SsoConnection,
     Connection,
     isBuilderIdConnection,
@@ -42,7 +42,7 @@ export class CodeCatalystAuthStorage {
 
 export const onboardingUrl = vscode.Uri.parse('https://codecatalyst.aws/onboarding/view')
 
-export const defaultScopes = [...ssoAccountAccessScopes, ...codecatalystScopes]
+export const defaultScopes = [...scopesSsoAccountAccess, ...scopesCodeCatalyst]
 
 export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection =>
     isSsoConnection(conn) && !isValidCodeCatalystConnection(conn)
@@ -70,9 +70,7 @@ export class CodeCatalystAuthenticationProvider {
         })
 
         // set initial context in case event does not trigger
-        this.restore().then(() => {
-            setCodeCatalystConnectedContext(this.isConnectionValid())
-        })
+        setCodeCatalystConnectedContext(this.isConnectionValid())
     }
 
     public get activeConnection() {
@@ -146,6 +144,13 @@ export class CodeCatalystAuthenticationProvider {
 
         type ConnectionFlowEvent = Partial<MetricShapes[MetricName]> & {
             readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade' // eslint-disable-line @typescript-eslint/naming-convention
+        }
+
+        const existingBuilderId = (await this.auth.listConnections()).find(isBuilderIdConnection)
+        if (isValidCodeCatalystConnection(existingBuilderId)) {
+            // A Builder ID with the correct scopes already exists so we can use this immediately
+            await this.secondaryAuth.useNewConnection(existingBuilderId)
+            return this.activeConnection!
         }
 
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)

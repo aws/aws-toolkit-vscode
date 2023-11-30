@@ -14,7 +14,7 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
 import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
-import { closeAllEditors } from '../../testUtil'
+import { assertTelemetry, closeAllEditors } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
 import { HttpResponse } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
@@ -27,6 +27,7 @@ import {
     stopScanMessage,
 } from '../../../codewhisperer/models/constants'
 import * as model from '../../../codewhisperer/models/model'
+import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.gen'
 
 const mockCreateCodeScanResponse = {
     $response: {
@@ -90,7 +91,19 @@ const mockCodeScanFindings = JSON.stringify([
             text: 'text',
             markdown: 'markdown',
         },
-    },
+        detectorId: 'detectorId',
+        detectorName: 'detectorName',
+        findingId: 'findingId',
+        relatedVulnerabilities: [],
+        severity: 'High',
+        remediation: {
+            recommendation: {
+                text: 'text',
+                url: 'url',
+            },
+            suggestedFixes: [],
+        },
+    } satisfies model.RawCodeScanIssue,
 ])
 
 const mockListCodeScanFindingsResponse = {
@@ -253,5 +266,11 @@ describe('startSecurityScan', function () {
             extensionContext
         )
         assert.ok(commandSpy.calledWith(codeScanLogsOutputChannelId))
+        assertTelemetry('codewhisperer_securityScan', {
+            codewhispererLanguage: 'python',
+            codewhispererCodeScanTotalIssues: 1,
+            codewhispererCodeScanIssuesWithFixes: 0,
+            codewhispererCodeScanLines: 188,
+        } as CodewhispererSecurityScan)
     })
 })

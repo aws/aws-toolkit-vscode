@@ -69,7 +69,7 @@ jobs:
                   echo "tagname=$TAG_NAME" >> $GITHUB_OUTPUT
                   echo "version=$(grep -m 1 version package.json | grep -o '[0-9][^\"]\+' | sed 's/-SNAPSHOT//')" >> $GITHUB_OUTPUT
                   echo 'changes<<EOF' >> $GITHUB_OUTPUT
-                  head -14 CHANGELOG.md >> $GITHUB_OUTPUT
+                  cat CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print; exit if $. == 2' >> $GITHUB_OUTPUT
                   echo 'EOF' >> $GITHUB_OUTPUT
 
     publish:
@@ -83,6 +83,9 @@ jobs:
             FEAT_NAME: ${{ needs.package.outputs.feature }}
             TAG_NAME: ${{ needs.package.outputs.tagname }}
             AWS_TOOLKIT_VERSION: ${{ needs.package.outputs.version }}
+            # Used in release_notes.md
+            BRANCH: ${{ github.ref_name }}
+            # Used in release_notes.md
             AWS_TOOLKIT_CHANGES: ${{ needs.package.outputs.changes }}
         permissions:
             contents: write

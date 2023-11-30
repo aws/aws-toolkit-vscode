@@ -12,7 +12,6 @@ import path = require('path')
 import { tempDirPath } from '../../../shared/filesystemUtilities'
 import * as CodeWhispererConstants from '../../models/constants'
 import { getLogger } from '../../../shared/logger'
-
 export interface Truncation {
     rootDir: string
     zipFilePath: string
@@ -32,7 +31,10 @@ export const DependencyGraphConstants = {
     as: 'as',
     static: 'static',
     package: 'package',
+    using: 'using',
+    globalusing: 'global using',
     semicolon: ';',
+    equals: '=',
 
     /**
      * Regex
@@ -46,10 +48,17 @@ export const DependencyGraphConstants = {
     javaExt: '.java',
     javaBuildExt: '.class',
     jsExt: '.js',
+    tsExt: '.ts',
+    csharpExt: '.cs',
+    jsonExt: '.json',
+    yamlExt: '.yaml',
+    ymlExt: '.yml',
+    tfExt: '.tf',
+    hclExt: '.hcl',
 }
 
 export abstract class DependencyGraph {
-    protected _languageId: string = ''
+    protected _languageId: CodeWhispererConstants.PlatformLanguageId = 'plaintext'
     protected _sysPaths: Set<string> = new Set<string>()
     protected _parsedStatements: Set<string> = new Set<string>()
     protected _pickedSourceFiles: Set<string> = new Set<string>()
@@ -61,7 +70,7 @@ export abstract class DependencyGraph {
 
     private _isProjectTruncated = false
 
-    constructor(languageId: string) {
+    constructor(languageId: CodeWhispererConstants.PlatformLanguageId) {
         this._languageId = languageId
     }
 

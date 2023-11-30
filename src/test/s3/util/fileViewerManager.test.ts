@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { S3FileProvider, S3FileViewerManager } from '../../../s3/fileViewerManager'
 import { DefaultBucket, DefaultS3Client, File, toFile } from '../../../shared/clients/s3Client'
 import globals from '../../../shared/extensionGlobals'
-import { VirualFileSystem } from '../../../shared/virtualFilesystem'
+import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { bufferToStream } from '../../../shared/utilities/streamUtilities'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { SeverityLevel } from '../../shared/vscode/message'
@@ -179,7 +179,7 @@ describe('FileViewerManager', function () {
     const readScheme = 's3-read-test'
     const editScheme = 's3-edit-test'
     let s3: ReturnType<typeof createS3>
-    let fs: VirualFileSystem
+    let fs: VirtualFileSystem
     let fileViewerManager: S3FileViewerManager
     let disposables: vscode.Disposable[]
 
@@ -196,7 +196,7 @@ describe('FileViewerManager', function () {
 
     beforeEach(function () {
         s3 = createS3()
-        fs = new VirualFileSystem()
+        fs = new VirtualFileSystem()
 
         fileViewerManager = new S3FileViewerManager(() => s3.client, fs, new PromptSettings(), {
             read: readScheme,

@@ -6,8 +6,9 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { BuilderIdKind, ExtensionUse, SsoKind, hasBuilderId, hasIamCredentials, hasSso } from '../../auth/utils'
-import { Connection, SsoConnection, codecatalystScopes, codewhispererScopes } from '../../auth/connection'
+import { Connection, SsoConnection, scopesCodeCatalyst } from '../../auth/connection'
 import { builderIdConnection, iamConnection, ssoConnection } from './testUtil'
+import { amazonQScopes } from '../../codewhisperer/util/authUtil'
 
 describe('ExtensionUse.isFirstUse()', function () {
     let fakeState: vscode.Memento
@@ -69,15 +70,15 @@ type SsoTestCase = { kind: SsoKind; connections: Connection[]; expected: boolean
 type BuilderIdTestCase = { kind: BuilderIdKind; connections: Connection[]; expected: boolean }
 
 describe('connection exists funcs', function () {
-    const cwIdcConnection: SsoConnection = { ...ssoConnection, scopes: codewhispererScopes, label: 'codeWhispererSso' }
+    const cwIdcConnection: SsoConnection = { ...ssoConnection, scopes: amazonQScopes, label: 'codeWhispererSso' }
     const cwBuilderIdConnection: SsoConnection = {
         ...builderIdConnection,
-        scopes: codewhispererScopes,
+        scopes: amazonQScopes,
         label: 'codeWhispererBuilderId',
     }
     const ccBuilderIdConnection: SsoConnection = {
         ...builderIdConnection,
-        scopes: codecatalystScopes,
+        scopes: scopesCodeCatalyst,
         label: 'codeCatalystBuilderId',
     }
     const ssoConnections: Connection[] = [

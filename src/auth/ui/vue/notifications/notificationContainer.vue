@@ -82,7 +82,7 @@ export default defineComponent({
 }
 
 .success-text a {
-    color: rgb(26, 96, 247);
+    color: rgb(47, 111, 249);
 }
 
 .failure-text div {

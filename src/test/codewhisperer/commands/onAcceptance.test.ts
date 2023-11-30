@@ -18,6 +18,7 @@ import { extensionVersion } from '../../../shared/vscode/env'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { AcceptedSuggestionEntry } from '../../../codewhisperer/models/model'
 
 describe('onAcceptance', function () {
     describe('onAcceptance', function () {
@@ -60,7 +61,7 @@ describe('onAcceptance', function () {
                 },
                 extensionContext.globalState
             )
-            const actualArg = trackerSpy.getCall(0).args[0]
+            const actualArg = trackerSpy.getCall(0).args[0] as AcceptedSuggestionEntry
             assert.ok(trackerSpy.calledOnce)
             assert.strictEqual(actualArg.originalString, 'def two_sum(nums, target):')
             assert.strictEqual(actualArg.requestId, '')

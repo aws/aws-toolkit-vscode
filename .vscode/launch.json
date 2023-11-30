@@ -20,6 +20,7 @@
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
             },
+            "envFile": "${workspaceFolder}/.local.env",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "watch"
         },

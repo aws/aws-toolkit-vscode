@@ -4,27 +4,17 @@
  -->
 
 <template>
-    <div v-if="isConnected" style="display: flex; gap: 1em">
-        <label class="auth-form-title"
+    <div style="display: flex; gap: 1em; justify-content: center">
+        <label class="auth-container-title"
             ><div class="pass-icon icon icon-vscode-pass-filled"></div>
             Connected to <slot></slot
         ></label>
-    </div>
-    <div v-else>
-        <label class="auth-form-title"><slot></slot></label>
     </div>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-export default defineComponent({
-    props: {
-        isConnected: {
-            type: Boolean,
-            required: true,
-        },
-    },
-})
+export default defineComponent({})
 </script>
 
 <style>

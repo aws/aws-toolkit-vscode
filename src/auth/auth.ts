@@ -30,7 +30,7 @@ import {
     loadSharedCredentialsSections,
 } from './credentials/sharedCredentials'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
-import { partition } from '../shared/utilities/mementos'
+import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
 import { SsoCredentialsProvider } from './providers/ssoCredentialsProvider'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { join, toStream } from '../shared/utilities/collectionUtils'
@@ -50,14 +50,14 @@ import {
     SsoProfile,
     StatefulConnection,
     StoredProfile,
-    codecatalystScopes,
+    scopesCodeCatalyst,
     createBuilderIdProfile,
     createSsoProfile,
     hasScopes,
     isValidCodeCatalystConnection,
     loadIamProfilesIntoStore,
     loadLinkedProfilesIntoStore,
-    ssoAccountAccessScopes,
+    scopesSsoAccountAccess,
 } from './connection'
 import { isSageMaker, isCloud9 } from '../shared/extensionUtilities'
 
@@ -239,7 +239,7 @@ export class Auth implements AuthService, ConnectionManager {
             ): entry is [string, StoredProfile<SsoProfile>] => {
                 const r =
                     entry[1].type === 'sso' &&
-                    hasScopes(entry[1], ssoAccountAccessScopes) &&
+                    hasScopes(entry[1], scopesSsoAccountAccess) &&
                     entry[1].metadata.connectionState === 'valid'
                 return r
             }
@@ -295,20 +295,80 @@ export class Auth implements AuthService, ConnectionManager {
 
     public async deleteConnection(connection: Pick<Connection, 'id'>): Promise<void> {
         const connId = connection.id
-        if (connId === this.#activeConnection?.id) {
-            await this.logout()
-        } else {
-            await this.invalidateConnection(connId)
+        const profile = this.store.getProfile(connId)
+
+        // it is possible the connection was already deleted
+        // but was still requested to be deleted. We pretend
+        // we deleted it and continue as normal
+        if (profile) {
+            if (connId === this.#activeConnection?.id) {
+                await this.logout()
+            } else {
+                await this.invalidateConnection(connId)
+            }
+
+            await this.store.deleteProfile(connId)
+
+            if (profile.type === 'sso') {
+                // There may have been linked IAM credentials attached to this
+                // so we will want to clear them.
+                await this.clearStaleLinkedIamConnections()
+            }
         }
 
-        await this.store.deleteProfile(connId)
         this.#onDidDeleteConnection.fire(connId)
+    }
+
+    private async clearStaleLinkedIamConnections() {
+        // Updates our store, evicting stale IAM credential profiles if the
+        // SSO they are linked to was removed.
+        await loadIamProfilesIntoStore(this.store, this.iamProfileProvider)
+
+        // If we were using a IAM credential linked to the SSO it can exist as the
+        // active connection but was deleted everywhere else. So we check and clear if needed.
+        if (this.#activeConnection && this.store.getProfile(this.#activeConnection.id) === undefined) {
+            this.#activeConnection = undefined
+            this.#onDidChangeActiveConnection.fire(undefined)
+        }
+    }
+
+    /**
+     * @warning Only intended for Dev mode purposes
+     *
+     * Put the SSO connection in to an expired state
+     */
+    public async expireConnection(conn: Pick<SsoConnection, 'id'>): Promise<void> {
+        const profile = this.store.getProfileOrThrow(conn.id)
+        if (profile.type === 'iam') {
+            throw new ToolkitError('Auth: Cannot force expire an IAM connection')
+        }
+        const provider = this.getTokenProvider(conn.id, profile)
+        await provider.invalidate()
+        // updates the state of the connection
+        await this.validateConnection(conn.id, profile)
     }
 
     public async getConnection(connection: Pick<Connection, 'id'>): Promise<Connection | undefined> {
         const connections = await this.listConnections()
 
         return connections.find(c => c.id === connection.id)
+    }
+
+    /**
+     * Sets the given connection as valid or invalid.
+     * You must retrieve the updated state separately using {@link Auth.getConnectionState()}
+     *
+     * Alternatively you can use the `getToken()` call on an SSO connection to do the same thing,
+     * but it will additionally prompt for reauthentication if the connection is invalid.
+     */
+    public async refreshConnectionState(connection: Pick<Connection, 'id'>): Promise<undefined> {
+        const profile = this.store.getProfile(connection.id)
+
+        if (profile === undefined) {
+            return
+        }
+
+        await this.validateConnection(connection.id, profile)
     }
 
     public async updateConnection(connection: Pick<SsoConnection, 'id'>, profile: SsoProfile): Promise<SsoConnection>
@@ -559,8 +619,8 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         return startUrl === builderIdStartUrl
-            ? [identifier, createBuilderIdProfile(codecatalystScopes)]
-            : [identifier, createSsoProfile(region, startUrl, codecatalystScopes)]
+            ? [identifier, createBuilderIdProfile(scopesCodeCatalyst)]
+            : [identifier, createSsoProfile(region, startUrl, scopesCodeCatalyst)]
     }
 
     private getTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
@@ -571,7 +631,7 @@ export class Auth implements AuthService, ConnectionManager {
         // no longer matches this condition.
         const shouldUseSoftwareStatement =
             getCodeCatalystDevEnvId() !== undefined &&
-            profile.scopes?.every(scope => codecatalystScopes.includes(scope))
+            profile.scopes?.every(scope => scopesCodeCatalyst.includes(scope))
 
         const tokenIdentifier = shouldUseSoftwareStatement ? this.detectSsoSessionNameForCodeCatalyst() : id
 
@@ -793,24 +853,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     static #instance: Auth | undefined
     public static get instance() {
-        return (this.#instance ??= new Auth(new ProfileStore(getMemento())))
-
-        function getMemento() {
-            if (!vscode.env.remoteName) {
-                // local compute: no further partitioning
-                return globals.context.globalState
-            }
-
-            const devEnvId = getCodeCatalystDevEnvId()
-
-            if (devEnvId !== undefined) {
-                // dev env: partition to dev env ID (compute backend might not always be the same)
-                return partition(globals.context.globalState, devEnvId)
-            }
-
-            // remote env: keeps a shared "global state" for all workspaces that report the same machine ID
-            return partition(globals.context.globalState, globals.machineId)
-        }
+        return (this.#instance ??= new Auth(new ProfileStore(getEnvironmentSpecificMemento())))
     }
 
     private getSsoProfileLabel(profile: SsoProfile) {

@@ -1,14 +1,37 @@
 The AWS Toolkit lets you interact with AWS directly from VS Code. Ready to install? See [Getting Started](#getting-started).
 
+## [Amazon Q (preview)](https://aws.amazon.com/q/)
+
+Amazon Q is your conversational assistant for building, maintaining, and transforming applications. Amazon Q can do the following from the IDE:
+
+-   Answer questions about AWS
+-   Answer questions about general programming concepts
+-   Explain what a line of code or code function does
+-   Write unit tests and code
+-   Debug and fix code
+-   Refactor code
+
+![Amazon Q](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhispererChat.gif)
+
 ## [Amazon CodeWhisperer](https://aws.amazon.com/codewhisperer/)
 
-Build applications faster and more securely with your AI coding companion
+An AI powered productivity tool for the IDE.
 
--   **Real-time code suggestions** - accelerate application development with automatic code recommendations based on your code and comments
+-   **Real-time code suggestions** - automatic code recommendations in 15+ languages, now including infrastructure as code (CloudFormation, AWS CDK, and Terraform)
 -   **Optimized for use with AWS services** - code suggestions are optimized for AWS APIs including Amazon Elastic Compute Cloud (Amazon EC2), AWS Lambda, and Amazon Simple Storage Service (Amazon S3)
--   **Built-in security scans** - Scan your code to detect hard-to-find vulnerabilities, and get code suggestions to remediate them immediately
+-   **Built-in security scans** - Scan your code to detect hard-to-find vulnerabilities and get code suggestions to remediate them immediately
 
 ![CodeWhisperer](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif)
+
+## [Application Composer](https://aws.amazon.com/application-composer/)
+
+AWS Application Composer maintains a real-time visual representation of your application architecture in sync with your IaC. Changes to the architecture—such as adding new resources or changing service configuration—are reflected in the IaC artifacts, and vice versa.
+
+-   Visually compose modern applications from 1,000+ AWS CloudFormation resources with little guesswork.
+-   Use the right tool for the task, including visual, code, or generative AI powered code suggestions in your IDE.
+-   Integrate with Workflow Studio to visually orchestrate over 220 AWS services or public http endpoints with Step Functions workflows.
+
+![Application Composer](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/appComposer.gif)
 
 ## [**Amazon CodeCatalyst**](https://codecatalyst.aws/explore)
 

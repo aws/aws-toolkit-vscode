@@ -11,6 +11,27 @@ that cannot be enforced by a `lint` build-task.
     instead of inventing new conventions.
 -   Convention: provide global editor commands as an alternative to browsing items in the Explorer.
     -   Instead of needing to visit service _Foo_ in the Explorer to _View_ its items, consider also providing a `AWS: Foo: View Item` command.
+-   [Webview guidance](https://code.visualstudio.com/api/ux-guidelines/webviews)
+-   Webview costs:
+    -   Webviews very easily lead to the [inner-platform effect](https://en.wikipedia.org/wiki/Inner-platform_effect).
+        Because they are fully isolated from vscode and its extensions, they must include any code
+        and frameworks.
+    -   Leads to extra dependencies.
+    -   Webviews inherit none of vscode's standard features. This means features like keyboard
+        shortcuts, syntax highlighting, and editor navigation, are not available to users. Instead
+        users must learn the custom _web application_ embedded in the webview.
+
+## Dependencies
+
+Dependencies can be very high-leverage if they solve a difficult problem.
+Dependencies are also a [maintenance burden](https://github.com/aws/aws-toolkit-vscode/pulls?q=is%3Apr+author%3Aapp%2Fdependabot+is%3Aclosed) and security risk
+Copy-pasting or "inlining" a dependency doesn't solve that, of course--it only hides the problem (another cost).
+So before taking on a new dependency, ask:
+
+-   is this solving a problem that is worth the cost?
+-   could the problem be solved in some other way that involves a smaller cost? For example, using
+    an isolated function with good test coverage, or a native vscode feature such as a TreeView or
+    quickpick menu.
 
 ## Naming
 
@@ -91,6 +112,13 @@ that is a net cost.
     -   Localize UI messages. Do _not_ localize log and exception messages.
     -   Use `extensionUtilities.getIdeProperties()` to automatically match IDE
         terminology (e.g. VS Code : CodeLens :: AWS Cloud9 : Inline Action)
+-   Refactoring tools allow us to avoid "premature abstraction". Avoid wrappers
+    or other abstractions until the need is clear and obvious.
+
+### Exceptions
+
+_See also [ARCHITECTURE.md](./ARCHITECTURE.md#exceptions)._
+
 -   Bubble-up error conditions, do not sink them to random hidden places (such as
     logs only), expecting callers to figure out the failure mode. If a caller
     spawns a process that fails, the caller should get an exception, callback, or
@@ -101,10 +129,22 @@ that is a net cost.
     attaching metadata to the error, or retrying the failed action. Do not just
     log and rethrow the error without additional context as to where the error occured.
 -   Do not log a stack trace unless it's truly a fatal exception. Stack traces are
-    noisy and mostly useless in production because the extension is 'bundled', removing
-    anything useful from the trace.
--   Refactoring tools allow us to avoid "premature abstraction". Avoid wrappers
-    until the need is clear and obvious.
+    noisy and mostly useless in production because the extension is bundled
+    (webpacked), removing anything useful from the trace.
+    -   When _debugging_ the extension, you can tell the debugger to break on
+        exceptions, so logging the stacktrace is unnecessary there.
+-   Do not use multiple logger calls to log what is semantically a single
+    message. Use a string template or printf-style syntax (`%s` ) to format the
+    message:
+    -   GOOD:
+        ```
+        getLogger().error(`Failed to create %s: %s`, foo, (err as Error).message)
+        ```
+    -   BAD:
+        ```
+        getLogger().error(`Failed to create %s`, foo)
+        getLogger().error(err)
+        ```
 
 ## Test guidelines
 

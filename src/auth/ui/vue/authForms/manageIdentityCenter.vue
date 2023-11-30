@@ -1,72 +1,56 @@
 <template>
-    <div class="auth-form container-background border-common">
-        <div v-if="checkIfConnected">
-            <FormTitle :isConnected="isConnected"
-                >IAM Identity Center&nbsp;<a
-                    class="icon icon-lg icon-vscode-info"
-                    href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
-                    v-on:click="emitUiClick('auth_infoIAMIdentityCenter')"
-                ></a
-            ></FormTitle>
-            <div v-if="!isConnected" class="sub-text-color">Successor to AWS Single Sign-on</div>
-        </div>
-        <div v-else>
-            <!-- In this scenario we do not care about the active IC connection -->
-            <FormTitle :isConnected="false"
-                >IAM Identity Center&nbsp;<a
-                    class="icon icon-lg icon-vscode-info"
-                    href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
-                    v-on:click="emitUiClick('auth_infoIAMIdentityCenter')"
-                ></a
-            ></FormTitle>
-            <div style="color: var(--vscode-descriptionForeground)">Successor to AWS Single Sign-on</div>
-        </div>
-
+    <div class="auth-container">
         <div v-if="stage === 'START'">
-            <div class="form-section">
-                <label class="input-title">Start URL</label>
-                <label class="form-description-color input-description-small"
-                    >URL for your organization, provided by an admin or help desk.</label
-                >
-                <input v-model="data.startUrl" type="text" :data-invalid="!!errors.startUrl" />
-                <div class="form-description-color input-description-small error-text">{{ errors.startUrl }}</div>
-            </div>
+            <button v-on:click="toggleInputFormShown" :class="isLowPriority ? lowPriorityButton : ''">
+                <div :class="collapsibleClass" class="auth-container-icon"></div>
+                {{ buttonText }}
+            </button>
 
-            <div class="form-section">
-                <label class="input-title">Region</label>
-                <label class="form-description-color input-description-small"
-                    >AWS Region that hosts Identity directory</label
-                >
-                <div v-on:click="selectRegion()" style="display: flex; flex-direction: row; gap: 2%; cursor: pointer">
-                    <div class="icon icon-lg icon-vscode-edit edit-icon"></div>
-                    <div class="text-link-color" style="width: 100%">
-                        {{ data.region ? data.region : 'Select a region...' }}
+            <div v-if="isInputFormShown" class="auth-form-container">
+                <div>
+                    <label class="input-title">Start URL</label>
+                    <label class="form-description-color input-description-small"
+                        >URL for your organization, provided by an admin or help desk.</label
+                    >
+                    <input v-model="data.startUrl" type="text" :data-invalid="!!errors.startUrl" />
+                    <div class="form-description-color input-description-small error-text">
+                        {{ errors.startUrl }}
                     </div>
                 </div>
-                <div class="form-description-color input-description-small error-text">{{ errors.region }}</div>
-            </div>
 
-            <div class="form-section">
-                <button v-on:click="signin()">Sign in</button>
-                <div class="form-description-color input-description-small error-text">{{ errors.submit }}</div>
+                <div>
+                    <label class="input-title">Region</label>
+                    <label class="form-description-color input-description-small"
+                        >AWS Region that hosts Identity directory</label
+                    >
+                    <div
+                        v-on:click="selectRegion()"
+                        style="display: flex; flex-direction: row; gap: 2%; cursor: pointer"
+                    >
+                        <div class="icon icon-lg icon-vscode-edit text-link-color"></div>
+                        <div class="text-link-color" style="width: 100%">
+                            {{ data.region ? data.region : 'Select a region...' }}
+                        </div>
+                    </div>
+                    <div class="form-description-color input-description-small error-text">{{ errors.region }}</div>
+                </div>
+
+                <div>
+                    <button v-on:click="signin()">Sign in</button>
+                    <div class="form-description-color input-description-small error-text">{{ errors.submit }}</div>
+                </div>
             </div>
         </div>
 
-        <div v-if="stage === 'WAITING_ON_USER'">
-            <div class="form-section">
-                <div>Follow instructions...</div>
-            </div>
-        </div>
+        <template v-if="stage === 'WAITING_ON_USER'">
+            <button disabled>Follow instructions...</button>
+        </template>
 
-        <div v-if="stage === 'CONNECTED'">
-            <div class="form-section">
-                <div v-on:click="signout()" class="text-link-color" style="cursor: pointer">Sign out</div>
-            </div>
+        <template v-if="stage === 'CONNECTED'">
+            <FormTitle>IAM Identity Center</FormTitle>
 
-            <div class="form-section">
-                <button v-on:click="showView()">Open {{ authName }} in Toolkit</button>
-            </div>
-        </div>
+            <div v-on:click="signout()" class="text-link-color" style="cursor: pointer">Sign out</div>
+        </template>
     </div>
 </template>
 <script lang="ts">
@@ -107,6 +91,10 @@ export default defineComponent({
             type: Boolean,
             default: false,
         },
+        isLowPriority: {
+            type: Boolean,
+            default: true,
+        },
     },
     data() {
         return {
@@ -117,6 +105,9 @@ export default defineComponent({
             stage: 'START' as IdentityCenterStage,
 
             authName: this.state.name,
+            isInputFormShown: false,
+            lowPriorityButton: 'low-priority-button',
+            buttonText: '',
         }
     },
 
@@ -126,7 +117,11 @@ export default defineComponent({
 
         await this.emitUpdate('created')
     },
-    computed: {},
+    computed: {
+        collapsibleClass() {
+            return this.isInputFormShown ? 'icon icon-vscode-chevron-down' : 'icon icon-vscode-chevron-right'
+        },
+    },
     methods: {
         setNewValue(key: IdentityCenterKey, value: string) {
             this.state.setValue(key, value, this.allowExistingStartUrl)
@@ -150,13 +145,19 @@ export default defineComponent({
             this.stage = await this.state.stage()
             this.data = this.state.data
             this.errors = this.state.errors
-            this.isConnected = this.checkIfConnected ? await this.state.isAuthConnected() : false
+            this.isConnected = await this.state.isAuthConnected()
+
+            if (this.isConnected && !this.checkIfConnected) {
+                this.buttonText = 'Add an IAM Identity Center profile'
+            } else {
+                this.buttonText = 'Sign in with IAM Identity Center (SSO)'
+            }
         },
         async emitUpdate(cause?: ConnectionUpdateCause) {
             await this.updateForm()
             this.emitAuthConnectionUpdated({
                 id: this.state.id,
-                isConnected: await this.state.isAuthConnected(),
+                isConnected: this.isConnected,
                 cause,
             })
         },
@@ -173,6 +174,9 @@ export default defineComponent({
         },
         showView() {
             this.state.showView()
+        },
+        toggleInputFormShown() {
+            this.isInputFormShown = !this.isInputFormShown
         },
     },
     watch: {
@@ -362,7 +366,7 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
     }
 
     override async _showView(): Promise<void> {
-        return client.showCodeWhispererNode()
+        return client.showCodeWhispererView()
     }
 
     override _signout(): Promise<void> {
@@ -452,7 +456,7 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
     }
 
     override async isAuthConnected(): Promise<boolean> {
-        return client.isIdentityCenterExists()
+        return await client.isExplorerConnected('idc')
     }
 
     override isConnectionExists(): Promise<boolean> {
@@ -529,6 +533,6 @@ class IdentityCenterErrors {
 }
 </script>
 <style>
-@import './sharedAuthForms.css';
 @import '../shared.css';
+@import './sharedAuthForms.css';
 </style>

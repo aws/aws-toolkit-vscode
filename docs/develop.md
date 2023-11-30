@@ -5,8 +5,22 @@ Notes about the codebase, its utilities, special globals, etc.
 ## VSCode context keys
 
 VScode extensions can use vscode 'setContext' command to set special context keys which are
-available in `package.json`. This extension sets the following keys:
+available in `package.json`.
 
+### Defining a new setContext key
+
+If you must define a new key,
+
+-   Prefix it with `aws.` as recommended by the [vscode docs](https://code.visualstudio.com/api/extension-guides/command#using-a-custom-when-clause-context).
+-   Use brevity. Less is more.
+-   Document it in the list below.
+
+### Toolkit setContext keys
+
+We set the following keys:
+
+-   `isCloud9`: This is hardcoded by Cloud9 itself, not the Toolkit.
+    -   Cloud9 _does not support setContext_. So this is the only usable key there.
 -   `aws.codecatalyst.connected`: CodeCatalyst connection is active.
 -   `CODEWHISPERER_ENABLED`: CodeWhisperer connection is active.
 -   `aws.isDevMode`: AWS Toolkit is running in "developer mode".
