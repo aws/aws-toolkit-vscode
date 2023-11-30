@@ -25,6 +25,9 @@ import * as testUtil from './testUtil'
 import { getTestWindow, resetTestWindow } from './shared/vscode/window'
 import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
 import { TelemetryDebounceInfo } from '../shared/vscode/commands2'
+import { TelemetrySpan } from '../shared/telemetry/spans'
+import { Result } from '../shared/telemetry/telemetry.gen'
+import { Hook } from 'mocha'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -34,6 +37,7 @@ const maxTestDuration = 30_000
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
 let openExternalStub: sinon.SinonStub<Parameters<(typeof vscode)['env']['openExternal']>, Thenable<boolean>>
+let telemetrySpanSpy: sinon.SinonSpy
 // let executeCommandSpy: sinon.SinonSpy | undefined
 
 export async function mochaGlobalSetup(this: Mocha.Runner) {
@@ -85,6 +89,7 @@ export const mochaHooks = {
         globals.telemetry.logger.clear()
         TelemetryDebounceInfo.instance.clear()
         ;(globals.context as FakeExtensionContext).globalState = new FakeMemento()
+        telemetrySpanSpy = sinon.spy(TelemetrySpan.prototype, 'emit')
 
         await testUtil.closeAllEditors()
     },
@@ -105,6 +110,12 @@ export const mochaHooks = {
         r.dispose()
         globals.codelensRootRegistry.dispose()
         globalSandbox.restore()
+
+        // Don't run any validations for tests on telemetry
+        if (!(this.currentTest ?? this.test)?.file?.includes('shared/telemetry/')) {
+            validateTelemetryEmitCalls(this.test as Hook, telemetrySpanSpy)
+        }
+        telemetrySpanSpy.restore()
 
         // executeCommandSpy = undefined
     },
@@ -146,6 +157,43 @@ function writeLogsToFile(testName: string) {
     entries?.unshift(`=== Starting test "${testName}" ===`)
     entries?.push(`=== Ending test "${testName}" ===\n\n`)
     appendFileSync(testLogOutput, entries?.join('\n') ?? '', 'utf8')
+}
+
+/*
+ * Validates that telemetry emit() calls for the the given Mocha Context test session 1. contain a result property
+ * and 2. contain a reason propery is the result is 'Failed'. NOTE: This assume that this function is called in
+ * the afterEach hook.
+ *
+ * TODO: While this catches cases in code that is tested, untested code will still release incomplete metrics.
+ * Consider using custom lint rules to address all cases if possible.
+ */
+function validateTelemetryEmitCalls(testHook: Hook, spy: sinon.SinonSpy) {
+    const failedStr: Result = 'Failed'
+    const telemetryRunDocsStr =
+        'Consider using `.run()` instead, which will set these properties automatically. ' +
+        'See https://github.com/aws/aws-toolkit-vscode/blob/master/docs/telemetry.md#guidelines'
+
+    for (const c of spy.getCalls()) {
+        const metricName = c.thisValue.name
+        const missingResultErrMsg =
+            `This test calls \`${metricName}.emit({...})\` without the \`result\` property. ` +
+            `This property is always required. ${telemetryRunDocsStr}`
+        const missingReasonErrMsg =
+            `This test calls \`${metricName}.emit({...result: 'Failed'})\` without the \`reason\` property. ` +
+            `This property is always required when \`result\` = 'Failed'. ${telemetryRunDocsStr}`
+
+        const data = c.args[0]
+        if (data) {
+            if (data.result === undefined) {
+                // This function is meant to be called in the afterEach() hook. We can force the test to fail with this
+                // strategy. If we used an assert statement, then the test session would exit immediately on the first fail.
+                testHook.error(new Error(missingResultErrMsg))
+            }
+            if (data.result === failedStr && data.reason === undefined) {
+                testHook.error(new Error(missingReasonErrMsg))
+            }
+        }
+    }
 }
 
 export function assertLogsContain(text: string, exactMatch: boolean, severity: LogLevel) {
