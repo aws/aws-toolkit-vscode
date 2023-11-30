@@ -11,9 +11,9 @@ import { normalize } from '../../../shared/utilities/pathUtils'
 export interface utgLanguageConfig {
     extension: string
     testFilenamePattern: RegExp[]
-    functionExtractionPattern: RegExp
-    classExtractionPattern: RegExp
-    importStatementRegExp: RegExp
+    functionExtractionPattern?: RegExp
+    classExtractionPattern?: RegExp
+    importStatementRegExp?: RegExp
 }
 
 export const utgLanguageConfigs: Record<string, utgLanguageConfig> = {
@@ -33,40 +33,29 @@ export const utgLanguageConfigs: Record<string, utgLanguageConfig> = {
         classExtractionPattern: /^class\s+(\w+)\s*:/gm,
         importStatementRegExp: /from (.*) import.*/,
     },
-    // TODO: NOTE!!!! for the following configuration, [functionExtractionPattern], [classExtractionPattern], [importStatementRegExp] are placeholder and not being tested
-    // TODO: update them when JS/TS UTG are ENABLED
-    // TODO: also need to update the logic to consider dialects file extension e.g. .js & .jsx, .ts & .tsx, for now, .js will only look for .js file but not .jsx
     typescript: {
         extension: '.ts',
         testFilenamePattern: [/^(.+)\.test(\.ts|\.tsx)$/, /^(.+)\.spec(\.ts|\.tsx)$/],
-        functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
-        classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
-        importStatementRegExp: /import\s+([a-zA-Z_])/,
     },
     javascript: {
         extension: '.js',
         testFilenamePattern: [/^(.+)\.test(\.js|\.jsx)$/, /^(.+)\.spec(\.js|\.jsx)$/],
-        functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
-        classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
-        importStatementRegExp: /import\s+([a-zA-Z_])/,
     },
     typescriptreact: {
         extension: '.tsx',
         testFilenamePattern: [/^(.+)\.test(\.ts|\.tsx)$/, /^(.+)\.spec(\.ts|\.tsx)$/],
-        functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
-        classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
-        importStatementRegExp: /import\s+([a-zA-Z_])/,
     },
     javascriptreact: {
         extension: '.jsx',
         testFilenamePattern: [/^(.+)\.test(\.js|\.jsx)$/, /^(.+)\.spec(\.js|\.jsx)$/],
-        functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
-        classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
-        importStatementRegExp: /import\s+([a-zA-Z_])/,
     },
 }
 
-export function extractFunctions(fileContent: string, regex: RegExp) {
+export function extractFunctions(fileContent: string, regex?: RegExp) {
+    if (!regex) {
+        return []
+    }
+
     const functionNames: string[] = []
     let match: RegExpExecArray | null
 
@@ -77,7 +66,10 @@ export function extractFunctions(fileContent: string, regex: RegExp) {
     return functionNames
 }
 
-export function extractClasses(fileContent: string, regex: RegExp) {
+export function extractClasses(fileContent: string, regex?: RegExp) {
+    if (!regex) {
+        return []
+    }
     const classNames: string[] = []
     let match: RegExpExecArray | null
 
