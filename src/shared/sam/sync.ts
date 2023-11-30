@@ -491,7 +491,10 @@ function getSyncParamsFromConfig(config: SamConfig) {
     return params
 }
 
-export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | undefined): Promise<Partial<SyncParams>> {
+export async function prepareSyncParams(
+    arg: vscode.Uri | AWSTreeNodeBase | undefined,
+    validate?: boolean
+): Promise<Partial<SyncParams>> {
     // Skip creating dependency layers by default for backwards compat
     const baseParams: Partial<SyncParams> = { skipDependencyLayer: true }
 
@@ -519,7 +522,7 @@ export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | unde
 
         const template = {
             uri: arg,
-            data: await CloudFormation.load(arg.fsPath),
+            data: await CloudFormation.load(arg.fsPath, validate),
         }
 
         return { ...baseParams, template, projectRoot: getWorkspaceUri(template) }
@@ -528,8 +531,16 @@ export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | unde
     return baseParams
 }
 
+export type SamSyncResult = {
+    isSuccess: boolean
+}
+
 export function registerSync() {
-    async function runSync(deployType: SyncParams['deployType'], arg?: unknown) {
+    async function runSync(
+        deployType: SyncParams['deployType'],
+        arg?: unknown,
+        validate?: boolean
+    ): Promise<SamSyncResult> {
         telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly' })
 
         const connection = Auth.instance.activeConnection
@@ -543,13 +554,19 @@ export function registerSync() {
 
         await confirmDevStack()
         const registry = await globals.templateRegistry
-        const params = await new SyncWizard({ deployType, ...(await prepareSyncParams(input)) }, registry).run()
+        const params = await new SyncWizard(
+            { deployType, ...(await prepareSyncParams(input, validate)) },
+            registry
+        ).run()
         if (params === undefined) {
             throw new CancellationError('user')
         }
 
         try {
             await runSamSync({ ...params, connection })
+            return {
+                isSuccess: true,
+            }
         } catch (err) {
             throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
         }
@@ -560,7 +577,7 @@ export function registerSync() {
             id: 'aws.samcli.sync',
             autoconnect: true,
         },
-        (arg?: unknown) => telemetry.sam_sync.run(() => runSync('infra', arg))
+        (arg?: unknown, validate?: boolean) => telemetry.sam_sync.run(() => runSync('infra', arg, validate))
     )
 
     const settings = SamCliSettings.instance
@@ -601,11 +618,11 @@ async function confirmDevStack() {
     }
 
     const message = `
-The SAM CLI will use the AWS Lambda, Amazon API Gateway, and AWS StepFunctions APIs to upload your code without 
+The SAM CLI will use the AWS Lambda, Amazon API Gateway, and AWS StepFunctions APIs to upload your code without
 performing a CloudFormation deployment. This will cause drift in your CloudFormation stack.
-**The sync command should only be used against a development stack**. 
+**The sync command should only be used against a development stack**.
 
-Confirm that you are synchronizing a development stack.    
+Confirm that you are synchronizing a development stack.
 `.trim()
 
     const okDontShow = "OK, and don't show this again"

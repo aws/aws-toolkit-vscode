@@ -1,4 +1,4 @@
-_This is an **unsupported preview build** of AWS Toolkit, for testing new features._
+_This is an **unsupported preview build** of the `${BRANCH}` branch of AWS Toolkit._
 
 # Install
 
@@ -8,3 +8,7 @@ _This is an **unsupported preview build** of AWS Toolkit, for testing new featur
 # Changes
 
 ${AWS_TOOLKIT_CHANGES}
+
+## Previous changes
+
+-   See [CHANGELOG.md](CHANGELOG.md)

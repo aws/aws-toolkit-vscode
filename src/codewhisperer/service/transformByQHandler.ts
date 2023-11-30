@@ -57,75 +57,70 @@ export function throwIfCancelled() {
     }
 }
 
-/*
- * This function searches for a .class file in each opened module. Then it runs javap on the found .class file to get the JDK version
- * for the file, and sets the version in the state variable. Only JDK8 and JDK11 are supported.
- */
-export async function getValidModules() {
+export async function getOpenProjects() {
     const folders = vscode.workspace.workspaceFolders
-    const validModules: vscode.QuickPickItem[] = []
     if (folders === undefined) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
-        throw Error('No Java projects found since no projects are open')
+        throw new ToolkitError('No Java projects found since no projects are open', { code: 'NoOpenProjects' })
     }
-    let containsSupportedJava = false // workspace must contain Java 8 or Java 11 code for this to be true
-    let containsPomXml = false // workspace must contain a 'pom.xml' file for this to be true
-    let failureReason = 'NoJavaProjectsAvailable'
+    const openProjects: vscode.QuickPickItem[] = []
     for (const folder of folders) {
-        const compiledJavaFiles = await vscode.workspace.findFiles(
-            new vscode.RelativePattern(folder, '**/*.class'),
-            '**/node_modules/**',
-            1
-        )
-        if (compiledJavaFiles.length < 1) {
-            continue
-        }
-        const classFilePath = compiledJavaFiles[0].fsPath
-        const baseCommand = 'javap'
-        const args = ['-v', classFilePath]
-        const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
-
-        if (spawnResult.error || spawnResult.status !== 0) {
-            failureReason = 'CouldNotRunJavaCommand'
-            continue // if cannot get Java version, move on to other projects in workspace
-        }
-        const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
-        const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
-        if (javaVersion === CodeWhispererConstants.JDK8VersionNumber) {
-            transformByQState.setSourceJDKVersionToJDK8()
-            containsSupportedJava = true
-        } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
-            transformByQState.setSourceJDKVersionToJDK11()
-            containsSupportedJava = true
-        } else {
-            continue
-        }
-        const buildFile = await vscode.workspace.findFiles(
-            new vscode.RelativePattern(folder, '**/pom.xml'), // only supporting projects with a pom.xml for now
-            '**/node_modules/**',
-            1
-        )
-        if (buildFile.length < 1) {
-            checkIfGradle(folder)
-            continue
-        } else {
-            containsPomXml = true
-        }
-        validModules.push({ label: folder.name, description: folder.uri.fsPath })
-    }
-    if (!containsSupportedJava) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
-        throw new ToolkitError('No Java projects found', { code: failureReason })
-    }
-    if (!containsPomXml) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
-        throw new ToolkitError('No build file found', { code: 'CouldNotFindPomXml' })
-    } else {
-        telemetry.amazonq_codeTransformInvoke.record({
-            codeTransform_ProjectType: 'maven',
+        openProjects.push({
+            label: folder.name,
+            description: folder.uri.fsPath,
         })
     }
-    return validModules
+    return openProjects
+}
+
+/*
+ * This function searches for a .class file in the selected project. Then it runs javap on the found .class file to get the JDK version
+ * for the project, and sets the version in the state variable. Only JDK8 and JDK11 are supported. It also ensure a pom.xml file is found,
+ * since only the Maven build system is supported for now.
+ */
+export async function validateProjectSelection(project: vscode.QuickPickItem) {
+    const projectPath = project.description
+    const compiledJavaFiles = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(projectPath!, '**/*.class'),
+        '**/node_modules/**',
+        1
+    )
+    if (compiledJavaFiles.length < 1) {
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        throw new ToolkitError('No Java projects found', { code: 'NoJavaProjectsAvailable' })
+    }
+    const classFilePath = compiledJavaFiles[0].fsPath
+    const baseCommand = 'javap'
+    const args = ['-v', classFilePath]
+    const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
+
+    if (spawnResult.error || spawnResult.status !== 0) {
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        throw new ToolkitError('Unable to determine Java version', { code: 'CannotDetermineJavaVersion' })
+    }
+    const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
+    const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
+    if (javaVersion === CodeWhispererConstants.JDK8VersionNumber) {
+        transformByQState.setSourceJDKVersionToJDK8()
+    } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
+        transformByQState.setSourceJDKVersionToJDK11()
+    } else {
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
+    }
+    const buildFile = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(projectPath!, '**/pom.xml'),
+        '**/node_modules/**',
+        1
+    )
+    if (buildFile.length < 1) {
+        await checkIfGradle(projectPath!)
+        vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
+        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
+    }
+    telemetry.amazonq_codeTransformInvoke.record({
+        codeTransform_ProjectType: 'maven',
+    })
 }
 
 export function getSha256(fileName: string) {
@@ -276,7 +271,7 @@ export async function zipCode(modulePath: string) {
     throwIfCancelled()
 
     let dependencyFiles: string[] = []
-    if (!mavenFailed) {
+    if (!mavenFailed && fs.existsSync(dependencyFolderPath)) {
         dependencyFiles = getFilesRecursively(dependencyFolderPath)
     }
 
@@ -384,14 +379,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     return status
 }
 
-async function checkIfGradle(folder: vscode.WorkspaceFolder) {
-    const gradleBuildFiles = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(folder, '**/build.gradle'),
+async function checkIfGradle(projectPath: string) {
+    const gradleBuildFile = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(projectPath, '**/build.gradle'),
         '**/node_modules/**',
         1
     )
 
-    if (gradleBuildFiles.length > 1) {
+    if (gradleBuildFile.length > 0) {
         telemetry.amazonq_codeTransformInvoke.record({
             codeTransform_ProjectType: 'gradle',
         })

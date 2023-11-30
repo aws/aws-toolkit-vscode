@@ -23,6 +23,16 @@ An AI powered productivity tool for the IDE.
 
 ![CodeWhisperer](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif)
 
+## [Application Composer](https://aws.amazon.com/application-composer/)
+
+AWS Application Composer maintains a real-time visual representation of your application architecture in sync with your IaC. Changes to the architecture—such as adding new resources or changing service configuration—are reflected in the IaC artifacts, and vice versa.
+
+-   Visually compose modern applications from 1,000+ AWS CloudFormation resources with little guesswork.
+-   Use the right tool for the task, including visual, code, or generative AI powered code suggestions in your IDE.
+-   Integrate with Workflow Studio to visually orchestrate over 220 AWS services or public http endpoints with Step Functions workflows.
+
+![Application Composer](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/appComposer.gif)
+
 ## [**Amazon CodeCatalyst**](https://codecatalyst.aws/explore)
 
 Unified software development service to quickly build and deliver applications on AWS.
