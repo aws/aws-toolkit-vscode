@@ -1,3 +1,8 @@
+## 2.1.0 2023-11-30
+
+- **Feature** Use MDE endpoint set by environment variable
+- **Feature** AWS Application Composer is now available from the AWS Toolkit for Visual Studio Code. Visualize and design AWS CloudFormation and AWS SAM applications from your local machine. Use integrations with featured services such as Amazon CodeWhisperer, AWS Step Functions, and AWS SAM to improve your development experience.
+
 ## 2.0.0 2023-11-28
 
 - **Bug Fix** CodeWhisperer status bar showing even when not in use
