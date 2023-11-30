@@ -29,6 +29,7 @@ import { indent } from '../../shared/utilities/textUtilities'
 import { keepAliveHeader } from './agent'
 import { getOptOutPreference } from '../util/commonUtil'
 import * as os from 'os'
+import { getClientId } from '../../shared/telemetry/util'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -226,14 +227,20 @@ export class DefaultCodeWhispererClient {
     }
 
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
-        const requestWithOptOut: SendTelemetryEventRequest = {
+        const requestWithCommonFields: SendTelemetryEventRequest = {
             ...request,
             optOutPreference: getOptOutPreference(),
+            userContext: {
+                ideCategory: 'VSCODE',
+                operatingSystem: this.getOperatingSystem(),
+                product: 'CodeWhisperer',
+                clientId: await getClientId(globals.context.globalState),
+            },
         }
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
             return
         }
-        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithOptOut).promise()
+        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithCommonFields).promise()
         getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
     }
 
@@ -243,6 +250,7 @@ export class DefaultCodeWhispererClient {
                 ideCategory: 'VSCODE',
                 operatingSystem: this.getOperatingSystem(),
                 product: 'CodeWhisperer',
+                clientId: await getClientId(globals.context.globalState),
             },
         }
         return (await this.createUserSdkClient()).listFeatureEvaluations(request).promise()

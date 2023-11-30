@@ -266,6 +266,9 @@ export class TelemetryHelper {
         const selectedCustomization = getSelectedCustomization()
         const generatedLines =
             acceptedRecommendationContent.trim() === '' ? 0 : acceptedRecommendationContent.split('\n').length
+        const suggestionCount = this.sessionDecisions
+            .map(e => e.codewhispererSuggestionCount)
+            .reduce((a, b) => a + b, 0)
 
         const aggregated: CodewhispererUserTriggerDecision = {
             codewhispererSessionId: this.sessionDecisions[0].codewhispererSessionId,
@@ -275,9 +278,7 @@ export class TelemetryHelper {
             codewhispererLanguage: language,
             codewhispererGettingStartedTask: session.taskType,
             codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
-            codewhispererSuggestionCount: this.sessionDecisions
-                .map(e => e.codewhispererSuggestionCount)
-                .reduce((a, b) => a + b, 0),
+            codewhispererSuggestionCount: suggestionCount,
             codewhispererAutomatedTriggerType: autoTriggerType,
             codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
             codewhispererCursorOffset: this.sessionDecisions[0].codewhispererCursorOffset,
@@ -336,6 +337,7 @@ export class TelemetryHelper {
                         timestamp: new Date(Date.now()),
                         suggestionReferenceCount: referenceCount,
                         generatedLine: generatedLines,
+                        numberOfRecommendations: suggestionCount,
                     },
                 },
             })

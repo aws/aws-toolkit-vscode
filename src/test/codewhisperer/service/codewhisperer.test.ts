@@ -14,6 +14,8 @@ import globals from '../../../shared/extensionGlobals'
 import { AWSError, Request } from 'aws-sdk'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { createSpyClient } from '../testUtil'
+import * as os from 'os'
+import { getClientId } from '../../../shared/telemetry/util'
 
 describe('codewhisperer', async function () {
     let clientSpy: CodeWhispererUserClient
@@ -100,6 +102,38 @@ describe('codewhisperer', async function () {
     it('sendTelemetryEvent should NOT be called for Builder ID user who optout telemetry', async function () {
         await sendTelemetryEventOptoutCheckHelper(userTriggerDecisionPayload, false, false)
     })
+
+    it('sendTelemetryEvent should be called with UserContext payload', async function () {
+        const clientSpyStub = sinon.stub(clientSpy, 'sendTelemetryEvent').returns({
+            promise: () =>
+                Promise.resolve({
+                    $response: {
+                        requestId: anyString(),
+                    },
+                }),
+        } as Request<SendTelemetryEventResponse, AWSError>)
+
+        const expectedUserContext = {
+            ideCategory: 'VSCODE',
+            operatingSystem: getOperatingSystem(),
+            product: 'CodeWhisperer',
+            clientId: await getClientId(globals.context.globalState),
+        }
+
+        await codeWhispererClient.sendTelemetryEvent({ telemetryEvent: userTriggerDecisionPayload })
+        sinon.assert.calledWith(clientSpyStub, sinon.match({ userContext: expectedUserContext }))
+    })
+
+    function getOperatingSystem(): string {
+        const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
+        if (osId === 'darwin') {
+            return 'MAC'
+        } else if (osId === 'win32') {
+            return 'WINDOWS'
+        } else {
+            return 'LINUX'
+        }
+    }
 
     async function sendTelemetryEventOptoutCheckHelper(
         payload: TelemetryEvent,
