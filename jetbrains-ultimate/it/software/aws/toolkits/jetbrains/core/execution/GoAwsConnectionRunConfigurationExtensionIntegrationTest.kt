@@ -9,9 +9,11 @@ import com.goide.execution.application.GoApplicationRunConfigurationType
 import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.RunManager
 import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.WebModuleTypeBase
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.PsiTestUtil
+import com.intellij.testFramework.common.ThreadLeakTracker
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -48,6 +50,7 @@ class GoAwsConnectionRunConfigurationExtensionIntegrationTest {
 
     @Before
     fun setup() {
+        ThreadLeakTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "TerminalEmulator-TtyConnector")
         projectRule.fixture.ensureCorrectGoVersion(disposableRule.disposable)
         PsiTestUtil.addModule(projectRule.project, WebModuleTypeBase.getInstance(), "main", projectRule.fixture.tempDirFixture.findOrCreateDir("."))
     }
