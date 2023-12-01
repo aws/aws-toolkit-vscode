@@ -185,7 +185,7 @@ function validateTelemetryMetrics() {
 
             assert.ok(
                 metadata.result !== failedStr ? true : metadata.reason !== undefined,
-                `This test emits metric \`${m.MetricName}\` without the \`reason\` property. ` +
+                `Metric \`${m.MetricName}\` was emitted without the \`reason\` property. ` +
                     `This property is always required when \`result\` = 'Failed'. ${telemetryRunDocsStr}`
             )
         }
