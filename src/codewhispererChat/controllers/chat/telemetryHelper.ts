@@ -103,19 +103,19 @@ export class CWCTelemetryHelper {
     }
 
     public recordOpenChat() {
-        telemetry.amazonq_openChat.emit()
+        telemetry.amazonq_openChat.emit({ passive: true })
     }
 
     public recordCloseChat() {
-        telemetry.amazonq_closeChat.emit()
+        telemetry.amazonq_closeChat.emit({ passive: true })
     }
 
     public recordEnterFocusChat() {
-        telemetry.amazonq_enterFocusChat.emit()
+        telemetry.amazonq_enterFocusChat.emit({ passive: true })
     }
 
     public recordExitFocusChat() {
-        telemetry.amazonq_exitFocusChat.emit()
+        telemetry.amazonq_exitFocusChat.emit({ passive: true })
     }
 
     public async recordFeedback(message: ChatItemFeedbackMessage) {
