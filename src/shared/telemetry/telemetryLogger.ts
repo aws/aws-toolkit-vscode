@@ -30,7 +30,7 @@ function isValidEntry(datum: MetadataEntry): datum is Required<MetadataEntry> {
 /**
  * Telemetry currently sends metadata as an array of key/value pairs, but this is unintuitive for JS
  */
-const mapMetadata = (excludeKeys: string[]) => (metadata: Required<MetricDatum>['Metadata']) => {
+export const mapMetadata = (excludeKeys: string[]) => (metadata: Required<MetricDatum>['Metadata']) => {
     const result: Metadata = {}
     return metadata
         .filter(isValidEntry)
@@ -92,5 +92,12 @@ export class TelemetryLogger {
      */
     public queryFull(query: MetricQuery): MetricDatum[] {
         return this._metrics.filter(m => m.MetricName === query.metricName)
+    }
+
+    /**
+     * Returns all seen metrics.
+     */
+    public getAllMetrics(): MetricDatum[] {
+        return [...this._metrics]
     }
 }
