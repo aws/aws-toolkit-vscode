@@ -297,6 +297,8 @@ export const transformByQCancelledMessage = 'Transformation cancelled'
 
 export const transformByQCompleted = 'Transformation completed'
 
+export const transformByQPartiallyCompletedMessage = 'Transformation partially completed'
+
 export const noPomXmlFoundMessage =
     'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations. Be sure to also build your project.'
 
