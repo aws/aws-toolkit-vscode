@@ -179,7 +179,7 @@ function validateTelemetryMetrics() {
             const metadata = mapMetadata([])(m.Metadata)
             assert.ok(
                 metadata.result !== undefined,
-                `This test emits metric \`${m.MetricName}\` without the \`result\` property. ` +
+                `Metric \`${m.MetricName}\` was emitted without the \`result\` property. ` +
                     `This property is always required. ${telemetryRunDocsStr}`
             )
 
