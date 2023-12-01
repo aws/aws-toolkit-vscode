@@ -150,7 +150,7 @@ export class AuthUtil {
                 }
 
                 // start the feature config polling job
-                vscode.commands.executeCommand('aws.codewhisperer.fetchFeatureConfigs')
+                vscode.commands.executeCommand('aws.codeWhisperer.fetchFeatureConfigs')
             }
             await this.setVscodeContextProps()
         })
