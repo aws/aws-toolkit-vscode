@@ -41,6 +41,7 @@
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
         "onStartupFinished",
+        "onUri",
         "onDebugResolve:aws-sam",
         "onView:aws.codeWhisperer.securityPanel",
         "onDebugInitialConfigurations",
