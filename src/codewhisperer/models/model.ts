@@ -156,7 +156,7 @@ export class Recommendation implements CodeWhispererUserClient.Completion {
 
     constructor(
         readonly cwRecommendation: CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion,
-        public suggestionState: CodewhispererSuggestionState | 'Showed' | undefined = undefined
+        public suggestionState: CodewhispererSuggestionState | 'Showed' | undefined = 'Unseen'
     ) {
         this.content = cwRecommendation.content
         this.references = cwRecommendation.references
