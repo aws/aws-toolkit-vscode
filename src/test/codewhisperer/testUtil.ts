@@ -156,7 +156,7 @@ export function createTextDocumentChangeEvent(document: vscode.TextDocument, ran
 
 export async function createSpyClient() {
     const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
-    let clientSpy = spy(
+    const clientSpy = spy(
         (await builder.createAwsService(Service, {
             apiConfig: userApiConfig,
         } as ServiceOptions)) as CodeWhispererUserClient
