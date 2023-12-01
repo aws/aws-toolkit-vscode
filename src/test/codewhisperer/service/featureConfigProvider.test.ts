@@ -41,7 +41,7 @@ describe('CodeWhispererFeatureConfigServiceTest', () => {
             value: 'testValue',
         } as FeatureEvaluation
 
-        let clientSpy = await createSpyClient()
+        const clientSpy = await createSpyClient()
         sinon.stub(clientSpy, 'listFeatureEvaluations').returns({
             promise: () =>
                 Promise.resolve({
