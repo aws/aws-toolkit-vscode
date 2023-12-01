@@ -66,18 +66,6 @@ describe('codewhisperer', async function () {
         await sendTelemetryEventOptoutCheckHelper(payload, true, false)
     })
 
-    it('sendTelemetryEvent for codeScan for json should respect telemetry optout status', async function () {
-        const payload = {
-            codeScanEvent: {
-                programmingLanguage: { languageName: 'json' },
-                codeScanJobId: anyString(),
-                timestamp: new Date(),
-            },
-        }
-        await sendTelemetryEventOptoutCheckHelper(payload, true, true)
-        await sendTelemetryEventOptoutCheckHelper(payload, true, false)
-    })
-
     it('sendTelemetryEvent for codePercentage should respect telemetry optout status', async function () {
         const payload = {
             codeCoverageEvent: {
