@@ -79,8 +79,8 @@ describe('CodeWhisperer security scan', async function () {
         })
     }
 
-    function getDependencyGraph(languageId: string) {
-        return DependencyGraphFactory.getDependencyGraph(languageId)
+    function getDependencyGraph(editor: vscode.TextEditor) {
+        return DependencyGraphFactory.getDependencyGraph(editor)
     }
 
     /*
@@ -92,7 +92,7 @@ describe('CodeWhisperer security scan', async function () {
     returns artifactMap and projectPath
     */
     async function securityJobSetup(editor: vscode.TextEditor) {
-        const dependencyGraph = getDependencyGraph(editor.document.languageId)
+        const dependencyGraph = getDependencyGraph(editor)
         if (dependencyGraph === undefined) {
             throw new Error(`"${editor.document.languageId}" is not supported for security scan.`)
         }
@@ -194,7 +194,7 @@ describe('CodeWhisperer security scan', async function () {
         const appRoot = path.join(workspaceFolder, 'go1-plain-sam-app')
         const appCodePath = path.join(appRoot, 'hello-world', 'main.go')
         const editor = await openTestFile(appCodePath)
-        const dependencyGraph = getDependencyGraph(editor.document.languageId)
+        const dependencyGraph = getDependencyGraph(editor)
 
         assert.strictEqual(dependencyGraph, undefined)
         await assert.rejects(() => securityJobSetup(editor))

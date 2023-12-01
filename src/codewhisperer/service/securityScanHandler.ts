@@ -73,14 +73,18 @@ function mapToAggregatedList(
                 filePath: filePath,
                 issues: issues.map(issue => {
                     return {
-                        startLine:
-                            issue.startLine === issue.endLine
-                                ? issue.startLine - 1 >= 0
-                                    ? issue.startLine - 1
-                                    : 0
-                                : issue.endLine,
+                        startLine: issue.startLine - 1 >= 0 ? issue.startLine - 1 : 0,
                         endLine: issue.endLine,
                         comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
+                        title: issue.title,
+                        description: issue.description,
+                        detectorId: issue.detectorId,
+                        detectorName: issue.detectorName,
+                        findingId: issue.findingId,
+                        relatedVulnerabilities: issue.relatedVulnerabilities,
+                        severity: issue.severity,
+                        recommendation: issue.remediation.recommendation,
+                        suggestedFixes: issue.remediation.suggestedFixes,
                     }
                 }),
             }

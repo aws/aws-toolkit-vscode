@@ -20,6 +20,7 @@ import {
     CreateTokenRequest,
     RegisterClientRequest,
     SSOOIDC,
+    SSOOIDCClient,
     StartDeviceAuthorizationRequest,
 } from '@aws-sdk/client-sso-oidc'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
@@ -29,8 +30,7 @@ import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 import { isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
-import { Client } from '@aws-sdk/smithy-client'
-import { HttpHandlerOptions, SdkError } from '@aws-sdk/types'
+import { SdkError } from '@aws-sdk/types'
 import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
 import { StandardRetryStrategy, defaultRetryDecider } from '@aws-sdk/middleware-retry'
 
@@ -209,12 +209,18 @@ function omitIfPresent<T extends Record<string, unknown>>(obj: T, ...keys: strin
     return objCopy
 }
 
-function addLoggingMiddleware(client: Client<HttpHandlerOptions, any, any, any>) {
+function addLoggingMiddleware(client: SSOOIDCClient) {
     client.middlewareStack.add(
         (next, context) => args => {
             if (HttpRequest.isInstance(args.request)) {
                 const { hostname, path } = args.request
-                const input = omitIfPresent(args.input, 'clientSecret', 'accessToken', 'refreshToken')
+                const input = omitIfPresent(
+                    // TODO: Fix
+                    args.input as unknown as Record<string, unknown>,
+                    'clientSecret',
+                    'accessToken',
+                    'refreshToken'
+                )
                 getLogger().debug('API request (%s %s): %O', hostname, path, input)
             }
             return next(args)
@@ -238,7 +244,13 @@ function addLoggingMiddleware(client: Client<HttpHandlerOptions, any, any, any>)
                 throw e
             })
             if (HttpResponse.isInstance(result.response)) {
-                const output = omitIfPresent(result.output, 'clientSecret', 'accessToken', 'refreshToken')
+                const output = omitIfPresent(
+                    // TODO: Fix
+                    result.output as unknown as Record<string, unknown>,
+                    'clientSecret',
+                    'accessToken',
+                    'refreshToken'
+                )
                 getLogger().debug('API response (%s %s): %O', hostname, path, output)
             }
 

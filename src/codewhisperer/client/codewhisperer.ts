@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
@@ -20,6 +21,7 @@ import userApiConfig = require('./user-service-2.json')
 import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger'
 import { indent } from '../../shared/utilities/textUtilities'
+import { keepAliveHeader } from './agent'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -123,6 +125,7 @@ export class DefaultCodeWhispererClient {
                         if (req.operation === 'generateCompletions') {
                             req.on('build', () => {
                                 req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
+                                req.httpRequest.headers['Connection'] = keepAliveHeader
                             })
                         }
                     },
@@ -223,6 +226,50 @@ export class DefaultCodeWhispererClient {
         }
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithOptOut).promise()
         getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
+    }
+
+    /**
+     * @description Use this function to start the transformation job.
+     * @param request
+     * @returns transformationJobId - String id for the Job
+     */
+    public async codeModernizerStartCodeTransformation(
+        request: CodeWhispererUserClient.StartTransformationRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.StartTransformationResponse, AWSError>> {
+        return (await this.createUserSdkClient()).startTransformation(request).promise()
+    }
+
+    /**
+     * @description Use this function to stop the transformation job.
+     * @param request
+     * @returns transformationJobId - String id for the Job
+     */
+    public async codeModernizerStopCodeTransformation(
+        request: CodeWhispererUserClient.StopTransformationRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.StopTransformationResponse, AWSError>> {
+        return (await this.createUserSdkClient()).stopTransformation(request).promise()
+    }
+
+    /**
+     * @description Use this function to get the status of the code transformation. We should
+     * be polling this function periodically to get updated results. When this function
+     * returns COMPLETED we know the transformation is done.
+     */
+    public async codeModernizerGetCodeTransformation(
+        request: CodeWhispererUserClient.GetTransformationRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationResponse, AWSError>> {
+        return (await this.createUserSdkClient()).getTransformation(request).promise()
+    }
+
+    /**
+     * @description After starting a transformation use this function to display the LLM
+     * transformation plan to the user.
+     * @params tranformationJobId - String id returned from StartCodeTransformationResponse
+     */
+    public async codeModernizerGetCodeTransformationPlan(
+        request: CodeWhispererUserClient.GetTransformationPlanRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationPlanResponse, AWSError>> {
+        return (await this.createUserSdkClient()).getTransformationPlan(request).promise()
     }
 }
 

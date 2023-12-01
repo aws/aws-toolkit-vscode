@@ -11,8 +11,7 @@ import { getSecondaryAuth } from '../../auth/secondaryAuth'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { PromptSettings } from '../../shared/settings'
 import {
-    ssoAccountAccessScopes,
-    codewhispererScopes,
+    scopesCodeWhispererCore,
     createBuilderIdProfile,
     hasScopes,
     SsoConnection,
@@ -21,13 +20,29 @@ import {
     isIamConnection,
     isSsoConnection,
     isBuilderIdConnection,
+    scopesSsoAccountAccess,
+    scopesCodeWhispererChat,
+    scopesFeatureDev,
+    scopesGumby,
+    isIdcSsoConnection,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
+import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
+import { Commands, placeholder } from '../../shared/vscode/commands2'
 
-export const defaultCwScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
-export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultCwScopes)
+/** Backwards compatibility for connections w pre-chat scopes */
+export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
+export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
+export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesFeatureDev]
 
-export const isValidCodeWhispererConnection = (conn?: Connection): conn is Connection => {
+export const awsBuilderIdSsoProfile = createBuilderIdProfile(codeWhispererChatScopes)
+
+/**
+ * "Core" are the CW scopes that existed before the addition of new scopes
+ * for Amazon Q.
+ */
+export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is Connection => {
     if (isCloud9('classic')) {
         return isIamConnection(conn)
     }
@@ -38,16 +53,36 @@ export const isValidCodeWhispererConnection = (conn?: Connection): conn is Conne
 
     return (
         (isCloud9('codecatalyst') && isIamConnection(conn)) ||
-        (isSsoConnection(conn) && hasScopes(conn, codewhispererScopes))
+        (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
     )
+}
+/** For Builder ID only, if using IdC then use {@link isValidAmazonQConnection} */
+export const isValidCodeWhispererChatConnection = (conn?: Connection): conn is Connection => {
+    return (
+        isBuilderIdConnection(conn) &&
+        isValidCodeWhispererCoreConnection(conn) &&
+        hasScopes(conn, codeWhispererChatScopes)
+    )
+}
+
+/** Superset that includes all of CodeWhisperer + Amazon Q */
+export const isValidAmazonQConnection = (conn?: Connection): conn is Connection => {
+    return isSsoConnection(conn) && isValidCodeWhispererCoreConnection(conn) && hasScopes(conn, amazonQScopes)
+}
+
+interface HasAlreadySeenQWelcome {
+    local?: boolean
+    devEnv?: boolean
+    ssh?: boolean
+    wsl?: boolean
 }
 
 export class AuthUtil {
     static #instance: AuthUtil
 
-    private usingEnterpriseSSO: boolean = false
     private reauthenticatePromptShown: boolean = false
     private _isCustomizationFeatureEnabled: boolean = false
+    private readonly mementoKey: string = 'hasAlreadySeenQWelcomeObj'
 
     public get isCustomizationFeatureEnabled(): boolean {
         return this._isCustomizationFeatureEnabled
@@ -61,6 +96,7 @@ export class AuthUtil {
         }
         this._isCustomizationFeatureEnabled = value
         vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        void Commands.tryExecute('aws.amazonq.refresh')
         vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }
 
@@ -68,45 +104,64 @@ export class AuthUtil {
         this.auth,
         'codewhisperer',
         'CodeWhisperer',
-        isValidCodeWhispererConnection
+        isValidCodeWhispererCoreConnection
     )
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
     public constructor(public readonly auth = Auth.instance) {
-        this.auth.onDidChangeConnectionState(e => {
+        this.auth.onDidChangeConnectionState(async e => {
             if (e.state !== 'authenticating') {
                 this.refreshCodeWhisperer()
             }
+
+            await this.setVscodeContextProps()
         })
 
-        this.secondaryAuth.onDidChangeActiveConnection(async conn => {
-            if (conn?.type === 'sso') {
-                this.usingEnterpriseSSO = !isBuilderIdConnection(conn)
-                if (!this.isConnectionExpired() && this.usingEnterpriseSSO) {
-                    vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
-                }
-            } else {
-                this.usingEnterpriseSSO = false
+        this.secondaryAuth.onDidChangeActiveConnection(async () => {
+            if (this.isValidEnterpriseSsoInUse()) {
+                vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
             }
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+                Commands.tryExecute('aws.amazonq.refresh'),
+                vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
-            const prompts = PromptSettings.instance
 
-            const shouldShow = await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
+
+            const memento = globals.context.globalState
+            const shouldShowObject: HasAlreadySeenQWelcome = memento.get(this.mementoKey) ?? {
+                local: false,
+                devEnv: false,
+                ssh: false,
+                wsl: false,
+            }
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
                 //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
-                if (shouldShow) {
-                    vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
-                    prompts.disablePrompt('codeWhispererNewWelcomeMessage')
+                const key = getEnvType()
+                if (!shouldShowObject[key]) {
+                    shouldShowObject[key] = true
+                    memento.update(this.mementoKey, shouldShowObject)
+                    await vscode.commands.executeCommand('aws.amazonq.welcome', placeholder, key)
                 }
             }
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
+            await this.setVscodeContextProps()
         })
+    }
+
+    public async setVscodeContextProps() {
+        if (!isCloud9()) {
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
+            await vscode.commands.executeCommand(
+                'setContext',
+                'aws.codewhisperer.disconnected',
+                this.isConnectionExpired()
+            )
+        }
     }
 
     public reformatStartUrl(startUrl: string | undefined) {
@@ -134,7 +189,10 @@ export class AuthUtil {
     }
 
     public isEnterpriseSsoInUse(): boolean {
-        return this.conn !== undefined && this.usingEnterpriseSSO
+        const conn = this.conn
+        // we have an sso that isn't builder id, must be IdC by process of elimination
+        const isUsingEnterpriseSso = conn?.type === 'sso' && !isBuilderIdConnection(conn)
+        return conn !== undefined && isUsingEnterpriseSso
     }
 
     // If there is an active SSO connection
@@ -151,8 +209,8 @@ export class AuthUtil {
 
         if (!conn) {
             conn = await this.auth.createConnection(awsBuilderIdSsoProfile)
-        } else if (!isValidCodeWhispererConnection(conn)) {
-            conn = await this.secondaryAuth.addScopes(conn, defaultCwScopes)
+        } else if (!isValidCodeWhispererChatConnection(conn)) {
+            conn = await this.secondaryAuth.addScopes(conn, codeWhispererChatScopes)
         }
 
         if (this.auth.getConnectionState(conn) === 'invalid') {
@@ -163,20 +221,22 @@ export class AuthUtil {
     }
 
     public async connectToEnterpriseSso(startUrl: string, region: string) {
-        const existingConn = (await this.auth.listConnections()).find(
+        let conn = (await this.auth.listConnections()).find(
             (conn): conn is SsoConnection =>
                 isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
         )
 
-        if (!existingConn) {
-            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region, defaultCwScopes))
-            return this.secondaryAuth.useNewConnection(conn)
-        } else if (isValidCodeWhispererConnection(existingConn)) {
-            return this.secondaryAuth.useNewConnection(existingConn)
-        } else if (isSsoConnection(existingConn)) {
-            const conn = await this.secondaryAuth.addScopes(existingConn, defaultCwScopes)
-            return this.secondaryAuth.useNewConnection(conn)
+        if (!conn) {
+            conn = await this.auth.createConnection(createSsoProfile(startUrl, region, amazonQScopes))
+        } else if (!isValidAmazonQConnection(conn)) {
+            conn = await this.secondaryAuth.addScopes(conn, amazonQScopes)
         }
+
+        if (this.auth.getConnectionState(conn) === 'invalid') {
+            conn = await this.auth.reauthenticate(conn)
+        }
+
+        return this.secondaryAuth.useNewConnection(conn)
     }
 
     public static get instance() {
@@ -229,13 +289,13 @@ export class AuthUtil {
         const connectionExpired =
             this.secondaryAuth.isConnectionExpired &&
             this.conn !== undefined &&
-            isValidCodeWhispererConnection(this.conn)
+            isValidCodeWhispererCoreConnection(this.conn)
         getLogger().debug(`codewhisperer: Connection expired = ${connectionExpired},
                            secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired},
                            connection is undefined = ${this.conn === undefined}`)
         if (this.conn) {
             getLogger().debug(
-                `codewhisperer: isValidCodeWhispererConnection = ${isValidCodeWhispererConnection(this.conn)}`
+                `codewhisperer: isValidCodeWhispererConnection = ${isValidCodeWhispererCoreConnection(this.conn)}`
             )
         }
         return connectionExpired
@@ -243,9 +303,25 @@ export class AuthUtil {
 
     public async reauthenticate() {
         try {
-            await this.auth.reauthenticate(this.conn!)
+            if (this.conn?.type !== 'sso') {
+                return
+            }
+
+            // Edge Case: With the addition of Amazon Q/Chat scopes we may need to add
+            // the new scopes to existing connections.
+            if (isBuilderIdConnection(this.conn) && !isValidCodeWhispererChatConnection(this.conn)) {
+                const conn = await this.secondaryAuth.addScopes(this.conn, codeWhispererChatScopes)
+                this.secondaryAuth.useNewConnection(conn)
+            } else if (isIdcSsoConnection(this.conn) && !isValidAmazonQConnection(this.conn)) {
+                const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
+                this.secondaryAuth.useNewConnection(conn)
+            } else {
+                await this.auth.reauthenticate(this.conn)
+            }
         } catch (err) {
             throw ToolkitError.chain(err, 'Unable to authenticate connection')
+        } finally {
+            this.setVscodeContextProps()
         }
     }
 
@@ -253,6 +329,8 @@ export class AuthUtil {
         await Promise.all([
             vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
             vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+            Commands.tryExecute('aws.amazonq.refresh'),
+            vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
             vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
         ])
     }
@@ -284,5 +362,105 @@ export class AuthUtil {
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         this.showReauthenticatePrompt(isAutoTrigger)
+        this.setVscodeContextProps()
     }
+}
+
+/**
+ * Returns a snapshot of the overall auth state of
+ * CodeWhisperer + Chat features.
+ */
+export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<FeatureAuthState> {
+    const currentConnection = cwAuth.conn
+
+    if (currentConnection === undefined) {
+        return buildFeatureAuthState(AuthStates.disconnected)
+    }
+    if (!isSsoConnection(currentConnection)) {
+        throw new ToolkitError(`Connection "${currentConnection.id}" is not a valid type: ${currentConnection.type}`)
+    }
+
+    // The state of the connection may not have been properly validated
+    // and the current state we see may be stale, so refresh for latest state.
+    await cwAuth.auth.refreshConnectionState(currentConnection)
+
+    // default to expired to indicate reauth is needed if unmodified
+    const state: FeatureAuthState = buildFeatureAuthState(AuthStates.expired)
+
+    if (isBuilderIdConnection(currentConnection)) {
+        // Regardless, if using Builder ID, Amazon Q is unsupported
+        state[Features.amazonQ] = AuthStates.unsupported
+    }
+
+    if (cwAuth.isConnectionExpired()) {
+        return state
+    }
+
+    if (isBuilderIdConnection(currentConnection)) {
+        if (isValidCodeWhispererCoreConnection(currentConnection)) {
+            state[Features.codewhispererCore] = AuthStates.connected
+        }
+        if (isValidCodeWhispererChatConnection(currentConnection)) {
+            state[Features.codewhispererChat] = AuthStates.connected
+        }
+    } else if (isIdcSsoConnection(currentConnection)) {
+        if (isValidCodeWhispererCoreConnection(currentConnection)) {
+            state[Features.codewhispererCore] = AuthStates.connected
+        }
+        if (isValidAmazonQConnection(currentConnection)) {
+            Object.values(Features).forEach(v => (state[v as Feature] = AuthStates.connected))
+        }
+    }
+
+    return state
+}
+
+export type FeatureAuthState = { [feature in Feature]: AuthState }
+export type Feature = (typeof Features)[keyof typeof Features]
+export type AuthState = (typeof AuthStates)[keyof typeof AuthStates]
+
+export const AuthStates = {
+    /** The current connection is working and supports this feature. */
+    connected: 'connected',
+    /** No connection exists, so this feature cannot be used*/
+    disconnected: 'disconnected',
+    /**
+     * The current connection exists, but needs to be reauthenticated for this feature to work
+     *
+     * Look to use {@link AuthUtil.reauthenticate}
+     */
+    expired: 'expired',
+    /**
+     * A connection exists, but does not support this feature.
+     *
+     * Eg: We are currently using Builder ID, but must use Identity Center.
+     */
+    unsupported: 'unsupported',
+} as const
+const Features = {
+    codewhispererCore: 'codewhispererCore',
+    codewhispererChat: 'codewhispererChat',
+    amazonQ: 'amazonQ',
+} as const
+
+function buildFeatureAuthState(state: AuthState): FeatureAuthState {
+    return {
+        codewhispererCore: state,
+        codewhispererChat: state,
+        amazonQ: state,
+    }
+}
+
+function getEnvType(): keyof HasAlreadySeenQWelcome {
+    const remoteName = vscode.env.remoteName
+    if (remoteName) {
+        if (remoteName === 'ssh-remote') {
+            if (getCodeCatalystDevEnvId()) {
+                return 'devEnv'
+            }
+            return 'ssh'
+        }
+        return 'wsl'
+    }
+    return 'local'
 }

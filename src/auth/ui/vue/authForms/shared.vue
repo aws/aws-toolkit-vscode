@@ -1,17 +1,32 @@
 <script lang="ts">
 import { CodeCatalystBuilderIdState, CodeWhispererBuilderIdState } from './manageBuilderId.vue'
 import { CredentialsState } from './manageCredentials.vue'
-import { CodeWhispererIdentityCenterState, ExplorerIdentityCenterState } from './manageIdentityCenter.vue'
+import {
+    CodeCatalystIdentityCenterState,
+    CodeWhispererIdentityCenterState,
+    ExplorerIdentityCenterState,
+} from './manageIdentityCenter.vue'
 import { AuthFormId } from './types'
+
+export const AuthFormIds = {
+    credentials: 'credentials',
+    builderIdCodeWhisperer: 'builderIdCodeWhisperer',
+    builderIdCodeCatalyst: 'builderIdCodeCatalyst',
+    identityCenterCodeWhisperer: 'identityCenterCodeWhisperer',
+    identityCenterCodeCatalyst: 'identityCenterCodeCatalyst',
+    identityCenterExplorer: 'identityCenterExplorer',
+    aggregateExplorer: 'aggregateExplorer',
+} as const
 
 /**
  * The state instance of all auth forms
  */
 const authFormsState = {
-    credentials: new CredentialsState() as CredentialsState,
+    credentials: CredentialsState.instance,
     builderIdCodeWhisperer: CodeWhispererBuilderIdState.instance,
     builderIdCodeCatalyst: CodeCatalystBuilderIdState.instance,
     identityCenterCodeWhisperer: new CodeWhispererIdentityCenterState(),
+    identityCenterCodeCatalyst: new CodeCatalystIdentityCenterState(),
     identityCenterExplorer: new ExplorerIdentityCenterState(),
 } as const
 
@@ -43,6 +58,14 @@ export interface AuthForm {
      * If the auth form is successfully connected
      */
     isAuthConnected(): Promise<boolean>
+
+    /**
+     * Return true if the toolkit extension is aware of
+     * a connection. It does not have to be actively used
+     * for it to exist.
+     */
+    isConnectionExists(): Promise<boolean>
+
     get id(): AuthFormId
 }
 

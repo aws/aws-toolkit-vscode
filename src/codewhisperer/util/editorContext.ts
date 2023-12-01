@@ -11,13 +11,12 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
-import {
-    CodeWhispererSupplementalContext,
-    fetchSupplementalContext,
-} from './supplementalContext/supplementalContextUtil'
+import { fetchSupplementalContext } from './supplementalContext/supplementalContextUtil'
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
+import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
+import { CodeWhispererSupplementalContext } from '../models/model'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -40,6 +39,27 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
             document.positionAt(offset + CodeWhispererConstants.charactersLimit)
         )
     )
+    if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
+        return {
+            filename: getFileNameForRequest(editor),
+            programmingLanguage: {
+                languageName: 'plaintext',
+            },
+            leftFileContent: caretLeftFileContext,
+            rightFileContent: caretRightFileContext,
+        } as codewhispererClient.FileContext
+    }
+
+    if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
+        return {
+            filename: getFileNameForRequest(editor),
+            programmingLanguage: {
+                languageName: 'plaintext',
+            },
+            leftFileContent: caretLeftFileContext,
+            rightFileContent: caretRightFileContext,
+        } as codewhispererClient.FileContext
+    }
 
     return {
         filename: getFileNameForRequest(editor),

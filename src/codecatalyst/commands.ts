@@ -24,7 +24,8 @@ import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { Auth } from '../auth/auth'
-import { SsoConnection } from '../auth/connection'
+import { SsoConnection, defaultSsoRegion } from '../auth/connection'
+import { builderIdStartUrl } from '../auth/sso/model'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -136,7 +137,11 @@ function createClientInjector(authProvider: CodeCatalystAuthenticationProvider):
         telemetry.record({ userId: AccountStatus.NotSet })
 
         await authProvider.restore()
-        const conn = await authProvider.tryGetBuilderIdConnection()
+        const conn = authProvider.activeConnection
+        if (!conn) {
+            // TODO: In the future, it would be very nice to open a connection picker here.
+            throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnectionBadState' })
+        }
         const validatedConn = await validateConnection(conn, authProvider.auth)
         const client = await createClient(validatedConn)
         telemetry.record({ userId: client.identity.id })
@@ -204,7 +209,7 @@ export class CodeCatalystCommands {
     public readonly withClient: ClientInjector
     public readonly bindClient = createCommandDecorator(this)
 
-    public constructor(authProvider: CodeCatalystAuthenticationProvider) {
+    public constructor(private authProvider: CodeCatalystAuthenticationProvider) {
         this.withClient = createClientInjector(authProvider)
     }
 
@@ -258,7 +263,11 @@ export class CodeCatalystCommands {
         await vscode.window.showTextDocument(uri)
     }
 
-    public async openDevEnv(id?: DevEnvironmentId, targetPath?: string): Promise<void> {
+    public async openDevEnv(
+        id?: DevEnvironmentId,
+        targetPath?: string,
+        connection?: { startUrl: string; region: string }
+    ): Promise<void> {
         if (vscode.env.remoteName === 'ssh-remote') {
             throw new ToolkitError('Cannot connect from a remote context. Try again from a local VS Code instance.', {
                 code: 'ConnectedToRemote',
@@ -275,6 +284,9 @@ export class CodeCatalystCommands {
         if (id === undefined) {
             telemetry.record({ source: 'CommandPalette' })
         }
+
+        // Try to ensure active connection, defaulting to BuilderID if not specified:
+        await this.authProvider.tryConnectTo(connection ?? { startUrl: builderIdStartUrl, region: defaultSsoRegion })
 
         return this.withClient(openDevEnv, devenv, targetPath)
     }

@@ -18,9 +18,14 @@ const warnOnce = onceChanged((s: string, url: string) => {
     showMessageWithUrl(s, url, undefined, 'error')
 })
 
-export const codecatalystScopes = ['codecatalyst:read_write']
-export const ssoAccountAccessScopes = ['sso:account:access']
-export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
+export const scopesCodeCatalyst = ['codecatalyst:read_write']
+export const scopesSsoAccountAccess = ['sso:account:access']
+/** These are the non-chat scopes for CW. */
+export const scopesCodeWhispererCore = ['codewhisperer:completions', 'codewhisperer:analysis']
+export const scopesCodeWhispererChat = ['codewhisperer:conversations']
+export const scopesFeatureDev = ['codewhisperer:taskassist']
+export const scopesGumby = ['codewhisperer:transformations']
+
 export const defaultSsoRegion = 'us-east-1'
 
 type SsoType =
@@ -51,15 +56,15 @@ export const isAnySsoConnection = (conn?: Connection): conn is SsoConnection => 
 export const isIdcSsoConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'idc')
 export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'builderId')
 
-export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
-    isBuilderIdConnection(conn) && hasScopes(conn, codecatalystScopes)
+export const isValidCodeCatalystConnection = (conn?: Connection): conn is SsoConnection =>
+    isSsoConnection(conn) && hasScopes(conn, scopesCodeCatalyst)
 
 export function hasScopes(target: SsoConnection | SsoProfile, scopes: string[]): boolean {
     return scopes?.every(s => target.scopes?.includes(s))
 }
 
 export function createBuilderIdProfile(
-    scopes = [...ssoAccountAccessScopes]
+    scopes = [...scopesSsoAccountAccess]
 ): SsoProfile & { readonly scopes: string[] } {
     return {
         scopes,
@@ -72,7 +77,7 @@ export function createBuilderIdProfile(
 export function createSsoProfile(
     startUrl: string,
     region = 'us-east-1',
-    scopes = [...ssoAccountAccessScopes]
+    scopes = [...scopesSsoAccountAccess]
 ): SsoProfile & { readonly scopes: string[] } {
     return {
         scopes,
@@ -324,7 +329,7 @@ export async function* loadLinkedProfilesIntoStore(
     }
 
     /** Does `ssoProfile` have scopes other than "sso:account:access"? */
-    const hasScopes = !!ssoProfile.scopes?.some(s => !ssoAccountAccessScopes.includes(s))
+    const hasScopes = !!ssoProfile.scopes?.some(s => !scopesSsoAccountAccess.includes(s))
     if (!hasScopes && (accounts.size === 0 || found.size === 0)) {
         // SSO user has no OIDC scopes nor IAM roles. Possible causes:
         // - user is not an "Assigned user" in any account in the SSO org

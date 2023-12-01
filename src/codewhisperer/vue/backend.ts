@@ -14,6 +14,10 @@ import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } fro
 import { FileSystemCommon } from '../../srcShared/fs'
 import { getLogger } from '../../shared/logger'
 import { PromptSettings } from '../../shared/settings'
+import { CodeWhispererSource } from '../commands/types'
+import { submitFeedback } from '../../feedback/vue/submitFeedback'
+import { placeholder } from '../../shared/vscode/commands2'
+
 export type OSType = 'Mac' | 'RestOfOS'
 export class CodeWhispererWebview extends VueWebview {
     public readonly id = 'CodeWhispererWebview'
@@ -89,7 +93,7 @@ export class CodeWhispererWebview extends VueWebview {
 
     //This function opens the Feedback CodeWhisperer page in the webview
     async openFeedBack(): Promise<void> {
-        vscode.commands.executeCommand('aws.submitFeedback', 'CodeWhisperer')
+        submitFeedback.execute(placeholder, 'CodeWhisperer')
     }
 
     //------Telemetry------
@@ -131,12 +135,10 @@ const Panel = VueWebview.compilePanel(CodeWhispererWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 
-export type CodeWhispererSource = 'codewhispererDeveloperTools'
-
 // This function is called when the extension is activated : Webview of CodeWhisperer
 export async function showCodeWhispererWebview(
     ctx: vscode.ExtensionContext,
-    source: CodeWhispererSource
+    source: CodeWhispererSource | undefined
 ): Promise<void> {
     activePanel ??= new Panel(ctx)
     activePanel.server.setSource(source)

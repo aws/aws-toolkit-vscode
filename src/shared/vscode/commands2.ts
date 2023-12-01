@@ -19,6 +19,34 @@ type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
 
 /**
+ * HACK
+ *
+ * If a command matches the following conditions:
+ * - Is registered with VS Code
+ * - Has args for the execution of the command
+ * - Can be executed through a package.json contribution (eg: ellipsis menu in View)
+ *
+ * Then unexpected args will be passed to the command.
+ * - Currently it sets arg[0] to an object or undefined, depending on the context.
+ * - And the rest of the args will be undefined do not exist.
+ * ---
+ * **So as a workaround**, commands who meet the above criteria should
+ * - have this type as their first arg as a placeholder
+ * - When executing the command from within the code, pass in {@link placeholder} as the first arg.
+ * - In the command check if the first arg !== {@link placeholder}, and if so you will need to
+ *   set values for the other args since they will not exist.
+ */
+export type VsCodeCommandArg = typeof placeholder
+/** A placeholder value for Commands that use {@link VsCodeCommandArg} */
+export const placeholder = 'placeholder**' as const
+
+/**
+ * The command was executed by a VSCode UI component which we
+ * cannot accurately determine a source.
+ */
+export const vscodeComponent = 'vscodeComponent'
+
+/**
  * A handle for a generic "command" that is registered (or will be registered) through
  * VS Code's `commands` API.
  *
@@ -102,9 +130,7 @@ export class Commands {
 
     public constructor(private readonly commands = vscode.commands) {}
 
-    /**
-     * Returns a {@link Command} if the ID is currently registered within VS Code.
-     */
+    /** See {@link Commands.get}. */
     public async get(id: string): Promise<Command | undefined> {
         const registeredCommands = await this.commands.getCommands()
 
@@ -118,12 +144,20 @@ export class Commands {
         }
     }
 
-    /**
-     * Registers a new command with the VS Code API.
-     *
-     * @param info command id (string) or {@link CommandInfo} object
-     * @param callback command implementation
-     */
+    /** See {@link Commands.tryExecute}. */
+    public async tryExecute<T extends Callback = Callback>(
+        id: string,
+        ...args: Parameters<T>
+    ): Promise<ReturnType<T> | undefined> {
+        const cmd = this.resources.get(id)
+        if (!cmd) {
+            getLogger().debug('command not found: "%s"', id)
+            return undefined
+        }
+        return this.commands.executeCommand<ReturnType<T>>(id, ...args)
+    }
+
+    /** See {@link Commands.register}. */
     public register<T extends Callback>(
         info: string | Omit<CommandInfo<T>, 'args' | 'label'>,
         callback: T
@@ -139,12 +173,7 @@ export class Commands {
         return this.addResource(resource).register()
     }
 
-    /**
-     * Declares the _intent_ to register a command.
-     *
-     * Forward declaration adds one level of indirection. This allows for explicit annotation of
-     * not just the command signature but also its immediate dependencies.
-     */
+    /** See {@link Commands.declare}. */
     public declare<T extends Callback, D extends any[]>(
         id: string | Omit<CommandInfo<T>, 'args' | 'label'>,
         factory: CommandFactory<T, D>
@@ -154,25 +183,7 @@ export class Commands {
         return this.addResource(new CommandResource(resource, this.commands))
     }
 
-    /**
-     * Convenience method to declare commands directly from a class.
-     *
-     * Mostly used when many commands are associated with the same long-lived context.
-     * Functions are currently bound at declaration time for simplicity, though this
-     * may change in the future.
-     *
-     * #### Example
-     * ```ts
-     * class Foo {
-     *     public square(n: number): number {
-     *         return n * n
-     *     }
-     * }
-     *
-     * const square = Commands.instance.from(Foo).declareSquare('aws.square')
-     * await square.register(new Foo()).execute(5)
-     * ```
-     */
+    /** See {@link Commands.from}. */
     public from<T>(target: new (...args: any[]) => T): Declarables<T> {
         type Id = Parameters<Declare<T, Callback>>[0]
         const result = {} as Record<string, Declare<T, Callback>>
@@ -203,28 +214,53 @@ export class Commands {
         return resource
     }
 
-    /**
-     * The default instance of {@link Commands}.
-     */
+    /** Default instance of {@link Commands}. */
     public static readonly instance = new Commands()
 
     /**
-     * Returns {@link Commands.get} using the default instance.
+     * Returns a {@link Command} if the ID is currently registered within VS Code.
      */
     public static readonly get = this.instance.get.bind(this.instance)
 
     /**
-     * Returns {@link Commands.register} using the default instance.
+     * Executes a command if it exists, else does nothing.
+     */
+    public static readonly tryExecute = this.instance.tryExecute.bind(this.instance)
+
+    /**
+     * Registers a new command with the VS Code API.
+     *
+     * @param info command id (string) or {@link CommandInfo} object
+     * @param callback command implementation
      */
     public static readonly register = this.instance.register.bind(this.instance)
 
     /**
-     * Returns {@link Commands.declare} using the default instance.
+     * Declares the _intent_ to register a command.
+     *
+     * Forward declaration adds one level of indirection. This allows for explicit annotation of
+     * not just the command signature but also its immediate dependencies.
      */
     public static readonly declare = this.instance.declare.bind(this.instance)
 
     /**
-     * Returns {@link Commands.from} using the default instance.
+     * Convenience method to declare commands directly from a class.
+     *
+     * Mostly used when many commands are associated with the same long-lived context.
+     * Functions are currently bound at declaration time for simplicity, though this
+     * may change in the future.
+     *
+     * #### Example
+     * ```ts
+     * class Foo {
+     *     public square(n: number): number {
+     *         return n * n
+     *     }
+     * }
+     *
+     * const square = Commands.instance.from(Foo).declareSquare('aws.square')
+     * await square.register(new Foo()).execute(5)
+     * ```
      */
     public static readonly from = this.instance.from.bind(this.instance)
 }
@@ -373,7 +409,7 @@ interface CommandInfo<T extends Callback> {
     /**
      * The indexes of args in `execute()` that will be used to determine
      * the uniqueness of the metric `vscode_executeCommand`.
-     * 
+     *
      * - By default, {@link VscodeExecuteCommand} is throttled for metrics of the
      *   same {@link VscodeExecuteCommand.command}.
      * - By defining this property, the values of the args will be combined
@@ -384,17 +420,17 @@ interface CommandInfo<T extends Callback> {
      *
      * @example
      * const compositeKey: CompositeKey = {
-     *     0: 'source' // the value is the "source" field of `vscode_executeCommand`
+     *     1: 'source' // the value is the "source" field of `vscode_executeCommand`
      * }
      * ...
-     * myCommand.execute('SourceValue', 'thisIsNotUsed')
+     * myCommand.execute(undefined, 'SourceValue')
      * ...
-     * // vscode_executeCommand -> { command: 'myCommand' source: 'SourceValue' } 
+     * // vscode_executeCommand -> { command: 'myCommand' source: 'SourceValue' }
      */
     readonly compositeKey?: CompositeKey
 }
 
-/** 
+/**
  * Indicates that the arg should be used as a telemetry field
  * for the metric {@link VscodeExecuteCommand}.
  */
@@ -402,19 +438,20 @@ export type CompositeKey = { [index: number]: MetricField }
 
 /** Supported {@link VscodeExecuteCommand} fields */
 const MetricFields = {
-    /** 
-     * TODO: Figure out how to derive "source" as a type from {@link VscodeExecuteCommand.source} 
+    /**
+     * TODO: Figure out how to derive "source" as a type from {@link VscodeExecuteCommand.source}
      * instead of explicitly writing it.
      */
-    source: 'source'
+    source: 'source',
 } as const
-type MetricField = typeof MetricFields[keyof typeof MetricFields]
+type MetricField = (typeof MetricFields)[keyof typeof MetricFields]
 
 function getInstrumenter(
     id: { id: string; args: any[]; compositeKey: CompositeKey },
     threshold: number,
     telemetryName?: MetricName
 ) {
+    handleBadCompositeKey(id)
     const currentTime = globals.clock.Date.now()
     const info = TelemetryDebounceInfo.instance.get(id)
 
@@ -423,7 +460,7 @@ function getInstrumenter(
     if (!telemetryName && info?.startTime !== undefined && currentTime - info.startTime < threshold) {
         info.debounceCount += 1
         TelemetryDebounceInfo.instance.set(id, info)
-        getLogger().debug(`commands: skipped telemetry for "${id.id}" with key "${id.compositeKey}"`)
+        getLogger().debug('commands: skipped telemetry for "%s" with key "%O"', id.id, id.compositeKey)
 
         return undefined
     }
@@ -447,18 +484,47 @@ function getInstrumenter(
         })
 }
 
-/** 
+export const unsetSource = 'sourceImproperlySet'
+
+function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: CompositeKey }) {
+    const id = data.id
+    const args = data.args
+    const compositeKey = data.compositeKey
+
+    if (Object.keys(compositeKey).length === 0) {
+        return // nothing to do since no key
+    }
+
+    Object.entries(compositeKey).forEach(([index, field]) => {
+        const indexAsInt = parseInt(index)
+        const arg = args[indexAsInt]
+        if (field === 'source' && typeof arg !== 'string') {
+            /**
+             * This case happens when either the caller sets the wrong args themselves through
+             * vscode.commands.executeCommand OR if through a VS Code UI component like the ellipsis menu
+             *
+             * TODO: To fix this we insert a value in the `source` arg so that there is something there
+             * for the metric to emit. We need to figure out a better way to handle either incorrectly called
+             * or the VS Code UI component.
+             */
+            getLogger().error('Commands/Telemetry: "%s" executed with invalid "source" type: "%O"', id, args)
+            args[indexAsInt] = unsetSource
+        }
+    })
+}
+
+/**
  * Returns a map that contains values for the fields of {@link VscodeExecuteCommand}.
- * 
+ *
  * These fields are resolved by extracting the {@link args} that were specified
  * in {@link compositeKey}.
  */
-function findFieldsToAddToMetric(args: any[], compositeKey: CompositeKey): {[field in MetricField]?: any} {
+function findFieldsToAddToMetric(args: any[], compositeKey: CompositeKey): { [field in MetricField]?: any } {
     const indexes = keysAsInt(compositeKey)
     const indexesWithValue = indexes.filter(i => compositeKey[i] !== undefined)
     const sortedIndexesWithValue = indexesWithValue.sort((a, b) => a - b)
-    
-    const result: { [field in MetricField]?: any} = {}
+
+    const result: { [field in MetricField]?: any } = {}
     sortedIndexesWithValue.forEach(i => {
         const fieldName: MetricField = compositeKey[i]
         const fieldValue = args[i]

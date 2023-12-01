@@ -164,7 +164,6 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             ImportAdderProvider.instance.onShowRecommendation(document, this.startPos.line, r)
             this.nextMove = 0
             TelemetryHelper.instance.setFirstSuggestionShowTime()
-            TelemetryHelper.instance.tryRecordClientComponentLatency()
             this._onDidShow.fire()
             if (matchedCount >= 2 || this.nextToken !== '') {
                 const result = [item]

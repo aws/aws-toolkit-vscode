@@ -10,6 +10,7 @@ import { References } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { application } from '../util/codeWhispererApplication'
+import { placeholder } from '../../shared/vscode/commands2'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -79,6 +80,7 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
                 title: this.refs[i],
                 tooltip: 'Reference code',
                 command: 'aws.codeWhisperer.openReferencePanel',
+                arguments: [placeholder, 'codelens'],
             }
             codeLenses.push(codeLens)
         }

@@ -440,6 +440,7 @@ export class RecommendationHandler {
      * Clear recommendation state
      */
     clearRecommendations() {
+        session.requestIdList = []
         session.recommendations = []
         this.requestId = ''
         session.sessionId = ''
@@ -553,6 +554,7 @@ export class RecommendationHandler {
                 vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReached)
             }
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh', true)
+            await Commands.tryExecute('aws.amazonq.refresh', true)
         }
     }
 
