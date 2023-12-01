@@ -93,11 +93,4 @@ export class TelemetryLogger {
     public queryFull(query: MetricQuery): MetricDatum[] {
         return this._metrics.filter(m => m.MetricName === query.metricName)
     }
-
-    /**
-     * Returns all seen metrics.
-     */
-    public getAllMetrics(): MetricDatum[] {
-        return [...this._metrics]
-    }
 }

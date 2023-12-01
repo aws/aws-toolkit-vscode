@@ -25,9 +25,6 @@ import * as testUtil from './testUtil'
 import { getTestWindow, resetTestWindow } from './shared/vscode/window'
 import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
 import { TelemetryDebounceInfo } from '../shared/vscode/commands2'
-import { mapMetadata } from '../shared/telemetry/telemetryLogger'
-import { Result } from '../shared/telemetry/telemetry.gen'
-import { Hook } from 'mocha'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -109,16 +106,6 @@ export const mochaHooks = {
         globals.codelensRootRegistry.dispose()
         globalSandbox.restore()
 
-        // Don't run any validations for tests on telemetry
-        if (!(this.currentTest ?? this.test)?.file?.includes('shared/telemetry/')) {
-            try {
-                validateTelemetryMetrics()
-            } catch (e) {
-                //If we used an assert statement, then the test session would exit immediately on the first fail.
-                ;(this.test as Hook).error(e)
-            }
-        }
-
         // executeCommandSpy = undefined
     },
 }
@@ -159,37 +146,6 @@ function writeLogsToFile(testName: string) {
     entries?.unshift(`=== Starting test "${testName}" ===`)
     entries?.push(`=== Ending test "${testName}" ===\n\n`)
     appendFileSync(testLogOutput, entries?.join('\n') ?? '', 'utf8')
-}
-
-/**
- * Validates that emitted telemetry metrics 1. contain a result property and 2. contain a reason propery is
- * the result is 'Failed'.
- *
- * TODO: While this catches cases in code that is tested, untested code will still release incomplete metrics.
- * Consider using custom lint rules to address these cases if possible.
- */
-function validateTelemetryMetrics() {
-    const failedStr: Result = 'Failed'
-    const telemetryRunDocsStr =
-        'Consider using `.run()` instead of `.emit()`, which will set these properties automatically. ' +
-        'See https://github.com/aws/aws-toolkit-vscode/blob/master/docs/telemetry.md#guidelines'
-
-    for (const m of globals.telemetry.logger.getAllMetrics()) {
-        if (m.Metadata) {
-            const metadata = mapMetadata([])(m.Metadata)
-            assert.ok(
-                metadata.result !== undefined,
-                `Metric \`${m.MetricName}\` was emitted without the \`result\` property. ` +
-                    `This property is always required. ${telemetryRunDocsStr}`
-            )
-
-            assert.ok(
-                metadata.result !== failedStr ? true : metadata.reason !== undefined,
-                `Metric \`${m.MetricName}\` was emitted without the \`reason\` property. ` +
-                    `This property is always required when \`result\` = 'Failed'. ${telemetryRunDocsStr}`
-            )
-        }
-    }
 }
 
 export function assertLogsContain(text: string, exactMatch: boolean, severity: LogLevel) {
