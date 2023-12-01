@@ -386,12 +386,18 @@ describe('CodeWhisperer telemetry', async function () {
             assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
+            // debugging purpose
+            assert.strictEqual(editor.document.offsetAt(editor.selection.active), 0)
             await manualTrigger(editor, client, config)
             await typing(editor, 'F')
             assertTextEditorContains('F')
 
             await acceptByTab()
             assertTextEditorContains('Foo')
+
+            // debugging purpose
+            assert.strictEqual(editor.document.getText(), 'Foo')
+            assert.strictEqual(editor.document.offsetAt(editor.selection.active), 3)
 
             await manualTrigger(editor, client, config)
             await rejectByEsc()
