@@ -1407,12 +1407,12 @@
                 },
                 {
                     "submenu": "aws.submenu.feedback",
-                    "when": "view != aws.AmazonQChatView",
+                    "when": "view =~ /^aws\\./ && view != aws.AmazonQChatView",
                     "group": "y_toolkitMeta@1"
                 },
                 {
                     "submenu": "aws.submenu.help",
-                    "when": "view != aws.AmazonQChatView",
+                    "when": "view =~ /^aws\\./ && view != aws.AmazonQChatView",
                     "group": "y_toolkitMeta@2"
                 },
                 {
