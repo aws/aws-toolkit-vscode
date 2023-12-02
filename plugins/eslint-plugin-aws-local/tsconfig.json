@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "incremental": true,
+        "module": "commonjs",
+        "target": "es2021",
+        "outDir": "dist",
+        "lib": ["dom", "es2021"],
+        "sourceMap": true,
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "strict": true,
+        "noUnusedLocals": true,
+        "skipLibCheck": true
+    },
+    "include": ["lib/**/*", "test/**/*", "index.ts"]
+}

@@ -443,6 +443,15 @@ If you are contribuing visual assets from other open source repos, the source re
 
 1. Add an entry [here](docs/icons.md#third-party) summarizing the new destination location, where the assets were sourced from, and a brief rationale.
 
+### Custom Lint Rules
+
+The package.json 'devDependencies' includes `eslint-plugin-aws-local`. This is a local eslint plugin where we define custom lint rules. Additional lint rules and tests for lint rules can be added to this plugin:
+
+1. Define a new rule in `plugins/eslint-plugin-aws-local/lib/rules`.
+2. Create a test for your rule in `plugins/eslint-plugin-aws-local/test/rules` and run with `npm run test` in the root directory of `eslint-plugin-aws-local`.
+3. Register your rule in `plugins/eslint-plugin-aws-local/index.ts`.
+4. Enable your rule in `.eslintrc`.
+
 ## Using new vscode APIs
 
 The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)

@@ -9,7 +9,7 @@ module.exports = {
         node: true,
         mocha: true,
     },
-    plugins: ['@typescript-eslint', 'header', 'no-null'],
+    plugins: ['@typescript-eslint', 'header', 'no-null', 'aws-local'],
     extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/eslint-recommended',
@@ -115,5 +115,6 @@ module.exports = {
             },
             { lineEndings: 'unix' },
         ],
+        'aws-local/no-only-in-tests': 'error'
     },
 }
