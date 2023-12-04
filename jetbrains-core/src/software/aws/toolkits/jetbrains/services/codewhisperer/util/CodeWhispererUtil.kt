@@ -13,6 +13,7 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.yield
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
+import software.amazon.awssdk.services.codewhispererruntime.model.OptOutPreference
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
@@ -35,6 +36,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhi
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.Chunk
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.isTelemetryEnabled
+import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyWarn
@@ -274,6 +276,13 @@ object CodeWhispererUtil {
         val filename = (editor as EditorImpl).virtualFile?.name ?: return null
         return taskTypeToFilename.filter { filename.startsWith(it.value) }.keys.firstOrNull()
     }
+
+    fun getTelemetryOptOutPreference() =
+        if (AwsSettings.getInstance().isTelemetryEnabled) {
+            OptOutPreference.OPTIN
+        } else {
+            OptOutPreference.OPTOUT
+        }
 }
 
 enum class CaretMovement {

@@ -31,6 +31,7 @@ object CodeWhispererConstants {
     const val POPUP_DELAY_CHECK_INTERVAL: Long = 25
     const val IDLE_TIME_CHECK_INTERVAL: Long = 25
     const val SUPPLEMENTAL_CONTEXT_TIMEOUT = 50L
+    const val FEATURE_EVALUATION_PRODUCT_NAME = "CodeWhisperer"
 
     val AWSTemplateKeyWordsRegex = Regex("(AWSTemplateFormatVersion|Resources|AWS::|Description)")
     val AWSTemplateCaseInsensitiveKeyWordsRegex = Regex("(cloudformation|cfn|template|description)")
@@ -77,6 +78,7 @@ object CodeWhispererConstants {
     const val TOTAL_MILLIS_IN_SECOND = 1000
     const val TOTAL_SECONDS_IN_MINUTE: Long = 60L
     const val ACCOUNTLESS_START_URL = "accountless"
+    const val FEATURE_CONFIG_POLL_INTERVAL_IN_MS: Long = 30 * 60 * 1000L // 30 mins
 
     // Date when Accountless is not supported
     val EXPIRE_DATE = SimpleDateFormat("yyyy-MM-dd").parse("2023-01-31")

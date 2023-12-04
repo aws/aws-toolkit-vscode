@@ -12,6 +12,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.codewhispererruntime.model.OptOutPreference
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.LegacyManagedBearerSsoConnection
@@ -20,6 +21,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getCompletionType
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getTelemetryOptOutPreference
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.toCodeChunk
 import software.aws.toolkits.jetbrains.settings.AwsSettings
@@ -215,6 +217,17 @@ class CodeWhispererUtilTest {
         assertThat(getCompletionType(aCompletion("test\n    "))).isEqualTo(CodewhispererCompletionType.Line)
         assertThat(getCompletionType(aCompletion("test\n\r"))).isEqualTo(CodewhispererCompletionType.Line)
         assertThat(getCompletionType(aCompletion("\n\n\n\ntest"))).isEqualTo(CodewhispererCompletionType.Line)
+    }
+
+    @Test
+    fun `test getTelemetryOptOutPreference() returns correct status based on AwsTelemetry`() {
+        AwsSettings.getInstance().isTelemetryEnabled = true
+        assertThat(AwsSettings.getInstance().isTelemetryEnabled).isTrue
+        assertThat(getTelemetryOptOutPreference()).isEqualTo(OptOutPreference.OPTIN)
+
+        AwsSettings.getInstance().isTelemetryEnabled = false
+        assertThat(AwsSettings.getInstance().isTelemetryEnabled).isFalse
+        assertThat(getTelemetryOptOutPreference()).isEqualTo(OptOutPreference.OPTOUT)
     }
 }
 

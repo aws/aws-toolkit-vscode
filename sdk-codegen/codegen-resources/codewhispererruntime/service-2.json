@@ -39,6 +39,8 @@
             "output":{"shape":"CreateUploadUrlResponse"},
             "errors":[
                 {"shape":"ThrottlingException"},
+                {"shape":"ConflictException"},
+                {"shape":"ResourceNotFoundException"},
                 {"shape":"InternalServerException"},
                 {"shape":"ValidationException"},
                 {"shape":"AccessDeniedException"}
@@ -441,6 +443,7 @@
                 "contentMd5":{"shape":"CreateUploadUrlRequestContentMd5String"},
                 "contentChecksum":{"shape":"CreateUploadUrlRequestContentChecksumString"},
                 "contentChecksumType":{"shape":"ContentChecksumType"},
+                "contentLength":{"shape":"CreateUploadUrlRequestContentLengthLong"},
                 "artifactType":{"shape":"ArtifactType"},
                 "uploadIntent":{"shape":"UploadIntent"},
                 "uploadContext":{"shape":"UploadContext"}
@@ -451,6 +454,11 @@
             "max":512,
             "min":1,
             "sensitive":true
+        },
+        "CreateUploadUrlRequestContentLengthLong":{
+            "type":"long",
+            "box":true,
+            "min":1
         },
         "CreateUploadUrlRequestContentMd5String":{
             "type":"string",
@@ -491,7 +499,7 @@
             "type":"string",
             "max":950,
             "min":0,
-            "pattern":"$|^arn:[-.a-z0-9]{1,63}:codewhisperer:([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
+            "pattern":"arn:[-.a-z0-9]{1,63}:codewhisperer:([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
         },
         "CustomizationName":{
             "type":"string",
@@ -932,7 +940,8 @@
         "PreSignedUrl":{
             "type":"string",
             "max":2048,
-            "min":1
+            "min":1,
+            "sensitive":true
         },
         "PrimitiveInteger":{"type":"integer"},
         "ProgrammingLanguage":{
@@ -1462,7 +1471,8 @@
             "members":{
                 "ideCategory":{"shape":"IdeCategory"},
                 "operatingSystem":{"shape":"OperatingSystem"},
-                "product":{"shape":"UserContextProductString"}
+                "product":{"shape":"UserContextProductString"},
+                "clientId":{"shape":"UUID"}
             }
         },
         "UserContextProductString":{
@@ -1544,7 +1554,8 @@
                 "recommendationLatencyMilliseconds":{"shape":"Double"},
                 "timestamp":{"shape":"Timestamp"},
                 "suggestionReferenceCount":{"shape":"PrimitiveInteger"},
-                "generatedLine":{"shape":"PrimitiveInteger"}
+                "generatedLine":{"shape":"PrimitiveInteger"},
+                "numberOfRecommendations":{"shape":"PrimitiveInteger"}
             }
         },
         "ValidationException":{

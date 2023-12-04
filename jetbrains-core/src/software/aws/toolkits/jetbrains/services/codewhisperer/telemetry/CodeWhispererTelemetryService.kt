@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.Recommendati
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutoTriggerService
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererFeatureConfigService
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
@@ -225,7 +226,8 @@ class CodeWhispererTelemetryService {
                             completionType,
                             suggestionState,
                             suggestionReferenceCount,
-                            generatedLineCount
+                            generatedLineCount,
+                            recommendationContext.details.size
                         )
                     LOG.debug {
                         "Successfully sent user trigger decision telemetry. RequestId: ${response.responseMetadata().requestId()}"
@@ -272,7 +274,8 @@ class CodeWhispererTelemetryService {
             codewhispererSupplementalContextTimeout = supplementalContext?.isProcessTimeout,
             codewhispererSupplementalContextStrategyId = supplementalContext?.strategy.toString(),
             codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name,
-            codewhispererGettingStartedTask = getGettingStartedTaskType(requestContext.editor)
+            codewhispererGettingStartedTask = getGettingStartedTaskType(requestContext.editor),
+            codewhispererFeatureEvaluations = CodeWhispererFeatureConfigService.getInstance().getFeatureConfigsTelemetry()
         )
     }
 

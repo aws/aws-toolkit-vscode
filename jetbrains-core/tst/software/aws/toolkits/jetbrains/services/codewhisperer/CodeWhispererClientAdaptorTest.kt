@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.replaceService
@@ -46,10 +47,14 @@ import software.amazon.awssdk.services.codewhispererruntime.model.Customization
 import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.IdeCategory
 import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableCustomizationsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableCustomizationsResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ListCodeAnalysisFindingsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.ListCodeAnalysisFindingsResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.ListFeatureEvaluationsRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.ListFeatureEvaluationsResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.OperatingSystem
 import software.amazon.awssdk.services.codewhispererruntime.model.OptOutPreference
 import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventResponse
@@ -82,6 +87,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.TriggerTypeI
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.FEATURE_EVALUATION_PRODUCT_NAME
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
@@ -126,6 +132,7 @@ class CodeWhispererClientAdaptorTest {
             on { getCodeAnalysis(any<GetCodeAnalysisRequest>()) } doReturn getCodeAnalysisResponse
             on { listCodeAnalysisFindings(any<ListCodeAnalysisFindingsRequest>()) } doReturn listCodeAnalysisFindingsResponse
             on { sendTelemetryEvent(any<SendTelemetryEventRequest>()) } doReturn sendtelemetryEventResponse
+            on { listFeatureEvaluations(any<ListFeatureEvaluationsRequest>()) } doReturn listFeatureEvaluationsResponse
         }
 
         val mockConnection = mock<BearerSsoConnection>()
@@ -245,7 +252,7 @@ class CodeWhispererClientAdaptorTest {
             projectRule.fixture.editor,
             projectRule.project,
             file,
-            LatencyContext()
+            LatencyContext(codewhispererEndToEndStart = 0, codewhispererEndToEndEnd = 20000000)
         )
 
         sut.sendUserTriggerDecisionTelemetry(
@@ -254,7 +261,8 @@ class CodeWhispererClientAdaptorTest {
             CodewhispererCompletionType.Line,
             CodewhispererSuggestionState.Accept,
             3,
-            1
+            1,
+            2
         )
 
         argumentCaptor<SendTelemetryEventRequest>().apply {
@@ -265,6 +273,8 @@ class CodeWhispererClientAdaptorTest {
                 assertThat(it.suggestionState()).isEqualTo(SuggestionState.ACCEPT)
                 assertThat(it.suggestionReferenceCount()).isEqualTo(3)
                 assertThat(it.generatedLine()).isEqualTo(1)
+                assertThat(it.recommendationLatencyMilliseconds()).isEqualTo(20.0)
+                assertThat(it.numberOfRecommendations()).isEqualTo(2)
             }
         }
     }
@@ -369,7 +379,8 @@ class CodeWhispererClientAdaptorTest {
                 aCompletionType(),
                 aSuggestionState(),
                 0,
-                1
+                1,
+                2
             )
         }
     }
@@ -393,6 +404,23 @@ class CodeWhispererClientAdaptorTest {
         sendTelemetryEventOptOutCheckHelper {
             sut.sendUserModificationTelemetry(aString(), aString(), aProgrammingLanguage(), aString(), 0.0)
         }
+    }
+
+    @Test
+    fun `test listFeatureEvaluations sends expected payloads`() {
+        sut.listFeatureEvaluations()
+
+        verify(bearerClient).listFeatureEvaluations(
+            argThat<ListFeatureEvaluationsRequest> {
+                this.userContext().ideCategory() == IdeCategory.JETBRAINS &&
+                    this.userContext().operatingSystem() == when {
+                        SystemInfo.isWindows -> OperatingSystem.WINDOWS
+                        SystemInfo.isMac -> OperatingSystem.MAC
+                        else -> OperatingSystem.LINUX
+                    } &&
+                    this.userContext().product() == FEATURE_EVALUATION_PRODUCT_NAME
+            }
+        )
     }
 
     private fun sendTelemetryEventOptOutCheckHelper(mockApiCall: () -> Unit) {
@@ -465,6 +493,8 @@ class CodeWhispererClientAdaptorTest {
             .build() as ListCodeAnalysisFindingsResponse
 
         val sendtelemetryEventResponse = SendTelemetryEventResponse.builder().build()
+
+        val listFeatureEvaluationsResponse = ListFeatureEvaluationsResponse.builder().build()
 
         private val generateCompletionsPaginatorResponse: GenerateCompletionsIterable = mock()
 
