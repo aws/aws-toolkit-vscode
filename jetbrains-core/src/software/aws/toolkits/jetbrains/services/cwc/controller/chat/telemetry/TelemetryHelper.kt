@@ -56,12 +56,12 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
 
     // When chat panel is focused
     fun recordEnterFocusChat() {
-        AmazonqTelemetry.enterFocusChat()
+        AmazonqTelemetry.enterFocusChat(passive = true)
     }
 
     // When chat panel is unfocused
     fun recordExitFocusChat() {
-        AmazonqTelemetry.exitFocusChat()
+        AmazonqTelemetry.exitFocusChat(passive = true)
     }
 
     fun recordStartConversation(tabId: String, data: ChatRequestData) {
@@ -344,11 +344,11 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
         private val logger = getLogger<TelemetryHelper>()
 
         fun recordOpenChat() {
-            AmazonqTelemetry.openChat()
+            AmazonqTelemetry.openChat(passive = true)
         }
 
         fun recordCloseChat() {
-            AmazonqTelemetry.closeChat()
+            AmazonqTelemetry.closeChat(passive = true)
         }
 
         fun recordTelemetryChatRunCommand(type: CwsprChatCommandType, name: String? = null) {
