@@ -109,7 +109,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
     }
     const buildFile = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(projectPath!, '**/pom.xml'),
+        new vscode.RelativePattern(projectPath!, 'pom.xml'),
         '**/node_modules/**',
         1
     )
