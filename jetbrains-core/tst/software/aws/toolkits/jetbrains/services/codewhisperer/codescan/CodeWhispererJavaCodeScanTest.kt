@@ -21,6 +21,7 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
@@ -28,6 +29,7 @@ import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.core.compileProjectAndWait
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.JavaCodeScanSessionConfig
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PayloadMetadata
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
@@ -151,6 +153,17 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
             filesInZip += 1
         }
         assertThat(filesInZip).isEqualTo(4)
+    }
+
+    @Test
+    fun `create payload with no build files does not throw exception`() {
+        sessionConfigSpy.stub {
+            onGeneric { includeDependencies() }.thenReturn(PayloadMetadata(emptySet(), 0, 0, emptySet()))
+        }
+        assertDoesNotThrow {
+            val payload = sessionConfigSpy.createPayload()
+            assertThat(payload.context.buildPayloadSize).isEqualTo(0)
+        }
     }
 
     @Test

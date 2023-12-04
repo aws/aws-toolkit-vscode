@@ -16,7 +16,6 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.cannotFindBuildArtifacts
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLarge
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JAVA_CODE_SCAN_TIMEOUT_IN_SECONDS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JAVA_PAYLOAD_LIMIT_IN_BYTES
@@ -56,7 +55,6 @@ internal class JavaCodeScanSessionConfig(
         // Include all the dependencies using BFS
         val (sourceFiles, srcPayloadSize, totalLines, buildPaths) = includeDependencies()
 
-        var noClassFilesFound = true
         val outputPaths = CompilerPaths.getOutputPaths(ModuleManager.getInstance(project).modules)
         var totalBuildPayloadSize = 0L
         val buildFiles = buildPaths.mapNotNull { relativePath ->
@@ -64,13 +62,11 @@ internal class JavaCodeScanSessionConfig(
             if (classFile == null) {
                 LOG.debug { "Cannot find class file for $relativePath" }
             } else {
-                noClassFilesFound = false
                 totalBuildPayloadSize += classFile.toFile().length()
             }
             classFile
         }
         LOG.debug { "Total build files sent in payload: ${buildFiles.size}" }
-        if (noClassFilesFound) cannotFindBuildArtifacts()
 
         // Copy all the included source and build files to the source zip
         val srcZip = zipFiles(sourceFiles.mapNotNull { getPath(it) } + buildFiles)
