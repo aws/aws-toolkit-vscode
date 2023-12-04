@@ -189,15 +189,20 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         codeModernizerBottomWindowPanelManager.setJobStartingUI()
     }
 
-    fun validateAndStart(srcStartComponent: CodeTransformStartSrcComponents = CodeTransformStartSrcComponents.DevToolsStartButton) {
-        val validationResult = validate(project)
-        sendValidationResultTelemetry(validationResult, srcStartComponent)
-        if (validationResult.valid) {
-            runModernize()
-        } else {
-            warnUnsupportedProject(validationResult.invalidReason)
+    fun validateAndStart(srcStartComponent: CodeTransformStartSrcComponents = CodeTransformStartSrcComponents.DevToolsStartButton) =
+        projectCoroutineScope(project).launch {
+            if (isModernizationInProgress.getAndSet(true)) return@launch
+            val validationResult = validate(project)
+            runInEdt {
+                if (validationResult.valid) {
+                    runModernize()
+                } else {
+                    warnUnsupportedProject(validationResult.invalidReason)
+                    isModernizationInProgress.set(false)
+                }
+            }
+            sendValidationResultTelemetry(validationResult, srcStartComponent)
         }
-    }
 
     private fun sendValidationResultTelemetry(validationResult: ValidationResult, srcStartComponent: CodeTransformStartSrcComponents) {
         CodeTransformTelemetryState.instance.setSessionId()
