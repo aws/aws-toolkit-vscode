@@ -35,12 +35,9 @@ export class CodeTransformTelemetry {
                 ...commonMetrics,
             })
         }
-
-        // todo: log metric for started from transform command
     }
 
-    //TODO: it would be better to expand JDKVersion from an enum to a class,
-    //but it's faster to do this for now
+    //TODO: expand JDKVersion from an enum to a class
     static toJDKMetricValue(source: JDKVersion): string {
         switch (source) {
             case JDKVersion.JDK8:
