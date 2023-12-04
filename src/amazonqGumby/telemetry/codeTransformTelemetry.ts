@@ -11,7 +11,6 @@ import { JDKVersion } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { codeTransformTelemetryState } from './codeTransformTelemetryState'
 import { CodeTransformConstants } from '../constants'
-import { CodeTransformJavaSourceVersionsAllowed } from '../../shared/telemetry/telemetry'
 
 export class CodeTransformTelemetry {
     public static SidePanelTransformTreeNode = 'devToolsStartButton'
@@ -44,11 +43,11 @@ export class CodeTransformTelemetry {
     static toJDKMetricValue(source: JDKVersion): string {
         switch (source) {
             case JDKVersion.JDK8:
-                return 'jdk8' as CodeTransformJavaSourceVersionsAllowed
+                return 'jdk8'
             case JDKVersion.JDK11:
-                return 'jdk11' as CodeTransformJavaSourceVersionsAllowed
+                return 'jdk11'
             case JDKVersion.JDK17:
-                return 'jdk17' as CodeTransformJavaSourceVersionsAllowed
+                return 'jdk17'
         }
         return ''
     }
