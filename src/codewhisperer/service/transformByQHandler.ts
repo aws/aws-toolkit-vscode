@@ -187,13 +187,15 @@ export async function stopJob(jobId: string) {
             const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
                 transformationJobId: jobId,
             })
-            telemetry.codeTransform_logApiLatency.emit({
-                codeTransformApiNames: 'StopTransformation',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformJobId: jobId,
-                codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-                codeTransformRequestId: response.$response ? response.$response.requestId : '',
-            })
+            if (response.$response !== undefined) {
+                telemetry.codeTransform_logApiLatency.emit({
+                    codeTransformApiNames: 'StopTransformation',
+                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformJobId: jobId,
+                    codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+                    codeTransformRequestId: response.$response.requestId,
+                })
+            }
         } catch (e: any) {
             const errorMessage = 'Error stopping job'
             telemetry.amazonq_codeTransformInvoke.record({
