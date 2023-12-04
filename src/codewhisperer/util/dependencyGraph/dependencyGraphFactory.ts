@@ -12,6 +12,7 @@ import { cloudformationDependencyGraph } from './cloudformationDependencyGraph'
 import { DependencyGraphConstants } from './dependencyGraph'
 import * as vscode from 'vscode'
 import { terraformDependencyGraph } from './terraformDependencyGraph'
+import { RubyDependencyGraph } from './rubyDependencyGraph'
 
 const languageMap = {
     java: JavaDependencyGraph,
@@ -21,6 +22,7 @@ const languageMap = {
     csharp: CsharpDependencyGraph,
     cloudformation: cloudformationDependencyGraph,
     terraform: terraformDependencyGraph,
+    ruby: RubyDependencyGraph,
 } as const
 
 type LanguageMap = typeof languageMap
@@ -53,6 +55,8 @@ export class DependencyGraphFactory {
                 return new languageMap['cloudformation']('yaml' satisfies CodeWhispererConstants.PlatformLanguageId)
             case 'json' satisfies CodeWhispererConstants.PlatformLanguageId:
                 return new languageMap['cloudformation']('json' satisfies CodeWhispererConstants.PlatformLanguageId)
+            case 'ruby' satisfies CodeWhispererConstants.PlatformLanguageId:
+                return new languageMap['ruby']('ruby' satisfies CodeWhispererConstants.PlatformLanguageId)
             default:
                 return this.getDependencyGraphFromFileExtensions(editor.document.fileName)
         }

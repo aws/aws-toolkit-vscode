@@ -35,6 +35,11 @@ export const DependencyGraphConstants = {
     globalusing: 'global using',
     semicolon: ';',
     equals: '=',
+    require: 'require',
+    require_relative: 'require_relative',
+    load: 'load',
+    include: 'include',
+    extend: 'extend',
 
     /**
      * Regex
@@ -55,6 +60,7 @@ export const DependencyGraphConstants = {
     ymlExt: '.yml',
     tfExt: '.tf',
     hclExt: '.hcl',
+    rubyExt: '.rb',
 }
 
 export abstract class DependencyGraph {
