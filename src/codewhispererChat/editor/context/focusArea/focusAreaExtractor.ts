@@ -46,7 +46,11 @@ export class FocusAreaContextExtractor {
 
         importantRange = this.trimRangeAccordingToLimits(editor.document, importantRange)
         const codeBlock = this.getRangeText(editor.document, importantRange)
-        const extendedCodeBlockRange = this.getExtendedCodeBlockRange(editor.document, importantRange)
+        const extendedCodeBlockRange = this.getExtendedCodeBlockRange(
+            editor.document,
+            importantRange,
+            focusAreaCharLimit
+        )
 
         return {
             extendedCodeBlock: this.getRangeText(editor.document, extendedCodeBlockRange),
@@ -86,45 +90,77 @@ export class FocusAreaContextExtractor {
         )
     }
 
-    private getExtendedCodeBlockRange(document: TextDocument, importantRange: Range): Range {
+    // Function to extend the code block range
+    private getExtendedCodeBlockRange(
+        document: TextDocument,
+        importantRange: Range,
+        focusAreaCharLimit: number
+    ): Range {
+        // Flag to add line before or after
         let addLineBefore = true
+        // Loop while range can still be extended
         while (
-            this.getRangeText(document, importantRange).length < focusAreaCharLimit &&
-            (importantRange.start.line !== 0 || importantRange.end.line !== document.lineCount - 1)
+            !(importantRange.start.line === 0 && importantRange.start.character === 0) ||
+            !(
+                importantRange.end.line === document.lineCount - 1 &&
+                importantRange.end.character === document.lineAt(document.lineCount - 1).range.end.character
+            )
         ) {
-            if (addLineBefore && importantRange.start.line !== 0) {
-                const tmpRange = new Range(
-                    importantRange.start.line - 1,
-                    0,
-                    importantRange.end.line,
-                    importantRange.end.character
-                )
-                addLineBefore = false
-
-                if (this.getRangeText(document, tmpRange).length >= focusAreaCharLimit) {
-                    break
+            let tmpRange: Range | undefined = undefined
+            if (addLineBefore) {
+                // Check if we have characters left in the beginning of the current line
+                if (importantRange.start.character !== 0) {
+                    tmpRange = new Range(
+                        importantRange.start.line,
+                        0,
+                        importantRange.end.line,
+                        importantRange.end.character
+                    )
+                } else if (importantRange.start.line !== 0) {
+                    tmpRange = new Range(
+                        importantRange.start.line - 1,
+                        document.lineAt(importantRange.start.line - 1).range.end.character,
+                        importantRange.end.line,
+                        importantRange.end.character
+                    )
                 }
 
-                importantRange = tmpRange
+                // Flip flag for next iteration
+                addLineBefore = false
+            } else {
+                // Check if we have characters left in the end of the current line
+                if (importantRange.end.character !== document.lineAt(importantRange.end.line).range.end.character) {
+                    tmpRange = new Range(
+                        importantRange.start.line,
+                        importantRange.start.character,
+                        importantRange.end.line,
+                        document.lineAt(importantRange.end.line).range.end.character
+                    )
+                } else if (importantRange.end.line !== document.lineCount - 1) {
+                    tmpRange = new Range(
+                        importantRange.start.line,
+                        importantRange.start.character,
+                        importantRange.end.line + 1,
+                        0
+                    )
+                }
+
+                // Flip flag for next iteration
+                addLineBefore = true
+            }
+
+            // Check if tmp range was set
+            if (tmpRange === undefined) {
                 continue
             }
-
-            if (importantRange.end.line !== document.lineCount - 1) {
-                const tmpRange = new Range(
-                    importantRange.start.line,
-                    importantRange.start.character,
-                    importantRange.end.line + 1,
-                    document.lineAt(importantRange.end.line + 1).range.end.character
-                )
-
-                if (this.getRangeText(document, tmpRange).length >= focusAreaCharLimit) {
-                    break
-                }
-
-                importantRange = tmpRange
+            // Check character length of tmp range
+            if (this.getRangeText(document, tmpRange).length >= focusAreaCharLimit) {
+                // Break loop if too long
+                break
             }
 
-            addLineBefore = true
+            // Update important range
+            importantRange = tmpRange
         }
 
         return importantRange
