@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "fixed input prompt gets wrapped to new line which avoids focusing"
+}
