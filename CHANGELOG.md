@@ -1,3 +1,6 @@
+# _2.0_ (2023-11-28)
+- **(Feature)** Support for Amazon Q, your generative AI–powered assistant designed for work that can be tailored to your business, code, data, and operations.
+
 # _1.89_ (2023-11-26)
 - **(Feature)** CodeWhisperer: Uses Generative AI and automated reasoning to rewrite lines of code flagged for security vulnerabilities during a security scan.
 - **(Feature)** CodeWhisperer now supports new IaC languages: JSON, YAML and Terraform.

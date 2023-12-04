@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "CodeWhisperer: Security scans for Java no longer require build artifacts"
-}

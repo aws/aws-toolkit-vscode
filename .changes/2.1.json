@@ -1,0 +1,17 @@
+{
+  "date" : "2023-12-04",
+  "version" : "2.1",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeWhisperer: Simplify Learn More page"
+  }, {
+    "type" : "bugfix",
+    "description" : "CodeWhisperer: Security scans for Java no longer require build artifacts"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Transform: Fix an issue where the IDE may freeze after clicking \"Transform\""
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix JetBrains Gateway specific notifications being shown in non-Gateway IDEs"
+  } ]
+}
