@@ -10,7 +10,7 @@ import { LicenseUtil } from '../util/licenseUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { RecommendationHandler } from './recommendationHandler'
 import { session } from '../util/codeWhispererSession'
-import { Recommendation } from '../models/model'
+import { CompletionRecommendation } from '../models/model'
 /**
  * completion provider for intelliSense popup
  */
@@ -26,7 +26,7 @@ export function getCompletionItems(document: vscode.TextDocument, position: vsco
 export function getCompletionItem(
     document: vscode.TextDocument,
     position: vscode.Position,
-    recommendationDetail: Recommendation,
+    recommendationDetail: CompletionRecommendation,
     recommendationIndex: number
 ) {
     const start = session.startPos

@@ -10,12 +10,12 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
 import { ImportAdderProvider } from './importAdderProvider'
 import { application } from '../util/codeWhispererApplication'
-import { Recommendation } from '../models/model'
+import { CompletionRecommendation } from '../models/model'
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
     private nextMove: number
-    private recommendations: Recommendation[]
+    private recommendations: CompletionRecommendation[]
     private requestId: string
     private startPos: Position
     private nextToken: string
@@ -26,7 +26,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
     public constructor(
         itemIndex: number | undefined,
         firstMove: number,
-        recommendations: Recommendation[],
+        recommendations: CompletionRecommendation[],
         requestId: string,
         startPos: Position,
         nextToken: string
@@ -86,7 +86,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
 
     getInlineCompletionItem(
         document: vscode.TextDocument,
-        r: Recommendation,
+        r: CompletionRecommendation,
         start: vscode.Position,
         end: vscode.Position,
         index: number,

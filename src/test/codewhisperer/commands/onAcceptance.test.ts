@@ -19,7 +19,7 @@ import { extensionVersion } from '../../../shared/vscode/env'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
-import { Recommendation } from '../../../codewhisperer/models/model'
+import { CompletionRecommendation } from '../../../codewhisperer/models/model'
 import { AcceptedSuggestionEntry } from '../../../codewhisperer/models/model'
 
 describe('onAcceptance', function () {
@@ -90,7 +90,7 @@ describe('onAcceptance', function () {
             session.sessionId = 'test'
             session.startPos = new vscode.Position(1, 0)
             mockEditor.selection = new vscode.Selection(new vscode.Position(1, 0), new vscode.Position(1, 0))
-            session.recommendations = [new Recommendation({ content: "print('Hello World!')" })]
+            session.recommendations = [new CompletionRecommendation({ content: "print('Hello World!')" })]
             session.setSuggestionState(0, 'Showed')
             TelemetryHelper.instance.triggerType = 'OnDemand'
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')

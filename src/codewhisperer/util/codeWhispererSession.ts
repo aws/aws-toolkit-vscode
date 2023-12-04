@@ -11,7 +11,7 @@ import {
 } from '../../shared/telemetry/telemetry.gen'
 import { GenerateRecommendationsRequest, ListRecommendationsRequest } from '../client/codewhisperer'
 import { Position } from 'vscode'
-import { Recommendation } from '../models/model'
+import { CompletionRecommendation } from '../models/model'
 import { CodeWhispererSupplementalContext } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -31,7 +31,7 @@ class CodeWhispererSession {
     language: CodewhispererLanguage = 'java'
     taskType: CodewhispererGettingStartedTask | undefined
     // Various states of recommendations
-    recommendations: Recommendation[] = []
+    recommendations: CompletionRecommendation[] = []
 
     // Some other variables for client component latency
     fetchCredentialStartTime = 0

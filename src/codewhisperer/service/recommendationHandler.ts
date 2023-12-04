@@ -8,7 +8,7 @@ import { extensionVersion } from '../../shared/vscode/env'
 import { RecommendationsList, DefaultCodeWhispererClient, CognitoCredentialsError } from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
-import { ConfigurationEntry, GetRecommendationsResponse, Recommendation, vsCodeState } from '../models/model'
+import { ConfigurationEntry, GetRecommendationsResponse, CompletionRecommendation, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
@@ -378,7 +378,7 @@ export class RecommendationHandler {
                     session.setSuggestionState(recommendationIndex, 'Discard')
                 }
             })
-            const recommendationDetails = recommendations.map(r => new Recommendation(r))
+            const recommendationDetails = recommendations.map(r => new CompletionRecommendation(r))
             session.recommendations = pagination
                 ? session.recommendations.concat(recommendationDetails)
                 : recommendationDetails

@@ -148,7 +148,7 @@ export interface InlineCompletionItem {
     index: number
 }
 
-export class Recommendation implements CodeWhispererUserClient.Completion {
+export class CompletionRecommendation implements CodeWhispererUserClient.Completion {
     readonly content: string
     readonly references?: CodeWhispererUserClient.References | CodeWhispererClient.References | undefined
     readonly mostRelevantMissingImports?: CodeWhispererClient.Imports | CodeWhispererUserClient.Imports | undefined

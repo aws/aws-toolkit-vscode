@@ -8,7 +8,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { findLineToInsertImportStatement } from '../util/importAdderUtil'
 import { application } from '../util/codeWhispererApplication'
-import { Recommendation } from '../models/model'
+import { CompletionRecommendation } from '../models/model'
 
 /**
  * ImportAdderProvider
@@ -40,7 +40,7 @@ export class ImportAdderProvider implements vscode.CodeLensProvider {
 
     public async onAcceptRecommendation(
         editor: vscode.TextEditor,
-        r: Recommendation | undefined,
+        r: CompletionRecommendation | undefined,
         firstLineOfRecommendation: number
     ) {
         this.clear()
@@ -81,7 +81,7 @@ export class ImportAdderProvider implements vscode.CodeLensProvider {
     public onShowRecommendation(
         document: vscode.TextDocument,
         line: number,
-        r: Recommendation
+        r: CompletionRecommendation
     ): vscode.CodeLens | undefined {
         if (this.isNotEnabled(document.languageId)) {
             return undefined

@@ -10,7 +10,7 @@ import { getCompletionItems, getCompletionItem, getLabel } from '../../../codewh
 import { createMockDocument, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
-import { Recommendation } from '../../../codewhisperer/models/model'
+import { CompletionRecommendation } from '../../../codewhisperer/models/model'
 
 describe('completionProviderService', function () {
     beforeEach(function () {
@@ -39,7 +39,7 @@ describe('completionProviderService', function () {
             RecommendationHandler.instance.requestId = 'mock_requestId_getCompletionItem'
             session.sessionId = 'mock_sessionId_getCompletionItem'
             const mockPosition = new vscode.Position(0, 1)
-            const mockRecommendationDetail: Recommendation = new Recommendation({
+            const mockRecommendationDetail: CompletionRecommendation = new CompletionRecommendation({
                 content: "\n\t\tconsole.log('Hello world!');\n\t}",
             })
             const mockRecommendationIndex = 1
@@ -92,8 +92,8 @@ describe('completionProviderService', function () {
     describe('getCompletionItems', function () {
         it('should return completion items for each non-empty recommendation', async function () {
             session.recommendations = [
-                new Recommendation({ content: "\n\t\tconsole.log('Hello world!');\n\t}" }),
-                new Recommendation({ content: '\nvar a = 10' }),
+                new CompletionRecommendation({ content: "\n\t\tconsole.log('Hello world!');\n\t}" }),
+                new CompletionRecommendation({ content: '\nvar a = 10' }),
             ]
             const mockPosition = new vscode.Position(0, 0)
             const mockDocument = createMockDocument('', 'test.ts', 'typescript')

@@ -4,48 +4,48 @@
  */
 
 import assert from 'assert'
-import { Recommendation } from '../../../codewhisperer/models/model'
+import { CompletionRecommendation } from '../../../codewhisperer/models/model'
 import CodeWhispererUserClient from '../../../codewhisperer/client/codewhispereruserclient'
 import CodeWhispererClient from '../../../codewhisperer/client/codewhispererclient'
 
 describe('Recommendation', function () {
-    let sut: Recommendation
+    let sut: CompletionRecommendation
 
     it('suggestion state is set to empty if content is of length 0', function () {
-        sut = new Recommendation({ content: '' })
+        sut = new CompletionRecommendation({ content: '' })
         assert.strictEqual(sut.suggestionState, 'Empty')
     })
 
     it('should return Block if it has multi lines', function () {
-        sut = new Recommendation({ content: 'test\n\n   \t\r\nanother test' })
+        sut = new CompletionRecommendation({ content: 'test\n\n   \t\r\nanother test' })
         assert.strictEqual(sut.completionType, 'Block')
 
-        sut = new Recommendation({ content: 'test\ntest\n' })
+        sut = new CompletionRecommendation({ content: 'test\ntest\n' })
         assert.strictEqual(sut.completionType, 'Block')
 
-        sut = new Recommendation({ content: '\n   \t\r\ntest\ntest' })
+        sut = new CompletionRecommendation({ content: '\n   \t\r\ntest\ntest' })
         assert.strictEqual(sut.completionType, 'Block')
     })
 
     it('should return Line given a single-line suggestion', function () {
-        sut = new Recommendation({ content: 'test' })
+        sut = new CompletionRecommendation({ content: 'test' })
         assert.strictEqual(sut.completionType, 'Line')
 
-        sut = new Recommendation({ content: 'test\r\t   ' })
+        sut = new CompletionRecommendation({ content: 'test\r\t   ' })
         assert.strictEqual(sut.completionType, 'Line')
     })
 
     it('should return Line given a multi-line completion but only one-lien of non-blank sequence', function () {
-        sut = new Recommendation({ content: 'test\n\t' })
+        sut = new CompletionRecommendation({ content: 'test\n\t' })
         assert.strictEqual(sut.completionType, 'Line')
 
-        sut = new Recommendation({ content: 'test\n    ' })
+        sut = new CompletionRecommendation({ content: 'test\n    ' })
         assert.strictEqual(sut.completionType, 'Line')
 
-        sut = new Recommendation({ content: 'test\n\r' })
+        sut = new CompletionRecommendation({ content: 'test\n\r' })
         assert.strictEqual(sut.completionType, 'Line')
 
-        sut = new Recommendation({ content: '\n\n\n\ntest' })
+        sut = new CompletionRecommendation({ content: '\n\n\n\ntest' })
         assert.strictEqual(sut.completionType, 'Line')
     })
 
@@ -74,7 +74,7 @@ describe('Recommendation', function () {
             mostRelevantMissingImports: imports,
         }
 
-        sut = new Recommendation(completion)
+        sut = new CompletionRecommendation(completion)
 
         assert.strictEqual(sut.content, 'foo')
         assert.strictEqual(sut.completionType, 'Line')
@@ -108,7 +108,7 @@ describe('Recommendation', function () {
             mostRelevantMissingImports: imports,
         }
 
-        sut = new Recommendation(completion)
+        sut = new CompletionRecommendation(completion)
 
         assert.strictEqual(sut.content, 'foo')
         assert.strictEqual(sut.completionType, 'Line')

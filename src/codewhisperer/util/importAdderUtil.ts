@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CodeWhispererSettings } from './codewhispererSettings'
-import { Recommendation } from '../models/model'
+import { CompletionRecommendation } from '../models/model'
 
 export function findLineToInsertImportStatement(editor: vscode.TextEditor, firstLineOfRecommendation: number): number {
     let line = findLineOfLastImportStatement(editor, firstLineOfRecommendation)
@@ -77,7 +77,7 @@ export function findLineOfLastImportStatement(editor: vscode.TextEditor, firstLi
 /* Returns the number of imports in a recommendation
  *  return undefined if the API response field is missing or import is disabled
  */
-export function getImportCount(recommendation: Recommendation): number | undefined {
+export function getImportCount(recommendation: CompletionRecommendation): number | undefined {
     if (
         'mostRelevantMissingImports' in recommendation &&
         recommendation.mostRelevantMissingImports !== undefined &&

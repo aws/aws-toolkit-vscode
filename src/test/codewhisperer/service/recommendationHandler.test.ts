@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import { assertTelemetryCurried } from '../../testUtil'
-import { ConfigurationEntry, Recommendation } from '../../../codewhisperer/models/model'
+import { ConfigurationEntry, CompletionRecommendation } from '../../../codewhisperer/models/model'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
@@ -80,9 +80,9 @@ describe('recommendationHandler', function () {
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
             const actual = session.recommendations
-            const expected: Recommendation[] = [
-                new Recommendation({ content: "print('Hello World!')" }),
-                new Recommendation({ content: '' }),
+            const expected: CompletionRecommendation[] = [
+                new CompletionRecommendation({ content: "print('Hello World!')" }),
+                new CompletionRecommendation({ content: '' }),
             ]
             assert.deepStrictEqual(actual, expected)
             assert.strictEqual(
@@ -214,11 +214,11 @@ describe('recommendationHandler', function () {
         it('should return true if any response is not empty', function () {
             const handler = new RecommendationHandler()
             session.recommendations = [
-                new Recommendation({
+                new CompletionRecommendation({
                     content:
                         '\n    // Use the console to output debug info…n of the command with the "command" variable',
                 }),
-                new Recommendation({ content: '' }),
+                new CompletionRecommendation({ content: '' }),
             ]
             assert.ok(handler.isValidResponse())
         })
@@ -231,7 +231,10 @@ describe('recommendationHandler', function () {
 
         it('should return false if all response has no string length', function () {
             const handler = new RecommendationHandler()
-            session.recommendations = [new Recommendation({ content: '' }), new Recommendation({ content: '' })]
+            session.recommendations = [
+                new CompletionRecommendation({ content: '' }),
+                new CompletionRecommendation({ content: '' }),
+            ]
             assert.ok(!handler.isValidResponse())
         })
     })

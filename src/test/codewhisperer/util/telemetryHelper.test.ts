@@ -15,7 +15,7 @@ import {
     CodewhispererSuggestionState,
     CodewhispererUserDecision,
 } from '../../../shared/telemetry/telemetry.gen'
-import { Recommendation } from '../../../codewhisperer/models/model'
+import { CompletionRecommendation } from '../../../codewhisperer/models/model'
 
 // TODO: improve and move the following test utils to codewhisperer/testUtils.ts
 function aUserDecision(
@@ -51,8 +51,8 @@ function aServiceInvocation(): CodewhispererServiceInvocation {
 function aCompletion(
     content: string = 'aFakeContent',
     suggestionState: CodewhispererSuggestionState | 'Showed' | undefined = undefined
-): Recommendation {
-    return new Recommendation(
+): CompletionRecommendation {
+    return new CompletionRecommendation(
         {
             content: content,
         },
@@ -289,7 +289,7 @@ describe('telemetryHelper', function () {
             CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Classifier
 
             const telemetryHelper = new TelemetryHelper()
-            const response = [new Recommendation({ content: "print('Hello')" }, 'Showed')]
+            const response = [new CompletionRecommendation({ content: "print('Hello')" }, 'Showed')]
             const requestIdList = ['test_x', 'test_x', 'test_y']
             const sessionId = 'test_x'
             telemetryHelper.triggerType = 'AutoTrigger'

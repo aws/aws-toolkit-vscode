@@ -30,7 +30,7 @@ import { AuthUtil } from './authUtil'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { session } from './codeWhispererSession'
-import { Recommendation } from '../models/model'
+import { CompletionRecommendation } from '../models/model'
 import { CodeWhispererSupplementalContext } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -160,7 +160,7 @@ export class TelemetryHelper {
     public recordUserDecisionTelemetry(
         requestIdList: string[],
         sessionId: string,
-        recommendations: Recommendation[],
+        recommendations: CompletionRecommendation[],
         acceptIndex: number,
         paginationIndex: number,
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
@@ -490,7 +490,7 @@ export class TelemetryHelper {
     public getSuggestionState(
         i: number,
         acceptIndex: number,
-        recommendation: Recommendation
+        recommendation: CompletionRecommendation
     ): CodewhispererSuggestionState {
         const state = recommendation.suggestionState
         if (state && ['Empty', 'Filter', 'Discard'].includes(state)) {

@@ -11,7 +11,7 @@ import { createMockTextEditor, resetCodeWhispererGlobalVariables, createMockDocu
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
-import { CodeSuggestionsState, ConfigurationEntry, Recommendation } from '../../../codewhisperer/models/model'
+import { CodeSuggestionsState, ConfigurationEntry, CompletionRecommendation } from '../../../codewhisperer/models/model'
 import { CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionItemProvider'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
@@ -52,8 +52,8 @@ describe('inlineCompletionService', function () {
                 'checkAndResetCancellationTokens'
             )
             session.recommendations = [
-                new Recommendation({ content: "\n\t\tconsole.log('Hello world!');\n\t}" }),
-                new Recommendation({ content: '' }),
+                new CompletionRecommendation({ content: "\n\t\tconsole.log('Hello world!');\n\t}" }),
+                new CompletionRecommendation({ content: '' }),
             ]
             await InlineCompletionService.instance.getPaginatedRecommendation(
                 mockClient,
@@ -81,8 +81,8 @@ describe('inlineCompletionService', function () {
             ]
             ReferenceInlineProvider.instance.setInlineReference(1, 'test', fakeReferences)
             session.recommendations = [
-                new Recommendation({ content: "\n\t\tconsole.log('Hello world!');\n\t}" }),
-                new Recommendation({ content: '' }),
+                new CompletionRecommendation({ content: "\n\t\tconsole.log('Hello world!');\n\t}" }),
+                new CompletionRecommendation({ content: '' }),
             ]
             session.language = 'python'
 
