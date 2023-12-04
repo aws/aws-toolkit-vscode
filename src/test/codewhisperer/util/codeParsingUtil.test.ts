@@ -115,16 +115,14 @@ describe('isTestFile', () => {
         for (const name of tstFiles) {
             const file = `${name}.${fileExt}`
             const editor = await openATextEditorWithText('', file, tempFolder, { preview: false })
-            console.log(editor.document.languageId)
-            const actual = isTestFile(editor.document.uri.fsPath, { languageId: editor.document.languageId })
+            const actual = await isTestFile(editor.document.uri.fsPath, { languageId: editor.document.languageId })
             assert.strictEqual(actual, true)
         }
 
         for (const name of srcFiles) {
             const file = `${name}.${fileExt}`
             const editor = await openATextEditorWithText('', file, tempFolder, { preview: false })
-            console.log(editor.document.languageId)
-            const actual = isTestFile(editor.document.uri.fsPath, { languageId: editor.document.languageId })
+            const actual = await isTestFile(editor.document.uri.fsPath, { languageId: editor.document.languageId })
             assert.strictEqual(actual, false)
         }
     }
