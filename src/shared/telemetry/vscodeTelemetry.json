@@ -330,11 +330,6 @@
             "description": "A general string field to represent the result of the project"
         },
         {
-            "name": "codeTransformProjectValidationError",
-            "type": "string",
-            "description": "A general string field to represent project validation errors."
-        },
-        {
             "name": "codeTransformRuntimeError",
             "type": "string",
             "description": "A general string field to represent runtime errors in the project."
@@ -397,6 +392,21 @@
             "type": "string",
             "description": "The type of the project the user calls transform on",
             "allowedValues": ["maven", "gradle", "unknown"]
+        },
+        {
+            "name": "codeTransformPreValidationError",
+            "type": "string",
+            "description": "Names of the pre-validation errors that can occur in the project",
+            "allowedValues": [
+                "No pom.xml file found",
+                "No Java project found",
+                "Mixed Java project and another language found",
+                "Project selected is not Java 8 or Java 11",
+                "Only Maven projects supported",
+                "Empty project",
+                "Non SSO login",
+                "Project running on backend"
+            ]
         }
     ],
     "metrics": [
@@ -1060,7 +1070,7 @@
             "description": "The code transform button in the devtools to initiate the job but there is a validation error.",
             "metadata": [
                 {
-                    "type": "codeTransformProjectValidationError",
+                    "type": "codeTransformPreValidationError",
                     "required": true
                 },
                 {

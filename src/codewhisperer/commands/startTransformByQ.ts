@@ -110,10 +110,6 @@ export async function startTransformByQ() {
     try {
         await validateProjectSelection(state.project)
     } catch (err) {
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformProjectValidationError: `${err}`,
-        })
         getLogger().error('Selected project is not Java 8, not Java 11, or does not use Maven', err)
         throw err
     }

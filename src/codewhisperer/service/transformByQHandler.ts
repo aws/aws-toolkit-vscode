@@ -18,11 +18,12 @@ import { spawnSync } from 'child_process'
 import AdmZip from 'adm-zip'
 import fetch from '../../common/request'
 import globals from '../../shared/extensionGlobals'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { CodeTransformPreValidationError, telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { TransformByQJavaProjectNotFound } from '../../amazonqGumby/model'
+import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
 /* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
@@ -90,6 +91,11 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     )
     if (compiledJavaFiles.length < 1) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'No Java project found' as CodeTransformPreValidationError,
+            result: MetadataResult.Fail,
+        })
         throw new TransformByQJavaProjectNotFound()
     }
     const classFilePath = compiledJavaFiles[0].fsPath
@@ -99,6 +105,11 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
 
     if (spawnResult.error || spawnResult.status !== 0) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'No Java project found' as CodeTransformPreValidationError,
+            result: MetadataResult.Fail,
+        })
         throw new ToolkitError('Unable to determine Java version', {
             code: 'CannotDetermineJavaVersion',
             cause: spawnResult.error,
@@ -112,6 +123,13 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         transformByQState.setSourceJDKVersionToJDK11()
     } else {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError:
+                'Project selected is not Java 8 or Java 11' as CodeTransformPreValidationError,
+            result: MetadataResult.Fail,
+            reason: javaVersion,
+        })
         throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
     }
     const buildFile = await vscode.workspace.findFiles(
@@ -120,8 +138,14 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         1
     )
     if (buildFile.length < 1) {
-        await checkIfGradle(projectPath!)
+        const buildType = await checkIfGradle(projectPath!)
         vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'Only Maven projects supported' as CodeTransformPreValidationError,
+            result: MetadataResult.Fail,
+            reason: buildType,
+        })
         throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }
     telemetry.amazonq_codeTransformInvoke.record({
@@ -548,9 +572,11 @@ async function checkIfGradle(projectPath: string) {
         telemetry.amazonq_codeTransformInvoke.record({
             codeTransformProjectType: 'gradle',
         })
+        return 'Gradle'
     } else {
         telemetry.amazonq_codeTransformInvoke.record({
             codeTransformProjectType: 'unknown',
         })
+        return 'Unknown'
     }
 }
