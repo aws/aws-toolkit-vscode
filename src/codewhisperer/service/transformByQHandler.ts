@@ -187,7 +187,7 @@ export async function stopJob(jobId: string) {
             const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
                 transformationJobId: jobId,
             })
-            if (response.$response !== undefined) {
+            if (response !== undefined) {
                 telemetry.codeTransform_logApiLatency.emit({
                     codeTransformApiNames: 'StopTransformation',
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
