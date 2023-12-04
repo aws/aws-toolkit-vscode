@@ -235,7 +235,7 @@ export enum StepProgress {
     Failed = 'Failed',
 }
 
-enum JDKVersion {
+export enum JDKVersion {
     JDK8 = '8',
     JDK11 = '11',
     JDK17 = '17',
