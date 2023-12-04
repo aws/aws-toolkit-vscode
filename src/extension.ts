@@ -210,8 +210,12 @@ export async function activate(context: vscode.ExtensionContext) {
         )
 
         // do not enable codecatalyst for sagemaker
+        // TODO: remove setContext if SageMaker adds the context to their IDE
         if (!isSageMaker()) {
+            vscode.commands.executeCommand('setContext', 'aws.isSageMaker', false)
             await codecatalyst.activate(extContext)
+        } else {
+            vscode.commands.executeCommand('setContext', 'aws.isSageMaker', true)
         }
 
         await activateCloudFormationTemplateRegistry(context)
@@ -255,8 +259,10 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSchemas(extContext)
 
         if (!isCloud9()) {
-            await activateCWChat(extContext.extensionContext)
-            await activateQGumby(extContext)
+            if (!isSageMaker()) {
+                await activateCWChat(extContext.extensionContext)
+                await activateQGumby(extContext)
+            }
             await activateApplicationComposer(context)
         }
 

@@ -28,3 +28,4 @@ We set the following keys:
     nodejs (i.e. the environment has no "compute").
     -   Compare to `isWeb`, which vscode defines when the _UI_ is web, but says nothing about the
         _extension host_.
+-   `aws.isSageMaker`: AWS Toolkit is running in the SageMaker Code Editor.

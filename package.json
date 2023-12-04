@@ -725,7 +725,7 @@
                     "type": "webview",
                     "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
-                    "when": "!isCloud9"
+                    "when": "!isCloud9 && !aws.isSageMaker"
                 },
                 {
                     "id": "aws.AmazonQNeverShowBadge",
@@ -737,7 +737,7 @@
                 {
                     "id": "aws.amazonq",
                     "name": "%AWS.amazonq.title%",
-                    "when": "!isCloud9"
+                    "when": "!isCloud9 && !aws.isSageMaker"
                 },
                 {
                     "id": "aws.codewhisperer",
@@ -754,7 +754,8 @@
                 },
                 {
                     "id": "aws.codecatalyst",
-                    "name": "%AWS.codecatalyst.explorerTitle%"
+                    "name": "%AWS.codecatalyst.explorerTitle%",
+                    "when": "!aws.isSageMaker"
                 }
             ],
             "aws-codewhisperer-reference-log": [
