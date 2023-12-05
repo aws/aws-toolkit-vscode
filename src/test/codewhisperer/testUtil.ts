@@ -18,13 +18,20 @@ import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/co
 import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
 import fs from 'fs'
+import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
+import { FakeAwsContext } from '../utilities/fakeAwsContext'
+import { spy } from '../utilities/mockito'
+import { Service } from 'aws-sdk'
+import userApiConfig = require('./../../codewhisperer/client/user-service-2.json')
+import CodeWhispererUserClient = require('../../codewhisperer/client/codewhispereruserclient')
+import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
 
 export function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
     vsCodeState.isCodeWhispererEditing = false
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
-    session.language = 'python'
+    session.reset()
     CodeSuggestionsState.instance.setSuggestionsEnabled(false)
 }
 
@@ -146,6 +153,17 @@ export function createTextDocumentChangeEvent(document: vscode.TextDocument, ran
             },
         ],
     }
+}
+
+export async function createSpyClient() {
+    const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
+    const clientSpy = spy(
+        (await builder.createAwsService(Service, {
+            apiConfig: userApiConfig,
+        } as ServiceOptions)) as CodeWhispererUserClient
+    )
+    sinon.stub(codeWhispererClient, 'createUserSdkClient').returns(Promise.resolve(clientSpy))
+    return clientSpy
 }
 
 export function createCodeScanIssue(overrides?: Partial<CodeScanIssue>): CodeScanIssue {
