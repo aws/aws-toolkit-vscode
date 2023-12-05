@@ -39,6 +39,7 @@ import {
     applySecurityFix,
     signoutCodeWhisperer,
     showManageCwConnections,
+    fetchFeatureConfigsCmd,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -206,6 +207,8 @@ export async function activate(context: ExtContext): Promise<void> {
         selectCustomizationPrompt.register(),
         // notify new customizations
         notifyNewCustomizationsCmd.register(),
+        // fetch feature configs
+        fetchFeatureConfigsCmd.register(),
         /**
          * On recommendation acceptance
          */
