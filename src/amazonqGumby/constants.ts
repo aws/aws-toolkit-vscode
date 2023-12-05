@@ -3,6 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export class CodeTransformConstants {
-    static HubStartButton = 'HubStartButton'
+export enum CodeTransformConstants {
+    HubStartButton = 'HubStartButton',
 }
