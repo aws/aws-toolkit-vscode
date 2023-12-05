@@ -71,38 +71,29 @@ export class RubyDependencyGraph extends DependencyGraph {
         } = DependencyGraphConstants
 
         let keyword: string | undefined
-        let indexOfKeyword: number | undefined
 
         switch (true) {
             case importStr.startsWith(requireRelativeKeyword):
                 keyword = requireRelativeKeyword
-                indexOfKeyword = importStr.indexOf(requireRelativeKeyword)
                 break
             case importStr.startsWith(requireKeyword):
                 keyword = requireKeyword
-                indexOfKeyword = importStr.indexOf(requireKeyword)
                 break
             case importStr.startsWith(includeKeyword):
                 keyword = includeKeyword
-                indexOfKeyword = importStr.indexOf(includeKeyword)
                 break
             case importStr.startsWith(extendKeyword):
                 keyword = extendKeyword
-                indexOfKeyword = importStr.indexOf(extendKeyword)
                 break
             case importStr.startsWith(loadKeyword):
                 keyword = loadKeyword
-                indexOfKeyword = importStr.indexOf(loadKeyword)
                 break
             default:
                 break
         }
 
-        if (keyword && indexOfKeyword !== -1 && keyword !== undefined && indexOfKeyword !== undefined) {
-            const modulePathStr = importStr
-                .substring(indexOfKeyword + keyword.length)
-                .trim()
-                .replace(/\s+/g, '')
+        if (keyword && keyword !== undefined) {
+            const modulePathStr = importStr.substring(keyword.length).trim().replace(/\s+/g, '')
             modulePaths = this.getModulePath(modulePathStr)
         }
 
@@ -162,9 +153,9 @@ export class RubyDependencyGraph extends DependencyGraph {
                 const content: string = await readFileAsString(uri.fsPath)
                 const imports = await this.readImports(content)
                 const dependencies = this.getDependencies(uri, imports)
-                dependencies.forEach(dependency => {
+                for (const dependency of dependencies) {
                     q.push(dependency)
-                })
+                }
             }
         }
         return this._pickedSourceFiles
