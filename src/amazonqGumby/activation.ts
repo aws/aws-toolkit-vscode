@@ -15,7 +15,7 @@ import { ProposedTransformationExplorer } from '../codewhisperer/service/transfo
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { CodeTransformCancelSrcComponents, telemetry } from '../shared/telemetry/telemetry'
 import { logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
-import { CodeTransformConstants } from './constants'
+import { CodeTransformConstants } from './models/constants'
 
 export async function activate(context: ExtContext) {
     const transformationHubViewProvider = new TransformationHubViewProvider()

@@ -11,8 +11,11 @@ import { JDKVersion } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { codeTransformTelemetryState } from './codeTransformTelemetryState'
 
-export const SidePanelTransformTreeNode = 'devToolsStartButton'
-export const HubStartButton = 'bottomPanelSideNavButton'
+export const enum ActionPositions {
+    SidePanelTransformTreeNode = 'devToolsStartButton',
+    HubStartButton = 'bottomPanelSideNavButton',
+    Other = 'Unknown',
+}
 
 export const logCodeTransformInitiatedMetric = (source: string): void => {
     const commonMetrics = {
@@ -21,12 +24,13 @@ export const logCodeTransformInitiatedMetric = (source: string): void => {
 
     if (source === CodeWhispererConstants.transformTreeNode) {
         telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
-            codeTransformStartSrcComponents: SidePanelTransformTreeNode as CodeTransformStartSrcComponents,
+            codeTransformStartSrcComponents:
+                ActionPositions.SidePanelTransformTreeNode as CodeTransformStartSrcComponents,
             ...commonMetrics,
         })
-    } else if (source === HubStartButton) {
+    } else if (source === ActionPositions.HubStartButton) {
         telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
-            codeTransformStartSrcComponents: HubStartButton as CodeTransformStartSrcComponents,
+            codeTransformStartSrcComponents: ActionPositions.HubStartButton as CodeTransformStartSrcComponents,
             ...commonMetrics,
         })
     }
