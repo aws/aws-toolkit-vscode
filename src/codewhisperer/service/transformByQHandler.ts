@@ -148,9 +148,6 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         })
         throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }
-    telemetry.amazonq_codeTransformInvoke.record({
-        codeTransformProjectType: 'maven',
-    })
 }
 
 export function getSha256(fileName: string) {
@@ -224,9 +221,6 @@ export async function stopJob(jobId: string) {
             }
         } catch (e: any) {
             const errorMessage = 'Error stopping job'
-            telemetry.amazonq_codeTransformInvoke.record({
-                codeTransformApiNames: 'StopTransformation',
-            })
             getLogger().error(errorMessage)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'StopTransformation',
@@ -572,14 +566,8 @@ async function checkIfGradle(projectPath: string) {
     )
 
     if (gradleBuildFile.length > 0) {
-        telemetry.amazonq_codeTransformInvoke.record({
-            codeTransformProjectType: 'gradle',
-        })
         return 'Gradle'
     } else {
-        telemetry.amazonq_codeTransformInvoke.record({
-            codeTransformProjectType: 'unknown',
-        })
         return 'Unknown'
     }
 }
