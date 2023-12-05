@@ -36,6 +36,8 @@ import {
     CancelActionPositions,
     logCodeTransformInitiatedMetric,
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { FeatureConfigProvider } from '../service/featureConfigProvider'
+
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -247,6 +249,13 @@ export const notifyNewCustomizationsCmd = Commands.declare(
     { id: 'aws.codeWhisperer.notifyNewCustomizations', logging: false },
     () => () => {
         notifyNewCustomizations().then()
+    }
+)
+
+export const fetchFeatureConfigsCmd = Commands.declare(
+    { id: 'aws.codeWhisperer.fetchFeatureConfigs', logging: false },
+    () => () => {
+        FeatureConfigProvider.instance.fetchFeatureConfigs()
     }
 )
 

@@ -23,9 +23,9 @@ import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
-import { ExternalBrowserUtils } from '../../../amazonq/commons/externalBrowser/externalBrowserUtils'
 import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -441,7 +441,7 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
     }
 
     private processLink(message: any) {
-        ExternalBrowserUtils.instance.openLink(message.link)
+        openUrl(vscode.Uri.parse(message.link))
     }
 
     private insertCodeAtPosition(message: any) {
