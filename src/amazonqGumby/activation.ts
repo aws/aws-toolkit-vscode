@@ -13,7 +13,7 @@ import { transformByQState } from '../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformationResultsViewProvider'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
-import { CodeTransformCancelSrcComponents, telemetry } from '../shared/telemetry/telemetry'
+import { telemetry } from '../shared/telemetry/telemetry'
 import { CancelActionPositions, logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
 import { CodeTransformConstants } from './models/constants'
 
