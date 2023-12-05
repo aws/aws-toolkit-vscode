@@ -146,7 +146,6 @@ export async function startTransformByQ() {
         codeTransformJavaTargetVersionsAllowed: toJDKMetricValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
-        codeTransformConfigurationFilePath: '', // TODO: set or remove this
     })
 
     vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')

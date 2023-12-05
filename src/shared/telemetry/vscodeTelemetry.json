@@ -283,11 +283,6 @@
             "description": "Type of chat command name executed"
         },
         {
-            "name": "codeTransformConfigurationFilePath",
-            "type": "string",
-            "description": "Name of Java configuration/module file selected."
-        },
-        {
             "name": "codeTransformJavaSourceVersionsAllowed",
             "type": "string",
             "description": "Allowed Java versions to transform from.",
@@ -1161,10 +1156,6 @@
                     "required": true
                 },
                 {
-                    "type": "codeTransformConfigurationFilePath",
-                    "required": true
-                },
-                {
                     "type": "codeTransformSessionId",
                     "required": true
                 }
@@ -1193,10 +1184,6 @@
             "name": "codeTransform_configurationFileSelectedChanged",
             "description": "Fire a change event when users select a new configuration/module file from the dropdown.",
             "metadata": [
-                {
-                    "type": "codeTransformConfigurationFilePath",
-                    "required": true
-                },
                 {
                     "type": "codeTransformSessionId",
                     "required": true
