@@ -1,38 +1,25 @@
 <template>
-    <div class="auth-form container-background border-common" id="builder-id-form">
-        <div>
-            <FormTitle :isConnected="isConnected">AWS Builder ID</FormTitle>
-
-            <div v-if="stage === 'START'">
-                <div class="form-section">
-                    <div class="sub-text-color">
-                        {{ getDescription() }}
-                        <a :href="signUpUrl" v-on:click="emitUiClick('auth_learnMoreBuilderId')">Learn more.</a>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <button v-on:click="startSignIn()">{{ submitButtonText }}</button>
-                    <div class="small-description error-text">{{ error }}</div>
-                </div>
+    <div v-bind:class="[disabled ? 'disabled-form' : '']" class="auth-container">
+        <template v-if="stage === 'START'">
+            <div class="auth-container-section">
+                <button v-on:click="startSignIn()">{{ submitButtonText }}</button>
+                <div class="form-description-color input-description-small error-text">{{ error }}</div>
             </div>
+        </template>
 
-            <div v-if="stage === 'WAITING_ON_USER'">
-                <div class="form-section">
-                    <div>Follow instructions...</div>
-                </div>
+        <template v-if="stage === 'WAITING_ON_USER'">
+            <div class="auth-container-section">
+                <button disabled>Follow instructions...</button>
             </div>
+        </template>
 
-            <div v-if="stage === 'CONNECTED'">
-                <div class="form-section">
-                    <div v-on:click="signout()" class="text-link-color" style="cursor: pointer">Sign out</div>
-                </div>
+        <template v-if="stage === 'CONNECTED'">
+            <FormTitle>AWS Builder ID</FormTitle>
 
-                <div class="form-section">
-                    <button v-on:click="showNodeInView()">Open {{ name }} in Toolkit</button>
-                </div>
+            <div class="auth-container-section">
+                <div v-on:click="signout()" class="text-link-color" style="cursor: pointer">Sign out</div>
             </div>
-        </div>
+        </template>
     </div>
 </template>
 <script lang="ts">
@@ -45,6 +32,7 @@ import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthError } from '../types'
 import { FeatureId } from '../../../../shared/telemetry/telemetry.gen'
 import { AuthForm } from './shared.vue'
+import { CredentialSourceId } from '../../../../shared/telemetry/telemetry.gen'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -60,6 +48,10 @@ export default defineComponent({
             type: Object as PropType<BaseBuilderIdState>,
             required: true,
         },
+        disabled: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -68,64 +60,45 @@ export default defineComponent({
             builderIdCode: '',
             name: this.state.name,
             error: '' as string,
-            signUpUrl: '' as string,
+            signUpUrl: this.state.getSignUpUrl(),
             submitButtonText: '' as string,
+            description: this.state.getDescription(),
         }
     },
     async created() {
-        this.signUpUrl = this.getSignUpUrl()
-        await this.update('created')
+        await this.emitUpdate('created')
     },
     methods: {
         async startSignIn() {
+            await this.state.startAuthFormInteraction()
+
+            // update UI to show a pending state
             this.stage = 'WAITING_ON_USER'
-            client.startAuthFormInteraction(this.state.featureType, 'awsId')
-            const authError = await this.state.startBuilderIdSetup()
 
-            if (authError) {
-                this.error = authError.text
-                this.stage = await this.state.stage()
-
-                client.failedAuthAttempt({
-                    authType: 'awsId',
-                    featureType: this.state.featureType,
-                    reason: authError.id,
-                })
+            const wasSuccessful = await this.state.startBuilderIdSetup()
+            if (wasSuccessful) {
+                await this.emitUpdate('signIn')
             } else {
-                client.successfulAuthAttempt({
-                    featureType: this.state.featureType,
-                    authType: 'awsId',
-                })
-                await this.update('signIn')
+                await this.updateForm()
             }
         },
-        async update(cause?: ConnectionUpdateCause) {
-            await this.updateSubmitButtonText()
+        /** Updates the content of the form using the state data */
+        async updateForm() {
+            this.error = this.state.error
             this.stage = await this.state.stage()
+            this.submitButtonText = await this.state.getSubmitButtonText()
             this.isConnected = await this.state.isAuthConnected()
+        },
+        async emitUpdate(cause?: ConnectionUpdateCause) {
+            await this.updateForm()
             this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: this.isConnected, cause })
         },
         async signout() {
             await this.state.signout()
-            client.emitUiClick(this.state.uiClickSignout)
-            this.update('signOut')
+            this.emitUpdate('signOut')
         },
         showNodeInView() {
             this.state.showNodeInView()
-            client.emitUiClick(this.state.uiClickOpenId)
-        },
-        getSignUpUrl() {
-            return this.state.getSignUpUrl()
-        },
-        getDescription() {
-            return this.state.getDescription()
-        },
-        async updateSubmitButtonText() {
-            if (!(await isBuilderIdConnected())) {
-                this.submitButtonText = 'Sign up or Sign in'
-            } else {
-                this.submitButtonText = `Connect AWS Builder ID with ${this.state.name}`
-            }
         },
     },
 })
@@ -135,6 +108,7 @@ export default defineComponent({
  */
 abstract class BaseBuilderIdState implements AuthForm {
     protected _stage: BuilderIdStage = 'START'
+    #error: string = ''
 
     abstract get name(): string
     abstract get id(): AuthFormId
@@ -143,13 +117,30 @@ abstract class BaseBuilderIdState implements AuthForm {
     abstract get featureType(): FeatureId
     protected abstract _startBuilderIdSetup(): Promise<AuthError | undefined>
     abstract isAuthConnected(): Promise<boolean>
-    abstract showNodeInView(): Promise<void>
+    abstract _showNodeInView(): Promise<void>
+    abstract isConnectionExists(): Promise<boolean>
 
-    protected constructor() {}
+    /**
+     * Starts the Builder ID setup.
+     *
+     * Returns true if was successful.
+     */
+    async startBuilderIdSetup(): Promise<boolean> {
+        this.#error = ''
 
-    async startBuilderIdSetup(): Promise<AuthError | undefined> {
-        this._stage = 'WAITING_ON_USER'
-        return this._startBuilderIdSetup()
+        const authError = await this._startBuilderIdSetup()
+
+        if (authError) {
+            this.#error = authError.text
+            client.failedAuthAttempt(this.id, {
+                reason: authError.id,
+            })
+        } else {
+            this.#error = ''
+            client.successfulAuthAttempt(this.id)
+        }
+
+        return authError === undefined
     }
 
     async stage(): Promise<BuilderIdStage> {
@@ -160,6 +151,40 @@ abstract class BaseBuilderIdState implements AuthForm {
 
     async signout(): Promise<void> {
         await client.signoutBuilderId()
+        client.emitUiClick(this.uiClickSignout)
+    }
+
+    get authType(): CredentialSourceId {
+        return 'awsId'
+    }
+
+    get error(): string {
+        return this.#error
+    }
+
+    /**
+     * In the scenario a Builder ID is already connected,
+     * we want to change the submit button text for all unconnected
+     * Builder IDs to something else since they are not techincally
+     * signing in again, but instead adding scopes.
+     */
+    async getSubmitButtonText(): Promise<string> {
+        if (!(await this.anyBuilderIdConnected())) {
+            return 'Use for free with AWS Builder ID'
+        } else {
+            return `Connect AWS Builder ID with ${this.name}`
+        }
+    }
+
+    /**
+     * Returns true if any Builder Id is connected
+     */
+    private async anyBuilderIdConnected(): Promise<boolean> {
+        const results = await Promise.all([
+            CodeWhispererBuilderIdState.instance.isAuthConnected(),
+            CodeCatalystBuilderIdState.instance.isAuthConnected(),
+        ])
+        return results.some(isConnected => isConnected)
     }
 
     getSignUpUrl(): string {
@@ -168,6 +193,15 @@ abstract class BaseBuilderIdState implements AuthForm {
 
     getDescription(): string {
         return 'With AWS Builder ID, sign in for free without an AWS account.'
+    }
+
+    startAuthFormInteraction() {
+        return client.startAuthFormInteraction(this.featureType, this.authType)
+    }
+
+    showNodeInView() {
+        this._showNodeInView()
+        client.emitUiClick(this.uiClickOpenId)
     }
 }
 
@@ -196,20 +230,26 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
         return client.isCodeWhispererBuilderIdConnected()
     }
 
+    override isConnectionExists(): Promise<boolean> {
+        return client.hasBuilderId('codewhisperer')
+    }
+
     protected override _startBuilderIdSetup(): Promise<AuthError | undefined> {
         return client.startCodeWhispererBuilderIdSetup()
     }
 
-    override showNodeInView(): Promise<void> {
-        return client.showCodeWhispererNode()
+    override _showNodeInView(): Promise<void> {
+        return client.showCodeWhispererView()
     }
 
     override getSignUpUrl(): string {
         return 'https://docs.aws.amazon.com/codewhisperer/latest/userguide/whisper-setup-indv-devs.html'
     }
 
+    private constructor() {
+        super()
+    }
     static #instance: CodeWhispererBuilderIdState | undefined
-
     static get instance(): CodeWhispererBuilderIdState {
         return (this.#instance ??= new CodeWhispererBuilderIdState())
     }
@@ -240,18 +280,16 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
         return client.isCodeCatalystBuilderIdConnected()
     }
 
+    override isConnectionExists(): Promise<boolean> {
+        return client.hasBuilderId('codecatalyst')
+    }
+
     protected override _startBuilderIdSetup(): Promise<AuthError | undefined> {
         return client.startCodeCatalystBuilderIdSetup()
     }
 
-    override showNodeInView(): Promise<void> {
+    override _showNodeInView(): Promise<void> {
         return client.showCodeCatalystNode()
-    }
-
-    static #instance: CodeCatalystBuilderIdState | undefined
-
-    static get instance(): CodeCatalystBuilderIdState {
-        return (this.#instance ??= new CodeCatalystBuilderIdState())
     }
 
     override getDescription(): string {
@@ -261,25 +299,17 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
     override getSignUpUrl(): string {
         return 'https://aws.amazon.com/codecatalyst/'
     }
-}
 
-/**
- * Returns true if any Builder Id is connected
- */
-export async function isBuilderIdConnected(): Promise<boolean> {
-    const results = await Promise.all([
-        CodeWhispererBuilderIdState.instance.isAuthConnected(),
-        CodeCatalystBuilderIdState.instance.isAuthConnected(),
-    ])
-    return results.some(isConnected => isConnected)
+    private constructor() {
+        super()
+    }
+    static #instance: CodeCatalystBuilderIdState | undefined
+    static get instance(): CodeCatalystBuilderIdState {
+        return (this.#instance ??= new CodeCatalystBuilderIdState())
+    }
 }
 </script>
 <style>
 @import './sharedAuthForms.css';
 @import '../shared.css';
-
-#builder-id-form {
-    width: 300px;
-    height: fit-content;
-}
 </style>

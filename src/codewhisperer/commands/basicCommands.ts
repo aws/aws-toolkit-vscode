@@ -4,20 +4,20 @@
  */
 
 import * as vscode from 'vscode'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { CodewhispererCodeScanIssueApplyFix, Component, telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext } from '../../shared/extensions'
-import { Commands } from '../../shared/vscode/commands2'
+import { Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
+import { startTransformByQWithProgress, confirmStopTransformByQ } from './startTransformByQ'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { codeScanState } from '../models/model'
+import { CodeScanIssue, codeScanState, CodeSuggestionsState, transformByQState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
-import { showConnectionPrompt } from '../util/showSsoPrompt'
+import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { InlineCompletionService } from '../service/inlineCompletionService'
 import { getLogger } from '../../shared/logger'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
@@ -26,44 +26,34 @@ import {
     selectCustomization,
     showCustomizationPrompt,
 } from '../util/customizationUtil'
-import { get, set } from '../util/commonUtil'
-import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
-import { getIcon } from '../../shared/icons'
-import { localize } from '../../shared/utilities/vsCodeUtils'
+import { applyPatch } from 'diff'
+import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
+import { FileSystemCommon } from '../../srcShared/fs'
+import { Mutable } from '../../shared/utilities/tsUtils'
+import { CodeWhispererSource } from './types'
+import { showManageConnections } from '../../auth/ui/vue/show'
 
 export const toggleCodeSuggestions = Commands.declare(
-    'aws.codeWhisperer.toggleCodeSuggestion',
-    (globalState: vscode.Memento) => async () => {
-        const autoTriggerEnabled: boolean = get(CodeWhispererConstants.autoTriggerEnabledKey, globalState) || false
-        const toSet: boolean = !autoTriggerEnabled
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, toSet, globalState)
+    { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
+    (suggestionState: CodeSuggestionsState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         telemetry.aws_modifySetting.emit({
             settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
-            settingState: toSet
+            settingState: isSuggestionsEnabled
                 ? CodeWhispererConstants.autoSuggestionConfig.activated
                 : CodeWhispererConstants.autoSuggestionConfig.deactivated,
         })
     }
 )
-/*
-createGettingStartedNode(Learn) will be a childnode of CodeWhisperer
-onClick on this "Learn" Node will open the Learn CodeWhisperer Page.
-*/
-export const createGettingStartedNode = () =>
-    CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage
-        .build('codewhispererDeveloperTools')
-        .asTreeNode({
-            label: localize('AWS.explorerNode.codewhispererGettingStartedNode.label', 'Learn'),
-            iconPath: getIcon('aws-codewhisperer-learn'),
-        })
 
 export const enableCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.enableCodeSuggestions',
     (context: ExtContext) =>
         async (isAuto: boolean = true) => {
-            await set(CodeWhispererConstants.autoTriggerEnabledKey, isAuto, context.extensionContext.globalState)
+            await CodeSuggestionsState.instance.setSuggestionsEnabled(isAuto)
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.disconnected', false)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             if (!isCloud9()) {
                 await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
@@ -72,8 +62,8 @@ export const enableCodeSuggestions = Commands.declare(
 )
 
 export const showReferenceLog = Commands.declare(
-    'aws.codeWhisperer.openReferencePanel',
-    (context: ExtContext) => async () => {
+    { id: 'aws.codeWhisperer.openReferencePanel', compositeKey: { 1: 'source' } },
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-reference-log')
     }
 )
@@ -83,9 +73,9 @@ export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction
 })
 
 export const showSecurityScan = Commands.declare(
-    'aws.codeWhisperer.security.scan',
+    { id: 'aws.codeWhisperer.security.scan', compositeKey: { 1: 'source' } },
     (context: ExtContext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>
-        async () => {
+        async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
             if (AuthUtil.instance.isConnectionExpired()) {
                 await AuthUtil.instance.notifyReauthenticate()
             }
@@ -107,18 +97,66 @@ export const showSecurityScan = Commands.declare(
         }
 )
 
-export const selectCustomizationPrompt = Commands.declare('aws.codeWhisperer.selectCustomization', () => async () => {
-    telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
-    showCustomizationPrompt().then()
-})
+export const transformTreeNode = 'qTreeNode'
+export const showTransformByQ = Commands.declare(
+    { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
+    (context: ExtContext) => async (source: string) => {
+        if (AuthUtil.instance.isConnectionExpired()) {
+            await AuthUtil.instance.notifyReauthenticate()
+        }
 
-export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async () => {
-    await AuthUtil.instance.reauthenticate()
-})
+        if (transformByQState.isNotStarted()) {
+            startTransformByQWithProgress()
+        } else if (transformByQState.isCancelled()) {
+            vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
+        } else if (transformByQState.isRunning()) {
+            await confirmStopTransformByQ(transformByQState.getJobId())
+        }
+        // emit telemetry if clicked from tree node
+        if (source === transformTreeNode) {
+            telemetry.ui_click.emit({
+                elementId: 'amazonq_transform',
+                passive: false,
+            })
+        }
+        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    }
+)
 
+export const showTransformationHub = Commands.declare(
+    { id: 'aws.amazonq.showTransformationHub', compositeKey: { 0: 'source' } },
+    () => async (source: string) => {
+        await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
+    }
+)
+
+export const selectCustomizationPrompt = Commands.declare(
+    { id: 'aws.codeWhisperer.selectCustomization', compositeKey: { 1: 'source' } },
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
+        showCustomizationPrompt().then()
+    }
+)
+
+export const reconnect = Commands.declare(
+    { id: 'aws.codewhisperer.reconnect', compositeKey: { 1: 'source' } },
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        await AuthUtil.instance.reauthenticate()
+    }
+)
+
+/** Opens the Add Connections webview with CW highlighted */
+export const showManageCwConnections = Commands.declare(
+    { id: 'aws.codewhisperer.manageConnections', compositeKey: { 1: 'source' } },
+    () => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        return showManageConnections.execute(_, source, 'codewhisperer')
+    }
+)
+
+/** @deprecated in favor of the `Add Connection` page */
 export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => async () => {
     telemetry.ui_click.emit({ elementId: 'cw_signUp_Cta' })
-    await showConnectionPrompt()
+    await showCodeWhispererConnectionPrompt()
 })
 
 // Shortcut command to directly connect to Identity Center or prompt start URL entry
@@ -168,33 +206,36 @@ export const connectWithCustomization = Commands.declare(
     }
 )
 
-export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {
-    telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
-    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
-})
-
-// TODO: Use a different URI
-export const showFreeTierLimit = Commands.declare('aws.codeWhisperer.freeTierLimit', () => async () => {
-    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-})
-
-export const updateReferenceLog = Commands.declare(
-    { id: 'aws.codeWhisperer.updateReferenceLog', logging: false },
-    () => () => {
-        ReferenceLogViewProvider.instance.update()
+export const showLearnMore = Commands.declare(
+    { id: 'aws.codeWhisperer.learnMore', compositeKey: { 0: 'source' } },
+    () => async (source: CodeWhispererSource) => {
+        telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
+        openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
     }
 )
 
-export const refreshStatusBar = Commands.declare(
-    { id: 'aws.codeWhisperer.refreshStatusBar', logging: false },
+// TODO: Use a different URI
+export const showFreeTierLimit = Commands.declare(
+    { id: 'aws.codeWhisperer.freeTierLimit', compositeKey: { 1: 'source' } },
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+    }
+)
+
+export const updateReferenceLog = Commands.declare(
+    {
+        id: 'aws.codeWhisperer.updateReferenceLog',
+        logging: false,
+    },
     () => () => {
-        if (AuthUtil.instance.isConnectionValid()) {
-            InlineCompletionService.instance.setCodeWhispererStatusBarOk()
-        } else if (AuthUtil.instance.isConnectionExpired()) {
-            InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
-        } else {
-            InlineCompletionService.instance.hideCodeWhispererStatusBar()
-        }
+        return ReferenceLogViewProvider.instance.update()
+    }
+)
+
+export const openSecurityIssuePanel = Commands.declare(
+    'aws.codeWhisperer.openSecurityIssuePanel',
+    (context: ExtContext) => (issue: CodeScanIssue, filePath: string) => {
+        showSecurityIssueWebview(context.extensionContext, issue, filePath)
     }
 )
 
@@ -202,5 +243,75 @@ export const notifyNewCustomizationsCmd = Commands.declare(
     { id: 'aws.codeWhisperer.notifyNewCustomizations', logging: false },
     () => () => {
         notifyNewCustomizations().then()
+    }
+)
+
+export const applySecurityFix = Commands.declare(
+    'aws.codeWhisperer.applySecurityFix',
+    () => async (issue: CodeScanIssue, filePath: string, source: Component) => {
+        const [suggestedFix] = issue.suggestedFixes
+        if (!suggestedFix || !filePath) {
+            return
+        }
+
+        const applyFixTelemetryEntry: Mutable<CodewhispererCodeScanIssueApplyFix> = {
+            detectorId: issue.detectorId,
+            findingId: issue.findingId,
+            component: source,
+            result: 'Succeeded',
+        }
+
+        try {
+            const patch = suggestedFix.code
+            const document = await vscode.workspace.openTextDocument(filePath)
+            const fileContent = document.getText()
+
+            const updatedContent = applyPatch(fileContent, patch)
+            if (!updatedContent) {
+                vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
+                throw Error('Failed to get updated content from applying diff patch')
+            }
+
+            // saving the document text if not save
+            const isSaved = await document.save()
+            if (!isSaved) {
+                throw Error('Failed to save editor text changes into the file.')
+            }
+
+            // writing the patch applied version of document into the file
+            await FileSystemCommon.instance.writeFile(filePath, updatedContent)
+            vscode.window
+                .showInformationMessage(CodeWhispererConstants.codeFixAppliedSuccessMessage, {
+                    title: CodeWhispererConstants.runSecurityScanButtonTitle,
+                })
+                .then(res => {
+                    if (res?.title === CodeWhispererConstants.runSecurityScanButtonTitle) {
+                        vscode.commands.executeCommand('aws.codeWhisperer.security.scan')
+                    }
+                })
+            closeSecurityIssueWebview(issue.findingId)
+        } catch (err) {
+            getLogger().error(`Apply fix command failed. ${err}`)
+            applyFixTelemetryEntry.result = 'Failed'
+            applyFixTelemetryEntry.reason = err as string
+        } finally {
+            telemetry.codewhisperer_codeScanIssueApplyFix.emit(applyFixTelemetryEntry)
+        }
+    }
+)
+
+/**
+ * Forces focus to Amazon Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
+ * Used on first load, and any time we want to directly populate chat.
+ */
+export async function focusAmazonQPanel(): Promise<void> {
+    // VS Code-owned command: "View: Show Amazon Q"
+    await vscode.commands.executeCommand('workbench.view.extension.amazonq')
+}
+
+export const signoutCodeWhisperer = Commands.declare(
+    { id: 'aws.codewhisperer.signout', compositeKey: { 1: 'source' } },
+    (auth: AuthUtil) => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        return auth.secondaryAuth.deleteConnection()
     }
 )

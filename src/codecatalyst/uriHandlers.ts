@@ -8,6 +8,16 @@ import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { CodeCatalystCommands } from './commands'
 
+type ConnectParams = {
+    devEnvironmentId: string
+    spaceName: string
+    projectName: string
+    sso?: {
+        startUrl: string
+        region: string
+    }
+}
+
 export function register(
     handler: UriHandler,
     commands: Pick<typeof CodeCatalystCommands.declared, 'cloneRepo' | 'openDevEnv'>
@@ -20,18 +30,22 @@ export function register(
         }
     }
 
-    async function connectHandler(params: ReturnType<typeof parseConnectParams | typeof parseConnectParamsOld>) {
-        await commands.openDevEnv.execute({
-            id: params.devEnvironmentId,
-            org: { name: 'spaceName' in params ? params.spaceName : params.organizationName },
-            project: { name: params.projectName },
-        })
+    async function connectHandler(params: ConnectParams) {
+        await commands.openDevEnv.execute(
+            {
+                id: params.devEnvironmentId,
+                org: { name: params.spaceName },
+                project: { name: params.projectName },
+            },
+            undefined,
+            params.sso
+        )
     }
 
     return vscode.Disposable.from(
-        handler.registerHandler('/clone', cloneHandler, parseCloneParams),
-        handler.registerHandler('/connect/codecatalyst', connectHandler, parseConnectParams),
-        handler.registerHandler('/connect/caws', connectHandler, parseConnectParamsOld) // FIXME: remove this before GA
+        handler.onPath('/clone', cloneHandler, parseCloneParams),
+        handler.onPath('/connect/codecatalyst', connectHandler, parseConnectParams),
+        handler.onPath('/connect/caws', connectHandler, parseConnectParamsOld) // FIXME: remove this before GA
     )
 }
 
@@ -39,10 +53,27 @@ function parseCloneParams(query: SearchParams) {
     return { url: query.getAsOrThrow('url', 'A URL must be provided', v => vscode.Uri.parse(v, true)) }
 }
 
-function parseConnectParams(query: SearchParams) {
-    return query.getFromKeysOrThrow('devEnvironmentId', 'spaceName', 'projectName')
+export function parseConnectParams(query: SearchParams): ConnectParams {
+    try {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        const { sso_start_url, sso_region, ...rest } = query.getFromKeysOrThrow(
+            'devEnvironmentId',
+            'spaceName',
+            'projectName',
+            'sso_start_url',
+            'sso_region'
+        )
+        return { ...rest, sso: { startUrl: sso_start_url, region: sso_region } }
+    } catch {
+        return query.getFromKeysOrThrow('devEnvironmentId', 'spaceName', 'projectName')
+    }
 }
 
-function parseConnectParamsOld(query: SearchParams) {
-    return query.getFromKeysOrThrow('devEnvironmentId', 'organizationName', 'projectName')
+function parseConnectParamsOld(query: SearchParams): ConnectParams {
+    const params = query.getFromKeysOrThrow('devEnvironmentId', 'organizationName', 'projectName')
+    return {
+        devEnvironmentId: params.devEnvironmentId,
+        spaceName: params.organizationName,
+        projectName: params.projectName,
+    }
 }

@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../logger/logger'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
-import { globDirs, isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
+import { globDirPatterns, isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 import { Settings } from '../settings'
 import { once } from '../utilities/functionUtils'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -41,8 +41,7 @@ export interface WatchedItem<T> {
     item: T
 }
 
-/** Builds an exclude pattern based on vscode global settings and the `alwaysExclude` default. */
-export function getExcludePattern() {
+export function getGlobDirExcludedPatterns(): string[] {
     const vscodeFilesExclude = Settings.instance.get<object>('files.exclude', Object, {})
     const vscodeSearchExclude = Settings.instance.get<object>('search.exclude', Object, {})
     const vscodeWatcherExclude = Settings.instance.get<object>('files.watcherExclude', Object, {})
@@ -52,7 +51,14 @@ export function getExcludePattern() {
         ...Object.keys(vscodeSearchExclude),
         ...Object.keys(vscodeWatcherExclude),
     ]
-    return globDirs(all)
+    return globDirPatterns(all)
+}
+
+/** Builds an exclude pattern based on vscode global settings and the `alwaysExclude` default. */
+export function getExcludePattern() {
+    const excludePatternsStr = getGlobDirExcludedPatterns().join(',')
+    const excludePattern = `**/{${excludePatternsStr}}/`
+    return excludePattern
 }
 const getExcludePatternOnce = once(getExcludePattern)
 

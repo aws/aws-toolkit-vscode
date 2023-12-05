@@ -8,12 +8,12 @@ import { AwsContext } from '../shared/awsContext'
 import { Auth } from './auth'
 import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
-import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
-import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
+import { placeholder } from '../shared/vscode/commands2'
 import { getLogger } from '../shared/logger'
 import { ExtensionUse } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../codecatalyst/utils'
+import { showManageConnections } from './ui/vue/show'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
@@ -29,11 +29,7 @@ export async function initialize(
         }
     })
 
-    registerCommandsWithVSCode(
-        extensionContext,
-        AuthCommandDeclarations.instance,
-        new AuthCommandBackend(extensionContext)
-    )
+    extensionContext.subscriptions.push(showManageConnections.register(extensionContext))
 
     showManageConnectionsOnStartup()
 }
@@ -57,5 +53,5 @@ async function showManageConnectionsOnStartup() {
     }
 
     // Show connection management to user
-    AuthCommandDeclarations.instance.declared.showManageConnections.execute('firstStartup')
+    showManageConnections.execute(placeholder, 'firstStartup')
 }

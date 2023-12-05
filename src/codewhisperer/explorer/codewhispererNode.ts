@@ -4,26 +4,27 @@
  */
 
 import * as vscode from 'vscode'
-import globals from '../../shared/extensionGlobals'
-import * as CodeWhispererConstants from '../models/constants'
 import {
-    createAutoSuggestionsNode,
-    createOpenReferenceLogNode,
-    createSecurityScanNode,
+    createAutoSuggestions,
+    createOpenReferenceLog,
+    createSecurityScan,
     createLearnMore,
-    createSsoSignIn,
-    createFreeTierLimitMetNode,
-    createReconnectNode,
-    createSelectCustomizationNode,
+    createSignIn,
+    createFreeTierLimitMet,
+    createSelectCustomization,
+    createReconnect,
+    createGettingStarted,
+    createSignout,
+    createSeparator,
 } from './codewhispererChildrenNodes'
-import { createGettingStartedNode } from '../commands/basicCommands'
-import { Commands } from '../../shared/vscode/commands2'
-import { RootNode } from '../../awsexplorer/localExplorer'
+import { Command, Commands } from '../../shared/vscode/commands2'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
-import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
+import { CodeSuggestionsState } from '../models/model'
 
-export class CodeWhispererNode implements RootNode {
+export class CodeWhispererNode implements TreeNode {
     public readonly id = 'codewhisperer'
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
@@ -34,7 +35,11 @@ export class CodeWhispererNode implements RootNode {
     public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
     private _showFreeTierLimitReachedNode = false
 
-    constructor() {}
+    constructor() {
+        CodeSuggestionsState.instance.onDidChangeState(() => {
+            this.refresh()
+        })
+    }
 
     public getTreeItem() {
         const item = new vscode.TreeItem('CodeWhisperer')
@@ -70,42 +75,58 @@ export class CodeWhispererNode implements RootNode {
         return ''
     }
 
-    public getChildren() {
-        const autoTriggerEnabled =
-            globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
-        if (AuthUtil.instance.isConnectionExpired()) {
-            return [createReconnectNode(), createLearnMore()]
-        }
-        if (!AuthUtil.instance.isConnected()) {
-            return [createSsoSignIn(), createLearnMore()]
-        }
-        if (this._showFreeTierLimitReachedNode) {
-            if (hasVendedIamCredentials()) {
-                return [createFreeTierLimitMetNode(), createOpenReferenceLogNode()]
-            } else {
-                return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
+    public getChildren(): TreeNode<Command>[]
+    public getChildren(type: 'item'): DataQuickPickItem<string>[]
+    public getChildren(type: 'tree' | 'item'): TreeNode<Command>[] | DataQuickPickItem<string>[]
+    public getChildren(type: 'tree' | 'item' = 'tree'): any[] {
+        const _getChildren = () => {
+            const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
+            if (AuthUtil.instance.isConnectionExpired()) {
+                return [createReconnect(type), createLearnMore(type)]
             }
-        } else {
-            if (hasVendedIamCredentials()) {
-                return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
+            if (!AuthUtil.instance.isConnected()) {
+                return [createSignIn(type), createLearnMore(type)]
+            }
+            if (this._showFreeTierLimitReachedNode) {
+                if (hasVendedIamCredentials()) {
+                    return [createFreeTierLimitMet(type), createOpenReferenceLog(type)]
+                } else {
+                    return [createFreeTierLimitMet(type), createSecurityScan(type), createOpenReferenceLog(type)]
+                }
             } else {
-                if (AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled) {
+                if (hasVendedIamCredentials()) {
+                    return [createAutoSuggestions(type, autoTriggerEnabled), createOpenReferenceLog(type)]
+                } else {
+                    if (
+                        AuthUtil.instance.isValidEnterpriseSsoInUse() &&
+                        AuthUtil.instance.isCustomizationFeatureEnabled
+                    ) {
+                        return [
+                            createAutoSuggestions(type, autoTriggerEnabled),
+                            createSecurityScan(type),
+                            createSelectCustomization(type),
+                            createOpenReferenceLog(type),
+                            createGettingStarted(type), // "Learn" node : opens Learn CodeWhisperer page
+                        ]
+                    }
                     return [
-                        createAutoSuggestionsNode(autoTriggerEnabled),
-                        createSecurityScanNode(),
-                        createSelectCustomizationNode(),
-                        createOpenReferenceLogNode(),
-                        createGettingStartedNode(), // "Learn" node : opens Learn CodeWhisperer page
+                        createAutoSuggestions(type, autoTriggerEnabled),
+                        createSecurityScan(type),
+                        createOpenReferenceLog(type),
+                        createGettingStarted(type), // "Learn" node : opens Learn CodeWhisperer page
                     ]
                 }
-                return [
-                    createAutoSuggestionsNode(autoTriggerEnabled),
-                    createSecurityScanNode(),
-                    createOpenReferenceLogNode(),
-                    createGettingStartedNode(), // "Learn" node : opens Learn CodeWhisperer page
-                ]
             }
         }
+
+        const children = _getChildren()
+
+        // Add 'Sign Out' to quick pick if user is connected
+        if (AuthUtil.instance.isConnected() && type === 'item' && !hasVendedIamCredentials()) {
+            return [...children, createSeparator(), createSignout('item')]
+        }
+
+        return children
     }
 
     /**
@@ -125,18 +146,23 @@ export class CodeWhispererNode implements RootNode {
     }
 }
 
-export const codewhispererNode = new CodeWhispererNode()
-export const refreshCodeWhisperer = Commands.register(
-    { id: 'aws.codeWhisperer.refresh', logging: false },
-    (showFreeTierLimitNode = false) => {
-        codewhispererNode.updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
-        codewhispererNode.refresh()
-    }
-)
+let _codewhispererNode: CodeWhispererNode
+export function getCodewhispererNode(): CodeWhispererNode {
+    return (_codewhispererNode ??= new CodeWhispererNode())
+}
+export const refreshCodeWhisperer = (provider?: ResourceTreeDataProvider) =>
+    Commands.register({ id: 'aws.codeWhisperer.refresh', logging: false }, (showFreeTierLimitNode = false) => {
+        getCodewhispererNode().updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
+        getCodewhispererNode().refresh()
+        if (provider) {
+            provider.refresh()
+        }
+    })
 
-export const refreshCodeWhispererRootNode = Commands.register(
-    { id: 'aws.codeWhisperer.refreshRootNode', logging: false },
-    () => {
-        codewhispererNode.refreshRootNode()
-    }
-)
+export const refreshCodeWhispererRootNode = (provider?: ResourceTreeDataProvider) =>
+    Commands.register({ id: 'aws.codeWhisperer.refreshRootNode', logging: false }, () => {
+        getCodewhispererNode().refreshRootNode()
+        if (provider) {
+            provider.refresh()
+        }
+    })

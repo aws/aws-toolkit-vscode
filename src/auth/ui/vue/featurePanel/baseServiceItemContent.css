@@ -1,0 +1,84 @@
+.feature-panel-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    border-color: var(--vscode-descriptionForeground);
+    box-sizing: border-box;
+    height: fit-content;
+    gap: 1.2em;
+    width: 33%;
+    padding: 1.5em;
+}
+
+.feature-panel-selected {
+    border-color: var(--vscode-focusBorder);
+}
+
+.feature-panel-container-upper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2em;
+
+    /* 
+     * This must be the height of the tallest feature panel.
+     * This ensures all the borders of the feature panels are the same height.
+     */
+    min-height: 24em;
+}
+
+.feature-panel-image {
+    border-radius: 1em;
+
+    max-height: 15em;
+    margin: 0 auto;
+}
+
+.feature-panel-container-title {
+    display: inline;
+    font-size: 1.7rem;
+    font-weight: bold;
+}
+
+.feature-panel-container-description {
+    font-size: 1rem;
+}
+
+.feature-panel-container hr {
+    background-color: var(--vscode-descriptionForeground);
+    width: 100%;
+}
+
+.feature-panel-auth-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    justify-content: center;
+    margin-top: auto;
+    margin-bottom: auto;
+    /* display: flex;
+    flex-direction: column;
+    align-items: left;
+    gap: 1.2rem; */
+}
+
+.feature-panel-auth-container button {
+    padding: 0.4em;
+    border-radius: 0.5rem;
+    align-items: center;
+}
+
+.collapsible-title {
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    user-select: none;
+}
+
+.collapsible-description {
+    font-weight: bold;
+    font-size: 0.8rem;
+    user-select: none;
+}

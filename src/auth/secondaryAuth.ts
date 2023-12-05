@@ -11,7 +11,6 @@ import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { Auth } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { isNonNullable } from '../shared/utilities/tsUtils'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { Connection, SsoConnection, StatefulConnection } from './connection'
 
 let currentConn: Auth['activeConnection']
@@ -97,15 +96,16 @@ export class SecondaryAuth<T extends Connection = Connection> {
         private readonly auth: Auth,
         private readonly memento = globals.context.globalState
     ) {
-        const handleConnectionChanged = async (conn?: Connection) => {
-            if (
-                conn === undefined &&
-                this.#savedConnection &&
-                this.#savedConnection.id === this.#activeConnection?.id
-            ) {
-                await this.clearSavedConnection()
-            } else {
-                this.#activeConnection = conn
+        const handleConnectionChanged = async (newActiveConn?: Connection) => {
+            if (newActiveConn === undefined && this.#activeConnection?.id) {
+                // The active connection was removed
+                await this.clearActiveConnection()
+            }
+
+            const previousActiveId = this.activeConnection?.id
+            this.#activeConnection = newActiveConn
+            if (this.activeConnection?.id !== previousActiveId) {
+                // The user will get a different active connection from before, so notify them.
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
         }
@@ -117,10 +117,19 @@ export class SecondaryAuth<T extends Connection = Connection> {
             }
         })
 
+        this.auth.onDidChangeConnectionState(e => {
+            if (this.activeConnection?.id === e.id) {
+                this.#onDidChangeActiveConnection.fire(this.activeConnection)
+            }
+        })
+
         // Register listener and handle connection immediately in case we were instantiated late
         handleConnectionChanged(this.auth.activeConnection)
         this.auth.onDidChangeActiveConnection(handleConnectionChanged)
         this.auth.onDidDeleteConnection(async (deletedConnId: Connection['id']) => {
+            if (deletedConnId === this.#activeConnection?.id) {
+                await this.clearActiveConnection()
+            }
             if (deletedConnId === this.#savedConnection?.id) {
                 // Our saved connection does not exist anymore, delete the reference to it.
                 await this.clearSavedConnection()
@@ -157,13 +166,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
     /**
      * Globally deletes the connection that this secondary auth is using,
      * effectively doing a signout.
-     *
-     * The deletion automatically propogates to the other users of this
-     * connection, assuming they've configured the event listeners.
      */
     public async deleteConnection() {
         if (this.activeConnection) {
             await this.auth.deleteConnection(this.activeConnection)
+            await this.clearSavedConnection()
         }
     }
 
@@ -174,10 +181,23 @@ export class SecondaryAuth<T extends Connection = Connection> {
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
+    private async clearActiveConnection() {
+        this.#activeConnection = undefined
+        if (this.#savedConnection) {
+            /**
+             * No need to emit event since user is currently
+             * using the saved connection
+             */
+            return
+        }
+        this.#onDidChangeActiveConnection.fire(undefined)
+    }
+
     public async useNewConnection(conn: T) {
-        if (this.auth.activeConnection !== undefined && !this.isUsable(this.auth.activeConnection)) {
-            await this.saveConnection(conn)
-        } else {
+        await this.saveConnection(conn)
+        if (this.auth.activeConnection === undefined) {
+            // Since no connection exists yet in the "primary" auth, we will make
+            // this connection available to all primary auth users
             await this.auth.useConnection(conn)
         }
     }
@@ -200,11 +220,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
         try {
             return await this.auth.reauthenticate(updatedConn)
         } catch (e) {
-            if (CancellationError.isUserCancelled(e)) {
-                // We updated the connection scopes, but the user cancelled reauth.
-                // Revert to old connection scopes, otherwise the new scopes persist.
-                await updateConnectionScopes(oldScopes)
-            }
+            // We updated the connection scopes pre-emptively, but if there is some issue (e.g. user cancels,
+            // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,
+            // this could soft-lock users into a broken connection that cannot be re-authenticated without
+            // first deleting the connection.
+            await updateConnectionScopes(oldScopes)
             throw e
         }
     }
@@ -237,6 +257,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
             getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
             await this.memento.update(this.key, undefined)
         } else {
+            await this.auth.refreshConnectionState(conn)
             return conn
         }
     }

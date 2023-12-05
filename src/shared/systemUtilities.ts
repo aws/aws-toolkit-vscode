@@ -65,10 +65,9 @@ export class SystemUtilities {
         return os.homedir()
     }
 
-    public static async readFile(file: string | vscode.Uri): Promise<string> {
+    public static async readFile(file: string | vscode.Uri, decoder: TextDecoder = new TextDecoder()): Promise<string> {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
         const errorHandler = createPermissionsErrorHandler(uri, 'r**')
-        const decoder = new TextDecoder()
 
         if (isCloud9()) {
             return decoder.decode(await fs.readFile(uri.fsPath).catch(errorHandler))
@@ -208,6 +207,9 @@ export class SystemUtilities {
         }
         return ok
     }
+
+    // TODO: implement this by checking the file mode
+    // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
 
     /**
      * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not

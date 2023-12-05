@@ -4,11 +4,13 @@
  */
 
 import assert from 'assert'
+import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { DevSettings, Experiments, fromExtensionManifest, PromptSettings, Settings } from '../../shared/settings'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 import { Optional } from '../../shared/utilities/typeConstructors'
+import { ToolkitError } from '../../shared/errors'
 
 const settingsTarget = vscode.ConfigurationTarget.Workspace
 
@@ -25,6 +27,10 @@ describe('Settings', function () {
         await sut.update(settingKey, undefined)
     })
 
+    afterEach(async function () {
+        sinon.restore()
+    })
+
     const scenarios = [
         { testValue: 1234, desc: 'number' },
         { testValue: 0, desc: 'default number' },
@@ -39,6 +45,31 @@ describe('Settings', function () {
         { testValue: { value: 'foo' }, desc: 'object' },
         // Note: we don't test undefined because retrieval returns the package.json configured default value, if there is one
     ]
+
+    it('isValid()', async () => {
+        // TODO: could avoid sinon if we can force vscode to use a dummy settings.json file.
+        const fake = {
+            get: async () => {
+                return 'setting-value'
+            },
+            update: async () => {
+                throw Error()
+            },
+        } as unknown as vscode.WorkspaceConfiguration
+        sinon.stub(vscode.workspace, 'getConfiguration').returns(fake)
+
+        assert.deepStrictEqual(await sut.isValid(), 'invalid')
+
+        fake.update = async () => {
+            throw Error('EACCES')
+        }
+        assert.deepStrictEqual(await sut.isValid(), 'nowrite')
+
+        fake.update = async () => {
+            throw Error('xxx the file has unsaved changes xxx')
+        }
+        assert.deepStrictEqual(await sut.isValid(), 'nowrite')
+    })
 
     describe('get', function () {
         let settings: vscode.WorkspaceConfiguration
@@ -279,6 +310,44 @@ describe('DevSetting', function () {
             await settings.update('aws.dev.forceDevMode', false)
             await settings.update(`aws.dev.${testSetting}`, true).then(() => sut.get(testSetting, false))
             assert.strictEqual(sut.isDevMode(), false)
+        })
+    })
+
+    describe('getCodeCatalystConfig()', function () {
+        const devSettingName = 'aws.dev.codecatalystService'
+        const defaultConfig = {
+            region: 'default',
+            endpoint: 'default',
+            hostname: 'default',
+            gitHostname: 'default',
+        }
+
+        it('throws an error for incomplete dev configuration', async function () {
+            const testSetting = {
+                // missing region
+                endpoint: 'test_endpoint',
+                hostname: 'test_hostname',
+                gitHostname: 'test_githostname',
+            }
+
+            await settings.update(devSettingName, testSetting)
+            assert.throws(() => sut.getCodeCatalystConfig(defaultConfig), ToolkitError)
+        })
+
+        it('returns dev settings configuration when provided', async function () {
+            const testSetting = {
+                region: 'test_region',
+                endpoint: 'test_endpoint',
+                hostname: 'test_hostname',
+                gitHostname: 'test_githostname',
+            }
+
+            await settings.update(devSettingName, testSetting)
+            assert.deepStrictEqual(sut.getCodeCatalystConfig(defaultConfig), testSetting)
+        })
+
+        it('returns default configuration when dev settings are not provided', function () {
+            assert.deepStrictEqual(sut.getCodeCatalystConfig(defaultConfig), defaultConfig)
         })
     })
 })

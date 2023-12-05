@@ -12,7 +12,6 @@ import { RecommendationHandler } from '../service/recommendationHandler'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { AuthUtil } from '../util/authUtil'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { ClassifierTrigger } from '../service/classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
 import { session } from '../util/codeWhispererSession'
@@ -58,6 +57,12 @@ export async function invokeRecommendation(
     }
 
     if (isCloud9('any')) {
+        // C9 manual trigger key alt/option + C is ALWAYS enabled because the VSC version C9 is on doesn't support setContextKey which is used for CODEWHISPERER_ENABLED
+        // therefore we need a connection check if there is ANY connection(regardless of the connection's state) connected to CodeWhisperer on C9
+        if (!AuthUtil.instance.isConnected()) {
+            return
+        }
+
         if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
             return
         }
@@ -100,7 +105,6 @@ export async function invokeRecommendation(
             RecommendationHandler.instance.isGenerateRecommendationInProgress = false
         }
     } else if (isInlineCompletionEnabled()) {
-        TelemetryHelper.instance.setInvokeSuggestionStartTime()
         ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
         await InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
     }

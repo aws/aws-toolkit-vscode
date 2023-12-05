@@ -10,7 +10,7 @@ import {
 } from '../../shared/telemetry/telemetry.gen'
 import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
-import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
+import { CodeWhispererSupplementalContext } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 

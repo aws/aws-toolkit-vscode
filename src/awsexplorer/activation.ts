@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
@@ -22,15 +21,21 @@ import { AwsExplorer } from './awsExplorer'
 import { copyTextCommand } from './commands/copyText'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
-import { createLocalExplorerView } from './localExplorer'
+import { createToolView, ToolView } from './toolView'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
-import { CodeWhispererNode, codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
+import { cdkNode, CdkRootNode, refreshCdkExplorer } from '../cdk/explorer/rootNode'
+import {
+    CodeWhispererNode,
+    getCodewhispererNode,
+    refreshCodeWhisperer,
+    refreshCodeWhispererRootNode,
+} from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
-import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { amazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQNode'
+import { submitFeedback } from '../feedback/vue/submitFeedback'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -76,29 +81,69 @@ export async function activate(args: {
     )
 
     const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
-    const codecatalystNode = isCloud9('classic') || isSageMaker() ? [] : [new CodeCatalystRootNode(authProvider)]
-    const nodes = [...codecatalystNode, cdkNode, codewhispererNode]
-    const developerTools = createLocalExplorerView(nodes)
-    args.context.extensionContext.subscriptions.push(developerTools)
+    const codecatalystViewNode: ToolView[] = []
+    let codecatalystNode: CodeCatalystRootNode | undefined
 
-    // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
-    developerTools.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
+    const shouldShowCodeCatalyst = !(isCloud9('classic') || isSageMaker())
+    if (shouldShowCodeCatalyst) {
+        codecatalystNode = new CodeCatalystRootNode(authProvider)
+        codecatalystViewNode.push({
+            nodes: [codecatalystNode],
+            view: 'aws.codecatalyst',
+            refreshCommands: [
+                provider => {
+                    codecatalystNode!.addRefreshEmitter(() => provider.refresh())
+                },
+            ],
+        })
+    }
+    // CodeCatalyst view may not be present. Wrap VS Code-owned command to avoid warning toasts if missing
+    args.context.extensionContext.subscriptions.push(
+        Commands.register(`aws.codecatalyst.maybeFocus`, async () => {
+            if (shouldShowCodeCatalyst) {
+                // vs code-owned command
+                await vscode.commands.executeCommand('aws.codecatalyst.focus')
+            }
+        })
+    )
 
-    // Legacy CDK metric, remove this when we add something generic
-    const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
-    const onDidExpandCodeWhisperer = once(() => telemetry.ui_click.emit({ elementId: 'cw_parentNode' }))
-    developerTools.onDidExpandElement(e => {
-        if (e.element.resource instanceof CdkRootNode) {
-            recordExpandCdkOnce()
-        } else if (e.element.resource instanceof CodeWhispererNode) {
-            onDidExpandCodeWhisperer()
+    const amazonQViewNode: ToolView[] = []
+    if (!isCloud9()) {
+        amazonQViewNode.push({
+            nodes: [amazonQNode],
+            view: 'aws.amazonq',
+            refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
+        })
+    }
+    const viewNodes: ToolView[] = [
+        ...amazonQViewNode,
+        ...codecatalystViewNode,
+        { nodes: [cdkNode], view: 'aws.cdk', refreshCommands: [refreshCdkExplorer] },
+        {
+            nodes: [getCodewhispererNode()],
+            view: 'aws.codewhisperer',
+            refreshCommands: [refreshCodeWhisperer, refreshCodeWhispererRootNode],
+        },
+    ]
+    for (const viewNode of viewNodes) {
+        const toolView = createToolView(viewNode)
+        args.context.extensionContext.subscriptions.push(toolView)
+        if (viewNode.view === 'aws.cdk') {
+            // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
+            toolView.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
         }
-    })
 
-    registerDeveloperToolsCommands(args.context.extensionContext, developerTools, {
-        codeCatalyst: codecatalystNode ? codecatalystNode[0] : undefined,
-        codeWhisperer: codewhispererNode,
-    })
+        toolView.onDidExpandElement(e => {
+            if (e.element.resource instanceof CdkRootNode) {
+                // Legacy CDK metric, remove this when we add something generic
+                const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
+                recordExpandCdkOnce()
+            } else if (e.element.resource instanceof CodeWhispererNode) {
+                const onDidExpandCodeWhisperer = once(() => telemetry.ui_click.emit({ elementId: 'cw_parentNode' }))
+                onDidExpandCodeWhisperer()
+            }
+        })
+    }
 }
 
 async function registerAwsExplorerCommands(
@@ -115,13 +160,7 @@ async function registerAwsExplorerCommands(
                 telemetry.vscode_activeRegions.emit({ value: awsExplorer.getRegionNodesSize() })
             }
         }),
-        Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async id => {
-            if (id === 'CodeWhisperer') {
-                await submitFeedback(context, 'CodeWhisperer')
-            } else {
-                await submitFeedback(context, 'AWS Toolkit')
-            }
-        }),
+        submitFeedback.register(context),
         Commands.register({ id: 'aws.refreshAwsExplorer', autoconnect: true }, async (passive: boolean = false) => {
             awsExplorer.refresh()
 
@@ -165,42 +204,4 @@ async function registerAwsExplorerCommands(
         }),
         loadMoreChildrenCommand.register(awsExplorer)
     )
-}
-
-async function registerDeveloperToolsCommands(
-    ctx: vscode.ExtensionContext,
-    developerTools: vscode.TreeView<TreeNode>,
-    nodes: {
-        codeWhisperer: CodeWhispererNode
-        codeCatalyst: CodeCatalystRootNode | undefined
-    }
-) {
-    /**
-     * Registers a vscode command which shows the
-     * node in the Developer Tools view.
-     *
-     * @param name name to use in the command
-     * @param node node to show
-     */
-    const registerShowDeveloperToolsNode = (name: string, node: TreeNode) => {
-        ctx.subscriptions.push(
-            Commands.register(`aws.developerTools.show${name}`, async () => {
-                if (!developerTools.visible) {
-                    /**
-                     * HACK: In the edge case where the Developer Tools view is
-                     * not yet rendered (openend by user), we will expand the
-                     * menu to trigger loading of the nodes
-                     */
-                    await vscode.commands.executeCommand('aws.developerTools.focus')
-                }
-                return developerTools.reveal(node, { expand: true, select: true, focus: true })
-            })
-        )
-    }
-
-    registerShowDeveloperToolsNode('CodeWhisperer', nodes.codeWhisperer)
-
-    if (nodes.codeCatalyst) {
-        registerShowDeveloperToolsNode('CodeCatalyst', nodes.codeCatalyst)
-    }
 }

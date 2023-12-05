@@ -6,16 +6,16 @@
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
 import { isValidResponse } from '../../shared/wizards/wizard'
-import { AuthUtil } from './authUtil'
+import { AuthUtil, amazonQScopes } from './authUtil'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { codewhispererScopes } from '../../auth/connection'
 import { createStartUrlPrompter, showRegionPrompter } from '../../auth/utils'
 import { Region } from '../../shared/regions/endpoints'
+import { Commands } from '../../shared/vscode/commands2'
 
 export const getStartUrl = async () => {
-    const inputBox = await createStartUrlPrompter('IAM Identity Center', codewhispererScopes)
+    const inputBox = await createStartUrlPrompter('IAM Identity Center', amazonQScopes)
     const userInput = await inputBox.prompt()
     if (!isValidResponse(userInput)) {
         telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
@@ -36,5 +36,6 @@ export async function connectToEnterpriseSso(startUrl: string, region: Region['i
         })
     }
     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    await Commands.tryExecute('aws.amazonq.refresh')
     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
 }

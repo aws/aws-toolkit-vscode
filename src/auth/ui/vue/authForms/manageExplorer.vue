@@ -1,26 +1,15 @@
 <template>
-    <div class="auth-form container-background border-common" id="explorer-form">
-        <div>
-            <FormTitle :isConnected="isConnected">{{ connectionName }}</FormTitle>
-            <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
-        </div>
-
-        <div v-if="isConnected" class="form-section">
-            <button v-on:click="showExplorer()">Open Resource Explorer</button>
-        </div>
+    <div class="auth-container">
+        <FormTitle v-if="isConnected">{{ connectionName }}</FormTitle>
     </div>
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
 import BaseAuthForm from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
-import { WebviewClientFactory } from '../../../../webviews/client'
-import { AuthWebview } from '../show'
 import { ExplorerIdentityCenterState } from './manageIdentityCenter.vue'
 import { CredentialsState } from './manageCredentials.vue'
 import { AuthFormId } from './types'
-
-const client = WebviewClientFactory.create<AuthWebview>()
 
 export type IdentityCenterStage = 'START' | 'WAITING_ON_USER' | 'CONNECTED'
 
@@ -58,10 +47,6 @@ export default defineComponent({
         this.emitAuthConnectionUpdated({ id: 'aggregateExplorer', isConnected: this.isConnected, cause: 'created' })
     },
     methods: {
-        showExplorer() {
-            client.showResourceExplorer()
-            client.emitUiClick('auth_openAWSExplorer')
-        },
         async updateConnectionName() {
             const currentConnection = await this.getCurrentConnection()
             if (currentConnection === undefined) {
@@ -85,9 +70,4 @@ export default defineComponent({
 <style>
 @import './sharedAuthForms.css';
 @import '../shared.css';
-
-#explorer-form {
-    width: 280px;
-    height: fit-content;
-}
 </style>
