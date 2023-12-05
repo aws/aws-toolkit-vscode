@@ -4,11 +4,11 @@
  */
 
 import assert from 'assert'
-import { FileContext } from '../../../codewhisperer/client/codewhisperer'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { createMockTextEditor, createMockClientRequest, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { PlatformLanguageId } from '../../../codewhisperer/models/constants'
 import { CodewhispererLanguage } from '../../../shared/telemetry/telemetry.gen'
+import { FileContext } from '../../../codewhisperer/models/model'
 
 describe('editorContext', function () {
     beforeEach(function () {
