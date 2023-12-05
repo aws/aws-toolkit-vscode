@@ -276,7 +276,8 @@ class CodeCatalystClientInternal {
                         }
                         resolve(defaultVal)
                     } else {
-                        reject(e)
+                        const err = e as AWS.AWSError
+                        reject(new ToolkitError(err.code, { cause: err }))
                     }
                     return
                 }
