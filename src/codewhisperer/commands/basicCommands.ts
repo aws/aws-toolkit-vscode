@@ -38,7 +38,6 @@ import {
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
 
-
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
     (suggestionState: CodeSuggestionsState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
