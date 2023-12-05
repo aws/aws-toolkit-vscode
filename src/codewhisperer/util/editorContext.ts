@@ -19,11 +19,11 @@ import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry'
 import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
-import { CodeWhispererSupplementalContext } from '../models/model'
+import { CodeWhispererSupplementalContext, FileContext } from '../models/model'
 
 let tabSize: number = getTabSizeSetting()
 
-export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codewhisperer.FileContext {
+export function extractContextForCodeWhisperer(editor: vscode.TextEditor): FileContext {
     const document = editor.document
     const curPos = editor.selection.active
     const offset = document.offsetAt(curPos)
@@ -273,7 +273,7 @@ function toProgrammingLanguage(
 }
 
 function toFileContext(
-    cwFileContext: codewhisperer.FileContext
+    cwFileContext: FileContext
 ): CodeWhispererClient.FileContext | CodeWhispererUserClient.FileContext {
     return {
         filename: cwFileContext.filename,

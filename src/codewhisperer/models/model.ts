@@ -15,6 +15,7 @@ import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
 import { autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
+import CodeWhispererUserClient from '../client/codewhispereruserclient'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -37,6 +38,10 @@ export const vsCodeState: VsCodeState = {
     isIntelliSenseActive: false,
     isCodeWhispererEditing: false,
     lastUserModificationTime: 0,
+}
+
+export type FileContext = Omit<CodeWhispererUserClient.FileContext, 'programmingLanguage'> & {
+    language: CodewhispererLanguage
 }
 
 export type UtgStrategy = 'ByName' | 'ByContent'
