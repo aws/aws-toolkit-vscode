@@ -5,8 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as codewhispererClient from '../client/codewhisperer'
-import * as CodeWhispererClient from '../client/codewhispererclient'
-import * as CodeWhispererUserClient from '../client/codewhispereruserclient'
 import * as path from 'path'
 import * as CodeWhispererConstants from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
@@ -245,17 +243,13 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
     getLogger().debug(logString)
 }
 
-function toProgrammingLanguage(
-    cwLanguage: CodewhispererLanguage
-): CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage {
+function toProgrammingLanguage(cwLanguage: CodewhispererLanguage): codewhispererClient.ProgrammingLanguage {
     return {
         languageName: cwLanguage,
     }
 }
 
-function toFileContext(
-    cwFileContext: FileContext
-): CodeWhispererClient.FileContext | CodeWhispererUserClient.FileContext {
+function toFileContext(cwFileContext: FileContext): codewhispererClient.FileContext {
     return {
         filename: cwFileContext.filename,
         programmingLanguage: toProgrammingLanguage(cwFileContext.programmingLanguage),
