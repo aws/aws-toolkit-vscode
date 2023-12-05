@@ -17,6 +17,7 @@ import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
+import fs from 'fs'
 
 export function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
@@ -179,4 +180,11 @@ export function createCodeActionContext(): vscode.CodeActionContext {
         only: vscode.CodeActionKind.Empty,
         triggerKind: vscode.CodeActionTriggerKind.Automatic,
     }
+}
+
+export function createMockDirentFile(fileName: string): fs.Dirent {
+    const dirent = new fs.Dirent()
+    dirent.isFile = () => true
+    dirent.name = fileName
+    return dirent
 }

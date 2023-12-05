@@ -55,6 +55,7 @@ export const DependencyGraphConstants = {
     ymlExt: '.yml',
     tfExt: '.tf',
     hclExt: '.hcl',
+    goExt: '.go',
 }
 
 export abstract class DependencyGraph {
