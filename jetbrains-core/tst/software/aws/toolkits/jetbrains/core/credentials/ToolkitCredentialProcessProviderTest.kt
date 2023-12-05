@@ -236,8 +236,8 @@ class ToolkitCredentialProcessProviderTest {
     }
 
     private fun stubParser(output: CredentialProcessOutput = CredentialProcessOutput("foo", "bar", null, null)) {
-        stub {
-            on { parser.parse(any()) }.thenReturn(output)
+        parser.stub {
+            on { parse(any()) }.thenReturn(output)
         }
     }
 
