@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ToolkitError } from '../shared/errors'
+import { ToolkitError } from '../../shared/errors'
 
 export class TransformByQUploadArchiveFailed extends ToolkitError {
     constructor() {

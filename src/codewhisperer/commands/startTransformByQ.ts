@@ -36,7 +36,7 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { ToolkitError } from '../../shared/errors'
-import { TransformByQUploadArchiveFailed } from '../../amazonqGumby/model'
+import { TransformByQUploadArchiveFailed } from '../../amazonqGumby/models/model'
 import { toJDKMetricValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 
 const localize = nls.loadMessageBundle()

@@ -22,7 +22,7 @@ import { CodeTransformPreValidationError, telemetry } from '../../shared/telemet
 import { ToolkitError } from '../../shared/errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
-import { TransformByQJavaProjectNotFound } from '../../amazonqGumby/model'
+import { TransformByQJavaProjectNotFound } from '../../amazonqGumby/models/model'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
 /* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
