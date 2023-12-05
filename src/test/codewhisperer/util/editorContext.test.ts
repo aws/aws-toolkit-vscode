@@ -45,7 +45,7 @@ describe('editorContext', function () {
             { editorLanguageId: 'shellscript', expectedFileContextLanguage: 'shell', filename: 'test.sh' },
         ]
 
-        it('shoudl return correct filecontext and language should be normalized', function () {
+        it('returns correct filecontext and language should be normalized', function () {
             testCases.forEach(testCase => {
                 assertFileContextCorrect(
                     testCase.editorLanguageId,
