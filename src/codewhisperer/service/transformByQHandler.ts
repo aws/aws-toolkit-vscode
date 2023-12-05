@@ -474,7 +474,7 @@ export async function getTransformationSteps(jobId: string) {
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
         })
-        // TODO, do we throw error here or ignore if we are polling?
+        throw e
     }
 }
 
