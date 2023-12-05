@@ -53,7 +53,7 @@ export async function downloadExportResultArchive(
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
         codeTransformJobId: transformByQState.getJobId(),
         codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-        codeTransformUploadZipSize: totalDownloadBytes,
+        codeTransformTotalByteSize: totalDownloadBytes,
         codeTransformRequestId: result.$metadata.requestId,
     })
 }

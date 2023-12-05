@@ -313,7 +313,8 @@ export class ProposedTransformationExplorer {
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     codeTransformRunTimeLatency: calculateTotalLatency(deserializeArchiveStartTime),
-                    codeTransformUploadZipSize: 0,
+                    // TODO: A nice to have would be getting the zip download size
+                    codeTransformTotalByteSize: 0,
                     codeTransformRuntimeError: deserializeErrorMessage,
                 })
             }

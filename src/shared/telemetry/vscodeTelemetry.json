@@ -315,9 +315,9 @@
             "description": "A string id for the api request that was fired."
         },
         {
-            "name": "codeTransformUploadZipSize",
+            "name": "codeTransformTotalByteSize",
             "type": "int",
-            "description": "An integer representing the byte size of the zip to upload to s3 bucket."
+            "description": "An integer representing the byte size of the upload or download."
         },
         {
             "name": "codeTransformUploadId",
@@ -1226,7 +1226,7 @@
             "description": "A timestamp for when the job is ending upload zip contents",
             "metadata": [
                 {
-                    "type": "codeTransformUploadZipSize",
+                    "type": "codeTransformTotalByteSize",
                     "required": true
                 },
                 {
@@ -1248,7 +1248,7 @@
                     "required": true
                 },
                 {
-                    "type": "codeTransformUploadZipSize",
+                    "type": "codeTransformTotalByteSize",
                     "required": true
                 },
                 {
@@ -1363,7 +1363,7 @@
                     "required": false
                 },
                 {
-                    "type": "codeTransformUploadZipSize",
+                    "type": "codeTransformTotalByteSize",
                     "required": false
                 }
             ]

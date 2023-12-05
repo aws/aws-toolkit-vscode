@@ -189,6 +189,8 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+            // TODO: A nice to have would be getting the zipUploadSize
+            codeTransformTotalByteSize: 0,
         })
         getLogger().info(`Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
@@ -383,7 +385,8 @@ export async function zipCode(modulePath: string) {
 
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-        codeTransformUploadZipSize: 0,
+        // TODO: A nice to have would be getting the zipUploadSize
+        codeTransformTotalByteSize: 0,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
     })
     return tempFilePath
