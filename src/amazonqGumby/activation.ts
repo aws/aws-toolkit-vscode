@@ -14,7 +14,7 @@ import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformationResultsViewProvider'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { CodeTransformCancelSrcComponents, telemetry } from '../shared/telemetry/telemetry'
-import { logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
+import { CancelActionPositions, logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
 import { CodeTransformConstants } from './models/constants'
 
 export async function activate(context: ExtContext) {
@@ -33,16 +33,13 @@ export async function activate(context: ExtContext) {
             await startTransformByQWithProgress()
         }),
 
-        Commands.register(
-            'aws.amazonq.stopTransformationInHub',
-            async (cancelSrc: CodeTransformCancelSrcComponents) => {
-                if (transformByQState.isRunning()) {
-                    confirmStopTransformByQ(transformByQState.getJobId(), cancelSrc)
-                } else {
-                    vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
-                }
+        Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
+            if (transformByQState.isRunning()) {
+                confirmStopTransformByQ(transformByQState.getJobId(), cancelSrc)
+            } else {
+                vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
             }
-        ),
+        }),
 
         Commands.register('aws.amazonq.showHistoryInHub', async () => {
             transformationHubViewProvider.updateContent('job history', 0) // 0 is dummy value for startTime - not used

@@ -32,7 +32,10 @@ import { FileSystemCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { showManageConnections } from '../../auth/ui/vue/show'
-import { logCodeTransformInitiatedMetric } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import {
+    CancelActionPositions,
+    logCodeTransformInitiatedMetric,
+} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -111,7 +114,7 @@ export const showTransformByQ = Commands.declare(
         } else if (transformByQState.isCancelled()) {
             vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
         } else if (transformByQState.isRunning()) {
-            await confirmStopTransformByQ(transformByQState.getJobId(), 'devToolsStopButton')
+            await confirmStopTransformByQ(transformByQState.getJobId(), CancelActionPositions.DevToolsSidePanel)
         }
         // emit telemetry if clicked from tree node
         if (source === CodeWhispererConstants.transformTreeNode) {
