@@ -21,7 +21,7 @@ export class RecommendationService {
         return (this.#instance ??= new RecommendationService())
     }
 
-    async generateRecommednation(
+    async generateRecommendation(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
         triggerType: CodewhispererTriggerType,

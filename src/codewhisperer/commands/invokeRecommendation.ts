@@ -52,5 +52,5 @@ export async function invokeRecommendation(
         )
     }
 
-    await RecommendationService.instance.generateRecommednation(client, editor, 'OnDemand', config, undefined)
+    await RecommendationService.instance.generateRecommendation(client, editor, 'OnDemand', config, undefined)
 }
