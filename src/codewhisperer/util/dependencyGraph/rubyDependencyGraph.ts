@@ -92,7 +92,7 @@ export class RubyDependencyGraph extends DependencyGraph {
                 break
         }
 
-        if (keyword && keyword !== undefined) {
+        if (keyword !== undefined) {
             const modulePathStr = importStr.substring(keyword.length).trim().replace(/\s+/g, '')
             modulePaths = this.getModulePath(modulePathStr)
         }
