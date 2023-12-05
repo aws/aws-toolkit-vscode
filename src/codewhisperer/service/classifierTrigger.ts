@@ -43,7 +43,7 @@ export class ClassifierTrigger {
         Enter: 0.2853,
     }
 
-    private languageCoefficientMap: Readonly<Record<CodewhispererLanguage, number>> = {
+    private languageCoefficientMap: Readonly<Record<string, number>> = {
         java: -0.4622,
         javascript: -0.4688,
         python: -0.3052,
@@ -60,8 +60,6 @@ export class ClassifierTrigger {
         go: -0.3504,
         scala: -0.534,
         cpp: -0.1734,
-        plaintext: 0,
-        c: 0,
     }
 
     // other metadata coefficient
