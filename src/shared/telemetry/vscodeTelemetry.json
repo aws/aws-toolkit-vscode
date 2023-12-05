@@ -855,56 +855,6 @@
                     "required": false
                 }
             ]
-        },
-        {
-            "name": "amazonq_codeTransformInvoke",
-            "description": "The user selects code transform on an open project",
-            "metadata": [
-                {
-                    "type": "codeTransformSessionId",
-                    "required": true
-                },
-                {
-                    "type": "codeTransformApiNames",
-                    "required": false
-                },
-                {
-                    "type": "codeTransformApiErrorMessage",
-                    "required": false
-                },
-                {
-                    "type": "codeTransformJobId",
-                    "required": false
-                },
-                {
-                    "type": "codeTransformProjectType",
-                    "required": false
-                },
-                {
-                    "type": "codeTransformJavaSourceVersionsAllowed",
-                    "required": false
-                },
-                {
-                    "type": "codeTransformJavaTargetVersionsAllowed",
-                    "required": false
-                },
-                {
-                    "type": "codeTransformResultStatusMessage",
-                    "required": false
-                },
-                {
-                    "type": "duration",
-                    "required": true
-                },
-                {
-                    "type": "result",
-                    "required": true
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                }
-            ]
         }
     ]
 }
