@@ -479,7 +479,7 @@ export class ClassifierTrigger {
             autoTriggerType,
             char,
             lineNum,
-            fileContext.language
+            fileContext.programmingLanguage
         )
 
         const threshold = this.getThreshold()

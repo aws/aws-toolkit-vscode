@@ -41,7 +41,7 @@ export const vsCodeState: VsCodeState = {
 }
 
 export type FileContext = Omit<CodeWhispererUserClient.FileContext, 'programmingLanguage'> & {
-    language: CodewhispererLanguage
+    programmingLanguage: CodewhispererLanguage
 }
 
 export type UtgStrategy = 'ByName' | 'ByContent'

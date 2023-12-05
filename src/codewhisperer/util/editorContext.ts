@@ -44,7 +44,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): FileC
     if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
         return {
             filename: getFileNameForRequest(editor),
-            language: 'plaintext',
+            programmingLanguage: 'plaintext',
             leftFileContent: caretLeftFileContext,
             rightFileContent: caretRightFileContext,
         }
@@ -53,7 +53,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): FileC
     if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
         return {
             filename: getFileNameForRequest(editor),
-            language: 'plaintext',
+            programmingLanguage: 'plaintext',
             leftFileContent: caretLeftFileContext,
             rightFileContent: caretRightFileContext,
         }
@@ -61,7 +61,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): FileC
 
     return {
         filename: getFileNameForRequest(editor),
-        language: runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? 'plaintext',
+        programmingLanguage: runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? 'plaintext',
         leftFileContent: caretLeftFileContext,
         rightFileContent: caretRightFileContext,
     }
@@ -258,7 +258,7 @@ function toFileContext(
 ): CodeWhispererClient.FileContext | CodeWhispererUserClient.FileContext {
     return {
         filename: cwFileContext.filename,
-        programmingLanguage: toProgrammingLanguage(cwFileContext.language),
+        programmingLanguage: toProgrammingLanguage(cwFileContext.programmingLanguage),
         leftFileContent: cwFileContext.leftFileContent,
         rightFileContent: cwFileContext.rightFileContent,
     }

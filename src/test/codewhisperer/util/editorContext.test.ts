@@ -34,7 +34,7 @@ describe('editorContext', function () {
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
             const expected: FileContext = {
                 filename: filename,
-                language: expectedFileContextLanguage,
+                programmingLanguage: expectedFileContextLanguage,
                 leftFileContent: 'foo\nbar',
                 rightFileContent: '\nbaz',
             }
