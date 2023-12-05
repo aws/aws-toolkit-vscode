@@ -31,13 +31,12 @@ import * as he from 'he'
 import {
     CodeTransformJavaSourceVersionsAllowed,
     CodeTransformJavaTargetVersionsAllowed,
-    CodeTransformCancelSrcComponents,
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { ToolkitError } from '../../shared/errors'
 import { TransformByQUploadArchiveFailed } from '../../amazonqGumby/models/model'
-import { toJDKMetricValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { CancelActionPositions, toJDKMetricValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -370,7 +369,7 @@ export function getPlanProgress() {
 
 export async function confirmStopTransformByQ(
     jobId: string,
-    cancelSrc: CodeTransformCancelSrcComponents = 'bottomPanelSideNavButton'
+    cancelSrc: CancelActionPositions = CancelActionPositions.BottomHubPanel
 ) {
     const resp = await vscode.window.showWarningMessage(
         CodeWhispererConstants.stopTransformByQMessage,
