@@ -10,7 +10,6 @@ import * as CodeWhispererUserClient from '../client/codewhispereruserclient'
 import * as path from 'path'
 import * as CodeWhispererConstants from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { fetchSupplementalContext } from './supplementalContext/supplementalContextUtil'
@@ -20,6 +19,7 @@ import { selectFrom } from '../../shared/utilities/tsUtils'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry'
 import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
 import { CodeWhispererSupplementalContext, FileContext } from '../models/model'
+import { getOptOutPreference } from './commonUtil'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -27,7 +27,6 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): FileC
     const document = editor.document
     const curPos = editor.selection.active
     const offset = document.offsetAt(curPos)
-    TelemetryHelper.instance.cursorOffset = offset
 
     const caretLeftFileContext = editor.document.getText(
         new vscode.Range(
@@ -91,7 +90,7 @@ export function getFileNameForRequest(editor: vscode.TextEditor): string {
 export async function buildListRecommendationRequest(
     editor: vscode.TextEditor,
     nextToken: string,
-    allowCodeWithReference: boolean | undefined = undefined
+    allowCodeWithReference: boolean
 ): Promise<{
     request: codewhisperer.ListRecommendationsRequest
     supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
@@ -125,25 +124,6 @@ export async function buildListRecommendationRequest(
           })
         : []
 
-    if (allowCodeWithReference === undefined) {
-        return {
-            request: {
-                fileContext: {
-                    filename: fileContext.filename,
-                    programmingLanguage: {
-                        languageName: fileContext.language,
-                    },
-                    leftFileContent: fileContext.leftFileContent,
-                    rightFileContent: fileContext.rightFileContent,
-                },
-                nextToken: nextToken,
-                supplementalContexts: supplementalContext,
-                customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
-            },
-            supplementalMetadata: supplementalMetadata,
-        }
-    }
-
     return {
         request: {
             fileContext: toFileContext(fileContext),
@@ -153,6 +133,7 @@ export async function buildListRecommendationRequest(
             },
             supplementalContexts: supplementalContext,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+            optOutPreference: getOptOutPreference(),
         },
         supplementalMetadata: supplementalMetadata,
     }
