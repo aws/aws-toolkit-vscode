@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as codewhisperer from '../client/codewhisperer'
+import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererClient from '../client/codewhispererclient'
 import * as CodeWhispererUserClient from '../client/codewhispereruserclient'
 import * as path from 'path'
@@ -92,7 +92,7 @@ export async function buildListRecommendationRequest(
     nextToken: string,
     allowCodeWithReference: boolean
 ): Promise<{
-    request: codewhisperer.ListRecommendationsRequest
+    request: codewhispererClient.ListRecommendationsRequest
     supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
@@ -118,7 +118,7 @@ export async function buildListRecommendationRequest(
     logSupplementalContext(supplementalContexts)
 
     const selectedCustomization = getSelectedCustomization()
-    const supplementalContext: codewhisperer.SupplementalContext[] = supplementalContexts
+    const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
         ? supplementalContexts.supplementalContextItems.map(v => {
               return selectFrom(v, 'content', 'filePath')
           })
@@ -140,7 +140,7 @@ export async function buildListRecommendationRequest(
 }
 
 export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
-    request: codewhisperer.GenerateRecommendationsRequest
+    request: codewhispererClient.GenerateRecommendationsRequest
     supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
@@ -175,7 +175,7 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
 }
 
 export function validateRequest(
-    req: codewhisperer.ListRecommendationsRequest | codewhisperer.GenerateRecommendationsRequest
+    req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
 ): boolean {
     const isLanguageNameValid = !(
         req.fileContext.programmingLanguage.languageName === undefined ||
