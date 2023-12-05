@@ -166,7 +166,7 @@ export class KeyStrokeHandler {
             return
         }
         // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
-        await RecommendationService.instance.generateRecommednation(
+        await RecommendationService.instance.generateRecommendation(
             client,
             editor,
             'AutoTrigger',
