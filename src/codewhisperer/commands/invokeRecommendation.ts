@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { vsCodeState, ConfigurationEntry, GetRecommendationsResponse } from '../models/model'
+import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { isCloud9 } from '../../shared/extensionUtilities'
