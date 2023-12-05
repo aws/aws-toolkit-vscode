@@ -37,7 +37,7 @@ import {
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { ToolkitError } from '../../shared/errors'
 import { TransformByQUploadArchiveFailed } from '../../amazonqGumby/model'
-import { CodeTransformTelemetry } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { toJDKMetricValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -145,10 +145,10 @@ export async function startTransformByQ() {
 
     telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-        codeTransformJavaSourceVersionsAllowed: CodeTransformTelemetry.toJDKMetricValue(
+        codeTransformJavaSourceVersionsAllowed: toJDKMetricValue(
             transformByQState.getSourceJDKVersion()
         ) as CodeTransformJavaSourceVersionsAllowed,
-        codeTransformJavaTargetVersionsAllowed: CodeTransformTelemetry.toJDKMetricValue(
+        codeTransformJavaTargetVersionsAllowed: toJDKMetricValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
         codeTransformConfigurationFilePath: '', // TODO: set or remove this
@@ -164,10 +164,10 @@ export async function startTransformByQ() {
     await vscode.commands.executeCommand('aws.amazonq.refresh')
     await telemetry.amazonq_codeTransformInvoke.run(async span => {
         span.record({
-            codeTransformJavaSourceVersionsAllowed: CodeTransformTelemetry.toJDKMetricValue(
+            codeTransformJavaSourceVersionsAllowed: toJDKMetricValue(
                 transformByQState.getSourceJDKVersion()
             ) as CodeTransformJavaSourceVersionsAllowed,
-            codeTransformJavaTargetVersionsAllowed: CodeTransformTelemetry.toJDKMetricValue(
+            codeTransformJavaTargetVersionsAllowed: toJDKMetricValue(
                 transformByQState.getTargetJDKVersion()
             ) as CodeTransformJavaTargetVersionsAllowed,
         })

@@ -32,7 +32,7 @@ import { FileSystemCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { showManageConnections } from '../../auth/ui/vue/show'
-import { CodeTransformTelemetry } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { logCodeTransformInitiatedMetric } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -106,7 +106,7 @@ export const showTransformByQ = Commands.declare(
         }
 
         if (transformByQState.isNotStarted()) {
-            CodeTransformTelemetry.logCodeTransformInitiatedMetric(source)
+            logCodeTransformInitiatedMetric(source)
             startTransformByQWithProgress()
         } else if (transformByQState.isCancelled()) {
             vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
