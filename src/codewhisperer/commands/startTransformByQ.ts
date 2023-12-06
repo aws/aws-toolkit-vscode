@@ -291,18 +291,12 @@ export async function startTransformByQ() {
             )
         }
         if (transformByQState.isSucceeded()) {
-            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompleted, { modal: true })
+            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompletedMessage, { modal: true })
         } else if (transformByQState.isPartiallySucceeded()) {
             vscode.window.showInformationMessage(CodeWhispererConstants.transformByQPartiallyCompletedMessage, {
                 modal: true,
             })
         }
-        await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
-        clearInterval(intervalId)
-        transformByQState.setToNotStarted() // so that the "Transform by Q" button resets
-        vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
-        await vscode.commands.executeCommand('aws.amazonq.refresh')
-        vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
     }
     await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
     clearInterval(intervalId)

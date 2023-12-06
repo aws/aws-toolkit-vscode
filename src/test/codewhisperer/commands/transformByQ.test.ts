@@ -21,6 +21,7 @@ import {
     stopJob,
     pollTransformationJob,
     validateProjectSelection,
+    getOpenProjects,
 } from '../../../codewhisperer/service/transformByQHandler'
 
 describe('transformByQ', function () {
@@ -113,6 +114,29 @@ describe('transformByQ', function () {
             {
                 name: 'Error',
                 message: 'No Java projects found',
+            }
+        )
+    })
+
+    it('WHEN getOpenProjects called on non-empty workspace THEN returns open projects', async function () {
+        sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .get(() => [{ uri: vscode.Uri.file('/user/test/project/'), name: 'TestProject', index: 0 }])
+
+        const openProjects = await getOpenProjects()
+        assert.strictEqual(openProjects[0].label, 'TestProject')
+    })
+
+    it('WHEN getOpenProjects called on empty workspace THEN throws error', async function () {
+        sinon.stub(vscode.workspace, 'workspaceFolders').get(() => undefined)
+
+        await assert.rejects(
+            async () => {
+                await getOpenProjects()
+            },
+            {
+                name: 'Error',
+                message: 'No Java projects found since no projects are open',
             }
         )
     })

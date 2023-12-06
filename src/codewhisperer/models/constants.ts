@@ -294,12 +294,14 @@ export const transformByQFailedMessage = 'Transformation failed'
 
 export const transformByQCancelledMessage = 'Transformation cancelled'
 
-export const transformByQCompleted = 'Transformation completed'
+export const transformByQCompletedMessage = 'Transformation completed'
 
 export const transformByQPartiallyCompletedMessage = 'Transformation partially completed'
 
 export const noPomXmlFoundMessage =
-    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations. Be sure to also build your project.'
+    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml in the root directory to identify build configurations. Be sure to also build your project.'
+
+export const noActiveIdCMessage = 'Transform by Q requires an active IAM Identity Center connection'
 
 export const noOngoingJobMessage = 'No job is in-progress at the moment'
 
