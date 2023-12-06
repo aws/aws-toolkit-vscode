@@ -148,6 +148,9 @@ export class AuthUtil {
                     memento.update(this.mementoKey, shouldShowObject)
                     await vscode.commands.executeCommand('aws.amazonq.welcome', placeholder, key)
                 }
+
+                // start the feature config polling job
+                vscode.commands.executeCommand('aws.codeWhisperer.fetchFeatureConfigs')
             }
             await this.setVscodeContextProps()
         })

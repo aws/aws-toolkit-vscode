@@ -32,6 +32,11 @@ import { FileSystemCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { showManageConnections } from '../../auth/ui/vue/show'
+import {
+    CancelActionPositions,
+    logCodeTransformInitiatedMetric,
+} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { FeatureConfigProvider } from '../service/featureConfigProvider'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -97,7 +102,6 @@ export const showSecurityScan = Commands.declare(
         }
 )
 
-export const transformTreeNode = 'qTreeNode'
 export const showTransformByQ = Commands.declare(
     { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
     (context: ExtContext) => async (source: string) => {
@@ -106,14 +110,15 @@ export const showTransformByQ = Commands.declare(
         }
 
         if (transformByQState.isNotStarted()) {
+            logCodeTransformInitiatedMetric(source)
             startTransformByQWithProgress()
         } else if (transformByQState.isCancelled()) {
             vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
         } else if (transformByQState.isRunning()) {
-            await confirmStopTransformByQ(transformByQState.getJobId())
+            await confirmStopTransformByQ(transformByQState.getJobId(), CancelActionPositions.DevToolsSidePanel)
         }
         // emit telemetry if clicked from tree node
-        if (source === transformTreeNode) {
+        if (source === CodeWhispererConstants.transformTreeNode) {
             telemetry.ui_click.emit({
                 elementId: 'amazonq_transform',
                 passive: false,
@@ -243,6 +248,13 @@ export const notifyNewCustomizationsCmd = Commands.declare(
     { id: 'aws.codeWhisperer.notifyNewCustomizations', logging: false },
     () => () => {
         notifyNewCustomizations().then()
+    }
+)
+
+export const fetchFeatureConfigsCmd = Commands.declare(
+    { id: 'aws.codeWhisperer.fetchFeatureConfigs', logging: false },
+    () => () => {
+        FeatureConfigProvider.instance.fetchFeatureConfigs()
     }
 )
 
