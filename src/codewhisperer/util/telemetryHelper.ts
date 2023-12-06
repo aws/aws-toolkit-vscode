@@ -68,7 +68,7 @@ export class TelemetryHelper {
         language: CodewhispererLanguage,
         taskType: CodewhispererGettingStartedTask | undefined,
         reason: string,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+        supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         const event = {
             codewhispererRequestId: requestId ? requestId : undefined,
@@ -100,7 +100,7 @@ export class TelemetryHelper {
         sessionId: string,
         paginationIndex: number,
         languageId: string,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+        supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         telemetry.codewhisperer_userDecision.emit({
