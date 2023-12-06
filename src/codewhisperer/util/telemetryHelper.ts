@@ -141,7 +141,7 @@ export class TelemetryHelper {
         paginationIndex: number,
         completionTypes: Map<number, CodewhispererCompletionType>,
         recommendationSuggestionState?: Map<number, string>,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+        supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         const events: CodewhispererUserDecision[] = []
         // emit user decision telemetry
@@ -214,7 +214,7 @@ export class TelemetryHelper {
         events: CodewhispererUserDecision[],
         requestId: string,
         sessionId: string,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+        supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         // the request level user decision will contain information from both the service_invocation event
         // and the user_decision events for recommendations within that request
@@ -250,7 +250,7 @@ export class TelemetryHelper {
         sessionId: string,
         acceptedRecommendationContent: string,
         referenceCount: number,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+        supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         // the user trigger decision will aggregate information from request level user decisions within one session
         // and add additional session level insights
