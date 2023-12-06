@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Normalize telemetry logging metrics for AmazonQ Transform"
+}

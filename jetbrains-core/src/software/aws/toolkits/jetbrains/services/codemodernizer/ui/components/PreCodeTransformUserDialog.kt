@@ -110,8 +110,6 @@ class PreCodeTransformUserDialog(
                 }
                 buildFileComboBox.addActionListener {
                     CodetransformTelemetry.configurationFileSelectedChanged(
-                        codeTransformConfigurationFilePath = buildFileComboBox.selectedItem?.toString() ?: buildfiles.firstOrNull()?.path
-                            ?: throw RuntimeException("Unable to get selected item"),
                         codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId()
                     )
                 }

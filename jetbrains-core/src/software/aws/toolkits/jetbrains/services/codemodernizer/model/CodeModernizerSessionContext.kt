@@ -18,6 +18,9 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
+import software.aws.toolkits.telemetry.CodeTransformMavenBuildCommand
+import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.io.File
 import java.io.IOException
 import java.nio.file.FileVisitOption
@@ -75,6 +78,11 @@ data class CodeModernizerSessionContext(
         val root = configurationFile.parent
         val sourceFolder = File(root.path)
         val depDirectory = runMavenCommand(sourceFolder)
+        if (depDirectory != null) {
+            CodetransformTelemetry.dependenciesCopied(
+                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+            )
+        }
         return runReadAction {
             try {
                 val directoriesToExclude = findDirectoriesToExclude(sourceFolder)
@@ -148,14 +156,31 @@ data class CodeModernizerSessionContext(
             val output = runCommand("./mvnw")
             if (output.exitCode != 0) {
                 LOG.error { "mvnw command output:\n$output" }
+                val error = "The exitCode should be 0 while it was ${output.exitCode}"
+                CodetransformTelemetry.mvnBuildFailed(
+                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+                    codeTransformMavenBuildCommand = CodeTransformMavenBuildCommand.Mvnw,
+                    reason = error
+                )
                 return null
             } else {
                 LOG.warn { "mvnw executed successfully" }
                 shouldTryMvnCommand = false
             }
         } catch (e: ProcessNotCreatedException) {
-            LOG.warn { "./mvnw failed to execute as its likely not a unix machine" }
+            val error = "./mvnw failed to execute as its likely not a unix machine"
+            CodetransformTelemetry.mvnBuildFailed(
+                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformMavenBuildCommand = CodeTransformMavenBuildCommand.Mvnw,
+                reason = error
+            )
+            LOG.warn { error }
         } catch (e: Exception) {
+            CodetransformTelemetry.mvnBuildFailed(
+                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformMavenBuildCommand = CodeTransformMavenBuildCommand.Mvnw,
+                reason = e.message
+            )
             when {
                 e.message?.contains("Cannot run program \"./mvnw\"") == true -> {} // noop
                 else -> throw e
@@ -169,14 +194,31 @@ data class CodeModernizerSessionContext(
                 val output = runCommand("mvn")
                 if (output.exitCode != 0) {
                     LOG.error { "Maven command output:\n$output" }
+                    val error = "The exitCode should be 0 while it was ${output.exitCode}"
+                    CodetransformTelemetry.mvnBuildFailed(
+                        codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+                        codeTransformMavenBuildCommand = CodeTransformMavenBuildCommand.Mvn,
+                        reason = error
+                    )
                     return null
                 } else {
                     LOG.warn { "Maven executed successfully" }
                 }
             } catch (e: ProcessNotCreatedException) {
-                LOG.warn { "Maven failed to execute as its likely not installed to the PATH" }
+                val error = "Maven failed to execute as its likely not installed to the PATH"
+                CodetransformTelemetry.mvnBuildFailed(
+                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+                    codeTransformMavenBuildCommand = CodeTransformMavenBuildCommand.Mvn,
+                    reason = error
+                )
+                LOG.warn { error }
                 return null
             } catch (e: Exception) {
+                CodetransformTelemetry.mvnBuildFailed(
+                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+                    codeTransformMavenBuildCommand = CodeTransformMavenBuildCommand.Mvn,
+                    reason = e.message
+                )
                 LOG.error(e) { e.message.toString() }
                 throw e
             }

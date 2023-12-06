@@ -89,7 +89,7 @@ class CodeModernizerSession(
                 is ZipCreationResult.Succeeded -> result.payload
             }
             CodetransformTelemetry.jobCreateZipEndTime(
-                codeTransformUploadZipSize = payload.length().toInt(),
+                codeTransformTotalByteSize = payload.length().toInt(),
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformRunTimeLatency = calculateTotalLatency(startTime, Instant.now())
             )
@@ -334,7 +334,7 @@ class CodeModernizerSession(
                 codeTransformApiNames = CodeTransformApiNames.UploadZip,
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformRunTimeLatency = calculateTotalLatency(uploadStartTime, Instant.now()),
-                codeTransformUploadZipSize = payload.length().toInt()
+                codeTransformTotalByteSize = payload.length().toInt()
             )
             LOG.warn { "Upload complete" }
         }

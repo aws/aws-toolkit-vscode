@@ -110,7 +110,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformRunTimeLatency = calculateTotalLatency(apiStartTime, apiEndTime),
                 codeTransformJobId = job.id,
-                codeTransformUploadZipSize = totalDownloadBytes
+                codeTransformTotalByteSize = totalDownloadBytes
             )
             LOG.warn { "Successfully converted the download to a zip at ${path.toAbsolutePath()}." }
             val zipPath = path.toAbsolutePath().toString()
@@ -133,7 +133,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
                     codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformRunTimeLatency = calculateTotalLatency(apiStartTime, apiEndTime),
                     codeTransformJobId = job.id,
-                    codeTransformUploadZipSize = totalDownloadBytes,
+                    codeTransformTotalByteSize = totalDownloadBytes,
                     codeTransformRuntimeError = telemetryErrorMessage
                 )
             }

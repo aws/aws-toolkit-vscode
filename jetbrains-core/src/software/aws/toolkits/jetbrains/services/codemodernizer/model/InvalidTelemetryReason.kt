@@ -3,4 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.codemodernizer.model
 
-data class InvalidTelemetryReason(val category: String = "Unknown", val additonalInfo: String = "")
+import software.aws.toolkits.telemetry.CodeTransformPreValidationError
+
+data class InvalidTelemetryReason(val category: CodeTransformPreValidationError? = CodeTransformPreValidationError.Unknown, val additonalInfo: String = "")
