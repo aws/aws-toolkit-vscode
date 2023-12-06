@@ -335,6 +335,15 @@ See [docs/cfn-schema-support.md](./docs/cfn-schema-support.md) for how to fix
 and improve the JSON schema that provides auto-completion and syntax checking
 of SAM and CloudFormation `template.yaml` files.
 
+### Custom Lint Rules
+
+The package.json 'devDependencies' includes `eslint-plugin-aws-toolkits`. This is a local eslint plugin where we define custom lint rules. Additional lint rules and tests for lint rules can be added to this plugin:
+
+1. Define a new rule in `plugins/eslint-plugin-aws-toolkits/lib/rules`.
+2. Create a test for your rule in `plugins/eslint-plugin-aws-toolkits/test/rules` and run with `npm run test` in the root directory of `eslint-plugin-aws-toolkits`.
+3. Register your rule in `plugins/eslint-plugin-aws-toolkits/index.ts`.
+4. Enable your rule in `.eslintrc`.
+
 ### AWS SDK generator
 
 When the AWS SDK does not (yet) support a service but you have an API
@@ -442,15 +451,6 @@ If you are contribuing visual assets from other open source repos, the source re
     ```
 
 1. Add an entry [here](docs/icons.md#third-party) summarizing the new destination location, where the assets were sourced from, and a brief rationale.
-
-### Custom Lint Rules
-
-The package.json 'devDependencies' includes `eslint-plugin-aws-local`. This is a local eslint plugin where we define custom lint rules. Additional lint rules and tests for lint rules can be added to this plugin:
-
-1. Define a new rule in `plugins/eslint-plugin-aws-local/lib/rules`.
-2. Create a test for your rule in `plugins/eslint-plugin-aws-local/test/rules` and run with `npm run test` in the root directory of `eslint-plugin-aws-local`.
-3. Register your rule in `plugins/eslint-plugin-aws-local/index.ts`.
-4. Enable your rule in `.eslintrc`.
 
 ## Using new vscode APIs
 

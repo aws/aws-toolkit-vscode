@@ -16,22 +16,22 @@ getRuleTester().run('no-only-in-tests', rules['no-only-in-tests'], {
 
     invalid: [
         {
-            code:  "describe.only('mySuite', function () { it('does things', async function () {} ) })",
+            code: "describe.only('mySuite', function () { it('does things', async function () {} ) })",
             errors: [describeOnlyErrMsg],
             output: "describe('mySuite', function () { it('does things', async function () {} ) })",
         },
         {
-            code:  "describe('mySuite', function() { it.only('does things', async function () { console.log('did things') })})",
+            code: "describe('mySuite', function() { it.only('does things', async function () { console.log('did things') })})",
             errors: [itOnlyErrMsg],
             output: "describe('mySuite', function() { it('does things', async function () { console.log('did things') })})",
         },
         {
-            code:  "describe.only('mySuite', function() { it.only('does things', async function () { console.log('did things') })})",
+            code: "describe.only('mySuite', function() { it.only('does things', async function () { console.log('did things') })})",
             errors: [describeOnlyErrMsg, itOnlyErrMsg],
             output: "describe('mySuite', function() { it('does things', async function () { console.log('did things') })})",
         },
         {
-            code:  "it.only('does things', async function () { console.log('did things') })",
+            code: "it.only('does things', async function () { console.log('did things') })",
             errors: [itOnlyErrMsg],
             output: "it('does things', async function () { console.log('did things') })",
         },

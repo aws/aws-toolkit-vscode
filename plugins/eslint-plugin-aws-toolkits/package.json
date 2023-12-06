@@ -1,5 +1,5 @@
 {
-    "name": "eslint-plugin-aws-local",
+    "name": "eslint-plugin-aws-toolkits",
     "version": "1.0.0",
     "description": "Local custom lint rules for AWS Toolkit VSCode",
     "main": "dist/index.js",

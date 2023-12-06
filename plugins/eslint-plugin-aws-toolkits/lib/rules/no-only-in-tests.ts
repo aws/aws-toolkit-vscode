@@ -9,11 +9,12 @@ import { CallExpression, Identifier, MemberExpression } from '@typescript-eslint
 import { Rule } from 'eslint'
 
 function isValidExpression(node: CallExpression): MemberExpression | undefined {
-    const isValid = node.callee.type === AST_NODE_TYPES.MemberExpression
-        && node.callee.object.type === AST_NODE_TYPES.Identifier
-        && node.callee.property.type === AST_NODE_TYPES.Identifier
+    const isValid =
+        node.callee.type === AST_NODE_TYPES.MemberExpression &&
+        node.callee.object.type === AST_NODE_TYPES.Identifier &&
+        node.callee.property.type === AST_NODE_TYPES.Identifier
 
-    return isValid ? node.callee as MemberExpression : undefined
+    return isValid ? (node.callee as MemberExpression) : undefined
 }
 
 export const describeOnlyErrMsg = 'mocha test `.only()` not allowed for `describe`'
@@ -22,7 +23,7 @@ export const itOnlyErrMsg = 'mocha test `.only()` not allowed for `it`'
 export default ESLintUtils.RuleCreator.withoutDocs({
     meta: {
         docs: {
-            description: 'disallow mocha\'s only() from being published in test code',
+            description: "disallow mocha's only() from being published in test code",
             recommended: 'error',
         },
         messages: {
@@ -30,7 +31,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
             itOnlyErrMsg,
         },
         type: 'problem',
-        fixable: "code",
+        fixable: 'code',
         schema: [],
     },
     defaultOptions: [],
@@ -52,10 +53,10 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                     return context.report({
                         node: node.callee,
                         messageId: `${object.name}OnlyErrMsg`,
-                        fix: (fixer) => {
+                        fix: fixer => {
                             // Range - 1 removes the period in `it.only()`
                             return fixer.removeRange([property.range[0] - 1, property.range[1]])
-                        }
+                        },
                     })
                 }
             },

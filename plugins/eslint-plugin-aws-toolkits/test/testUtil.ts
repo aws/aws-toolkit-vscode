@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { RuleTester } from "eslint";
+import { RuleTester } from 'eslint'
 
 export function getRuleTester() {
     return new RuleTester({
@@ -12,7 +12,7 @@ export function getRuleTester() {
         parserOptions: {
             project: './tsconfig.json',
             tsconfigRootDir: __dirname,
-            ecmaVersion: 2021
+            ecmaVersion: 2021,
         },
-    });
+    })
 }
