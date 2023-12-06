@@ -312,15 +312,6 @@ export const applySecurityFix = Commands.declare(
     }
 )
 
-/**
- * Forces focus to Amazon Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
- * Used on first load, and any time we want to directly populate chat.
- */
-export async function focusAmazonQPanel(): Promise<void> {
-    // VS Code-owned command: "View: Show Amazon Q"
-    await vscode.commands.executeCommand('workbench.view.extension.amazonq')
-}
-
 export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.codewhisperer.signout', compositeKey: { 1: 'source' } },
     (auth: AuthUtil) => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
