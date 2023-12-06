@@ -8,6 +8,8 @@ import {
     CodewhispererLanguage,
     CodewhispererGettingStartedTask,
     CodewhispererSuggestionState,
+    CodewhispererAutomatedTriggerType,
+    CodewhispererTriggerType,
 } from '../../shared/telemetry/telemetry.gen'
 import { GenerateRecommendationsRequest, ListRecommendationsRequest } from '../client/codewhisperer'
 import { Position } from 'vscode'
@@ -23,13 +25,17 @@ class CodeWhispererSession {
     sessionId = ''
     requestIdList: string[] = []
     startPos = new Position(0, 0)
+    startCursorOffset = 0
     leftContextOfCurrentLine = ''
     requestContext: {
         request: ListRecommendationsRequest | GenerateRecommendationsRequest
         supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     } = { request: {} as any, supplementalMetadata: {} as any }
-    language: CodewhispererLanguage = 'java'
+    language: CodewhispererLanguage = 'python'
     taskType: CodewhispererGettingStartedTask | undefined
+    triggerType: CodewhispererTriggerType = 'OnDemand'
+    autoTriggerType: CodewhispererAutomatedTriggerType | undefined
+
     // Various states of recommendations
     recommendations: CompletionRecommendation[] = []
 
@@ -64,6 +70,18 @@ class CodeWhispererSession {
 
     getCompletionType(index: number): CodewhispererCompletionType {
         return this.recommendations[index].completionType
+    }
+
+    reset() {
+        this.sessionId = ''
+        this.requestContext = { request: {} as any, supplementalMetadata: {} as any }
+        this.requestIdList = []
+        this.startPos = new Position(0, 0)
+        this.startCursorOffset = 0
+        this.leftContextOfCurrentLine = ''
+        this.language = 'python'
+        this.triggerType = 'OnDemand'
+        this.recommendations = []
     }
 }
 

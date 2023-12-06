@@ -114,7 +114,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                     truncatedSuggestion,
                     this.requestId,
                     session.sessionId,
-                    TelemetryHelper.instance.triggerType,
+                    session.triggerType,
                     session.getCompletionType(index),
                     runtimeLanguageContext.getLanguageContext(document.languageId).language,
                     r.references,

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Event as VSCodeEvent } from 'vscode'
+import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { Messenger, StaticTextResponseType } from './messenger/messenger'
@@ -45,8 +45,8 @@ import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
-import { ExternalBrowserUtils } from '../../../amazonq/commons/externalBrowser/externalBrowserUtils'
 import { processTransformByQ } from '../../../amazonqGumby/entrypoint'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -191,7 +191,7 @@ export class ChatController {
         click: ResponseBodyLinkClickMessage | SourceLinkClickMessage | FooterInfoLinkClick
     ) {
         this.telemetryHelper.recordInteractWithMessage(click)
-        ExternalBrowserUtils.instance.openLink(click.link)
+        openUrl(Uri.parse(click.link))
     }
 
     private processResponseBodyLinkClick(click: ResponseBodyLinkClickMessage) {

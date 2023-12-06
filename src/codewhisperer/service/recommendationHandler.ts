@@ -66,6 +66,7 @@ const lock = new AsyncLock({ maxPending: 1 })
 
 export class RecommendationHandler {
     public lastInvocationTime: number
+    // TODO: remove this requestId
     public requestId: string
     private nextToken: string
     private cancellationToken: vscode.CancellationTokenSource
@@ -191,9 +192,9 @@ export class RecommendationHandler {
             } else {
                 session.requestContext = {
                     request: {
-                        fileContext: session.requestContext.request.fileContext,
+                        ...session.requestContext.request,
+                        // Putting nextToken assignment in the end so it overwrites the existing nextToken
                         nextToken: this.nextToken,
-                        supplementalContexts: session.requestContext.request.supplementalContexts,
                     },
                     supplementalMetadata: session.requestContext.supplementalMetadata,
                 }
@@ -206,7 +207,10 @@ export class RecommendationHandler {
         // set start pos for non pagination call or first pagination call
         if (!pagination || (pagination && page === 0)) {
             session.startPos = editor.selection.active
+            session.startCursorOffset = editor.document.offsetAt(session.startPos)
             session.leftContextOfCurrentLine = EditorContext.getLeftContext(editor, session.startPos.line)
+            session.triggerType = triggerType
+            session.autoTriggerType = autoTriggerType
 
             /**
              * Validate request
@@ -247,7 +251,6 @@ export class RecommendationHandler {
                 recommendations = (resp && resp.completions) || []
             }
             invocationResult = 'Succeeded'
-            TelemetryHelper.instance.triggerType = triggerType
             requestId = resp?.$response && resp?.$response?.requestId
             nextToken = resp?.nextToken ? resp?.nextToken : ''
             sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
@@ -342,11 +345,8 @@ export class RecommendationHandler {
                     requestId,
                     sessionId,
                     session.recommendations.length + recommendations.length - 1,
-                    triggerType,
-                    autoTriggerType,
                     invocationResult,
                     latency,
-                    session.startPos.line,
                     session.language,
                     session.taskType,
                     reason,
@@ -687,7 +687,7 @@ export class RecommendationHandler {
             telemetry.codewhisperer_perceivedLatency.emit({
                 codewhispererRequestId: this.requestId,
                 codewhispererSessionId: session.sessionId,
-                codewhispererTriggerType: TelemetryHelper.instance.triggerType,
+                codewhispererTriggerType: session.triggerType,
                 codewhispererCompletionType: session.getCompletionType(0),
                 codewhispererLanguage: languageContext.language,
                 duration: performance.now() - this.lastInvocationTime,

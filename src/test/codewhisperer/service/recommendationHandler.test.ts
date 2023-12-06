@@ -10,7 +10,6 @@ import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewh
 import { assertTelemetryCurried } from '../../testUtil'
 import { ConfigurationEntry, CompletionRecommendation } from '../../../codewhisperer/models/model'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
-import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { stub } from '../../utilities/stubber'
 import { CodeWhispererCodeCoverageTracker } from '../../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
@@ -110,7 +109,7 @@ describe('recommendationHandler', function () {
             await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
             assert.strictEqual(handler.requestId, 'test_request')
             assert.strictEqual(session.sessionId, 'test_request')
-            assert.strictEqual(TelemetryHelper.instance.triggerType, 'AutoTrigger')
+            assert.strictEqual(session.triggerType, 'AutoTrigger')
         })
 
         it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
@@ -142,7 +141,7 @@ describe('recommendationHandler', function () {
             })
             sinon.stub(performance, 'now').returns(0.0)
             session.startPos = new vscode.Position(1, 0)
-            TelemetryHelper.instance.cursorOffset = 2
+            session.startCursorOffset = 2
             await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
             const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
             assertTelemetry({
@@ -188,7 +187,7 @@ describe('recommendationHandler', function () {
             sinon.stub(performance, 'now').returns(0.0)
             session.startPos = new vscode.Position(1, 0)
             session.requestIdList = ['test_request_empty']
-            TelemetryHelper.instance.cursorOffset = 2
+            session.startCursorOffset = 2
             await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             assertTelemetry({

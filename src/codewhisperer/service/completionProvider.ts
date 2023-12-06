@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { LicenseUtil } from '../util/licenseUtil'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { RecommendationHandler } from './recommendationHandler'
 import { session } from '../util/codeWhispererSession'
 import { CompletionRecommendation } from '../models/model'
@@ -60,7 +59,7 @@ export function getCompletionItem(
             recommendation,
             RecommendationHandler.instance.requestId,
             session.sessionId,
-            TelemetryHelper.instance.triggerType,
+            session.triggerType,
             recommendationDetail.completionType,
             languageContext.language,
             references,
