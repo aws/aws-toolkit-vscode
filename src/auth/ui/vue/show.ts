@@ -181,7 +181,7 @@ export class AuthWebview extends VueWebview {
     }
 
     async showAmazonQChat(): Promise<void> {
-        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+        focusAmazonQPanel()
     }
 
     async getIdentityCenterRegion(): Promise<Region | undefined> {
@@ -842,4 +842,12 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
 
         return result
     }
+}
+
+/**
+ * Forces focus to Amazon Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
+ * Used on first load, and any time we want to directly populate chat.
+ */
+export async function focusAmazonQPanel(): Promise<void> {
+    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
 }
