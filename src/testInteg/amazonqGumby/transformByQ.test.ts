@@ -19,15 +19,16 @@ describe('transformByQ', function () {
     let zippedCodePath = ''
 
     beforeEach(async function () {
-        tempDir = os.tmpdir()
-        tempFileName = `testfile-=${Date.now()}.txt`
+        tempDir = path.join(os.tmpdir(), 'gumby-test')
+        fs.mkdirSync(tempDir)
+        tempFileName = `testfile-${Date.now()}.txt`
         tempFilePath = path.join(tempDir, tempFileName)
         fs.writeFileSync(tempFilePath, 'sample content for the test file')
         zippedCodePath = await zipCode(tempDir)
     })
 
     afterEach(function () {
-        fs.rmSync(tempFilePath, { force: true })
+        fs.rmSync(tempDir, { recursive: true, force: true })
     })
 
     it('WHEN upload payload with valid request THEN succeeds', async function () {
@@ -44,15 +45,17 @@ describe('transformByQ', function () {
             uploadIntent: CodeWhispererConstants.uploadIntent,
         })
         await sleep(65000) // sleep for 65 seconds since the upload URL expires after 60 seconds
-        const uploadStatusCode = await uploadArtifactToS3(zippedCodePath, createUploadUrlResponse)
-        assert.notStrictEqual(uploadStatusCode, 200)
+        await assert.rejects(async () => {
+            await uploadArtifactToS3(zippedCodePath, createUploadUrlResponse)
+        })
     })
 
     it('WHEN upload artifact to S3 with unsigned upload URL THEN fails to upload', async function () {
-        const uploadStatusCode = await uploadArtifactToS3(zippedCodePath, {
-            uploadId: 'dummyId',
-            uploadUrl: 'https://aws-transform-artifacts-us-east-1.s3.amazonaws.com',
+        await assert.rejects(async () => {
+            await uploadArtifactToS3(zippedCodePath, {
+                uploadId: 'dummyId',
+                uploadUrl: 'https://aws-transform-artifacts-us-east-1.s3.amazonaws.com',
+            })
         })
-        assert.notStrictEqual(uploadStatusCode, 200)
     })
 })

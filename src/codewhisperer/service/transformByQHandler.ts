@@ -190,7 +190,6 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             codeTransformTotalByteSize: 0,
         })
         getLogger().info(`Status from S3 Upload = ${response.status}`)
-        return response.status
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in S3 UploadZip API call'
         telemetry.codeTransform_logApiError.emit({
@@ -253,19 +252,7 @@ export async function uploadPayload(payloadFileName: string) {
             codeTransformUploadId: response.uploadId,
             codeTransformRequestId: response.$response.requestId,
         })
-        const uploadStatusCode = await uploadArtifactToS3(payloadFileName, response)
-        if (uploadStatusCode !== 200) {
-            // QUESTION: should I instead be checking for any 2XX code?
-            const errorMessage = 'Error in CreateUploadUrl API call'
-            telemetry.codeTransform_logApiError.emit({
-                codeTransformApiNames: 'CreateUploadUrl',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformApiErrorMessage: errorMessage,
-                codeTransformRequestId: response.$response.requestId,
-            })
-            // Pass along error to callee function
-            throw new ToolkitError(errorMessage)
-        }
+        await uploadArtifactToS3(payloadFileName, response)
         return response.uploadId
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in CreateUploadUrl API call'
