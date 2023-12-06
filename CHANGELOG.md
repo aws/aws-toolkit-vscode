@@ -1,3 +1,11 @@
+## 2.2.0 2023-12-06
+
+- **Breaking Change** validate that pom.xml is in root directory of project, not anywhere in project
+- **Bug Fix** AWS Toolkit submenus appear in other extension views #4111
+- **Bug Fix** CodeCatalyst: "No handler found" error may occur when opening `vscode://` URI #4105
+- **Bug Fix** CodeWhisperer: Security scans for Java no longer require build artifacts
+- **Bug Fix** Amazon Q: Input prompt gets wrapped to new line which avoids focusing
+
 ## 2.1.0 2023-11-30
 
 - **Feature** Use MDE endpoint set by environment variable
