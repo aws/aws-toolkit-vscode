@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CodeCatalyst: \"No handler found\" error may occur when opening `vscode://` URI #4105"
-}
