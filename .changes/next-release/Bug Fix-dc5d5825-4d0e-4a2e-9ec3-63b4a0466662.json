@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q: Input prompt gets wrapped to new line which avoids focusing"
+}

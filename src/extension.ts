@@ -138,6 +138,9 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
+        // Create this now, but don't call vscode.window.registerUriHandler() until after all
+        // Toolkit services have a chance to register their path handlers. #4105
+        globals.uriHandler = new UriHandler()
 
         const settings = Settings.instance
         const experiments = Experiments.instance
@@ -155,18 +158,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await globals.schemaService.start()
         awsFiletypes.activate()
-
-        globals.uriHandler = new UriHandler()
-        context.subscriptions.push(
-            vscode.window.registerUriHandler({
-                handleUri: uri =>
-                    telemetry.runRoot(() => {
-                        telemetry.record({ source: 'UriHandler' })
-
-                        return globals.uriHandler.handleUri(uri)
-                    }),
-            })
-        )
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -272,6 +263,17 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
         await activateRedshift(extContext)
+
+        context.subscriptions.push(
+            vscode.window.registerUriHandler({
+                handleUri: uri =>
+                    telemetry.runRoot(() => {
+                        telemetry.record({ source: 'UriHandler' })
+
+                        return globals.uriHandler.handleUri(uri)
+                    }),
+            })
+        )
 
         showWelcomeMessage(context)
 

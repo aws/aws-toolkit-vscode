@@ -41,6 +41,7 @@
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
         "onStartupFinished",
+        "onUri",
         "onDebugResolve:aws-sam",
         "onView:aws.codeWhisperer.securityPanel",
         "onDebugInitialConfigurations",
@@ -1407,12 +1408,12 @@
                 },
                 {
                     "submenu": "aws.submenu.feedback",
-                    "when": "view != aws.AmazonQChatView",
+                    "when": "view =~ /^aws\\./ && view != aws.AmazonQChatView",
                     "group": "y_toolkitMeta@1"
                 },
                 {
                     "submenu": "aws.submenu.help",
-                    "when": "view != aws.AmazonQChatView",
+                    "when": "view =~ /^aws\\./ && view != aws.AmazonQChatView",
                     "group": "y_toolkitMeta@2"
                 },
                 {
@@ -4261,7 +4262,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.168",
+        "@aws-toolkits/telemetry": "^1.0.169",
         "@aws/fully-qualified-names": "^2.1.1",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
@@ -4352,7 +4353,7 @@
         "@aws-sdk/shared-ini-file-loader": "^3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@3.2.9",
+        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@3.2.10",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@vscode/debugprotocol": "^1.57.0",
