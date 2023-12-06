@@ -473,8 +473,8 @@ class SetupAuthenticationDialog(
         }
 
         row(message("gettingstarted.setup.iam.secret_key")) {
-            textField()
-                .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
+            passwordField()
+                .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.password.isEmpty() }
                 .bindText(state.iamTabState::secretKey)
         }
     }

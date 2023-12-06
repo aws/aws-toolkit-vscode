@@ -836,6 +836,7 @@ class GettingStartedPanel(
                             row {
                                 link(message("toolkit.login.aws_builder_id.already_connected.reconnect")) {
                                     val validConnection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER)
+
                                     val connection = validConnection.activeConnectionBearer
                                     if (connection is ProfileSsoManagedBearerSsoConnection) {
                                         if (validConnection.connectionType == ActiveConnectionType.IAM_IDC) {
@@ -847,6 +848,8 @@ class GettingStartedPanel(
                                                 deleteSsoConnectionCW(connection)
                                             }
                                         }
+                                    }
+                                    if (connection != null) {
                                         logoutFromSsoConnection(project, connection) {
                                             controlPanelVisibility(panelConnected, panelNotConnected)
                                         }
