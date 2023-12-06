@@ -110,7 +110,7 @@ export class KeyStrokeHandler {
                 }
             }
 
-            const { rightFileContent } = extractContextForCodeWhisperer(editor)
+            const { rightFileContent } = extractContextForCodeWhisperer(editor).fileContext
             const rightContextLines = rightFileContent.split(/\r?\n/)
             const rightContextAtCurrentLine = rightContextLines[0]
             // we do not want to trigger when there is immediate right context on the same line

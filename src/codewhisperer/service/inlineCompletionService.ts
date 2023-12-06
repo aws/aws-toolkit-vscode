@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { CodeSuggestionsState, ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
+import { CodeSuggestionsState, GetRecommendationsResponse, RequestContext, vsCodeState } from '../models/model'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { RecommendationHandler } from './recommendationHandler'
-import { CodewhispererAutomatedTriggerType, CodewhispererTriggerType } from '../../shared/telemetry/telemetry'
 import { showTimedMessage } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger/logger'
 import { TelemetryHelper } from '../util/telemetryHelper'
@@ -24,7 +23,6 @@ import { listCodeWhispererCommandsId } from '../commands/statusBarCommands'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export class InlineCompletionService {
-    private maxPage = 100
     private statusBar: CodeWhispererStatusBar
     private _showRecommendationTimer?: NodeJS.Timer
     private _isPaginationRunning = false
@@ -78,10 +76,7 @@ export class InlineCompletionService {
 
     async getPaginatedRecommendation(
         client: DefaultCodeWhispererClient,
-        editor: vscode.TextEditor,
-        triggerType: CodewhispererTriggerType,
-        config: ConfigurationEntry,
-        autoTriggerType?: CodewhispererAutomatedTriggerType,
+        requestContext: RequestContext,
         event?: vscode.TextDocumentChangeEvent
     ) {
         if (
@@ -91,6 +86,8 @@ export class InlineCompletionService {
         ) {
             return
         }
+
+        const { editor, autoTriggerType, triggerType } = requestContext
 
         // Call report user decisions once to report recommendations leftover from last invocation.
         RecommendationHandler.instance.reportUserDecisions(-1)
@@ -115,17 +112,17 @@ export class InlineCompletionService {
         let response: GetRecommendationsResponse = {
             result: 'Failed',
             errorMessage: undefined,
+            nextToken: '',
         }
         try {
             let page = 0
-            while (page < this.maxPage) {
+            let nextToken = ''
+            do {
                 response = await RecommendationHandler.instance.getRecommendations(
                     client,
-                    editor,
-                    triggerType,
-                    config,
-                    autoTriggerType,
+                    requestContext,
                     true,
+                    nextToken,
                     page
                 )
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
@@ -137,8 +134,10 @@ export class InlineCompletionService {
                 if (!RecommendationHandler.instance.hasNextToken()) {
                     break
                 }
+                nextToken = response.nextToken
                 page++
-            }
+            } while (nextToken.length !== 0)
+
             TelemetryHelper.instance.setNumberOfRequestsInSession(page + 1)
         } catch (error) {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)

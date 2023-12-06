@@ -8,9 +8,9 @@ import {
     CodewhispererLanguage,
     CodewhispererGettingStartedTask,
 } from '../../shared/telemetry/telemetry.gen'
-import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
+import { Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
-import { CodeWhispererSupplementalContext } from '../models/model'
+import { RequestContext } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -22,10 +22,7 @@ class CodeWhispererSession {
     requestIdList: string[] = []
     startPos = new Position(0, 0)
     leftContextOfCurrentLine = ''
-    requestContext: {
-        request: ListRecommendationsRequest | GenerateRecommendationsRequest
-        supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
-    } = { request: {} as any, supplementalMetadata: {} as any }
+    requestContext: RequestContext = {} as any
     language: CodewhispererLanguage = 'java'
     taskType: CodewhispererGettingStartedTask | undefined
     // Various states of recommendations

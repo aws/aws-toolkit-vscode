@@ -6,15 +6,18 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
 import { getIcon } from '../../shared/icons'
 import {
+    CodewhispererAutomatedTriggerType,
     CodewhispererCompletionType,
+    CodewhispererGettingStartedTask,
     CodewhispererLanguage,
     CodewhispererTriggerType,
     Result,
 } from '../../shared/telemetry/telemetry'
-import { References } from '../client/codewhisperer'
+import { References, FileContext } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
 import { autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
+import CodeWhispererUserClient from '../client/codewhispereruserclient'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -37,6 +40,19 @@ export const vsCodeState: VsCodeState = {
     isIntelliSenseActive: false,
     isCodeWhispererEditing: false,
     lastUserModificationTime: 0,
+}
+
+export interface RequestContext {
+    editor: vscode.TextEditor
+    configuration: ConfigurationEntry
+    language: CodewhispererLanguage
+    fileContext: FileContext
+    triggerType: CodewhispererTriggerType
+    autoTriggerType: CodewhispererAutomatedTriggerType | undefined
+    cursorPosition: number
+    supplementalContext: CodeWhispererSupplementalContext | undefined
+    taskType: CodewhispererGettingStartedTask | undefined
+    customization: CodeWhispererUserClient.Customization
 }
 
 export type UtgStrategy = 'ByName' | 'ByContent'
@@ -64,6 +80,13 @@ export interface CodeWhispererSupplementalContextItem {
 export interface GetRecommendationsResponse {
     readonly result: 'Succeeded' | 'Failed'
     readonly errorMessage: string | undefined
+    readonly nextToken: string
+}
+
+export const COMPLETION_FAILED_RESPONSE: GetRecommendationsResponse = {
+    result: 'Failed',
+    errorMessage: undefined,
+    nextToken: '',
 }
 
 /** Manages the state of CodeWhisperer code suggestions */

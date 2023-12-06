@@ -469,7 +469,7 @@ export class ClassifierTrigger {
         autoTriggerType: string | undefined,
         shouldRecordResult: boolean = false
     ): boolean {
-        const fileContext = extractContextForCodeWhisperer(editor)
+        const fileContext = extractContextForCodeWhisperer(editor).fileContext
         const osPlatform = this.normalizeOsName(os.platform(), os.version())
         const char = event ? event.contentChanges[0].text : ''
         const lineNum = editor.selection.active.line

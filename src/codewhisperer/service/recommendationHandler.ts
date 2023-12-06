@@ -5,10 +5,16 @@
 
 import * as vscode from 'vscode'
 import { extensionVersion } from '../../shared/vscode/env'
-import { RecommendationsList, DefaultCodeWhispererClient, CognitoCredentialsError } from '../client/codewhisperer'
+import {
+    RecommendationsList,
+    DefaultCodeWhispererClient,
+    CognitoCredentialsError,
+    ListRecommendationsRequest,
+    GenerateRecommendationsRequest,
+} from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
-import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
+import { COMPLETION_FAILED_RESPONSE, GetRecommendationsResponse, RequestContext, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
@@ -22,13 +28,7 @@ import {
     isVscHavingRegressionInlineCompletionApi,
 } from '../util/commonUtil'
 import { showTimedMessage } from '../../shared/utilities/messages'
-import {
-    CodewhispererAutomatedTriggerType,
-    CodewhispererCompletionType,
-    CodewhispererGettingStartedTask,
-    CodewhispererTriggerType,
-    telemetry,
-} from '../../shared/telemetry/telemetry'
+import { CodewhispererCompletionType, CodewhispererTriggerType, telemetry } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import { invalidCustomizationMessage } from '../models/constants'
 import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
@@ -43,6 +43,7 @@ import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
+import { InlineCompletionService } from './inlineCompletionService'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -134,29 +135,11 @@ export class RecommendationHandler {
         return await asyncCallWithTimeout(promise, timeoutMessage, CodeWhispererConstants.promiseTimeoutLimit * 1000)
     }
 
-    async getTaskTypeFromEditorFileName(filePath: string): Promise<CodewhispererGettingStartedTask | undefined> {
-        if (filePath.includes('CodeWhisperer_generate_suggestion')) {
-            return 'autoTrigger'
-        } else if (filePath.includes('CodeWhisperer_manual_invoke')) {
-            return 'manualTrigger'
-        } else if (filePath.includes('CodeWhisperer_use_comments')) {
-            return 'commentAsPrompt'
-        } else if (filePath.includes('CodeWhisperer_navigate_suggestions')) {
-            return 'navigation'
-        } else if (filePath.includes('Generate_unit_tests')) {
-            return 'unitTest'
-        } else {
-            return undefined
-        }
-    }
-
     async getRecommendations(
         client: DefaultCodeWhispererClient,
-        editor: vscode.TextEditor,
-        triggerType: CodewhispererTriggerType,
-        config: ConfigurationEntry,
-        autoTriggerType?: CodewhispererAutomatedTriggerType,
+        requestContext: RequestContext,
         pagination: boolean = true,
+        nextToken: string = '',
         page: number = 0,
         isSM: boolean = isSageMaker(),
         retry: boolean = false
@@ -165,11 +148,10 @@ export class RecommendationHandler {
         let errorMessage: string | undefined = undefined
         let errorCode: string | undefined = undefined
 
+        const { editor, language, configuration, triggerType, autoTriggerType, taskType } = requestContext
+
         if (!editor) {
-            return Promise.resolve<GetRecommendationsResponse>({
-                result: invocationResult,
-                errorMessage: errorMessage,
-            })
+            return Promise.resolve<GetRecommendationsResponse>(COMPLETION_FAILED_RESPONSE)
         }
         let recommendations: RecommendationsList = []
         let requestId = ''
@@ -177,32 +159,24 @@ export class RecommendationHandler {
         let reason = ''
         let startTime = 0
         let latency = 0
-        let nextToken = ''
         let shouldRecordServiceInvocation = true
-        session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
-        session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
+        session.language = language
+        session.taskType = taskType
 
+        let request: ListRecommendationsRequest | GenerateRecommendationsRequest
         if (pagination) {
             if (page === 0) {
-                session.requestContext = await EditorContext.buildListRecommendationRequest(
-                    editor as vscode.TextEditor,
-                    this.nextToken,
-                    config.isSuggestionsWithCodeReferencesEnabled
-                )
-            } else {
-                session.requestContext = {
-                    request: {
-                        fileContext: session.requestContext.request.fileContext,
-                        nextToken: this.nextToken,
-                        supplementalContexts: session.requestContext.request.supplementalContexts,
-                    },
-                    supplementalMetadata: session.requestContext.supplementalMetadata,
-                }
+                session.requestContext = requestContext
             }
-        } else if (!pagination) {
-            session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
+            request = EditorContext.buildListRecommendationRequest(
+                requestContext,
+                nextToken,
+                configuration.isSuggestionsWithCodeReferencesEnabled
+            )
+        } else {
+            session.requestContext = requestContext
+            request = EditorContext.buildGenerateRecommendationRequest(requestContext)
         }
-        const request = session.requestContext.request
 
         // set start pos for non pagination call or first pagination call
         if (!pagination || (pagination && page === 0)) {
@@ -222,7 +196,7 @@ export class RecommendationHandler {
                     errorMessage = `${languageName} is currently not supported by CodeWhisperer`
                 }
                 return Promise.resolve<GetRecommendationsResponse>({
-                    result: invocationResult,
+                    ...COMPLETION_FAILED_RESPONSE,
                     errorMessage: errorMessage,
                 })
             }
@@ -236,7 +210,7 @@ export class RecommendationHandler {
                 pagination && !isSM ? client.listRecommendations(mappedReq) : client.generateRecommendations(mappedReq)
             const resp = await this.getServerResponse(
                 triggerType,
-                config.isManualTriggerEnabled,
+                configuration.isManualTriggerEnabled,
                 page === 0 && !retry,
                 codewhispererPromise
             )
@@ -325,16 +299,10 @@ export class RecommendationHandler {
                         .debug(`The selected customization is no longer available. Retrying with the default model.
                     Failed request id: ${requestId}`)
                     await switchToBaseCustomizationAndNotify()
-                    await this.getRecommendations(
-                        client,
-                        editor,
-                        triggerType,
-                        config,
-                        autoTriggerType,
-                        pagination,
-                        page,
-                        true
-                    )
+                    // is it supposed to call inlineService.getPaginatedRecos()?
+                    // should it sit in catch block?
+                    // do we need to reset all states?
+                    await InlineCompletionService.instance.getPaginatedRecommendation(client, requestContext)
                 }
             }
 
@@ -351,7 +319,7 @@ export class RecommendationHandler {
                     session.language,
                     session.taskType,
                     reason,
-                    session.requestContext.supplementalMetadata
+                    session.requestContext.supplementalContext
                 )
             }
         }
@@ -360,6 +328,7 @@ export class RecommendationHandler {
             return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
+                nextToken: nextToken,
             })
         }
 
@@ -400,7 +369,7 @@ export class RecommendationHandler {
                     sessionId,
                     page,
                     editor.document.languageId,
-                    session.requestContext.supplementalMetadata
+                    session.requestContext.supplementalContext
                 )
             }
             if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
@@ -408,7 +377,7 @@ export class RecommendationHandler {
             }
         }
         return Promise.resolve<GetRecommendationsResponse>({
-            result: invocationResult,
+            ...COMPLETION_FAILED_RESPONSE,
             errorMessage: errorMessage,
         })
     }
@@ -446,7 +415,7 @@ export class RecommendationHandler {
         this.requestId = ''
         session.sessionId = ''
         this.nextToken = ''
-        session.requestContext.supplementalMetadata = undefined
+        session.requestContext = {} as any
     }
 
     async clearInlineCompletionStates() {
@@ -490,7 +459,7 @@ export class RecommendationHandler {
             session.recommendations.length,
             session.completionTypes,
             session.suggestionStates,
-            session.requestContext.supplementalMetadata
+            session.requestContext.supplementalContext
         )
         if (isCloud9('any')) {
             this.clearRecommendations()

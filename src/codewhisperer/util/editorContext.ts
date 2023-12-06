@@ -11,16 +11,16 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
-import { fetchSupplementalContext } from './supplementalContext/supplementalContextUtil'
-import { supplementalContextTimeoutInMs } from '../models/constants'
-import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
-import { CodeWhispererSupplementalContext } from '../models/model'
+import { RequestContext } from '../models/model'
 
 let tabSize: number = getTabSizeSetting()
 
-export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codewhispererClient.FileContext {
+export function extractContextForCodeWhisperer(editor: vscode.TextEditor): {
+    fileContext: codewhispererClient.FileContext
+    cursorOffset: number
+} {
     const document = editor.document
     const curPos = editor.selection.active
     const offset = document.offsetAt(curPos)
@@ -41,35 +41,44 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
     )
     if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
         return {
-            filename: getFileNameForRequest(editor),
-            programmingLanguage: {
-                languageName: 'plaintext',
-            },
-            leftFileContent: caretLeftFileContext,
-            rightFileContent: caretRightFileContext,
-        } as codewhispererClient.FileContext
+            cursorOffset: offset,
+            fileContext: {
+                filename: getFileNameForRequest(editor),
+                programmingLanguage: {
+                    languageName: 'plaintext',
+                },
+                leftFileContent: caretLeftFileContext,
+                rightFileContent: caretRightFileContext,
+            } as codewhispererClient.FileContext,
+        }
     }
 
     if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
         return {
-            filename: getFileNameForRequest(editor),
-            programmingLanguage: {
-                languageName: 'plaintext',
-            },
-            leftFileContent: caretLeftFileContext,
-            rightFileContent: caretRightFileContext,
-        } as codewhispererClient.FileContext
+            cursorOffset: offset,
+            fileContext: {
+                filename: getFileNameForRequest(editor),
+                programmingLanguage: {
+                    languageName: 'plaintext',
+                },
+                leftFileContent: caretLeftFileContext,
+                rightFileContent: caretRightFileContext,
+            } as codewhispererClient.FileContext,
+        }
     }
 
     return {
-        filename: getFileNameForRequest(editor),
-        programmingLanguage: {
-            languageName:
-                runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId,
-        },
-        leftFileContent: caretLeftFileContext,
-        rightFileContent: caretRightFileContext,
-    } as codewhispererClient.FileContext
+        cursorOffset: offset,
+        fileContext: {
+            filename: getFileNameForRequest(editor),
+            programmingLanguage: {
+                languageName:
+                    runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId,
+            },
+            leftFileContent: caretLeftFileContext,
+            rightFileContent: caretRightFileContext,
+        } as codewhispererClient.FileContext,
+    }
 }
 
 export function getFileName(editor: vscode.TextEditor): string {
@@ -92,37 +101,15 @@ export function getFileNameForRequest(editor: vscode.TextEditor): string {
     return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
-export async function buildListRecommendationRequest(
-    editor: vscode.TextEditor,
+export function buildListRecommendationRequest(
+    requestContext: RequestContext,
     nextToken: string,
     allowCodeWithReference: boolean | undefined = undefined
-): Promise<{
-    request: codewhispererClient.ListRecommendationsRequest
-    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
-}> {
-    const fileContext = extractContextForCodeWhisperer(editor)
+): codewhispererClient.ListRecommendationsRequest {
+    const fileContext = requestContext.fileContext
+    const supplementalContexts = requestContext.supplementalContext
+    const selectedCustomization = requestContext.customization
 
-    const tokenSource = new vscode.CancellationTokenSource()
-    setTimeout(() => {
-        tokenSource.cancel()
-    }, supplementalContextTimeoutInMs)
-
-    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-
-    const supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined =
-        supplementalContexts
-            ? {
-                  isUtg: supplementalContexts.isUtg,
-                  isProcessTimeout: supplementalContexts.isProcessTimeout,
-                  contentsLength: supplementalContexts.contentsLength,
-                  latency: supplementalContexts.latency,
-                  strategy: supplementalContexts.strategy,
-              }
-            : undefined
-
-    logSupplementalContext(supplementalContexts)
-
-    const selectedCustomization = getSelectedCustomization()
     const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
         ? supplementalContexts.supplementalContextItems.map(v => {
               return selectFrom(v, 'content', 'filePath')
@@ -131,62 +118,34 @@ export async function buildListRecommendationRequest(
 
     if (allowCodeWithReference === undefined) {
         return {
-            request: {
-                fileContext: fileContext,
-                nextToken: nextToken,
-                supplementalContexts: supplementalContext,
-                customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
-            },
-            supplementalMetadata: supplementalMetadata,
+            fileContext: fileContext,
+            nextToken: nextToken,
+            supplementalContexts: supplementalContext,
+            customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         }
     }
 
     return {
-        request: {
-            fileContext: fileContext,
-            nextToken: nextToken,
-            referenceTrackerConfiguration: {
-                recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
-            },
-            supplementalContexts: supplementalContext,
-            customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+        fileContext: fileContext,
+        nextToken: nextToken,
+        referenceTrackerConfiguration: {
+            recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
         },
-        supplementalMetadata: supplementalMetadata,
+        supplementalContexts: supplementalContext,
+        customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
     }
 }
 
-export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
-    request: codewhispererClient.GenerateRecommendationsRequest
-    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
-}> {
-    const fileContext = extractContextForCodeWhisperer(editor)
-
-    const tokenSource = new vscode.CancellationTokenSource()
-    setTimeout(() => {
-        tokenSource.cancel()
-    }, supplementalContextTimeoutInMs)
-    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-    let supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
-
-    if (supplementalContexts) {
-        supplementalMetadata = {
-            isUtg: supplementalContexts.isUtg,
-            isProcessTimeout: supplementalContexts.isProcessTimeout,
-            contentsLength: supplementalContexts.contentsLength,
-            latency: supplementalContexts.latency,
-            strategy: supplementalContexts.strategy,
-        }
-    }
-
-    logSupplementalContext(supplementalContexts)
+export function buildGenerateRecommendationRequest(
+    requestContext: RequestContext
+): codewhispererClient.GenerateRecommendationsRequest {
+    const fileContext = requestContext.fileContext
+    const supplementalContexts = requestContext.supplementalContext
 
     return {
-        request: {
-            fileContext: fileContext,
-            maxResults: CodeWhispererConstants.maxRecommendations,
-            supplementalContexts: supplementalContexts?.supplementalContextItems ?? [],
-        },
-        supplementalMetadata: supplementalMetadata,
+        fileContext: fileContext,
+        maxResults: CodeWhispererConstants.maxRecommendations,
+        supplementalContexts: supplementalContexts?.supplementalContextItems ?? [],
     }
 }
 
@@ -237,26 +196,4 @@ export function getLeftContext(editor: vscode.TextEditor, line: number): string 
     }
 
     return lineText
-}
-
-function logSupplementalContext(supplementalContext: CodeWhispererSupplementalContext | undefined) {
-    if (!supplementalContext) {
-        return
-    }
-
-    let logString = `CodeWhispererSupplementalContext:
-    isUtg: ${supplementalContext.isUtg},
-    isProcessTimeout: ${supplementalContext.isProcessTimeout},
-    contentsLength: ${supplementalContext.contentsLength},
-    latency: ${supplementalContext.latency},
-`
-    supplementalContext.supplementalContextItems.forEach((context, index) => {
-        logString += `Chunk ${index}:
-        Path: ${context.filePath}
-        Content: ${index}:${context.content}
-        Score: ${context.score}
-        -----------------------------------------------`
-    })
-
-    getLogger().debug(logString)
 }

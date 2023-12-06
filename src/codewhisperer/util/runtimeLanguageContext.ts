@@ -193,7 +193,7 @@ export class RuntimeLanguageContext {
      * @param languageId: either vscodeLanguageId or CodewhispererLanguage
      * @returns ture if the language is supported by CodeWhisperer otherwise false
      */
-    public isLanguageSupported(languageId: string): boolean {
+    public isLanguageSupported(languageId: string | undefined): languageId is CodewhispererLanguage {
         const lang = this.normalizeLanguage(languageId)
         return lang !== undefined && this.normalizeLanguage(languageId) !== 'plaintext'
     }
