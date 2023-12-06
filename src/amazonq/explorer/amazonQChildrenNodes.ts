@@ -7,12 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
-import {
-    focusAmazonQPanel,
-    reconnect,
-    showTransformByQ,
-    transformTreeNode,
-} from '../../codewhisperer/commands/basicCommands'
+import { focusAmazonQPanel, reconnect, showTransformByQ } from '../../codewhisperer/commands/basicCommands'
 import { transformByQState } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { amazonQHelpUrl } from '../../shared/constants'
@@ -66,7 +61,7 @@ export const createTransformByQ = () => {
     if (transformByQState.isRunning()) {
         vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (status === '') {
-            // job is running but polling has not started yet, so display generic messsage
+            // job is running but polling has not started yet, so display generic message
             status = CodeWhispererConstants.transformByQStateRunningMessage
         }
     } else if (transformByQState.isCancelled()) {
@@ -80,7 +75,7 @@ export const createTransformByQ = () => {
     } else if (transformByQState.isNotStarted()) {
         status = ''
     }
-    return showTransformByQ.build(transformTreeNode).asTreeNode({
+    return showTransformByQ.build(CodeWhispererConstants.transformTreeNode).asTreeNode({
         label: status !== '' ? `${prefix} Transform [Job status: ` + status + `]` : `Transform`,
         iconPath: transformByQState.getIconForButton(),
         tooltip: `${prefix} Transform`,
