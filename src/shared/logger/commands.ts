@@ -28,18 +28,16 @@ export class Logging {
         viewLogsAtMessage: Commands.from(this).declareOpenLogId('aws.viewLogsAtMessage'),
     }
 
-    public constructor(private readonly defaultLogUri: vscode.Uri, private readonly logger: Logger) {}
+    public constructor(private readonly logUri: vscode.Uri, private readonly logger: Logger) {}
 
-    public async openLogUri(logUri?: unknown): Promise<vscode.TextEditor | undefined> {
-        telemetry.toolkit_viewLogs.emit() // Perhaps add additional argument to know which log was viewed?
-
-        // If the command is called directly from a package.json menu item, then logUri may be a vscode-provided object, typically a TreeNode.
-        return vscode.window.showTextDocument(logUri instanceof vscode.Uri ? logUri : this.defaultLogUri)
+    public async openLogUri(): Promise<vscode.TextEditor | undefined> {
+        telemetry.toolkit_viewLogs.emit()
+        return vscode.window.showTextDocument(this.logUri)
     }
 
-    public async openLogId(logId: number, logUri = this.defaultLogUri) {
-        const msg = this.logger.getLogById(logId, logUri)
-        const editor = await this.openLogUri(logUri)
+    public async openLogId(logId: number) {
+        const msg = this.logger.getLogById(logId, this.logUri)
+        const editor = await this.openLogUri()
         if (!msg || !editor) {
             return
         }
