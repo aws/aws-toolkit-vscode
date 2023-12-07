@@ -373,11 +373,11 @@
             },
             "union": true
         },
-        "ChatMessageInteractionType": {
+        "ChatTriggerType": {
             "type": "string",
             "enum": ["MANUAL", "DIAGNOSTIC"]
         },
-        "ChatTriggerType": {
+        "ChatMessageInteractionType": {
             "type": "string",
             "enum": [
                 "INSERT_AT_CURSOR",
