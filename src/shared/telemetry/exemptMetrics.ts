@@ -15,12 +15,18 @@
  * This allowlist exists to fix these incrementally and not have CI fail in the meantime.
  */
 const validationExemptMetrics: Set<string> = new Set([
+    'amazonq_runCommand',
     'amazonq_isReviewedChanges',
     'apigateway_copyUrl',
     'aws_loadCredentials',
     'aws_modifySetting',
     'aws_validateCredentials',
     'cloudwatchlogs_download',
+    'codeTransform_isDoubleClickedToTriggerInvalidProject',
+    'codeTransform_jobIsCancelledByUser',
+    'codeTransform_jobStatusChanged',
+    'codeTransform_logApiError',
+    'codeTransform_logApiLatency',
     'codewhisperer_userDecision',
     'codewhisperer_codeScanIssueHover',
     'codewhisperer_codePercentage',
