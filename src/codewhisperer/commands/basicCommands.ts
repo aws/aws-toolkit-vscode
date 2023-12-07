@@ -146,7 +146,7 @@ export const selectCustomizationPrompt = Commands.declare(
 export const reconnect = Commands.declare(
     { id: 'aws.codewhisperer.reconnect', compositeKey: { 1: 'source' } },
     () =>
-        async (_: VsCodeCommandArg, source: CodeWhispererSource, addMissingScopes = false) => {
+        async (_: VsCodeCommandArg, source: CodeWhispererSource, addMissingScopes: boolean = false) => {
             await AuthUtil.instance.reauthenticate(addMissingScopes)
         }
 )

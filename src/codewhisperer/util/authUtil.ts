@@ -302,7 +302,7 @@ export class AuthUtil {
         return connectionExpired
     }
 
-    public async reauthenticate(addMissingScopes = false) {
+    public async reauthenticate(addMissingScopes: boolean = false) {
         try {
             if (this.conn?.type !== 'sso') {
                 return
