@@ -228,6 +228,15 @@ export class AuthWebview extends VueWebview {
             await setupFunc()
             return
         } catch (e) {
+            if (e instanceof ToolkitError && e.code === 'NotOnboarded') {
+                /**
+                 * Connection is fine, they just skipped onboarding so not an actual error.
+                 *
+                 * The error comes from user cancelling prompt by {@link CodeCatalystAuthenticationProvider.promptOnboarding()}
+                 */
+                return
+            }
+
             if (
                 CancellationError.isUserCancelled(e) ||
                 (e instanceof ToolkitError && (CancellationError.isUserCancelled(e.cause) || e.cancelled === true))
