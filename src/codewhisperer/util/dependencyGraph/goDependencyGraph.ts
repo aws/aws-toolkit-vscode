@@ -12,6 +12,7 @@ import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger'
 import path from 'path'
 import { readFileAsString } from '../../../shared/filesystemUtilities'
+import { ToolkitError } from '../../../shared/errors'
 
 const importRegex = /^\s*import\s+([^(]+?$|\([^)]+\))/gm
 const moduleRegex = /"[^"\r\n]+"/gm
@@ -66,7 +67,7 @@ export class GoDependencyGraph extends DependencyGraph {
                 await this.traverseDir(this.getProjectPath(uri))
             }
             await sleep(1000)
-            getLogger().verbose('Picked source files: [' + [...this._pickedSourceFiles].join(', ') + ']')
+            getLogger().verbose(`CodeWhisperer: Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
             const truncDirPath = this.getTruncDirPath(uri)
             this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
             const zipFilePath = this.zipDir(truncDirPath, CodeWhispererConstants.codeScanZipExt)
@@ -82,7 +83,7 @@ export class GoDependencyGraph extends DependencyGraph {
             }
         } catch (error) {
             getLogger().error('Go dependency graph error caused by:', error)
-            throw new Error('Go context processing failed.')
+            throw ToolkitError.chain(error, 'Go context processing failed.')
         }
     }
 

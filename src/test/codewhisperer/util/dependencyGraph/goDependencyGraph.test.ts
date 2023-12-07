@@ -13,23 +13,23 @@ import fs from 'fs'
 import { createMockDirentFile } from '../../testUtil'
 import { getTestWorkspaceFolder } from '../../../../testInteg/integrationTestsUtilities'
 
-describe('goDependencyGraph', () => {
+describe('goDependencyGraph', function () {
     const workspaceFolder = getTestWorkspaceFolder()
     const appRoot = join(workspaceFolder, 'go1-zip')
     const appCodePath = join(appRoot, 'main.go')
     const goDependencyGraph = new GoDependencyGraph('go' satisfies CodeWhispererConstants.PlatformLanguageId)
 
-    describe('parseImport', () => {
-        beforeEach(() => {
+    describe('parseImport', function () {
+        beforeEach(function () {
             sinon.stub(fs, 'existsSync').returns(true)
             sinon.stub(fs, 'readdirSync').returns([createMockDirentFile('file1.go'), createMockDirentFile('file2.go')])
         })
 
-        afterEach(() => {
+        afterEach(function () {
             sinon.restore()
         })
 
-        it('should parse direct import', () => {
+        it('should parse direct import', function () {
             const dependencies = goDependencyGraph.parseImport('import "fmt"', ['dirPath1', 'dirPath2'])
             assert.strictEqual(dependencies.length, 4)
             assert.deepStrictEqual(dependencies, [
@@ -40,7 +40,7 @@ describe('goDependencyGraph', () => {
             ])
         })
 
-        it('should parse nested import', () => {
+        it('should parse nested import', function () {
             const dependencies = goDependencyGraph.parseImport('import "math/rand"', ['dirPath1', 'dirPath2'])
             assert.strictEqual(dependencies.length, 4)
             assert.deepStrictEqual(dependencies, [
@@ -51,7 +51,7 @@ describe('goDependencyGraph', () => {
             ])
         })
 
-        it('should parse grouped import', () => {
+        it('should parse grouped import', function () {
             const dependencies = goDependencyGraph.parseImport(
                 `
 import (
@@ -74,7 +74,7 @@ import (
             ])
         })
 
-        it('should parse aliased import', () => {
+        it('should parse aliased import', function () {
             const dependencies = goDependencyGraph.parseImport('import m "math"', ['dirPath1', 'dirPath2'])
             assert.strictEqual(dependencies.length, 4)
             assert.deepStrictEqual(dependencies, [
@@ -85,7 +85,7 @@ import (
             ])
         })
 
-        it('should parse dot import', () => {
+        it('should parse dot import', function () {
             const dependencies = goDependencyGraph.parseImport('import . "math"', ['dirPath1', 'dirPath2'])
             assert.strictEqual(dependencies.length, 4)
             assert.deepStrictEqual(dependencies, [
@@ -96,7 +96,7 @@ import (
             ])
         })
 
-        it('should parse blank import', () => {
+        it('should parse blank import', function () {
             const dependencies = goDependencyGraph.parseImport('import _ "math"', ['dirPath1', 'dirPath2'])
             assert.strictEqual(dependencies.length, 4)
             assert.deepStrictEqual(dependencies, [
@@ -107,7 +107,7 @@ import (
             ])
         })
 
-        it('should parse relative import', () => {
+        it('should parse relative import', function () {
             const dependencies = goDependencyGraph.parseImport(
                 'import "example.com/module/outerPackage/innerPackage"',
                 ['dirPath1', 'dirPath2']
@@ -122,8 +122,8 @@ import (
         })
     })
 
-    describe('getDependencies', () => {
-        it('should return expected dependencies', () => {
+    describe('getDependencies', function () {
+        it('should return expected dependencies', function () {
             const dependencies = goDependencyGraph.getDependencies(vscode.Uri.parse(appCodePath), [
                 'import (\n\t"example/random-number/util"\n\t"fmt"\n)',
             ])
@@ -132,8 +132,8 @@ import (
         })
     })
 
-    describe('searchDependency', () => {
-        it('should search dependencies and return expected picked source files', async () => {
+    describe('searchDependency', function () {
+        it('should search dependencies and return expected picked source files', async function () {
             const sourceFilesSet = await goDependencyGraph.searchDependency(vscode.Uri.parse(appCodePath))
             assert.strictEqual(sourceFilesSet.size, 3)
             const sourceFiles = [...sourceFilesSet]
@@ -143,8 +143,8 @@ import (
         })
     })
 
-    describe('generateTruncation', () => {
-        it('should generate and return expected truncation', async () => {
+    describe('generateTruncation', function () {
+        it('should generate and return expected truncation', async function () {
             const truncation = await goDependencyGraph.generateTruncation(vscode.Uri.file(appCodePath))
             assert.ok(truncation.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(truncation.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
@@ -154,8 +154,8 @@ import (
         })
     })
 
-    describe('isTestFile', () => {
-        it('should return true if the file contains relevant test imports', async () => {
+    describe('isTestFile', function () {
+        it('should return true if the file contains relevant test imports', async function () {
             const content = `
             package main
             import "testing"
@@ -166,7 +166,7 @@ import (
             assert.strictEqual(isTestFile, true)
         })
 
-        it('should return false if the file does not contain any relevant test imports', async () => {
+        it('should return false if the file does not contain any relevant test imports', async function () {
             const content = `
             package main
             import "fmt"
