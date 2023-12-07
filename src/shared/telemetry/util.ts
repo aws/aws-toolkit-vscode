@@ -95,7 +95,7 @@ export async function getUserAgent(
  * 1. contain a result property and
  * 2. contain a reason propery if result = 'Failed'.
  */
-export function validateMetricEvent(event: MetricDatum) {
+export function validateMetricEvent(event: MetricDatum, fatal: boolean) {
     const failedStr: Result = 'Failed'
     const telemetryRunDocsStr =
         'Consider using `.run()` instead of `.emit()`, which will set these properties automatically. ' +

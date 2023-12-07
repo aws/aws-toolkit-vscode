@@ -151,7 +151,7 @@ export class DefaultTelemetryService {
             if (isAutomation()) {
                 // TODO: While this catches cases in code that is tested, untested code will still release incomplete metrics.
                 // Consider using custom lint rules to address these cases if possible.
-                validateMetricEvent(event)
+                validateMetricEvent(event, isAutomation())
             }
             const actualAwsContext = awsContext || this.awsContext
             const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
