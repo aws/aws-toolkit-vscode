@@ -19,7 +19,6 @@ const validationExemptMetrics: Set<string> = new Set([
     'amazonq_isReviewedChanges',
     'apigateway_copyUrl',
     'aws_loadCredentials',
-    'aws_modifySetting',
     'aws_validateCredentials',
     'cloudwatchlogs_download',
     'codeTransform_isDoubleClickedToTriggerInvalidProject',
