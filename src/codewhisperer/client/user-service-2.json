@@ -384,6 +384,7 @@
                 "COPY_SNIPPET",
                 "COPY",
                 "CLICK_LINK",
+                "CLICK_BODY_LINK",
                 "CLICK_FOLLOW_UP",
                 "HOVER_REFERENCE",
                 "UPVOTE",
