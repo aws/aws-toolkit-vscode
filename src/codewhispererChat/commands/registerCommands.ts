@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { focusAmazonQPanel } from '../../codewhisperer/commands/basicCommands'
+import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 import { Commands } from '../../shared/vscode/commands2'
 import { ChatControllerMessagePublishers } from '../controllers/chat/controller'
 

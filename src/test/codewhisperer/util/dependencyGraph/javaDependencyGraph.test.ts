@@ -59,21 +59,36 @@ describe('javaDependencyGraph', function () {
     })
 
     describe('generateTruncation', function () {
+        let javaDependencyGraph: JavaDependencyGraph
         beforeEach(function () {
-            sinon.stub(JavaDependencyGraph.prototype, <any>'generateBuildFilePaths').returns([appCodePath])
+            javaDependencyGraph = new JavaDependencyGraph(languageId)
         })
         afterEach(function () {
             sinon.restore()
         })
         it('Should generate and return expected truncation', async function () {
-            const javaDependencyGraph = new JavaDependencyGraph(languageId)
-            sinon.stub(javaDependencyGraph, <any>'_outputDirs').value(new Set<string>('build'))
+            sinon.stub(JavaDependencyGraph.prototype, <any>'generateBuildFilePaths').returns([appCodePath])
+            sinon.stub(javaDependencyGraph, <any>'_outputDirs').value(new Set<string>(['build']))
             const truncation = await javaDependencyGraph.generateTruncation(vscode.Uri.parse(appCodePath))
             assert.ok(truncation.lines > 0)
             assert.ok(truncation.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(truncation.srcPayloadSizeInBytes > 0)
             assert.ok(truncation.scannedFiles.size > 0)
             assert.ok(truncation.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
+        })
+        it('should not throw error if java compilation output path is not set', async () => {
+            sinon.stub(JavaDependencyGraph.prototype, <any>'generateBuildFilePaths').returns([appCodePath])
+            sinon.stub(javaDependencyGraph, <any>'_outputDirs').value(new Set<string>([]))
+            await assert.doesNotReject(async () => {
+                await javaDependencyGraph.generateTruncation(vscode.Uri.parse(appCodePath))
+            })
+        })
+        it('should not throw error no build files are found', async () => {
+            sinon.stub(JavaDependencyGraph.prototype, <any>'generateBuildFilePaths').returns([])
+            sinon.stub(javaDependencyGraph, <any>'_outputDirs').value(new Set<string>(['build']))
+            await assert.doesNotReject(async () => {
+                await javaDependencyGraph.generateTruncation(vscode.Uri.parse(appCodePath))
+            })
         })
     })
 

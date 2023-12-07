@@ -43,9 +43,9 @@ export function register(
     }
 
     return vscode.Disposable.from(
-        handler.registerHandler('/clone', cloneHandler, parseCloneParams),
-        handler.registerHandler('/connect/codecatalyst', connectHandler, parseConnectParams),
-        handler.registerHandler('/connect/caws', connectHandler, parseConnectParamsOld) // FIXME: remove this before GA
+        handler.onPath('/clone', cloneHandler, parseCloneParams),
+        handler.onPath('/connect/codecatalyst', connectHandler, parseConnectParams),
+        handler.onPath('/connect/caws', connectHandler, parseConnectParamsOld) // FIXME: remove this before GA
     )
 }
 

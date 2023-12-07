@@ -1,3 +1,16 @@
+## 2.2.0 2023-12-06
+
+- **Breaking Change** validate that pom.xml is in root directory of project, not anywhere in project
+- **Bug Fix** AWS Toolkit submenus appear in other extension views #4111
+- **Bug Fix** CodeCatalyst: "No handler found" error may occur when opening `vscode://` URI #4105
+- **Bug Fix** CodeWhisperer: Security scans for Java no longer require build artifacts
+- **Bug Fix** Amazon Q: Input prompt gets wrapped to new line which avoids focusing
+
+## 2.1.0 2023-11-30
+
+- **Feature** Use MDE endpoint set by environment variable
+- **Feature** AWS Application Composer is now available from the AWS Toolkit for Visual Studio Code. Visualize and design AWS CloudFormation and AWS SAM applications from your local machine. Use integrations with featured services such as Amazon CodeWhisperer, AWS Step Functions, and AWS SAM to improve your development experience.
+
 ## 2.0.0 2023-11-28
 
 - **Bug Fix** CodeWhisperer status bar showing even when not in use

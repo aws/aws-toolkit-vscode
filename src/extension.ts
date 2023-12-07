@@ -52,6 +52,7 @@ import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
+import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './redshift/activation'
 import { CredentialsStore } from './auth/credentials/store'
 import { activate as activateCWChat } from './amazonq/activation'
@@ -137,6 +138,9 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
+        // Create this now, but don't call vscode.window.registerUriHandler() until after all
+        // Toolkit services have a chance to register their path handlers. #4105
+        globals.uriHandler = new UriHandler()
 
         const settings = Settings.instance
         const experiments = Experiments.instance
@@ -154,18 +158,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await globals.schemaService.start()
         awsFiletypes.activate()
-
-        globals.uriHandler = new UriHandler()
-        context.subscriptions.push(
-            vscode.window.registerUriHandler({
-                handleUri: uri =>
-                    telemetry.runRoot(() => {
-                        telemetry.record({ source: 'UriHandler' })
-
-                        return globals.uriHandler.handleUri(uri)
-                    }),
-            })
-        )
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -265,11 +257,23 @@ export async function activate(context: vscode.ExtensionContext) {
         if (!isCloud9()) {
             await activateCWChat(extContext.extensionContext)
             await activateQGumby(extContext)
+            await activateApplicationComposer(context)
         }
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
         await activateRedshift(extContext)
+
+        context.subscriptions.push(
+            vscode.window.registerUriHandler({
+                handleUri: uri =>
+                    telemetry.runRoot(() => {
+                        telemetry.record({ source: 'UriHandler' })
+
+                        return globals.uriHandler.handleUri(uri)
+                    }),
+            })
+        )
 
         showWelcomeMessage(context)
 

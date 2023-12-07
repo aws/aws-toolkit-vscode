@@ -152,19 +152,6 @@ export class JavaDependencyGraph extends DependencyGraph {
         })
     }
 
-    private async getFileLevelBuildFilePaths(uri: vscode.Uri, projectPath: string) {
-        const filePath = uri.fsPath
-        this._pickedSourceFiles.clear()
-        this._pickedSourceFiles.add(filePath)
-        this._totalSize = statSync(filePath).size
-        const content = await readFileAsString(uri.fsPath)
-        this._totalLines = content.split(DependencyGraphConstants.newlineRegex).length
-        const javaStatement = this.extractStatement(content)
-        this._buildFileRelativePaths.clear()
-        const buildFileRelativePath = this.generateBuildFileRelativePath(uri, projectPath, javaStatement.packages)
-        return this.generateOneBuildFilePaths(buildFileRelativePath)
-    }
-
     async searchDependency(uri: vscode.Uri): Promise<Set<string>> {
         const filePath = uri.fsPath
         const q: string[] = []
@@ -227,26 +214,6 @@ export class JavaDependencyGraph extends DependencyGraph {
             }
         })
         this._fetchedDirs.add(dirPath)
-    }
-
-    private generateOneBuildFilePaths(buildFileRelativePath: string) {
-        const oneBuildFilePaths: string[] = []
-        this._outputDirs.forEach(dir => {
-            const builFilePath = path.join(dir, buildFileRelativePath)
-            if (existsSync(builFilePath) && oneBuildFilePaths.length === 0) {
-                oneBuildFilePaths.push(builFilePath)
-            }
-        })
-        this._outputNonStrictDirs.forEach(dir => {
-            const builFilePath = path.join(dir, buildFileRelativePath)
-            if (existsSync(builFilePath) && oneBuildFilePaths.length === 0) {
-                oneBuildFilePaths.push(builFilePath)
-            }
-        })
-        if (oneBuildFilePaths.length === 0) {
-            throw new Error(`${buildFileRelativePath} is not found.`)
-        }
-        return oneBuildFilePaths
     }
 
     private generateBuildFilePaths() {
@@ -372,17 +339,13 @@ export class JavaDependencyGraph extends DependencyGraph {
             await sleep(1000)
             this.autoDetectClasspath(projectPath, projectName, DependencyGraphConstants.javaBuildExt)
             if (this._outputDirs.size === 0 && this._outputNonStrictDirs.size === 0) {
-                throw new Error(`Classpath auto-detection failed.`)
+                getLogger().debug(`Classpath auto-detection failed.`)
             }
-            let buildFiles: string[] = this.generateBuildFilePaths()
-            if (buildFiles.length === 0) {
-                getLogger().debug('Project level compile error:')
-                buildFiles = await this.getFileLevelBuildFilePaths(uri, projectPath)
-            }
+            const buildFiles: string[] = this.generateBuildFilePaths()
             const truncDirPath = this.getTruncDirPath(uri)
-            getLogger().debug(`Picked source files:`)
+            getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
             this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
-            getLogger().debug(`Picked build artifacts:`)
+            getLogger().debug(`Picked build artifacts: [${buildFiles}]`)
             this.copyFilesToTmpDir(buildFiles, truncDirPath)
             const totalBuildSize = this.getFilesTotalSize(Array.from(buildFiles.values()))
             const zipFilePath = this.zipDir(truncDirPath, CodeWhispererConstants.codeScanZipExt)

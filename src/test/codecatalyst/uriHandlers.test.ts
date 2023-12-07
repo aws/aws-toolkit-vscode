@@ -61,7 +61,7 @@ describe('CodeCatalyst handlers', function () {
 
     describe('clone', function () {
         it('registers for "/clone"', function () {
-            assert.throws(() => handler.registerHandler('/clone', () => {}))
+            assert.throws(() => handler.onPath('/clone', () => {}))
         })
 
         it('ignores requests without a url', async function () {

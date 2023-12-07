@@ -54,6 +54,77 @@
             "description": "The id of the detector which produced the code scan issue"
         },
         {
+            "name": "hasChatAuth",
+            "type": "boolean",
+            "description": "Whether the user has access to CodeWhisperer Chat"
+        },
+        {
+            "name": "numAttempts",
+            "type": "int",
+            "description": "Number of generations before the user accepted or rejected"
+        },
+        {
+            "name": "resourceType",
+            "type": "string",
+            "description": "CloudFormation resource type"
+        },
+        {
+            "name": "pathsScrubbed",
+            "type": "int",
+            "description": "Number of generation paths modified"
+        },
+        {
+            "name": "generateFailure",
+            "type": "string",
+            "allowedValues": ["Parse"],
+            "description": "Type of generation failure"
+        },
+        {
+            "name": "loadFileTime",
+            "type": "int",
+            "description": "Time from opening Composer to loading the file"
+        },
+        {
+            "name": "initializeTime",
+            "type": "int",
+            "description": "Time from opening Composer to Composer initialize"
+        },
+        {
+            "name": "saveFileTime",
+            "type": "int",
+            "description": "Time from opening Composer to saving the file"
+        },
+        {
+            "name": "fps",
+            "type": "int",
+            "description": "Average frames per second"
+        },
+        {
+            "name": "sourceResourceType",
+            "type": "string",
+            "description": "CloudFormation resource type of connection start"
+        },
+        {
+            "name": "destResourceType",
+            "type": "string",
+            "description": "CloudFormation resource type of connection end"
+        },
+        {
+            "name": "sourceFacetType",
+            "type": "string",
+            "description": "Resource subtype of connection start"
+        },
+        {
+            "name": "destFacetType",
+            "type": "string",
+            "description": "Resource subtype of connection end"
+        },
+        {
+            "name": "didSave",
+            "type": "boolean",
+            "description": "Whether the user saved"
+        },
+        {
             "name": "cwsprChatTriggerInteraction",
             "type": "string",
             "allowedValues": ["hotkeys", "click", "contextMenu"],
@@ -210,56 +281,6 @@
             "name": "cwsprChatCommandName",
             "type": "string",
             "description": "Type of chat command name executed"
-        },
-        {
-            "name": "codeTransform_JobId",
-            "type": "string",
-            "description": "A string ID for the current job running"
-        },
-        {
-            "name": "codeTransform_SourceJavaVersion",
-            "type": "string",
-            "description": "The Java version of the project the customer has selected to transform"
-        },
-        {
-            "name": "codeTransform_ResultStatusMessage",
-            "type": "string",
-            "description": "A general string field to represent the ending status of the job"
-        },
-        {
-            "name": "codeTransform_ApiErrorId",
-            "type": "string",
-            "description": "A general string field to represent the key/id to be used so that we can map to a specific API error message"
-        },
-        {
-            "name": "codeTransform_RuntimeErrorId",
-            "type": "string",
-            "description": "A general string field to represent the key/id to be used so that we can map to a specific runtime error message"
-        },
-        {
-            "name": "codeTransform_SessionId",
-            "type": "string",
-            "description": "A general string field to represent the IDE session from when users start the transformation process"
-        },
-        {
-            "name": "codeTransform_ApiName",
-            "type": "string",
-            "description": "Names of allowed API calls in Gumby",
-            "allowedValues": [
-                "StartTransformation",
-                "StopTransformation",
-                "GetTransformation",
-                "GetTransformationPlan",
-                "UploadZip",
-                "CreateUploadUrl",
-                "ExportResultArchive"
-            ]
-        },
-        {
-            "name": "codeTransform_ProjectType",
-            "type": "string",
-            "description": "The type of the project the user calls transform on",
-            "allowedValues": ["maven", "gradle", "unknown"]
         }
     ],
     "metrics": [
@@ -514,6 +535,83 @@
             "description": "Called after opening the SAM Config UI"
         },
         {
+            "name": "appcomposer_openTemplate",
+            "description": "Called after opening a template",
+            "metadata": [{ "type": "hasChatAuth" }]
+        },
+        {
+            "name": "appcomposer_deployClicked",
+            "description": "Called after clicking the Sync button"
+        },
+        {
+            "name": "appcomposer_deployCompleted",
+            "description": "Called after a Composer-triggered SAM Sync completes"
+        },
+        {
+            "name": "appcomposer_generateClicked",
+            "description": "Called after generating a standard resource template partial",
+            "metadata": [{ "type": "resourceType" }]
+        },
+        {
+            "name": "appcomposer_regenerateClicked",
+            "description": "Called after regenerating a standard resource template partial",
+            "metadata": [{ "type": "resourceType" }]
+        },
+        {
+            "name": "appcomposer_generateAccepted",
+            "description": "Called after accepting a generative AI suggestion",
+            "metadata": [{ "type": "resourceType" }, { "type": "numAttempts" }]
+        },
+        {
+            "name": "appcomposer_generateRejected",
+            "description": "Called after rejecting a generative AI suggestion",
+            "metadata": [{ "type": "resourceType" }, { "type": "numAttempts" }]
+        },
+        {
+            "name": "appcomposer_invalidGeneration",
+            "description": "Called after a generate failed",
+            "metadata": [{ "type": "resourceType" }, { "type": "generateFailure" }]
+        },
+        {
+            "name": "appcomposer_postProcess",
+            "description": "Called after a generate is processed",
+            "metadata": [{ "type": "resourceType" }, { "type": "pathsScrubbed" }]
+        },
+        {
+            "name": "appcomposer_customerReady",
+            "description": "Called after a customer loads into Composeer",
+            "metadata": [{ "type": "loadFileTime" }, { "type": "initializeTime" }, { "type": "saveFileTime" }]
+        },
+        {
+            "name": "appcomposer_fps",
+            "description": "Called regularly to record app performance",
+            "metadata": [{ "type": "fps" }]
+        },
+        {
+            "name": "appcomposer_addResource",
+            "description": "Called when a resource is added to the canvas",
+            "metadata": [{ "type": "resourceType" }]
+        },
+        {
+            "name": "appcomposer_addConnection",
+            "description": "Called when two resources are connected",
+            "metadata": [
+                { "type": "sourceResourceType" },
+                { "type": "sourceFacetType" },
+                { "type": "destResourceType" },
+                { "type": "destFacetType" }
+            ]
+        },
+        {
+            "name": "appcomposer_openWfs",
+            "description": "Called when Step Functions Workflow Studio is opened"
+        },
+        {
+            "name": "appcomposer_closeWfs",
+            "description": "Called when Step Functions Workflow Studio is closed",
+            "metadata": [{ "type": "didSave" }]
+        },
+        {
             "name": "codewhisperer_codeScanIssueHover",
             "description": "Called when a code scan issue is hovered over",
             "metadata": [{ "type": "findingId" }, { "type": "detectorId" }]
@@ -754,78 +852,6 @@
                 },
                 {
                     "type": "cwsprChatCommandName",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_codeTransformInvoke",
-            "description": "The user selects code transform on an open project",
-            "metadata": [
-                {
-                    "type": "codeTransform_SessionId",
-                    "required": true
-                },
-                {
-                    "type": "codeTransform_ApiName",
-                    "required": false
-                },
-                {
-                    "type": "codeTransform_ApiErrorId",
-                    "required": false
-                },
-                {
-                    "type": "codeTransform_JobId",
-                    "required": false
-                },
-                {
-                    "type": "codeTransform_ProjectType",
-                    "required": false
-                },
-                {
-                    "type": "codeTransform_SourceJavaVersion",
-                    "required": false
-                },
-                {
-                    "type": "codeTransform_ResultStatusMessage",
-                    "required": false
-                },
-                {
-                    "type": "duration",
-                    "required": true
-                },
-                {
-                    "type": "result",
-                    "required": true
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_codeTransformReview",
-            "description": "The user reviews the proposed results of a code transformation",
-            "metadata": [
-                {
-                    "type": "codeTransform_SessionId",
-                    "required": true
-                },
-                {
-                    "type": "codeTransform_JobId",
-                    "required": true
-                },
-                {
-                    "type": "codeTransform_ApiName",
-                    "required": false
-                },
-                {
-                    "type": "result",
-                    "required": true
-                },
-                {
-                    "type": "reason",
                     "required": false
                 }
             ]
