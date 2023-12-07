@@ -103,18 +103,26 @@ export function validateMetricEvent(event: MetricDatum, fatal: boolean) {
 
     if (!isValidationExemptMetric(event.MetricName) && event.Metadata) {
         const metadata = mapMetadata([])(event.Metadata)
-        if (metadata.result === undefined) {
-            throw new Error(
-                `Metric \`${event.MetricName}\` was emitted without the \`result\` property. ` +
-                    `This property is always required. ${telemetryRunDocsStr}`
-            )
-        }
 
-        if (metadata.result === failedStr && metadata.reason === undefined) {
-            throw new Error(
-                `Metric \`${event.MetricName}\` was emitted without the \`reason\` property. ` +
-                    `This property is always required when \`result\` = 'Failed'. ${telemetryRunDocsStr}`
-            )
+        try {
+            if (metadata.result === undefined) {
+                throw new Error(
+                    `Metric \`${event.MetricName}\` was emitted without the \`result\` property. ` +
+                        `This property is always required. ${telemetryRunDocsStr}`
+                )
+            }
+
+            if (metadata.result === failedStr && metadata.reason === undefined) {
+                throw new Error(
+                    `Metric \`${event.MetricName}\` was emitted without the \`reason\` property. ` +
+                        `This property is always required when \`result\` = 'Failed'. ${telemetryRunDocsStr}`
+                )
+            }
+        } catch (err: any) {
+            if (fatal) {
+                throw err
+            }
+            getLogger().warn(`Metric Event did not pass validation: ${(err as Error).message}`)
         }
     }
 }
