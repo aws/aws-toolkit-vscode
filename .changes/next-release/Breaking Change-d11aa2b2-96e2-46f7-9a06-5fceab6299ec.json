@@ -1,4 +1,0 @@
-{
-	"type": "Breaking Change",
-	"description": "validate that pom.xml is in root directory of project, not anywhere in project"
-}

@@ -34,6 +34,8 @@ export class DependencyGraphFactory {
     static getDependencyGraphFromFileExtensions<K extends Keys>(fileName: string): ClassType<K> {
         if (fileName.endsWith(DependencyGraphConstants.tfExt) || fileName.endsWith(DependencyGraphConstants.hclExt)) {
             return new languageMap['terraform']('tf' satisfies CodeWhispererConstants.PlatformLanguageId)
+        } else if (fileName.endsWith(DependencyGraphConstants.jsonExt)) {
+            return new languageMap['cloudformation']('json' satisfies CodeWhispererConstants.PlatformLanguageId)
         } else {
             return undefined
         }
@@ -53,8 +55,6 @@ export class DependencyGraphFactory {
                 return new languageMap['csharp']('csharp' satisfies CodeWhispererConstants.PlatformLanguageId)
             case 'yaml' satisfies CodeWhispererConstants.PlatformLanguageId:
                 return new languageMap['cloudformation']('yaml' satisfies CodeWhispererConstants.PlatformLanguageId)
-            case 'json' satisfies CodeWhispererConstants.PlatformLanguageId:
-                return new languageMap['cloudformation']('json' satisfies CodeWhispererConstants.PlatformLanguageId)
             case 'go' satisfies CodeWhispererConstants.PlatformLanguageId:
                 return new languageMap['go']('go' satisfies CodeWhispererConstants.PlatformLanguageId)
             default:

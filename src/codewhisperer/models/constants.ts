@@ -98,6 +98,7 @@ export const platformLanguageIds = [
     'terragrunt',
     'packer',
     'plaintext',
+    'jsonc',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
@@ -403,3 +404,5 @@ export const crossFileContextConfig = {
 export const utgConfig = {
     maxSegmentSize: 10200,
 }
+
+export const transformTreeNode = 'qTreeNode'
