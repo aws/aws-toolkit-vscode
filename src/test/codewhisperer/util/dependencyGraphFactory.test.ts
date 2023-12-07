@@ -9,6 +9,7 @@ import { join } from 'path'
 import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
 import { DependencyGraphFactory } from '../../../codewhisperer/util/dependencyGraph/dependencyGraphFactory'
 import { terraformDependencyGraph } from './../../../codewhisperer/util/dependencyGraph/terraformDependencyGraph'
+import { cloudformationDependencyGraph } from '../../../codewhisperer/util/dependencyGraph/cloudformationDependencyGraph'
 
 describe('DependencyGraphFactory', function () {
     const workspaceFolder = getTestWorkspaceFolder()
@@ -26,5 +27,14 @@ describe('DependencyGraphFactory', function () {
         const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor)
         const isTerraformDependencyGraph = dependencyGraph instanceof terraformDependencyGraph
         assert.ok(isTerraformDependencyGraph)
+    })
+
+    it('codescan request for file in supported json language find generate dependency graph using file extension', async function () {
+        const appRoot = join(workspaceFolder, 'cloudformation-plain-sam-app')
+        const appCodePath = join(appRoot, 'src', 'app.json')
+        const editor = await openTestFile(appCodePath)
+        const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor)
+        const isCloudFormationDependencyGraph = dependencyGraph instanceof cloudformationDependencyGraph
+        assert.ok(isCloudFormationDependencyGraph)
     })
 })
