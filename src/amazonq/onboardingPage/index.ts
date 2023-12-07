@@ -7,8 +7,8 @@ import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import path from 'path'
 import { MessagePublisher } from '../messages/messagePublisher'
-import { focusAmazonQPanel } from '../../codewhisperer/commands/basicCommands'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 
 export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublisher: MessagePublisher<any>): void {
     const panel = vscode.window.createWebviewPanel(

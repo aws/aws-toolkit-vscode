@@ -7,12 +7,13 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
-import { focusAmazonQPanel, reconnect, showTransformByQ } from '../../codewhisperer/commands/basicCommands'
+import { reconnect, showTransformByQ } from '../../codewhisperer/commands/basicCommands'
 import { transformByQState } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 
 const localize = nls.loadMessageBundle()
 
@@ -50,7 +51,7 @@ export const switchToAmazonQNode = () =>
 export const enableAmazonQNode = () =>
     // Simply trigger re-auth to obtain the proper scopes- same functionality as if requested in the chat window.
     reconnect.build(placeholder, cwTreeNodeSource).asTreeNode({
-        label: localize('AWS.amazonq.enable', 'Enable Amazon Q (Preview)'),
+        label: localize('AWS.amazonq.enable', 'Enable'),
         iconPath: getIcon('vscode-debug-start'),
         contextValue: 'awsEnableAmazonQ',
     })
