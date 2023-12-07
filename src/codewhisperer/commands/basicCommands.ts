@@ -41,13 +41,19 @@ import { FeatureConfigProvider } from '../service/featureConfigProvider'
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
     (suggestionState: CodeSuggestionsState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
-        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-        telemetry.aws_modifySetting.emit({
-            settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
-            settingState: isSuggestionsEnabled
-                ? CodeWhispererConstants.autoSuggestionConfig.activated
-                : CodeWhispererConstants.autoSuggestionConfig.deactivated,
+        await telemetry.aws_modifySetting.run(async span => {
+            span.record({
+                settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
+            })
+
+            const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
+            span.record({
+                settingState: isSuggestionsEnabled
+                    ? CodeWhispererConstants.autoSuggestionConfig.activated
+                    : CodeWhispererConstants.autoSuggestionConfig.deactivated,
+            })
+
+            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         })
     }
 )
