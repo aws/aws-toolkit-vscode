@@ -9,7 +9,7 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { readFileAsString } from '../../../shared/filesystemUtilities'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { DependencyGraphConstants, DependencyGraph, Truncation } from './dependencyGraph'
-import path = require('path')
+import * as path from 'path'
 
 export const importRegex = /(require|require_relative|load|include|extend)\s+('[^']+'|"[^"]+"|\w+)(\s+as\s+(\w+))?/gm
 
