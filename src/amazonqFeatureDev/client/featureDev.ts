@@ -9,13 +9,12 @@ import { ConfiguredRetryStrategy } from '@aws-sdk/util-retry'
 import { omit } from 'lodash'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
-import { ToolkitError } from '../../shared/errors'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
-import { ContentLengthError } from '../errors'
+import { ApiError, ContentLengthError } from '../errors'
 import { endpoint, region } from '../../codewhisperer/models/constants'
 
 // Create a client for featureDev proxy client based off of aws sdk v2
@@ -82,7 +81,7 @@ export class FeatureDevClient {
                     (e as any).requestId
                 }`
             )
-            throw new ToolkitError((e as Error).message, { code: 'CreateConversationFailed' })
+            throw new ApiError((e as Error).message, 'CreateConversation', (e as any).statusCode)
         }
     }
 
@@ -117,7 +116,7 @@ export class FeatureDevClient {
             if (e.code === 'ValidationException' && e.message.includes('Invalid contentLength')) {
                 throw new ContentLengthError()
             }
-            throw new ToolkitError((e as Error).message, { code: 'CreateUploadUrlFailed' })
+            throw new ApiError((e as Error).message, 'CreateUploadUrl', (e as any).statusCode)
         }
     }
 
@@ -156,7 +155,7 @@ export class FeatureDevClient {
             getLogger().error(
                 `${featureName}: failed to execute planning: ${(e as Error).message} RequestId: ${(e as any).requestId}`
             )
-            throw new ToolkitError((e as Error).message, { code: 'GeneratePlanFailed' })
+            throw new ApiError((e as Error).message, 'GeneratePlanFailed', (e as any)?.$metadata?.httpStatusCode ?? 500) // Internal server errors are not returning the http status code
         }
     }
 }
