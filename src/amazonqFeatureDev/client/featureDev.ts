@@ -52,6 +52,15 @@ async function createFeatureDevStreamingClient(): Promise<CodeWhispererStreaming
     return streamingClient
 }
 
+const streamResponseErrors: Record<string, number> = {
+    ValidationException: 400,
+    AccessDeniedException: 403,
+    ResourceNotFoundException: 404,
+    ConflictException: 409,
+    ThrottlingException: 429,
+    InternalServerException: 500,
+}
+
 export class FeatureDevClient {
     private async getClient() {
         // Should not be stored for the whole session.
@@ -75,13 +84,9 @@ export class FeatureDevClient {
                 requestId: $response.requestId,
             })
             return conversationId
-        } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to start conversation: ${(e as Error).message} RequestId: ${
-                    (e as any).requestId
-                }`
-            )
-            throw new ApiError((e as Error).message, 'CreateConversation', (e as any).statusCode)
+        } catch (e: any) {
+            getLogger().error(`${featureName}: failed to start conversation: ${e.message} RequestId: ${e.requestId}`)
+            throw new ApiError(e.message, 'CreateConversation', e.statusCode)
         }
     }
 
@@ -109,14 +114,12 @@ export class FeatureDevClient {
             return response
         } catch (e: any) {
             getLogger().error(
-                `${featureName}: failed to generate presigned url: ${(e as Error).message} RequestId: ${
-                    (e as any).requestId
-                }`
+                `${featureName}: failed to generate presigned url: ${e.message} RequestId: ${e.requestId}`
             )
             if (e.code === 'ValidationException' && e.message.includes('Invalid contentLength')) {
                 throw new ContentLengthError()
             }
-            throw new ApiError((e as Error).message, 'CreateUploadUrl', (e as any).statusCode)
+            throw new ApiError(e.message, 'CreateUploadUrl', e.statusCode)
         }
     }
 
@@ -151,11 +154,9 @@ export class FeatureDevClient {
                 assistantResponse.push(responseItem.assistantResponseEvent!.content)
             }
             return assistantResponse.join(' ')
-        } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to execute planning: ${(e as Error).message} RequestId: ${(e as any).requestId}`
-            )
-            throw new ApiError((e as Error).message, 'GeneratePlanFailed', (e as any)?.$metadata?.httpStatusCode ?? 500) // Internal server errors are not returning the http status code
+        } catch (e: any) {
+            getLogger().error(`${featureName}: failed to execute planning: ${e.message} RequestId: ${e.requestId}`)
+            throw new ApiError(e.message, 'GeneratePlan', e.$metadata?.httpStatusCode ?? streamResponseErrors[e.name])
         }
     }
 }

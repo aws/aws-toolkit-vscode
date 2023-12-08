@@ -72,7 +72,7 @@ export class ContentLengthError extends ToolkitError {
 
 export class ApiError extends ToolkitError {
     constructor(message: string, api: string, errorCode: number) {
-        super(message, { code: `${api} - ${errorCode}` })
+        super(message, { code: `${api}-${errorCode}` })
     }
 }
 
