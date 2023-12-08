@@ -20,12 +20,12 @@ describe('UriHandler', function () {
     })
 
     it('can register a handler', async function () {
-        uriHandler.registerHandler(testPath, q => assert.strictEqual(q.get('key'), 'value'))
+        uriHandler.onPath(testPath, q => assert.strictEqual(q.get('key'), 'value'))
         return uriHandler.handleUri(makeUri('key=value'))
     })
 
     it('uses parser if available', async function () {
-        uriHandler.registerHandler(
+        uriHandler.onPath(
             testPath,
             q => assert.strictEqual(q.myNumber, 123),
             (q: SearchParams) => ({ myNumber: Number(q.get('myString')) })
@@ -34,20 +34,20 @@ describe('UriHandler', function () {
     })
 
     it('can handle lists', async function () {
-        uriHandler.registerHandler(testPath, q => assert.deepStrictEqual(q.get('list'), ['1', '2', '3']))
+        uriHandler.onPath(testPath, q => assert.deepStrictEqual(q.get('list'), ['1', '2', '3']))
         return uriHandler.handleUri(makeUri('list=1&list=2&list=3'))
     })
 
     it('can dispose handlers', async function () {
         return new Promise((resolve, reject) => {
-            uriHandler.registerHandler(testPath, () => reject(new Error('this should not be called'))).dispose()
+            uriHandler.onPath(testPath, () => reject(new Error('this should not be called'))).dispose()
             uriHandler.handleUri(makeUri()).then(resolve)
         })
     })
 
     it('throws when registering handler for same path', function () {
-        uriHandler.registerHandler(testPath, () => {})
-        assert.throws(() => uriHandler.registerHandler(testPath, () => {}))
+        uriHandler.onPath(testPath, () => {})
+        assert.throws(() => uriHandler.onPath(testPath, () => {}))
     })
 
     it('catches errors thrown by the parser', async function () {
@@ -58,7 +58,7 @@ describe('UriHandler', function () {
             throw new Error()
         }
 
-        uriHandler.registerHandler(testPath, handler, parser)
+        uriHandler.onPath(testPath, handler, parser)
         await assert.doesNotReject(uriHandler.handleUri(makeUri('key=value')))
     })
 
@@ -67,7 +67,7 @@ describe('UriHandler', function () {
             throw new Error()
         }
 
-        uriHandler.registerHandler(testPath, handler)
+        uriHandler.onPath(testPath, handler)
         return assert.doesNotReject(uriHandler.handleUri(makeUri()))
     })
 })

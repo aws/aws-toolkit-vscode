@@ -147,6 +147,5 @@ export const s3FileViewerHelpUrl = 'https://docs.aws.amazon.com/toolkit-for-vsco
 //URL for Redshift
 export const redshiftHelpUrl = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/redshift.html'
 
-// URL for Amazon Q (Preview)
-// TODO: UPDATE ME!!! When link becomes available.
-export const amazonQHelpUrl = 'https://aws.amazon.com'
+// URL for Amazon Q
+export const amazonQHelpUrl = 'https://aws.amazon.com/q/'

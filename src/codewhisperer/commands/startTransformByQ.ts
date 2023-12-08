@@ -20,13 +20,23 @@ import {
     pollTransformationJob,
     convertToTimeString,
     convertDateToTimestamp,
-    getValidModules,
+    getOpenProjects,
+    validateProjectSelection,
 } from '../service/transformByQHandler'
 import { QuickPickItem } from 'vscode'
 import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as he from 'he'
+import {
+    CodeTransformJavaSourceVersionsAllowed,
+    CodeTransformJavaTargetVersionsAllowed,
+    telemetry,
+} from '../../shared/telemetry/telemetry'
+import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { ToolkitError } from '../../shared/errors'
+import { TransformByQUploadArchiveFailed } from '../../amazonqGumby/models/model'
+import { CancelActionPositions, toJDKMetricValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -56,47 +66,52 @@ interface UserInputState {
     totalSteps: number
     targetLanguage: QuickPickItem
     targetVersion: QuickPickItem
-    module: QuickPickItem
+    project: QuickPickItem
 }
 
-async function collectInputs(validModules: vscode.QuickPickItem[] | undefined) {
+async function collectInputs(validProjects: vscode.QuickPickItem[] | undefined) {
     // const targetLanguages: QuickPickItem[] = CodeWhispererConstants.targetLanguages.map(label => ({ label }))
     const state = {} as Partial<UserInputState>
     // only supporting target language of Java and target version of JDK17 for now, so skip to pickModule prompt
     transformByQState.setTargetJDKVersionToJDK17()
-    await MultiStepInputFlowController.run(input => pickModule(input, state, validModules))
+    await MultiStepInputFlowController.run(input => pickProject(input, state, validProjects))
     // await MultiStepInputFlowController.run(input => pickTargetLanguage(input, state, targetLanguages, validModules))
     return state as UserInputState
 }
 
-async function pickModule(
+async function pickProject(
     input: MultiStepInputFlowController,
     state: Partial<UserInputState>,
-    validModules: vscode.QuickPickItem[] | undefined
+    validProjects: vscode.QuickPickItem[] | undefined
 ) {
     const pick = await input.showQuickPick({
         title: CodeWhispererConstants.transformByQWindowTitle,
         step: DropdownStep.STEP_1,
         totalSteps: DropdownStep.STEP_1,
         placeholder: CodeWhispererConstants.selectModulePrompt,
-        items: validModules!,
-        shouldResume: () => Promise.resolve(true),
-        ignoreFocusOut: false,
+        items: validProjects!,
+        shouldResume: () => Promise.resolve(false),
     })
-    state.module = pick
-    transformByQState.setModuleName(he.encode(state.module.label)) // encode to avoid HTML injection risk
+    state.project = pick
+    transformByQState.setProjectName(he.encode(state.project.label)) // encode to avoid HTML injection risk
 }
 
 export async function startTransformByQ() {
-    let validModules: vscode.QuickPickItem[] | undefined
+    let openProjects: vscode.QuickPickItem[] = []
     try {
-        validModules = await getValidModules()
+        openProjects = await getOpenProjects()
     } catch (err) {
-        getLogger().error('Failed to get valid modules: ', err)
+        getLogger().error('Failed to get open projects: ', err)
         throw err
     }
+    const state = await collectInputs(openProjects)
 
-    const state = await collectInputs(validModules)
+    try {
+        await validateProjectSelection(state.project)
+    } catch (err) {
+        getLogger().error('Selected project is not Java 8, not Java 11, or does not use Maven', err)
+        throw err
+    }
 
     const selection = await vscode.window.showWarningMessage(
         CodeWhispererConstants.dependencyDisclaimer,
@@ -105,16 +120,33 @@ export async function startTransformByQ() {
     )
 
     if (selection !== 'Transform') {
-        return
+        telemetry.codeTransform_jobIsCanceledFromUserPopupClick.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        })
+        throw new ToolkitError('Transform cancelled', { code: 'DidNotConfirmDisclaimer', cancelled: true })
+    } else {
+        telemetry.codeTransform_jobIsStartedFromUserPopupClick.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        })
     }
 
     transformByQState.setToRunning()
-    transformByQState.setModulePath(state.module.description!)
+    transformByQState.setProjectPath(state.project.description!)
     sessionPlanProgress['uploadCode'] = StepProgress.Pending
     sessionPlanProgress['buildCode'] = StepProgress.Pending
     sessionPlanProgress['transformCode'] = StepProgress.Pending
     sessionPlanProgress['returnCode'] = StepProgress.Pending
     const startTime = new Date()
+
+    telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
+        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        codeTransformJavaSourceVersionsAllowed: toJDKMetricValue(
+            transformByQState.getSourceJDKVersion()
+        ) as CodeTransformJavaSourceVersionsAllowed,
+        codeTransformJavaTargetVersionsAllowed: toJDKMetricValue(
+            transformByQState.getTargetJDKVersion()
+        ) as CodeTransformJavaTargetVersionsAllowed,
+    })
 
     vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
     vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
@@ -138,12 +170,11 @@ export async function startTransformByQ() {
         let uploadId = ''
         throwIfCancelled()
         try {
-            const payloadFileName = await zipCode(state.module.description!)
+            const payloadFileName = await zipCode(state.project.description!)
             await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
             uploadId = await uploadPayload(payloadFileName)
         } catch (error) {
-            errorMessage = 'Failed to zip code and upload it to S3'
-            throw error // do not log the error due to security issues (may contain the uploadUrl)
+            throw new TransformByQUploadArchiveFailed()
         }
         sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
         await vscode.commands.executeCommand('aws.amazonq.refresh')
@@ -158,7 +189,7 @@ export async function startTransformByQ() {
         } catch (error) {
             errorMessage = 'Failed to start job'
             getLogger().error(errorMessage, error)
-            throw error
+            throw new ToolkitError(errorMessage, { cause: error as Error })
         }
         transformByQState.setJobId(jobId)
         await vscode.commands.executeCommand('aws.amazonq.refresh')
@@ -173,7 +204,7 @@ export async function startTransformByQ() {
         } catch (error) {
             errorMessage = 'Failed to poll transformation job for plan availability, or job itself failed'
             getLogger().error(errorMessage, error)
-            throw error
+            throw new ToolkitError(errorMessage, { cause: error as Error })
         }
         let plan = undefined
         try {
@@ -181,7 +212,7 @@ export async function startTransformByQ() {
         } catch (error) {
             errorMessage = 'Failed to get transformation plan'
             getLogger().error(errorMessage, error)
-            throw error
+            throw new ToolkitError(errorMessage, { cause: error as Error })
         }
         sessionPlanProgress['buildCode'] = StepProgress.Succeeded
         const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
@@ -198,14 +229,15 @@ export async function startTransformByQ() {
         } catch (error) {
             errorMessage = 'Failed to get transformation job status'
             getLogger().error(errorMessage, error)
-            throw error
+            throw new ToolkitError(errorMessage, { cause: error as Error })
         }
 
         if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
             errorMessage = 'Failed to complete transformation'
             getLogger().error(errorMessage)
             sessionPlanProgress['transformCode'] = StepProgress.Failed
-            throw new Error(errorMessage)
+
+            throw new ToolkitError(errorMessage, { code: 'JobDidNotSucceed' })
         }
 
         sessionPlanProgress['transformCode'] = StepProgress.Succeeded
@@ -220,14 +252,17 @@ export async function startTransformByQ() {
     } catch (error) {
         if (transformByQState.isCancelled()) {
             stopJob(transformByQState.getJobId())
-            vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage)
+            vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage, { modal: true })
         } else {
             transformByQState.setToFailed()
             let displayedErrorMessage = CodeWhispererConstants.transformByQFailedMessage
             if (errorMessage !== '') {
                 displayedErrorMessage = errorMessage
             }
-            vscode.window.showErrorMessage(displayedErrorMessage)
+            if (transformByQState.getJobFailureReason() !== '') {
+                displayedErrorMessage += `: ${transformByQState.getJobFailureReason()}`
+            }
+            vscode.window.showErrorMessage(displayedErrorMessage, { modal: true })
         }
         if (sessionPlanProgress['uploadCode'] !== StepProgress.Succeeded) {
             sessionPlanProgress['uploadCode'] = StepProgress.Failed
@@ -244,18 +279,23 @@ export async function startTransformByQ() {
     } finally {
         vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
         const durationInMs = new Date().getTime() - startTime.getTime()
-        if (state.module) {
+
+        if (state.project) {
             sessionJobHistory = processHistory(
                 sessionJobHistory,
                 convertDateToTimestamp(startTime),
-                transformByQState.getModuleName(),
+                transformByQState.getProjectName(),
                 transformByQState.getStatus(),
                 convertToTimeString(durationInMs),
                 transformByQState.getJobId()
             )
         }
         if (transformByQState.isSucceeded()) {
-            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompleted)
+            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompleted, { modal: true })
+        } else if (transformByQState.isPartiallySucceeded()) {
+            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQPartiallyCompletedMessage, {
+                modal: true,
+            })
         }
         await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
         clearInterval(intervalId)
@@ -264,6 +304,13 @@ export async function startTransformByQ() {
         await vscode.commands.executeCommand('aws.amazonq.refresh')
         vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
     }
+    await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
+    clearInterval(intervalId)
+    transformByQState.setToNotStarted() // so that the "Transform by Q" button resets
+    transformByQState.setPolledJobStatus('') // reset polled job status too
+    vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
+    await vscode.commands.executeCommand('aws.amazonq.refresh')
+    vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
 }
 
 export function processHistory(
@@ -288,7 +335,10 @@ export function getPlanProgress() {
     return sessionPlanProgress
 }
 
-export async function confirmStopTransformByQ(jobId: string) {
+export async function confirmStopTransformByQ(
+    jobId: string,
+    cancelSrc: CancelActionPositions = CancelActionPositions.BottomHubPanel
+) {
     const resp = await vscode.window.showWarningMessage(
         CodeWhispererConstants.stopTransformByQMessage,
         { modal: true },
@@ -298,9 +348,12 @@ export async function confirmStopTransformByQ(jobId: string) {
         getLogger().verbose('User requested to stop transform by Q. Stopping transform by Q.')
         transformByQState.setToCancelled()
         await vscode.commands.executeCommand('aws.amazonq.refresh')
-        vscode.window.showInformationMessage(CodeWhispererConstants.stoppingTransformByQMessage)
         vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         stopJob(jobId)
+        telemetry.codeTransform_jobIsCancelledByUser.emit({
+            codeTransformCancelSrcComponents: cancelSrc,
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        })
     }
 }
 

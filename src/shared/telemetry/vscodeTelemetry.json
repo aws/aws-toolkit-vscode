@@ -54,6 +54,77 @@
             "description": "The id of the detector which produced the code scan issue"
         },
         {
+            "name": "hasChatAuth",
+            "type": "boolean",
+            "description": "Whether the user has access to CodeWhisperer Chat"
+        },
+        {
+            "name": "numAttempts",
+            "type": "int",
+            "description": "Number of generations before the user accepted or rejected"
+        },
+        {
+            "name": "resourceType",
+            "type": "string",
+            "description": "CloudFormation resource type"
+        },
+        {
+            "name": "pathsScrubbed",
+            "type": "int",
+            "description": "Number of generation paths modified"
+        },
+        {
+            "name": "generateFailure",
+            "type": "string",
+            "allowedValues": ["Parse"],
+            "description": "Type of generation failure"
+        },
+        {
+            "name": "loadFileTime",
+            "type": "int",
+            "description": "Time from opening Composer to loading the file"
+        },
+        {
+            "name": "initializeTime",
+            "type": "int",
+            "description": "Time from opening Composer to Composer initialize"
+        },
+        {
+            "name": "saveFileTime",
+            "type": "int",
+            "description": "Time from opening Composer to saving the file"
+        },
+        {
+            "name": "fps",
+            "type": "int",
+            "description": "Average frames per second"
+        },
+        {
+            "name": "sourceResourceType",
+            "type": "string",
+            "description": "CloudFormation resource type of connection start"
+        },
+        {
+            "name": "destResourceType",
+            "type": "string",
+            "description": "CloudFormation resource type of connection end"
+        },
+        {
+            "name": "sourceFacetType",
+            "type": "string",
+            "description": "Resource subtype of connection start"
+        },
+        {
+            "name": "destFacetType",
+            "type": "string",
+            "description": "Resource subtype of connection end"
+        },
+        {
+            "name": "didSave",
+            "type": "boolean",
+            "description": "Whether the user saved"
+        },
+        {
             "name": "cwsprChatTriggerInteraction",
             "type": "string",
             "allowedValues": ["hotkeys", "click", "contextMenu"],
@@ -462,6 +533,83 @@
         {
             "name": "sam_openConfigUi",
             "description": "Called after opening the SAM Config UI"
+        },
+        {
+            "name": "appcomposer_openTemplate",
+            "description": "Called after opening a template",
+            "metadata": [{ "type": "hasChatAuth" }]
+        },
+        {
+            "name": "appcomposer_deployClicked",
+            "description": "Called after clicking the Sync button"
+        },
+        {
+            "name": "appcomposer_deployCompleted",
+            "description": "Called after a Composer-triggered SAM Sync completes"
+        },
+        {
+            "name": "appcomposer_generateClicked",
+            "description": "Called after generating a standard resource template partial",
+            "metadata": [{ "type": "resourceType" }]
+        },
+        {
+            "name": "appcomposer_regenerateClicked",
+            "description": "Called after regenerating a standard resource template partial",
+            "metadata": [{ "type": "resourceType" }]
+        },
+        {
+            "name": "appcomposer_generateAccepted",
+            "description": "Called after accepting a generative AI suggestion",
+            "metadata": [{ "type": "resourceType" }, { "type": "numAttempts" }]
+        },
+        {
+            "name": "appcomposer_generateRejected",
+            "description": "Called after rejecting a generative AI suggestion",
+            "metadata": [{ "type": "resourceType" }, { "type": "numAttempts" }]
+        },
+        {
+            "name": "appcomposer_invalidGeneration",
+            "description": "Called after a generate failed",
+            "metadata": [{ "type": "resourceType" }, { "type": "generateFailure" }]
+        },
+        {
+            "name": "appcomposer_postProcess",
+            "description": "Called after a generate is processed",
+            "metadata": [{ "type": "resourceType" }, { "type": "pathsScrubbed" }]
+        },
+        {
+            "name": "appcomposer_customerReady",
+            "description": "Called after a customer loads into Composeer",
+            "metadata": [{ "type": "loadFileTime" }, { "type": "initializeTime" }, { "type": "saveFileTime" }]
+        },
+        {
+            "name": "appcomposer_fps",
+            "description": "Called regularly to record app performance",
+            "metadata": [{ "type": "fps" }]
+        },
+        {
+            "name": "appcomposer_addResource",
+            "description": "Called when a resource is added to the canvas",
+            "metadata": [{ "type": "resourceType" }]
+        },
+        {
+            "name": "appcomposer_addConnection",
+            "description": "Called when two resources are connected",
+            "metadata": [
+                { "type": "sourceResourceType" },
+                { "type": "sourceFacetType" },
+                { "type": "destResourceType" },
+                { "type": "destFacetType" }
+            ]
+        },
+        {
+            "name": "appcomposer_openWfs",
+            "description": "Called when Step Functions Workflow Studio is opened"
+        },
+        {
+            "name": "appcomposer_closeWfs",
+            "description": "Called when Step Functions Workflow Studio is closed",
+            "metadata": [{ "type": "didSave" }]
         },
         {
             "name": "codewhisperer_codeScanIssueHover",

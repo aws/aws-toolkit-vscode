@@ -29,6 +29,7 @@ import {
 import { getLogger } from '../../shared/logger'
 import globals from '../../shared/extensionGlobals'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
+import { Commands, placeholder } from '../../shared/vscode/commands2'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -95,7 +96,7 @@ export class AuthUtil {
         }
         this._isCustomizationFeatureEnabled = value
         vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-        vscode.commands.executeCommand('aws.amazonq.refresh')
+        void Commands.tryExecute('aws.amazonq.refresh')
         vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }
 
@@ -123,11 +124,13 @@ export class AuthUtil {
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
-                vscode.commands.executeCommand('aws.amazonq.refresh'),
+                Commands.tryExecute('aws.amazonq.refresh'),
                 vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
+
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
 
             const memento = globals.context.globalState
             const shouldShowObject: HasAlreadySeenQWelcome = memento.get(this.mementoKey) ?? {
@@ -143,8 +146,11 @@ export class AuthUtil {
                 if (!shouldShowObject[key]) {
                     shouldShowObject[key] = true
                     memento.update(this.mementoKey, shouldShowObject)
-                    await vscode.commands.executeCommand('aws.amazonq.welcome')
+                    await vscode.commands.executeCommand('aws.amazonq.welcome', placeholder, key)
                 }
+
+                // start the feature config polling job
+                vscode.commands.executeCommand('aws.codeWhisperer.fetchFeatureConfigs')
             }
             await this.setVscodeContextProps()
         })
@@ -300,19 +306,21 @@ export class AuthUtil {
 
     public async reauthenticate() {
         try {
-            // Edge Case: With the addition of Amazon Q/Chat scopes we may need to add
-            // the new scopes to existing connections.
-            if (this.conn?.type === 'sso') {
-                if (isBuilderIdConnection(this.conn) && !isValidCodeWhispererChatConnection(this.conn)) {
-                    const conn = await this.secondaryAuth.addScopes(this.conn, codeWhispererChatScopes)
-                    this.secondaryAuth.useNewConnection(conn)
-                } else if (isIdcSsoConnection(this.conn) && !isValidAmazonQConnection(this.conn)) {
-                    const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
-                    this.secondaryAuth.useNewConnection(conn)
-                }
+            if (this.conn?.type !== 'sso') {
+                return
             }
 
-            await this.auth.reauthenticate(this.conn!)
+            // Edge Case: With the addition of Amazon Q/Chat scopes we may need to add
+            // the new scopes to existing connections.
+            if (isBuilderIdConnection(this.conn) && !isValidCodeWhispererChatConnection(this.conn)) {
+                const conn = await this.secondaryAuth.addScopes(this.conn, codeWhispererChatScopes)
+                this.secondaryAuth.useNewConnection(conn)
+            } else if (isIdcSsoConnection(this.conn) && !isValidAmazonQConnection(this.conn)) {
+                const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
+                this.secondaryAuth.useNewConnection(conn)
+            } else {
+                await this.auth.reauthenticate(this.conn)
+            }
         } catch (err) {
             throw ToolkitError.chain(err, 'Unable to authenticate connection')
         } finally {
@@ -324,7 +332,7 @@ export class AuthUtil {
         await Promise.all([
             vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
             vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
-            vscode.commands.executeCommand('aws.amazonq.refresh'),
+            Commands.tryExecute('aws.amazonq.refresh'),
             vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
             vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
         ])
@@ -372,7 +380,7 @@ export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<Feat
         return buildFeatureAuthState(AuthStates.disconnected)
     }
     if (!isSsoConnection(currentConnection)) {
-        throw new ToolkitError(`Connection is not a valid type: ${currentConnection}`)
+        throw new ToolkitError(`Connection "${currentConnection.id}" is not a valid type: ${currentConnection.type}`)
     }
 
     // The state of the connection may not have been properly validated

@@ -25,3 +25,5 @@ export const uiComponentsTexts = {
     codeSuggestionWithReferenceTitle: 'Some suggestions contain code with references.',
     spinnerText: 'Generating your answer...',
 }
+
+export const userGuideURL = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/getting-started.html'

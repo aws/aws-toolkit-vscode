@@ -235,7 +235,7 @@ export enum StepProgress {
     Failed = 'Failed',
 }
 
-enum JDKVersion {
+export enum JDKVersion {
     JDK8 = '8',
     JDK11 = '11',
     JDK17 = '17',
@@ -249,15 +249,15 @@ export enum DropdownStep {
 
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
-    dependenciesRoot: string = 'dependencies/'
+    dependenciesRoot: string | undefined = 'dependencies/'
     version: string = '1.0'
 }
 
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
 
-    private moduleName: string = ''
-    private modulePath: string = ''
+    private projectName: string = ''
+    private projectPath: string = ''
 
     private jobId: string = ''
 
@@ -269,6 +269,8 @@ export class TransformByQState {
     private summaryFilePath: string = ''
 
     private polledJobStatus: string = ''
+
+    private jobFailureReason: string = ''
 
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
@@ -294,12 +296,12 @@ export class TransformByQState {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
     }
 
-    public getModuleName() {
-        return this.moduleName
+    public getProjectName() {
+        return this.projectName
     }
 
-    public getModulePath() {
-        return this.modulePath
+    public getProjectPath() {
+        return this.projectPath
     }
 
     public getJobId() {
@@ -330,6 +332,10 @@ export class TransformByQState {
         return this.summaryFilePath
     }
 
+    public getJobFailureReason() {
+        return this.jobFailureReason
+    }
+
     public setToNotStarted() {
         this.transformByQState = TransformByQStatus.NotStarted
     }
@@ -354,12 +360,12 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
     }
 
-    public setModuleName(name: string) {
-        this.moduleName = name
+    public setProjectName(name: string) {
+        this.projectName = name
     }
 
-    public setModulePath(path: string) {
-        this.modulePath = path
+    public setProjectPath(path: string) {
+        this.projectPath = path
     }
 
     public setJobId(id: string) {
@@ -388,6 +394,10 @@ export class TransformByQState {
 
     public setSummaryFilePath(filePath: string) {
         this.summaryFilePath = filePath
+    }
+
+    public setJobFailureReason(reason: string) {
+        this.jobFailureReason = reason
     }
 
     public getPrefixTextForButton() {

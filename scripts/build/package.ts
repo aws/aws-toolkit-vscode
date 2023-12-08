@@ -6,9 +6,9 @@
 //
 // Creates an artifact that can be given to users for testing alpha/beta builds:
 //
-//     aws-toolkit-vscode-99.0.0-xxxxxxxxxxxx.vsix
+//     aws-toolkit-vscode-99.0.0-xxxxxxx.vsix
 //
-// Where `xxxxxxxxxxxx` is the first 12 characters of the commit hash that produced the artifact
+// Where `xxxxxxx` is the first 7 characters of the commit hash that produced the artifact.
 //
 // The script works like this:
 // 1. temporarily change `version` in package.json
@@ -90,15 +90,15 @@ function isBeta(): boolean {
  *
  * @returns version-string suffix, for example: "-e6ecd84685a9"
  */
-function getVersionSuffix(feature: string): string {
+function getVersionSuffix(feature: string, debug: boolean): string {
     if (isRelease()) {
         return ''
     }
-    const commitId = child_process.execSync('git rev-parse --short=12 HEAD').toString().trim()
-    if (!commitId) {
-        return ''
-    }
-    return `${feature === '' ? '' : `-${feature}`}-${commitId}`
+    const debugSuffix = debug ? '-debug' : ''
+    const featureSuffix = feature === '' ? '' : `-${feature}`
+    const commitId = child_process.execSync('git rev-parse --short=7 HEAD').toString().trim()
+    const commitSuffix = commitId ? `-${commitId}` : ''
+    return `${debugSuffix}${featureSuffix}${commitSuffix}`
 }
 
 function main() {
@@ -118,12 +118,11 @@ function main() {
             fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
 
             const packageJson: typeof PackageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
-            const versionSuffix = getVersionSuffix(args.feature)
+            const versionSuffix = getVersionSuffix(args.feature, args.debug)
             const version = packageJson.version
-            // Setting the version to an arbitrarily high number stops VSC from auto-updating the beta extension
-            const betaOrDebugVersion = `99.0.0${versionSuffix}`
-            if (isBeta() || args.debug) {
-                packageJson.version = betaOrDebugVersion
+            if (isBeta()) {
+                // Declare an arbitrarily high version number, to stop VSC from auto-updating "beta" builds.
+                packageJson.version = `99.0.0${versionSuffix}`
             } else {
                 packageJson.version = version.replace('-SNAPSHOT', versionSuffix)
             }

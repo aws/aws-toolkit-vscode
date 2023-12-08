@@ -22,7 +22,7 @@ export class QuickActionHandler {
     private connector: Connector
     private tabsStorage: TabsStorage
     private tabDataGenerator: TabDataGenerator
-    public isFeatureDevEnabled: boolean
+    private isFeatureDevEnabled: boolean
 
     constructor(props: QuickActionsHandlerProps) {
         this.mynahUI = props.mynahUI
@@ -97,7 +97,7 @@ export class QuickActionHandler {
             this.mynahUI.updateStore(affectedTabId, { chatItems: [] })
             this.mynahUI.updateStore(
                 affectedTabId,
-                this.tabDataGenerator.getTabData('featuredev', realPromptText === '', taskName)
+                this.tabDataGenerator.getTabData('featuredev', true, realPromptText === '', taskName)
             )
 
             if (realPromptText !== '') {

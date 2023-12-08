@@ -11,9 +11,10 @@ import {
     createOpenReferenceLog,
 } from '../../codewhisperer/explorer/codewhispererChildrenNodes'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
-import { AuthUtil } from '../../codewhisperer/util/authUtil'
-import { createLearnMoreNode, createTransformByQ, switchToAmazonQNode } from './amazonQChildrenNodes'
+import { AuthUtil, amazonQScopes, codeWhispererChatScopes } from '../../codewhisperer/util/authUtil'
+import { createLearnMoreNode, createTransformByQ, enableAmazonQNode, switchToAmazonQNode } from './amazonQChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
+import { hasScopes, isSsoConnection } from '../../auth/connection'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -70,6 +71,15 @@ export class AmazonQNode implements TreeNode {
         if (!AuthUtil.instance.isConnected()) {
             return [createSignIn('tree'), createLearnMoreNode()]
         }
+        if (isSsoConnection(AuthUtil.instance.conn)) {
+            const missingScopes =
+                (AuthUtil.instance.isEnterpriseSsoInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
+                !hasScopes(AuthUtil.instance.conn, codeWhispererChatScopes)
+
+            if (missingScopes) {
+                return [enableAmazonQNode(), createLearnMoreNode()]
+            }
+        }
         if (this._showFreeTierLimitReachedNode) {
             return [createFreeTierLimitMet('tree'), createOpenReferenceLog('tree')]
         } else {
@@ -78,7 +88,7 @@ export class AmazonQNode implements TreeNode {
                 vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
                 return [switchToAmazonQNode(), createTransformByQ(), createOpenReferenceLog('tree')] // transform only available for IdC users
             }
-            return [switchToAmazonQNode()]
+            return [switchToAmazonQNode(), createOpenReferenceLog('tree')]
         }
     }
 

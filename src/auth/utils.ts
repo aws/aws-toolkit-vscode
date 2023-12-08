@@ -326,6 +326,11 @@ export async function tryAddCredentials(
 const getConnectionIcon = (conn: Connection) =>
     conn.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')
 
+const deleteConnection = 'Delete Connection'
+export const createDeleteConnectionButton: () => vscode.QuickInputButton = () => {
+    return { tooltip: deleteConnection, iconPath: getIcon('vscode-trash') }
+}
+
 export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
     const addNewConnection = {
         label: codicon`${getIcon('vscode-plus')} Add New Connection`,
@@ -340,8 +345,16 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
             ? localize('aws.auth.promptConnection.iam.placeholder', 'Select an IAM credential')
             : localize('aws.auth.promptConnection.all.placeholder', 'Select a connection')
 
+    const refreshPrompter = () => {
+        // This function should not return a promise, or else tests fail.
+
+        prompter.clearAndLoadItems(loadItems()).catch(e => {
+            getLogger().error(`Auth: Failed loading connections in quickpick: %s`, e)
+            throw e
+        })
+    }
     const refreshButton = createRefreshButton()
-    refreshButton.onClick = () => void prompter.clearAndLoadItems(loadItems())
+    refreshButton.onClick = refreshPrompter
 
     // Place add/edit connection items at the bottom, then sort 'sso' connections
     // first, then valid connections, then finally the item label
@@ -375,6 +388,19 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
         },
     })
 
+    prompter.quickPick.onDidTriggerItemButton(async e => {
+        // User wants to delete a specific connection
+        if (e.button.tooltip === deleteConnection) {
+            const conn = e.item.data as Connection
+
+            // Set prompter in to a busy state so that
+            // tests must wait for refresh to fully complete
+            prompter.busy = true
+            await auth.deleteConnection(conn)
+            refreshPrompter()
+        }
+    })
+
     return prompter
 
     async function* loadItems(): AsyncGenerator<
@@ -397,11 +423,14 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
 
     function toPickerItem(conn: Connection): DataQuickPickItem<Connection> {
         const state = auth.getConnectionState(conn)
+        // Only allow SSO connections to be deleted
+        const deleteButton: vscode.QuickInputButton[] = conn.type === 'sso' ? [createDeleteConnectionButton()] : []
         if (state === 'valid') {
             return {
                 data: conn,
                 label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
                 description: getConnectionDescription(conn),
+                buttons: [...deleteButton],
             }
         }
 
@@ -419,6 +448,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
             data: conn,
             invalidSelection: state !== 'authenticating',
             label: codicon`${getIcon('vscode-error')} ${conn.label}`,
+            buttons: [...deleteButton],
             description:
                 state === 'authenticating'
                     ? 'authenticating...'
@@ -596,7 +626,7 @@ export async function hasSso(
     return (await findSsoConnections(kind, allConnections)).length > 0
 }
 
-async function findSsoConnections(
+export async function findSsoConnections(
     kind: SsoKind = 'any',
     allConnections = () => Auth.instance.listConnections()
 ): Promise<SsoConnection[]> {

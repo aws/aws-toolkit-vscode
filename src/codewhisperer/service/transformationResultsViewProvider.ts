@@ -16,6 +16,9 @@ import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../shared/utilities/download'
 import { ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -250,12 +253,13 @@ export class ProposedTransformationExplorer {
                     'markdown.showPreview',
                     vscode.Uri.file(transformByQState.getSummaryFilePath())
                 )
+                telemetry.ui_click.emit({ elementId: 'transformationHub_viewSummary' })
             }
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
             vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.PreparingReview)
-
+            telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
             const pathToArchive = path.join(
                 ProposedTransformationExplorer.TmpDir,
                 transformByQState.getJobId(),
@@ -271,36 +275,64 @@ export class ProposedTransformationExplorer {
                     },
                     pathToArchive
                 )
-            } catch (error) {
+            } catch (e: any) {
                 // This allows the customer to retry the download
                 vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
-                throw new ToolkitError('There was a problem fetching the transformed code.')
+                const errorMessage = 'There was a problem fetching the transformed code.'
+                telemetry.codeTransform_logApiError.emit({
+                    codeTransformApiNames: 'ExportResultArchive',
+                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformJobId: transformByQState.getJobId(),
+                    codeTransformApiErrorMessage: e?.message || errorMessage,
+                    codeTransformRequestId: e?.requestId,
+                })
+                throw new ToolkitError(errorMessage)
             }
-            const pathContainingArchive = path.dirname(pathToArchive)
-            const zip = new AdmZip(pathToArchive)
-            zip.extractAllTo(pathContainingArchive)
 
-            diffModel.parseDiff(
-                path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
-                path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSourceDir),
-                transformByQState.getModulePath()
-            )
-
-            vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.InReview)
-            transformDataProvider.refresh()
-
-            transformByQState.setSummaryFilePath(
-                path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
-            )
+            let deserializeErrorMessage
+            const deserializeArchiveStartTime = Date.now()
+            try {
+                // Download and deserialize the zip
+                const pathContainingArchive = path.dirname(pathToArchive)
+                const zip = new AdmZip(pathToArchive)
+                zip.extractAllTo(pathContainingArchive)
+                diffModel.parseDiff(
+                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
+                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSourceDir),
+                    transformByQState.getProjectPath()
+                )
+                vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.InReview)
+                transformDataProvider.refresh()
+                transformByQState.setSummaryFilePath(
+                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
+                )
+            } catch (e: any) {
+                deserializeErrorMessage = e?.message || 'Error during deserialization of result archive'
+            } finally {
+                telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
+                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformJobId: transformByQState.getJobId(),
+                    codeTransformRunTimeLatency: calculateTotalLatency(deserializeArchiveStartTime),
+                    // TODO: A nice to have would be getting the zip download size
+                    codeTransformTotalByteSize: 0,
+                    codeTransformRuntimeError: deserializeErrorMessage,
+                })
+            }
 
             await vscode.window.showInformationMessage(
                 'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.',
                 { modal: true }
             )
+            await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
+            telemetry.codeTransform_vcsDiffViewerVisible.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformJobId: transformByQState.getJobId(),
+            })
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             diffModel.saveChanges()
+            telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             vscode.commands.executeCommand(
                 'setContext',
@@ -308,15 +340,25 @@ export class ProposedTransformationExplorer {
                 TransformByQReviewStatus.NotStarted
             )
             transformDataProvider.refresh()
-
             await vscode.window.showInformationMessage('Changes applied')
+            telemetry.codeTransform_vcsViewerSubmitted.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformJobId: transformByQState.getJobId(),
+            })
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', () => {
             diffModel.rejectChanges()
+            telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
             vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             vscode.commands.executeCommand('setCommand', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
+            telemetry.codeTransform_vcsViewerCanceled.emit({
+                // eslint-disable-next-line id-length
+                codeTransformPatchViewerCancelSrcComponents: 'cancelButton',
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformJobId: transformByQState.getJobId(),
+            })
         })
     }
 }

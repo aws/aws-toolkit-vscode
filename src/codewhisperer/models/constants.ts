@@ -6,10 +6,7 @@
 /**
  * SDK Client
  */
-
-// export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
-
-export const endpoint = 'https://rts.gamma-us-east-1.codewhisperer.ai.aws.dev/' // gamma IAD
+export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
 export const region = 'us-east-1'
 
@@ -101,6 +98,7 @@ export const platformLanguageIds = [
     'terragrunt',
     'packer',
     'plaintext',
+    'jsonc',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
@@ -173,10 +171,10 @@ export const suggestionShowDelay = 250
 // add 200ms more delay on top of inline default 30-50ms
 export const inlineSuggestionShowDelay = 200
 
-export const referenceLog = 'CodeWhisperer Reference Log'
+export const referenceLog = 'Code Reference Log'
 
 export const suggestionDetailReferenceText = (licenses: string) =>
-    `Reference code under ${licenses}. View full details in CodeWhisperer reference log.`
+    `Reference code under ${licenses}. View full details in Code Reference Log.`
 
 export const hoverInlayText = (licenseName: string | undefined, repository: string | undefined) =>
     `Reference code under the ${licenseName} license from repository ${repository}`
@@ -201,6 +199,10 @@ export const referenceLogPromptTextEnterpriseSSO =
 export const codeScanJavaPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
 export const codeScanCsharpPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
+
+export const codeScanRubyPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
+
+export const codeScanGoPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
 export const codeScanPythonPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
@@ -259,7 +261,7 @@ export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
 
-export const connectionExpired = `Connection expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
+export const connectionExpired = `Connection expired. To continue using Amazon Q/CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
 
 export const DoNotShowAgain = `Don\'t Show Again`
 
@@ -299,6 +301,8 @@ export const transformByQCancelledMessage = 'Transformation cancelled'
 
 export const transformByQCompleted = 'Transformation completed'
 
+export const transformByQPartiallyCompletedMessage = 'Transformation partially completed'
+
 export const noPomXmlFoundMessage =
     'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations. Be sure to also build your project.'
 
@@ -312,12 +316,12 @@ export const noSupportedJavaProjectsFoundMessage =
     'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11. Be sure to also build your project.'
 
 export const dependencyDisclaimer =
-    "Please confirm you are ready to proceed with the transformation. Amazon Q will upload the application code and it's dependency binaries from your machine to start the upgrade. If you haven't yet compiled the application on your local machine, please do so once before starting the upgrade."
+    'Please confirm you are ready to proceed with the transformation. Amazon Q will upload the application code and its dependency binaries from your machine to start the upgrade. If you have not yet compiled the application on your local machine, please do so once before starting the upgrade. Install Maven to ensure all module dependencies are picked for Transformation.'
 
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
 export const dependencyErrorMessage =
-    'We could not upload your project dependencies. Please make sure you have Maven installed and the project has been been built at least once.'
+    'Failed to execute Maven. It is possible that the upload does not include all dependencies.'
 
 export const planIntroductionMessage =
     'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'
@@ -346,7 +350,7 @@ export const transformationJobPollingIntervalSeconds = 10
 
 export const transformationJobTimeoutSeconds = 72000
 
-export const progressIntervalMs = 3000
+export const progressIntervalMs = 1000
 
 export const targetLanguages = ['Java']
 
@@ -402,3 +406,5 @@ export const crossFileContextConfig = {
 export const utgConfig = {
     maxSegmentSize: 10200,
 }
+
+export const transformTreeNode = 'qTreeNode'

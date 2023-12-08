@@ -4,16 +4,21 @@
             <div class="feature-panel-container-title">Amazon Q + CodeWhisperer</div>
 
             <img
-                class="service-item-content-image"
-                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
-                alt="CodeWhisperer example GIF"
+                class="feature-panel-image"
+                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhispererChat.gif"
+                alt="CodeWhisperer Chat example GIF"
             />
 
             <div class="feature-panel-container-description">
                 Build, maintain, and transform applications using generative AI.
-                <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')"
-                    >Learn more.</a
-                >
+                <br />
+                <br />
+                Learn more about
+                <a href="https://aws.amazon.com/q/" v-on:click="emitUiClick('auth_learnMoreAmazonQ')"> Amazon Q</a>
+                and
+                <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')">
+                    CodeWhisperer</a
+                >.
             </div>
         </div>
 
@@ -130,9 +135,11 @@ export default defineComponent({
         },
         showCodeWhispererView() {
             client.showCodeWhispererView()
+            client.emitUiClick('auth_openCodeWhisperer')
         },
         showAmazonQChat() {
             client.showAmazonQChat()
+            client.emitUiClick('auth_amazonQChat')
         },
     },
 })

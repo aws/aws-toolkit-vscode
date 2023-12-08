@@ -456,7 +456,7 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
     }
 
     override async isAuthConnected(): Promise<boolean> {
-        return client.isIdentityCenterExists()
+        return await client.isExplorerConnected('idc')
     }
 
     override isConnectionExists(): Promise<boolean> {

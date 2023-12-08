@@ -112,16 +112,16 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             progressHtml = `<p><b>Transformation Status</b></p>`
             progressHtml += `<p> ${this.getProgressIconMarkup(
                 planProgress['uploadCode']
-            )} Uploading code to secure build environment</p>`
+            )} Upload code to secure build environment</p>`
             if (planProgress['uploadCode'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['buildCode']
-                )} Building code and generating transformation plan</p>`
+                )} Generate transformation plan</p>`
             }
             if (planProgress['buildCode'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['transformCode']
-                )} Stepping through transformation plan</p>`
+                )} Transform your code to Java 17 using transformation plan</p>`
                 // now get the details of each sub-step of the "transformCode" step
                 if (planSteps !== undefined) {
                     const stepStatuses = []
@@ -170,7 +170,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             if (planProgress['transformCode'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['returnCode']
-                )} Validating and preparing proposed changes</p>`
+                )} Validate and prepare proposed changes</p>`
             }
         }
         const isJobInProgress = transformByQState.isRunning()

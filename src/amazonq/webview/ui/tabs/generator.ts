@@ -32,13 +32,13 @@ export class TabDataGenerator {
     private tabWelcomeMessage: Map<TabType, string> = new Map([
         [
             'unknown',
-            `Hi, I am Amazon Q. I can answer your software development questions. 
+            `Hi, I'm Amazon Q. I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
         You can enter \`/\` to see a list of quick actions.`,
         ],
         [
             'cwc',
-            `Hi, I am Amazon Q (Preview). I can answer your software development questions. 
+            `Hi, I'm Amazon Q. I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
         You can enter \`/\` to see a list of quick actions.`,
         ],
@@ -46,9 +46,9 @@ export class TabDataGenerator {
             'featuredev',
             `Welcome to /dev. 
 
-Here I can provide code suggestions across files in your current project.
+I can help you create a plan or define an approach to development. I'll reference and make suggestions based on your open project.
 
-Before I begin generating code, let's agree on an implementation plan. What change would you like to make?
+_Coming soon_: I'll provide code suggestions to help you implement the plan.
 `,
         ],
     ])
@@ -61,7 +61,12 @@ Before I begin generating code, let's agree on an implementation plan. What chan
         })
     }
 
-    public getTabData(tabType: TabType, needWelcomeMessages: boolean, taskName?: string): MynahUIDataModel {
+    public getTabData(
+        tabType: TabType,
+        needWelcomeMessages: boolean,
+        needFollowUp: boolean = true,
+        taskName?: string
+    ): MynahUIDataModel {
         return {
             tabTitle: taskName ?? this.tabTitle.get(tabType),
             promptInputInfo:
@@ -74,10 +79,14 @@ Before I begin generating code, let's agree on an implementation plan. What chan
                           type: ChatItemType.ANSWER,
                           body: this.tabWelcomeMessage.get(tabType),
                       },
-                      {
-                          type: ChatItemType.ANSWER,
-                          followUp: this.followUpsGenerator.generateWelcomeBlockForTab(tabType),
-                      },
+                      ...(needFollowUp
+                          ? [
+                                {
+                                    type: ChatItemType.ANSWER,
+                                    followUp: this.followUpsGenerator.generateWelcomeBlockForTab(tabType),
+                                },
+                            ]
+                          : []),
                   ]
                 : [],
         }
