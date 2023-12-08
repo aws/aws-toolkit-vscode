@@ -39,6 +39,12 @@ object CodeWhispererConstants {
     const val USING: String = "using"
     const val GLOBAL_USING: String = "global using"
     const val STATIC: String = "static"
+    const val REQUIRE: String = "require"
+    const val REQUIRE_RELATIVE: String = "require_relative"
+    const val LOAD: String = "load"
+    const val INCLUDE: String = "include"
+    const val EXTEND: String = "extend"
+    const val AS: String = " as "
 
     // TODO: this is currently set to 2050 to account for the server side 0.5 TPS and and extra 50 ms buffer to
     // avoid ThrottlingException as much as possible.
@@ -63,6 +69,8 @@ object CodeWhispererConstants {
     const val JAVA_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
     const val CSHARP_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
     const val CSHARP_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
+    const val RUBY_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
+    const val RUBY_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
     const val CLOUDFORMATION_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
     const val CLOUDFORMATION_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val TERRAFORM_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
