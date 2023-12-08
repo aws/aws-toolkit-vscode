@@ -195,6 +195,40 @@
             ],
             "documentation": "<p>Gets the metadata of a code analysis job.</p>"
         },
+        "GetTaskAssistCodeGeneration": {
+            "name": "GetTaskAssistCodeGeneration",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetTaskAssistCodeGenerationRequest"
+            },
+            "output": {
+                "shape": "GetTaskAssistCodeGenerationResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ConflictException"
+                },
+                {
+                    "shape": "ResourceNotFoundException"
+                },
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ],
+            "documentation": "<p>API to get status of task assist code generation.</p>"
+        },
         "GetTransformation": {
             "name": "GetTransformation",
             "http": {
@@ -401,6 +435,40 @@
             "documentation": "<p>Starts a code analysis job</p>",
             "idempotent": true
         },
+        "StartTaskAssistCodeGeneration": {
+            "name": "StartTaskAssistCodeGeneration",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "StartTaskAssistCodeGenerationRequest"
+            },
+            "output": {
+                "shape": "StartTaskAssistCodeGenerationResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ConflictException"
+                },
+                {
+                    "shape": "ResourceNotFoundException"
+                },
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ],
+            "documentation": "<p>API to start task assist code generation.</p>"
+        },
         "StartTransformation": {
             "name": "StartTransformation",
             "http": {
@@ -587,6 +655,32 @@
                     "shape": "Timestamp"
                 }
             }
+        },
+        "CodeGenerationId": {
+            "type": "string",
+            "documentation": "<p>ID which represents a single code generation in a conversation</p>",
+            "max": 128,
+            "min": 1
+        },
+        "CodeGenerationStatus": {
+            "type": "structure",
+            "required": ["status", "currentStage"],
+            "members": {
+                "status": {
+                    "shape": "CodeGenerationWorkflowStatus"
+                },
+                "currentStage": {
+                    "shape": "CodeGenerationWorkflowStage"
+                }
+            }
+        },
+        "CodeGenerationWorkflowStage": {
+            "type": "string",
+            "enum": ["InitialCodeGeneration", "CodeRefinement"]
+        },
+        "CodeGenerationWorkflowStatus": {
+            "type": "string",
+            "enum": ["InProgress", "Complete", "Failed"]
         },
         "CodeScanEvent": {
             "type": "structure",
@@ -1137,6 +1231,32 @@
                 }
             }
         },
+        "GetTaskAssistCodeGenerationRequest": {
+            "type": "structure",
+            "required": ["conversationId", "codeGenerationId"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "codeGenerationId": {
+                    "shape": "CodeGenerationId"
+                }
+            },
+            "documentation": "<p>Request for getting task assist code generation.</p>"
+        },
+        "GetTaskAssistCodeGenerationResponse": {
+            "type": "structure",
+            "required": ["conversationId", "codeGenerationStatus"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "codeGenerationStatus": {
+                    "shape": "CodeGenerationStatus"
+                }
+            },
+            "documentation": "<p>Response for getting task assist code generation status.</p>"
+        },
         "GetTransformationPlanRequest": {
             "type": "structure",
             "required": ["transformationJobId"],
@@ -1609,6 +1729,32 @@
             "type": "string",
             "max": 256,
             "min": 1
+        },
+        "StartTaskAssistCodeGenerationRequest": {
+            "type": "structure",
+            "required": ["conversationState", "workspaceState"],
+            "members": {
+                "conversationState": {
+                    "shape": "ConversationState"
+                },
+                "workspaceState": {
+                    "shape": "WorkspaceState"
+                }
+            },
+            "documentation": "<p>Structure to represent start code generation request.</p>"
+        },
+        "StartTaskAssistCodeGenerationResponse": {
+            "type": "structure",
+            "required": ["conversationId", "codeGenerationId"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "codeGenerationId": {
+                    "shape": "CodeGenerationId"
+                }
+            },
+            "documentation": "<p>Structure to represent start code generation response.</p>"
         },
         "StartTransformationRequest": {
             "type": "structure",
