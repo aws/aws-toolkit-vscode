@@ -147,6 +147,9 @@ export const reconnect = Commands.declare(
     { id: 'aws.codewhisperer.reconnect', compositeKey: { 1: 'source' } },
     () =>
         async (_: VsCodeCommandArg, source: CodeWhispererSource, addMissingScopes: boolean = false) => {
+            if (typeof addMissingScopes !== 'boolean') {
+                addMissingScopes = false
+            }
             await AuthUtil.instance.reauthenticate(addMissingScopes)
         }
 )
