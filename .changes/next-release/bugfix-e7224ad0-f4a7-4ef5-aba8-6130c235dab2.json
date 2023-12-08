@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q Transform: Fix to ensure backend gets necessary dependencies"
+}
