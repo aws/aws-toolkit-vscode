@@ -78,6 +78,7 @@ import { registerWebviewErrorHandler } from './webviews/server'
 import { initializeManifestPaths } from './extensionShared'
 import { ChildProcess } from './shared/utilities/childProcess'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
+import { Timeout } from './shared/utilities/timeoutUtils'
 
 let localize: nls.LocalizeFunc
 
@@ -282,6 +283,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
         if (!isReleaseVersion()) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        }
+        // HACK: Cloud9 currently has some issues with the Codewhisperer view,
+        //       where `getChildren` calls are executed on load but the UI doesn't respond
+        //       (the extension host disposes the commands and recreates them,
+        //       but the nodes remain tied to the old commands).
+        //       This forces a refresh after 5 seconds to ensure a refresh happens at the end of initial extension load.
+        //       If the issue is due to activity on the views,
+        //       this should be fired after planned activities have finished.
+        if (isCloud9()) {
+            const timeout = new Timeout(5000).onCompletion(() => {
+                vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+                timeout.dispose()
+            })
         }
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
