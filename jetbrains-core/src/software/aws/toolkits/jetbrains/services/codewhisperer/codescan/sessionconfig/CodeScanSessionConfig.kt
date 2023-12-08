@@ -223,6 +223,7 @@ sealed class CodeScanSessionConfig(
                 CodewhispererLanguage.Json -> CloudFormationJsonCodeScanSessionConfig(file, project)
                 CodewhispererLanguage.Tf,
                 CodewhispererLanguage.Hcl -> TerraformCodeScanSessionConfig(file, project)
+                CodewhispererLanguage.Go -> GoCodeScanSessionConfig(file, project)
                 CodewhispererLanguage.Ruby -> RubyCodeScanSessionConfig(file, project)
                 else -> fileFormatNotSupported(file.extension ?: "")
             }
