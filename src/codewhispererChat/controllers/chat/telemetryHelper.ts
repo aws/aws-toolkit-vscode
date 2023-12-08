@@ -375,6 +375,7 @@ export class CWCTelemetryHelper {
     //     }
     // }
 
+
     public setResponseStreamTotalTime(tabID: string) {
         const totalTime = performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
         this.responseStreamTotalTime.set(tabID, Math.round(totalTime))
