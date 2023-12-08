@@ -3,23 +3,34 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
+import * as path from 'path'
+
 import { collectFiles } from '../util/files'
-import { ConversationNotStartedState, PrepareRefinementState } from './sessionState'
+import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
+import { featureDevScheme } from '../constants'
+import { referenceLogText } from '../constants'
+import { FileSystemCommon } from '../../srcShared/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
-import { approachRetryLimit } from '../limits'
+import { approachRetryLimit, codeGenRetryLimit } from '../limits'
 import { SessionConfig } from './sessionConfigFactory'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
+
+const fs = FileSystemCommon.instance
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
+    private approach: string = ''
     private proxyClient: FeatureDevClient
     private _conversationId?: string
     private approachRetries: number
+    private codeGenRetries: number
     private preloaderFinished = false
     private _latestMessage: string = ''
     private _telemetry: TelemetryHelper
@@ -32,6 +43,7 @@ export class Session {
         this.proxyClient = new FeatureDevClient()
 
         this.approachRetries = approachRetryLimit
+        this.codeGenRetries = codeGenRetryLimit
 
         this._telemetry = new TelemetryHelper()
         this.isAuthenticating = false
@@ -81,6 +93,28 @@ export class Session {
         }
     }
 
+    /**
+     * Triggered by the Write Code follow up button to move to the code generation phase
+     */
+    initCodegen(): void {
+        this._state = new PrepareCodeGenState(
+            {
+                ...this.getSessionStateConfig(),
+                conversationId: this.conversationId,
+                uploadId: this.uploadId,
+            },
+            this.approach,
+            [],
+            [],
+            [],
+            this.tabID,
+            0
+        )
+        this._latestMessage = ''
+
+        telemetry.amazonq_isApproachAccepted.emit({ amazonqConversationId: this.conversationId, enabled: true })
+    }
+
     async send(msg: string): Promise<Interaction> {
         // When the task/"thing to do" hasn't been set yet, we want it to be the incoming message
         if (this.task === '' && msg) {
@@ -99,6 +133,7 @@ export class Session {
             files,
             task: this.task,
             msg,
+            fs: this.config.fs,
             messenger: this.messenger,
             telemetry: this.telemetry,
         })
@@ -115,9 +150,33 @@ export class Session {
 
             // If approach was changed then we need to set it in the next state and this state
             this.state.approach = newApproach
+            this.approach = newApproach
         }
 
         return resp.interaction
+    }
+
+    public async acceptChanges() {
+        const uploadId = this.uploadId
+        for (const filePath of this.state.filePaths ?? []) {
+            const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
+
+            const uri = vscode.Uri.from({ scheme: featureDevScheme, path: path.join(uploadId, filePath) })
+            const content = await this.config.fs.readFile(uri)
+            const decodedContent = new TextDecoder().decode(content)
+
+            await fs.mkdir(path.dirname(absolutePath))
+            await fs.writeFile(absolutePath, decodedContent)
+        }
+
+        for (const filePath of this.state.deletedFiles ?? []) {
+            const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
+            await fs.delete(absolutePath)
+        }
+
+        for (const ref of this.state.references ?? []) {
+            ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
+        }
     }
 
     get state() {
@@ -138,6 +197,8 @@ export class Session {
         switch (this.state.phase) {
             case 'Approach':
                 return this.approachRetries
+            case 'Codegen':
+                return this.codeGenRetries
             default:
                 return this.approachRetries
         }
@@ -147,6 +208,9 @@ export class Session {
         switch (this.state.phase) {
             case 'Approach':
                 this.approachRetries -= 1
+                break
+            case 'Codegen':
+                this.codeGenRetries -= 1
                 break
         }
     }
