@@ -9,6 +9,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererGo
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJavaScript
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJson
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJsx
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererKotlin
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPhp
@@ -19,8 +20,10 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererScala
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererShell
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererSql
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTf
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTsx
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTypeScript
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererYaml
 import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
 
 object CodeWhispererClassifierConstants {
@@ -54,7 +57,10 @@ object CodeWhispererClassifierConstants {
         CodeWhispererPhp.INSTANCE to -0.3917,
         CodeWhispererGo.INSTANCE to -0.3504,
         CodeWhispererScala.INSTANCE to -0.534,
-        CodeWhispererCpp.INSTANCE to -0.1734
+        CodeWhispererCpp.INSTANCE to -0.1734,
+        CodeWhispererJson.INSTANCE to 0.0,
+        CodeWhispererYaml.INSTANCE to -0.3,
+        CodeWhispererTf.INSTANCE to -0.55
     )
 
     // other metadata coefficient
