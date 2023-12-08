@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import admZip from 'adm-zip'
 import { existsSync, statSync } from 'fs'
 import { asyncCallWithTimeout } from '../commonUtil'
-import path = require('path')
+import * as path from 'path'
 import { tempDirPath } from '../../../shared/filesystemUtilities'
 import * as CodeWhispererConstants from '../../models/constants'
 import { getLogger } from '../../../shared/logger'
@@ -61,6 +61,7 @@ export const DependencyGraphConstants = {
     tfExt: '.tf',
     hclExt: '.hcl',
     rubyExt: '.rb',
+    goExt: '.go',
 }
 
 export abstract class DependencyGraph {

@@ -9,3 +9,4 @@ src/testFixtures/**
 dist/**
 types/*.d.ts
 src.gen/**
+plugins/*/dist/**

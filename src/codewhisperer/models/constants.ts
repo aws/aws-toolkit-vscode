@@ -98,6 +98,7 @@ export const platformLanguageIds = [
     'terragrunt',
     'packer',
     'plaintext',
+    'jsonc',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
@@ -200,6 +201,8 @@ export const codeScanJavaPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 export const codeScanCsharpPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
 export const codeScanRubyPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
+
+export const codeScanGoPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
 export const codeScanPythonPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
@@ -403,3 +406,5 @@ export const crossFileContextConfig = {
 export const utgConfig = {
     maxSegmentSize: 10200,
 }
+
+export const transformTreeNode = 'qTreeNode'

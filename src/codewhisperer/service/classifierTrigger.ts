@@ -61,6 +61,9 @@ export class ClassifierTrigger {
         go: -0.3504,
         scala: -0.534,
         cpp: -0.1734,
+        json: 0,
+        yaml: -0.3,
+        tf: -0.55,
     }
 
     // other metadata coefficient
