@@ -2,27 +2,30 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { existsSync, statSync, readdirSync } from 'fs'
 import * as vscode from 'vscode'
-import { DependencyGraphConstants, DependencyGraph, Truncation } from './dependencyGraph'
-import { sleep } from '../../../shared/utilities/timeoutUtils'
-import { readFileAsString } from '../../../shared/filesystemUtilities'
+import { existsSync, statSync, readdirSync } from 'fs'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
-import path = require('path')
+import { readFileAsString } from '../../../shared/filesystemUtilities'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
+import { DependencyGraphConstants, DependencyGraph, Truncation } from './dependencyGraph'
+import * as path from 'path'
 
-export const importRegex =
-    /(global\s)?using\s(static\s)?((\b[A-Z][A-Za-z]+(\.\b[A-Z][A-Za-z]+)*)|\w+\s*=\s*([\w.]+));/gm
+export const importRegex = /(require|require_relative|load|include|extend)\s+('[^']+'|"[^"]+"|\w+)(\s+as\s+(\w+))?/gm
 
-export class CsharpDependencyGraph extends DependencyGraph {
-    // Payload Size for C#: 1MB
+export class RubyDependencyGraph extends DependencyGraph {
+    // Payload Size for Ruby: 1MB
     getPayloadSizeLimitInBytes(): number {
-        return CodeWhispererConstants.codeScanCsharpPayloadSizeLimitBytes
+        return CodeWhispererConstants.codeScanRubyPayloadSizeLimitBytes
+    }
+    override updateSysPaths(uri: vscode.Uri) {
+        this.getDirPaths(uri).forEach(dirPath => {
+            this._sysPaths.add(dirPath)
+        })
     }
 
-    // No ImportPaths in C# so returning filePath = dirPath + moduluePath + csharpExtension
     private generateFilePath(modulePath: string, dirPath: string) {
-        const filePath = path.join(dirPath, modulePath + DependencyGraphConstants.csharpExt)
+        const filePath = path.join(dirPath, modulePath + DependencyGraphConstants.rubyExt)
         return existsSync(filePath) ? filePath : ''
     }
 
@@ -35,41 +38,69 @@ export class CsharpDependencyGraph extends DependencyGraph {
 
     //Generate the combinations for module paths
     private generateModulePaths(inputPath: string): string[] {
-        const inputPaths = inputPath.split('.')
+        const positionOfExt = inputPath.indexOf(DependencyGraphConstants.rubyExt) //To remove imports having .rb
+        if (positionOfExt !== -1) {
+            inputPath = inputPath.substring(0, positionOfExt).trim()
+        }
+
+        const inputPaths = inputPath.split('/')
         let outputPath = ''
         return inputPaths.map(pathSegment => {
-            outputPath += (outputPath ? '.' : '') + pathSegment
-            return path.join(...outputPath.split('.'))
+            outputPath += (outputPath ? '/' : '') + pathSegment
+            return path.join(...outputPath.split('/'))
         })
     }
 
     private getModulePath(modulePathStr: string) {
-        const index = modulePathStr.indexOf(DependencyGraphConstants.equals)
-        const modulePath = index !== -1 ? modulePathStr.substring(index + 1) : modulePathStr
-        return this.generateModulePaths(modulePath.trim())
+        const pos = modulePathStr.indexOf(DependencyGraphConstants.as)
+        if (pos !== -1) {
+            modulePathStr = modulePathStr.substring(0, pos)
+        }
+
+        return this.generateModulePaths(modulePathStr.replace(/[",'\s()]/g, '').trim())
     }
 
     private extractModulePaths(importStr: string) {
         let modulePaths: string[] = []
-        const usingKeyword = DependencyGraphConstants.using
-        const globalUsingKeyword = DependencyGraphConstants.globalusing
-        const staticKeyword = DependencyGraphConstants.static
-        // Check if Import statement starts with either "using" or "global using"
-        if (importStr.startsWith(usingKeyword) || importStr.startsWith(globalUsingKeyword)) {
-            const indexOfStatic = importStr.indexOf(staticKeyword)
-            const modulePathStr =
-                indexOfStatic !== -1
-                    ? importStr.substring(indexOfStatic + staticKeyword.length).trim()
-                    : importStr.substring(importStr.indexOf(usingKeyword) + usingKeyword.length).trim()
+        const {
+            require: requireKeyword,
+            require_relative: requireRelativeKeyword,
+            include: includeKeyword,
+            extend: extendKeyword,
+            load: loadKeyword,
+        } = DependencyGraphConstants
 
-            modulePaths = this.getModulePath(modulePathStr.replace(' ', ''))
+        let keyword: string | undefined
+
+        switch (true) {
+            case importStr.startsWith(requireRelativeKeyword):
+                keyword = requireRelativeKeyword
+                break
+            case importStr.startsWith(requireKeyword):
+                keyword = requireKeyword
+                break
+            case importStr.startsWith(includeKeyword):
+                keyword = includeKeyword
+                break
+            case importStr.startsWith(extendKeyword):
+                keyword = extendKeyword
+                break
+            case importStr.startsWith(loadKeyword):
+                keyword = loadKeyword
+                break
+            default:
+                break
+        }
+
+        if (keyword !== undefined) {
+            const modulePathStr = importStr.substring(keyword.length).trim().replace(/\s+/g, '')
+            modulePaths = this.getModulePath(modulePathStr)
         }
 
         return modulePaths
     }
 
     override parseImport(importStr: string, dirPaths: string[]) {
-        //return dependencies from the import statement
         if (this._parsedStatements.has(importStr)) {
             return []
         }
@@ -80,11 +111,6 @@ export class CsharpDependencyGraph extends DependencyGraph {
         return dependencies
     }
 
-    override updateSysPaths(uri: vscode.Uri) {
-        this.getDirPaths(uri).forEach(dirPath => {
-            this._sysPaths.add(dirPath)
-        })
-    }
     override getDependencies(uri: vscode.Uri, imports: string[]) {
         const dependencies: string[] = []
         imports.forEach(importStr => {
@@ -100,7 +126,6 @@ export class CsharpDependencyGraph extends DependencyGraph {
         })
         return dependencies
     }
-
     private async readImports(content: string) {
         this._totalLines += content.split(DependencyGraphConstants.newlineRegex).length
         const regExp = new RegExp(importRegex)
@@ -128,9 +153,9 @@ export class CsharpDependencyGraph extends DependencyGraph {
                 const content: string = await readFileAsString(uri.fsPath)
                 const imports = await this.readImports(content)
                 const dependencies = this.getDependencies(uri, imports)
-                dependencies.forEach(dependency => {
+                for (const dependency of dependencies) {
                     q.push(dependency)
-                })
+                }
             }
         }
         return this._pickedSourceFiles
@@ -149,7 +174,7 @@ export class CsharpDependencyGraph extends DependencyGraph {
                 await this.traverseDir(absPath)
             } else if (file.isFile()) {
                 if (
-                    file.name.endsWith(DependencyGraphConstants.csharpExt) &&
+                    file.name.endsWith(DependencyGraphConstants.rubyExt) &&
                     !this.reachSizeLimit(this._totalSize) &&
                     !this.willReachSizeLimit(this._totalSize, statSync(absPath).size) &&
                     !this._pickedSourceFiles.has(absPath)
@@ -189,39 +214,13 @@ export class CsharpDependencyGraph extends DependencyGraph {
         }
     }
 
-    //If Import statement includes below libraries, this file will be treated as a Test File.
-    override async isTestFile(content: string): Promise<boolean> {
-        const imports = await this.readImports(content)
-        const filteredImport = imports.filter(importStr => {
-            return (
-                importStr.includes('Xunit') ||
-                importStr.includes('NUnit.Framework') ||
-                importStr.includes('Microsoft.VisualStudio.TestTools.UnitTesting')
-            )
-        })
-        return filteredImport.length > 0
+    async getSourceDependencies(uri: vscode.Uri, content: string): Promise<string[]> {
+        return []
     }
-
-    /* New function added to fetch package path for a given file. 
-    /* It is used for fetching cross-file context. 
-    */
-    override async getSourceDependencies(uri: vscode.Uri, content: string): Promise<string[]> {
-        const imports = await this.readImports(content)
-        const dependencies = this.getDependencies(uri, imports)
-        return dependencies
+    async getSamePackageFiles(uri: vscode.Uri, projectPath: string): Promise<string[]> {
+        return []
     }
-
-    /* New function added to fetch package path for a given file. 
-    /* It is used for fetching cross-file context. 
-    */
-    override async getSamePackageFiles(uri: vscode.Uri, projectPath: string): Promise<string[]> {
-        const fileList: string[] = []
-        const packagePath = path.dirname(uri.fsPath)
-        readdirSync(packagePath, { withFileTypes: true }).forEach(file => {
-            fileList.push(path.join(packagePath, file.name))
-        })
-        return fileList
+    async isTestFile(content: string): Promise<boolean> {
+        return false
     }
 }
-
-export class CsharpDependencyGraphError extends Error {}

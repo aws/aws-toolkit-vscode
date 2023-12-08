@@ -12,6 +12,7 @@ import { cloudformationDependencyGraph } from './cloudformationDependencyGraph'
 import { DependencyGraphConstants } from './dependencyGraph'
 import * as vscode from 'vscode'
 import { terraformDependencyGraph } from './terraformDependencyGraph'
+import { RubyDependencyGraph } from './rubyDependencyGraph'
 import { GoDependencyGraph } from './goDependencyGraph'
 
 const languageMap = {
@@ -22,6 +23,7 @@ const languageMap = {
     csharp: CsharpDependencyGraph,
     cloudformation: cloudformationDependencyGraph,
     terraform: terraformDependencyGraph,
+    ruby: RubyDependencyGraph,
     go: GoDependencyGraph,
 } as const
 
@@ -55,6 +57,8 @@ export class DependencyGraphFactory {
                 return new languageMap['csharp']('csharp' satisfies CodeWhispererConstants.PlatformLanguageId)
             case 'yaml' satisfies CodeWhispererConstants.PlatformLanguageId:
                 return new languageMap['cloudformation']('yaml' satisfies CodeWhispererConstants.PlatformLanguageId)
+            case 'ruby' satisfies CodeWhispererConstants.PlatformLanguageId:
+                return new languageMap['ruby']('ruby' satisfies CodeWhispererConstants.PlatformLanguageId)
             case 'go' satisfies CodeWhispererConstants.PlatformLanguageId:
                 return new languageMap['go']('go' satisfies CodeWhispererConstants.PlatformLanguageId)
             default:
