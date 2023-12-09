@@ -285,7 +285,7 @@ class CodeModernizerSession(
     /**
      * Adapted from [CodeWhispererCodeScanSession]
      */
-    private fun uploadPayload(payload: File): String {
+    fun uploadPayload(payload: File): String {
         val sha256checksum: String = Base64.getEncoder().encodeToString(DigestUtils.sha256(FileInputStream(payload)))
         LOG.warn { "About to create an upload url" }
         if (isDisposed.get()) {

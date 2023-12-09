@@ -30,7 +30,11 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.filterOnlyParentF
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerStartJobResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CustomerSelection
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.InvalidTelemetryReason
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.unzipFile
+import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CodeTransformPreValidationError
 import kotlin.io.path.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.exists
@@ -140,5 +144,18 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
     fun `stopping job before JobId has been created notifies users that job can be stopped`() {
         codeModernizerManagerSpy.userInitiatedStopCodeModernization()
         verify(codeModernizerManagerSpy, times(1)).notifyTransformationStartStopping()
+    }
+
+    @Test
+    fun `start transformation without IdC connection`() {
+        val result = codeModernizerManagerSpy.validate(project)
+        val expectedResult = ValidationResult(
+            false,
+            message("codemodernizer.notification.warn.invalid_project.description.reason.not_logged_in"),
+            InvalidTelemetryReason(
+                CodeTransformPreValidationError.NonSSOLogin
+            )
+        )
+        assertEquals(expectedResult, result)
     }
 }

@@ -31,6 +31,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUr
 import software.amazon.awssdk.services.codewhispererruntime.model.GetTransformationPlanResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GetTransformationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTransformationResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.StopTransformationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationJob
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationLanguage
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationPlan
@@ -92,6 +93,8 @@ open class CodeWhispererCodeModernizerTestBase(
     internal val migrationStep = MigrationStep("Test migration step")
     internal lateinit var testCodeModernizerArtifact: CodeModernizerArtifact
     internal val exampleZipPath = "simple.zip".toResourceFile().toPath()
+    internal val expectedFilePath = "expectedFile".toResourceFile().toPath()
+    internal val overwrittenFilePath = "overwrittenFile".toResourceFile().toPath()
     internal val validZipPatchDirPath = "patch/"
     internal val validZipArtifactsPath = "artifacts/"
     internal val validZipSummaryPath = "summary/"
@@ -154,6 +157,9 @@ open class CodeWhispererCodeModernizerTestBase(
         .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
         .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build())
         .build() as GetTransformationPlanResponse
+
+    internal val exampleStopTransformationResponse = StopTransformationResponse.builder()
+        .transformationStatus(TransformationStatus.STOPPED).build() as StopTransformationResponse
 
     internal val exampleGetCodeMigrationResponse = GetTransformationResponse.builder()
         .transformationJob(

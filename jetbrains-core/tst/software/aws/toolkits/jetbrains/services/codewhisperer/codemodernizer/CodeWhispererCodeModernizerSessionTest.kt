@@ -3,13 +3,22 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.codemodernizer
 
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration
+import com.github.tomakehurst.wiremock.junit.WireMockRule
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.testFramework.runInEdtAndWait
 import kotlinx.coroutines.runBlocking
+import org.apache.commons.codec.digest.DigestUtils
+import org.assertj.core.api.Assertions.assertThat
+import org.gradle.internal.impldep.com.amazonaws.ResponseMetadata
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
@@ -17,18 +26,28 @@ import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.stub
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
+import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
+import software.amazon.awssdk.http.SdkHttpResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerStartJobResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ZipCreationResult
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import java.io.File
+import java.io.FileInputStream
+import java.util.Base64
 import java.util.zip.ZipFile
 import kotlin.io.path.Path
 import kotlin.test.assertNotNull
@@ -39,9 +58,25 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
         path.forEach { projectRule.fixture.addFileToModule(module, it, it) }
     }
 
+    @Rule
+    @JvmField
+    val wireMock = WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort())
+
+    lateinit var gumbyUploadUrlResponse: CreateUploadUrlResponse
+
     @Before
     override fun setup() {
         super.setup()
+        val s3endpoint = "http://127.0.0.1:${wireMock.port()}"
+        gumbyUploadUrlResponse = CreateUploadUrlResponse.builder()
+            .uploadUrl(s3endpoint)
+            .uploadId("1234")
+            .kmsKeyArn("0000000000000000000000000000000000:key/1234abcd")
+            .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
+            .sdkHttpResponse(
+                SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build()
+            )
+            .build() as CreateUploadUrlResponse
     }
 
     @Test
@@ -278,5 +313,36 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
         assertEquals(CodeModernizerJobCompletedResult.JobPartiallySucceeded(jobId, testSessionContextSpy.targetJavaVersion), result)
         verify(clientAdaptorSpy, times(4)).getCodeModernizationJob(any())
         verify(clientAdaptorSpy, atLeastOnce()).getCodeModernizationPlan(any())
+    }
+
+    @Test
+    fun `overwritten files would have different checksum from expected files`() {
+        val expectedSha256checksum: String = Base64.getEncoder().encodeToString(
+            DigestUtils.sha256(FileInputStream(expectedFilePath.toAbsolutePath().toString()))
+        )
+        val fakeSha256checksum: String = Base64.getEncoder().encodeToString(
+            DigestUtils.sha256(FileInputStream(overwrittenFilePath.toAbsolutePath().toString()))
+        )
+        assertThat(expectedSha256checksum).isNotEqualTo(fakeSha256checksum)
+    }
+
+    @Test
+    fun `test uploadPayload()`() {
+        val expectedSha256checksum: String =
+            Base64.getEncoder().encodeToString(DigestUtils.sha256(FileInputStream(expectedFilePath.toAbsolutePath().toString())))
+        clientAdaptorSpy.stub {
+            onGeneric { clientAdaptorSpy.createGumbyUploadUrl(any()) }
+                .thenReturn(gumbyUploadUrlResponse)
+        }
+        wireMock.stubFor(put(urlEqualTo("/")).willReturn(aResponse().withStatus(200)))
+        testSessionSpy.uploadPayload(expectedFilePath.toFile())
+
+        val inOrder = inOrder(testSessionSpy)
+        inOrder.verify(testSessionSpy).uploadArtifactToS3(
+            eq(gumbyUploadUrlResponse.uploadUrl()),
+            eq(expectedFilePath.toFile()),
+            eq(expectedSha256checksum),
+            eq(gumbyUploadUrlResponse.kmsKeyArn())
+        )
     }
 }
