@@ -11,7 +11,7 @@ import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs'
-import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
+import { setValidConnection, skipTestIfNoValidConn } from '../util/amazonQUtil'
 
 describe('transformByQ', function () {
     let tempDir = ''
@@ -25,7 +25,7 @@ describe('transformByQ', function () {
     })
 
     beforeEach(async function () {
-        skiptTestIfNoValidConn(validConnection, this)
+        skipTestIfNoValidConn(validConnection, this)
         tempDir = path.join(os.tmpdir(), 'gumby-test')
         fs.mkdirSync(tempDir)
         tempFileName = `testfile-${Date.now()}.txt`
