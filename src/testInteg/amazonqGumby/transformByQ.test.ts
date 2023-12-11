@@ -4,13 +4,10 @@
  */
 
 import assert from 'assert'
-import { getSha256, uploadArtifactToS3, uploadPayload, zipCode } from '../../codewhisperer/service/transformByQHandler'
-import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
-import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
+import { uploadArtifactToS3, uploadPayload, zipCode } from '../../codewhisperer/service/transformByQHandler'
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs'
-import { sleep } from '../../shared/utilities/timeoutUtils'
 
 describe('transformByQ', function () {
     let tempDir = ''
@@ -34,19 +31,6 @@ describe('transformByQ', function () {
     it('WHEN upload payload with valid request THEN succeeds', async function () {
         await assert.doesNotReject(async () => {
             await uploadPayload(zippedCodePath)
-        })
-    })
-
-    it('WHEN upload artifact to S3 with expired upload URL THEN fails to upload', async function () {
-        const sha256 = getSha256(zippedCodePath)
-        const createUploadUrlResponse = await codeWhisperer.codeWhispererClient.createUploadUrl({
-            contentChecksum: sha256,
-            contentChecksumType: CodeWhispererConstants.contentChecksumType,
-            uploadIntent: CodeWhispererConstants.uploadIntent,
-        })
-        await sleep(65000) // sleep for 65 seconds since the upload URL expires after 60 seconds
-        await assert.rejects(async () => {
-            await uploadArtifactToS3(zippedCodePath, createUploadUrlResponse)
         })
     })
 

@@ -156,12 +156,9 @@ export function getSha256(fileName: string) {
     return hasher.digest('base64')
 }
 
-// TODO: later, consider enhancing the S3 client to include this functionality
-export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
-    const sha256 = getSha256(fileName)
-
+export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {
     let headersObj = {}
-    if (resp.kmsKeyArn === undefined || resp.kmsKeyArn.length === 0) {
+    if (kmsKeyArn === undefined || kmsKeyArn.length === 0) {
         headersObj = {
             'x-amz-checksum-sha256': sha256,
             'Content-Type': 'application/zip',
@@ -171,9 +168,16 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             'x-amz-checksum-sha256': sha256,
             'Content-Type': 'application/zip',
             'x-amz-server-side-encryption': 'aws:kms',
-            'x-amz-server-side-encryption-aws-kms-key-id': resp.kmsKeyArn,
+            'x-amz-server-side-encryption-aws-kms-key-id': kmsKeyArn,
         }
     }
+    return headersObj
+}
+
+// TODO: later, consider enhancing the S3 client to include this functionality
+export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
+    const sha256 = getSha256(fileName)
+    const headersObj = getHeadersObj(sha256, resp.kmsKeyArn)
 
     await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
@@ -189,9 +193,10 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             // TODO: A nice to have would be getting the zipUploadSize
             codeTransformTotalByteSize: 0,
         })
-        getLogger().info(`Status from S3 Upload = ${response.status}`)
+        getLogger().info(`CodeTransform: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in S3 UploadZip API call'
+        getLogger().error('CodeTransform: UploadZip error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -221,7 +226,7 @@ export async function stopJob(jobId: string) {
             }
         } catch (e: any) {
             const errorMessage = 'Error stopping job'
-            getLogger().error(errorMessage)
+            getLogger().error('CodeTransform: StopTransformation error = ', errorMessage)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'StopTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -256,6 +261,7 @@ export async function uploadPayload(payloadFileName: string) {
         return response.uploadId
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in CreateUploadUrl API call'
+        getLogger().error('CodeTransform: CreateUploadUrl error: = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'CreateUploadUrl',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -302,7 +308,7 @@ function getProjectDependencies(modulePath: string): string[] {
 
     if (spawnResult.error || spawnResult.status !== 0) {
         vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage, { modal: true })
-        getLogger().error('Error in running Maven command:')
+        getLogger().error('CodeTransform: Error in running Maven command = ')
         // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
         if (spawnResult.error) {
             getLogger().error(spawnResult.error)
@@ -412,6 +418,7 @@ export async function startJob(uploadId: string) {
         return response.transformationJobId
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in StartTransformation API call'
+        getLogger().error('CodeTransform: StartTransformation error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'StartTransformation',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -459,6 +466,7 @@ export async function getTransformationPlan(jobId: string) {
         return plan
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in GetTransformationPlan API call'
+        getLogger().error('CodeTransform: GetTransformationPlan error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -488,6 +496,7 @@ export async function getTransformationSteps(jobId: string) {
         return response.transformationPlan.transformationSteps
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in GetTransformationPlan API call'
+        getLogger().error('CodeTransform: GetTransformationPlan error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -544,6 +553,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
         } catch (e: any) {
             const errorMessage = e?.message || 'Error in GetTransformation API call'
+            getLogger().error('CodeTransform: GetTransformation error = ', errorMessage)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'GetTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),

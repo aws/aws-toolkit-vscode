@@ -768,7 +768,7 @@
                 {
                     "type": "webview",
                     "id": "aws.amazonq.transformationHub",
-                    "name": ""
+                    "name": "Status"
                 },
                 {
                     "id": "aws.amazonq.transformationProposedChangesTree",

@@ -22,6 +22,7 @@ import {
     pollTransformationJob,
     validateProjectSelection,
     getOpenProjects,
+    getHeadersObj,
 } from '../../../codewhisperer/service/transformByQHandler'
 
 describe('transformByQ', function () {
@@ -193,6 +194,26 @@ describe('transformByQ', function () {
                 id: '123',
             },
         ]
+        assert.deepStrictEqual(actual, expected)
+    })
+
+    it(`WHEN get headers for upload artifact to S3 THEN returns correct header with kms key arn`, function () {
+        const actual = getHeadersObj('dummy-sha-256', 'dummy-kms-key-arn')
+        const expected = {
+            'x-amz-checksum-sha256': 'dummy-sha-256',
+            'Content-Type': 'application/zip',
+            'x-amz-server-side-encryption': 'aws:kms',
+            'x-amz-server-side-encryption-aws-kms-key-id': 'dummy-kms-key-arn',
+        }
+        assert.deepStrictEqual(actual, expected)
+    })
+
+    it(`WHEN get headers for upload artifact to S3 THEN returns correct headers without kms key arn`, function () {
+        const actual = getHeadersObj('dummy-sha-256', '')
+        const expected = {
+            'x-amz-checksum-sha256': 'dummy-sha-256',
+            'Content-Type': 'application/zip',
+        }
         assert.deepStrictEqual(actual, expected)
     })
 })
