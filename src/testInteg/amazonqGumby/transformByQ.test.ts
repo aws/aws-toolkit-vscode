@@ -25,13 +25,13 @@ describe('transformByQ', function () {
     })
 
     beforeEach(async function () {
+        skiptTestIfNoValidConn(validConnection, this)
         tempDir = path.join(os.tmpdir(), 'gumby-test')
         fs.mkdirSync(tempDir)
         tempFileName = `testfile-${Date.now()}.txt`
         tempFilePath = path.join(tempDir, tempFileName)
         fs.writeFileSync(tempFilePath, 'sample content for the test file')
         zippedCodePath = await zipCode(tempDir)
-        skiptTestIfNoValidConn(validConnection, this)
     })
 
     afterEach(function () {
