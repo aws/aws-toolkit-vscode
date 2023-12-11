@@ -18,8 +18,8 @@ export async function processTransformByQ() {
     }
     if (transformByQState.isNotStarted()) {
         await sleep(1000) // sleep so that chat can respond first, then show input prompt
-        telemetry.codeTransform_jobIsStartedFromChatPrompt.emit()
         startTransformByQWithProgress()
+        telemetry.codeTransform_jobIsStartedFromChatPrompt.emit()
     } else {
         vscode.window.showInformationMessage(jobInProgressMessage, { modal: true })
     }
