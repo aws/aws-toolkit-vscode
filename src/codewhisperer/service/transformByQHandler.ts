@@ -569,13 +569,8 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 }
 
 async function checkIfGradle(projectPath: string) {
-    const gradleBuildFile = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(projectPath, 'build.gradle'),
-        '**/node_modules/**',
-        1
-    )
-
-    if (gradleBuildFile.length > 0) {
+    const gradleBuildFilePath = path.join(projectPath, 'build.gradle')
+    if (fs.existsSync(gradleBuildFilePath)) {
         return 'Gradle'
     } else {
         return 'Unknown'
