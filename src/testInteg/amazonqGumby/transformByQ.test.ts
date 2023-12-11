@@ -4,7 +4,10 @@
  */
 
 import assert from 'assert'
-import { uploadArtifactToS3, uploadPayload, zipCode } from '../../codewhisperer/service/transformByQHandler'
+import { uploadArtifactToS3, zipCode, getSha256 } from '../../codewhisperer/service/transformByQHandler'
+import fetch from '../../common/request'
+import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
+import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs'
@@ -28,9 +31,20 @@ describe('transformByQ', function () {
         fs.rmSync(tempDir, { recursive: true, force: true })
     })
 
-    it('WHEN upload payload with valid request THEN succeeds', async function () {
-        await assert.doesNotReject(async () => {
-            await uploadPayload(zippedCodePath)
+    it('WHEN upload payload with missing sha256 in headers THEN fails to upload', async function () {
+        const sha256 = getSha256(zippedCodePath)
+        const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
+            contentChecksum: sha256,
+            contentChecksumType: CodeWhispererConstants.contentChecksumType,
+            uploadIntent: CodeWhispererConstants.uploadIntent,
+        })
+        const headersObj = {
+            'x-amz-checksum-sha256': '',
+            'Content-Type': 'application/zip',
+        }
+        await assert.rejects(async () => {
+            await fetch('PUT', response.uploadUrl, { body: fs.readFileSync(zippedCodePath), headers: headersObj })
+                .response
         })
     })
 

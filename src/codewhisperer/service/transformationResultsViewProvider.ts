@@ -310,6 +310,7 @@ export class ProposedTransformationExplorer {
             } catch (e: any) {
                 deserializeErrorMessage = e?.message || 'Error during deserialization of result archive'
             } finally {
+                getLogger().error('CodeTransform: ParseDiff error = ', deserializeErrorMessage)
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
