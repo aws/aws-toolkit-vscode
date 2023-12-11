@@ -11,12 +11,18 @@ import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs'
+import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
 
 describe('transformByQ', function () {
     let tempDir = ''
     let tempFileName = ''
     let tempFilePath = ''
     let zippedCodePath = ''
+    let validConnection: boolean
+
+    before(async function () {
+        validConnection = await setValidConnection()
+    })
 
     beforeEach(async function () {
         tempDir = path.join(os.tmpdir(), 'gumby-test')
@@ -25,6 +31,7 @@ describe('transformByQ', function () {
         tempFilePath = path.join(tempDir, tempFileName)
         fs.writeFileSync(tempFilePath, 'sample content for the test file')
         zippedCodePath = await zipCode(tempDir)
+        skiptTestIfNoValidConn(validConnection, this)
     })
 
     afterEach(function () {
