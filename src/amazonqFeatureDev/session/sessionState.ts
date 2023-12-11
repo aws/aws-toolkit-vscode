@@ -34,15 +34,24 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.sourceRoot, action.telemetry)
+        const uploadId = await telemetry.amazonq_uploadCode.run(async span => {
+            span.record({ amazonqConversationId: this.config.conversationId })
+            const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
+                this.config.sourceRoot,
+                action.telemetry,
+                span
+            )
 
-        const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
-            this.config.conversationId,
-            zipFileChecksum,
-            zipFileBuffer.length
-        )
+            const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
+                this.config.conversationId,
+                zipFileChecksum,
+                zipFileBuffer.length
+            )
 
-        await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
+            await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
+            return uploadId
+        })
+
         const nextState = new RefinementState({ ...this.config, uploadId }, this.approach, this.tabID, 0)
         return nextState.interact(action)
     }

@@ -19,6 +19,8 @@ import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../limits'
 import { createHash } from 'crypto'
 
+import { AmazonqUploadCode, Metric } from '../../shared/telemetry/telemetry'
+
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
     const extraPatterns = [
@@ -81,7 +83,11 @@ const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('ba
 /**
  * given the root path of the repo it zips its files in memory and generates a checksum for it.
  */
-export async function prepareRepoData(repoRootPath: string, telemetry: TelemetryHelper) {
+export async function prepareRepoData(
+    repoRootPath: string,
+    telemetry: TelemetryHelper,
+    span: Metric<AmazonqUploadCode>
+) {
     try {
         const zip = new AdmZip()
 
@@ -113,6 +119,7 @@ export async function prepareRepoData(repoRootPath: string, telemetry: Telemetry
             }
         }
         telemetry.setRepositorySize(totalBytes)
+        span.record({ amazonqRepositorySize: totalBytes })
         const zipFileBuffer = zip.toBuffer()
         return {
             zipFileBuffer,
