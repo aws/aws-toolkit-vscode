@@ -86,7 +86,7 @@ export class FeatureDevClient {
             return conversationId
         } catch (e: any) {
             getLogger().error(`${featureName}: failed to start conversation: ${e.message} RequestId: ${e.requestId}`)
-            throw new ApiError(e.message, 'CreateConversation', e.statusCode)
+            throw new ApiError(e.message, 'CreateConversation', e.code, e.statusCode)
         }
     }
 
@@ -119,7 +119,7 @@ export class FeatureDevClient {
             if (e.code === 'ValidationException' && e.message.includes('Invalid contentLength')) {
                 throw new ContentLengthError()
             }
-            throw new ApiError(e.message, 'CreateUploadUrl', e.statusCode)
+            throw new ApiError(e.message, 'CreateUploadUrl', e.code, e.statusCode)
         }
     }
 
@@ -156,7 +156,12 @@ export class FeatureDevClient {
             return assistantResponse.join(' ')
         } catch (e: any) {
             getLogger().error(`${featureName}: failed to execute planning: ${e.message} RequestId: ${e.requestId}`)
-            throw new ApiError(e.message, 'GeneratePlan', e.$metadata?.httpStatusCode ?? streamResponseErrors[e.name])
+            throw new ApiError(
+                e.message,
+                'GeneratePlan',
+                e.name,
+                e.$metadata?.httpStatusCode ?? streamResponseErrors[e.name]
+            )
         }
     }
 }
