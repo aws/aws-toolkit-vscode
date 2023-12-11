@@ -93,7 +93,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'No Java project found' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
         })
         throw new TransformByQJavaProjectNotFound()
@@ -107,7 +107,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'No Java project found' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
         })
         throw new ToolkitError('Unable to determine Java version', {
@@ -125,8 +125,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError:
-                'Project selected is not Java 8 or Java 11' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'UnsupportedJavaVersion',
             result: MetadataResult.Fail,
             reason: javaVersion,
         })
@@ -142,7 +141,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'Only Maven projects supported' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'NonMavenProject',
             result: MetadataResult.Fail,
             reason: buildType,
         })

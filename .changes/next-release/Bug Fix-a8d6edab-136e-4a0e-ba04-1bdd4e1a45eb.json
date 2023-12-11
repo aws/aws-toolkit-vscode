@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix telemetry logging for new Amazon Q Code Transform telemetry updates"
+}
