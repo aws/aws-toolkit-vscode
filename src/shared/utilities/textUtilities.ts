@@ -170,3 +170,27 @@ export function getRelativeDate(from: Date, now: Date = new Date()): string {
     // Prevent clock skew showing future date
     return moment(from).subtract(5, 'second').from(now)
 }
+
+/**
+ * Format for rendering readable dates.
+ *
+ * Same format used in the S3 console, but it's also locale-aware.
+ *
+ * US: Jan 5, 2020 5:30:20 PM GMT-0700
+ * GB: 5 Jan 2020 17:30:20 GMT+0100
+ */
+export function getLocalizedDateFormat(d: Date = new Date()) {
+    const dateFormat = new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    })
+    const timeFormat = new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        timeZoneName: 'longOffset',
+    })
+
+    return `${dateFormat.format(d)} ${timeFormat.format(d)}`
+}
