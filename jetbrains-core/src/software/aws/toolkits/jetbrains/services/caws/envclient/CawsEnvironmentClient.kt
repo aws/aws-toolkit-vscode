@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.util.text.nullize
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
@@ -19,6 +21,7 @@ import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClientBuilder
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.caws.CawsConstants
 import software.aws.toolkits.jetbrains.services.caws.envclient.models.CreateDevfileRequest
 import software.aws.toolkits.jetbrains.services.caws.envclient.models.CreateDevfileResponse
@@ -29,10 +32,15 @@ import software.aws.toolkits.jetbrains.services.caws.envclient.models.UpdateActi
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
+@Service
 class CawsEnvironmentClient(
-    private val endpoint: String = "http://127.0.0.1:1339",
+    private val endpoint: String = System.getenv(CawsConstants.CAWS_ENV_API_ENDPOINT).nullize(true) ?: CawsConstants.DEFAULT_CAWS_ENV_API_ENDPOINT,
     private val httpClient: CloseableHttpClient = HttpClientBuilder.create().build()
 ) : Disposable {
+    init {
+        LOG.info { "Initialized with endpoint: $endpoint" }
+    }
+
     private val objectMapper = jacksonObjectMapper().also {
         it.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE)
         it.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
