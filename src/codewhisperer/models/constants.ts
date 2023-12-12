@@ -188,7 +188,7 @@ export const referenceLogText = (
 ) =>
     `with code ${code} provided with reference under ${license} from repository ${repository}. Added to ${filePath} ${lineInfo}.`
 
-export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in 
+export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in
     <a href="#" onclick="openSettings();return false;">CodeWhisperer Settings</a>`
 
 export const referenceLogPromptTextEnterpriseSSO =
@@ -222,7 +222,7 @@ export const codeScanJobTimeoutSeconds = 50
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
-export const codeScanJobPollingIntervalSeconds = 5
+export const codeScanJobPollingIntervalSeconds = 1
 
 export const artifactTypeSource = 'SourceCode'
 
