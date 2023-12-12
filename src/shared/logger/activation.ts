@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import moment from 'moment'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
@@ -154,13 +153,17 @@ function getLogLevel(): LogLevel {
 }
 
 function makeLogFilename(): string {
-    const m = moment()
-    const date = m.format('YYYYMMDD')
-    const time = m.format('HHmmss')
-    // the 'T' matches VS Code's log file name format
-    const datetime = `${date}T${time}`
+    const now = new Date()
+    // local to machine: use getMonth/Date instead of UTC equivalent
+    // month is offset by 1
+    const m = now.getMonth() + 1 < 10 ? `0${now.getMonth() + 1}` : now.getMonth() + 1
+    const d = now.getDate() < 10 ? `0${now.getDate()}` : now.getDate()
+    const h = now.getHours() < 10 ? `0${now.getHours()}` : now.getHours()
+    const mn = now.getMinutes() < 10 ? `0${now.getMinutes()}` : now.getMinutes()
+    const s = now.getSeconds() < 10 ? `0${now.getSeconds()}` : now.getSeconds()
+    const dt = `${now.getFullYear()}${m}${d}T${h}${mn}${s}`
 
-    return `aws_toolkit_${datetime}.log`
+    return `aws_toolkit_${dt}.log`
 }
 
 /**
