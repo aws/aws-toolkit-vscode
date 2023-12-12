@@ -32,6 +32,6 @@ export async function uploadCode(url: string, buffer: Buffer, checksumSha256: st
         })
     } catch (e: any) {
         getLogger().error(`${featureName}: failed to upload code to s3: ${(e as Error).message}`)
-        throw new UploadCodeError(e instanceof got.HTTPError ? `${e.response.statusCode}` : '')
+        throw new UploadCodeError(e instanceof got.HTTPError ? `${e.response.statusCode}` : 'Unknown')
     }
 }
