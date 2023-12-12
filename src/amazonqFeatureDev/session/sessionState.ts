@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { UserMessageNotFoundError } from '../errors'
+import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
 import { SessionState, SessionStateAction, SessionStateConfig, SessionStateInteraction } from '../types'
 import { prepareRepoData } from '../util/files'
 import { uploadCode } from '../util/upload'
@@ -23,9 +23,7 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
     }
 
     async interact(_action: SessionStateAction): Promise<SessionStateInteraction> {
-        throw new ToolkitError('Illegal transition between states, restart the conversation', {
-            code: 'IllegalStateTransition',
-        })
+        throw new IllegalStateTransition()
     }
 }
 
