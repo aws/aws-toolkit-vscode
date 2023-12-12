@@ -494,6 +494,7 @@
         <registryKey key="aws.credentialProcess.timeout" description="AWS Credential Process timeout (ms)" restartRequired="false" defaultValue="30000"/>
         <registryKey key="aws.debuggerAttach.timeout" description="Time allowed for debuggers to attach before timing out (ms)" restartRequired="false"
                      defaultValue="60000"/>
+        <registryKey key="aws.codecatalyst.endpoint" description="API endpoint for the CodeCatalyst service" restartRequired="true" defaultValue=""/>
         <registryKey key="aws.toolkit.developerMode" description="Enables features to facilitate development of the toolkit" restartRequired="false"
                      defaultValue="false"/>
         <typedHandler implementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererTypedHandler"/>

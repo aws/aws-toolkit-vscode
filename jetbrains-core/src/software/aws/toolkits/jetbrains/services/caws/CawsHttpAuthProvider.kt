@@ -44,7 +44,7 @@ class CawsHttpAuthProvider : GitHttpAuthDataProvider {
     }
 
     override fun getAuthData(project: Project, url: String, login: String): AuthData? {
-        if (url.contains(CawsEndpoints.CAWS_GIT_PATTERN)) {
+        if (CawsEndpoints.isCawsGit(url)) {
             return getPat(login)?.let { AuthData(login, it.getPasswordAsString()) }
         }
 

@@ -3,6 +3,9 @@
 
 package software.aws.toolkits.jetbrains.services.caws
 
+import software.aws.toolkits.core.utils.tryOrNull
+import java.net.URI
+
 object CawsEndpoints {
     const val CAWS_DOCS = "https://docs.aws.amazon.com/codecatalyst/latest/userguide/welcome.html"
     const val CAWS_DEV_ENV_MARKETING = "https://codecatalyst.aws/explore/dev-environments"
@@ -11,8 +14,17 @@ object CawsEndpoints {
 
     private const val CAWS_PROD_CONSOLE_BASE = "https://codecatalyst.aws/"
 
-    // TODO: fix this heuristic
-    const val CAWS_GIT_PATTERN = "codecatalyst.aws"
+    private val CAWS_PROD_GIT_PATTERN = """git\..*?\.codecatalyst.aws""".toRegex(RegexOption.IGNORE_CASE)
+    private val CAWS_GAMMA_GIT_PATTERN = """git\..*?\.aws.dev""".toRegex(RegexOption.IGNORE_CASE)
+    fun isCawsGit(url: String): Boolean {
+        val uri = tryOrNull {
+            URI.create(url)
+        } ?: return false
+
+        return uri.host?.let {
+            it.matches(CAWS_PROD_GIT_PATTERN) || it.matches(CAWS_GAMMA_GIT_PATTERN)
+        } ?: false
+    }
 
     object ConsoleFactory {
         fun baseUrl() = CAWS_PROD_CONSOLE_BASE
