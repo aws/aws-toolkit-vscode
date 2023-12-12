@@ -49,18 +49,19 @@ describe('transformByQ', function () {
             'x-amz-checksum-sha256': '',
             'Content-Type': 'application/zip',
         }
-        await assert.rejects(async () => {
-            await fetch('PUT', response.uploadUrl, { body: fs.readFileSync(zippedCodePath), headers: headersObj })
-                .response
-        })
+        await assert.rejects(
+            () =>
+                fetch('PUT', response.uploadUrl, { body: fs.readFileSync(zippedCodePath), headers: headersObj })
+                    .response
+        )
     })
 
     it('WHEN upload artifact to S3 with unsigned upload URL THEN fails to upload', async function () {
-        await assert.rejects(async () => {
-            await uploadArtifactToS3(zippedCodePath, {
+        await assert.rejects(() =>
+            uploadArtifactToS3(zippedCodePath, {
                 uploadId: 'dummyId',
                 uploadUrl: 'https://aws-transform-artifacts-us-east-1.s3.amazonaws.com',
             })
-        })
+        )
     })
 })
