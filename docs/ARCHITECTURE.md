@@ -4,9 +4,27 @@ An overview of the architecture for various components within the Toolkit.
 
 ## Commands
 
-Many parts of the VS Code API relies on the use of 'commands' which are simply functions bound to a global ID. For small projects, this simplicity is great. But the base API doesn't offer a lot of common functionality that a large project might want: logging, error handling, etc.
+Every high level "action" that can be done in a VS Code extension should try to be in a [Command](https://code.visualstudio.com/api/extension-guides/command). For example if I click the AWS icon on the status bar that should trigger some "on status bar item clicked" action. It may look something like this:
+<img src="./images/developerModeEnabled.png" alt="Developer Mode Enabled" width="512"/>
 
-For the Toolkit, common command functionality is implemented in [Commands](../src/shared/vscode/commands2.ts). The goal with this abstraction is to increase consistency across the Toolkit for anything related to commands.
+```typescript
+// first register the command with VS Code
+vscode.commands.registerCommand('aws.auth.showConnections', myCallbackFunction)
+
+...
+
+function userClickedStatusBarIcon() {
+    vscode.commands.executeCommand('aws.auth.showConnections')
+}
+```
+
+This is nice and easy to use. Commands are indicators of "entrypoints" to high level actions that can easily be re-used and reduce code duplication. The issue is that the above does not provide additional common functionality that a large project might want: logging, error handling, etc.
+
+---
+
+To add more functionality to a VS Code Command, the toolkit wraps it in our [Commands](../src/shared/vscode/commands2.ts) class. The goal with this abstraction is to increase consistency across the Toolkit for anything related to commands.
+
+We can now intercept the execution and result of VS Code Commands and perform operations such as logging, telemetry, error handling, ...
 
 ### Examples
 
@@ -40,6 +58,10 @@ For the Toolkit, common command functionality is implemented in [Commands](../sr
     // This object should be returned as a child of some other tree node
     const node = command.build('Hello, World!').asTreeNode({ label: 'Click me!' })
     ```
+
+### Telemetry
+
+Any Command that is registered with `Commands.register()` will be configured to [automatically emit a telemetry event](https://github.com/aws/aws-toolkit-vscode/blob/6e6ca6b358e711bddefb3a01acfd34a37251e71e/src/shared/vscode/commands2.ts#L476) when executed with [Command.execute()](https://github.com/aws/aws-toolkit-vscode/blob/6e6ca6b358e711bddefb3a01acfd34a37251e71e/src/shared/vscode/commands2.ts#L74). The event name is `vscode_executeCommand`.
 
 ### Advanced Uses
 

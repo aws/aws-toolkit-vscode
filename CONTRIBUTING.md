@@ -6,13 +6,27 @@ feedback and contributions from the community.
 Reviewing this document will maximize your success in working with the
 codebase and sending pull requests.
 
+## Quick Links
+
+-   [How to Run the extension](#run)
+-   [Development Guidelines](#guidelines)
+-   [More detailed docs](./docs)
+-   [Telemetry](./docs/telemetry.md)
+-   [Using the `Commands` class](./docs/ARCHITECTURE.md#commands)
+
 ## Getting Started
 
-### Find things to do
+### Extension development flow
 
-If you're looking for ideas about where to contribute, consider
-[_good first issue_](https://github.com/aws/aws-toolkit-vscode/labels/good%20first%20issue)
-issues.
+This explains the high level flow of going from nothing to a new release with your change. The actual details are explained in the rest of the document.
+
+-   Clone this repo
+-   Install required dependencies
+-   Make a change in the code
+-   Manually test it locally (on top of actual tests)
+-   Create a Github PR for that change
+-   Get the PR merged after review from the appropriate teams/people
+-   At a scheduled time, the toolkits team will perform a release including your change. It will be available as a new `.vsix` in the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode)
 
 ### Setup
 
@@ -35,11 +49,21 @@ Then clone the repository and install NPM packages:
 
 ### Run
 
+You made a change to the code, now you want to test it.
+
+#### Running in `Debug` mode
+
+The benefits of Debug mode:
+
+-   Continuously builds when you make changes
+-   Allows for breakpoints to be set
+
 To run the extension from VSCode as a Node.js app:
 
-1. Select the Run panel from the sidebar.
+1. Select `Run & Debug` from the activity bar.
 2. From the dropdown at the top of the Run pane, choose `Extension`.
-3. Press `F5` to launch a new instance of VSCode with the extension installed and the debugger attached.
+3. Click the green arrow to start, a new VS Code window will eventually appear which contains the AWS Toolkit extension with your changes already loaded.
+   <img src="./docs/images/debugMenu.png" alt="Developer Mode Enabled" width="512"/>
 
 To run the extension from VSCode in "web mode" (a browser app, or "PWA"):
 
@@ -49,7 +73,9 @@ To run the extension from VSCode in "web mode" (a browser app, or "PWA"):
 
 ### Build
 
-When you launch the extension or run tests from VSCode, it will automatically build the extension and watch for changes.
+Assuming you skipped [Run](#run), you can build the final extension artifact ending in `.vsix` and then test with that.
+
+You most likely will not need to use this during development, [running in `Debug` mode](#running-in-debug-mode) will be sufficient.
 
 You can also use these NPM tasks (see `npm run` for the full list):
 
@@ -155,9 +181,12 @@ structure, mechanics and philosophy.
 
 You can run tests directly from VSCode:
 
-1. Select `View > Debug`, or select the Debug pane from the sidebar.
-2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
-3. Press `F5` to run tests with the debugger attached.
+1. Go to the `Run & Debug` menu.
+2. Select the correct config to run the correct test
+    - (Red Arrow) Regular unit tests in `src/test/`
+    - (Blue Arrow) Integration and E2E tests in `src/testInteg/` and `src/testE2E/` respectively.
+3. Click the green arrow to run  
+   <img src="./docs/images/runTests.png" alt="Developer Mode Enabled" width="512"/>
 
 You can also run tests from the command line:
 
@@ -208,6 +237,12 @@ You can find the coverage report at `./coverage/index.html` after running the te
 
 You can find documentation to create VSCode IDE settings for CodeCatalyst blueprints at [docs/vscode-config.md](./docs/vscode-config.md).
 
+### Find things to do
+
+If you're looking for ideas about where to contribute, consider
+[_good first issue_](https://github.com/aws/aws-toolkit-vscode/labels/good%20first%20issue)
+issues.
+
 ## Pull Requests
 
 Before sending a pull request:
@@ -222,7 +257,7 @@ To send a pull request:
 2. Modify the source; focus on the specific change you are contributing. If you also reformat all the code, it will be hard for us to focus on your change.
     - Read the [project guidelines](#guidelines), this is very important for non-trivial changes.
 3. Commit to your fork [using clear commit messages](#commit-messages).
-4. Update the [changelog](#changelog).
+4. Update the [changelog](#changelog) if the change is user-facing.
 5. [Create a pull request](https://help.github.com/articles/creating-a-pull-request/).
 6. Pay attention to any CI failures reported in the pull request.
 
@@ -282,11 +317,31 @@ generating SDKs, etc.
 ### Toolkit developer settings (`aws.dev.*`)
 
 The [DevSettngs](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts#L553) class defines various developer-only settings that change the behavior of the
-Toolkit for testing and development purposes. To use a setting just add it to
+Toolkit for testing and development purposes.
+
+#### To Enable Developer Mode
+
+-   `cmd/ctrl` + `shift` + `p` to open the Command Palette
+-   `Preferences: Open User Settings (JSON)`
+-   Paste in `"aws.dev.forceDevMove": true`
+-   Open the Command Palette again and select `Developer: Reload Window` to reload VS Code
+-   If developer mode was successfully enabled the AWS status bar icon will be yellow:
+    <img src="./docs/images/developerModeEnabled.png" alt="Developer Mode Enabled" width="512"/>
+
+Otherwise, to use a specific setting just add it to
 your `settings.json`. At runtime, if the Toolkit reads any of these settings,
 the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45).
 
-The setting `aws.dev.forceDevMode` will take precedence over all dev settings and enable dev mode on `"aws.dev.forceDevMode": true` or disable on `"aws.dev.forceDevMode": false`.
+#### Developer Mode Commands
+
+You can run different commands available only when in Developer Mode. For example, manipulating Auth connections.
+
+<img src="./docs/images/developerMenu.png" alt="Developer Mode Menu" width="512"/>
+
+To open the Developer Menu:
+
+-   Open the Command Palette
+-   Search: `AWS (Developer): Open Developer Menu`
 
 ### Logging
 

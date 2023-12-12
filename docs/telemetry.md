@@ -1,5 +1,15 @@
 # Telemetry
 
+## Overview
+
+This is the general flow of telemetry.
+
+-   Design your telemetry event "shape".
+-   Add the shape to the [telemetry repo](https://github.com/aws/aws-toolkit-common/blob/main/telemetry/definitions/commonDefinitions.json) in a PR, this is shared between all IDEs.
+-   After merging, automation will perform code generation of types for each language of the supported IDEs and upload to the appropriate repository. For example, [VS Code uses NPM](https://www.npmjs.com/package/@aws-toolkits/telemetry).
+-   Pull in the latest changes to the telemetry module from `npm` in your code.
+-   Start emitting telemetry events where needed.
+
 ## Development
 
 See [aws-toolkit-common/telemetry](https://github.com/aws/aws-toolkit-common/tree/main/telemetry#telemetry) for full details about defining telemetry metrics.
@@ -17,7 +27,7 @@ See [aws-toolkit-common/telemetry](https://github.com/aws/aws-toolkit-common/tre
 
 ## Guidelines
 
--   Use `run()` where possible. It automatically sets the `result` and `reason` fields. See below for details.
+-   Use `run()` where possible. It automatically sets the `result` and `reason` fields. [See below for details](#incrementally-building-a-metric).
     -   `run()` gets the `reason` value from the `Error.code` property of any exception that is thrown.
     -   Your code can throw `ToolkitError` with a `code` field to communicate errors, validation issues, or [cancellation](https://github.com/aws/aws-toolkit-vscode/blob/06661f84530c6b5331579871d685515700b7767e/src/auth/sso/model.ts#L138). See below.
 -   The `reason` and `result` fields are standard metric fields shared by all Toolkits (VSCode, JetBrains, VisualStudio).
