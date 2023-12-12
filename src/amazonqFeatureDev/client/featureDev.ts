@@ -14,9 +14,9 @@ import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
-import { ApiError, ContentLengthError, UnknownError } from '../errors'
+import { ApiError, ContentLengthError, UnknownApiError } from '../errors'
 import { endpoint, region } from '../../codewhisperer/models/constants'
-import { isAwsError } from '../../shared/errors'
+import { isAwsError, isCodeWhispererStreamingServiceException } from '../../shared/errors'
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
@@ -93,7 +93,7 @@ export class FeatureDevClient {
                 throw new ApiError(e.message, 'CreateConversation', e.code, e.statusCode ?? 400)
             }
 
-            throw new UnknownError()
+            throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'CreateConversation')
         }
     }
 
@@ -130,7 +130,7 @@ export class FeatureDevClient {
                 throw new ApiError(e.message, 'CreateUploadUrl', e.code, e.statusCode ?? 400)
             }
 
-            throw new UnknownError()
+            throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'CreateUploadUrl')
         }
     }
 
@@ -165,16 +165,22 @@ export class FeatureDevClient {
                 assistantResponse.push(responseItem.assistantResponseEvent!.content)
             }
             return assistantResponse.join(' ')
-        } catch (e: any) {
-            getLogger().error(
-                `${featureName}: failed to execute planning: ${e.message} RequestId: ${e.requestId ?? 'unknown'}`
-            )
-            throw new ApiError(
-                e.message,
-                'GeneratePlan',
-                e.name ?? 'Unknown',
-                e.$metadata?.httpStatusCode ?? streamResponseErrors[e.name]
-            )
+        } catch (e) {
+            if (isCodeWhispererStreamingServiceException(e)) {
+                getLogger().error(
+                    `${featureName}: failed to execute planning: ${e.message} RequestId: ${
+                        e.$metadata.requestId ?? 'unknown'
+                    }`
+                )
+                throw new ApiError(
+                    e.message,
+                    'GeneratePlan',
+                    e.name,
+                    e.$metadata?.httpStatusCode ?? streamResponseErrors[e.name] ?? 500
+                )
+            }
+
+            throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'GeneratePlan')
         }
     }
 }

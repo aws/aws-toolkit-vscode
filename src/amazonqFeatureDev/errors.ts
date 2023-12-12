@@ -70,15 +70,15 @@ export class ContentLengthError extends ToolkitError {
     }
 }
 
-export class UnknownError extends ToolkitError {
-    constructor() {
-        super('The current error is not being handled. Please, investigate the issue', { code: 'UnhandledError' })
+export class UnknownApiError extends ToolkitError {
+    constructor(message: string, api: string) {
+        super(message, { code: `${api}-Unknown` })
     }
 }
 
 export class ApiError extends ToolkitError {
-    constructor(message: string, api: string, errorName: string, errorCode?: number) {
-        super(message, { code: `${api}-${errorName}-${errorCode ?? 'unknown'}` })
+    constructor(message: string, api: string, errorName: string, errorCode: number) {
+        super(message, { code: `${api}-${errorName}-${errorCode}` })
     }
 }
 
