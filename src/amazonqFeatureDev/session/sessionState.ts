@@ -34,7 +34,7 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const uploadId = await telemetry.amazonq_uploadCode.run(async span => {
+        const uploadId = await telemetry.amazonq_createUpload.run(async span => {
             span.record({ amazonqConversationId: this.config.conversationId })
             const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
                 this.config.sourceRoot,

@@ -19,7 +19,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../limits'
 import { createHash } from 'crypto'
 
-import { AmazonqUploadCode, Metric } from '../../shared/telemetry/telemetry'
+import { AmazonqCreateUpload, Metric } from '../../shared/telemetry/telemetry'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -86,7 +86,7 @@ const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('ba
 export async function prepareRepoData(
     repoRootPath: string,
     telemetry: TelemetryHelper,
-    span: Metric<AmazonqUploadCode>
+    span: Metric<AmazonqCreateUpload>
 ) {
     try {
         const zip = new AdmZip()
