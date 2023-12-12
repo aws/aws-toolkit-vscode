@@ -14,8 +14,9 @@ import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
-import { ApiError, ContentLengthError } from '../errors'
+import { ApiError, ContentLengthError, UnknownError } from '../errors'
 import { endpoint, region } from '../../codewhisperer/models/constants'
+import { isAwsError } from '../../shared/errors'
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
@@ -84,9 +85,15 @@ export class FeatureDevClient {
                 requestId: $response.requestId,
             })
             return conversationId
-        } catch (e: any) {
-            getLogger().error(`${featureName}: failed to start conversation: ${e.message} RequestId: ${e.requestId}`)
-            throw new ApiError(e.message, 'CreateConversation', e.code, e.statusCode)
+        } catch (e) {
+            if (isAwsError(e)) {
+                getLogger().error(
+                    `${featureName}: failed to start conversation: ${e.message} RequestId: ${e.requestId}`
+                )
+                throw new ApiError(e.message, 'CreateConversation', e.code, e.statusCode ?? 400)
+            }
+
+            throw new UnknownError()
         }
     }
 
@@ -112,14 +119,18 @@ export class FeatureDevClient {
                 requestId: response.$response.requestId,
             })
             return response
-        } catch (e: any) {
-            getLogger().error(
-                `${featureName}: failed to generate presigned url: ${e.message} RequestId: ${e.requestId}`
-            )
-            if (e.code === 'ValidationException' && e.message.includes('Invalid contentLength')) {
-                throw new ContentLengthError()
+        } catch (e) {
+            if (isAwsError(e)) {
+                getLogger().error(
+                    `${featureName}: failed to generate presigned url: ${e.message} RequestId: ${e.requestId}`
+                )
+                if (e.code === 'ValidationException' && e.message.includes('Invalid contentLength')) {
+                    throw new ContentLengthError()
+                }
+                throw new ApiError(e.message, 'CreateUploadUrl', e.code, e.statusCode ?? 400)
             }
-            throw new ApiError(e.message, 'CreateUploadUrl', e.code, e.statusCode)
+
+            throw new UnknownError()
         }
     }
 
@@ -155,11 +166,13 @@ export class FeatureDevClient {
             }
             return assistantResponse.join(' ')
         } catch (e: any) {
-            getLogger().error(`${featureName}: failed to execute planning: ${e.message} RequestId: ${e.requestId}`)
+            getLogger().error(
+                `${featureName}: failed to execute planning: ${e.message} RequestId: ${e.requestId ?? 'unknown'}`
+            )
             throw new ApiError(
                 e.message,
                 'GeneratePlan',
-                e.name,
+                e.name ?? 'Unknown',
                 e.$metadata?.httpStatusCode ?? streamResponseErrors[e.name]
             )
         }
