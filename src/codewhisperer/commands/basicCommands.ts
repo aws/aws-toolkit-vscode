@@ -151,9 +151,13 @@ export const selectCustomizationPrompt = Commands.declare(
 
 export const reconnect = Commands.declare(
     { id: 'aws.codewhisperer.reconnect', compositeKey: { 1: 'source' } },
-    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        await AuthUtil.instance.reauthenticate()
-    }
+    () =>
+        async (_: VsCodeCommandArg, source: CodeWhispererSource, addMissingScopes: boolean = false) => {
+            if (typeof addMissingScopes !== 'boolean') {
+                addMissingScopes = false
+            }
+            await AuthUtil.instance.reauthenticate(addMissingScopes)
+        }
 )
 
 /** Opens the Add Connections webview with CW highlighted */

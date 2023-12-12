@@ -30,6 +30,6 @@ export class AuthController {
     }
 
     private handleReAuth() {
-        reconnect.execute(placeholder, amazonQChatSource)
+        reconnect.execute(placeholder, amazonQChatSource, true)
     }
 }
