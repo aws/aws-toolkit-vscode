@@ -116,7 +116,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 false,
                 message("codemodernizer.notification.warn.invalid_project.description.reason.remote_backend"),
                 InvalidTelemetryReason(
-                    CodeTransformPreValidationError.ProjectRunningOnBackend
+                    CodeTransformPreValidationError.RemoteRunProject
                 )
             )
         }
@@ -126,7 +126,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 false,
                 message("codemodernizer.notification.warn.invalid_project.description.reason.not_logged_in"),
                 InvalidTelemetryReason(
-                    CodeTransformPreValidationError.NonSSOLogin
+                    CodeTransformPreValidationError.NonSsoLogin
                 )
             )
         }
@@ -136,7 +136,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 false,
                 message("codemodernizer.notification.warn.invalid_project.description.reason.missing_content_roots"),
                 InvalidTelemetryReason(
-                    CodeTransformPreValidationError.EmptyProject
+                    CodeTransformPreValidationError.NoPom
                 )
             )
         }
@@ -147,7 +147,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 false,
                 message("codemodernizer.notification.warn.invalid_project.description.reason.invalid_jdk_versions", supportedJavaMappings.keys.joinToString()),
                 InvalidTelemetryReason(
-                    CodeTransformPreValidationError.ProjectSelectedIsNotJava8OrJava11,
+                    CodeTransformPreValidationError.UnsupportedJavaVersion,
                     project.tryGetJdk().toString()
                 )
             )
@@ -160,7 +160,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 false,
                 message("codemodernizer.notification.warn.invalid_project.description.reason.no_valid_files", supportedBuildFileNames.joinToString()),
                 InvalidTelemetryReason(
-                    CodeTransformPreValidationError.ProjectSelectedIsNotJava8OrJava11,
+                    CodeTransformPreValidationError.NonMavenProject,
                     if (isGradleProject(project)) "Gradle build" else "other build"
                 )
             )
