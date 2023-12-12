@@ -24,7 +24,7 @@ export async function setValidConnection() {
     return validConnection
 }
 
-export function skipTestIfNoValidConn(validConnection: boolean, ctx: Mocha.Context) {
+export async function skipTestIfNoValidConn(validConnection: boolean, ctx: Mocha.Context) {
     if (!validConnection && ctx.currentTest) {
         ctx.currentTest.title += ` (skipped - no valid connection)`
         ctx.currentTest.skip()
