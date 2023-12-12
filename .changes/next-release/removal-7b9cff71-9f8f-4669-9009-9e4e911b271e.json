@@ -1,0 +1,4 @@
+{
+  "type" : "removal",
+  "description" : "Removed support for 2022.3.x IDEs"
+}
