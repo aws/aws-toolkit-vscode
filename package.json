@@ -754,7 +754,8 @@
                 },
                 {
                     "id": "aws.codecatalyst",
-                    "name": "%AWS.codecatalyst.explorerTitle%"
+                    "name": "%AWS.codecatalyst.explorerTitle%",
+                    "when": "!isCloud9 || isCloud9CodeCatalyst"
                 }
             ],
             "aws-codewhisperer-reference-log": [
