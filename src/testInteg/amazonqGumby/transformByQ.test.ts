@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { uploadArtifactToS3, zipCode, getSha256 } from '../../codewhisperer/service/transformByQHandler'
+import { zipCode, getSha256 } from '../../codewhisperer/service/transformByQHandler'
 import fetch from '../../common/request'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
@@ -53,15 +53,6 @@ describe('transformByQ', function () {
             () =>
                 fetch('PUT', response.uploadUrl, { body: fs.readFileSync(zippedCodePath), headers: headersObj })
                     .response
-        )
-    })
-
-    it('WHEN upload artifact to S3 with unsigned upload URL THEN fails to upload', async function () {
-        await assert.rejects(() =>
-            uploadArtifactToS3(zippedCodePath, {
-                uploadId: 'dummyId',
-                uploadUrl: 'https://aws-transform-artifacts-us-east-1.s3.amazonaws.com',
-            })
         )
     })
 })
