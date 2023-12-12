@@ -18,7 +18,7 @@ import { spawnSync } from 'child_process'
 import AdmZip from 'adm-zip'
 import fetch from '../../common/request'
 import globals from '../../shared/extensionGlobals'
-import { CodeTransformPreValidationError, telemetry } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
@@ -93,7 +93,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'No Java project found' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
         })
         throw new TransformByQJavaProjectNotFound()
@@ -107,7 +107,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'No Java project found' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
         })
         throw new ToolkitError('Unable to determine Java version', {
@@ -125,8 +125,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError:
-                'Project selected is not Java 8 or Java 11' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'UnsupportedJavaVersion',
             result: MetadataResult.Fail,
             reason: javaVersion,
         })
@@ -140,11 +139,18 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     if (buildFile.length < 1) {
         const buildType = await checkIfGradle(projectPath!)
         vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
+        if (buildType === 'Gradle') {
+            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformPreValidationError: 'NonMavenProject',
+                result: MetadataResult.Fail,
+                reason: buildType,
+            })
+        }
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'Only Maven projects supported' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'NoPom',
             result: MetadataResult.Fail,
-            reason: buildType,
         })
         throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }
