@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule
 import com.intellij.analysis.problemsView.toolWindow.ProblemsView
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.RegisterToolWindowTask
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.testFramework.ApplicationRule
@@ -19,12 +20,14 @@ import org.assertj.core.api.Assertions.assertThat
 import org.gradle.internal.impldep.com.amazonaws.ResponseMetadata
 import org.junit.Before
 import org.junit.Rule
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
+import org.mockito.kotlin.stub
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.services.codewhisperer.model.CodeScanStatus
@@ -226,6 +229,39 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
             }
         ]                
     """
+    internal fun getSourceFilesUnderProjectRoot(sessionConfigSpy: CodeScanSessionConfig, testFile: VirtualFile, size: Int) = assertThat(
+        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile).size
+    ).isEqualTo(size)
+
+    internal fun getTotalProjectSizeInBytes(sessionConfigSpy: CodeScanSessionConfig, totalSize: Long) = runBlocking {
+        assertThat(sessionConfigSpy.getTotalProjectSizeInBytes()).isEqualTo(totalSize)
+    }
+
+    internal fun selectedFileLargerThanPayloadSizeThrowsException(sessionConfigSpy: CodeScanSessionConfig) {
+        sessionConfigSpy.stub {
+            onGeneric { getPayloadLimitInBytes() }.thenReturn(100)
+        }
+        assertThrows<CodeWhispererCodeScanException> {
+            sessionConfigSpy.createPayload()
+        }
+    }
+
+    internal fun includeDependencies(
+        sessionConfigSpy: CodeScanSessionConfig,
+        includedSourceFilesSize: Long,
+        totalSize: Long,
+        expectedTotalLines: Long,
+        expectedBuilds: Int
+    ) {
+        val payloadMetadata = sessionConfigSpy.includeDependencies()
+        assertNotNull(payloadMetadata)
+        val (includedSourceFiles, srcPayloadSize, totalLines) = payloadMetadata
+        assertThat(includedSourceFiles.size).isEqualTo(includedSourceFilesSize)
+        assertThat(srcPayloadSize).isEqualTo(totalSize)
+        assertThat(totalLines).isEqualTo(expectedTotalLines)
+        assertThat(sessionConfigSpy.isProjectTruncated()).isFalse
+        assertThat(payloadMetadata.buildPaths).hasSize(expectedBuilds)
+    }
 
     internal fun assertE2ERunsSuccessfully(
         sessionConfigSpy: CodeScanSessionConfig,

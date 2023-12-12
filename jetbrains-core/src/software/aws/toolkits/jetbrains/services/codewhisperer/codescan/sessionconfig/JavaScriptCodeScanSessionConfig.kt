@@ -10,17 +10,25 @@ import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JS_CODE_SCAN_TIMEOUT_IN_SECONDS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JS_PAYLOAD_LIMIT_IN_BYTES
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.IOException
 import java.nio.file.Path
 
 internal class JavaScriptCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
-    private val project: Project
+    private val project: Project,
+    private val language: CodewhispererLanguage
 ) : CodeScanSessionConfig(selectedFile, project) {
 
     private val importRegex = Regex("^import.*(?:[\"'](.+)[\"']);?\$")
     private val requireRegex = Regex("^.+require\\(['\"](.+)['\"]\\)[ \\t]*;?")
-    override val sourceExt: List<String> = listOf(".js")
+    override val sourceExt by lazy {
+        if (language === CodewhispererLanguage.Javascript) {
+            listOf(".js")
+        } else {
+            listOf(".ts")
+        }
+    }
 
     override fun overallJobTimeoutInSeconds(): Long = JS_CODE_SCAN_TIMEOUT_IN_SECONDS
 

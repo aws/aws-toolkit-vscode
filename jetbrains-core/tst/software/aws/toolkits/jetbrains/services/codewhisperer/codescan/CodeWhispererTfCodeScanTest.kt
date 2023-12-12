@@ -4,11 +4,9 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.codescan
 
 import com.intellij.openapi.vfs.VirtualFile
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
@@ -72,7 +70,7 @@ class CodeWhispererTfCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsi
 
     @Test
     fun `test getSourceFilesUnderProjectRoot`() {
-        assertThat(sessionConfigSpy.getSourceFilesUnderProjectRoot(testTf).size).isEqualTo(3)
+        getSourceFilesUnderProjectRoot(sessionConfigSpy, testTf, 3)
     }
 
     @Test
@@ -84,30 +82,17 @@ class CodeWhispererTfCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsi
 
     @Test
     fun `test includeDependencies()`() {
-        val payloadMetadata = sessionConfigSpy.includeDependencies()
-        assertNotNull(payloadMetadata)
-        assertThat(sessionConfigSpy.isProjectTruncated()).isFalse
-        assertThat(payloadMetadata.sourceFiles.size).isEqualTo(3)
-        assertThat(payloadMetadata.payloadSize).isEqualTo(totalSize)
-        assertThat(payloadMetadata.linesScanned).isEqualTo(this.totalLines)
-        assertThat(payloadMetadata.buildPaths).hasSize(0)
+        includeDependencies(sessionConfigSpy, 3, totalSize, this.totalLines, 0)
     }
 
     @Test
     fun `test getTotalProjectSizeInBytes()`() {
-        runBlocking {
-            assertThat(sessionConfigSpy.getTotalProjectSizeInBytes()).isEqualTo(totalSize)
-        }
+        getTotalProjectSizeInBytes(sessionConfigSpy, this.totalSize)
     }
 
     @Test
     fun `selected file larger than payload limit throws exception`() {
-        sessionConfigSpy.stub {
-            onGeneric { getPayloadLimitInBytes() }.thenReturn(100)
-        }
-        assertThrows<CodeWhispererCodeScanException> {
-            sessionConfigSpy.createPayload()
-        }
+        selectedFileLargerThanPayloadSizeThrowsException(sessionConfigSpy)
     }
 
     @Test

@@ -36,16 +36,6 @@ object CodeWhispererConstants {
     val AWSTemplateKeyWordsRegex = Regex("(AWSTemplateFormatVersion|Resources|AWS::|Description)")
     val AWSTemplateCaseInsensitiveKeyWordsRegex = Regex("(cloudformation|cfn|template|description)")
 
-    const val USING: String = "using"
-    const val GLOBAL_USING: String = "global using"
-    const val STATIC: String = "static"
-    const val REQUIRE: String = "require"
-    const val REQUIRE_RELATIVE: String = "require_relative"
-    const val LOAD: String = "load"
-    const val INCLUDE: String = "include"
-    const val EXTEND: String = "extend"
-    const val AS: String = " as "
-
     // TODO: this is currently set to 2050 to account for the server side 0.5 TPS and and extra 50 ms buffer to
     // avoid ThrottlingException as much as possible.
     const val INVOCATION_INTERVAL: Long = 2050
@@ -70,7 +60,7 @@ object CodeWhispererConstants {
     const val CSHARP_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
     const val CSHARP_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
     const val RUBY_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
-    const val RUBY_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
+    const val RUBY_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val CLOUDFORMATION_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
     const val CLOUDFORMATION_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val TERRAFORM_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
@@ -80,7 +70,7 @@ object CodeWhispererConstants {
     const val JS_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
     const val JS_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val GO_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
-    const val GO_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
+    const val GO_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val CODE_SCAN_POLLING_INTERVAL_IN_SECONDS: Long = 5
     const val CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS: Long = 10
     const val TOTAL_BYTES_IN_KB = 1024
@@ -89,6 +79,15 @@ object CodeWhispererConstants {
     const val TOTAL_SECONDS_IN_MINUTE: Long = 60L
     const val ACCOUNTLESS_START_URL = "accountless"
     const val FEATURE_CONFIG_POLL_INTERVAL_IN_MS: Long = 30 * 60 * 1000L // 30 mins
+    const val USING: String = "using"
+    const val GLOBAL_USING: String = "global using"
+    const val STATIC: String = "static"
+    const val REQUIRE: String = "require"
+    const val REQUIRE_RELATIVE: String = "require_relative"
+    const val LOAD: String = "load"
+    const val INCLUDE: String = "include"
+    const val EXTEND: String = "extend"
+    const val AS: String = " as "
 
     // Date when Accountless is not supported
     val EXPIRE_DATE = SimpleDateFormat("yyyy-MM-dd").parse("2023-01-31")

@@ -12,7 +12,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.TypeScriptCodeScanSessionConfig
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.JavaScriptCodeScanSessionConfig
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
@@ -25,7 +25,7 @@ class CodeWhispererTypeScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
     internal lateinit var testTs: VirtualFile
     internal lateinit var utilsTs: VirtualFile
     internal lateinit var helperTs: VirtualFile
-    internal lateinit var sessionConfigSpy: TypeScriptCodeScanSessionConfig
+    internal lateinit var sessionConfigSpy: JavaScriptCodeScanSessionConfig
 
     private var totalSize: Long = 0
     private var totalLines: Long = 0
@@ -34,7 +34,7 @@ class CodeWhispererTypeScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
     override fun setup() {
         super.setup()
         setupTypeScriptProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testTs, project) as TypeScriptCodeScanSessionConfig)
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(testTs, project) as JavaScriptCodeScanSessionConfig)
         setupResponse(testTs.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {

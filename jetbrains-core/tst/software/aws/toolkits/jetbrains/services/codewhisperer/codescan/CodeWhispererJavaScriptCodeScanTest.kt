@@ -7,7 +7,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
@@ -71,7 +70,7 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
 
     @Test
     fun `test getSourceFilesUnderProjectRoot`() {
-        assertThat(sessionConfigSpy.getSourceFilesUnderProjectRoot(testJs).size).isEqualTo(3)
+        getSourceFilesUnderProjectRoot(sessionConfigSpy, testJs, 3)
     }
 
     @Test
@@ -94,23 +93,17 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
 
     @Test
     fun `test includeDependencies()`() {
-        val payloadMetadata = sessionConfigSpy.includeDependencies()
-        assertNotNull(payloadMetadata)
-        assertThat(sessionConfigSpy.isProjectTruncated()).isFalse
-        assertThat(payloadMetadata.sourceFiles.size).isEqualTo(3)
-        assertThat(payloadMetadata.payloadSize).isEqualTo(totalSize)
-        assertThat(payloadMetadata.linesScanned).isEqualTo(this.totalLines)
-        assertThat(payloadMetadata.buildPaths).hasSize(0)
+        includeDependencies(sessionConfigSpy, 3, totalSize, this.totalLines, 0)
+    }
+
+    @Test
+    fun `test getTotalProjectSizeInBytes()`() {
+        getTotalProjectSizeInBytes(sessionConfigSpy, this.totalSize)
     }
 
     @Test
     fun `selected file larger than payload limit throws exception`() {
-        sessionConfigSpy.stub {
-            onGeneric { getPayloadLimitInBytes() }.thenReturn(100)
-        }
-        assertThrows<CodeWhispererCodeScanException> {
-            sessionConfigSpy.createPayload()
-        }
+        selectedFileLargerThanPayloadSizeThrowsException(sessionConfigSpy)
     }
 
     @Test

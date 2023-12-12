@@ -4,11 +4,9 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.codescan
 
 import com.intellij.openapi.vfs.VirtualFile
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
@@ -71,7 +69,7 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
 
     @Test
     fun `test getSourceFilesUnderProjectRoot`() {
-        assertThat(sessionConfigSpy.getSourceFilesUnderProjectRoot(testCs).size).isEqualTo(3)
+        getSourceFilesUnderProjectRoot(sessionConfigSpy, testCs, 3)
     }
 
     @Test
@@ -97,29 +95,17 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
 
     @Test
     fun `test includeDependencies()`() {
-        val payloadMetadata = sessionConfigSpy.includeDependencies()
-        assertNotNull(payloadMetadata)
-        val (includedSourceFiles, srcPayloadSize, totalLines) = payloadMetadata
-        assertThat(includedSourceFiles.size).isEqualTo(3)
-        assertThat(srcPayloadSize).isEqualTo(totalSize)
-        assertThat(totalLines).isEqualTo(this.totalLines)
+        includeDependencies(sessionConfigSpy, 3, totalSize, this.totalLines, 0)
     }
 
     @Test
     fun `test getTotalProjectSizeInBytes()`() {
-        runBlocking {
-            assertThat(sessionConfigSpy.getTotalProjectSizeInBytes()).isEqualTo(totalSize)
-        }
+        getTotalProjectSizeInBytes(sessionConfigSpy, this.totalSize)
     }
 
     @Test
     fun `selected file larger than payload limit throws exception`() {
-        sessionConfigSpy.stub {
-            onGeneric { getPayloadLimitInBytes() }.thenReturn(100)
-        }
-        assertThrows<CodeWhispererCodeScanException> {
-            sessionConfigSpy.createPayload()
-        }
+        selectedFileLargerThanPayloadSizeThrowsException(sessionConfigSpy)
     }
 
     @Test
