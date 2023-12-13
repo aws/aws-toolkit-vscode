@@ -322,7 +322,7 @@ export class CWCTelemetryHelper {
                         messageId: event.cwsprChatMessageId,
                         userIntent: event.cwsprChatUserIntent,
                         hasCodeSnippet: event.cwsprChatHasCodeSnippet,
-                        programmingLanguage: { languageName: event.cwsprChatProgrammingLanguage ?? '' },
+                        programmingLanguage: { languageName: event.cwsprChatProgrammingLanguage ?? 'unknown' },
                         activeEditorTotalCharacters: event.cwsprChatActiveEditorTotalCharacters,
                         timeToFirstChunkMilliseconds: event.cwsprChatTimeToFirstChunk,
                         timeBetweenChunks: this.getResponseStreamTimeBetweenChunks(message.tabID),
