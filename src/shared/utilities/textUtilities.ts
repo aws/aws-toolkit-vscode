@@ -246,7 +246,7 @@ export function getRelativeDate(from: Date, now: Date = new Date()): string {
  * US: Jan 5, 2020 5:30:20 PM GMT-0700
  * GB: 5 Jan 2020 17:30:20 GMT+0100
  */
-export function getFormattedLocalizedDate(d: Date = new Date()): string {
+export function formatLocalized(d: Date = new Date()): string {
     const dateFormat = new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'short',
@@ -265,7 +265,7 @@ export function getFormattedLocalizedDate(d: Date = new Date()): string {
  * Matches Insights console timestamp, e.g.: 2019-03-04T11:40:08.781-08:00
  * TODO: Do we want this this verbose? Log stream just shows HH:mm:ss
  */
-export function getInsightsFormattedTimestamp(forceUTC: boolean, d: Date = new Date()): string {
+export function formatDateTimestamp(forceUTC: boolean, d: Date = new Date()): string {
     let offsetString: string
     if (!forceUTC) {
         // manually adjust offset seconds if looking for a GMT timestamp:

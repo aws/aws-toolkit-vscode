@@ -15,7 +15,7 @@ import {
 } from '../../../cloudWatchLogs/commands/viewLogStream'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import globals from '../../../shared/extensionGlobals'
-import { getFormattedLocalizedDate } from '../../../shared/utilities/textUtilities'
+import { formatLocalized } from '../../../shared/utilities/textUtilities'
 
 class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     public constructor(private readonly pickLogStreamResponses: LogSearchChoice[] = []) {
@@ -92,7 +92,7 @@ describe('convertDescribeLogToQuickPickItems', function () {
         })
         assert.deepStrictEqual(results[1], {
             label: 'streamWithTimestamp',
-            detail: getFormattedLocalizedDate(new Date(time)),
+            detail: formatLocalized(new Date(time)),
         })
         const noResults = convertDescribeLogToQuickPickItems({})
         assert.strictEqual(noResults.length, 0)

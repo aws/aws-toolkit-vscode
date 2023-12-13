@@ -25,7 +25,7 @@ import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { prepareDocument, searchLogGroup } from './searchLogGroup'
 import { telemetry, Result } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
-import { getFormattedLocalizedDate } from '../../shared/utilities/textUtilities'
+import { formatLocalized } from '../../shared/utilities/textUtilities'
 
 export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
     await telemetry.cloudwatchlogs_open.run(async span => {
@@ -183,7 +183,7 @@ export function convertDescribeLogToQuickPickItems(
     return (response.logStreams ?? []).map<vscode.QuickPickItem>(stream => ({
         label: stream.logStreamName!,
         detail: stream.lastEventTimestamp
-            ? getFormattedLocalizedDate(new Date(stream.lastEventTimestamp))
+            ? formatLocalized(new Date(stream.lastEventTimestamp))
             : localize('AWS.cwl.viewLogStream.workflow.noStreams', '[No Log Events found]'),
     }))
 }

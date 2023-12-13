@@ -11,7 +11,7 @@ import globals from '../shared/extensionGlobals'
 import { PromptSettings } from '../shared/settings'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { showMessageWithCancel, showOutputMessage } from '../shared/utilities/messages'
-import { getInsightsFormattedTimestamp, removeAnsi } from '../shared/utilities/textUtilities'
+import { formatDateTimestamp, removeAnsi } from '../shared/utilities/textUtilities'
 import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { EcsSettings } from './util'
@@ -93,7 +93,7 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
         try {
             const { path, args, dispose } = await container.prepareCommandForTask(command, task)
             showOutputMessage(
-                `${getInsightsFormattedTimestamp(false)}:  Container: "${
+                `${formatDateTimestamp(false)}:  Container: "${
                     container.description.name
                 }" Task ID: "${task}" Command: "${command}"`,
                 globals.outputChannel

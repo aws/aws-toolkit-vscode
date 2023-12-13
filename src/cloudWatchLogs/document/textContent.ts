@@ -4,7 +4,7 @@
  */
 
 import { CloudWatchLogsEvent, CloudWatchLogsGroupInfo } from '../registry/logDataRegistry'
-import { getInsightsFormattedTimestamp } from '../../shared/utilities/textUtilities'
+import { formatDateTimestamp } from '../../shared/utilities/textUtilities'
 
 export const timestampSpaceEquivalent = '                             '
 
@@ -30,7 +30,7 @@ export function generateTextFromLogEvents(
         if (formatting?.timestamps) {
             // TODO: Handle different timezones and unix timestamps?
             const timestamp = event.timestamp
-                ? getInsightsFormattedTimestamp(true, new Date(event.timestamp))
+                ? formatDateTimestamp(true, new Date(event.timestamp))
                 : timestampSpaceEquivalent
             line = timestamp.concat('\t', line)
             // log entries containing newlines are indented to the same length as the timestamp.

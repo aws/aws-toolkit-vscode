@@ -27,7 +27,7 @@ import {
 } from '../utils.test'
 import { CloudWatchLogs } from 'aws-sdk'
 import { FilteredLogEvents } from 'aws-sdk/clients/cloudwatchlogs'
-import { getInsightsFormattedTimestamp } from '../../../shared/utilities/textUtilities'
+import { formatDateTimestamp } from '../../../shared/utilities/textUtilities'
 
 describe('LogDataRegistry', async function () {
     let registry: GetSetLogDataRegistry
@@ -209,7 +209,7 @@ describe('LogDataRegistry', async function () {
     describe('Timestamp', function () {
         it('matches CloudWatch insights timestamps', function () {
             const time = 1624201162222 // 2021-06-20 14:59:22.222 GMT+0
-            const timestamp = getInsightsFormattedTimestamp(true, new Date(time))
+            const timestamp = formatDateTimestamp(true, new Date(time))
             assert.strictEqual(timestamp, '2021-06-20T14:59:22.222+00:00')
         })
     })
