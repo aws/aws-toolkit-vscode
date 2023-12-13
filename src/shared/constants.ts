@@ -108,10 +108,6 @@ export const ecsIamPermissionsUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-best-practices-limit-access-execute-command'
 )
 
-// moment().format() matches Insights console timestamp, e.g.: 2019-03-04T11:40:08.781-08:00
-// TODO: Do we want this this verbose? Log stream just shows HH:mm:ss
-export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDTHH:mm:ss.SSSZ' // eslint-disable-line @typescript-eslint/naming-convention
-
 /**
  * URI scheme for CloudWatch Logs Virtual Documents
  */

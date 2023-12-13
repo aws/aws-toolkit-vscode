@@ -152,15 +152,20 @@ function getLogLevel(): LogLevel {
     return configuration.get('logLevel', defaultLogLevel)
 }
 
+/**
+ * Creates a name for the toolkit's logfile.
+ * Essentially an ISO string, but in the local timezone and without the trailing "Z"
+ * @returns Log filename
+ */
 function makeLogFilename(): string {
     const now = new Date()
     // local to machine: use getMonth/Date instead of UTC equivalent
-    // month is offset by 1
-    const m = now.getMonth() + 1 < 10 ? `0${now.getMonth() + 1}` : now.getMonth() + 1
-    const d = now.getDate() < 10 ? `0${now.getDate()}` : now.getDate()
-    const h = now.getHours() < 10 ? `0${now.getHours()}` : now.getHours()
-    const mn = now.getMinutes() < 10 ? `0${now.getMinutes()}` : now.getMinutes()
-    const s = now.getSeconds() < 10 ? `0${now.getSeconds()}` : now.getSeconds()
+    // month is zero-terminated: offset by 1
+    const m = (now.getMonth() + 1).toString().padStart(2, '0')
+    const d = now.getDate().toString().padStart(2, '0')
+    const h = now.getHours().toString().padStart(2, '0')
+    const mn = now.getMinutes().toString().padStart(2, '0')
+    const s = now.getSeconds().toString().padStart(2, '0')
     const dt = `${now.getFullYear()}${m}${d}T${h}${mn}${s}`
 
     return `aws_toolkit_${dt}.log`

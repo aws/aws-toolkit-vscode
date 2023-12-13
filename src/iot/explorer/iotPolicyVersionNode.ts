@@ -10,7 +10,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { inspect } from 'util'
 import { IotPolicyWithVersionsNode } from './iotPolicyNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { getLocalizedDateFormat } from '../../shared/utilities/textUtilities'
+import { getFormattedLocalizedDate } from '../../shared/utilities/textUtilities'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
@@ -44,7 +44,7 @@ export class IotPolicyVersionNode extends AWSTreeNodeBase implements AWSResource
             this.policy.name,
             this.version.versionId,
             this.isDefault ? 'DEFAULT\n' : '',
-            getLocalizedDateFormat(this.version.createDate)
+            getFormattedLocalizedDate(this.version.createDate)
         )
         this.label = localize(
             'AWS.explorerNode.iot.versionName',

@@ -6,14 +6,12 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import moment from 'moment'
 import * as vscode from 'vscode'
-import { INSIGHTS_TIMESTAMP_FORMAT } from '../shared/constants'
 import globals from '../shared/extensionGlobals'
 import { PromptSettings } from '../shared/settings'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { showMessageWithCancel, showOutputMessage } from '../shared/utilities/messages'
-import { removeAnsi } from '../shared/utilities/textUtilities'
+import { getInsightsFormattedTimestamp, removeAnsi } from '../shared/utilities/textUtilities'
 import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { EcsSettings } from './util'
@@ -95,7 +93,7 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
         try {
             const { path, args, dispose } = await container.prepareCommandForTask(command, task)
             showOutputMessage(
-                `${moment().format(INSIGHTS_TIMESTAMP_FORMAT)}:  Container: "${
+                `${getInsightsFormattedTimestamp(false)}:  Container: "${
                     container.description.name
                 }" Task ID: "${task}" Command: "${command}"`,
                 globals.outputChannel

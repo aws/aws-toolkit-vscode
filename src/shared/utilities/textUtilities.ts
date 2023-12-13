@@ -240,11 +240,13 @@ export function getRelativeDate(from: Date, now: Date = new Date()): string {
  * Format for rendering readable dates.
  *
  * Same format used in the S3 console, but it's also locale-aware.
+ * This specifically combines a separate date and time format
+ * in order to avoid a comma between the date and time.
  *
  * US: Jan 5, 2020 5:30:20 PM GMT-0700
  * GB: 5 Jan 2020 17:30:20 GMT+0100
  */
-export function getLocalizedDateFormat(d: Date = new Date()) {
+export function getFormattedLocalizedDate(d: Date = new Date()): string {
     const dateFormat = new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'short',
@@ -258,4 +260,26 @@ export function getLocalizedDateFormat(d: Date = new Date()) {
     })
 
     return `${dateFormat.format(d)} ${timeFormat.format(d)}`
+}
+/**
+ * Matches Insights console timestamp, e.g.: 2019-03-04T11:40:08.781-08:00
+ * TODO: Do we want this this verbose? Log stream just shows HH:mm:ss
+ */
+export function getInsightsFormattedTimestamp(forceUTC: boolean, d: Date = new Date()): string {
+    let offsetString: string
+    if (!forceUTC) {
+        // manually adjust offset seconds if looking for a GMT timestamp:
+        // the date is created in local time, but `getISOString` will always output unadjusted GMT
+        d = new Date(d.getTime() - d.getTimezoneOffset() * 1000 * 60)
+        offsetString = '+00:00'
+    } else {
+        // positive offset means GMT-n, negative offset means GMT+n
+        // offset is in minutes
+        offsetString = `${d.getTimezoneOffset() <= 0 ? '+' : '-'}${(d.getTimezoneOffset() / 60)
+            .toString()
+            .padStart(2, '0')}:00`
+    }
+    const iso = d.toISOString()
+    // trim 'Z' (last char of iso string) and add offset string
+    return `${iso.substring(0, iso.length - 1)}${offsetString}`
 }
