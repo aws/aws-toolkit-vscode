@@ -71,7 +71,7 @@ object CodeWhispererConstants {
     const val JS_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val GO_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
     const val GO_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
-    const val CODE_SCAN_POLLING_INTERVAL_IN_SECONDS: Long = 5
+    const val CODE_SCAN_POLLING_INTERVAL_IN_SECONDS: Long = 1
     const val CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS: Long = 10
     const val TOTAL_BYTES_IN_KB = 1024
     const val TOTAL_BYTES_IN_MB = 1024 * 1024
