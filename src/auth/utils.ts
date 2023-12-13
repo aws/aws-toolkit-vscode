@@ -391,6 +391,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
     prompter.quickPick.onDidTriggerItemButton(async e => {
         // User wants to delete a specific connection
         if (e.button.tooltip === deleteConnection) {
+            telemetry.ui_click.emit({ elementId: 'connection_deleteFromList' })
             const conn = e.item.data as Connection
 
             // Set prompter in to a busy state so that
