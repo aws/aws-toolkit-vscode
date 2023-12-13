@@ -31,7 +31,7 @@ describe('transformByQ', async function () {
     })
 
     beforeEach(function () {
-        skipTestIfNoValidConn(validConnection, this)
+        skipTestIfNoValidConn(validConnection, this) // need valid IdC
     })
 
     after(async function () {
