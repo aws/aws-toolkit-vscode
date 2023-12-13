@@ -311,6 +311,7 @@ export const prioritizedAwsErrors: RegExp[] = [
     /^ValidationException$/,
     /^ResourceNotFoundException$/,
     /^ServiceQuotaExceededException$/,
+    /^AccessDeniedException$/,
 ]
 
 /**
