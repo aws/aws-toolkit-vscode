@@ -222,7 +222,7 @@ export const codeScanJobTimeoutSeconds = 50
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
-export const codeScanJobPollingIntervalSeconds = 5
+export const codeScanJobPollingIntervalSeconds = 1
 
 export const artifactTypeSource = 'SourceCode'
 
