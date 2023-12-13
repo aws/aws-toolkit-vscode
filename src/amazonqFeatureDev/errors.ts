@@ -55,6 +55,12 @@ export class PrepareRepoFailedError extends ToolkitError {
     }
 }
 
+export class UploadCodeError extends ToolkitError {
+    constructor(statusCode: string) {
+        super('Unable to upload code', { code: `UploadCode-${statusCode}` })
+    }
+}
+
 export class IllegalStateTransition extends ToolkitError {
     constructor() {
         super('Illegal transition between states, restart the conversation', { code: 'IllegalStateTransition' })
