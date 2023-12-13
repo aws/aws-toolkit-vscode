@@ -33,6 +33,6 @@ describe('S3FileNode', function () {
                 `path/to/file.jpg\nSize: 1 KB\nLast Modified: ${lastModifiedReadable}`
             )
         )
-        assert.ok((node.description as string).startsWith('1 KB, a month ago'))
+        assert.ok((node.description as string).startsWith('1 KB, last month'))
     })
 })
