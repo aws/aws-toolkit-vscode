@@ -4,16 +4,16 @@
  */
 
 import assert from 'assert'
-import { zipCode, getSha256, uploadArtifactToS3 } from '../../codewhisperer/service/transformByQHandler'
+import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQHandler'
 import fetch from '../../common/request'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import * as os from 'os'
 import * as path from 'path'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import { setValidConnection, skipTestIfNoValidConn } from '../util/amazonQUtil'
 
-describe('transformByQ', function () {
+describe('transformByQ', async function () {
     let tempDir = ''
     let tempFileName = ''
     let tempFilePath = ''
@@ -22,10 +22,6 @@ describe('transformByQ', function () {
 
     before(async function () {
         validConnection = await setValidConnection()
-    })
-
-    beforeEach(async function () {
-        await skipTestIfNoValidConn(validConnection, this)
         tempDir = path.join(os.tmpdir(), 'gumby-test')
         fs.mkdirSync(tempDir)
         tempFileName = `testfile-${Date.now()}.txt`
@@ -34,8 +30,14 @@ describe('transformByQ', function () {
         zippedCodePath = await zipCode(tempDir)
     })
 
-    afterEach(function () {
-        fs.rmSync(tempDir, { recursive: true, force: true })
+    beforeEach(function () {
+        skipTestIfNoValidConn(validConnection, this)
+    })
+
+    after(async function () {
+        if (tempDir !== '') {
+            await fs.remove(tempDir)
+        }
     })
 
     it('WHEN upload payload with missing sha256 in headers THEN fails to upload', async function () {
