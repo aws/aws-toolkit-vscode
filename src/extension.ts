@@ -292,9 +292,8 @@ export async function activate(context: vscode.ExtensionContext) {
         //       If the issue is due to activity on the views,
         //       this should be fired after planned activities have finished.
         if (isCloud9()) {
-            const timeout = new Timeout(5000).onCompletion(() => {
+            new Timeout(5000).onCompletion(() => {
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-                timeout.dispose()
             })
         }
     } catch (error) {
