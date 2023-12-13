@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Opening a CodeCatalyst dev env triggers a builder ID login in certain situations."
+}
