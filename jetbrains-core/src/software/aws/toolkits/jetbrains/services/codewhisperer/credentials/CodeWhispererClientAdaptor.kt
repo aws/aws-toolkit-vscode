@@ -244,6 +244,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                     it.programmingLanguage { builder -> builder.languageName(programmingLanguage.toCodeWhispererRuntimeLanguage().languageId) }
                     it.sessionId(responseContext.sessionId)
                     it.recommendationLatencyMilliseconds(e2eLatency)
+                    it.triggerToResponseLatencyMilliseconds(requestContext.latencyContext.paginationFirstCompletionTime)
                     it.suggestionState(suggestionState.toCodeWhispererSdkType())
                     it.timestamp(Instant.now())
                     it.suggestionReferenceCount(suggestionReferenceCount)

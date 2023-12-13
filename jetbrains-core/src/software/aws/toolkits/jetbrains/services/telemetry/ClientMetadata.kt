@@ -40,5 +40,6 @@ data class ClientMetadata(
         .operatingSystem(osForCodeWhisperer)
         .product(FEATURE_EVALUATION_PRODUCT_NAME)
         .clientId(clientId)
+        .ideVersion(productVersion)
         .build()
 }
