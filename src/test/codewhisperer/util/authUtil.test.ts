@@ -145,23 +145,35 @@ describe('AuthUtil', async function () {
         assert.strictEqual(auth.getConnectionState(conn), 'valid')
     })
 
-    it('reauthenticate adds missing CodeWhisperer Chat Builder ID scopes', async function () {
+    it('reauthenticate does NOT add missing CodeWhisperer scopes if not required to', async function () {
         const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
         await auth.useConnection(conn)
 
         await authUtil.reauthenticate()
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
+        assert.deepStrictEqual(authUtil.conn?.scopes, codeWhispererCoreScopes)
+    })
+
+    it('reauthenticate adds missing CodeWhisperer Chat Builder ID scopes when explicitly required', async function () {
+        const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
+        await auth.useConnection(conn)
+
+        // method under test
+        await authUtil.reauthenticate(true)
+
+        assert.strictEqual(authUtil.conn?.type, 'sso')
         assert.deepStrictEqual(authUtil.conn?.scopes, codeWhispererChatScopes)
     })
 
-    it('reauthenticate adds missing Amazon Q IdC scopes', async function () {
+    it('reauthenticate adds missing Amazon Q IdC scopes when explicitly required', async function () {
         const conn = await auth.createConnection(
             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererCoreScopes })
         )
         await auth.useConnection(conn)
 
-        await authUtil.reauthenticate()
+        // method under test
+        await authUtil.reauthenticate(true)
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
         assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)

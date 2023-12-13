@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import moment from 'moment'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { IotClient, IotCertificate } from '../../shared/clients/iotClient'
 
@@ -20,9 +19,8 @@ import { getLogger } from '../../shared/logger'
 import { IotCertsFolderNode } from './iotCertFolderNode'
 import { IotThingNode } from './iotThingNode'
 import { IotPolicyCertNode } from './iotPolicyNode'
-import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getIcon } from '../../shared/icons'
-import { truncate } from '../../shared/utilities/textUtilities'
+import { formatLocalized, truncate } from '../../shared/utilities/textUtilities'
 import { Settings } from '../../shared/settings'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 
@@ -51,7 +49,7 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
             '{0}\nStatus: {1}\nCreated: {2}{3}',
             this.certificate.id,
             this.certificate.activeStatus,
-            moment(this.certificate.creationDate).format(LOCALIZED_DATE_FORMAT),
+            formatLocalized(this.certificate.creationDate),
             things?.length ?? 0 > 0 ? `\nAttached to: ${things!.join(', ')}` : ''
         )
         this.iconPath = getIcon('aws-iot-certificate')

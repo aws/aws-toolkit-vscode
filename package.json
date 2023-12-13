@@ -754,7 +754,8 @@
                 },
                 {
                     "id": "aws.codecatalyst",
-                    "name": "%AWS.codecatalyst.explorerTitle%"
+                    "name": "%AWS.codecatalyst.explorerTitle%",
+                    "when": "!isCloud9 || isCloud9CodeCatalyst"
                 }
             ],
             "aws-codewhisperer-reference-log": [
@@ -768,7 +769,7 @@
                 {
                     "type": "webview",
                     "id": "aws.amazonq.transformationHub",
-                    "name": ""
+                    "name": "Status"
                 },
                 {
                     "id": "aws.amazonq.transformationProposedChangesTree",
@@ -4263,7 +4264,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.169",
+        "@aws-toolkits/telemetry": "^1.0.172",
         "@aws/fully-qualified-names": "^2.1.1",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
@@ -4310,9 +4311,9 @@
         "esbuild-loader": "2.20.0",
         "eslint": "^8.26.0",
         "eslint-config-prettier": "8.8",
+        "eslint-plugin-aws-toolkits": "file:plugins/eslint-plugin-aws-toolkits",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
-        "eslint-plugin-aws-toolkits": "file:plugins/eslint-plugin-aws-toolkits",
         "file-loader": "^6.2.0",
         "glob": "^7.1.7",
         "husky": "^7.0.2",
@@ -4379,7 +4380,6 @@
         "lodash": "^4.17.21",
         "markdown-it": "^13.0.2",
         "mime-types": "^2.1.32",
-        "moment": "^2.29.4",
         "node-fetch": "^2.7.0",
         "parse-diff": "0.11.1",
         "portfinder": "^1.0.32",

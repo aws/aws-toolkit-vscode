@@ -12,6 +12,7 @@ import { CancellationError } from './utilities/timeoutUtils'
 import { isNonNullable } from './utilities/tsUtils'
 import type * as fs from 'fs'
 import type * as os from 'os'
+import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 
 export const errorCode = {
     invalidConnection: 'InvalidConnection',
@@ -310,6 +311,7 @@ export const prioritizedAwsErrors: RegExp[] = [
     /^ValidationException$/,
     /^ResourceNotFoundException$/,
     /^ServiceQuotaExceededException$/,
+    /^AccessDeniedException$/,
 ]
 
 /**
@@ -368,6 +370,29 @@ export function findAwsErrorInCausalChain(error: unknown): AWSError | undefined 
     }
 
     return undefined
+}
+
+export function isCodeWhispererStreamingServiceException(
+    error: unknown
+): error is CodeWhispererStreamingServiceException {
+    if (error === undefined) {
+        return false
+    }
+
+    return error instanceof Error && hasFault(error) && hasMetadata(error) && hasName(error)
+}
+
+function hasFault<T>(error: T): error is T & { $fault: 'client' | 'server' } {
+    const fault = (error as { $fault?: unknown }).$fault
+    return typeof fault === 'string' && (fault === 'client' || fault === 'server')
+}
+
+function hasMetadata<T>(error: T): error is T & Pick<CodeWhispererStreamingServiceException, '$metadata'> {
+    return typeof (error as { $metadata?: unknown }).$metadata === 'object'
+}
+
+function hasName<T>(error: T): error is T & { name: string } {
+    return typeof (error as { name?: unknown }).name === 'string'
 }
 
 export function isAwsError(error: unknown): error is AWSError {

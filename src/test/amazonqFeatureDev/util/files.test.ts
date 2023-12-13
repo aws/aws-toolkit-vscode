@@ -10,6 +10,7 @@ import assert from 'assert'
 import { collectFiles, prepareRepoData } from '../../../amazonqFeatureDev/util/files'
 import { createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../testUtil'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
+import { AmazonqCreateUpload, Metric } from '../../../shared/telemetry/telemetry.gen'
 
 describe('file utils', () => {
     describe('collectFiles', function () {
@@ -41,7 +42,9 @@ describe('file utils', () => {
             const workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
 
             const telemetry = new TelemetryHelper()
-            const result = await prepareRepoData(workspace.uri.fsPath, telemetry)
+            const result = await prepareRepoData(workspace.uri.fsPath, telemetry, {
+                record: () => {},
+            } as unknown as Metric<AmazonqCreateUpload>)
             assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
             // checksum is not the same across different test executions because some unique random folder names are generated
             assert.strictEqual(result.zipFileChecksum.length, 44)

@@ -22,9 +22,9 @@ describe('TelemetrySpan', function () {
     })
 
     it('removes passive and value from the metadata', function () {
-        new TelemetrySpan('foo').emit({ passive: false, value: 100, reason: 'bar' })
+        new TelemetrySpan('foo').emit({ passive: false, value: 100, result: 'Succeeded', reason: 'bar' })
 
-        assertTelemetry('foo' as MetricName, { reason: 'bar' })
+        assertTelemetry('foo' as MetricName, { result: 'Succeeded', reason: 'bar' })
     })
 
     it('records duration if a start time is available', function () {
