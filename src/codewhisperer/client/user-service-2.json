@@ -1456,7 +1456,8 @@
                 "ideCategory": { "shape": "IdeCategory" },
                 "operatingSystem": { "shape": "OperatingSystem" },
                 "product": { "shape": "UserContextProductString" },
-                "clientId": { "shape": "UUID" }
+                "clientId": { "shape": "UUID" },
+                "ideVersion": { "shape": "String" }
             }
         },
         "UserContextProductString": {
@@ -1531,6 +1532,7 @@
                 "suggestionState": { "shape": "SuggestionState" },
                 "recommendationLatencyMilliseconds": { "shape": "Double" },
                 "timestamp": { "shape": "Timestamp" },
+                "triggerToResponseLatencyMilliseconds": { "shape": "Double" },
                 "suggestionReferenceCount": { "shape": "PrimitiveInteger" },
                 "generatedLine": { "shape": "PrimitiveInteger" },
                 "numberOfRecommendations": { "shape": "PrimitiveInteger" }

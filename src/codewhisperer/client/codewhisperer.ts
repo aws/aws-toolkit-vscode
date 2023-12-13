@@ -30,6 +30,7 @@ import { keepAliveHeader } from './agent'
 import { getOptOutPreference } from '../util/commonUtil'
 import * as os from 'os'
 import { getClientId } from '../../shared/telemetry/util'
+import { extensionVersion } from '../../shared/vscode/env'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -235,6 +236,7 @@ export class DefaultCodeWhispererClient {
                 operatingSystem: this.getOperatingSystem(),
                 product: 'CodeWhisperer',
                 clientId: await getClientId(globals.context.globalState),
+                ideVersion: extensionVersion,
             },
         }
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
@@ -251,6 +253,7 @@ export class DefaultCodeWhispererClient {
                 operatingSystem: this.getOperatingSystem(),
                 product: 'CodeWhisperer',
                 clientId: await getClientId(globals.context.globalState),
+                ideVersion: extensionVersion,
             },
         }
         return (await this.createUserSdkClient()).listFeatureEvaluations(request).promise()
