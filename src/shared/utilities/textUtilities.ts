@@ -5,7 +5,6 @@
 
 import * as crypto from 'crypto'
 import * as fs from 'fs'
-import moment from 'moment'
 import { default as stripAnsi } from 'strip-ansi'
 import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
@@ -166,7 +165,73 @@ export function toTitleCase(str: string): string {
     return str.charAt(0).toUpperCase().concat(str.slice(1))
 }
 
+/**
+ * Gets a relative date between the from date and now date (default: current time)
+ * e.g. "in 1 minute", '1 minute ago'
+ * works on the scales of seconds, minutes, hours, days, weeks, months, years
+ * @param from start Date
+ * @param now end Date (default: current time)
+ * @returns string representation of relative date
+ */
 export function getRelativeDate(from: Date, now: Date = new Date()): string {
-    // Prevent clock skew showing future date
-    return moment(from).subtract(5, 'second').from(now)
+    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto', style: 'long' })
+
+    const second = 1000
+    const minute = second * 60
+    const hour = minute * 60
+    const day = hour * 24
+    const week = day * 7
+
+    // Prevent clock skew showing future date - adjust 5 seconds
+    const fromAdj = new Date(from.valueOf() - 5 * second)
+
+    const diff = fromAdj.valueOf() - now.valueOf()
+    const absDiff = Math.abs(diff)
+    // seconds
+    if (absDiff < minute) {
+        // magnitude is less than a minute
+        return rtf.format(Math.floor(diff / second), 'second')
+    }
+    // minutes
+    if (absDiff < hour) {
+        // magnitude is less than an hour
+        return rtf.format(Math.floor(diff / minute), 'minute')
+    }
+    // hours
+    if (absDiff < day) {
+        // magnitude is less than a day
+        return rtf.format(Math.floor(diff / hour), 'hour')
+    }
+    // days
+    if (absDiff < week) {
+        // magnitude is less than a week
+        return rtf.format(Math.floor(diff / day), 'day')
+    }
+    // weeks
+    if (
+        (Math.abs(fromAdj.getUTCMonth() - now.getUTCMonth()) === 0 &&
+            Math.abs(fromAdj.getUTCFullYear() - now.getUTCFullYear()) === 0) || // same month of same year
+        (fromAdj.getUTCMonth() - now.getUTCMonth() === 1 && fromAdj.getUTCDate() < now.getUTCDate()) || // different months, but less than a month apart in terms of numeric days
+        (now.getUTCMonth() - fromAdj.getUTCMonth() === 1 && now.getUTCDate() < fromAdj.getUTCDate()) // same as above but in the opposite direction
+    ) {
+        return rtf.format(Math.floor(diff / week), 'week')
+    }
+    // months
+    if (
+        Math.abs(fromAdj.getUTCFullYear() - now.getUTCFullYear()) === 0 || // same year, and all the other conditions above didn't pass
+        (fromAdj.getUTCFullYear() - now.getUTCFullYear() === 1 && fromAdj.getUTCMonth() < now.getUTCMonth()) || // different years, but less than a year apart in terms of months
+        (now.getUTCFullYear() - fromAdj.getUTCFullYear() === 1 && now.getUTCMonth() < fromAdj.getUTCMonth()) // same as the above, but in reverse
+    ) {
+        // add/subtract months to make up for the difference between years
+        let adjMonths = 0
+        if (fromAdj.getUTCFullYear() > now.getUTCFullYear()) {
+            adjMonths = 12
+        } else if (fromAdj.getUTCFullYear() < now.getUTCFullYear()) {
+            adjMonths = -12
+        }
+        return rtf.format(Math.floor(fromAdj.getUTCMonth() - now.getUTCMonth() + adjMonths), 'month')
+    }
+    // years
+    // if all conditionals above have failed, we're looking in terms of a > 1 year gap
+    return rtf.format(Math.floor(fromAdj.getUTCFullYear() - now.getUTCFullYear()), 'year')
 }
