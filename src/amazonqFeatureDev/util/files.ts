@@ -95,16 +95,14 @@ export async function prepareRepoData(
             new vscode.RelativePattern(repoRootPath, '**'),
             getExcludePattern()
         )
-        const files = await filterOutGitignoredFiles(repoRootPath, allFiles)
 
+        const files = await filterOutGitignoredFiles(repoRootPath, allFiles)
         let totalBytes = 0
         for (const file of files) {
             const fileSize = (await vscode.workspace.fs.stat(vscode.Uri.file(file.fsPath))).size
-
             if (fileSize >= maxFileSizeBytes) {
                 continue
             }
-
             totalBytes += fileSize
 
             const relativePath = getWorkspaceRelativePath(file.fsPath)
@@ -118,8 +116,10 @@ export async function prepareRepoData(
                 )
             }
         }
+
         telemetry.setRepositorySize(totalBytes)
         span.record({ amazonqRepositorySize: totalBytes })
+
         const zipFileBuffer = zip.toBuffer()
         return {
             zipFileBuffer,
