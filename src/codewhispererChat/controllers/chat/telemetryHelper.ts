@@ -399,7 +399,8 @@ export class CWCTelemetryHelper {
 
             return chunkDeltaTimes.slice(0, 100)
         } catch (e) {
-            return [-1]
+            getLogger().debug(`Failed to get response time between chunks, message: ${e}`)
+            return []
         }
     }
 
