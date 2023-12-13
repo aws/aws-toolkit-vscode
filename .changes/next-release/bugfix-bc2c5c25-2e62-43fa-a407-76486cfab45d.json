@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix issue where the CodeWhisperer status bar widget is visible in a remote development environment"
-}

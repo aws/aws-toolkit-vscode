@@ -1,3 +1,9 @@
+# _2.1_ (2023-12-04)
+- **(Feature)** CodeWhisperer: Simplify Learn More page
+- **(Bug Fix)** CodeWhisperer: Security scans for Java no longer require build artifacts
+- **(Bug Fix)** Amazon Q Transform: Fix an issue where the IDE may freeze after clicking "Transform"
+- **(Bug Fix)** Fix JetBrains Gateway specific notifications being shown in non-Gateway IDEs
+
 # _2.0_ (2023-11-28)
 - **(Feature)** Support for Amazon Q, your generative AI–powered assistant designed for work that can be tailored to your business, code, data, and operations.
 
