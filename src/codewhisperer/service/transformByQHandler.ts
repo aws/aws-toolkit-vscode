@@ -389,11 +389,14 @@ export async function zipCode(modulePath: string) {
         fs.rmSync(dependencyFolderPath, { recursive: true, force: true })
     }
 
+    // for now, use the pass/fail status of the maven command to determine this metric status
+    const mavenStatus = mavenFailed ? MetadataResult.Fail : MetadataResult.Pass
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
         // TODO: A nice to have would be getting the zipUploadSize
         codeTransformTotalByteSize: 0,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
+        result: mavenStatus,
     })
     return tempFilePath
 }
