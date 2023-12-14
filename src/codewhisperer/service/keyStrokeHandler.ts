@@ -17,7 +17,6 @@ import { InlineCompletionService } from './inlineCompletionService'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
-import { session } from '../util/codeWhispererSession'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -104,11 +103,12 @@ export class KeyStrokeHandler {
                 return
             }
 
-            // Skip Cloud9 IntelliSense acceptance event
-            if (isCloud9() && event.contentChanges.length > 0 && session.recommendations.length > 0) {
-                if (event.contentChanges[0].text === session.recommendations[0].content) {
-                    return
-                }
+            // In Cloud9, do not auto trigger when
+            // 1. The input is from IntelliSense acceptance event
+            // 2. The input is from copy and paste some code
+            // event.contentChanges[0].text.length > 1 is a close estimate of 1 and 2
+            if (isCloud9() && event.contentChanges.length > 0 && event.contentChanges[0].text.length > 1) {
+                return
             }
 
             const { rightFileContent } = extractContextForCodeWhisperer(editor)

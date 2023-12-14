@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix a bug when accepting a recommendation in AWS Cloud9 will trigger another suggestion"
+}
