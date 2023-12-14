@@ -115,11 +115,13 @@ export class FeatureDevController {
                     telemetry.amazonq_approachThumbsUp.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
+                        result: 'Succeeded',
                     })
                 } else if (vote === 'downvote') {
                     telemetry.amazonq_approachThumbsDown.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
+                        result: 'Succeeded',
                     })
                 }
                 break
@@ -357,7 +359,11 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 
     private async openDiff(message: OpenDiffMessage) {
         const session = await this.sessionStorage.getSession(message.tabID)
-        telemetry.amazonq_isReviewedChanges.emit({ amazonqConversationId: session.conversationId, enabled: true })
+        telemetry.amazonq_isReviewedChanges.emit({
+            amazonqConversationId: session.conversationId,
+            enabled: true,
+            result: 'Succeeded',
+        })
 
         if (message.deleted) {
             const fileUri = this.getOriginalFileUri(message, session)

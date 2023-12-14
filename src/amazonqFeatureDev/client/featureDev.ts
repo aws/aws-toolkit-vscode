@@ -63,7 +63,7 @@ const streamResponseErrors: Record<string, number> = {
 }
 
 export class FeatureDevClient {
-    private async getClient() {
+    public async getClient() {
         // Should not be stored for the whole session.
         // Client has to be reinitialized for each request so we always have a fresh bearerToken
         return await createFeatureDevProxyClient()
