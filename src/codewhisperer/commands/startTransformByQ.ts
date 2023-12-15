@@ -37,6 +37,7 @@ import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTr
 import { ToolkitError } from '../../shared/errors'
 import { TransformByQUploadArchiveFailed } from '../../amazonqGumby/models/model'
 import { CancelActionPositions, toJDKMetricValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -122,11 +123,13 @@ export async function startTransformByQ() {
     if (selection !== 'Transform') {
         telemetry.codeTransform_jobIsCanceledFromUserPopupClick.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            result: MetadataResult.Pass,
         })
         throw new ToolkitError('Transform cancelled', { code: 'DidNotConfirmDisclaimer', cancelled: true })
     } else {
         telemetry.codeTransform_jobIsStartedFromUserPopupClick.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            result: MetadataResult.Pass,
         })
     }
 
@@ -146,6 +149,7 @@ export async function startTransformByQ() {
         codeTransformJavaTargetVersionsAllowed: toJDKMetricValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
+        result: MetadataResult.Pass,
     })
 
     vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
@@ -347,6 +351,7 @@ export async function confirmStopTransformByQ(
         telemetry.codeTransform_jobIsCancelledByUser.emit({
             codeTransformCancelSrcComponents: cancelSrc,
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            result: MetadataResult.Pass,
         })
     }
 }
