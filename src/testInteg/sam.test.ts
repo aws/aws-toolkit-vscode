@@ -322,8 +322,7 @@ async function startDebugger(
             try {
                 await vscode.commands.executeCommand('workbench.action.debug.continue')
                 return true
-            }
-            catch {
+            } catch {
                 return false
             }
         },

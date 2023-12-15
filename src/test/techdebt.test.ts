@@ -6,6 +6,7 @@
 import assert from 'assert'
 import * as semver from 'semver'
 import * as env from '../shared/vscode/env'
+import { installVSCodeExtension } from '../../scripts/test/launchTestUtilities'
 
 // Checks project config and dependencies, to remind us to remove old things
 // when possible.
@@ -48,6 +49,18 @@ describe('tech debt', function () {
         assert(
             new Date() < new Date(2024, 1, 15),
             'Re-evaluate if we should still keep skipping CodeCatalyst E2E Tests'
+        )
+    })
+
+    it('stop not using latest python extension version in integration CI tests', function () {
+        /**
+         * The explicitly set version is done in {@link installVSCodeExtension}
+         * The parent ticket for SAM test issues: IDE-12295
+         * Python Extension Bug Issue (if this is fixed, then this should be too): https://github.com/microsoft/vscode-python/issues/22659
+         */
+        assert(
+            new Date() < new Date(2024, 1, 15),
+            'Re-evaluate if we can use the latest python extension version in CI integration tests'
         )
     })
 })
