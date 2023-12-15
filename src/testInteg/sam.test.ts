@@ -24,15 +24,15 @@ import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
-import { sleep } from '../shared/utilities/timeoutUtils'
 import globals from '../shared/extensionGlobals'
 import { closeAllEditors } from '../test/testUtil'
+import { ToolkitError } from '../shared/errors'
 
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 /* Test constants go here */
 const codelensTimeout: number = 60000
-const codelensRetryInterval: number = 200
+const codelensRetryInterval: number = 5000
 const noDebugSessionTimeout: number = 5000
 const noDebugSessionInterval: number = 100
 
@@ -55,15 +55,6 @@ interface TestScenario {
 // to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
     // zips
-    {
-        runtime: 'nodejs14.x',
-        displayName: 'nodejs14.x (ZIP)',
-        path: 'hello-world/app.js',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
     {
         runtime: 'nodejs16.x',
         displayName: 'nodejs16.x (ZIP)',
@@ -150,16 +141,6 @@ const scenarios: TestScenario[] = [
     // },
 
     // images
-    {
-        runtime: 'nodejs14.x',
-        displayName: 'nodejs14.x (Image)',
-        baseImage: 'amazon/nodejs14.x-base',
-        path: 'hello-world/app.js',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
     {
         runtime: 'nodejs16.x',
         displayName: 'nodejs16.x (Image)',
@@ -326,25 +307,32 @@ async function startDebugger(
         )
     })
 
-    // Executes the 'F5' action
+    // Executes the 'F5' action to start debugging
     await vscode.debug.startDebugging(undefined, testConfig)
     if (!vscode.debug.activeDebugSession) {
         logSession('EXIT', `${testConfig.name} (exited immediately)`)
         return
     }
     logSession('START', vscode.debug.activeDebugSession.name)
-    await sleep(400)
-    await continueDebugger()
-    await sleep(400)
-    await continueDebugger()
-    await sleep(400)
-    await continueDebugger()
+
+    // Some tests need to hit debug continue to the debugger to complete.
+    // Testing locally seemed to take 600-800 millis to run.
+    const result = await waitUntil(
+        async () => {
+            try {
+                await vscode.commands.executeCommand('workbench.action.debug.continue')
+                return true
+            } catch {
+                return false
+            }
+        },
+        { interval: 500, timeout: 10_000 }
+    )
+    if (result === undefined) {
+        throw new ToolkitError(`Toolkit: Debug session did not stop. Something may have gotten stuck.`)
+    }
 
     return success
-}
-
-async function continueDebugger(): Promise<void> {
-    await vscode.commands.executeCommand('workbench.action.debug.continue')
 }
 
 async function stopDebugger(logMsg: string | undefined): Promise<void> {
@@ -507,13 +495,13 @@ describe('SAM Integration Tests', async function () {
                     ) {
                         this.skip()
                     }
-
                     const codeLenses = await testUtils.getAddConfigCodeLens(
                         samAppCodeUri,
                         codelensTimeout,
                         codelensRetryInterval
                     )
-                    assert.ok(codeLenses && codeLenses.length === 2)
+                    assert.ok(codeLenses, 'No CodeLenses provided')
+                    assert.strictEqual(codeLenses.length, 2, 'Incorrect amount of CodeLenses provided')
 
                     let manifestFile: RegExp
                     switch (scenario.language) {

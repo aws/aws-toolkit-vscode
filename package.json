@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
     "description": "Including Amazon Q, CodeWhisperer, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
-    "version": "2.3.0-SNAPSHOT",
+    "version": "2.4.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -725,7 +725,7 @@
                     "type": "webview",
                     "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
-                    "when": "!isCloud9"
+                    "when": "!isCloud9 && !aws.isSageMaker"
                 },
                 {
                     "id": "aws.AmazonQNeverShowBadge",
@@ -737,7 +737,7 @@
                 {
                     "id": "aws.amazonq",
                     "name": "%AWS.amazonq.title%",
-                    "when": "!isCloud9"
+                    "when": "!isCloud9 && !aws.isSageMaker"
                 },
                 {
                     "id": "aws.codewhisperer",
@@ -755,7 +755,7 @@
                 {
                     "id": "aws.codecatalyst",
                     "name": "%AWS.codecatalyst.explorerTitle%",
-                    "when": "!isCloud9 || isCloud9CodeCatalyst"
+                    "when": "!isCloud9 && !aws.isSageMaker || isCloud9CodeCatalyst"
                 }
             ],
             "aws-codewhisperer-reference-log": [

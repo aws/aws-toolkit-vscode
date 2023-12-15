@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "The `aws.samcli.enableCodeLenses` setting now enables/disables SAM codelenses in `template.yaml` files, in addition to source code files."
-}

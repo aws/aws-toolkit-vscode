@@ -54,8 +54,7 @@ phases:
             - bash buildspec/shared/linux-pre_build.sh
             # Where non-root "pip3 install" puts things:
             - 'export PATH="$HOME/.local/bin:$PATH"'
-            # Explicit older version since we assume the newer version is causing our CI to fail (python 3.10 sam tests specifically)
-            - '>/dev/null pip install aws-sam-cli==1.94.0'
+            - '>/dev/null pip3 install --upgrade aws-sam-cli'
             - '>/dev/null pip3 install --upgrade awscli'
             # Print info about sam (version, location, …).
             - 'pip3 show aws-sam-cli'
