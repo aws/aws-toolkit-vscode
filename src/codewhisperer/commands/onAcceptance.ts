@@ -24,7 +24,12 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
      * Format document
      */
     if (acceptanceEntry.editor) {
-        const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
+        const languageContext = runtimeLanguageContext.getLanguageContext(
+            acceptanceEntry.editor.document.languageId,
+            acceptanceEntry.editor.document.fileName.substring(
+                acceptanceEntry.editor.document.fileName.lastIndexOf('.') + 1
+            )
+        )
         const start = acceptanceEntry.range.start
         const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end
 

@@ -73,7 +73,12 @@ export async function onInlineAcceptance(
 
     if (acceptanceEntry.editor) {
         await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-        const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
+        const languageContext = runtimeLanguageContext.getLanguageContext(
+            acceptanceEntry.editor.document.languageId,
+            acceptanceEntry.editor.document.fileName.substring(
+                acceptanceEntry.editor.document.fileName.lastIndexOf('.') + 1
+            )
+        )
         const start = acceptanceEntry.range.start
         const end = acceptanceEntry.editor.selection.active
 

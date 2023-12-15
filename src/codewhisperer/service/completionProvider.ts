@@ -41,7 +41,10 @@ export function getCompletionItem(
     completionItem.preselect = true
     completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
     completionItem.range = new vscode.Range(start, position)
-    const languageContext = runtimeLanguageContext.getLanguageContext(document.languageId)
+    const languageContext = runtimeLanguageContext.getLanguageContext(
+        document.languageId,
+        document.fileName.substring(document.fileName.lastIndexOf('.') + 1)
+    )
     let references: typeof recommendationDetail.references
     if (recommendationDetail.references !== undefined && recommendationDetail.references.length > 0) {
         references = recommendationDetail.references

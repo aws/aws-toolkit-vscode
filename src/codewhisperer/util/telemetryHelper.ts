@@ -99,10 +99,9 @@ export class TelemetryHelper {
         requestIdList: string[],
         sessionId: string,
         paginationIndex: number,
-        languageId: string,
+        languageContext: CodewhispererLanguage,
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
-        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         telemetry.codewhisperer_userDecision.emit({
             codewhispererRequestId: requestIdList[0],
             codewhispererSessionId: sessionId ? sessionId : undefined,
@@ -113,7 +112,7 @@ export class TelemetryHelper {
             codewhispererSuggestionReferences: undefined,
             codewhispererSuggestionReferenceCount: 0,
             codewhispererCompletionType: 'Line',
-            codewhispererLanguage: languageContext.language,
+            codewhispererLanguage: languageContext,
             codewhispererGettingStartedTask: session.taskType,
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),

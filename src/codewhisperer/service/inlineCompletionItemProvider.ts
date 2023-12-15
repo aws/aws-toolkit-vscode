@@ -116,7 +116,10 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                     session.sessionId,
                     session.triggerType,
                     session.getCompletionType(index),
-                    runtimeLanguageContext.getLanguageContext(document.languageId).language,
+                    runtimeLanguageContext.getLanguageContext(
+                        document.languageId,
+                        document.fileName.substring(document.fileName.lastIndexOf('.') + 1)
+                    ).language,
                     r.references,
                 ],
             },

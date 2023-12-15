@@ -180,7 +180,10 @@ export class RecommendationHandler {
         let latency = 0
         let nextToken = ''
         let shouldRecordServiceInvocation = true
-        session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
+        session.language = runtimeLanguageContext.getLanguageContext(
+            editor.document.languageId,
+            editor.document.fileName.substring(editor.document.fileName.lastIndexOf('.') + 1)
+        ).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
         if (pagination) {
@@ -399,7 +402,10 @@ export class RecommendationHandler {
                     session.requestIdList,
                     sessionId,
                     page,
-                    editor.document.languageId,
+                    runtimeLanguageContext.getLanguageContext(
+                        editor.document.languageId,
+                        editor.document.fileName.substring(editor.document.fileName.lastIndexOf('.') + 1)
+                    ).language,
                     session.requestContext.supplementalMetadata
                 )
             }
@@ -685,7 +691,10 @@ export class RecommendationHandler {
     private sendPerceivedLatencyTelemetry() {
         if (vscode.window.activeTextEditor) {
             const languageContext = runtimeLanguageContext.getLanguageContext(
-                vscode.window.activeTextEditor.document.languageId
+                vscode.window.activeTextEditor.document.languageId,
+                vscode.window.activeTextEditor.document.fileName.substring(
+                    vscode.window.activeTextEditor.document.fileName.lastIndexOf('.') + 1
+                )
             )
             telemetry.codewhisperer_perceivedLatency.emit({
                 codewhispererRequestId: this.requestId,
