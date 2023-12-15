@@ -397,7 +397,7 @@ export async function zipCode(modulePath: string) {
         codeTransformTotalByteSize: 0,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
         result: mavenStatus,
-        reason: mavenFailed ? 'Maven command failed' : '',
+        reason: mavenFailed ? 'MavenCommandFailed' : undefined
     })
     return tempFilePath
 }
