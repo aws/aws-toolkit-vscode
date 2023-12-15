@@ -181,23 +181,16 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
 export function validateRequest(
     req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
 ): boolean {
-    // const lastIndex = req.fileContext.filename.lastIndexOf('.')
-    // let extensionName=''
-    // if (lastIndex > 0) {
-    //     extensionName=req.fileContext.filename.substring(lastIndex+1)
-    // }
     const isLanguageNameValid = !(
-        (
-            req.fileContext.programmingLanguage.languageName === undefined ||
-            req.fileContext.programmingLanguage.languageName.length < 1 ||
-            req.fileContext.programmingLanguage.languageName.length > 128 ||
-            !(
-                runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName) ||
-                runtimeLanguageContext.isFileFormatSupported(
-                    req.fileContext.filename.substring(req.fileContext.filename.lastIndexOf('.') + 1)
-                )
+        req.fileContext.programmingLanguage.languageName === undefined ||
+        req.fileContext.programmingLanguage.languageName.length < 1 ||
+        req.fileContext.programmingLanguage.languageName.length > 128 ||
+        !(
+            runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName) ||
+            runtimeLanguageContext.isFileFormatSupported(
+                req.fileContext.filename.substring(req.fileContext.filename.lastIndexOf('.') + 1)
             )
-        ) //req.fileContext.filename //network.tf
+        )
     )
     const isFileNameValid = !(req.fileContext.filename === undefined || req.fileContext.filename.length < 1)
     const isFileContextValid = !(
