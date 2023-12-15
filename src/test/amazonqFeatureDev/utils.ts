@@ -10,9 +10,11 @@ import { Messenger } from '../../amazonqFeatureDev/controllers/chat/messenger/me
 import { AppToWebViewMessageDispatcher } from '../../amazonqFeatureDev/views/connector/connector'
 import { ChatControllerEventEmitters, FeatureDevController } from '../../amazonqFeatureDev/controllers/chat/controller'
 import { ChatSessionStorage } from '../../amazonqFeatureDev/storages/chatSession'
-import { Session } from '../../amazonqFeatureDev/session/session'
-import { createSessionConfig } from '../../amazonqFeatureDev/session/sessionConfigFactory'
 import { createTestWorkspaceFolder } from '../testUtil'
+import { createSessionConfig } from '../../amazonqFeatureDev/session/sessionConfigFactory'
+import { Session } from '../../amazonqFeatureDev/session/session'
+import { SessionState } from '../../amazonqFeatureDev/types'
+import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 
 export function createMessenger(): Messenger {
     return new Messenger(
@@ -37,20 +39,37 @@ export function createMockChatEmitters(): ChatControllerEventEmitters {
 
 export interface ControllerSetup {
     emitters: ChatControllerEventEmitters
-    session: Session
     workspaceFolder: vscode.WorkspaceFolder
     messenger: Messenger
+    sessionStorage: ChatSessionStorage
 }
 
-export async function createController({
-    tabID,
-    conversationID,
-    uploadID,
+export async function createSession({
+    messenger,
+    sessionState,
+    conversationID = '0',
+    tabID = '0',
+    uploadID = '0',
 }: {
-    tabID: string
-    conversationID: string
-    uploadID: string
-}): Promise<ControllerSetup> {
+    messenger: Messenger
+    sessionState?: Omit<SessionState, 'uploadId'>
+    conversationID?: string
+    tabID?: string
+    uploadID?: string
+}) {
+    const sessionConfig = await createSessionConfig()
+
+    const client = sinon.createStubInstance(FeatureDevClient)
+    client.createConversation.resolves(conversationID)
+    const session = new Session(sessionConfig, messenger, tabID, sessionState, client)
+
+    sinon.stub(session, 'conversationId').get(() => conversationID)
+    sinon.stub(session, 'uploadId').get(() => uploadID)
+
+    return session
+}
+
+export async function createController(): Promise<ControllerSetup> {
     const messenger = createMessenger()
 
     // Create a new workspace root
@@ -58,13 +77,6 @@ export async function createController({
     sinon.stub(vscode.workspace, 'workspaceFolders').value([testWorkspaceFolder])
 
     const sessionStorage = new ChatSessionStorage(messenger)
-    const sessionConfig = await createSessionConfig()
-
-    const session = new Session(sessionConfig, messenger, tabID)
-
-    sinon.stub(sessionStorage, 'getSession').resolves(session)
-    sinon.stub(session, 'conversationId').get(() => conversationID)
-    sinon.stub(session, 'uploadId').get(() => uploadID)
 
     const mockChatControllerEventEmitters = createMockChatEmitters()
 
@@ -77,8 +89,8 @@ export async function createController({
 
     return {
         emitters: mockChatControllerEventEmitters,
-        session,
         workspaceFolder: testWorkspaceFolder,
         messenger,
+        sessionStorage,
     }
 }
