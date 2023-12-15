@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeWhisperer supports code generation for Iaac languages without external extensions"
+}
