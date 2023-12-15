@@ -7,6 +7,9 @@ import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { CodeCatalystCommands } from './commands'
+import { builderIdStartUrl } from '../auth/sso/model'
+import { defaultSsoRegion } from '../auth/connection'
+import { getLogger } from '../shared/logger'
 
 type ConnectParams = {
     devEnvironmentId: string
@@ -54,18 +57,14 @@ function parseCloneParams(query: SearchParams) {
 }
 
 export function parseConnectParams(query: SearchParams): ConnectParams {
+    const params = query.getFromKeysOrThrow('devEnvironmentId', 'spaceName', 'projectName')
+
     try {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        const { sso_start_url, sso_region, ...rest } = query.getFromKeysOrThrow(
-            'devEnvironmentId',
-            'spaceName',
-            'projectName',
-            'sso_start_url',
-            'sso_region'
-        )
-        return { ...rest, sso: { startUrl: sso_start_url, region: sso_region } }
+        const ssoParams = query.getFromKeysOrThrow('sso_start_url', 'sso_region')
+        return { ...params, sso: { startUrl: ssoParams.sso_start_url, region: ssoParams.sso_region } }
     } catch {
-        return query.getFromKeysOrThrow('devEnvironmentId', 'spaceName', 'projectName')
+        getLogger().debug(`No IdC SSO params provided in CodeCatalyst URI, defaulting to Builder ID.`)
+        return { ...params, sso: { startUrl: builderIdStartUrl, region: defaultSsoRegion } }
     }
 }
 
