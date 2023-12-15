@@ -81,6 +81,7 @@ function mapToAggregatedList(
                         detectorId: issue.detectorId,
                         detectorName: issue.detectorName,
                         findingId: issue.findingId,
+                        ruleId: issue.ruleId,
                         relatedVulnerabilities: issue.relatedVulnerabilities,
                         severity: issue.severity,
                         recommendation: issue.remediation.recommendation,

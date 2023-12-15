@@ -54,6 +54,11 @@
             "description": "The id of the detector which produced the code scan issue"
         },
         {
+            "name": "ruleId",
+            "type": "string",
+            "description": "The id of the rule which produced the code scan issue"
+        },
+        {
             "name": "hasChatAuth",
             "type": "boolean",
             "description": "Whether the user has access to CodeWhisperer Chat"
@@ -614,12 +619,22 @@
         {
             "name": "codewhisperer_codeScanIssueHover",
             "description": "Called when a code scan issue is hovered over",
-            "metadata": [{ "type": "findingId" }, { "type": "detectorId" }]
+            "metadata": [{ "type": "findingId" }, { "type": "detectorId" }, { "type": "ruleId", "required": false }]
         },
         {
             "name": "codewhisperer_codeScanIssueApplyFix",
             "description": "Called when a code scan issue suggested fix is applied",
-            "metadata": [{ "type": "findingId" }, { "type": "detectorId" }, { "type": "component" }]
+            "metadata": [
+                { "type": "findingId" },
+                { "type": "detectorId" },
+                { "type": "component" },
+                { "type": "ruleId", "required": false }
+            ]
+        },
+        {
+            "name": "codewhisperer_codeScanIssueViewDetails",
+            "description": "Called when a code scan issue webview is opened",
+            "metadata": [{ "type": "findingId" }, { "type": "detectorId" }, { "type": "ruleId", "required": false }]
         },
         {
             "name": "amazonq_openChat",
