@@ -94,7 +94,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
-            result: MetadataResult.Fail,
+            result: MetadataResult.Pass,
         })
         throw new TransformByQJavaProjectNotFound()
     }
@@ -108,7 +108,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
-            result: MetadataResult.Fail,
+            result: MetadataResult.Pass,
         })
         throw new ToolkitError('Unable to determine Java version', {
             code: 'CannotDetermineJavaVersion',
@@ -126,7 +126,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'UnsupportedJavaVersion',
-            result: MetadataResult.Fail,
+            result: MetadataResult.Pass,
             reason: javaVersion,
         })
         throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
@@ -143,14 +143,14 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformPreValidationError: 'NonMavenProject',
-                result: MetadataResult.Fail,
+                result: MetadataResult.Pass,
                 reason: buildType,
             })
         }
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoPom',
-            result: MetadataResult.Fail,
+            result: MetadataResult.Pass,
         })
         throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }
@@ -209,6 +209,7 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
             result: MetadataResult.Fail,
+            reason: 'UploadToS3Failed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -242,6 +243,7 @@ export async function stopJob(jobId: string) {
                 codeTransformApiErrorMessage: e?.message || errorMessage,
                 codeTransformRequestId: e?.requestId,
                 result: MetadataResult.Fail,
+                reason: 'StopTransformationFailed',
             })
             throw new ToolkitError(errorMessage, { cause: e as Error })
         }
@@ -278,6 +280,7 @@ export async function uploadPayload(payloadFileName: string) {
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
             result: MetadataResult.Fail,
+            reason: 'CreateUploadUrlFailed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -443,6 +446,7 @@ export async function startJob(uploadId: string) {
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
             result: MetadataResult.Fail,
+            reason: 'StartTransformationFailed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -494,6 +498,7 @@ export async function getTransformationPlan(jobId: string) {
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
             result: MetadataResult.Fail,
+            reason: 'GetTransformationPlanFailed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -526,6 +531,7 @@ export async function getTransformationSteps(jobId: string) {
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
             result: MetadataResult.Fail,
+            reason: 'GetTransformationPlanFailed',
         })
         throw e
     }
@@ -586,6 +592,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 codeTransformApiErrorMessage: errorMessage,
                 codeTransformRequestId: e?.requestId,
                 result: MetadataResult.Fail,
+                reason: 'GetTransformationFailed',
             })
             // Pass along error to callee function
             throw new ToolkitError(errorMessage, { cause: e as Error })

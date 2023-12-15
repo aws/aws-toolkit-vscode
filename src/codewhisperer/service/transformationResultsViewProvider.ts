@@ -288,6 +288,7 @@ export class ProposedTransformationExplorer {
                     codeTransformApiErrorMessage: e?.message || errorMessage,
                     codeTransformRequestId: e?.requestId,
                     result: MetadataResult.Fail,
+                    reason: 'ExportResultArchiveFailed',
                 })
                 throw new ToolkitError(errorMessage)
             }
