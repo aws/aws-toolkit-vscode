@@ -314,15 +314,16 @@ export class ProposedTransformationExplorer {
                 )
             } catch (e: any) {
                 deserializeErrorMessage = e?.message || 'Error during deserialization of result archive'
-            } finally {
                 getLogger().error('CodeTransform: ParseDiff error = ', deserializeErrorMessage)
+            } finally {
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     codeTransformRunTimeLatency: calculateTotalLatency(deserializeArchiveStartTime),
                     codeTransformTotalByteSize: exportResultsArchiveSize,
                     codeTransformRuntimeError: deserializeErrorMessage,
-                    result: MetadataResult.Pass,
+                    result: deserializeErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
+                    reason: deserializeErrorMessage ? 'DeserializationFailed' : undefined,
                 })
             }
 
