@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q: Fixed an issue where sometimes /transform won't appear when switching between idC/builder id"
-}
