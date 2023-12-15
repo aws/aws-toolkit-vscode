@@ -8,6 +8,7 @@ import * as config from './config'
 import { ExtContext } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
+import { SkipPrompter } from '../shared/ui/common/skipPrompter'
 import { DevSettings } from '../shared/settings'
 import { FileProvider, VirtualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
@@ -45,7 +46,7 @@ const menuOptions: Record<string, MenuOption> = {
     openTerminal: {
         label: 'Open Remote Terminal',
         description: 'CodeCatalyst',
-        detail: 'Open a new terminal connected to the remote environment',
+        detail: 'Opens a new terminal connected to the remote environment',
         executor: openTerminalCommand,
     },
     deleteDevEnv: {
@@ -55,16 +56,16 @@ const menuOptions: Record<string, MenuOption> = {
         executor: deleteDevEnvCommand,
     },
     editStorage: {
-        label: 'Edit Storage',
+        label: 'Show or Edit Global Storage',
         description: 'VS Code',
-        detail: 'Edit a key in global/secret storage as a JSON document',
+        detail: 'Shows all globalState values, or edit a specific globalState/secret key as a JSON document',
         executor: openStorageFromInput,
     },
-    showGlobalState: {
-        label: 'Show Global State',
+    showEnvVars: {
+        label: 'Show Environment Variables',
         description: 'AWS Toolkit',
-        detail: 'Shows various state (including environment variables)',
-        executor: showGlobalState,
+        detail: 'Shows all environment variable values',
+        executor: () => showState('envvars'),
     },
     deleteSsoConnections: {
         label: 'Auth: Delete SSO Connections',
@@ -78,13 +79,33 @@ const menuOptions: Record<string, MenuOption> = {
     },
 }
 
-export class GlobalStateDocumentProvider implements vscode.TextDocumentContentProvider {
+/**
+ * Provides (readonly, as opposed to `ObjectEditor`) content for the aws-dev2:/ URI scheme.
+ *
+ * ```
+ * aws-dev2:/state/envvars
+ * aws-dev2:/state/globalstate
+ * ```
+ *
+ * TODO: This only purpose of this provider is to avoid an annoying unsaved, empty document that
+ * re-appears after vscode restart. Ideally there should be only one scheme (aws-dev:/).
+ */
+export class DevDocumentProvider implements vscode.TextDocumentContentProvider {
+    constructor(private readonly ctx: ExtContext) {}
     provideTextDocumentContent(uri: vscode.Uri): string {
-        let s = 'Environment variables known to AWS Toolkit:\n'
-        for (const [k, v] of Object.entries(process.env)) {
-            s += `${k}=${v}\n`
+        if (uri.path === '/envvars') {
+            let s = 'Environment variables known to AWS Toolkit:\n\n'
+            for (const [k, v] of Object.entries(process.env)) {
+                s += `${k}=${v}\n`
+            }
+            return s
+        } else if (uri.path === '/globalstate') {
+            // lol hax
+            // as of November 2023, all of a memento's properties are stored as property `f` when minified
+            return JSON.stringify((this.ctx.extensionContext.globalState as any).f, undefined, 4)
+        } else {
+            return `unknown URI path: ${uri}`
         }
-        return s
     }
 }
 
@@ -105,7 +126,7 @@ export function activate(ctx: ExtContext): void {
     ctx.extensionContext.subscriptions.push(
         devSettings.onDidChangeActiveSettings(updateMode),
         vscode.commands.registerCommand('aws.dev.openMenu', () => openMenu(ctx, menuOptions)),
-        vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new GlobalStateDocumentProvider())
+        vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider(ctx))
     )
 
     updateMode()
@@ -130,6 +151,8 @@ async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<v
     const prompter = createQuickPick(items, {
         title: 'Developer Menu',
         buttons: createCommonButtons(),
+        matchOnDescription: true,
+        matchOnDetail: true,
     })
 
     await prompter.prompt()
@@ -169,12 +192,10 @@ class VirtualObjectFile implements FileProvider {
             const value = (await this.storage.get(key)) ?? ''
             return JSON.stringify(JSON.parse(value), undefined, 4)
         } else {
-            if (key !== '') {
-                return JSON.stringify(this.storage.get(key, {}), undefined, 4)
+            if (key === '') {
+                return '(empty key)'
             }
-            // lol hax
-            // as of November 2023, all of a memento's properties are stored as property `f` when minified
-            return JSON.stringify((this.storage as any).f, undefined, 4)
+            return JSON.stringify(this.storage.get(key, {}), undefined, 4)
         }
     }
 
@@ -208,8 +229,10 @@ class ObjectEditor {
         vscode.workspace.registerFileSystemProvider(ObjectEditor.scheme, this.fs)
     }
 
-    public async openStorage(type: 'globals' | 'secrets', key: string): Promise<void> {
+    public async openStorage(type: 'globalsView' | 'globals' | 'secrets', key: string): Promise<void> {
         switch (type) {
+            case 'globalsView':
+                return showState('globalstate')
             case 'globals':
                 return this.openState(this.context.globalState, key)
             case 'secrets':
@@ -263,14 +286,15 @@ class ObjectEditor {
 }
 
 async function openStorageFromInput(ctx: ExtContext) {
-    const wizard = new (class extends Wizard<{ target: 'globals' | 'secrets'; key: string }> {
+    const wizard = new (class extends Wizard<{ target: 'globalsView' | 'globals' | 'secrets'; key: string }> {
         constructor() {
             super()
 
             this.form.target.bindPrompter(() =>
                 createQuickPick(
                     [
-                        { label: 'Global State', data: 'globals' },
+                        { label: 'Show all globalState', data: 'globalsView' },
+                        { label: 'Edit globalState', data: 'globals' },
                         { label: 'Secrets', data: 'secrets' },
                     ],
                     {
@@ -284,7 +308,10 @@ async function openStorageFromInput(ctx: ExtContext) {
                     return createInputBox({
                         title: 'Enter a key',
                     })
+                } else if (target === 'globalsView') {
+                    return new SkipPrompter('')
                 } else if (target === 'globals') {
+                    // List all globalState keys in the quickpick menu.
                     const items = ctx.extensionContext.globalState
                         .keys()
                         .map(key => {
@@ -296,12 +323,8 @@ async function openStorageFromInput(ctx: ExtContext) {
                         .sort((a, b) => {
                             return a.data.localeCompare(b.data)
                         })
-                    items.unshift({
-                        data: '',
-                        label: "SHOW ALL (edits here won't write to global state)",
-                    })
 
-                    return createQuickPick(items, { title: 'Pick a global state key' })
+                    return createQuickPick(items, { title: 'Select a key' })
                 } else {
                     throw new Error('invalid storage target')
                 }
@@ -330,8 +353,8 @@ async function expireSsoConnections() {
     vscode.window.showInformationMessage(`Expired: ${ssoConns.map(c => c.startUrl).join(', ')}`)
 }
 
-async function showGlobalState() {
-    const uri = vscode.Uri.parse('aws-dev2:global-state')
+async function showState(path: string) {
+    const uri = vscode.Uri.parse(`aws-dev2://state/${path}`)
     const doc = await vscode.workspace.openTextDocument(uri)
     await vscode.window.showTextDocument(doc, { preview: false })
 }
