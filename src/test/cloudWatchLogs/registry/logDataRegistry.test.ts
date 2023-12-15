@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import moment from 'moment'
 import * as vscode from 'vscode'
 import {
     LogDataRegistry,
@@ -14,7 +13,6 @@ import {
     CloudWatchLogsResponse,
     CloudWatchLogsData,
 } from '../../../cloudWatchLogs/registry/logDataRegistry'
-import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import {
@@ -29,6 +27,7 @@ import {
 } from '../utils.test'
 import { CloudWatchLogs } from 'aws-sdk'
 import { FilteredLogEvents } from 'aws-sdk/clients/cloudwatchlogs'
+import { formatDateTimestamp } from '../../../shared/utilities/textUtilities'
 
 describe('LogDataRegistry', async function () {
     let registry: GetSetLogDataRegistry
@@ -210,7 +209,7 @@ describe('LogDataRegistry', async function () {
     describe('Timestamp', function () {
         it('matches CloudWatch insights timestamps', function () {
             const time = 1624201162222 // 2021-06-20 14:59:22.222 GMT+0
-            const timestamp = moment.utc(time).format(INSIGHTS_TIMESTAMP_FORMAT)
+            const timestamp = formatDateTimestamp(true, new Date(time))
             assert.strictEqual(timestamp, '2021-06-20T14:59:22.222+00:00')
         })
     })

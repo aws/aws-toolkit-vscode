@@ -14,7 +14,6 @@ import {
 import * as ssmDocumentUtil from '../../../ssmDocument/util/util'
 import * as fsUtilities from '../../../shared/filesystemUtilities'
 
-import YAML from 'yaml'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('createDocumentFromTemplate', async function () {
@@ -31,10 +30,15 @@ describe('createDocumentFromTemplate', async function () {
         sandbox.restore()
     })
 
-    const fakeContent = `{
-        "schemaVersion": "2.2",
-        "mainSteps": []
-    }`
+    const fakeContentYaml = `---
+schemaVersion: '2.2'
+mainSteps: []
+`
+
+    const fakeContentJson = `{
+    "schemaVersion": "2.2",
+    "mainSteps": []
+}`
 
     const fakeSelectionResult: SsmDocumentTemplateQuickPickItem = {
         label: 'test template',
@@ -49,16 +53,14 @@ describe('createDocumentFromTemplate', async function () {
     it('open and save document based on selected template', async function () {
         sandbox.stub(picker, 'promptUser').returns(Promise.resolve(fakeSelection))
         sandbox.stub(picker, 'verifySinglePickerOutput').returns(fakeSelectionResult)
-        sandbox.stub(fsUtilities, 'readFileAsString').returns(Promise.resolve(fakeContent))
+        sandbox.stub(fsUtilities, 'readFileAsString').returns(Promise.resolve(fakeContentYaml))
         sandbox.stub(ssmDocumentUtil, 'promptUserForDocumentFormat').returns(Promise.resolve('JSON'))
-        sandbox.stub(JSON, 'stringify').returns(fakeContent)
-        sandbox.stub(YAML, 'stringify').returns(fakeContent)
 
         const openTextDocumentStub = sandbox.stub(vscode.workspace, 'openTextDocument')
 
         await createSsmDocumentFromTemplate(mockContext)
 
-        assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.content, fakeContent)
+        assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.content, fakeContentJson)
         assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.language, 'ssm-json')
     })
 })

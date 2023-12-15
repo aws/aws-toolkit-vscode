@@ -90,7 +90,7 @@ function setTemplateRegistryInGlobals(registry: CloudFormationTemplateRegistry) 
                 return await asyncRegistry.getInstance()
             }
 
-            return NoopWatcher
+            return new NoopWatcher()
         },
     })
 }

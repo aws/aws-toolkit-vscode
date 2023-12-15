@@ -98,6 +98,7 @@ export const platformLanguageIds = [
     'terragrunt',
     'packer',
     'plaintext',
+    'jsonc',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
@@ -199,6 +200,10 @@ export const codeScanJavaPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
 export const codeScanCsharpPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
+export const codeScanRubyPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const codeScanGoPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
 export const codeScanPythonPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
 export const codeScanCFPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
@@ -217,7 +222,7 @@ export const codeScanJobTimeoutSeconds = 50
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
-export const codeScanJobPollingIntervalSeconds = 5
+export const codeScanJobPollingIntervalSeconds = 1
 
 export const artifactTypeSource = 'SourceCode'
 
@@ -294,12 +299,14 @@ export const transformByQFailedMessage = 'Transformation failed'
 
 export const transformByQCancelledMessage = 'Transformation cancelled'
 
-export const transformByQCompleted = 'Transformation completed'
+export const transformByQCompletedMessage = 'Transformation completed'
 
 export const transformByQPartiallyCompletedMessage = 'Transformation partially completed'
 
 export const noPomXmlFoundMessage =
-    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations. Be sure to also build your project.'
+    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml in the root directory to identify build configurations. Be sure to also build your project.'
+
+export const noActiveIdCMessage = 'Transform by Q requires an active IAM Identity Center connection'
 
 export const noOngoingJobMessage = 'No job is in-progress at the moment'
 
@@ -401,3 +408,5 @@ export const crossFileContextConfig = {
 export const utgConfig = {
     maxSegmentSize: 10200,
 }
+
+export const transformTreeNode = 'qTreeNode'

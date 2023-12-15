@@ -11,6 +11,7 @@ import { getIdeProperties } from '../extensionUtilities'
 import { TEMPLATE_TARGET_TYPE, API_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import { AddSamDebugConfigurationInput } from '../sam/debugger/commands/addSamDebugConfiguration'
 import { localize } from '../utilities/vsCodeUtils'
+import { SamCliSettings } from '../sam/cli/samCliSettings'
 
 /**
  * Provides "Add Debug Configuration" CodeLenses to SAM template.yaml files,
@@ -24,6 +25,10 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
         launchConfig = new LaunchConfiguration(document.uri),
         waitForSymbols: boolean = false
     ): Promise<vscode.CodeLens[]> {
+        const config = SamCliSettings.instance
+        if (!config.get('enableCodeLenses', false)) {
+            return []
+        }
         const apiResources = await symbolResolver.getResourcesOfKind('api', waitForSymbols)
         const funResources = await symbolResolver.getResourcesOfKind('function', waitForSymbols)
         if (_(funResources).isEmpty() && _(apiResources).isEmpty()) {

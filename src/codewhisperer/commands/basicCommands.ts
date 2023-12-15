@@ -32,17 +32,28 @@ import { FileSystemCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { showManageConnections } from '../../auth/ui/vue/show'
+import {
+    CancelActionPositions,
+    logCodeTransformInitiatedMetric,
+} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { FeatureConfigProvider } from '../service/featureConfigProvider'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
     (suggestionState: CodeSuggestionsState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
-        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-        telemetry.aws_modifySetting.emit({
-            settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
-            settingState: isSuggestionsEnabled
-                ? CodeWhispererConstants.autoSuggestionConfig.activated
-                : CodeWhispererConstants.autoSuggestionConfig.deactivated,
+        await telemetry.aws_modifySetting.run(async span => {
+            span.record({
+                settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
+            })
+
+            const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
+            span.record({
+                settingState: isSuggestionsEnabled
+                    ? CodeWhispererConstants.autoSuggestionConfig.activated
+                    : CodeWhispererConstants.autoSuggestionConfig.deactivated,
+            })
+
+            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         })
     }
 )
@@ -97,7 +108,6 @@ export const showSecurityScan = Commands.declare(
         }
 )
 
-export const transformTreeNode = 'qTreeNode'
 export const showTransformByQ = Commands.declare(
     { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
     (context: ExtContext) => async (source: string) => {
@@ -106,14 +116,15 @@ export const showTransformByQ = Commands.declare(
         }
 
         if (transformByQState.isNotStarted()) {
+            logCodeTransformInitiatedMetric(source)
             startTransformByQWithProgress()
         } else if (transformByQState.isCancelled()) {
             vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
         } else if (transformByQState.isRunning()) {
-            await confirmStopTransformByQ(transformByQState.getJobId())
+            await confirmStopTransformByQ(transformByQState.getJobId(), CancelActionPositions.DevToolsSidePanel)
         }
         // emit telemetry if clicked from tree node
-        if (source === transformTreeNode) {
+        if (source === CodeWhispererConstants.transformTreeNode) {
             telemetry.ui_click.emit({
                 elementId: 'amazonq_transform',
                 passive: false,
@@ -140,9 +151,13 @@ export const selectCustomizationPrompt = Commands.declare(
 
 export const reconnect = Commands.declare(
     { id: 'aws.codewhisperer.reconnect', compositeKey: { 1: 'source' } },
-    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        await AuthUtil.instance.reauthenticate()
-    }
+    () =>
+        async (_: VsCodeCommandArg, source: CodeWhispererSource, addMissingScopes: boolean = false) => {
+            if (typeof addMissingScopes !== 'boolean') {
+                addMissingScopes = false
+            }
+            await AuthUtil.instance.reauthenticate(addMissingScopes)
+        }
 )
 
 /** Opens the Add Connections webview with CW highlighted */
@@ -246,6 +261,13 @@ export const notifyNewCustomizationsCmd = Commands.declare(
     }
 )
 
+export const fetchFeatureConfigsCmd = Commands.declare(
+    { id: 'aws.codeWhisperer.fetchFeatureConfigs', logging: false },
+    () => () => {
+        FeatureConfigProvider.instance.fetchFeatureConfigs()
+    }
+)
+
 export const applySecurityFix = Commands.declare(
     'aws.codeWhisperer.applySecurityFix',
     () => async (issue: CodeScanIssue, filePath: string, source: Component) => {
@@ -299,15 +321,6 @@ export const applySecurityFix = Commands.declare(
         }
     }
 )
-
-/**
- * Forces focus to Amazon Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
- * Used on first load, and any time we want to directly populate chat.
- */
-export async function focusAmazonQPanel(): Promise<void> {
-    // VS Code-owned command: "View: Show Amazon Q"
-    await vscode.commands.executeCommand('workbench.view.extension.amazonq')
-}
 
 export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.codewhisperer.signout', compositeKey: { 1: 'source' } },

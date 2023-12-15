@@ -28,17 +28,16 @@ export class Logging {
         viewLogsAtMessage: Commands.from(this).declareOpenLogId('aws.viewLogsAtMessage'),
     }
 
-    public constructor(private readonly defaultLogUri: vscode.Uri, private readonly logger: Logger) {}
+    public constructor(private readonly logUri: vscode.Uri, private readonly logger: Logger) {}
 
-    public async openLogUri(logUri = this.defaultLogUri): Promise<vscode.TextEditor | undefined> {
-        telemetry.toolkit_viewLogs.emit() // Perhaps add additional argument to know which log was viewed?
-
-        return vscode.window.showTextDocument(logUri)
+    public async openLogUri(): Promise<vscode.TextEditor | undefined> {
+        telemetry.toolkit_viewLogs.emit()
+        return vscode.window.showTextDocument(this.logUri)
     }
 
-    public async openLogId(logId: number, logUri = this.defaultLogUri) {
-        const msg = this.logger.getLogById(logId, logUri)
-        const editor = await this.openLogUri(logUri)
+    public async openLogId(logId: number) {
+        const msg = this.logger.getLogById(logId, this.logUri)
+        const editor = await this.openLogUri()
         if (!msg || !editor) {
             return
         }

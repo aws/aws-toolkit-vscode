@@ -222,7 +222,29 @@ describe('StepFunctions VisualizeStateMachine', async function () {
             command: 'update',
             stateMachineData: mockDataJson,
             isValid: true,
-            errors: [],
+        }
+
+        assert.ok(postMessage.calledOnce)
+        assert.deepEqual(postMessage.firstCall.args, [message])
+    })
+
+    it('Test AslVisualisation sendUpdateMessage posts a correct update message for invalid YAML files', async function () {
+        const yamlDoc = await getDocument(mockDataYaml.replace('StartAt:', ']StartAt:'), YAML_ASL)
+        const postMessage = sinon.spy()
+        class MockAslVisualizationYaml extends AslVisualization {
+            public override getWebview(): vscode.Webview | undefined {
+                return { postMessage } as unknown as vscode.Webview
+            }
+        }
+
+        const visualisation = new MockAslVisualizationYaml(yamlDoc)
+
+        await visualisation.sendUpdateMessage(yamlDoc)
+
+        const message = {
+            command: 'update',
+            stateMachineData: undefined,
+            isValid: false,
         }
 
         assert.ok(postMessage.calledOnce)
@@ -246,7 +268,6 @@ describe('StepFunctions VisualizeStateMachine', async function () {
             command: 'update',
             stateMachineData: mockDataJson,
             isValid: true,
-            errors: [],
         }
 
         assert.ok(postMessage.calledOnce)

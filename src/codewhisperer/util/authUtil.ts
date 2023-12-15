@@ -36,8 +36,6 @@ export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCode
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
 export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesFeatureDev]
 
-export const awsBuilderIdSsoProfile = createBuilderIdProfile(codeWhispererChatScopes)
-
 /**
  * "Core" are the CW scopes that existed before the addition of new scopes
  * for Amazon Q.
@@ -148,6 +146,9 @@ export class AuthUtil {
                     memento.update(this.mementoKey, shouldShowObject)
                     await vscode.commands.executeCommand('aws.amazonq.welcome', placeholder, key)
                 }
+
+                // start the feature config polling job
+                vscode.commands.executeCommand('aws.codeWhisperer.fetchFeatureConfigs')
             }
             await this.setVscodeContextProps()
         })
@@ -208,7 +209,7 @@ export class AuthUtil {
         let conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 
         if (!conn) {
-            conn = await this.auth.createConnection(awsBuilderIdSsoProfile)
+            conn = await this.auth.createConnection(createBuilderIdProfile(codeWhispererChatScopes))
         } else if (!isValidCodeWhispererChatConnection(conn)) {
             conn = await this.secondaryAuth.addScopes(conn, codeWhispererChatScopes)
         }
@@ -301,23 +302,27 @@ export class AuthUtil {
         return connectionExpired
     }
 
-    public async reauthenticate() {
+    public async reauthenticate(addMissingScopes: boolean = false) {
         try {
             if (this.conn?.type !== 'sso') {
                 return
             }
 
             // Edge Case: With the addition of Amazon Q/Chat scopes we may need to add
-            // the new scopes to existing connections.
-            if (isBuilderIdConnection(this.conn) && !isValidCodeWhispererChatConnection(this.conn)) {
-                const conn = await this.secondaryAuth.addScopes(this.conn, codeWhispererChatScopes)
-                this.secondaryAuth.useNewConnection(conn)
-            } else if (isIdcSsoConnection(this.conn) && !isValidAmazonQConnection(this.conn)) {
-                const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
-                this.secondaryAuth.useNewConnection(conn)
-            } else {
-                await this.auth.reauthenticate(this.conn)
+            // the new scopes to existing pre-chat connections.
+            if (addMissingScopes) {
+                if (isBuilderIdConnection(this.conn) && !isValidCodeWhispererChatConnection(this.conn)) {
+                    const conn = await this.secondaryAuth.addScopes(this.conn, codeWhispererChatScopes)
+                    await this.secondaryAuth.useNewConnection(conn)
+                    return
+                } else if (isIdcSsoConnection(this.conn) && !isValidAmazonQConnection(this.conn)) {
+                    const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
+                    await this.secondaryAuth.useNewConnection(conn)
+                    return
+                }
             }
+
+            await this.auth.reauthenticate(this.conn)
         } catch (err) {
             throw ToolkitError.chain(err, 'Unable to authenticate connection')
         } finally {
