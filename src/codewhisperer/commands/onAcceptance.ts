@@ -14,6 +14,7 @@ import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
+import { getFileExtension } from '../util/editorContext'
 
 /**
  * This function is called when user accepts a intelliSense suggestion or an inline suggestion
@@ -26,9 +27,7 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
     if (acceptanceEntry.editor) {
         const languageContext = runtimeLanguageContext.getLanguageContext(
             acceptanceEntry.editor.document.languageId,
-            acceptanceEntry.editor.document.fileName.substring(
-                acceptanceEntry.editor.document.fileName.lastIndexOf('.') + 1
-            )
+            getFileExtension(acceptanceEntry.editor.document)
         )
         const start = acceptanceEntry.range.start
         const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end

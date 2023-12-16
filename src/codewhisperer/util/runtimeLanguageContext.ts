@@ -158,10 +158,10 @@ export class RuntimeLanguageContext {
     }
 
     /**
-     * @param languageId : vscode language id or codewhisperer language name
+     * @param languageId : vscode language id or codewhisperer language name, fileExtension: extension of the selected file
      * @returns An object with a field language: CodewhispererLanguage, if no corresponding CodewhispererLanguage ID, plaintext is returned
      */
-    public getLanguageContext(languageId?: string, filename?: string): { language: CodewhispererLanguage } {
+    public getLanguageContext(languageId?: string, fileExtension?: string): { language: CodewhispererLanguage } {
         const extensionToLanguageMap: Record<string, CodewhispererLanguage> = {
             tf: 'tf',
             hcl: 'tf',
@@ -171,8 +171,8 @@ export class RuntimeLanguageContext {
             // Add more mappings if needed
         }
 
-        if (languageId === 'plaintext' && filename !== undefined) {
-            const languages = extensionToLanguageMap[filename]
+        if (languageId === 'plaintext' && fileExtension !== undefined) {
+            const languages = extensionToLanguageMap[fileExtension]
             if (languages) {
                 return { language: languages }
             }
@@ -220,7 +220,7 @@ export class RuntimeLanguageContext {
     /**
      *
      * @param fileFormat : vscode editor filecontext filename extension
-     * @returns  if the fileformat is supported by CodeWhisperer otherwise false
+     * @returns  true if the fileformat is supported by CodeWhisperer otherwise false
      */
     public isFileFormatSupported(fileFormat: string): boolean {
         const fileformat = this.supportedLanguageExtensionMap.get(fileFormat)

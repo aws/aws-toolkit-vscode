@@ -76,6 +76,10 @@ export function getFileName(editor: vscode.TextEditor): string {
     return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
+export function getFileExtension(document: vscode.TextDocument): string {
+    return document.fileName.substring(document.fileName.lastIndexOf('.') + 1)
+}
+
 export function getFileNameForRequest(editor: vscode.TextEditor): string {
     const fileName = path.basename(editor.document.fileName)
 
@@ -181,17 +185,14 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
 export function validateRequest(
     req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
 ): boolean {
-    const isLanguageNameValid = !(
-        req.fileContext.programmingLanguage.languageName === undefined ||
-        req.fileContext.programmingLanguage.languageName.length < 1 ||
-        req.fileContext.programmingLanguage.languageName.length > 128 ||
-        !(
-            runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName) ||
+    const isLanguageNameValid =
+        req.fileContext.programmingLanguage.languageName !== undefined &&
+        req.fileContext.programmingLanguage.languageName.length >= 1 &&
+        req.fileContext.programmingLanguage.languageName.length <= 128 &&
+        (runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName) ||
             runtimeLanguageContext.isFileFormatSupported(
                 req.fileContext.filename.substring(req.fileContext.filename.lastIndexOf('.') + 1)
-            )
-        )
-    )
+            ))
     const isFileNameValid = !(req.fileContext.filename === undefined || req.fileContext.filename.length < 1)
     const isFileContextValid = !(
         req.fileContext.leftFileContent.length > CodeWhispererConstants.charactersLimit ||

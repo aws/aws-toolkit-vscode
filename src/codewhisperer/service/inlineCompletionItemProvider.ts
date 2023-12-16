@@ -11,6 +11,7 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
 import { ImportAdderProvider } from './importAdderProvider'
 import { application } from '../util/codeWhispererApplication'
+import { getFileExtension } from '../util/editorContext'
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -116,10 +117,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                     session.sessionId,
                     session.triggerType,
                     session.getCompletionType(index),
-                    runtimeLanguageContext.getLanguageContext(
-                        document.languageId,
-                        document.fileName.substring(document.fileName.lastIndexOf('.') + 1)
-                    ).language,
+                    runtimeLanguageContext.getLanguageContext(document.languageId, getFileExtension(document)).language,
                     r.references,
                 ],
             },

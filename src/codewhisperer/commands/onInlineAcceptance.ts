@@ -27,6 +27,7 @@ import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
 import { ImportAdderProvider } from '../service/importAdderProvider'
 import { session } from '../util/codeWhispererSession'
+import { getFileExtension } from '../util/editorContext'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
@@ -75,9 +76,7 @@ export async function onInlineAcceptance(
         await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
         const languageContext = runtimeLanguageContext.getLanguageContext(
             acceptanceEntry.editor.document.languageId,
-            acceptanceEntry.editor.document.fileName.substring(
-                acceptanceEntry.editor.document.fileName.lastIndexOf('.') + 1
-            )
+            getFileExtension(acceptanceEntry.editor.document)
         )
         const start = acceptanceEntry.range.start
         const end = acceptanceEntry.editor.selection.active
