@@ -85,6 +85,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         <th>Module</th>
                         <th>Status</th>
                         <th>Duration</th>
+                        <th>Id</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -94,6 +95,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         <td>${job.module}</td>
                         <td>${job.status}</td>
                         <td>${job.duration}</td>
+                        <td>${job.id}</td>
                     </tr>`
                     )}
                 </tbody>

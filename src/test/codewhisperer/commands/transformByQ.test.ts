@@ -8,7 +8,9 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as model from '../../../codewhisperer/models/model'
 import * as startTransformByQ from '../../../codewhisperer/commands/startTransformByQ'
-import proxyquire from 'proxyquire'
+import * as os from 'os'
+import * as path from 'path'
+import * as fs from 'fs'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -70,42 +72,31 @@ describe('transformByQ', function () {
         assert.strictEqual(model.transformByQState.getStatus(), 'Cancelled')
     })
 
-    it('WHEN validateProjectSelection called on valid project THEN correctly extracts JDK8 version', async function () {
-        const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
-        findFilesStub.onFirstCall().resolves([vscode.Uri.file('/user/sample/project/ClassFile.class')])
-        findFilesStub.onSecondCall().resolves([vscode.Uri.file('/user/sample/project/pom.xml')])
-
-        const spawnSyncResult = {
-            stdout: 'major version: 52',
-            stderr: '',
-            error: undefined,
-            status: 0,
-            pid: 12345,
-            signal: undefined,
-            output: ['', 'major version: 52', ''],
-        }
-        const spawnSyncStub = sinon.stub().returns(spawnSyncResult)
-
-        const { validateProjectSelection } = proxyquire('../../../codewhisperer/service/transformByQHandler', {
-            child_process: { spawnSync: spawnSyncStub },
-        })
-
+    it('WHEN validateProjectSelection called on non-Maven project THEN throws error', async function () {
         const dummyQuickPickItem: vscode.QuickPickItem = {
             label: 'SampleProject',
             description: '/dummy/path/here',
         }
-        await assert.doesNotReject(async () => {
-            await validateProjectSelection(dummyQuickPickItem)
-        })
-        assert.strictEqual(model.transformByQState.getSourceJDKVersion(), '8')
+        await assert.rejects(
+            async () => {
+                await validateProjectSelection(dummyQuickPickItem)
+            },
+            {
+                name: 'Error',
+                message: 'No valid Maven build file found',
+            }
+        )
     })
 
-    it('WHEN validateProjectSelection called on project with no class files THEN throws error', async function () {
+    it('WHEN validateProjectSelection called on project with pom.xml but no class files THEN throws error', async function () {
+        const tempDir = os.tmpdir()
+        const dummyPomPath = path.join(tempDir, 'pom.xml')
+        fs.writeFileSync(dummyPomPath, '')
         const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
         findFilesStub.onFirstCall().resolves([])
         const dummyQuickPickItem: vscode.QuickPickItem = {
             label: 'SampleProject',
-            description: '/dummy/path/here',
+            description: tempDir,
         }
 
         await assert.rejects(
@@ -117,6 +108,7 @@ describe('transformByQ', function () {
                 message: 'No Java projects found',
             }
         )
+        fs.rmSync(dummyPomPath)
     })
 
     it('WHEN getOpenProjects called on non-empty workspace THEN returns open projects', async function () {

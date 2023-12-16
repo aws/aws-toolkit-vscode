@@ -276,7 +276,7 @@ export class ProposedTransformationExplorer {
                     pathToArchive
                 )
             } catch (e: any) {
-                // This allows the customer to retry the download
+                vscode.window.showErrorMessage('Error downloading the diff')
                 vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
                 const errorMessage = 'There was a problem fetching the transformed code.'
                 getLogger().error('CodeTransform: ExportResultArchive error = ', errorMessage)
@@ -309,6 +309,7 @@ export class ProposedTransformationExplorer {
                 )
             } catch (e: any) {
                 deserializeErrorMessage = e?.message || 'Error during deserialization of result archive'
+                vscode.window.showErrorMessage(deserializeErrorMessage)
             } finally {
                 getLogger().error('CodeTransform: ParseDiff error = ', deserializeErrorMessage)
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
@@ -322,8 +323,7 @@ export class ProposedTransformationExplorer {
             }
 
             await vscode.window.showInformationMessage(
-                'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.',
-                { modal: true }
+                'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.'
             )
             await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             telemetry.codeTransform_vcsDiffViewerVisible.emit({

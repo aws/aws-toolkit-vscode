@@ -64,7 +64,7 @@ export function throwIfCancelled() {
 export async function getOpenProjects() {
     const folders = vscode.workspace.workspaceFolders
     if (folders === undefined) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         throw new ToolkitError('No Java projects found since no projects are open', { code: 'NoOpenProjects' })
     }
     const openProjects: vscode.QuickPickItem[] = []
@@ -84,17 +84,38 @@ export async function getOpenProjects() {
  */
 export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const projectPath = project.description
+    const isMaven = await checkIfMaven(projectPath!)
+    if (!isMaven) {
+        const buildType = await checkIfGradle(projectPath!)
+        vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
+        if (buildType === 'Gradle') {
+            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformPreValidationError: 'NonMavenProject',
+                result: MetadataResult.Fail,
+                reason: buildType,
+            })
+        }
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'NoPom',
+            result: MetadataResult.Fail,
+            reason: 'NoPomFileFound',
+        })
+        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
+    }
     const compiledJavaFiles = await vscode.workspace.findFiles(
         new vscode.RelativePattern(projectPath!, '**/*.class'),
         '**/node_modules/**',
         1
     )
     if (compiledJavaFiles.length < 1) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
+            reason: 'NoClassFilesFound',
         })
         throw new TransformByQJavaProjectNotFound()
     }
@@ -104,11 +125,12 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
+            reason: 'JavapCommandFailed',
         })
         throw new ToolkitError('Unable to determine Java version', {
             code: 'CannotDetermineJavaVersion',
@@ -122,7 +144,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
         transformByQState.setSourceJDKVersionToJDK11()
     } else {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'UnsupportedJavaVersion',
@@ -130,29 +152,6 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
             reason: javaVersion,
         })
         throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
-    }
-    const buildFile = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(projectPath!, 'pom.xml'), // check for pom.xml in root directory only
-        '**/node_modules/**',
-        1
-    )
-    if (buildFile.length < 1) {
-        const buildType = await checkIfGradle(projectPath!)
-        vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
-        if (buildType === 'Gradle') {
-            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformPreValidationError: 'NonMavenProject',
-                result: MetadataResult.Fail,
-                reason: buildType,
-            })
-        }
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NoPom',
-            result: MetadataResult.Fail,
-        })
-        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }
 }
 
@@ -185,7 +184,6 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
     const sha256 = getSha256(fileName)
     const headersObj = getHeadersObj(sha256, resp.kmsKeyArn)
 
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
     try {
         const apiStartTime = Date.now()
@@ -247,7 +245,6 @@ export async function stopJob(jobId: string) {
 
 export async function uploadPayload(payloadFileName: string) {
     const sha256 = getSha256(payloadFileName)
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
     try {
         const apiStartTime = Date.now()
@@ -279,14 +276,25 @@ export async function uploadPayload(payloadFileName: string) {
     }
 }
 
-function getFilesRecursively(dir: string): string[] {
+/**
+ * Gets all files in dir. We use this method to get the source code, then we run a mvn command to
+ * copy over dependencies into their own folder, then we use this method again to get those
+ * dependencies. If isDependenciesFolder is true, then we are getting all the files
+ * of the dependencies which were copied over by the previously-run mvn command, in which case
+ * we DO want to include any dependencies that may happen to be named "target", hence the check
+ * in the first part of the IF statement. The point of excluding folders named target is that
+ * "target" is also the name of the folder where .class files, large JARs, etc. are stored after
+ * building, and we do not want these included in the ZIP so we exclude these when calling
+ * getFilesRecursively on the source code folder.
+ */
+function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
     const entries = fs.readdirSync(dir, { withFileTypes: true })
     const files = entries.flatMap(entry => {
         const res = path.resolve(dir, entry.name)
-        // exclude 'target' directory from ZIP due to issues in backend
+        // exclude 'target' directory from ZIP (except if zipping dependencies) due to issues in backend
         if (entry.isDirectory()) {
-            if (entry.name !== 'target') {
-                return getFilesRecursively(res)
+            if (isDependenciesFolder || entry.name !== 'target') {
+                return getFilesRecursively(res, isDependenciesFolder)
             } else {
                 return []
             }
@@ -313,7 +321,7 @@ function getProjectDependencies(modulePath: string): string[] {
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: false, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage, { modal: true })
+        vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
         getLogger().error('CodeTransform: Error in running Maven command = ')
         // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
         if (spawnResult.error) {
@@ -328,13 +336,11 @@ function getProjectDependencies(modulePath: string): string[] {
 }
 
 export async function zipCode(modulePath: string) {
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
     const zipStartTime = Date.now()
     const sourceFolder = modulePath
-    const sourceFiles = getFilesRecursively(sourceFolder)
+    const sourceFiles = getFilesRecursively(sourceFolder, false)
 
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
     let dependencyFolderInfo: string[] = []
@@ -348,7 +354,6 @@ export async function zipCode(modulePath: string) {
     const dependencyFolderPath = !mavenFailed ? dependencyFolderInfo[0] : ''
     const dependencyFolderName = !mavenFailed ? dependencyFolderInfo[1] : ''
 
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
     const zip = new AdmZip()
@@ -360,12 +365,11 @@ export async function zipCode(modulePath: string) {
         zip.addLocalFile(file, path.dirname(paddedPath))
     }
 
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
     let dependencyFiles: string[] = []
     if (!mavenFailed && fs.existsSync(dependencyFolderPath)) {
-        dependencyFiles = getFilesRecursively(dependencyFolderPath)
+        dependencyFiles = getFilesRecursively(dependencyFolderPath, true)
     }
 
     if (!mavenFailed && dependencyFiles.length > 0) {
@@ -380,7 +384,6 @@ export async function zipCode(modulePath: string) {
     }
     zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest), 'utf-8'))
 
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
@@ -576,6 +579,15 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
         }
     }
     return status
+}
+
+export async function checkIfMaven(projectPath: string) {
+    const mavenBuildFilePath = path.join(projectPath, 'pom.xml')
+    if (fs.existsSync(mavenBuildFilePath)) {
+        return true
+    } else {
+        return false
+    }
 }
 
 async function checkIfGradle(projectPath: string) {
