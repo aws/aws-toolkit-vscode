@@ -60,9 +60,6 @@ import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
 import { FeedbackWebview } from './submitFeedback'
-import { transformByQState } from '../../codewhisperer/models/model'
-import { getClientId } from '../../shared/telemetry/util'
-import globals from '../../shared/extensionGlobals'
 
 const client = WebviewClientFactory.create<FeedbackWebview>()
 
@@ -74,7 +71,6 @@ export default defineComponent({
             isSubmitting: false,
             error: '',
             feedbackName: '',
-            extraCodeTransformData: { jobId: '', clientId: '' },
         }
     },
     created() {
@@ -86,14 +82,9 @@ export default defineComponent({
             this.isSubmitting = true
             console.log('Submitting feedback...')
             // identifier to help us (internally) know that feedback came from either CodeWhisperer or AWS Toolkit
-            let userComment =
-                this.feedbackName === 'CodeWhisperer' ? 'CodeWhisperer onboarding: ' + this.comment : this.comment
-            // info to help us (internally) know the jobId and clientId for transform by Q job runs
-            this.extraCodeTransformData['jobId'] = transformByQState.getJobId()
-            this.extraCodeTransformData['clientId'] = await getClientId(globals.context.globalState)
-            userComment += `\n${JSON.stringify(this.extraCodeTransformData)}`
             const resp = await client.submit({
-                comment: userComment,
+                comment:
+                    this.feedbackName === 'CodeWhisperer' ? 'CodeWhisperer onboarding: ' + this.comment : this.comment,
                 sentiment: this.sentiment,
             })
 

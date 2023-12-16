@@ -8,9 +8,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as model from '../../../codewhisperer/models/model'
 import * as startTransformByQ from '../../../codewhisperer/commands/startTransformByQ'
-import * as os from 'os'
 import * as path from 'path'
-import * as fs from 'fs'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -26,6 +24,7 @@ import {
     getOpenProjects,
     getHeadersObj,
 } from '../../../codewhisperer/service/transformByQHandler'
+import { createTestWorkspaceFolder, toFile } from '../../testUtil'
 
 describe('transformByQ', function () {
     afterEach(function () {
@@ -89,14 +88,14 @@ describe('transformByQ', function () {
     })
 
     it('WHEN validateProjectSelection called on project with pom.xml but no class files THEN throws error', async function () {
-        const tempDir = os.tmpdir()
-        const dummyPomPath = path.join(tempDir, 'pom.xml')
-        fs.writeFileSync(dummyPomPath, '')
+        const folder = await createTestWorkspaceFolder()
+        const dummyPomPath = path.join(folder.uri.fsPath, 'pom.xml')
+        toFile(dummyPomPath, '')
         const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
         findFilesStub.onFirstCall().resolves([])
         const dummyQuickPickItem: vscode.QuickPickItem = {
             label: 'SampleProject',
-            description: tempDir,
+            description: folder.uri.fsPath,
         }
 
         await assert.rejects(
@@ -108,7 +107,6 @@ describe('transformByQ', function () {
                 message: 'No Java projects found',
             }
         )
-        fs.rmSync(dummyPomPath)
     })
 
     it('WHEN getOpenProjects called on non-empty workspace THEN returns open projects', async function () {
