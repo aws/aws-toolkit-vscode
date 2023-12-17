@@ -252,7 +252,7 @@ export async function startTransformByQ() {
     } catch (error) {
         if (transformByQState.isCancelled()) {
             stopJob(transformByQState.getJobId())
-            vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage, { modal: true })
+            vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage)
         } else {
             transformByQState.setToFailed()
             let displayedErrorMessage = CodeWhispererConstants.transformByQFailedMessage
@@ -262,7 +262,7 @@ export async function startTransformByQ() {
             if (transformByQState.getJobFailureReason() !== '') {
                 displayedErrorMessage += `: ${transformByQState.getJobFailureReason()}`
             }
-            vscode.window.showErrorMessage(displayedErrorMessage, { modal: true })
+            vscode.window.showErrorMessage(displayedErrorMessage)
         }
         if (sessionPlanProgress['uploadCode'] !== StepProgress.Succeeded) {
             sessionPlanProgress['uploadCode'] = StepProgress.Failed
@@ -291,14 +291,11 @@ export async function startTransformByQ() {
             )
         }
         if (transformByQState.isSucceeded()) {
-            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompletedMessage, { modal: true })
+            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompletedMessage)
         } else if (transformByQState.isPartiallySucceeded()) {
-            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQPartiallyCompletedMessage, {
-                modal: true,
-            })
+            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQPartiallyCompletedMessage)
         }
     }
-    await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
     clearInterval(intervalId)
     transformByQState.setToNotStarted() // so that the "Transform by Q" button resets
     transformByQState.setPolledJobStatus('') // reset polled job status too

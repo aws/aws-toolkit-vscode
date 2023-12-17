@@ -323,7 +323,7 @@ export const dependencyDisclaimer =
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
 export const dependencyErrorMessage =
-    'Failed to execute Maven. It is possible that the upload does not include all dependencies.'
+    'Failed to execute Maven. It is possible that the upload does not include all dependencies. We will still attempt to complete the transformation.'
 
 export const planIntroductionMessage =
     'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'
