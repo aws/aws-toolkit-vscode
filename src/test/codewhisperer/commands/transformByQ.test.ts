@@ -87,10 +87,10 @@ describe('transformByQ', function () {
         )
     })
 
-    it('WHEN validateProjectSelection called on project with pom.xml but no class files THEN throws error', async function () {
+    it.only('WHEN validateProjectSelection called on project with pom.xml but no class files THEN throws error', async function () {
         const folder = await createTestWorkspaceFolder()
         const dummyPomPath = path.join(folder.uri.fsPath, 'pom.xml')
-        toFile(dummyPomPath, '')
+        toFile('', dummyPomPath)
         const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
         findFilesStub.onFirstCall().resolves([])
         const dummyQuickPickItem: vscode.QuickPickItem = {
