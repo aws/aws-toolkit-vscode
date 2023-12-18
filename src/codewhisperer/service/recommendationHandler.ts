@@ -44,6 +44,7 @@ import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import { getFileExtension } from '../util/editorContext'
+import path from 'path'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -405,7 +406,7 @@ export class RecommendationHandler {
                     page,
                     runtimeLanguageContext.getLanguageContext(
                         editor.document.languageId,
-                        editor.document.fileName.substring(editor.document.fileName.lastIndexOf('.') + 1)
+                        path.extname(editor.document.fileName)
                     ).language,
                     session.requestContext.supplementalMetadata
                 )

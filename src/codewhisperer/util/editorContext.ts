@@ -77,7 +77,7 @@ export function getFileName(editor: vscode.TextEditor): string {
 }
 
 export function getFileExtension(document: vscode.TextDocument): string {
-    return document.fileName.substring(document.fileName.lastIndexOf('.') + 1)
+    return path.extname(document.fileName)
 }
 
 export function getFileNameForRequest(editor: vscode.TextEditor): string {
