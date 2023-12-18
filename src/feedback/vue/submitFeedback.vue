@@ -60,6 +60,7 @@ import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
 import { FeedbackWebview } from './submitFeedback'
+import { transformByQState } from '../../codewhisperer/models/model'
 
 const client = WebviewClientFactory.create<FeedbackWebview>()
 
@@ -81,6 +82,12 @@ export default defineComponent({
             this.error = ''
             this.isSubmitting = true
             console.log('Submitting feedback...')
+            // jobId from transform by Q
+            const jobId = transformByQState.getJobId()
+            if (jobId != '') {
+                // user must have started a job
+                this.comment += `\n Transform by Q jobId: ${jobId}`
+            }
             // identifier to help us (internally) know that feedback came from either CodeWhisperer or AWS Toolkit
             const resp = await client.submit({
                 comment:
