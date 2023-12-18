@@ -87,19 +87,11 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const buildSystem = await checkBuildSystem(projectPath!)
     if (buildSystem !== BuildSystem.Maven) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
-        if (buildSystem === BuildSystem.Gradle) {
-            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformPreValidationError: 'NonMavenProject',
-                result: MetadataResult.Fail,
-                reason: buildSystem,
-            })
-        }
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NoPom',
+            codeTransformPreValidationError: 'NonMavenProject',
             result: MetadataResult.Fail,
-            reason: 'NoPomFileFound',
+            reason: buildSystem === BuildSystem.Gradle ? buildSystem : 'NoPomFileFound',
         })
         throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }

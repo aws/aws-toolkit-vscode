@@ -277,7 +277,7 @@ export class ProposedTransformationExplorer {
                 )
             } catch (e: any) {
                 // This allows the customer to retry the download
-                vscode.window.showErrorMessage('Error downloading the diff')
+                vscode.window.showErrorMessage('Transform by Q experienced an error when downloading the diff')
                 vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
                 const errorMessage = 'There was a problem fetching the transformed code.'
                 getLogger().error('CodeTransform: ExportResultArchive error = ', errorMessage)
