@@ -27,6 +27,7 @@ import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformApiNames
+import software.aws.toolkits.telemetry.CodeTransformPatchViewerCancelSrcComponents
 import software.aws.toolkits.telemetry.CodeTransformVCSViewerSrcComponents
 import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.nio.file.Files
@@ -46,7 +47,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
         if (result.artifact == null) {
             notifyUnableToApplyPatch(result.zipPath)
         } else {
-            displayDiffUsingPatch(result.artifact.patch)
+            displayDiffUsingPatch(result.artifact.patch, job)
         }
     }
 
@@ -145,7 +146,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
     /**
      * Opens the built-in patch dialog to display the diff and allowing users to apply the changes locally.
      */
-    internal fun displayDiffUsingPatch(patchFile: VirtualFile) {
+    internal fun displayDiffUsingPatch(patchFile: VirtualFile, jobId: JobId) {
         runInEdt {
             val dialog = ApplyPatchDifferentiatedDialog(
                 project,
@@ -159,10 +160,27 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
                 null,
                 null,
                 null,
-                false
+                false,
             )
             dialog.isModal = true
-            dialog.showAndGet()
+
+            CodetransformTelemetry.vcsDiffViewerVisible(
+                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformJobId = jobId.id
+            )
+
+            if (dialog.showAndGet()) {
+                CodetransformTelemetry.vcsViewerSubmitted(
+                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+                    codeTransformJobId = jobId.id
+                )
+            } else {
+                CodetransformTelemetry.vcsViewerCanceled(
+                    codeTransformPatchViewerCancelSrcComponents = CodeTransformPatchViewerCancelSrcComponents.CancelButton,
+                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+                    codeTransformJobId = jobId.id
+                )
+            }
         }
     }
 

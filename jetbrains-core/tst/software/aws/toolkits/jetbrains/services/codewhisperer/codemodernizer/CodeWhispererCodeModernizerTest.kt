@@ -15,6 +15,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito
+import org.mockito.Mockito.never
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
@@ -92,6 +93,18 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
         doReturn(result).whenever(handler).downloadArtifact(any())
         handler.displayDiff(jobId)
         verify(handler, times(1)).notifyUnableToApplyPatch(path)
+    }
+
+    @Test
+    fun `ArtifactHandler displays patch`() = runBlocking {
+        val handler = spy(ArtifactHandler(project, clientAdaptorSpy))
+        val path = testCodeModernizerArtifact.zipPath
+        val result = DownloadArtifactResult(testCodeModernizerArtifact, path)
+        doReturn(result).whenever(handler).downloadArtifact(any())
+        doNothing().whenever(handler).displayDiffUsingPatch(any(), any())
+        handler.displayDiff(jobId)
+        verify(handler, never()).notifyUnableToApplyPatch(path)
+        verify(handler, times(1)).displayDiffUsingPatch(testCodeModernizerArtifact.patch, jobId)
     }
 
     @Test
