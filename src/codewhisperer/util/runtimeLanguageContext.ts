@@ -158,10 +158,25 @@ export class RuntimeLanguageContext {
     }
 
     /**
-     * @param languageId : vscode language id or codewhisperer language name
+     * @param languageId : vscode language id or codewhisperer language name, fileExtension: extension of the selected file
      * @returns An object with a field language: CodewhispererLanguage, if no corresponding CodewhispererLanguage ID, plaintext is returned
      */
-    public getLanguageContext(languageId?: string): { language: CodewhispererLanguage } {
+    public getLanguageContext(languageId?: string, fileExtension?: string): { language: CodewhispererLanguage } {
+        const extensionToLanguageMap: Record<string, CodewhispererLanguage> = {
+            tf: 'tf',
+            hcl: 'tf',
+            json: 'json',
+            yaml: 'yaml',
+            yml: 'yaml',
+            // Add more mappings if needed
+        }
+
+        if (languageId === 'plaintext' && fileExtension !== undefined) {
+            const languages = extensionToLanguageMap[fileExtension]
+            if (languages) {
+                return { language: languages }
+            }
+        }
         return { language: this.normalizeLanguage(languageId) ?? 'plaintext' }
     }
 
@@ -177,7 +192,10 @@ export class RuntimeLanguageContext {
         const fileContext = request.fileContext
         const runtimeLanguage: codewhispererClient.ProgrammingLanguage = {
             languageName: this.toRuntimeLanguage(
-                request.fileContext.programmingLanguage.languageName as CodewhispererLanguage
+                runtimeLanguageContext.getLanguageContext(
+                    request.fileContext.programmingLanguage.languageName,
+                    request.fileContext.filename.substring(request.fileContext.filename.lastIndexOf('.') + 1)
+                ).language
             ),
         }
 
@@ -193,11 +211,20 @@ export class RuntimeLanguageContext {
     /**
      *
      * @param languageId: either vscodeLanguageId or CodewhispererLanguage
-     * @returns ture if the language is supported by CodeWhisperer otherwise false
+     * @returns true if the language is supported by CodeWhisperer otherwise false
      */
     public isLanguageSupported(languageId: string): boolean {
         const lang = this.normalizeLanguage(languageId)
         return lang !== undefined && this.normalizeLanguage(languageId) !== 'plaintext'
+    }
+    /**
+     *
+     * @param fileFormat : vscode editor filecontext filename extension
+     * @returns  true if the fileformat is supported by CodeWhisperer otherwise false
+     */
+    public isFileFormatSupported(fileFormat: string): boolean {
+        const fileformat = this.supportedLanguageExtensionMap.get(fileFormat)
+        return fileformat !== undefined && this.supportedLanguageExtensionMap.get(fileformat) !== 'txt'
     }
 }
 

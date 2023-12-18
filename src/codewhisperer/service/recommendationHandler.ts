@@ -43,6 +43,7 @@ import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
+import path from 'path'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -180,7 +181,10 @@ export class RecommendationHandler {
         let latency = 0
         let nextToken = ''
         let shouldRecordServiceInvocation = true
-        session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
+        session.language = runtimeLanguageContext.getLanguageContext(
+            editor.document.languageId,
+            path.extname(editor.document.fileName)
+        ).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
         if (pagination) {
@@ -399,7 +403,10 @@ export class RecommendationHandler {
                     session.requestIdList,
                     sessionId,
                     page,
-                    editor.document.languageId,
+                    runtimeLanguageContext.getLanguageContext(
+                        editor.document.languageId,
+                        path.extname(editor.document.fileName)
+                    ).language,
                     session.requestContext.supplementalMetadata
                 )
             }
@@ -685,7 +692,10 @@ export class RecommendationHandler {
     private sendPerceivedLatencyTelemetry() {
         if (vscode.window.activeTextEditor) {
             const languageContext = runtimeLanguageContext.getLanguageContext(
-                vscode.window.activeTextEditor.document.languageId
+                vscode.window.activeTextEditor.document.languageId,
+                vscode.window.activeTextEditor.document.fileName.substring(
+                    vscode.window.activeTextEditor.document.fileName.lastIndexOf('.') + 1
+                )
             )
             telemetry.codewhisperer_perceivedLatency.emit({
                 codewhispererRequestId: this.requestId,

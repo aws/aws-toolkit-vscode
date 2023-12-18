@@ -14,6 +14,7 @@ import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
+import path from 'path'
 
 /**
  * This function is called when user accepts a intelliSense suggestion or an inline suggestion
@@ -24,7 +25,10 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
      * Format document
      */
     if (acceptanceEntry.editor) {
-        const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
+        const languageContext = runtimeLanguageContext.getLanguageContext(
+            acceptanceEntry.editor.document.languageId,
+            path.extname(acceptanceEntry.editor.document.fileName)
+        )
         const start = acceptanceEntry.range.start
         const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end
 
