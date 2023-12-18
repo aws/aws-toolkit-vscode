@@ -19,6 +19,7 @@ import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -287,9 +288,13 @@ export class ProposedTransformationExplorer {
                     codeTransformJobId: transformByQState.getJobId(),
                     codeTransformApiErrorMessage: e?.message || errorMessage,
                     codeTransformRequestId: e?.requestId,
+                    result: MetadataResult.Fail,
+                    reason: 'ExportResultArchiveFailed',
                 })
                 throw new ToolkitError(errorMessage)
             }
+
+            const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
 
             let deserializeErrorMessage
             const deserializeArchiveStartTime = Date.now()
@@ -309,17 +314,20 @@ export class ProposedTransformationExplorer {
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
                 )
             } catch (e: any) {
-                deserializeErrorMessage = e?.message || 'Error during deserialization of result archive'
+                deserializeErrorMessage =
+                    e?.message ||
+                    'Transform by Q experienced an error during the deserialization of the downloaded result archive'
+                getLogger().error('CodeTransform: ParseDiff error = ', deserializeErrorMessage)
                 vscode.window.showErrorMessage(deserializeErrorMessage)
             } finally {
-                getLogger().error('CodeTransform: ParseDiff error = ', deserializeErrorMessage)
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     codeTransformRunTimeLatency: calculateTotalLatency(deserializeArchiveStartTime),
-                    // TODO: A nice to have would be getting the zip download size
-                    codeTransformTotalByteSize: 0,
+                    codeTransformTotalByteSize: exportResultsArchiveSize,
                     codeTransformRuntimeError: deserializeErrorMessage,
+                    result: deserializeErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
+                    reason: deserializeErrorMessage ? 'DeserializationFailed' : undefined,
                 })
             }
 
@@ -330,6 +338,7 @@ export class ProposedTransformationExplorer {
             telemetry.codeTransform_vcsDiffViewerVisible.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
+                result: MetadataResult.Pass,
             })
         })
 
@@ -347,6 +356,7 @@ export class ProposedTransformationExplorer {
             telemetry.codeTransform_vcsViewerSubmitted.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
+                result: MetadataResult.Pass,
             })
         })
 
@@ -361,6 +371,7 @@ export class ProposedTransformationExplorer {
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
+                result: MetadataResult.Pass,
             })
         })
     }
