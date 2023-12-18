@@ -48,12 +48,13 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
 
     @Test
     fun `test runModernize handles user cancelled dialog`() {
-        doReturn(null).whenever(codeModernizerManagerSpy).getCustomerSelection()
+        doReturn(null).whenever(codeModernizerManagerSpy).getCustomerSelection(any())
         runInEdtAndWait {
-            val job = codeModernizerManagerSpy.runModernize()
+            val buildFiles = listOf(emptyPomFile)
+            val job = codeModernizerManagerSpy.runModernize(buildFiles)
             assertNull(job)
-            verify(codeModernizerManagerSpy, times(1)).runModernize()
-            verify(codeModernizerManagerSpy, times(1)).getCustomerSelection()
+            verify(codeModernizerManagerSpy, times(1)).runModernize(buildFiles)
+            verify(codeModernizerManagerSpy, times(1)).getCustomerSelection(buildFiles)
             // verify execution stopped after user cancelled
             verify(codeModernizerManagerSpy, times(0)).createCodeModernizerSession(any(), any())
             verify(codeModernizerManagerSpy, times(0)).launchModernizationJob(any())
@@ -68,14 +69,15 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
         `when`(mockFile.name).thenReturn("pomx.xml")
         `when`(mockFile.path).thenReturn("/mocked/path/pom.xml")
         val selection = CustomerSelection(mockFile, JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_17)
-        doReturn(selection).whenever(codeModernizerManagerSpy).getCustomerSelection()
+        doReturn(selection).whenever(codeModernizerManagerSpy).getCustomerSelection(any())
         doNothing().whenever(codeModernizerManagerSpy).postModernizationJob(any())
         doReturn(CodeModernizerStartJobResult.Started(jobId)).whenever(testSessionSpy).createModernizationJob()
         runInEdtAndWait {
-            val job = codeModernizerManagerSpy.runModernize()
+            val buildFiles = listOf(emptyPomFile)
+            val job = codeModernizerManagerSpy.runModernize(buildFiles)
             assertNotNull(job)
-            verify(codeModernizerManagerSpy, times(1)).runModernize()
-            verify(codeModernizerManagerSpy, times(1)).getCustomerSelection()
+            verify(codeModernizerManagerSpy, times(1)).runModernize(buildFiles)
+            verify(codeModernizerManagerSpy, times(1)).getCustomerSelection(buildFiles)
             verify(codeModernizerManagerSpy, times(1)).createCodeModernizerSession(any(), any())
             verify(codeModernizerManagerSpy, times(1)).launchModernizationJob(any())
         }
@@ -116,13 +118,13 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
     @Test
     fun `able to filter roots correctly`() {
         val tests = listOf(
-            listOf<String>() to listOf(),
-            listOf("foo/bar") to listOf("foo/bar"),
-            listOf("foo/bar", "foo/baz", "foo/bar/qux") to listOf("foo/bar", "foo/baz"),
-            listOf("foos", "foo/bar", "foo/baz", "foo/bar/qux") to listOf("foos", "foo/bar", "foo/baz"),
-            listOf("foo", "foo/bar", "foo/baz", "foo/bar/qux") to listOf("foo"),
+            setOf<String>() to listOf(),
+            setOf("foo/bar") to listOf("foo/bar"),
+            setOf("foo/bar", "foo/baz", "foo/bar/qux") to listOf("foo/bar", "foo/baz"),
+            setOf("foos", "foo/bar", "foo/baz", "foo/bar/qux") to listOf("foos", "foo/bar", "foo/baz"),
+            setOf("foo", "foo/bar", "foo/baz", "foo/bar/qux") to listOf("foo"),
         ).map { (input, expected) -> input.map { "$it/pom.xml" } to expected.map { "$it/pom.xml" } }
-        tests.map { (input, expected) -> Pair(input.map { LightVirtualFile(it) }, expected) }
+        tests.map { (input, expected) -> Pair(input.map { LightVirtualFile(it) }.toSet(), expected) }
             .forEach { (input, expected) ->
                 assertEquals(expected, filterOnlyParentFiles(input).map { it.name })
             }
@@ -131,10 +133,10 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
     @Test
     fun `able to filter roots correctly when multiple on same level`() {
         val tests = listOf(
-            listOf("foo/tmp0.txt", "foo/bar/tmp.txt", "foo/bar/tmp2.txt", "foo/bar/qux/tmp3.txt") to listOf("foo/tmp0.txt"),
-            listOf("foo/bar/tmp.txt", "foo/bar/tmp2.txt", "foo/bar/qux/tmp3.txt") to listOf("foo/bar/tmp.txt", "foo/bar/tmp2.txt"),
+            setOf("foo/tmp0.txt", "foo/bar/tmp.txt", "foo/bar/tmp2.txt", "foo/bar/qux/tmp3.txt") to listOf("foo/tmp0.txt"),
+            setOf("foo/bar/tmp.txt", "foo/bar/tmp2.txt", "foo/bar/qux/tmp3.txt") to listOf("foo/bar/tmp.txt", "foo/bar/tmp2.txt"),
         )
-        tests.map { (input, expected) -> Pair(input.map { LightVirtualFile(it) }, expected) }
+        tests.map { (input, expected) -> Pair(input.map { LightVirtualFile(it) }.toSet(), expected) }
             .forEach { (input, expected) ->
                 assertEquals(expected, filterOnlyParentFiles(input).map { it.name })
             }

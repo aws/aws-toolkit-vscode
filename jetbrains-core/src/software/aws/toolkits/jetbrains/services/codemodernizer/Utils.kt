@@ -252,7 +252,7 @@ suspend fun JobId.pollTransformationStatusAndPlan(
     return PollingResult(true, transformationResponse?.transformationJob(), state, transformationPlan)
 }
 
-fun filterOnlyParentFiles(filePaths: List<VirtualFile>): List<VirtualFile> {
+fun filterOnlyParentFiles(filePaths: Set<VirtualFile>): List<VirtualFile> {
     if (filePaths.isEmpty()) return listOf()
     // sorts it like:
     // foo

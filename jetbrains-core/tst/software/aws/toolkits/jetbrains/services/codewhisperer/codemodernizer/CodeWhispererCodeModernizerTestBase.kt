@@ -89,6 +89,7 @@ open class CodeWhispererCodeModernizerTestBase(
     internal lateinit var testSessionStateSpy: CodeModernizerSessionState
     internal val diffResource = "diff.patch".toResourceFile()
     internal val examplePatchVirtualFile = LightVirtualFile("diff.patch", diffResource.readText())
+    internal val emptyPomFile = LightVirtualFile("pom.xml", "")
     internal val jobId = JobId("Test job id")
     internal val migrationStep = MigrationStep("Test migration step")
     internal lateinit var testCodeModernizerArtifact: CodeModernizerArtifact

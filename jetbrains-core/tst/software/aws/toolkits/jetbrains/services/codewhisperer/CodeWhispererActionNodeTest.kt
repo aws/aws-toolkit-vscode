@@ -107,7 +107,7 @@ class CodeWhispererActionNodeTest {
     fun `runCodeModernizer`() {
         whenever(codeModernizerManager.validate(any())).thenReturn(ValidationResult(true))
         whenever(codeModernizerManager.getRunActionButtonIcon()).thenReturn(AllIcons.Actions.Execute)
-        whenever(codeModernizerManager.runModernize()).thenReturn(Job())
+        whenever(codeModernizerManager.runModernize(any())).thenReturn(Job())
         sut = CodeModernizerRunModernizeNode(project)
 
         sut.onDoubleClick(mock())
