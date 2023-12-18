@@ -86,7 +86,7 @@ export default defineComponent({
             const jobId = transformByQState.getJobId()
             if (jobId != '') {
                 // user must have started a job
-                this.comment += `\n Transform by Q jobId: ${jobId}`
+                this.comment += `\n\n[Transform by Q jobId: ${jobId}]`
             }
             // identifier to help us (internally) know that feedback came from either CodeWhisperer or AWS Toolkit
             const resp = await client.submit({
