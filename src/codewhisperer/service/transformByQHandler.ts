@@ -89,52 +89,71 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         '**/node_modules/**',
         1
     )
+    if (compiledJavaFiles.length < 1) {
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'NoJavaProject',
+            result: MetadataResult.Pass,
+        })
+        throw new TransformByQJavaProjectNotFound()
+    }
+    const classFilePath = compiledJavaFiles[0].fsPath
+    const baseCommand = 'javap'
+    const args = ['-v', classFilePath]
+    const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
+
+    if (spawnResult.error || spawnResult.status !== 0) {
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'NoJavaProject',
+            result: MetadataResult.Pass,
+        })
+        throw new ToolkitError('Unable to determine Java version', {
+            code: 'CannotDetermineJavaVersion',
+            cause: spawnResult.error,
+        })
+    }
+    const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
+    const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
+    if (javaVersion === CodeWhispererConstants.JDK8VersionNumber) {
+        transformByQState.setSourceJDKVersionToJDK8()
+    } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
+        transformByQState.setSourceJDKVersionToJDK11()
+    } else {
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'UnsupportedJavaVersion',
+            result: MetadataResult.Pass,
+            reason: javaVersion,
+        })
+        throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
+    }
     const buildFile = await vscode.workspace.findFiles(
         new vscode.RelativePattern(projectPath!, 'pom.xml'), // check for pom.xml in root directory only
         '**/node_modules/**',
         1
     )
-    telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.run(() => {
-        telemetry.record({ codeTransformSessionId: codeTransformTelemetryState.getSessionId() })
-        if (compiledJavaFiles.length < 1) {
-            vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
-            telemetry.record({ codeTransformPreValidationError: 'NoJavaProject' })
-            throw new TransformByQJavaProjectNotFound()
-        }
-        const classFilePath = compiledJavaFiles[0].fsPath
-        const baseCommand = 'javap'
-        const args = ['-v', classFilePath]
-        const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
-
-        if (spawnResult.error || spawnResult.status !== 0) {
-            vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
-            telemetry.record({ codeTransformPreValidationError: 'NoJavaProject' })
-            throw new ToolkitError('Unable to determine Java version', {
-                code: 'CannotDetermineJavaVersion',
-                cause: spawnResult.error,
+    if (buildFile.length < 1) {
+        const buildType = await checkIfGradle(projectPath!)
+        vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
+        if (buildType === 'Gradle') {
+            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformPreValidationError: 'NonMavenProject',
+                result: MetadataResult.Pass,
+                reason: buildType,
             })
         }
-        const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
-        const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
-        if (javaVersion === CodeWhispererConstants.JDK8VersionNumber) {
-            transformByQState.setSourceJDKVersionToJDK8()
-        } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
-            transformByQState.setSourceJDKVersionToJDK11()
-        } else {
-            vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
-            telemetry.record({ codeTransformPreValidationError: 'UnsupportedJavaVersion' })
-            throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
-        }
-        if (buildFile.length < 1) {
-            const buildType = checkIfGradle(projectPath!)
-            vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
-            if (buildType === 'Gradle') {
-                telemetry.record({ codeTransformPreValidationError: 'NonMavenProject' })
-            }
-            telemetry.record({ codeTransformPreValidationError: 'NoPom' })
-            throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
-        }
-    })
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'NoPom',
+            result: MetadataResult.Pass,
+        })
+        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
+    }
 }
 
 export function getSha256(fileName: string) {
@@ -582,7 +601,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     return status
 }
 
-function checkIfGradle(projectPath: string) {
+async function checkIfGradle(projectPath: string) {
     const gradleBuildFilePath = path.join(projectPath, 'build.gradle')
     if (fs.existsSync(gradleBuildFilePath)) {
         return 'Gradle'
