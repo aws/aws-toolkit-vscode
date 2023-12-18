@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { transformByQState, TransformByQStoppedError, ZipManifest } from '../models/model'
+import { BuildSystem, transformByQState, TransformByQStoppedError, ZipManifest } from '../models/model'
 import * as codeWhisperer from '../client/codewhisperer'
 import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger'
@@ -84,16 +84,15 @@ export async function getOpenProjects() {
  */
 export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const projectPath = project.description
-    const isMaven = await checkIfMaven(projectPath!)
-    if (!isMaven) {
-        const buildType = await checkIfGradle(projectPath!)
+    const buildSystem = await checkBuildSystem(projectPath!)
+    if (buildSystem !== BuildSystem.Maven) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
-        if (buildType === 'Gradle') {
+        if (buildSystem === BuildSystem.Gradle) {
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformPreValidationError: 'NonMavenProject',
                 result: MetadataResult.Fail,
-                reason: buildType,
+                reason: buildSystem,
             })
         }
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
@@ -579,20 +578,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     return status
 }
 
-export async function checkIfMaven(projectPath: string) {
+export async function checkBuildSystem(projectPath: string) {
     const mavenBuildFilePath = path.join(projectPath, 'pom.xml')
     if (fs.existsSync(mavenBuildFilePath)) {
-        return true
-    } else {
-        return false
+        return BuildSystem.Maven
     }
-}
-
-async function checkIfGradle(projectPath: string) {
     const gradleBuildFilePath = path.join(projectPath, 'build.gradle')
     if (fs.existsSync(gradleBuildFilePath)) {
-        return 'Gradle'
-    } else {
-        return 'Unknown'
+        return BuildSystem.Gradle
     }
+    return BuildSystem.Unknown
 }
