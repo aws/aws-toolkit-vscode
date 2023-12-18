@@ -33,7 +33,7 @@ import { isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import { DependencyGraphConstants } from '../util/dependencyGraph/dependencyGraph'
-import { getFileExtension } from '../util/editorContext'
+import path from 'path'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
@@ -75,7 +75,7 @@ export async function startSecurityScan(
     const codeScanTelemetryEntry: CodeScanTelemetryEntry = {
         codewhispererLanguage: runtimeLanguageContext.getLanguageContext(
             editor.document.languageId,
-            getFileExtension(editor.document)
+            path.extname(editor.document.fileName)
         ).language,
         codewhispererCodeScanSrcPayloadBytes: 0,
         codewhispererCodeScanSrcZipFileBytes: 0,

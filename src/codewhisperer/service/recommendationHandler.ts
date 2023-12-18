@@ -43,7 +43,6 @@ import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
-import { getFileExtension } from '../util/editorContext'
 import path from 'path'
 
 /**
@@ -184,7 +183,7 @@ export class RecommendationHandler {
         let shouldRecordServiceInvocation = true
         session.language = runtimeLanguageContext.getLanguageContext(
             editor.document.languageId,
-            getFileExtension(editor.document)
+            path.extname(editor.document.fileName)
         ).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 

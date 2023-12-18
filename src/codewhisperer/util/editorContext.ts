@@ -76,10 +76,6 @@ export function getFileName(editor: vscode.TextEditor): string {
     return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
-export function getFileExtension(document: vscode.TextDocument): string {
-    return path.extname(document.fileName)
-}
-
 export function getFileNameForRequest(editor: vscode.TextEditor): string {
     const fileName = path.basename(editor.document.fileName)
 
