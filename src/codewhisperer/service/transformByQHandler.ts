@@ -94,7 +94,8 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
-            result: MetadataResult.Pass,
+            result: MetadataResult.Fail,
+            reason: 'NoJavaProjectsAvailable',
         })
         throw new TransformByQJavaProjectNotFound()
     }
@@ -108,7 +109,8 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
-            result: MetadataResult.Pass,
+            result: MetadataResult.Fail,
+            reason: 'CannotDetermineJavaVersion',
         })
         throw new ToolkitError('Unable to determine Java version', {
             code: 'CannotDetermineJavaVersion',
@@ -126,7 +128,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'UnsupportedJavaVersion',
-            result: MetadataResult.Pass,
+            result: MetadataResult.Fail,
             reason: javaVersion,
         })
         throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
@@ -143,14 +145,15 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformPreValidationError: 'NonMavenProject',
-                result: MetadataResult.Pass,
+                result: MetadataResult.Fail,
                 reason: buildType,
             })
         }
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoPom',
-            result: MetadataResult.Pass,
+            result: MetadataResult.Fail,
+            reason: 'CouldNotFindPomXml',
         })
         throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }
