@@ -278,6 +278,7 @@ export class ProposedTransformationExplorer {
                 )
             } catch (e: any) {
                 // This allows the customer to retry the download
+                vscode.window.showErrorMessage('Transform by Q experienced an error when downloading the diff')
                 vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
                 const errorMessage = 'There was a problem fetching the transformed code.'
                 getLogger().error('CodeTransform: ExportResultArchive error = ', errorMessage)
@@ -313,8 +314,11 @@ export class ProposedTransformationExplorer {
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
                 )
             } catch (e: any) {
-                deserializeErrorMessage = e?.message || 'Error during deserialization of result archive'
+                deserializeErrorMessage =
+                    e?.message ||
+                    'Transform by Q experienced an error during the deserialization of the downloaded result archive'
                 getLogger().error('CodeTransform: ParseDiff error = ', deserializeErrorMessage)
+                vscode.window.showErrorMessage(deserializeErrorMessage)
             } finally {
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -328,8 +332,7 @@ export class ProposedTransformationExplorer {
             }
 
             await vscode.window.showInformationMessage(
-                'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.',
-                { modal: true }
+                'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.'
             )
             await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             telemetry.codeTransform_vcsDiffViewerVisible.emit({

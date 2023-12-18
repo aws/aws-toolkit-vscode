@@ -241,6 +241,12 @@ export enum JDKVersion {
     JDK17 = '17',
 }
 
+export enum BuildSystem {
+    Maven = 'Maven',
+    Gradle = 'Gradle',
+    Unknown = 'Unknown',
+}
+
 export enum DropdownStep {
     STEP_1 = 1,
     STEP_2 = 2,
