@@ -95,6 +95,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
+            reason: 'NoJavaProjectsAvailable',
         })
         throw new TransformByQJavaProjectNotFound()
     }
@@ -109,6 +110,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
+            reason: 'CannotDetermineJavaVersion',
         })
         throw new ToolkitError('Unable to determine Java version', {
             code: 'CannotDetermineJavaVersion',
@@ -151,6 +153,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoPom',
             result: MetadataResult.Fail,
+            reason: 'CouldNotFindPomXml',
         })
         throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }
@@ -196,8 +199,8 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            // TODO: A nice to have would be getting the zipUploadSize
-            codeTransformTotalByteSize: 0,
+            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
+            result: MetadataResult.Pass,
         })
         getLogger().info(`CodeTransform: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
@@ -208,6 +211,8 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
+            result: MetadataResult.Fail,
+            reason: 'UploadToS3Failed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -228,6 +233,7 @@ export async function stopJob(jobId: string) {
                     codeTransformJobId: jobId,
                     codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
                     codeTransformRequestId: response.$response.requestId,
+                    result: MetadataResult.Pass,
                 })
             }
         } catch (e: any) {
@@ -239,6 +245,8 @@ export async function stopJob(jobId: string) {
                 codeTransformJobId: jobId,
                 codeTransformApiErrorMessage: e?.message || errorMessage,
                 codeTransformRequestId: e?.requestId,
+                result: MetadataResult.Fail,
+                reason: 'StopTransformationFailed',
             })
             throw new ToolkitError(errorMessage, { cause: e as Error })
         }
@@ -262,6 +270,7 @@ export async function uploadPayload(payloadFileName: string) {
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformUploadId: response.uploadId,
             codeTransformRequestId: response.$response.requestId,
+            result: MetadataResult.Pass,
         })
         await uploadArtifactToS3(payloadFileName, response)
         return response.uploadId
@@ -273,6 +282,8 @@ export async function uploadPayload(payloadFileName: string) {
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
+            result: MetadataResult.Fail,
+            reason: 'CreateUploadUrlFailed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -375,6 +386,10 @@ export async function zipCode(modulePath: string) {
             zip.addLocalFile(file, path.dirname(paddedPath))
         }
         zipManifest.dependenciesRoot += `${dependencyFolderName}/`
+        telemetry.codeTransform_dependenciesCopied.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            result: MetadataResult.Pass,
+        })
     } else {
         zipManifest.dependenciesRoot = undefined
     }
@@ -393,8 +408,7 @@ export async function zipCode(modulePath: string) {
     const mavenStatus = mavenFailed ? MetadataResult.Fail : MetadataResult.Pass
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-        // TODO: A nice to have would be getting the zipUploadSize
-        codeTransformTotalByteSize: 0,
+        codeTransformTotalByteSize: (await fs.promises.stat(tempFilePath)).size,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
         result: mavenStatus,
         reason: mavenFailed ? 'MavenCommandFailed' : undefined,
@@ -424,6 +438,7 @@ export async function startJob(uploadId: string) {
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformJobId: response.transformationJobId,
             codeTransformRequestId: response.$response.requestId,
+            result: MetadataResult.Pass,
         })
         return response.transformationJobId
     } catch (e: any) {
@@ -434,6 +449,8 @@ export async function startJob(uploadId: string) {
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
+            result: MetadataResult.Fail,
+            reason: 'StartTransformationFailed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -457,6 +474,7 @@ export async function getTransformationPlan(jobId: string) {
             codeTransformJobId: jobId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformRequestId: response.$response.requestId,
+            result: MetadataResult.Pass,
         })
         const logoAbsolutePath = globals.context.asAbsolutePath(
             path.join('resources', 'icons', 'aws', 'amazonq', 'transform-landing-page-icon.svg')
@@ -483,6 +501,8 @@ export async function getTransformationPlan(jobId: string) {
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
+            result: MetadataResult.Fail,
+            reason: 'GetTransformationPlanFailed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -502,6 +522,7 @@ export async function getTransformationSteps(jobId: string) {
             codeTransformJobId: jobId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformRequestId: response.$response.requestId,
+            result: MetadataResult.Pass,
         })
         return response.transformationPlan.transformationSteps
     } catch (e: any) {
@@ -513,6 +534,8 @@ export async function getTransformationSteps(jobId: string) {
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
+            result: MetadataResult.Fail,
+            reason: 'GetTransformationPlanFailed',
         })
         throw e
     }
@@ -534,6 +557,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 codeTransformJobId: jobId,
                 codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
                 codeTransformRequestId: response.$response.requestId,
+                result: MetadataResult.Pass,
             })
             status = response.transformationJob.status!
             if (response.transformationJob.reason) {
@@ -546,6 +570,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: jobId,
                     codeTransformStatus: status,
+                    result: MetadataResult.Pass,
                 })
             }
             transformByQState.setPolledJobStatus(status)
@@ -570,6 +595,8 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 codeTransformJobId: jobId,
                 codeTransformApiErrorMessage: errorMessage,
                 codeTransformRequestId: e?.requestId,
+                result: MetadataResult.Fail,
+                reason: 'GetTransformationFailed',
             })
             // Pass along error to callee function
             throw new ToolkitError(errorMessage, { cause: e as Error })
