@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Emit additional metadata in telemetry"
+	"description": "Code Transform Telemetry includes additional metadata"
 }
