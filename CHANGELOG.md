@@ -1,3 +1,9 @@
+## 2.4.0 2023-12-19
+
+- **Bug Fix** Amazon Q: `/dev` command may fail with "Conversation id must exist"
+- **Bug Fix** CodeWhisperer supports code generation for Iac languages without external extensions
+- **Feature** Code Transform Telemetry includes additional metadata
+
 ## 2.3.0 2023-12-15
 
 - **Bug Fix** Help > View Toolkit Logs opens an empty file if other menu items were interacted with first.
