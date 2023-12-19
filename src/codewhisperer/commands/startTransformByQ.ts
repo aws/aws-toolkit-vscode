@@ -36,7 +36,7 @@ import {
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { ToolkitError } from '../../shared/errors'
 import { TransformByQUploadArchiveFailed } from '../../amazonqGumby/models/model'
-import { CancelActionPositions, toJDKMetricValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { CancelActionPositions, JDKToTelemetryValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
 const localize = nls.loadMessageBundle()
@@ -143,10 +143,10 @@ export async function startTransformByQ() {
 
     telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-        codeTransformJavaSourceVersionsAllowed: toJDKMetricValue(
+        codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getSourceJDKVersion()
         ) as CodeTransformJavaSourceVersionsAllowed,
-        codeTransformJavaTargetVersionsAllowed: toJDKMetricValue(
+        codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
         result: MetadataResult.Pass,
