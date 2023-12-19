@@ -70,7 +70,7 @@ export class Session {
         // Store the initial message when setting up the conversation so that if it fails we can retry with this message
         this._latestMessage = msg
 
-        telemetry.amazonq_startConversationInvoke.run(async span => {
+        await telemetry.amazonq_startConversationInvoke.run(async span => {
             this._conversationId = await this.proxyClient.createConversation()
             span.record({ amazonqConversationId: this._conversationId })
         })
