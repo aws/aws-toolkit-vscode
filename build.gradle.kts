@@ -27,6 +27,13 @@ allprojects {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    configurations.all {
+        resolutionStrategy {
+            failOnDynamicVersions()
+            failOnChangingVersions()
+        }
+    }
 }
 
 val generateChangeLog = tasks.register<GenerateGithubChangeLog>("generateChangeLog") {

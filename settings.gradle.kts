@@ -42,6 +42,8 @@ when (providers.gradleProperty("ideProfileName").get()) {
     }
 }
 
+apply(from = "kotlinResolution.settings.gradle.kts")
+
 include("jetbrains-ultimate")
 include("jetbrains-rider")
 include("intellij")

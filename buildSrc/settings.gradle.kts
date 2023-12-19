@@ -27,6 +27,8 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             from(files("../gradle/libs.versions.toml"))
+
+            apply(from = "../kotlinResolution.settings.gradle.kts")
         }
     }
 
