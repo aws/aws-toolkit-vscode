@@ -251,6 +251,12 @@ export const openSecurityIssuePanel = Commands.declare(
     'aws.codeWhisperer.openSecurityIssuePanel',
     (context: ExtContext) => (issue: CodeScanIssue, filePath: string) => {
         showSecurityIssueWebview(context.extensionContext, issue, filePath)
+
+        telemetry.codewhisperer_codeScanIssueViewDetails.emit({
+            findingId: issue.findingId,
+            detectorId: issue.detectorId,
+            ruleId: issue.ruleId,
+        })
     }
 )
 
@@ -279,6 +285,7 @@ export const applySecurityFix = Commands.declare(
         const applyFixTelemetryEntry: Mutable<CodewhispererCodeScanIssueApplyFix> = {
             detectorId: issue.detectorId,
             findingId: issue.findingId,
+            ruleId: issue.ruleId,
             component: source,
             result: 'Succeeded',
         }

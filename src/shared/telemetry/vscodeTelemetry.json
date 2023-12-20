@@ -44,16 +44,6 @@
             "description": "Installed CLI"
         },
         {
-            "name": "findingId",
-            "type": "string",
-            "description": "The id of a security finding from a code scan"
-        },
-        {
-            "name": "detectorId",
-            "type": "string",
-            "description": "The id of the detector which produced the code scan issue"
-        },
-        {
             "name": "hasChatAuth",
             "type": "boolean",
             "description": "Whether the user has access to CodeWhisperer Chat"
@@ -610,16 +600,6 @@
             "name": "appcomposer_closeWfs",
             "description": "Called when Step Functions Workflow Studio is closed",
             "metadata": [{ "type": "didSave" }]
-        },
-        {
-            "name": "codewhisperer_codeScanIssueHover",
-            "description": "Called when a code scan issue is hovered over",
-            "metadata": [{ "type": "findingId" }, { "type": "detectorId" }]
-        },
-        {
-            "name": "codewhisperer_codeScanIssueApplyFix",
-            "description": "Called when a code scan issue suggested fix is applied",
-            "metadata": [{ "type": "findingId" }, { "type": "detectorId" }, { "type": "component" }]
         },
         {
             "name": "amazonq_openChat",
