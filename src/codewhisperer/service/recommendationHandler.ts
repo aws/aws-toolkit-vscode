@@ -44,7 +44,6 @@ import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
-import { instance } from 'ts-mockito'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
