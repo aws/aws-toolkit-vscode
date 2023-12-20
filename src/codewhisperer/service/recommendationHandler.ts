@@ -294,7 +294,7 @@ export class RecommendationHandler {
                     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions', false)
                 }
             } else {
-                errorMessage = error as string
+                errorMessage = error instanceof Error ? error.message : String(error)
                 reason = error ? String(error) : 'unknown'
             }
         } finally {
