@@ -321,6 +321,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
                             detectorId = it.detectorId,
                             detectorName = it.detectorName,
                             findingId = it.findingId,
+                            ruleId = it.ruleId,
                             relatedVulnerabilities = it.relatedVulnerabilities,
                             severity = it.severity,
                             recommendation = it.remediation.recommendation,
@@ -381,6 +382,7 @@ internal data class CodeScanRecommendation(
     val detectorId: String,
     val detectorName: String,
     val findingId: String,
+    val ruleId: String?,
     val relatedVulnerabilities: List<String>,
     val severity: String,
     val remediation: Remediation

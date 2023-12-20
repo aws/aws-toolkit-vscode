@@ -494,6 +494,7 @@ data class CodeWhispererCodeScanIssue(
     val detectorId: String,
     val detectorName: String,
     val findingId: String,
+    val ruleId: String?,
     val relatedVulnerabilities: List<String>,
     val severity: String,
     val recommendation: Recommendation,

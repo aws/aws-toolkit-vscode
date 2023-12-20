@@ -328,7 +328,8 @@ class CodeWhispererTelemetryService {
     fun sendCodeScanIssueHoverEvent(issue: CodeWhispererCodeScanIssue) {
         CodewhispererTelemetry.codeScanIssueHover(
             findingId = issue.findingId,
-            detectorId = issue.detectorId
+            detectorId = issue.detectorId,
+            ruleId = issue.ruleId
         )
     }
 
@@ -336,6 +337,7 @@ class CodeWhispererTelemetryService {
         CodewhispererTelemetry.codeScanIssueApplyFix(
             findingId = issue.findingId,
             detectorId = issue.detectorId,
+            ruleId = issue.ruleId,
             component = Component.Hover,
             result = result,
             reason = reason

@@ -35,16 +35,6 @@
             "description": "Workflow step name"
         },
         {
-            "name": "findingId",
-            "type": "string",
-            "description": "The id of a security finding from a code scan"
-        },
-        {
-            "name": "detectorId",
-            "type": "string",
-            "description": "The id of the detector which produced the code scan issue"
-        },
-        {
             "name": "cwsprChatTriggerInteraction",
             "type": "string",
             "allowedValues": ["hotkeys", "click", "contextMenu"],
@@ -285,25 +275,6 @@
                 { "type": "duration"},
                 { "type": "codecatalyst_devEnvironmentWorkflowStep"},
                 { "type": "codecatalyst_devEnvironmentWorkflowError", "required": false }
-            ]
-        },
-        {
-            "name": "codewhisperer_codeScanIssueHover",
-            "description": "Called when a code scan issue is hovered over",
-            "metadata": [
-                { "type":  "findingId" },
-                { "type":  "detectorId" }
-            ]
-        },
-        {
-            "name": "codewhisperer_codeScanIssueApplyFix",
-            "description": "Called when a code scan issue suggested fix is applied",
-            "metadata": [
-                { "type":  "findingId" },
-                { "type":  "detectorId" },
-                { "type":  "component" },
-                { "type":  "result" },
-                { "type":  "reason", "required": false }
             ]
         },
         {
