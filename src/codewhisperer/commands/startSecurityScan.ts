@@ -265,14 +265,14 @@ function populateCodeScanLogStream(scannedFiles: Set<string>) {
     securityScanOutputChannel.clear()
     const numScannedFiles = scannedFiles.size
     if (numScannedFiles === 1) {
-        codeScanLogger.verbose(`${numScannedFiles} file was scanned during the last Security Scan.`)
+        codeScanLogger.info(`${numScannedFiles} file was scanned during the last Security Scan.`)
     } else {
-        codeScanLogger.verbose(`${numScannedFiles} files were scanned during the last Security Scan.`)
+        codeScanLogger.info(`${numScannedFiles} files were scanned during the last Security Scan.`)
     }
     // Log all the scanned files to codeScanLogger
     for (const file of scannedFiles) {
         const uri = vscode.Uri.file(file)
-        codeScanLogger.verbose(`File scanned: ${uri.fsPath}`)
+        codeScanLogger.info(`File scanned: ${uri.fsPath}`)
     }
 }
 
