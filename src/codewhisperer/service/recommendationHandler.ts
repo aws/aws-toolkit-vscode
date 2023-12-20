@@ -44,6 +44,7 @@ import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
+import { instance } from 'ts-mockito'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -294,7 +295,7 @@ export class RecommendationHandler {
                     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions', false)
                 }
             } else {
-                errorMessage = error as string
+                errorMessage = error instanceof Error ? error.message : String(error)
                 reason = error ? String(error) : 'unknown'
             }
         } finally {
