@@ -86,7 +86,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
                 downloadResultsResponse = clientAdaptor.downloadExportResultArchive(job)
             } catch (e: Exception) {
                 CodetransformTelemetry.logApiError(
-                    codeTransformApiNames = CodeTransformApiNames.StartTransformation,
+                    codeTransformApiNames = CodeTransformApiNames.ExportResultArchive,
                     codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformApiErrorMessage = e.message.toString(),
                     codeTransformJobId = job.id,

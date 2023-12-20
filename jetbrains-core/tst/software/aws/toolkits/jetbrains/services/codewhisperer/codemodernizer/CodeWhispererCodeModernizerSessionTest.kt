@@ -8,8 +8,10 @@ import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockRule
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.testFramework.common.ThreadLeakTracker
 import com.intellij.testFramework.runInEdtAndWait
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.codec.digest.DigestUtils
@@ -22,6 +24,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.spy
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeastOnce
@@ -62,21 +65,27 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
     @JvmField
     val wireMock = WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort())
 
-    lateinit var gumbyUploadUrlResponse: CreateUploadUrlResponse
-
     @Before
     override fun setup() {
         super.setup()
-        val s3endpoint = "http://127.0.0.1:${wireMock.port()}"
-        gumbyUploadUrlResponse = CreateUploadUrlResponse.builder()
-            .uploadUrl(s3endpoint)
-            .uploadId("1234")
-            .kmsKeyArn("0000000000000000000000000000000000:key/1234abcd")
-            .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
-            .sdkHttpResponse(
-                SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build()
-            )
-            .build() as CreateUploadUrlResponse
+        ThreadLeakTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "Process Proxy: Launcher")
+    }
+
+    // when maven is not installed in the local machine and mvnw does not support this pom.xml
+    @Test
+    fun `CodeModernizerSessionContext shows the transformation hub once ide maven finishes`() {
+        val module = projectRule.module
+        val fileText = "Morning"
+        projectRule.fixture.addFileToModule(module, "src/tmp.txt", fileText)
+
+        // get project.projectFile because project.projectFile can not be null
+        val roots = ModuleRootManager.getInstance(module).contentRoots
+        val root = roots[0]
+        val context = spy(CodeModernizerSessionContext(project, root.children[0], JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_11))
+        runInEdtAndWait {
+            context.createZipWithModuleFiles().payload
+            verify(context, times(1)).showTransformationHub()
+        }
     }
 
     @Test
@@ -328,6 +337,16 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
 
     @Test
     fun `test uploadPayload()`() {
+        val s3endpoint = "http://127.0.0.1:${wireMock.port()}"
+        val gumbyUploadUrlResponse = CreateUploadUrlResponse.builder()
+            .uploadUrl(s3endpoint)
+            .uploadId("1234")
+            .kmsKeyArn("0000000000000000000000000000000000:key/1234abcd")
+            .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
+            .sdkHttpResponse(
+                SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build()
+            )
+            .build() as CreateUploadUrlResponse
         val expectedSha256checksum: String =
             Base64.getEncoder().encodeToString(DigestUtils.sha256(FileInputStream(expectedFilePath.toAbsolutePath().toString())))
         clientAdaptorSpy.stub {
