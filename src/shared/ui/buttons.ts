@@ -52,7 +52,7 @@ export class QuickInputLinkButton implements QuickInputButton<void> {
     }
 
     public onClick(): void {
-        openUrl(this.uri)
+        void openUrl(this.uri)
     }
 }
 

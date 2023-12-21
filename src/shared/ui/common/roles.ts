@@ -74,11 +74,11 @@ function addCreateRoleButton(
             .then(role => [{ label: role.RoleName, data: role }])
             .catch(err => {
                 getLogger().error('role prompter: Failed to create new role: %s', err)
-                showViewLogsMessage(localize('AWS.rolePrompter.createRole.failed', 'Failed to create new role'))
+                void showViewLogsMessage(localize('AWS.rolePrompter.createRole.failed', 'Failed to create new role'))
                 return []
             })
 
-        prompter.loadItems(items)
+        return prompter.loadItems(items)
     }
 
     prompter.quickPick.buttons = [

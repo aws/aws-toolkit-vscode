@@ -100,7 +100,7 @@ export function activate(): void {
                 doc.languageId !== 'ini' &&
                 (basename === 'credentials' || basename === 'config')
             ) {
-                vscode.languages.setTextDocumentLanguage(doc, 'ini')
+                await vscode.languages.setTextDocumentLanguage(doc, 'ini')
             }
 
             if (await isSameMetricPending(telemKind, fileExt)) {

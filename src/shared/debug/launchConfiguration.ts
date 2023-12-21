@@ -127,11 +127,13 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
         } catch (e) {
             const helpText = localize('AWS.generic.message.getHelp', 'Get Help...')
             getLogger().error('setDebugConfigurations failed: %O', e as Error)
-            showViewLogsMessage(makeFailedWriteMessage('launch.json'), 'error', [helpText]).then(async buttonText => {
-                if (buttonText === helpText) {
-                    openUrl(vscode.Uri.parse(launchConfigDocUrl))
+            await showViewLogsMessage(makeFailedWriteMessage('launch.json'), 'error', [helpText]).then(
+                async buttonText => {
+                    if (buttonText === helpText) {
+                        await openUrl(vscode.Uri.parse(launchConfigDocUrl))
+                    }
                 }
-            })
+            )
         }
     }
 }
