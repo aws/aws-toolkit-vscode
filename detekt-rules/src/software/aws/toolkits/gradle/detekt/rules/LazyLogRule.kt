@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
 
 @RequiresTypeResolution
 class LazyLogRule : Rule() {
-    override val issue = Issue("LazyLog", Severity.Style, "Use lazy logging synatax (e.g. warning {\"abc\"} ) instead of warning(\"abc\")", Debt.FIVE_MINS)
+    override val issue = Issue("LazyLog", Severity.Style, "Use lazy logging syntax (e.g. warning {\"abc\"} ) instead of warning(\"abc\")", Debt.FIVE_MINS)
 
     // UI tests have issues with this TODO see if we want multiple detekt.yml files or disable for certain modules in this rule
     private val optOut = setOf("software.aws.toolkits.jetbrains.uitests")
