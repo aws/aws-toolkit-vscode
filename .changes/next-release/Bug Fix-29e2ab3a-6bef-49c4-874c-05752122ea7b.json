@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "CodeWhisperer: Fixed an issue where Security Scan Log output is blank if log level is not \"verbose\"."
+	"description": "CodeWhisperer: Security Scan Log output is blank if log level is not \"verbose\"."
 }
