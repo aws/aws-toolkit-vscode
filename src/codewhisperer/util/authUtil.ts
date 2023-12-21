@@ -120,12 +120,13 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
             }
             await Promise.all([
-                vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
-                vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+                // onDidChangeActiveConnection may trigger before these modules are activated.
+                Commands.tryExecute('aws.codeWhisperer.refresh'),
+                Commands.tryExecute('aws.codeWhisperer.refreshRootNode'),
                 Commands.tryExecute('aws.amazonq.refresh'),
-                vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
-                vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
-                vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
+                Commands.tryExecute('aws.amazonq.refreshRootNode'),
+                Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
+                Commands.tryExecute('aws.codeWhisperer.updateReferenceLog'),
             ])
 
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
