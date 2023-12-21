@@ -72,7 +72,7 @@ export async function showMessageWithUrl(
     const p = showMessageWithItems(message, kind, items)
     return p.then<string | undefined>(selection => {
         if (selection === urlItem) {
-            openUrl(uri)
+            void openUrl(uri)
         }
         return selection
     })
@@ -181,7 +181,7 @@ async function showProgressWithTimeout(
                         })
                         return
                     }
-                    vscode.window.withProgress(options, function (progress, token) {
+                    void vscode.window.withProgress(options, function (progress, token) {
                         token.onCancellationRequested(() => timeout.cancel())
                         resolve(progress)
                         return new Promise(timeout.onCompletion)
@@ -290,7 +290,7 @@ export class Messages {
  * @returns prompts message to user on with progress
  */
 export async function showTimedMessage(message: string, duration: number) {
-    vscode.window.withProgress(
+    void vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             title: message,

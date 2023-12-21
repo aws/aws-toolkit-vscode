@@ -148,7 +148,9 @@ export function createQuickPick<T>(
             ? new FilterBoxQuickPickPrompter<T>(picker, mergedOptions)
             : new QuickPickPrompter<T>(picker, mergedOptions)
 
-    prompter.loadItems(items, false, mergedOptions.recentlyUsed)
+    prompter.loadItems(items, false, mergedOptions.recentlyUsed).catch(e => {
+        getLogger().error('createQuickPick: loadItems failed: %s', (e as Error).message)
+    })
 
     return prompter
 }

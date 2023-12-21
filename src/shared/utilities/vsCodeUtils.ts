@@ -63,7 +63,7 @@ export async function showExtensionPage(extId: string) {
         const err = e as Error
         getLogger().error('extension.open command failed: %s', err.message)
         const uri = vscode.Uri.parse(`https://marketplace.visualstudio.com/items?itemName=${extId}`)
-        openUrl(uri)
+        void openUrl(uri)
     }
 }
 
@@ -86,9 +86,9 @@ export function showInstallExtensionMsg(
     const items = [installBtn]
 
     const p = vscode.window.showErrorMessage(msg, ...items)
-    p.then<string | undefined>(selection => {
+    void p.then<string | undefined>(selection => {
         if (selection === installBtn) {
-            showExtensionPage(extId)
+            void showExtensionPage(extId)
         }
         return selection
     })
@@ -203,9 +203,9 @@ export function normalizeVSCodeUri(uri: vscode.Uri): string {
 export function reloadWindowPrompt(message: string): void {
     const reload = 'Reload'
 
-    vscode.window.showInformationMessage(message, reload).then(selected => {
+    void vscode.window.showInformationMessage(message, reload).then(selected => {
         if (selected === reload) {
-            vscode.commands.executeCommand('workbench.action.reloadWindow')
+            void vscode.commands.executeCommand('workbench.action.reloadWindow')
         }
     })
 }
