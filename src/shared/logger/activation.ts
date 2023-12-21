@@ -198,7 +198,7 @@ async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable>
         }
         checking = true
         if (!(await fsCommon.fileExists(logFile))) {
-            vscode.window.showWarningMessage(
+            await vscode.window.showWarningMessage(
                 localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
             )
             watcher.close()

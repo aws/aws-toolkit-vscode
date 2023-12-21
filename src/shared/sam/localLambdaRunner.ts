@@ -352,7 +352,7 @@ export async function runLambdaFunction(
             retryDelayMillis: attachDebuggerRetryDelayMillis,
         })
 
-        showDebugConsole()
+        await showDebugConsole()
     }
 
     try {

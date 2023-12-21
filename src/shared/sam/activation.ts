@@ -65,7 +65,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     }
 
     if (config.get('enableCodeLenses', false)) {
-        activateSlowCodeLensesOnce()
+        await activateSlowCodeLensesOnce()
     }
 
     await registerCommands(ctx, config)
@@ -97,7 +97,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         switch (event.key) {
             case 'location':
                 // This only shows a message (passive=true), does not set anything.
-                sharedDetectSamCli({ passive: true, showMessage: true })
+                await sharedDetectSamCli({ passive: true, showMessage: true })
                 break
             case 'enableCodeLenses':
                 if (config.get(event.key, false) && !didActivateCodeLensProviders) {
@@ -156,7 +156,7 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
         }),
         Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
             const toggled = !settings.get('enableCodeLenses', false)
-            settings.update('enableCodeLenses', toggled)
+            await settings.update('enableCodeLenses', toggled)
         })
     )
 }
@@ -180,7 +180,7 @@ async function activateCodeLensRegistry(context: ExtContext) {
         ])
         await registry.rebuild()
     } catch (e) {
-        vscode.window.showErrorMessage(
+        await vscode.window.showErrorMessage(
             localize(
                 'AWS.codelens.failToInitializeCode',
                 'Failed to activate Lambda handler {0}',
@@ -199,7 +199,7 @@ async function samDebugConfigCmd() {
     const activeEditor = vscode.window.activeTextEditor
     if (!activeEditor) {
         getLogger().error(`aws.addSamDebugConfig was called without an active text editor`)
-        vscode.window.showErrorMessage(
+        await vscode.window.showErrorMessage(
             localize('AWS.pickDebugHandler.noEditor', 'Toolkit could not find an active editor')
         )
 
@@ -209,7 +209,7 @@ async function samDebugConfigCmd() {
     const provider = supportedLanguages[document.languageId]
     if (!provider) {
         getLogger().error(`aws.addSamDebugConfig called on a document with an invalid language: ${document.languageId}`)
-        vscode.window.showErrorMessage(
+        await vscode.window.showErrorMessage(
             localize(
                 'AWS.pickDebugHandler.invalidLanguage',
                 'Toolkit cannot detect handlers in language: {0}',
@@ -222,7 +222,7 @@ async function samDebugConfigCmd() {
 
     // TODO: No reason for this to depend on the codelense provider (which scans the whole workspace and creates filewatchers).
     const lenses = (await provider.provideCodeLenses(document, new vscode.CancellationTokenSource().token, true)) ?? []
-    codelensUtils.invokeCodeLensCommandPalette(document, lenses)
+    await codelensUtils.invokeCodeLensCommandPalette(document, lenses)
 }
 
 /**
@@ -312,7 +312,7 @@ async function createYamlExtensionPrompt(): Promise<void> {
         for (const change of event.contentChanges) {
             const changedLine = event.document.lineAt(change.range.start.line)
             if (changedLine.text.includes('AWSTemplateFormatVersion')) {
-                promptInstallYamlPlugin(yamlPromptDisposables)
+                await promptInstallYamlPlugin(yamlPromptDisposables)
                 return
             }
         }

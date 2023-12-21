@@ -178,7 +178,7 @@ export async function addSamDebugConfiguration(
 }
 
 export async function openLaunchJsonFile(): Promise<void> {
-    vscode.commands.executeCommand(
+    await vscode.commands.executeCommand(
         vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length <= 1
             ? 'workbench.action.debug.configure'
             : 'workbench.action.openWorkspaceSettingsFile'
