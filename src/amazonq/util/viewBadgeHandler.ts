@@ -7,6 +7,7 @@ import { window, TreeItem, TreeView, ViewBadge } from 'vscode'
 import { getLogger } from '../../shared/logger'
 import globals from '../../shared/extensionGlobals'
 import { getChatAuthState } from '../../codewhisperer/util/authUtil'
+import { GlobalState } from '../../shared/globalState'
 
 let badgeHelperView: TreeView<void> | undefined
 const mementoKey = 'hasAlreadyOpenedAmazonQ'
@@ -43,8 +44,7 @@ export function changeViewBadge(badge?: ViewBadge) {
  * Removes the view badge from the badge helper view and prevents it from showing up ever again
  */
 export function deactivateInitialViewBadge() {
-    const memento = globals.context.globalState
-    memento.update(mementoKey, true)
+    GlobalState.instance.tryUpdate(mementoKey, true)
     changeViewBadge()
 }
 
