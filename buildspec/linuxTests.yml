@@ -4,6 +4,8 @@ version: 0.2
 run-as: codebuild-user
 
 env:
+    # For "pipefail".
+    shell: bash
     variables:
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
 
@@ -29,7 +31,26 @@ phases:
                     npm run testCompile
                     npm run lint
                 fi
-            - xvfb-run npm test --silent
+            - |
+                {
+                    set -e
+                    set -o pipefail
+                    _PROMISE_REJ_MSG='rejected promise not handled'
+                    mkfifo testout
+                    (cat testout &)
+                    xvfb-run npm test --silent | tee testout \
+                        | { >testout-rej grep --line-buffered "$_PROMISE_REJ_MSG" || true; }
+                    if [ -s testout-rej ] ; then
+                        echo ''
+                        cat testout-rej | sort
+                        printf '\n\nERROR: Found %s "%s" in test output (see above).\n%s\n\n' \
+                            "$(cat testout-rej | wc -l | tr -d ' ')" \
+                            "$_PROMISE_REJ_MSG" \
+                            '       This typically indicates a bug. Read https://developer.mozilla.org/docs/Web/JavaScript/Guide/Using_promises#error_handling'
+                        # TODO: fail the CI job
+                        # exit 1;
+                    fi
+                }
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
             - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
