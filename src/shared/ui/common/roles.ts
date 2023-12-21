@@ -78,7 +78,9 @@ function addCreateRoleButton(
                 return []
             })
 
-        return prompter.loadItems(items)
+        prompter.loadItems(items).catch(e => {
+            getLogger().error('addCreateRoleButton: loadItems() failed: %s', (e as Error).message)
+        })
     }
 
     prompter.quickPick.buttons = [
