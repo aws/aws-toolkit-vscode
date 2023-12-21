@@ -181,7 +181,7 @@ export class AuthWebview extends VueWebview {
     }
 
     async showAmazonQChat(): Promise<void> {
-        focusAmazonQPanel()
+        return focusAmazonQPanel()
     }
 
     async getIdentityCenterRegion(): Promise<Region | undefined> {
@@ -781,7 +781,9 @@ async function showAuthWebview(
         subscriptions = [
             webview.onDidDispose(() => {
                 if (activePanel) {
-                    emitWebviewClosed(activePanel.server)
+                    emitWebviewClosed(activePanel.server).catch(e => {
+                        getLogger().error('emitWebviewClosed failed: %s', (e as Error).message)
+                    })
                 }
                 vscode.Disposable.from(...(subscriptions ?? [])).dispose()
                 activePanel = undefined
