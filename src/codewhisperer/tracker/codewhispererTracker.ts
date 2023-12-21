@@ -13,10 +13,7 @@ import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { AuthUtil } from '../util/authUtil'
 import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
 import { codeWhispererClient } from '../client/codewhisperer'
-import {
-    logSendTelemetryEventFailure,
-    mapToClientTelemetryEvent,
-} from '../../codewhispererChat/controllers/chat/telemetryHelper'
+import { logSendTelemetryEventFailure } from '../../codewhispererChat/controllers/chat/telemetryHelper'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -111,7 +108,15 @@ export class CodeWhispererTracker {
                 telemetry.amazonq_modifyCode.emit(event)
 
                 codeWhispererClient
-                    .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_modifyCode', event))
+                    .sendTelemetryEvent({
+                        telemetryEvent: {
+                            chatUserModificationEvent: {
+                                conversationId: event.cwsprChatConversationId,
+                                messageId: event.cwsprChatMessageId,
+                                modificationPercentage: event.cwsprChatModificationPercentage,
+                            },
+                        },
+                    })
                     .then()
                     .catch(logSendTelemetryEventFailure)
             } else {
