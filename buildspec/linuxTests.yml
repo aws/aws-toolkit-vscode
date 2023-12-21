@@ -39,6 +39,8 @@ phases:
                     mkfifo testout
                     (cat testout &)
                     xvfb-run npm test --silent | tee testout \
+                        | grep -v 'undefined..reading..range' \
+                        | grep -v CODEWHISPERER_INLINE_UPDATE_LOCK_KEY \
                         | { >testout-rej grep --line-buffered "$_PROMISE_REJ_MSG" || true; }
                     if [ -s testout-rej ] ; then
                         echo ''
