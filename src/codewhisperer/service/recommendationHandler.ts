@@ -707,6 +707,7 @@ export class RecommendationHandler {
                 passive: true,
                 credentialStartUrl: AuthUtil.instance.startUrl,
                 codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+                result: 'Succeeded',
             })
         }
     }
