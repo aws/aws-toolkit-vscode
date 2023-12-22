@@ -85,7 +85,7 @@ export class FeatureDevController {
             }
         })
         this.chatControllerMessageListeners.openDiff.event(data => {
-            this.openDiff(data)
+            return this.openDiff(data)
         })
         this.chatControllerMessageListeners.stopResponse.event(data => {
             return this.stopResponse(data)
@@ -389,7 +389,7 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 
             const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
-                this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
                 return
             }
@@ -448,7 +448,7 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
     }
 
     private processLink(message: any) {
-        openUrl(vscode.Uri.parse(message.link))
+        void openUrl(vscode.Uri.parse(message.link))
     }
 
     private insertCodeAtPosition(message: any) {
