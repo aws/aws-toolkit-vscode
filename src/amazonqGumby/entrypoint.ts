@@ -24,7 +24,7 @@ export async function processTransformByQ() {
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             result: MetadataResult.Pass,
         })
-        startTransformByQWithProgress()
+        return startTransformByQWithProgress()
     } else {
         void vscode.window.showInformationMessage(jobInProgressMessage, { modal: true })
     }

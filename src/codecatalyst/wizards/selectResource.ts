@@ -18,6 +18,7 @@ import { getRelativeDate } from '../../shared/utilities/textUtilities'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { associateDevEnv, docs } from '../model'
 import { getHelpUrl, isDevenvVscode } from '../utils'
+import { getLogger } from '../../shared/logger/logger'
 
 export function createRepoLabel(r: codecatalyst.CodeCatalystRepo): string {
     return `${r.org.name} / ${r.project.name} / ${r.name}`
@@ -226,7 +227,9 @@ export async function selectRepoForDevEnv(
     })
 
     refresh.onClick = () => {
-        prompter.clearAndLoadItems(items)
+        prompter.clearAndLoadItems(items).catch(e => {
+            getLogger().error('clearAndLoadItems failed: %s', (e as Error).message)
+        })
     }
 
     const response = await prompter.prompt()

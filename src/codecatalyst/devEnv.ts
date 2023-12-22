@@ -77,13 +77,17 @@ export class InactivityMessage implements vscode.Disposable {
 
             const willRefreshOnStaleTimestamp = async () => await devEnvActivity.isLocalActivityStale()
 
-            this.message().show(
-                minutesSinceTimestamp + minutesUntilFirstMessage,
-                minutesUntilShutdown - minutesUntilFirstMessage,
-                userIsActive,
-                willRefreshOnStaleTimestamp,
-                relativeMinuteMillis
-            )
+            this.message()
+                .show(
+                    minutesSinceTimestamp + minutesUntilFirstMessage,
+                    minutesUntilShutdown - minutesUntilFirstMessage,
+                    userIsActive,
+                    willRefreshOnStaleTimestamp,
+                    relativeMinuteMillis
+                )
+                .catch(e => {
+                    getLogger().error('Message.show failed: %s', (e as Error).message)
+                })
         }, millisToWait + minutesUntilFirstMessage * relativeMinuteMillis)
     }
 
@@ -172,7 +176,7 @@ class Message implements vscode.Disposable {
             this.clearExistingMessage()
 
             const imHere = `I'm here!`
-            vscode.window
+            return vscode.window
                 .showWarningMessage(
                     `Your CodeCatalyst Dev Environment has been inactive for ${minutesUserWasInactive} minutes, and will stop soon.`,
                     imHere
@@ -182,7 +186,6 @@ class Message implements vscode.Disposable {
                         userIsActive()
                     }
                 })
-            return
         }
 
         this.currentWarningMessageTimeout.token.onCancellationRequested(c => {
@@ -203,7 +206,7 @@ class Message implements vscode.Disposable {
 
         if (isCloud9()) {
             // C9 does not support message with progress, so just show a warning message.
-            vscode.window
+            return vscode.window
                 .showWarningMessage(
                     this.buildInactiveWarningMessage(minutesUserWasInactive, minutesUntilShutdown),
                     'Cancel'
@@ -212,7 +215,7 @@ class Message implements vscode.Disposable {
                     this.currentWarningMessageTimeout!.cancel()
                 })
         } else {
-            void showMessageWithCancel(
+            return void showMessageWithCancel(
                 this.buildInactiveWarningMessage(minutesUserWasInactive, minutesUntilShutdown),
                 this.currentWarningMessageTimeout
             )
