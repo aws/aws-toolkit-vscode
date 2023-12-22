@@ -111,7 +111,7 @@ export async function activate(context: ExtContext): Promise<void> {
             if (
                 configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.includeSuggestionsWithCodeReferences')
             ) {
-                ReferenceLogViewProvider.instance.update()
+                await ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
                         .showInformationMessage(
@@ -120,7 +120,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         )
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                                void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
                 }
@@ -135,7 +135,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         )
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                                void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
                 }
@@ -149,7 +149,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     )
                     .then(selected => {
                         if (selected === CodeWhispererConstants.reloadWindow) {
-                            vscode.commands.executeCommand('workbench.action.reloadWindow')
+                            void vscode.commands.executeCommand('workbench.action.reloadWindow')
                         }
                     })
             }
@@ -201,7 +201,13 @@ export async function activate(context: ExtContext): Promise<void> {
         listCodeWhispererCommands.register(),
         // manual trigger
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
-            invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
+            invokeRecommendation(
+                vscode.window.activeTextEditor as vscode.TextEditor,
+                client,
+                await getConfigEntry()
+            ).catch(e => {
+                getLogger().error('invokeRecommendation failed: %s', (e as Error).message)
+            })
         }),
         // select customization
         selectCustomizationPrompt.register(),
@@ -248,7 +254,9 @@ export async function activate(context: ExtContext): Promise<void> {
     await auth.restore()
 
     if (auth.isConnectionExpired()) {
-        auth.showReauthenticatePrompt()
+        auth.showReauthenticatePrompt().catch(e => {
+            getLogger().error('showReauthenticatePrompt failed: %s', (e as Error).message)
+        })
     }
     if (auth.isValidEnterpriseSsoInUse()) {
         await notifyNewCustomizations()
@@ -440,7 +448,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
 export async function shutdown() {
     RecommendationHandler.instance.reportUserDecisions(-1)
-    CodeWhispererTracker.getTracker().shutdown()
+    await CodeWhispererTracker.getTracker().shutdown()
 }
 
 export async function enableDefaultConfigCloud9() {

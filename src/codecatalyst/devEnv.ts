@@ -194,7 +194,7 @@ class Message implements vscode.Disposable {
                 userIsActive()
             } else {
                 // The message timed out, show the updated message.
-                this.show(
+                void this.show(
                     minutesUserWasInactive + 1,
                     minutesUntilShutdown - 1,
                     userIsActive,

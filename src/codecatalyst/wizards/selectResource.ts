@@ -93,7 +93,9 @@ function createResourcePrompter<T extends codecatalyst.CodeCatalystResource>(
     })
 
     refresh.onClick = () => {
-        prompter.clearAndLoadItems(items)
+        prompter.clearAndLoadItems(items).catch(e => {
+            getLogger().error('clearAndLoadItems failed: %s', (e as Error).message)
+        })
     }
 
     return prompter
