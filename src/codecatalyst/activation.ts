@@ -111,7 +111,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         const devEnvActivity = await DevEnvActivity.instanceIfActivityTrackingEnabled(devEnvClient)
         if (shouldTrackUserActivity(maxInactivityMinutes) && devEnvActivity) {
             const inactivityMessage = new InactivityMessage()
-            void inactivityMessage.setupMessage(maxInactivityMinutes, devEnvActivity)
+            await inactivityMessage.setupMessage(maxInactivityMinutes, devEnvActivity)
 
             ctx.extensionContext.subscriptions.push(inactivityMessage, devEnvActivity)
         }

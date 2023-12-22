@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 import { isCloud9 } from '../shared/extensionUtilities'
+import { getLogger } from '../shared/logger'
 
 /** If we should be sending the dev env activity timestamps to track user activity */
 export function shouldTrackUserActivity(maxInactivityMinutes: DevEnvironment['inactivityTimeoutMinutes']): boolean {
@@ -48,7 +49,7 @@ export class InactivityMessage implements vscode.Disposable {
         })
 
         // Send an initial update to the dev env on startup
-        devEnvActivity.sendActivityUpdate()
+        await devEnvActivity.sendActivityUpdate()
     }
 
     private _setupMessage(
@@ -68,7 +69,12 @@ export class InactivityMessage implements vscode.Disposable {
 
         /** Wait until we are {@link InactivityMessage.firstMessageBeforeShutdown} minutes before shutdown. */
         this.#beforeMessageShown = globals.clock.setTimeout(() => {
-            const userIsActive = () => devEnvActivity.sendActivityUpdate()
+            const userIsActive = () => {
+                devEnvActivity.sendActivityUpdate().catch(e => {
+                    getLogger().error('DevEnvActivity.sendActivityUpdate failed: %s', (e as Error).message)
+                })
+            }
+
             const willRefreshOnStaleTimestamp = async () => await devEnvActivity.isLocalActivityStale()
 
             this.message().show(
@@ -138,7 +144,7 @@ class Message implements vscode.Disposable {
      *
      * @param minutesUserWasInactive total minutes user was inactive.
      * @param minutesUntilShutdown remaining minutes until shutdown.
-     * @param userIsActive function to call when we want to indicate the user is active
+     * @param userIsActive Call this to signal that user is active.
      * @param willRefreshOnStaleTimestamp sanity checks with the dev env api that the latest activity timestamp
      *                                    is the same as what this client has locally. If stale, the warning message
      *                                    will be refreshed asynchronously. Returns true if the message will be refreshed.
@@ -148,7 +154,7 @@ class Message implements vscode.Disposable {
     async show(
         minutesUserWasInactive: number,
         minutesUntilShutdown: number,
-        userIsActive: () => Promise<any> | any,
+        userIsActive: () => void,
         willRefreshOnStaleTimestamp: () => Promise<boolean>,
         relativeMinuteMillis: number
     ) {
