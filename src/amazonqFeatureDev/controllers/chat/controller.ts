@@ -59,10 +59,14 @@ export class FeatureDevController {
         this.contentController = new EditorContentController()
 
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
-            this.processUserChatMessage(data)
+            this.processUserChatMessage(data).catch(e => {
+                getLogger().error('processUserChatMessage failed: %s', (e as Error).message)
+            })
         })
         this.chatControllerMessageListeners.processChatItemVotedMessage.event(data => {
-            this.processChatItemVotedMessage(data.tabID, data.messageId, data.vote)
+            this.processChatItemVotedMessage(data.tabID, data.messageId, data.vote).catch(e => {
+                getLogger().error('processChatItemVotedMessage failed: %s', (e as Error).message)
+            })
         })
         this.chatControllerMessageListeners.followUpClicked.event(data => {
             switch (data.followUp.type) {

@@ -108,13 +108,18 @@ export class AsyncCloudFormationTemplateRegistry {
             }
         })
 
-        this.setupPromise.then(() => {
-            if (perf) {
-                perf.done()
+        this.setupPromise.then(
+            () => {
+                if (perf) {
+                    perf.done()
+                }
+                this.isSetup = true
+                cancelSetup.dispose()
+            },
+            e => {
+                getLogger().error('AsyncCloudFormationTemplateRegistry: setupPromise failed: %s', (e as Error).message)
             }
-            this.isSetup = true
-            cancelSetup.dispose()
-        })
+        )
 
         return this.setupPromise
     }

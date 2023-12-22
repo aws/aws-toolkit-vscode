@@ -173,7 +173,7 @@ export class RegionProvider {
         load().catch(err => {
             getLogger().error('Failure while loading Endpoints Manifest: %s', err)
 
-            vscode.window.showErrorMessage(
+            return vscode.window.showErrorMessage(
                 `${localize(
                     'AWS.error.endpoint.load.failure',
                     'The {0} Toolkit was unable to load endpoints data.',

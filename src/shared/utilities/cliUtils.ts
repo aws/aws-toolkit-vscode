@@ -101,7 +101,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
 
         if (selection !== install) {
             if (selection === manualInstall) {
-                openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
+                void openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
             }
             throw new CancellationError('user')
         }
@@ -140,14 +140,14 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
 
         result = 'Failed'
 
-        vscode.window
+        void vscode.window
             .showErrorMessage(
                 localize('AWS.cli.failedInstall', 'Installation of the {0} CLI failed.', cliToInstall.name),
                 manualInstall
             )
             .then(button => {
                 if (button === manualInstall) {
-                    openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
+                    void openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
                 }
             })
 
@@ -156,13 +156,18 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
         if (tempDir) {
             getLogger().info('Cleaning up installer...')
             // nonblocking: use `then`
-            tryRemoveFolder(tempDir).then(success => {
-                if (success) {
-                    getLogger().info('Removed installer.')
-                } else {
-                    getLogger().warn(`Failed to clean up installer in temp directory: ${tempDir}`)
+            tryRemoveFolder(tempDir).then(
+                success => {
+                    if (success) {
+                        getLogger().info('Removed installer.')
+                    } else {
+                        getLogger().warn(`installCli: failed to clean up temp directory: ${tempDir}`)
+                    }
+                },
+                e => {
+                    getLogger().error('installCli: tryRemoveFolder failed: %s', (e as Error).message)
                 }
-            })
+            )
         }
 
         telemetry.aws_toolInstallation.emit({ result, toolId: cli })

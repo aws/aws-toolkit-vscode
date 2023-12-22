@@ -13,6 +13,7 @@ import * as vscode from 'vscode'
 import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
+import { GlobalState } from './globalState'
 
 const defaultEncoding: BufferEncoding = 'utf8'
 
@@ -272,9 +273,9 @@ export async function setDefaultDownloadPath(downloadPath: string) {
     try {
         const savePath = await stat(downloadPath)
         if (savePath.isDirectory()) {
-            globals.context.globalState.update('aws.downloadPath', downloadPath)
+            GlobalState.instance.tryUpdate('aws.downloadPath', downloadPath)
         } else {
-            globals.context.globalState.update('aws.downloadPath', path.dirname(downloadPath))
+            GlobalState.instance.tryUpdate('aws.downloadPath', path.dirname(downloadPath))
         }
     } catch (err) {
         getLogger().error('Error while setting "aws.downloadPath"', err as Error)

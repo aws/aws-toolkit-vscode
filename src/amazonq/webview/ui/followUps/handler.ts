@@ -60,7 +60,7 @@ export class FollowUpInteractionHandler {
             this.tabsStorage.resetTabTimer(tabID)
 
             if (followUp.type !== undefined && followUp.type === 'init-prompt') {
-                this.connector.requestGenerativeAIAnswer(tabID, {
+                void this.connector.requestGenerativeAIAnswer(tabID, {
                     chatMessage: followUp.prompt,
                 })
                 return

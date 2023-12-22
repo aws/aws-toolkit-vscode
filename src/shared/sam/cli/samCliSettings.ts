@@ -93,7 +93,7 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
         try {
             return this.get('manuallySelectedBuckets')
         } catch (error) {
-            this.delete('manuallySelectedBuckets')
+            void this.delete('manuallySelectedBuckets')
         }
     }
 
