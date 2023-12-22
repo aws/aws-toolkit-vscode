@@ -41,7 +41,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         uriHandlers.register(ctx.uriHandler, CodeCatalystCommands.declared),
         ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands)),
         Commands.register('aws.codecatalyst.manageConnections', () => {
-            showManageConnections.execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
+            return showManageConnections.execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
         }),
         Commands.register('aws.codecatalyst.signout', () => {
             return authProvider.secondaryAuth.deleteConnection()
@@ -49,11 +49,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
     )
 
     if (!isCloud9()) {
-        GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then(disposable => {
+        await GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then(disposable => {
             ctx.extensionContext.subscriptions.push(disposable)
         })
 
-        GitExtension.instance
+        await GitExtension.instance
             .registerCredentialsProvider({
                 getCredentials(uri: vscode.Uri) {
                     if (uri.authority.endsWith(getCodeCatalystConfig().gitHostname)) {
@@ -83,7 +83,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         if (!isCloud9() && thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
             // Prevent Toolkit from reconnecting to a "non-vscode" devenv by actively closing it.
             // Can happen if devenv is switched to ides="cloud9", etc.
-            vscode.commands.executeCommand('workbench.action.remote.close')
+            void vscode.commands.executeCommand('workbench.action.remote.close')
             return
         }
 
@@ -97,11 +97,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 getIdeProperties().company
             )
             const openDevEnvSettings = localize('AWS.codecatalyst.openDevEnvSettings', 'Open Dev Environment Settings')
-            vscode.window.showInformationMessage(message, dontShow, openDevEnvSettings).then(selection => {
+            void vscode.window.showInformationMessage(message, dontShow, openDevEnvSettings).then(async selection => {
                 if (selection === dontShow) {
-                    settings.disablePrompt('remoteConnected')
+                    await settings.disablePrompt('remoteConnected')
                 } else if (selection === openDevEnvSettings) {
-                    CodeCatalystCommands.declared.openDevEnvSettings.execute()
+                    await CodeCatalystCommands.declared.openDevEnvSettings.execute()
                 }
             })
         }
@@ -111,7 +111,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         const devEnvActivity = await DevEnvActivity.instanceIfActivityTrackingEnabled(devEnvClient)
         if (shouldTrackUserActivity(maxInactivityMinutes) && devEnvActivity) {
             const inactivityMessage = new InactivityMessage()
-            inactivityMessage.setupMessage(maxInactivityMinutes, devEnvActivity)
+            void inactivityMessage.setupMessage(maxInactivityMinutes, devEnvActivity)
 
             ctx.extensionContext.subscriptions.push(inactivityMessage, devEnvActivity)
         }

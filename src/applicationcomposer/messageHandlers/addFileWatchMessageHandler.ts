@@ -35,7 +35,7 @@ export async function addFileWatchMessageHandler(request: AddFileWatchRequestMes
                     fileContents: fileContents,
                 }
 
-                context.panel.webview.postMessage(fileChangedMessage)
+                await context.panel.webview.postMessage(fileChangedMessage)
                 context.fileWatches[filePath] = { fileContents: fileContents }
             }
         })
@@ -56,5 +56,5 @@ export async function addFileWatchMessageHandler(request: AddFileWatchRequestMes
         }
     }
 
-    context.panel.webview.postMessage(addFileWatchResponseMessage)
+    await context.panel.webview.postMessage(addFileWatchResponseMessage)
 }

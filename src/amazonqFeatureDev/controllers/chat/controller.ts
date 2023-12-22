@@ -71,17 +71,14 @@ export class FeatureDevController {
         this.chatControllerMessageListeners.followUpClicked.event(data => {
             switch (data.followUp.type) {
                 case FollowUpTypes.Retry:
-                    this.retryRequest(data)
-                    break
+                    return this.retryRequest(data)
                 case FollowUpTypes.ModifyDefaultSourceFolder:
-                    this.modifyDefaultSourceFolder(data)
-                    break
+                    return this.modifyDefaultSourceFolder(data)
                 case FollowUpTypes.DevExamples:
                     this.initialExamples(data)
                     break
                 case FollowUpTypes.NewPlan:
-                    this.newPlan(data)
-                    break
+                    return this.newPlan(data)
                 case FollowUpTypes.SendFeedback:
                     this.sendFeedback()
                     break
@@ -91,10 +88,10 @@ export class FeatureDevController {
             this.openDiff(data)
         })
         this.chatControllerMessageListeners.stopResponse.event(data => {
-            this.stopResponse(data)
+            return this.stopResponse(data)
         })
         this.chatControllerMessageListeners.tabOpened.event(data => {
-            this.tabOpened(data)
+            return this.tabOpened(data)
         })
         this.chatControllerMessageListeners.tabClosed.event(data => {
             this.tabClosed(data)
@@ -157,7 +154,7 @@ export class FeatureDevController {
 
             const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
-                this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
                 return
             }
@@ -372,10 +369,10 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         if (message.deleted) {
             const fileUri = this.getOriginalFileUri(message, session)
             const basename = path.basename(message.filePath)
-            vscode.commands.executeCommand('vscode.open', fileUri, {}, `${basename} (Deleted)`)
+            await vscode.commands.executeCommand('vscode.open', fileUri, {}, `${basename} (Deleted)`)
         } else {
             const { left, right } = this.getFileDiffUris(message, session)
-            vscode.commands.executeCommand('vscode.diff', left, right)
+            await vscode.commands.executeCommand('vscode.diff', left, right)
         }
     }
 
@@ -447,7 +444,7 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
     }
 
     private sendFeedback() {
-        submitFeedback.execute(placeholder, 'Amazon Q')
+        void submitFeedback.execute(placeholder, 'Amazon Q')
     }
 
     private processLink(message: any) {

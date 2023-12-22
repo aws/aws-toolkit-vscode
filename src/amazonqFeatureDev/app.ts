@@ -67,6 +67,6 @@ export function init(appContext: AmazonQAppInitContext) {
     }, 500)
 
     AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(() => {
-        debouncedEvent()
+        return debouncedEvent()
     })
 }

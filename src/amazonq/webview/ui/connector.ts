@@ -146,9 +146,9 @@ export class Connector {
         }
 
         if (messageData.sender === 'CWChat') {
-            this.cwChatConnector.handleMessageReceive(messageData)
+            await this.cwChatConnector.handleMessageReceive(messageData)
         } else if (messageData.sender === 'featureDevChat') {
-            this.featureDevChatConnector.handleMessageReceive(messageData)
+            await this.featureDevChatConnector.handleMessageReceive(messageData)
         }
     }
 
