@@ -174,7 +174,9 @@ export async function showQuickStartWebview(context: vscode.ExtensionContext): P
         const view = await createQuickStartWebview(context)
         view.reveal()
     } catch {
-        vscode.window.showErrorMessage(localize('AWS.command.quickStart.error', 'Error while loading Quick Start page'))
+        await vscode.window.showErrorMessage(
+            localize('AWS.command.quickStart.error', 'Error while loading Quick Start page')
+        )
     }
 }
 
@@ -261,7 +263,9 @@ export function isDifferentVersion(context: vscode.ExtensionContext, currVersion
  * @param context VS Code Extension Context
  */
 export function setMostRecentVersion(context: vscode.ExtensionContext): void {
-    context.globalState.update(mostRecentVersionKey, extensionVersion)
+    context.globalState.update(mostRecentVersionKey, extensionVersion).then(undefined, e => {
+        getLogger().error('globalState.update() failed: %s', (e as Error).message)
+    })
 }
 
 /**
@@ -280,7 +284,7 @@ async function promptQuickstart(): Promise<void> {
         view
     )
     if (prompt === view) {
-        vscode.commands.executeCommand('aws.quickStart')
+        await vscode.commands.executeCommand('aws.quickStart')
     }
 }
 
@@ -301,7 +305,7 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
     }
     const version = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
     if (version === extensionAlphaVersion) {
-        vscode.window.showWarningMessage(
+        void vscode.window.showWarningMessage(
             localize(
                 'AWS.startup.toastIfAlpha',
                 '{0} Toolkit PREVIEW. (To get the latest STABLE version, uninstall this version.)',
@@ -314,7 +318,7 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
             if (!isCloud9()) {
-                promptQuickstart()
+                void promptQuickstart()
             }
         }
     } catch (err) {
@@ -331,7 +335,7 @@ export async function aboutToolkit(): Promise<void> {
     const copyButtonLabel = localize('AWS.message.prompt.copyButtonLabel', 'Copy')
     const result = await vscode.window.showInformationMessage(toolkitEnvDetails, { modal: true }, copyButtonLabel)
     if (result === copyButtonLabel) {
-        vscode.env.clipboard.writeText(toolkitEnvDetails)
+        void vscode.env.clipboard.writeText(toolkitEnvDetails)
     }
 }
 

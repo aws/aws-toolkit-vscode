@@ -21,9 +21,9 @@ export abstract class AWSTreeNodeBase extends TreeItem {
 
     public refresh(): void {
         if (isCloud9()) {
-            commands.executeCommand('aws.refreshAwsExplorer', true)
+            void commands.executeCommand('aws.refreshAwsExplorer', true)
         } else {
-            commands.executeCommand('aws.refreshAwsExplorerNode', this)
+            void commands.executeCommand('aws.refreshAwsExplorerNode', this)
         }
     }
 }

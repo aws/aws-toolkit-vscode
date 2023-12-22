@@ -38,7 +38,7 @@ export async function createFromEcr(
         }
 
         await client.createService(result)
-        vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
+        await vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
         telemetryResult = 'Succeeded'
     } finally {
         telemetry.apprunner_createService.emit({

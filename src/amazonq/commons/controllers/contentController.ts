@@ -4,6 +4,7 @@
  */
 
 import { Position, TextEditor, window } from 'vscode'
+import { getLogger } from '../../../shared/logger'
 
 export class EditorContentController {
     public insertTextAtCursorPosition(
@@ -17,11 +18,16 @@ export class EditorContentController {
                 .edit(editBuilder => {
                     editBuilder.insert(cursorStart, text)
                 })
-                .then(appliedEdits => {
-                    if (appliedEdits) {
-                        trackCodeEdit(editor, cursorStart)
+                .then(
+                    appliedEdits => {
+                        if (appliedEdits) {
+                            trackCodeEdit(editor, cursorStart)
+                        }
+                    },
+                    e => {
+                        getLogger().error('TextEditor.edit failed: %s', (e as Error).message)
                     }
-                })
+                )
         }
     }
 }

@@ -317,7 +317,7 @@ export async function makePythonCodeLensProvider(configuration: SamCliSettings):
                 return []
             }
             // Try to activate the Python Extension before requesting symbols from a python file
-            activateExtension(VSCODE_EXTENSION_ID.python)
+            await activateExtension(VSCODE_EXTENSION_ID.python)
             if (token.isCancellationRequested) {
                 return []
             }

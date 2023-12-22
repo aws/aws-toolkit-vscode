@@ -15,7 +15,7 @@ import { onceChanged } from '../shared/utilities/functionUtils'
 
 /** Shows an error message unless it is the same as the last one shown. */
 const warnOnce = onceChanged((s: string, url: string) => {
-    showMessageWithUrl(s, url, undefined, 'error')
+    void showMessageWithUrl(s, url, undefined, 'error')
 })
 
 export const scopesCodeCatalyst = ['codecatalyst:read_write']

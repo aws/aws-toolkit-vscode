@@ -20,18 +20,18 @@ export async function initialize(
     awsContext: AwsContext,
     loginManager: LoginManager
 ): Promise<void> {
-    Auth.instance.onDidChangeActiveConnection(conn => {
+    Auth.instance.onDidChangeActiveConnection(async conn => {
         // This logic needs to be moved to `Auth.useConnection` to correctly record `passive`
         if (conn?.type === 'iam' && conn.state === 'valid') {
-            loginManager.login({ passive: true, providerId: fromString(conn.id) })
+            await loginManager.login({ passive: true, providerId: fromString(conn.id) })
         } else {
-            loginManager.logout()
+            await loginManager.logout()
         }
     })
 
     extensionContext.subscriptions.push(showManageConnections.register(extensionContext))
 
-    showManageConnectionsOnStartup()
+    await showManageConnectionsOnStartup()
 }
 
 /**
@@ -53,5 +53,5 @@ async function showManageConnectionsOnStartup() {
     }
 
     // Show connection management to user
-    showManageConnections.execute(placeholder, 'firstStartup')
+    await showManageConnections.execute(placeholder, 'firstStartup')
 }

@@ -26,10 +26,10 @@ export class AuthController {
     }
 
     private handleFullAuth() {
-        showManageCwConnections.execute(placeholder, amazonQChatSource)
+        void showManageCwConnections.execute(placeholder, amazonQChatSource)
     }
 
     private handleReAuth() {
-        reconnect.execute(placeholder, amazonQChatSource, true)
+        void reconnect.execute(placeholder, amazonQChatSource, true)
     }
 }

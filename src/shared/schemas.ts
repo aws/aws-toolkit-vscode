@@ -81,7 +81,11 @@ export class SchemaService {
     }
 
     public async start(): Promise<void> {
-        getDefaultSchemas().then(schemas => (this.schemas = schemas))
+        getDefaultSchemas()
+            .then(schemas => (this.schemas = schemas))
+            .catch(e => {
+                getLogger().error('getDefaultSchemas failed: %s', (e as Error).message)
+            })
         await this.startTimer()
     }
 
@@ -94,7 +98,9 @@ export class SchemaService {
     public registerMapping(mapping: SchemaMapping, flush?: boolean): void {
         this.updateQueue.push(mapping)
         if (flush === true) {
-            this.processUpdates()
+            this.processUpdates().catch(e => {
+                getLogger().error('SchemaService: processUpdates() failed: %s', (e as Error).message)
+            })
         }
     }
 

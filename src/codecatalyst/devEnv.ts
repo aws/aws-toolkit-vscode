@@ -206,7 +206,7 @@ class Message implements vscode.Disposable {
                     this.currentWarningMessageTimeout!.cancel()
                 })
         } else {
-            showMessageWithCancel(
+            void showMessageWithCancel(
                 this.buildInactiveWarningMessage(minutesUserWasInactive, minutesUntilShutdown),
                 this.currentWarningMessageTimeout
             )

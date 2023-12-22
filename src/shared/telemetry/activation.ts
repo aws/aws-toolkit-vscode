@@ -92,7 +92,7 @@ function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
     )
 
     // Don't wait for a response
-    vscode.window
+    void vscode.window
         .showInformationMessage(telemetryNoticeText, noticeResponseViewSettings, noticeResponseOk)
         .then(async response => handleTelemetryNoticeResponse(response, extensionContext))
 }
@@ -109,12 +109,12 @@ export async function handleTelemetryNoticeResponse(
             return
         }
 
-        setHasUserSeenTelemetryNotice(extensionContext)
+        await setHasUserSeenTelemetryNotice(extensionContext)
 
         // noticeResponseOk is a no-op
 
         if (response === noticeResponseViewSettings) {
-            openSettings('aws.telemetry')
+            await openSettings('aws.telemetry')
         }
     } catch (err) {
         getLogger().error('Error while handling response from telemetry notice: %O', err as Error)
