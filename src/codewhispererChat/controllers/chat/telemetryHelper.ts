@@ -8,9 +8,9 @@ import {
     AmazonqAddMessage,
     AmazonqInteractWithMessage,
     CwsprChatCommandType,
+    CwsprChatInteractionType,
     CwsprChatTriggerInteraction,
     CwsprChatUserIntent,
-    MetricBase,
     Result,
     telemetry,
 } from '../../../shared/telemetry/telemetry'
@@ -31,28 +31,11 @@ import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents
 import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger'
 import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
-import CodeWhispererUserClient, { Dimension } from '../../../codewhisperer/client/codewhispereruserclient'
 import { isAwsError } from '../../../shared/errors'
+import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewhispereruserclient'
+import { supportedLanguagesList } from '../chat/chatRequest/converter'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
-
-export function mapToClientTelemetryEvent<T extends MetricBase>(
-    name: string,
-    event: T
-): CodeWhispererUserClient.SendTelemetryEventRequest {
-    return {
-        telemetryEvent: {
-            metricData: {
-                metricName: name,
-                metricValue: 1,
-                timestamp: new Date(Date.now()),
-                dimensions: Object.keys(event).map(
-                    (key): Dimension => ({ name: key, value: event[key as keyof T]?.toString() })
-                ),
-            },
-        },
-    }
-}
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -145,7 +128,7 @@ export class CWCTelemetryHelper {
         this.recordFeedbackResult('Succeeded')
     }
 
-    public recordFeedbackResult(feedbackResult: Result) {
+    private recordFeedbackResult(feedbackResult: Result) {
         telemetry.feedback_result.emit({ result: feedbackResult })
     }
 
@@ -236,12 +219,44 @@ export class CWCTelemetryHelper {
         telemetry.amazonq_interactWithMessage.emit(event)
 
         codeWhispererClient
-            .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_interactWithMessage', event))
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    chatInteractWithMessageEvent: {
+                        conversationId: event.cwsprChatConversationId,
+                        messageId: event.cwsprChatMessageId,
+                        interactionType: this.getCWClientTelemetryInteractionType(event.cwsprChatInteractionType),
+                        interactionTarget: event.cwsprChatInteractionTarget,
+                        acceptedCharacterCount: event.cwsprChatAcceptedCharactersLength,
+                        acceptedSnippetHasReference: false,
+                    },
+                },
+            })
             .then()
             .catch(logSendTelemetryEventFailure)
     }
 
-    public getTriggerInteractionFromTriggerEvent(triggerEvent: TriggerEvent | undefined): CwsprChatTriggerInteraction {
+    private getCWClientTelemetryInteractionType(type: CwsprChatInteractionType): ChatMessageInteractionType {
+        switch (type) {
+            case 'copySnippet':
+                return 'COPY_SNIPPET'
+            case 'insertAtCursor':
+                return 'INSERT_AT_CURSOR'
+            case 'clickFollowUp':
+                return 'CLICK_FOLLOW_UP'
+            case 'clickLink':
+                return 'CLICK_LINK'
+            case 'clickBodyLink':
+                return 'CLICK_BODY_LINK'
+            case 'upvote':
+                return 'UPVOTE'
+            case 'downvote':
+                return 'DOWNVOTE'
+            default:
+                return 'UNKNOWN'
+        }
+    }
+
+    private getTriggerInteractionFromTriggerEvent(triggerEvent: TriggerEvent | undefined): CwsprChatTriggerInteraction {
         switch (triggerEvent?.type) {
             case 'editor_context_command':
                 return triggerEvent.command?.triggerType === 'keybinding' ? 'hotkeys' : 'contextMenu'
@@ -291,7 +306,7 @@ export class CWCTelemetryHelper {
             cwsprChatReferencesCount: message.codeReferenceCount,
             cwsprChatFollowUpCount: message.followUpCount,
             cwsprChatTimeToFirstChunk: this.getResponseStreamTimeToFirstChunk(message.tabID),
-            cwsprChatTimeBetweenChunks: '', // this.getResponseStreamTimeBetweenChunks(message.tabID), //TODO: allow '[', ']' and ',' chars
+            cwsprChatTimeBetweenChunks: JSON.stringify(this.getResponseStreamTimeBetweenChunks(message.tabID)),
             cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatResponseLength: message.messageLength,
@@ -299,9 +314,26 @@ export class CWCTelemetryHelper {
         }
 
         telemetry.amazonq_addMessage.emit(event)
-
         codeWhispererClient
-            .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_addMessage', event))
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    chatAddMessageEvent: {
+                        conversationId: event.cwsprChatConversationId,
+                        messageId: event.cwsprChatMessageId,
+                        userIntent: triggerPayload.userIntent,
+                        hasCodeSnippet: event.cwsprChatHasCodeSnippet,
+                        programmingLanguage: this.isProgrammingLanguageSupported(triggerPayload.fileLanguage)
+                            ? { languageName: triggerPayload.fileLanguage as string }
+                            : undefined,
+                        activeEditorTotalCharacters: event.cwsprChatActiveEditorTotalCharacters,
+                        timeToFirstChunkMilliseconds: event.cwsprChatTimeToFirstChunk,
+                        timeBetweenChunks: this.getResponseStreamTimeBetweenChunks(message.tabID),
+                        fullResponselatency: event.cwsprChatFullResponseLatency,
+                        requestLength: event.cwsprChatRequestLength,
+                        responseLength: event.cwsprChatResponseLength,
+                    },
+                },
+            })
             .then()
             .catch(logSendTelemetryEventFailure)
     }
@@ -359,21 +391,20 @@ export class CWCTelemetryHelper {
         return Math.round(chunkTimes[1] - chunkTimes[0])
     }
 
-    // private getResponseStreamTimeBetweenChunks(tabID: string): string {
-    //     try {
-    //         const chunkDeltaTimes: number[] = []
-    //         const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0]
-    //         for (let idx = 0; idx < chunkTimes.length - 1; idx++) {
-    //             chunkDeltaTimes.push(Math.round(chunkTimes[idx + 1] - chunkTimes[idx]))
-    //         }
+    private getResponseStreamTimeBetweenChunks(tabID: string): number[] {
+        try {
+            const chunkDeltaTimes: number[] = []
+            const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0]
+            for (let idx = 0; idx < chunkTimes.length - 1; idx++) {
+                chunkDeltaTimes.push(Math.round(chunkTimes[idx + 1] - chunkTimes[idx]))
+            }
 
-    //         const trimmed = JSON.stringify(chunkDeltaTimes).slice(0, 2_000)
-    //         const fixed = trimmed.endsWith(',') ? trimmed.slice(0, -1) : trimmed
-    //         return fixed.endsWith(']') ? fixed : `${fixed}]`
-    //     } catch (e) {
-    //         return '[-1]'
-    //     }
-    // }
+            return chunkDeltaTimes.slice(0, 100)
+        } catch (e) {
+            getLogger().debug(`Failed to get response time between chunks, message: ${e}`)
+            return []
+        }
+    }
 
     public setResponseStreamTotalTime(tabID: string) {
         const totalTime = performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
@@ -382,5 +413,13 @@ export class CWCTelemetryHelper {
 
     public getConversationId(tabID: string): string | undefined {
         return this.sessionStorage.getSession(tabID).sessionIdentifier
+    }
+
+    private isProgrammingLanguageSupported(programmingLanguage: string | undefined) {
+        return (
+            programmingLanguage !== undefined &&
+            programmingLanguage !== '' &&
+            supportedLanguagesList.includes(programmingLanguage)
+        )
     }
 }
