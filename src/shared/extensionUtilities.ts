@@ -16,6 +16,8 @@ import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
 import { DevSettings } from './settings'
+import { SamCliSettings } from './sam/cli/samCliSettings'
+import { SamCliInfoInvocation } from './sam/cli/samCliInfo'
 
 const localize = nls.loadMessageBundle()
 
@@ -331,7 +333,7 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
  * Shows info about the extension and its environment.
  */
 export async function aboutToolkit(): Promise<void> {
-    const toolkitEnvDetails = getToolkitEnvironmentDetails()
+    const toolkitEnvDetails = await getToolkitEnvironmentDetails()
     const copyButtonLabel = localize('AWS.message.prompt.copyButtonLabel', 'Copy')
     const result = await vscode.window.showInformationMessage(toolkitEnvDetails, { modal: true }, copyButtonLabel)
     if (result === copyButtonLabel) {
@@ -343,17 +345,25 @@ export async function aboutToolkit(): Promise<void> {
  * Returns a string that includes the OS, AWS Toolkit,
  * and VS Code versions.
  */
-export function getToolkitEnvironmentDetails(): string {
+export async function getToolkitEnvironmentDetails(): Promise<string> {
     const osType = os.type()
     const osArch = os.arch()
     const osRelease = os.release()
     const vsCodeVersion = vscode.version
     const node = process.versions.node ? `node: ${process.versions.node}\n` : 'node: ?\n'
     const electron = process.versions.electron ? `electron: ${process.versions.electron}\n` : ''
+    const sam = await SamCliSettings.instance.getOrDetectSamCli()
+
+    let samVersion: string | undefined
+    if (sam?.path) {
+        try {
+            samVersion = (await new SamCliInfoInvocation(sam.path).execute()).version
+        } catch {}
+    }
 
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS: {0} {1} {2}\n{3} extension host:  {4}\n{5} Toolkit:  {6}\n{7}{8}',
+        'OS: {0} {1} {2}\n{3} extension host:  {4}\n{5} Toolkit:  {6}\nSAM CLI: {7}\n{8}{9}',
         osType,
         osArch,
         osRelease,
@@ -361,6 +371,7 @@ export function getToolkitEnvironmentDetails(): string {
         vsCodeVersion,
         getIdeProperties().company,
         extensionVersion,
+        samVersion ?? '?',
         node,
         electron
     )

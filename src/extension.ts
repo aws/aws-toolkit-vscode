@@ -125,7 +125,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const credentialsStore = new CredentialsStore()
         const loginManager = new LoginManager(globals.awsContext, credentialsStore)
 
-        const toolkitEnvDetails = getToolkitEnvironmentDetails()
+        const toolkitEnvDetails = await getToolkitEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
         toolkitEnvDetails
             .split(/\r?\n/)
