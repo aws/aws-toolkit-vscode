@@ -66,4 +66,16 @@ describe('transformByQ', async function () {
             })
         )
     })
+
+    it('WHEN createUploadUrl then URL uses HTTPS and sets 60 second expiration', async function () {
+        const sha256 = getSha256(zippedCodePath)
+        const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
+            contentChecksum: sha256,
+            contentChecksumType: CodeWhispererConstants.contentChecksumType,
+            uploadIntent: CodeWhispererConstants.uploadIntent,
+        })
+        const uploadUrl = response.uploadUrl
+        const usesHttpsAndExpiresAfter60Seconds = uploadUrl.includes('https') && uploadUrl.includes('X-Amz-Expires=60')
+        assert.strictEqual(usesHttpsAndExpiresAfter60Seconds, true)
+    })
 })
