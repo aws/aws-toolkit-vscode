@@ -91,6 +91,158 @@ describe('getSelectionInsideExtendedCodeBlock', () => {
             result
         )
     })
+    it('returns adjusted selection for one-line selection', () => {
+        // Stub originSelection and extendedCodeBlockRange
+        const originSelection = {
+            start: {
+                line: 10,
+                character: 5,
+            },
+            end: {
+                line: 10,
+                character: 50,
+            },
+        }
+
+        const extendedCodeBlockRange = {
+            start: {
+                line: 10,
+                character: 4,
+            },
+            end: {
+                line: 10,
+                character: 51,
+            },
+        }
+
+        const focusAreaContextExtractor = new FocusAreaContextExtractor()
+        const method = Reflect.get(focusAreaContextExtractor, 'getSelectionInsideExtendedCodeBlock')
+
+        const result = method.call(focusAreaContextExtractor, originSelection, extendedCodeBlockRange)
+
+        checkIfExpectedRangeEqualActualRange(
+            {
+                start: {
+                    line: 0,
+                    character: 1,
+                },
+                end: {
+                    line: 0,
+                    character: 46,
+                },
+            },
+            result
+        )
+    })
+})
+
+describe('trimRangeAccordingToLimits', () => {
+    it('cut characters from the last line', () => {
+        // Arrange
+        const document: TextDocument = createMockDocument('01234567\n0123456789\n0123456')
+        const range = {
+            start: {
+                line: 0,
+                character: 7,
+            },
+            end: {
+                line: 1,
+                character: 10,
+            },
+        }
+        const limit = 5
+
+        // Act
+        const focusAreaContextExtractor = new FocusAreaContextExtractor()
+        const method = Reflect.get(focusAreaContextExtractor, 'trimRangeAccordingToLimits')
+        const result = method.call(focusAreaContextExtractor, document, range, limit)
+
+        // Assert
+        checkIfExpectedRangeEqualActualRange(
+            {
+                start: {
+                    line: 0,
+                    character: 7,
+                },
+                end: {
+                    line: 1,
+                    character: 3,
+                },
+            },
+            result
+        )
+    })
+    it('cut the last line', () => {
+        // Arrange
+        const document: TextDocument = createMockDocument('01234567\n0123456789\n0123456')
+        const range = {
+            start: {
+                line: 0,
+                character: 0,
+            },
+            end: {
+                line: 1,
+                character: 10,
+            },
+        }
+        const limit = 9
+
+        // Act
+        const focusAreaContextExtractor = new FocusAreaContextExtractor()
+        const method = Reflect.get(focusAreaContextExtractor, 'trimRangeAccordingToLimits')
+        const result = method.call(focusAreaContextExtractor, document, range, limit)
+
+        // Assert
+        checkIfExpectedRangeEqualActualRange(
+            {
+                start: {
+                    line: 0,
+                    character: 0,
+                },
+                end: {
+                    line: 1,
+                    character: 0,
+                },
+            },
+            result
+        )
+    })
+
+    it('cut characters from the first line', () => {
+        // Arrange
+        const document: TextDocument = createMockDocument('01234567\n0123456789\n0123456')
+        const range = {
+            start: {
+                line: 0,
+                character: 0,
+            },
+            end: {
+                line: 1,
+                character: 10,
+            },
+        }
+        const limit = 5
+
+        // Act
+        const focusAreaContextExtractor = new FocusAreaContextExtractor()
+        const method = Reflect.get(focusAreaContextExtractor, 'trimRangeAccordingToLimits')
+        const result = method.call(focusAreaContextExtractor, document, range, limit)
+
+        // Assert
+        checkIfExpectedRangeEqualActualRange(
+            {
+                start: {
+                    line: 0,
+                    character: 0,
+                },
+                end: {
+                    line: 0,
+                    character: 4,
+                },
+            },
+            result
+        )
+    })
 })
 
 describe('getExtendedCodeBlockRange', () => {

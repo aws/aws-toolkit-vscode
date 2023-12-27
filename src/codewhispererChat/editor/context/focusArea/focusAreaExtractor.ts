@@ -44,7 +44,7 @@ export class FocusAreaContextExtractor {
         const [simpleNames] = this.prepareSimpleNames(names)
         const [usedFullyQualifiedNames] = this.prepareFqns(names)
 
-        importantRange = this.trimRangeAccordingToLimits(editor.document, importantRange)
+        importantRange = this.trimRangeAccordingToLimits(editor.document, importantRange, focusAreaCharLimit)
         const codeBlock = this.getRangeText(editor.document, importantRange)
         const extendedCodeBlockRange = this.getExtendedCodeBlockRange(
             editor.document,
@@ -84,18 +84,18 @@ export class FocusAreaContextExtractor {
 
         return new Selection(
             originSelection.start.line - extendedCodeBlockRange.start.line,
-            originSelection.start.character,
+            originSelection.start.line === extendedCodeBlockRange.start.line
+                ? originSelection.start.character - extendedCodeBlockRange.start.character
+                : originSelection.start.character,
             originSelection.end.line - extendedCodeBlockRange.start.line,
-            originSelection.end.character
+            originSelection.end.line === extendedCodeBlockRange.end.line
+                ? originSelection.end.character - extendedCodeBlockRange.start.character
+                : originSelection.end.character
         )
     }
 
     // Function to extend the code block range
-    private getExtendedCodeBlockRange(
-        document: TextDocument,
-        importantRange: Range,
-        focusAreaCharLimit: number
-    ): Range {
+    private getExtendedCodeBlockRange(document: TextDocument, importantRange: Range, charLimit: number): Range {
         // Flag to add line before or after
         let addLineBefore = true
         // Loop while range can still be extended
@@ -154,7 +154,7 @@ export class FocusAreaContextExtractor {
                 continue
             }
             // Check character length of tmp range
-            if (this.getRangeText(document, tmpRange).length >= focusAreaCharLimit) {
+            if (this.getRangeText(document, tmpRange).length >= charLimit) {
                 // Break loop if too long
                 break
             }
@@ -166,25 +166,54 @@ export class FocusAreaContextExtractor {
         return importantRange
     }
 
-    private trimRangeAccordingToLimits(document: TextDocument, importantRange: Range): Range {
+    private trimRangeAccordingToLimits(document: TextDocument, range: Range, charLimit: number): Range {
         while (
-            this.getRangeText(document, importantRange).length > focusAreaCharLimit &&
-            (importantRange.start.line !== importantRange.end.line ||
-                (importantRange.start.line === importantRange.end.line &&
-                    importantRange.start.character !== importantRange.end.character))
+            this.getRangeText(document, range).length > charLimit &&
+            (range.start.line !== range.end.line ||
+                (range.start.line === range.end.line && range.start.character !== range.end.character))
         ) {
-            if (importantRange.end.line === 0) {
-                break
+            if (range.end.line === range.start.line) {
+                range = new Range(
+                    range.start.line,
+                    range.start.character,
+                    range.start.line,
+                    range.start.character +
+                        charLimit -
+                        this.getRangeText(
+                            document,
+                            new Range(range.start.line, range.start.character, range.start.line, range.start.character)
+                        ).length -
+                        1
+                )
+            } else {
+                const selectionSizeWithoutLastLine = this.getRangeText(
+                    document,
+                    new Range(
+                        range.start.line,
+                        range.start.character,
+                        range.end.line - 1,
+                        document.lineAt(range.end.line - 1).range.end.character
+                    )
+                ).length
+                if (selectionSizeWithoutLastLine > charLimit) {
+                    range = new Range(
+                        range.start.line,
+                        range.start.character,
+                        range.end.line - 1,
+                        document.lineAt(range.end.line - 1).range.end.character
+                    )
+                } else {
+                    range = new Range(
+                        range.start.line,
+                        range.start.character,
+                        range.end.line,
+                        charLimit - selectionSizeWithoutLastLine - 1
+                    )
+                }
             }
-            importantRange = new Range(
-                importantRange.start.line,
-                importantRange.start.character,
-                importantRange.end.line - 1,
-                document.lineAt(importantRange.end.line - 1).range.end.character
-            )
         }
 
-        return importantRange
+        return range
     }
 
     private getRangeText(document: TextDocument, range: Range): string {
