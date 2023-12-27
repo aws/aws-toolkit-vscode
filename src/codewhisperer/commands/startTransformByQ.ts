@@ -27,7 +27,7 @@ import { QuickPickItem } from 'vscode'
 import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
-import * as he from 'he'
+import { encodeHTML } from '../../shared/utilities/textUtilities'
 import {
     CodeTransformJavaSourceVersionsAllowed,
     CodeTransformJavaTargetVersionsAllowed,
@@ -94,7 +94,7 @@ async function pickProject(
         shouldResume: () => Promise.resolve(false),
     })
     state.project = pick
-    transformByQState.setProjectName(he.encode(state.project.label)) // encode to avoid HTML injection risk
+    transformByQState.setProjectName(encodeHTML(state.project.label)) // encode to avoid HTML injection risk
 }
 
 export async function startTransformByQ() {
@@ -195,7 +195,7 @@ export async function startTransformByQ() {
             getLogger().error(errorMessage, error)
             throw new ToolkitError(errorMessage, { cause: error as Error })
         }
-        transformByQState.setJobId(jobId)
+        transformByQState.setJobId(encodeHTML(jobId))
         await vscode.commands.executeCommand('aws.amazonq.refresh')
 
         await sleep(2000) // sleep before polling job to prevent ThrottlingException
@@ -255,8 +255,12 @@ export async function startTransformByQ() {
         sessionPlanProgress['returnCode'] = StepProgress.Succeeded
     } catch (error) {
         if (transformByQState.isCancelled()) {
-            stopJob(transformByQState.getJobId())
-            vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage)
+            try {
+                await stopJob(transformByQState.getJobId())
+                vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage)
+            } catch {
+                vscode.window.showErrorMessage(CodeWhispererConstants.errorStoppingJobMessage)
+            }
         } else {
             transformByQState.setToFailed()
             let displayedErrorMessage = CodeWhispererConstants.transformByQFailedMessage
@@ -344,7 +348,11 @@ export async function confirmStopTransformByQ(
         transformByQState.setToCancelled()
         await vscode.commands.executeCommand('aws.amazonq.refresh')
         vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
-        stopJob(jobId)
+        try {
+            await stopJob(jobId)
+        } catch {
+            vscode.window.showErrorMessage(CodeWhispererConstants.errorStoppingJobMessage)
+        }
         telemetry.codeTransform_jobIsCancelledByUser.emit({
             codeTransformCancelSrcComponents: cancelSrc,
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
