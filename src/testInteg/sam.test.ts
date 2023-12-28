@@ -345,7 +345,9 @@ async function stopDebugger(logMsg: string | undefined): Promise<void> {
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
     await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.python, false)
-    await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.go, false)
+    // TODO: Must be reactivated when go tests are enabled above.
+    // Caveat: v0.40.1 of the go extension breaks this line (see changelog for this version)
+    // await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.go, false)
     await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.java, false)
     await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.javadebug, false)
     console.log('Extensions activated')
