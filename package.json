@@ -4355,7 +4355,7 @@
         "@aws-sdk/shared-ini-file-loader": "^3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@3.2.10",
+        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@3.3.2",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@vscode/debugprotocol": "^1.57.0",
