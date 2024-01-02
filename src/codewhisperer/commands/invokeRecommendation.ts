@@ -57,7 +57,7 @@ export async function invokeRecommendation(
     }
 
     if (isCloud9('any')) {
-        // C9 manual trigger key alt/option + C is ALWAYS enabled because the VSC version C9 is on doesn't support setContextKey which is used for CODEWHISPERER_ENABLED
+        // C9 manual trigger key alt/option + C is ALWAYS enabled because the VSC version C9 is on doesn't support setContextKey which is used for aws.codewhisperer.connected
         // therefore we need a connection check if there is ANY connection(regardless of the connection's state) connected to CodeWhisperer on C9
         if (!AuthUtil.instance.isConnected()) {
             return

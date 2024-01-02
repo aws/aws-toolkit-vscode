@@ -1463,23 +1463,18 @@
                     "group": "1_amazonQ@1"
                 },
                 {
-                    "command": "aws.auth.switchConnections",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && CODEWHISPERER_ENABLED",
-                    "group": "2_amazonQ@1"
-                },
-                {
                     "command": "aws.codewhisperer.manageConnections",
-                    "when": "view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && !aws.codewhisperer.connected",
                     "group": "2_amazonQ@2"
                 },
                 {
                     "command": "aws.codewhisperer.signout",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && CODEWHISPERER_ENABLED",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.connected",
                     "group": "2_amazonQ@4"
                 },
                 {
                     "command": "aws.codewhisperer.reconnect",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.disconnected",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.connectionExpired",
                     "group": "2_amazonQ@3"
                 }
             ],
@@ -3897,23 +3892,23 @@
                 "command": "aws.codeWhisperer",
                 "key": "alt+c",
                 "mac": "alt+c",
-                "when": "editorTextFocus && CODEWHISPERER_ENABLED || isCloud9 && editorTextFocus"
+                "when": "editorTextFocus && aws.codewhisperer.connected || isCloud9 && editorTextFocus"
             },
             {
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED || isCloud9 && suggestWidgetVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected || isCloud9 && suggestWidgetVisible && !editorReadonly"
             },
             {
                 "key": "right",
                 "command": "editor.action.inlineSuggest.showNext",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
                 "key": "left",
                 "command": "editor.action.inlineSuggest.showPrevious",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             }
         ],
         "grammars": [
