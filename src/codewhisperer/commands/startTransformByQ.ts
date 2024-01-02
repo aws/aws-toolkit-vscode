@@ -163,6 +163,8 @@ export async function startTransformByQ() {
 
     let intervalId = undefined
     let errorMessage = ''
+    let resultStatusMessage = ''
+
     try {
         intervalId = setInterval(() => {
             vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
@@ -178,6 +180,12 @@ export async function startTransformByQ() {
             await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
             uploadId = await uploadPayload(payloadFileName)
         } catch (error) {
+            telemetry.codeTransform_logGeneralError.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformApiErrorMessage: error instanceof Error ? error.message : errorMessage,
+                result: MetadataResult.Fail,
+                reason: 'UploadArchiveFailed',
+            })
             throw new TransformByQUploadArchiveFailed()
         }
         sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
@@ -193,6 +201,12 @@ export async function startTransformByQ() {
         } catch (error) {
             errorMessage = 'Failed to start job'
             getLogger().error(errorMessage, error)
+            telemetry.codeTransform_logGeneralError.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformApiErrorMessage: error instanceof Error ? error.message : errorMessage,
+                result: MetadataResult.Fail,
+                reason: 'StartJobFailed',
+            })
             throw new ToolkitError(errorMessage, { cause: error as Error })
         }
         transformByQState.setJobId(encodeHTML(jobId))
@@ -248,13 +262,16 @@ export async function startTransformByQ() {
         transformByQState.setToSucceeded()
         if (status === 'PARTIALLY_COMPLETED') {
             transformByQState.setToPartiallySucceeded()
+            resultStatusMessage = 'JobPartiallySucceeded'
         }
 
         await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
         await vscode.commands.executeCommand('aws.amazonq.refresh')
         sessionPlanProgress['returnCode'] = StepProgress.Succeeded
+        resultStatusMessage = 'JobCompletedSuccessfully'
     } catch (error) {
         if (transformByQState.isCancelled()) {
+            resultStatusMessage = 'User initiated stop'
             try {
                 await stopJob(transformByQState.getJobId())
                 vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage)
@@ -263,6 +280,7 @@ export async function startTransformByQ() {
             }
         } else {
             transformByQState.setToFailed()
+            resultStatusMessage = 'JobFailed'
             let displayedErrorMessage = CodeWhispererConstants.transformByQFailedMessage
             if (errorMessage !== '') {
                 displayedErrorMessage = errorMessage
@@ -287,6 +305,14 @@ export async function startTransformByQ() {
     } finally {
         vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
         const durationInMs = new Date().getTime() - startTime.getTime()
+
+        // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
+        telemetry.codeTransform_totalRunTime.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformResultStatusMessage: resultStatusMessage.toString(),
+            codeTransformRunTimeLatency: durationInMs,
+            result: MetadataResult.Pass,
+        })
 
         if (state.project) {
             sessionJobHistory = processHistory(
