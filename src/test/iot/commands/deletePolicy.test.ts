@@ -12,8 +12,8 @@ import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
-import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { getTestWindow } from '../../shared/vscode/window'
+import assert from 'assert'
 
 describe('deletePolicyCommand', function () {
     const policyName = 'test-policy'
@@ -28,9 +28,9 @@ describe('deletePolicyCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        iot = mock()
-        parentNode = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)))
-        node = new IotPolicyWithVersionsNode({ name: policyName, arn: 'arn' }, parentNode, instance(iot))
+        iot = {} as any as IotClient
+        parentNode = new IotPolicyFolderNode(iot, new IotNode(iot))
+        node = new IotPolicyWithVersionsNode({ name: policyName, arn: 'arn' }, parentNode, iot)
     })
 
     afterEach(function () {
@@ -38,9 +38,10 @@ describe('deletePolicyCommand', function () {
     })
 
     it('confirms deletion, deletes policy, and refreshes node', async function () {
-        when(iot.listPolicyTargets(deepEqual({ policyName }))).thenResolve([])
+        const listPolicyStub = sinon.stub().resolves([])
+        iot.listPolicyTargets = listPolicyStub
         const policyVersions = ['1']
-        when(iot.listPolicyVersions(anything())).thenReturn(
+        const listPolicyVersionsStub = sinon.stub().returns(
             asyncGenerator<Iot.PolicyVersion>(
                 policyVersions.map<Iot.PolicyVersion>(versionId => {
                     return {
@@ -49,19 +50,26 @@ describe('deletePolicyCommand', function () {
                 })
             )
         )
+        iot.listPolicyVersions = listPolicyVersionsStub
+        const deleteStub = sinon.stub()
+        iot.deletePolicy = deleteStub
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deletePolicyCommand(node)
 
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete Policy test-policy?')
 
-        verify(iot.deletePolicy(deepEqual({ policyName }))).once()
+        assert(listPolicyStub.calledOnceWithExactly({ policyName }))
+        assert(deleteStub.calledOnceWithExactly({ policyName }))
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when certificates are attached', async function () {
-        when(iot.listPolicyTargets(deepEqual({ policyName }))).thenResolve(['cert'])
+        const listPolicyStub = sinon.stub().resolves(['cert'])
+        iot.listPolicyTargets = listPolicyStub
+        const deleteStub = sinon.stub()
+        iot.deletePolicy = deleteStub
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deletePolicyCommand(node)
 
@@ -69,13 +77,15 @@ describe('deletePolicyCommand', function () {
             .getSecondMessage()
             .assertError(/Policy has attached certificates: cert/)
 
-        verify(iot.deletePolicy(anything())).never()
+        assert(listPolicyStub.calledOnceWithExactly({ policyName }))
+        assert(deleteStub.notCalled)
     })
 
     it('does nothing when multiple versions are present', async function () {
-        when(iot.listPolicyTargets(deepEqual({ policyName }))).thenResolve([])
+        const listPolicyStub = sinon.stub().resolves([])
+        iot.listPolicyTargets = listPolicyStub
         const policyVersions = ['1', '2']
-        when(iot.listPolicyVersions(anything())).thenReturn(
+        const listPolicyVersionsStub = sinon.stub().returns(
             asyncGenerator<Iot.PolicyVersion>(
                 policyVersions.map<Iot.PolicyVersion>(versionId => {
                     return {
@@ -84,21 +94,28 @@ describe('deletePolicyCommand', function () {
                 })
             )
         )
+        const deleteStub = sinon.stub()
+        iot.deletePolicy = deleteStub
+        iot.listPolicyVersions = listPolicyVersionsStub
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deletePolicyCommand(node)
 
-        verify(iot.deletePolicy(anything())).never()
+        assert(listPolicyStub.calledOnceWithExactly({ policyName }))
+        assert(deleteStub.notCalled)
     })
 
     it('does nothing when deletion is cancelled', async function () {
+        const deleteStub = sinon.stub()
+        iot.deletePolicy = deleteStub
         getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
         await deletePolicyCommand(node)
 
-        verify(iot.deletePolicy(anything())).never()
+        assert(deleteStub.notCalled)
     })
 
     it('shows an error message and refreshes node when policy deletion fails', async function () {
-        when(iot.deletePolicy(anything())).thenReject(new Error('Expected failure'))
+        const deleteStub = sinon.stub().rejects()
+        iot.deletePolicy = deleteStub
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deletePolicyCommand(node)

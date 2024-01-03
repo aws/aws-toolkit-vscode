@@ -12,25 +12,26 @@ import { ResourcesNode } from '../../dynamicResources/explorer/nodes/resourcesNo
 import { ResourceNode } from '../../dynamicResources/explorer/nodes/resourceNode'
 import { ResourceTypeNode } from '../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { formatResourceModel, AwsResourceManager } from '../../dynamicResources/awsResourceManager'
-import { CloudControlClient } from '../../shared/clients/cloudControlClient'
-import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
+import { CloudControlClient, DefaultCloudControlClient } from '../../shared/clients/cloudControlClient'
+import { CloudFormationClient, DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
-import { anything, capture, deepEqual, instance, mock, verify, when } from '../utilities/mockito'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { SchemaService } from '../../shared/schemas'
 import { remove } from 'fs-extra'
 import { existsSync } from 'fs'
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
 import globals from '../../shared/extensionGlobals'
+import { Stub, stub } from '../utilities/stubber'
+import { CloudControl, CloudFormation } from 'aws-sdk'
 
 describe('ResourceManager', function () {
     let sandbox: sinon.SinonSandbox
-    let cloudFormation: CloudFormationClient
-    let cloudControl: CloudControlClient
+    let cloudFormation: Stub<CloudFormationClient>
+    let cloudControl: Stub<CloudControlClient>
     let resourceNode: ResourceNode
     let resourceTypeNode: ResourceTypeNode
     let resourceManager: AwsResourceManager
-    let schemaService: SchemaService
+    let schemaService: Stub<SchemaService>
     let tempFolder: string
 
     const fakeTypeName = 'sometype'
@@ -48,25 +49,25 @@ describe('ResourceManager', function () {
     }
 
     beforeEach(async function () {
-        cloudControl = mock()
-        cloudFormation = mock()
-        schemaService = mock()
+        cloudControl = stub(DefaultCloudControlClient, {
+            regionCode: '',
+        })
+        cloudFormation = stub(DefaultCloudFormationClient, {
+            regionCode: '',
+        })
+        schemaService = stub(SchemaService)
+        schemaService.registerMapping = sinon.stub()
         sandbox = sinon.createSandbox()
         mockClients()
         tempFolder = await makeTemporaryToolkitFolder()
 
-        const rootNode = new ResourcesNode(fakeRegion, instance(cloudFormation), cloudControl)
-        resourceTypeNode = new ResourceTypeNode(
-            rootNode,
-            fakeTypeName,
-            instance(cloudControl),
-            {} as ResourceTypeMetadata
-        )
+        const rootNode = new ResourcesNode(fakeRegion, cloudFormation, cloudControl)
+        resourceTypeNode = new ResourceTypeNode(rootNode, fakeTypeName, cloudControl, {} as ResourceTypeMetadata)
         resourceNode = new ResourceNode(resourceTypeNode, fakeIdentifier)
         const fakeContext = await FakeExtensionContext.create()
         fakeContext.globalStorageUri = vscode.Uri.file(tempFolder)
         resourceManager = new AwsResourceManager(fakeContext)
-        globals.schemaService = instance(schemaService)
+        globals.schemaService = schemaService
     })
 
     afterEach(async function () {
@@ -185,10 +186,9 @@ describe('ResourceManager', function () {
 
     it('registers schema mappings when opening in edit', async function () {
         const editor = await resourceManager.open(resourceNode, false)
-        verify(schemaService.registerMapping(anything(), anything())).once()
+        assert(schemaService.registerMapping.calledOnce)
 
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const [mapping] = capture(schemaService.registerMapping).last()
+        const [mapping] = schemaService.registerMapping.args[schemaService.registerMapping.args.length - 1]
 
         const expectedSchemaLocation = path.join(tempFolder, 'sometype.schema.json')
         assert.ok(existsSync(expectedSchemaLocation))
@@ -205,40 +205,43 @@ describe('ResourceManager', function () {
         sandbox.stub(vscode.window, 'showTextDocument').resolves(mockTextEditor)
 
         await resourceManager.open(resourceNode, true)
-        verify(schemaService.registerMapping(anything())).never()
-        verify(cloudFormation.describeType(anything())).never()
+        assert(schemaService.registerMapping.notCalled)
+        assert(cloudFormation.describeType.notCalled)
     })
 
     it('deletes resource mapping on file close', async function () {
         const editor = await resourceManager.open(resourceNode, false)
         await resourceManager.close(editor.document.uri)
-        verify(schemaService.registerMapping(anything())).once()
-        verify(schemaService.registerMapping(anything(), anything())).once()
+        assert(schemaService.registerMapping.firstCall.calledWith(sinon.match.any, true))
+        assert(schemaService.registerMapping.secondCall.calledWith(sinon.match.any))
 
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const [mapping] = capture(schemaService.registerMapping).last()
+        const [mapping] = schemaService.registerMapping.args[schemaService.registerMapping.args.length - 1]
+
         assert.strictEqual(mapping.type, 'json')
         testutil.assertEqualPaths(mapping.uri.fsPath, editor.document.uri.fsPath)
         assert.strictEqual(mapping.schema, undefined)
     })
 
     function mockClients(): void {
-        when(
-            cloudControl.getResource(
-                deepEqual({
-                    TypeName: fakeTypeName,
-                    Identifier: fakeIdentifier,
-                })
-            )
-        ).thenResolve({
-            TypeName: 'foo',
-            ResourceDescription: {
-                Identifier: 'bar',
-                Properties: JSON.stringify(fakeResourceDescription),
-            },
+        cloudControl.getResource.callsFake(async (request: CloudControl.GetResourceInput) => {
+            assert.deepStrictEqual(request, {
+                TypeName: fakeTypeName,
+                Identifier: fakeIdentifier,
+            })
+
+            return {
+                TypeName: 'foo',
+                ResourceDescription: {
+                    Identifier: 'bar',
+                    Properties: JSON.stringify(fakeResourceDescription),
+                },
+            }
         })
-        when(cloudFormation.describeType(fakeTypeName)).thenResolve({
-            Schema: '{}',
+        cloudFormation.describeType.callsFake(async (name: string) => {
+            if (name === fakeTypeName) {
+                return { Schema: '{}' } as any as CloudFormation.DescribeTypeOutput
+            }
+            throw new Error()
         })
     }
 })

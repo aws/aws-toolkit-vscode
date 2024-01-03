@@ -10,7 +10,6 @@ import { createThingCommand } from '../../../iot/commands/createThing'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createThingCommand', function () {
@@ -24,8 +23,8 @@ describe('createThingCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        iot = mock()
-        node = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)))
+        iot = {} as any as IotClient
+        node = new IotThingFolderNode(iot, new IotNode(iot))
     })
 
     afterEach(function () {
@@ -33,9 +32,10 @@ describe('createThingCommand', function () {
     })
 
     it('prompts for thing name, creates thing, shows success, and refreshes node', async function () {
-        when(iot.createThing(deepEqual({ thingName }))).thenResolve({
+        const createStub = sinon.stub().resolves({
             thingName: thingName,
         })
+        iot.createThing = createStub
 
         getTestWindow().onDidShowInputBox(input => {
             assert.strictEqual(input.prompt, 'Enter a new Thing name')
@@ -48,14 +48,17 @@ describe('createThingCommand', function () {
             .getFirstMessage()
             .assertInfo(/Created Thing newIotThing/)
 
+        assert(createStub.calledOnceWithExactly({ thingName }))
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when prompt is cancelled', async function () {
+        const createStub = sinon.stub()
+        iot.createThing = createStub
         getTestWindow().onDidShowInputBox(input => input.hide())
         await createThingCommand(node)
 
-        verify(iot.createThing(anything())).never()
+        assert(createStub.notCalled)
     })
 
     it('warns when thing name has invalid length', async function () {
@@ -80,7 +83,8 @@ describe('createThingCommand', function () {
     })
 
     it('shows an error message and refreshes node when thing creation fails', async function () {
-        when(iot.createThing(anything())).thenReject(new Error('Expected failure'))
+        const createStub = sinon.stub().rejects()
+        iot.createThing = createStub
 
         getTestWindow().onDidShowInputBox(input => input.acceptValue(thingName))
         await createThingCommand(node)

@@ -1,0 +1,8 @@
+{
+    "aws.resources.enabledResources": [
+        "type1",
+        "type2"
+    ],
+    "json.schemas": [],
+    "editor.tabSize": 4
+}

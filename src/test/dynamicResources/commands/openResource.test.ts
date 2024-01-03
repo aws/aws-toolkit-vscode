@@ -6,85 +6,88 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import { AwsResourceManager, TypeSchema } from '../../../dynamicResources/awsResourceManager'
-import { instance, mock } from 'ts-mockito'
-import { when, verify } from '../../utilities/mockito'
 import { ResourceNode } from '../../../dynamicResources/explorer/nodes/resourceNode'
 import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { getDiagnostics, openResource } from '../../../dynamicResources/commands/openResource'
 import { getTestWindow } from '../../shared/vscode/window'
+import { Stub, stub } from '../../utilities/stubber'
+import sinon from 'sinon'
 
 describe('openResource', function () {
     const fakeType = 'fakeType'
     const fakeIdentifier = 'fakeIdentifier'
-    let mockResourceManager: AwsResourceManager
+    let mockResourceManager: Stub<AwsResourceManager>
     let mockDiagnosticCollection: vscode.DiagnosticCollection
     const fakeResourceNode = new ResourceNode({ typeName: fakeType } as ResourceTypeNode, fakeIdentifier)
 
     beforeEach(function () {
-        mockResourceManager = mock()
-        mockDiagnosticCollection = mock()
+        mockResourceManager = stub(AwsResourceManager)
+        mockDiagnosticCollection = {} as any as vscode.DiagnosticCollection
     })
 
     it('shows progress', async function () {
-        when(mockResourceManager.open(fakeResourceNode, false)).thenResolve()
+        mockResourceManager.open = sinon.stub()
         await openResource({
             source: fakeResourceNode,
             preview: false,
-            resourceManager: instance(mockResourceManager),
+            resourceManager: mockResourceManager,
             diagnostics: mockDiagnosticCollection,
         })
         const progress = getTestWindow().getFirstMessage()
         assert.ok(!progress.cancellable)
+        assert(mockResourceManager.open.calledOnceWithExactly(fakeResourceNode, false))
         assert.deepStrictEqual(progress.progressReports, [
             { message: `Opening resource ${fakeIdentifier} (${fakeType})...` },
         ])
     })
 
     it('shows an error message when opening resource fails', async function () {
-        when(mockResourceManager.open(fakeResourceNode, false)).thenThrow(new Error())
+        mockResourceManager.open = sinon.stub()
+        mockResourceManager.open.rejects()
         await openResource({
             source: fakeResourceNode,
             preview: false,
-            resourceManager: instance(mockResourceManager),
+            resourceManager: mockResourceManager,
             diagnostics: mockDiagnosticCollection,
         })
         getTestWindow().getSecondMessage().assertError(`Failed to open resource ${fakeIdentifier} (${fakeType})`)
     })
 
     it('handles opening ResourceNodes', async function () {
-        when(mockResourceManager.open(fakeResourceNode, false)).thenResolve()
+        mockResourceManager.open = sinon.stub()
         await openResource({
             source: fakeResourceNode,
             preview: false,
-            resourceManager: instance(mockResourceManager),
+            resourceManager: mockResourceManager,
             diagnostics: mockDiagnosticCollection,
         })
-        verify(mockResourceManager.open(fakeResourceNode, false)).once()
+        assert(mockResourceManager.open.calledOnceWithExactly(fakeResourceNode, false))
     })
 
     it('handles opening uris', async function () {
         const fakeUri = vscode.Uri.parse('foo')
-        when(mockResourceManager.fromUri(fakeUri)).thenReturn(fakeResourceNode)
-        when(mockResourceManager.open(fakeResourceNode, false)).thenResolve()
+        mockResourceManager.open = sinon.stub()
+        mockResourceManager.fromUri = sinon.stub()
+        mockResourceManager.fromUri.returns(fakeResourceNode)
         await openResource({
             source: fakeUri,
             preview: false,
-            resourceManager: instance(mockResourceManager),
+            resourceManager: mockResourceManager,
             diagnostics: mockDiagnosticCollection,
         })
-        verify(mockResourceManager.fromUri(fakeUri)).once()
-        verify(mockResourceManager.open(fakeResourceNode, false)).once()
+        assert(mockResourceManager.fromUri.calledOnceWithExactly(fakeUri))
+        assert(mockResourceManager.open.calledOnceWithExactly(fakeResourceNode, false))
     })
 
     it('can open in preview mode', async function () {
-        when(mockResourceManager.open(fakeResourceNode, true)).thenResolve()
+        mockResourceManager.open = sinon.stub()
         await openResource({
             source: fakeResourceNode,
             preview: true,
-            resourceManager: instance(mockResourceManager),
+            resourceManager: mockResourceManager,
             diagnostics: mockDiagnosticCollection,
         })
-        verify(mockResourceManager.open(fakeResourceNode, true)).once()
+        assert(mockResourceManager.open.calledOnceWithExactly(fakeResourceNode, true))
     })
 
     it('generates diagnostics for read-only properties', async function () {

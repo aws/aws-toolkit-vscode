@@ -12,8 +12,8 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client, File, Folder, Bucket } from '../../../shared/clients/s3Client'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
-import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { TestSettings } from '../../utilities/testSettingsConfiguration'
+import sinon from 'sinon'
 
 describe('S3BucketNode', function () {
     const name = 'bucket-name'
@@ -48,38 +48,42 @@ describe('S3BucketNode', function () {
     }
 
     beforeEach(function () {
-        s3 = mock()
+        s3 = {} as any as S3Client
         config = new TestSettings()
     })
 
     describe('getChildren', function () {
         it('gets children', async function () {
-            when(s3.listFiles(deepEqual({ bucketName: name, continuationToken: undefined, maxResults }))).thenResolve({
+            const stub = sinon.stub().resolves({
                 folders: [folder],
                 files: [file],
                 continuationToken: undefined,
             })
+            s3.listFiles = stub
 
             await config.getSection('aws').update('s3.maxItemsPerPage', maxResults)
-            const node = new S3BucketNode(bucket, new S3Node(instance(s3)), instance(s3), config)
+            const node = new S3BucketNode(bucket, new S3Node(s3), s3, config)
             const [folderNode, fileNode, ...otherNodes] = await node.getChildren()
 
+            assert(stub.calledOnceWithExactly({ bucketName: name, continuationToken: undefined, maxResults }))
             assertFolderNode(folderNode, folder)
             assertFileNode(fileNode, file)
             assert.strictEqual(otherNodes.length, 0)
         })
 
         it('gets children with node for loading more results', async function () {
-            when(s3.listFiles(deepEqual({ bucketName: name, continuationToken: undefined, maxResults }))).thenResolve({
+            const stub = sinon.stub().resolves({
                 folders: [folder],
                 files: [file],
                 continuationToken,
             })
+            s3.listFiles = stub
 
             await config.getSection('aws').update('s3.maxItemsPerPage', maxResults)
-            const node = new S3BucketNode(bucket, new S3Node(instance(s3)), instance(s3), config)
+            const node = new S3BucketNode(bucket, new S3Node(s3), s3, config)
             const [folderNode, fileNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
+            assert(stub.calledOnceWithExactly({ bucketName: name, continuationToken: undefined, maxResults }))
             assertFolderNode(folderNode, folder)
             assertFileNode(fileNode, file)
             assertMoreResultsNode(moreResultsNode)

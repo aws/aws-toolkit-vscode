@@ -13,10 +13,10 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { Bucket, S3Client } from '../../../shared/clients/s3Client'
 import { bufferToStream } from '../../../shared/utilities/streamUtilities'
 import { MockOutputChannel } from '../../mockOutputChannel'
-import { anything, mock, instance, when, verify } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import globals from '../../../shared/extensionGlobals'
 import { getTestWindow } from '../../shared/vscode/window'
+import sinon from 'sinon'
 
 describe('downloadFileAsCommand', function () {
     const bucketName = 'bucket-name'
@@ -38,16 +38,11 @@ describe('downloadFileAsCommand', function () {
     })
 
     beforeEach(function () {
-        s3 = mock()
+        s3 = {} as any as S3Client
 
         const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
-        bucketNode = new S3BucketNode(bucket, {} as S3Node, instance(s3))
-        node = new S3FileNode(
-            bucket,
-            { name: fileName, key: key, arn: 'arn', lastModified, sizeBytes },
-            bucketNode,
-            instance(s3)
-        )
+        bucketNode = new S3BucketNode(bucket, {} as S3Node, s3)
+        node = new S3FileNode(bucket, { name: fileName, key: key, arn: 'arn', lastModified, sizeBytes }, bucketNode, s3)
     })
 
     it('prompts for save location, downloads file with progress, and shows output channel', async function () {
@@ -59,7 +54,7 @@ describe('downloadFileAsCommand', function () {
         const outputChannel = new MockOutputChannel()
         globals.context.globalState.update('aws.downloadPath', temp)
 
-        when(s3.downloadFileStream(anything(), anything())).thenResolve(bufferToStream(Buffer.alloc(16)))
+        s3.downloadFileStream = sinon.stub().resolves(bufferToStream(Buffer.alloc(16)))
 
         await downloadFileAsCommand(node, outputChannel)
 
@@ -72,15 +67,17 @@ describe('downloadFileAsCommand', function () {
     })
 
     it('does nothing when prompt is cancelled', async function () {
+        const stub = sinon.stub()
+        s3.downloadFileStream = stub
         getTestWindow().onDidShowDialog(d => d.close())
         await assert.rejects(() => downloadFileAsCommand(node), /cancelled/i)
 
-        verify(s3.downloadFileStream(anything(), anything())).never()
+        assert(stub.notCalled)
     })
 
     it('throws when download fails', async function () {
         getTestWindow().onDidShowDialog(d => d.selectItem(saveLocation))
-        when(s3.downloadFileStream(anything(), anything())).thenReject(new Error('Expected failure'))
+        s3.downloadFileStream = sinon.stub().rejects(new Error('Expected failure'))
 
         await assert.rejects(() => downloadFileAsCommand(node, new MockOutputChannel()), /Failed to download/)
     })

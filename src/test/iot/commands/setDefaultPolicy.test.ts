@@ -12,7 +12,7 @@ import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { getTestWindow } from '../../shared/vscode/window'
-import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
+import assert from 'assert'
 
 describe('setDefaultPolicy', function () {
     const policyName = 'test-policy'
@@ -27,15 +27,15 @@ describe('setDefaultPolicy', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        iot = mock()
-        parentParentNode = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)))
-        parentNode = new IotPolicyWithVersionsNode({ name: policyName, arn: 'arn' }, parentParentNode, instance(iot))
+        iot = {} as any as IotClient
+        parentParentNode = new IotPolicyFolderNode(iot, new IotNode(iot))
+        parentNode = new IotPolicyWithVersionsNode({ name: policyName, arn: 'arn' }, parentParentNode, iot)
         node = new IotPolicyVersionNode(
             { name: policyName, arn: 'arn' },
             { versionId: 'V1', isDefaultVersion: false },
             false,
             parentNode,
-            instance(iot)
+            iot
         )
     })
 
@@ -44,18 +44,21 @@ describe('setDefaultPolicy', function () {
     })
 
     it('sets default version and refreshes node', async function () {
+        const stub = sinon.stub()
+        iot.setDefaultPolicyVersion = stub
         await setDefaultPolicy(node)
 
         getTestWindow()
             .getFirstMessage()
             .assertInfo(/Set V1 as default version of test-policy/)
-        verify(iot.setDefaultPolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).once()
+        assert(stub.calledOnceWithExactly({ policyName, policyVersionId: 'V1' }))
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode')
     })
 
     it('shows an error message and refreshes node when deletion fails', async function () {
-        when(iot.setDefaultPolicyVersion(anything())).thenReject(new Error('Expected failure'))
+        const stub = sinon.stub().rejects()
+        iot.setDefaultPolicyVersion = stub
         await setDefaultPolicy(node)
 
         getTestWindow()
