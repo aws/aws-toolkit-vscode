@@ -40,5 +40,5 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
         }
     }
 
-    context.panel.webview.postMessage(saveFileResponseMessage)
+    await context.panel.webview.postMessage(saveFileResponseMessage)
 }

@@ -38,7 +38,7 @@ export function throwAndNotifyIfInvalid(validationResult: SamCliValidatorResult)
         if (err instanceof InvalidSamCliError) {
             // SAM not found.
             // Calling code does not wait for the notification to complete
-            notifySamCliValidation(err)
+            void notifySamCliValidation(err)
         }
 
         // SAM found but version is invalid or failed to parse.

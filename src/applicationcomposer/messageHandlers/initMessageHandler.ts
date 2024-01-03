@@ -20,5 +20,5 @@ export async function initMessageHandler(context: WebviewContext) {
             authState.codewhispererChat === 'connected' || authState.codewhispererChat === 'expired',
     }
 
-    context.panel.webview.postMessage(responseMessage)
+    await context.panel.webview.postMessage(responseMessage)
 }

@@ -47,7 +47,7 @@ export class TextMessageHandler {
 
         this.tabsStorage.updateTabStatus(tabID, 'busy')
 
-        this.connector
+        void this.connector
             .requestGenerativeAIAnswer(tabID, {
                 chatMessage: chatPrompt.prompt ?? '',
                 chatCommand: chatPrompt.command,

@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q: `/dev` command may fail with \"Conversation id must exist\""
-}

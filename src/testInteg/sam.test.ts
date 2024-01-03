@@ -94,6 +94,16 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.78.0',
     },
     {
+        runtime: 'python3.12',
+        displayName: 'python 3.12 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
         runtime: 'java8',
         displayName: 'java8 (Gradle ZIP)',
         path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
@@ -176,6 +186,17 @@ const scenarios: TestScenario[] = [
         runtime: 'python3.11',
         displayName: 'python 3.11 (ZIP)',
         baseImage: 'amazon/python3.11-base',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
+        runtime: 'python3.12',
+        displayName: 'python 3.12 (ZIP)',
+        baseImage: 'amazon/python3.12-base',
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
@@ -345,7 +366,9 @@ async function stopDebugger(logMsg: string | undefined): Promise<void> {
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
     await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.python, false)
-    await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.go, false)
+    // TODO: Must be reactivated when go tests are enabled above.
+    // Caveat: v0.40.1 of the go extension breaks this line (see changelog for this version)
+    // await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.go, false)
     await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.java, false)
     await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.javadebug, false)
     console.log('Extensions activated')

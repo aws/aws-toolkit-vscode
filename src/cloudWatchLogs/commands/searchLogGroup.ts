@@ -67,7 +67,7 @@ export async function prepareDocument(uri: vscode.Uri, logData: CloudWatchLogsDa
         await registry.fetchNextLogEvents(uri)
         const doc = await vscode.workspace.openTextDocument(uri)
         await vscode.window.showTextDocument(doc, { preview: false })
-        vscode.languages.setTextDocumentLanguage(doc, 'log')
+        await vscode.languages.setTextDocumentLanguage(doc, 'log')
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
             throw err

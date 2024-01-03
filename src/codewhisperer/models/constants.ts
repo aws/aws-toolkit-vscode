@@ -314,6 +314,15 @@ export const jobInProgressMessage = 'Job is already in-progress'
 
 export const cancellationInProgressMessage = 'Cancellation is in-progress'
 
+export const errorStoppingJobMessage = 'Error stopping job'
+
+export const errorDownloadingDiffMessage = 'Transform by Q experienced an error when downloading the diff'
+
+export const viewProposedChangesMessage =
+    'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.'
+
+export const changesAppliedMessage = 'Changes applied'
+
 export const noSupportedJavaProjectsFoundMessage =
     'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11. Be sure to also build your project.'
 

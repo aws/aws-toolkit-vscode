@@ -237,7 +237,9 @@ export class IteratingQuickPickController<TResponse> {
             getLogger().debug('IteratingQuickPickController is already done iterating. Call reset() and start again')
             return
         }
-        this.loadItems()
+        this.loadItems().catch(e => {
+            getLogger().error('IteratingQuickPickController: loadItems failed: %s', (e as Error).message)
+        })
     }
 
     /**

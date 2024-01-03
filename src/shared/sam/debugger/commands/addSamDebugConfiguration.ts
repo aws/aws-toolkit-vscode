@@ -45,7 +45,7 @@ export async function addSamDebugConfiguration(
     step?: { step: number; totalSteps: number }
 ): Promise<void> {
     // emit without waiting
-    emitCommandTelemetry()
+    void emitCommandTelemetry()
 
     let samDebugConfig: AwsSamDebuggerConfiguration
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(rootUri)
@@ -168,7 +168,7 @@ export async function addSamDebugConfiguration(
     }
 
     if (openWebview) {
-        vscode.commands.executeCommand('aws.launchConfigForm', samDebugConfig)
+        await vscode.commands.executeCommand('aws.launchConfigForm', samDebugConfig)
     } else {
         const launchConfig = new LaunchConfiguration(rootUri)
         await launchConfig.addDebugConfiguration(samDebugConfig)
@@ -178,7 +178,7 @@ export async function addSamDebugConfiguration(
 }
 
 export async function openLaunchJsonFile(): Promise<void> {
-    vscode.commands.executeCommand(
+    await vscode.commands.executeCommand(
         vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length <= 1
             ? 'workbench.action.debug.configure'
             : 'workbench.action.openWorkspaceSettingsFile'

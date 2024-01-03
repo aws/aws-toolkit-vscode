@@ -15,7 +15,7 @@ import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryS
 
 export async function processTransformByQ() {
     if (!AuthUtil.instance.isEnterpriseSsoInUse()) {
-        vscode.window.showErrorMessage(noActiveIdCMessage)
+        void vscode.window.showErrorMessage(noActiveIdCMessage)
         return
     }
     if (transformByQState.isNotStarted()) {
@@ -24,8 +24,8 @@ export async function processTransformByQ() {
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             result: MetadataResult.Pass,
         })
-        startTransformByQWithProgress()
+        return startTransformByQWithProgress()
     } else {
-        vscode.window.showInformationMessage(jobInProgressMessage, { modal: true })
+        void vscode.window.showInformationMessage(jobInProgressMessage, { modal: true })
     }
 }

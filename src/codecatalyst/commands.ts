@@ -29,7 +29,7 @@ import { showManageConnections } from '../auth/ui/vue/show'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
-    vscode.commands.executeCommand('workbench.action.quickOpen', '> CodeCatalyst')
+    await vscode.commands.executeCommand('workbench.action.quickOpen', '> CodeCatalyst')
 }
 
 /** "Clone CodeCatalyst Repository" command. */
@@ -231,7 +231,7 @@ export class CodeCatalystCommands {
 
     public stopDevEnv(...args: WithClient<typeof stopDevEnv>) {
         return this.withClient(stopDevEnv, ...args).then(() => {
-            vscode.commands.executeCommand('workbench.action.remote.close')
+            void vscode.commands.executeCommand('workbench.action.remote.close')
         })
     }
 
@@ -288,7 +288,7 @@ export class CodeCatalystCommands {
         if (connection !== undefined) {
             await this.authProvider.tryConnectTo(connection)
         } else if (!this.authProvider.isConnectionValid()) {
-            showManageConnections.execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
+            void showManageConnections.execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
             return
         }
 

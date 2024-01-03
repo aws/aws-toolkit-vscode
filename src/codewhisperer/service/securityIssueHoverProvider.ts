@@ -35,6 +35,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
                     telemetry.codewhisperer_codeScanIssueHover.emit({
                         findingId: issue.findingId,
                         detectorId: issue.detectorId,
+                        ruleId: issue.ruleId,
                     })
                 }
             }

@@ -20,6 +20,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
+import * as CodeWhispererConstants from '../models/constants'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -278,7 +279,7 @@ export class ProposedTransformationExplorer {
                 )
             } catch (e: any) {
                 // This allows the customer to retry the download
-                vscode.window.showErrorMessage('Transform by Q experienced an error when downloading the diff')
+                vscode.window.showErrorMessage(CodeWhispererConstants.errorDownloadingDiffMessage)
                 vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
                 const errorMessage = 'There was a problem fetching the transformed code.'
                 getLogger().error('CodeTransform: ExportResultArchive error = ', errorMessage)
@@ -331,9 +332,7 @@ export class ProposedTransformationExplorer {
                 })
             }
 
-            await vscode.window.showInformationMessage(
-                'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.'
-            )
+            await vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
             await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             telemetry.codeTransform_vcsDiffViewerVisible.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -352,7 +351,7 @@ export class ProposedTransformationExplorer {
                 TransformByQReviewStatus.NotStarted
             )
             transformDataProvider.refresh()
-            await vscode.window.showInformationMessage('Changes applied')
+            await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedMessage)
             telemetry.codeTransform_vcsViewerSubmitted.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),

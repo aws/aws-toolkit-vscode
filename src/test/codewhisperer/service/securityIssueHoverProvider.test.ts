@@ -22,11 +22,12 @@ describe('securityIssueHoverProvider', () => {
 
     it('should return hover for each issue for the current position', () => {
         const issues = [
-            createCodeScanIssue({ findingId: 'finding-1', detectorId: 'language/detector-1' }),
+            createCodeScanIssue({ findingId: 'finding-1', detectorId: 'language/detector-1', ruleId: 'Rule-123' }),
             createCodeScanIssue({
                 findingId: 'finding-2',
                 detectorId: 'language/detector-2',
                 suggestedFixes: [],
+                ruleId: 'Rule-456',
             }),
         ]
 
@@ -90,8 +91,8 @@ describe('securityIssueHoverProvider', () => {
                 )} 'Open "CodeWhisperer Security Issue"')\n`
         )
         assertTelemetry('codewhisperer_codeScanIssueHover', [
-            { findingId: 'finding-1', detectorId: 'language/detector-1' },
-            { findingId: 'finding-2', detectorId: 'language/detector-2' },
+            { findingId: 'finding-1', detectorId: 'language/detector-1', ruleId: 'Rule-123' },
+            { findingId: 'finding-2', detectorId: 'language/detector-2', ruleId: 'Rule-456' },
         ])
     })
 
