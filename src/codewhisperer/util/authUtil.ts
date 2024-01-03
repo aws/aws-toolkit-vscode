@@ -27,7 +27,6 @@ import {
     isIdcSsoConnection,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
-import globals from '../../shared/extensionGlobals'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 
