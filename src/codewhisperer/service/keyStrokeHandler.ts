@@ -151,7 +151,7 @@ export class KeyStrokeHandler {
             }
 
             if (triggerType) {
-                this.invokeAutomatedTrigger(triggerType, editor, client, config, event)
+                await this.invokeAutomatedTrigger(triggerType, editor, client, config, event)
             }
         } catch (error) {
             getLogger().verbose(`Automated Trigger Exception : ${error}`)
