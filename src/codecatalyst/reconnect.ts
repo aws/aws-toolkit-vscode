@@ -18,6 +18,7 @@ import globals from '../shared/extensionGlobals'
 import { isDevenvVscode } from './utils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { SsoConnection } from '../auth/connection'
+import { GlobalState } from '../shared/globalState'
 
 const localize = nls.loadMessageBundle()
 
@@ -40,17 +41,17 @@ export function watchRestartingDevEnvs(ctx: ExtContext, authProvider: CodeCataly
 
 function handleRestart(conn: SsoConnection, ctx: ExtContext, envId: string | undefined) {
     if (envId !== undefined) {
-        const memento = ctx.extensionContext.globalState
-        const pendingReconnects = memento.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey, {})
+        const pendingReconnects =
+            GlobalState.instance.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey) ?? {}
         if (envId in pendingReconnects) {
             const devenv = pendingReconnects[envId]
             const devenvName = getDevEnvName(devenv.alias, envId)
             getLogger().info(`codecatalyst: ssh session reconnected to devenv: ${devenvName}`)
-            vscode.window.showInformationMessage(
+            void vscode.window.showInformationMessage(
                 localize('AWS.codecatalyst.reconnect.success', 'Reconnected to Dev Environment: {0}', devenvName)
             )
             delete pendingReconnects[envId]
-            memento.update(codecatalystReconnectKey, pendingReconnects)
+            GlobalState.instance.tryUpdate(codecatalystReconnectKey, pendingReconnects)
         }
     } else {
         getLogger().info('codecatalyst: attempting to poll dev environments')
@@ -174,7 +175,9 @@ async function pollDevEnvs(
                         message: `Dev Environment ${devenvName} is now running. Attempting to reconnect.`,
                     })
 
-                    openReconnectedDevEnv(client, id, details, shouldCloseRootInstance)
+                    openReconnectedDevEnv(client, id, details, shouldCloseRootInstance).catch(e => {
+                        getLogger().error('openReconnectedDevEnv failed: %s', (e as Error).message)
+                    })
 
                     // Don't watch this devenv, it is already being re-opened in SSH.
                     delete devenvs[id]
@@ -198,7 +201,9 @@ async function pollDevEnvs(
             } catch {
                 await failDevEnv(memento, id)
                 delete devenvs[id]
-                showViewLogsMessage(localize('AWS.codecatalyst.reconnect', 'Unable to reconnect to ${0}', devenvName))
+                void showViewLogsMessage(
+                    localize('AWS.codecatalyst.reconnect', 'Unable to reconnect to ${0}', devenvName)
+                )
             }
         }
         await sleep(reconnectTimer)
@@ -246,7 +251,7 @@ async function openReconnectedDevEnv(
         // When we only have 1 devenv to watch we might as well close the local vscode instance
         if (closeRootInstance) {
             // A brief delay ensures that metrics are saved from the connect command
-            sleep(5000).then(() => vscode.commands.executeCommand('workbench.action.closeWindow'))
+            await sleep(5000).then(() => vscode.commands.executeCommand('workbench.action.closeWindow'))
         }
     })
 }

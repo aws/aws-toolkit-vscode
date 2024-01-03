@@ -111,7 +111,9 @@ export function registerDevfileWatcher(devenvClient: DevEnvClient): vscode.Dispo
     const registry = new DevfileRegistry()
     const codelensProvider = new DevfileCodeLensProvider(registry, devenvClient)
     registry.addWatchPatterns([devfileGlobPattern])
-    registry.rebuild()
+    registry.rebuild().catch(e => {
+        getLogger().error('WatchedFiles.rebuild failed: %s', (e as Error).message)
+    })
 
     const codelensDisposable = vscode.languages.registerCodeLensProvider(
         {

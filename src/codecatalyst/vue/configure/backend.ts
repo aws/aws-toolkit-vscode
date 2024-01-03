@@ -184,7 +184,7 @@ export async function showConfigureDevEnv(
 function pollDevfile(devenv: ConnectedDevEnv, server: CodeCatalystConfigureWebview): vscode.Disposable {
     let done = false
 
-    ;(async () => {
+    void (async () => {
         while (!done) {
             const resp = await devenv.devenvClient.getStatus()
             if (resp.status === 'CHANGED') {
@@ -198,14 +198,14 @@ function pollDevfile(devenv: ConnectedDevEnv, server: CodeCatalystConfigureWebvi
 }
 
 function reportClosingMessage(): void {
-    vscode.window.withProgress(
+    void vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             title: 'Session ended. Session will restore when the Dev Environment is available again.',
         },
         async (progress, token) => {
             await sleep(2500)
-            vscode.commands.executeCommand('workbench.action.remote.close')
+            await vscode.commands.executeCommand('workbench.action.remote.close')
         }
     )
 }

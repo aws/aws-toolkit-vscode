@@ -31,7 +31,7 @@ export async function generateResourceHandler(request: GenerateResourceRequestMe
             isSuccess,
             traceId: request.traceId,
         }
-        context.panel.webview.postMessage(responseMessage)
+        await context.panel.webview.postMessage(responseMessage)
     } catch (error: any) {
         getLogger().error(`Error in generateResourceHandler: ${error.message}`, error)
 
@@ -46,7 +46,7 @@ export async function generateResourceHandler(request: GenerateResourceRequestMe
             metadata: {},
         }
 
-        context.panel.webview.postMessage(responseMessage)
+        await context.panel.webview.postMessage(responseMessage)
     }
 }
 
