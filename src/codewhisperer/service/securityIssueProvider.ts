@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { AggregatedCodeScanIssue } from '../models/model'
-import { ToolkitError } from '../../shared/errors'
 export abstract class SecurityIssueProvider {
     private _issues: AggregatedCodeScanIssue[] = []
     public get issues() {
@@ -18,7 +17,7 @@ export abstract class SecurityIssueProvider {
 
     public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
         if (!event.contentChanges || event.contentChanges.length === 0) {
-            throw new ToolkitError(`invalid event.contentChanges: ${JSON.stringify(event.contentChanges)}`)
+            return
         }
         const changedRange = event.contentChanges[0].range
         const changedText = event.contentChanges[0].text
