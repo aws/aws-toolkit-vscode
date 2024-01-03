@@ -41,8 +41,8 @@ export class CodeWhispererWebview extends VueWebview {
         const localFilePath = this.getLocalFilePath(fileName)
         if ((await FileSystemCommon.instance.fileExists(localFilePath)) && this.isFileSaved) {
             const fileUri = vscode.Uri.file(localFilePath)
-            vscode.workspace.openTextDocument(fileUri).then(doc => {
-                vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
+            await vscode.workspace.openTextDocument(fileUri).then(async doc => {
+                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
                     const endOfDocument = new vscode.Position(
                         doc.lineCount - 1,
                         doc.lineAt(doc.lineCount - 1).text.length
@@ -51,7 +51,7 @@ export class CodeWhispererWebview extends VueWebview {
                 })
             })
         } else {
-            this.saveFileLocally(localFilePath, fileContent)
+            await this.saveFileLocally(localFilePath, fileContent)
         }
     }
 
@@ -61,8 +61,8 @@ export class CodeWhispererWebview extends VueWebview {
             await FileSystemCommon.instance.writeFile(localFilePath, fileContent)
             this.isFileSaved = true
             // Opening the text document
-            vscode.workspace.openTextDocument(localFilePath).then(doc => {
-                vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
+            await vscode.workspace.openTextDocument(localFilePath).then(async doc => {
+                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
                     // Set the selection to the end of the document
                     const endOfDocument = new vscode.Position(
                         doc.lineCount - 1,
@@ -72,7 +72,7 @@ export class CodeWhispererWebview extends VueWebview {
                 })
             })
         } catch (error) {
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize(
                     'AWS.message.error.codewhispererLearnPage.saveFileLocally',
                     'There was an error in saving the file, check log for details.'
@@ -88,12 +88,12 @@ export class CodeWhispererWebview extends VueWebview {
 
     //This function opens the Keyboard shortcuts in VSCode
     async openShortCuts(): Promise<void> {
-        vscode.commands.executeCommand('workbench.action.openGlobalKeybindings', 'codewhisperer')
+        await vscode.commands.executeCommand('workbench.action.openGlobalKeybindings', 'codewhisperer')
     }
 
     //This function opens the Feedback CodeWhisperer page in the webview
     async openFeedBack(): Promise<void> {
-        submitFeedback.execute(placeholder, 'CodeWhisperer')
+        return submitFeedback.execute(placeholder, 'CodeWhisperer')
     }
 
     //------Telemetry------

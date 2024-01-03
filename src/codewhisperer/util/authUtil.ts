@@ -148,7 +148,7 @@ export class AuthUtil {
                 }
 
                 // start the feature config polling job
-                vscode.commands.executeCommand('aws.codeWhisperer.fetchFeatureConfigs')
+                await vscode.commands.executeCommand('aws.codeWhisperer.fetchFeatureConfigs')
             }
             await this.setVscodeContextProps()
         })
@@ -326,7 +326,7 @@ export class AuthUtil {
         } catch (err) {
             throw ToolkitError.chain(err, 'Unable to authenticate connection')
         } finally {
-            this.setVscodeContextProps()
+            await this.setVscodeContextProps()
         }
     }
 
@@ -357,7 +357,7 @@ export class AuthUtil {
                 if (resp === CodeWhispererConstants.connectWithAWSBuilderId) {
                     await this.reauthenticate()
                 } else if (resp === CodeWhispererConstants.DoNotShowAgain) {
-                    settings.disablePrompt('codeWhispererConnectionExpired')
+                    await settings.disablePrompt('codeWhispererConnectionExpired')
                 }
             })
         if (isAutoTrigger) {
@@ -366,8 +366,8 @@ export class AuthUtil {
     }
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
-        this.showReauthenticatePrompt(isAutoTrigger)
-        this.setVscodeContextProps()
+        void this.showReauthenticatePrompt(isAutoTrigger)
+        await this.setVscodeContextProps()
     }
 }
 
