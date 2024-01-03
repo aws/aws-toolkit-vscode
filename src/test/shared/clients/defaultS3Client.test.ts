@@ -465,7 +465,11 @@ describe('DefaultS3Client', function () {
                 .stub()
                 .returns(success({ Buckets: [{ Name: bucketName }, { Name: outOfRegionBucketName }] }))
             mockS3.listBuckets = listStub
-            const locationStub = sinon.stub().returns(success({ LocationConstraint: '' }))
+            const locationStub = sinon.stub().callsFake((param: { Bucket: string }) => {
+                if (param.Bucket && param.Bucket === bucketName) {
+                    return success({ LocationConstraint: '' })
+                }
+            })
             mockS3.getBucketLocation = locationStub
 
             const response = await createClient({ regionCode: 'us-east-1' }).listBuckets()

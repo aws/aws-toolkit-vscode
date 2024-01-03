@@ -35,7 +35,7 @@ describe('submitFeedbackListener', function () {
         })
         it(`submits feedback for ${productName}, disposes, and handles errors`, async function () {
             const error = 'Expected failure'
-            const postStub = sinon.stub().rejects()
+            const postStub = sinon.stub().rejects(new Error(error))
             mockTelemetry.postFeedback = postStub
             const webview = new FeedbackWebview(mockTelemetry, productName)
             const result = await webview.submit(message)
