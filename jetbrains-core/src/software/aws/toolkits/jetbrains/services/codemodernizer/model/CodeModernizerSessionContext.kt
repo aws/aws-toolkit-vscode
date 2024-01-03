@@ -12,6 +12,7 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.JavaSdkVersion
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindowManager
@@ -177,7 +178,12 @@ data class CodeModernizerSessionContext(
         LOG.warn { "Executing ./mvnw" }
         var shouldTryMvnCommand = true
         try {
-            val output = runCommand("./mvnw")
+            val mvnw = if (SystemInfo.isWindows) {
+                "./mvnw.cmd"
+            } else {
+                "./mvnw"
+            }
+            val output = runCommand(mvnw)
             if (output.exitCode != 0) {
                 LOG.error { "mvnw command output:\n$output" }
                 val error = "The exitCode should be 0 while it was ${output.exitCode}"
@@ -224,7 +230,6 @@ data class CodeModernizerSessionContext(
                         codeTransformMavenBuildCommand = CodeTransformMavenBuildCommand.Mvn,
                         reason = error
                     )
-                    return null
                 } else {
                     shouldTryMvnCommand = false
                     LOG.warn { "Maven executed successfully" }
@@ -244,7 +249,6 @@ data class CodeModernizerSessionContext(
                     reason = e.message
                 )
                 LOG.error(e) { e.message.toString() }
-                throw e
             }
         }
 
