@@ -67,14 +67,16 @@ export class KeyStrokeHandler {
                 return
             }
 
-            try {
-                this.invokeAutomatedTrigger('IdleTime', editor, client, config, event)
-            } finally {
-                if (this.idleTriggerTimer) {
-                    clearInterval(this.idleTriggerTimer)
-                    this.idleTriggerTimer = undefined
-                }
-            }
+            this.invokeAutomatedTrigger('IdleTime', editor, client, config, event)
+                .catch(e => {
+                    getLogger().error('invokeAutomatedTrigger failed: %s', (e as Error).message)
+                })
+                .finally(() => {
+                    if (this.idleTriggerTimer) {
+                        clearInterval(this.idleTriggerTimer)
+                        this.idleTriggerTimer = undefined
+                    }
+                })
         }, CodeWhispererConstants.idleTimerPollPeriod)
     }
 

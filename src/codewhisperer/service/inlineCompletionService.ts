@@ -109,7 +109,7 @@ export class InlineCompletionService {
             return
         }
 
-        this.setState('loading')
+        await this.setState('loading')
 
         TelemetryHelper.instance.setInvocationStartTime(performance.now())
         RecommendationHandler.instance.checkAndResetCancellationTokens()
@@ -132,7 +132,7 @@ export class InlineCompletionService {
                 )
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
                     RecommendationHandler.instance.reportUserDecisions(-1)
-                    vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+                    await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
                     TelemetryHelper.instance.setIsRequestCancelled(true)
                     return
                 }
@@ -145,9 +145,9 @@ export class InlineCompletionService {
         } catch (error) {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)
         }
-        vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+        await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
         if (triggerType === 'OnDemand' && session.recommendations.length === 0) {
-            showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
+            void showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
         }
         TelemetryHelper.instance.tryRecordClientComponentLatency()
     }
@@ -250,7 +250,7 @@ export class CodeWhispererStatusBar {
 /** In this module due to circulare dependency issues */
 export const refreshStatusBar = Commands.declare(
     { id: 'aws.codeWhisperer.refreshStatusBar', logging: false },
-    () => () => {
-        InlineCompletionService.instance.refreshStatusBar()
+    () => async () => {
+        await InlineCompletionService.instance.refreshStatusBar()
     }
 )
