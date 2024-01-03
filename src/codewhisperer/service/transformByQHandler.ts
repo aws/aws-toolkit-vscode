@@ -320,7 +320,7 @@ function getProjectDependencies(modulePath: string): string[] {
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: false, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
         getLogger().error('CodeTransform: Error in running Maven command = ')
         // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
         if (spawnResult.error) {
