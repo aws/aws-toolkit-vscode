@@ -94,6 +94,16 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.78.0',
     },
     {
+        runtime: 'python3.12',
+        displayName: 'python 3.12 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
         runtime: 'java8',
         displayName: 'java8 (Gradle ZIP)',
         path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
@@ -176,6 +186,17 @@ const scenarios: TestScenario[] = [
         runtime: 'python3.11',
         displayName: 'python 3.11 (ZIP)',
         baseImage: 'amazon/python3.11-base',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
+        runtime: 'python3.12',
+        displayName: 'python 3.12 (ZIP)',
+        baseImage: 'amazon/python3.12-base',
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
