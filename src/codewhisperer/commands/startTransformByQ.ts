@@ -152,12 +152,12 @@ export async function startTransformByQ() {
         result: MetadataResult.Pass,
     })
 
-    vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
-    vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
-    vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
-    vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
-    vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
-    resetReviewInProgress()
+    await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
+    await vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
+    await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
+    await vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
+    await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
+    await resetReviewInProgress()
 
     await vscode.commands.executeCommand('aws.amazonq.refresh')
 
@@ -165,7 +165,7 @@ export async function startTransformByQ() {
     let errorMessage = ''
     try {
         intervalId = setInterval(() => {
-            vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
+            void vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
         }, CodeWhispererConstants.progressIntervalMs)
         // step 1: CreateCodeUploadUrl and upload code
         await vscode.commands.executeCommand('aws.amazonq.refresh')
@@ -221,9 +221,9 @@ export async function startTransformByQ() {
         sessionPlanProgress['buildCode'] = StepProgress.Succeeded
         const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
         fs.writeFileSync(planFilePath, plan)
-        vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
+        await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
         transformByQState.setPlanFilePath(planFilePath)
-        vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
+        await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
 
         // step 3: poll until artifacts are ready to download
         throwIfCancelled()
@@ -257,9 +257,9 @@ export async function startTransformByQ() {
         if (transformByQState.isCancelled()) {
             try {
                 await stopJob(transformByQState.getJobId())
-                vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage)
+                void vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage)
             } catch {
-                vscode.window.showErrorMessage(CodeWhispererConstants.errorStoppingJobMessage)
+                void vscode.window.showErrorMessage(CodeWhispererConstants.errorStoppingJobMessage)
             }
         } else {
             transformByQState.setToFailed()
@@ -270,7 +270,7 @@ export async function startTransformByQ() {
             if (transformByQState.getJobFailureReason() !== '') {
                 displayedErrorMessage += `: ${transformByQState.getJobFailureReason()}`
             }
-            vscode.window.showErrorMessage(displayedErrorMessage)
+            void vscode.window.showErrorMessage(displayedErrorMessage)
         }
         if (sessionPlanProgress['uploadCode'] !== StepProgress.Succeeded) {
             sessionPlanProgress['uploadCode'] = StepProgress.Failed
@@ -285,7 +285,7 @@ export async function startTransformByQ() {
             sessionPlanProgress['returnCode'] = StepProgress.Failed
         }
     } finally {
-        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
+        await vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
         const durationInMs = new Date().getTime() - startTime.getTime()
 
         if (state.project) {
@@ -299,17 +299,17 @@ export async function startTransformByQ() {
             )
         }
         if (transformByQState.isSucceeded()) {
-            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompletedMessage)
+            void vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompletedMessage)
         } else if (transformByQState.isPartiallySucceeded()) {
-            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQPartiallyCompletedMessage)
+            void vscode.window.showInformationMessage(CodeWhispererConstants.transformByQPartiallyCompletedMessage)
         }
     }
     clearInterval(intervalId)
     transformByQState.setToNotStarted() // so that the "Transform by Q" button resets
     transformByQState.setPolledJobStatus('') // reset polled job status too
-    vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
+    await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
     await vscode.commands.executeCommand('aws.amazonq.refresh')
-    vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
+    void vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
 }
 
 export function processHistory(
@@ -347,11 +347,11 @@ export async function confirmStopTransformByQ(
         getLogger().verbose('User requested to stop transform by Q. Stopping transform by Q.')
         transformByQState.setToCancelled()
         await vscode.commands.executeCommand('aws.amazonq.refresh')
-        vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
+        await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         try {
             await stopJob(jobId)
         } catch {
-            vscode.window.showErrorMessage(CodeWhispererConstants.errorStoppingJobMessage)
+            void vscode.window.showErrorMessage(CodeWhispererConstants.errorStoppingJobMessage)
         }
         telemetry.codeTransform_jobIsCancelledByUser.emit({
             codeTransformCancelSrcComponents: cancelSrc,
@@ -361,7 +361,7 @@ export async function confirmStopTransformByQ(
     }
 }
 
-function resetReviewInProgress() {
-    vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
-    vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
+async function resetReviewInProgress() {
+    await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
+    await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
 }

@@ -37,7 +37,7 @@ export class InlineCompletionService {
         })
 
         CodeSuggestionsState.instance.onDidChangeState(() => {
-            this.refreshStatusBar()
+            return this.refreshStatusBar()
         })
     }
 
@@ -65,14 +65,16 @@ export class InlineCompletionService {
             if (delay < CodeWhispererConstants.inlineSuggestionShowDelay) {
                 return
             }
-            try {
-                this.sharedTryShowRecommendation()
-            } finally {
-                if (this._showRecommendationTimer) {
-                    clearInterval(this._showRecommendationTimer)
-                    this._showRecommendationTimer = undefined
-                }
-            }
+            this.sharedTryShowRecommendation()
+                .catch(e => {
+                    getLogger().error('tryShowRecommendation failed: %s', (e as Error).message)
+                })
+                .finally(() => {
+                    if (this._showRecommendationTimer) {
+                        clearInterval(this._showRecommendationTimer)
+                        this._showRecommendationTimer = undefined
+                    }
+                })
         }, CodeWhispererConstants.showRecommendationTimerPollPeriod)
     }
 
