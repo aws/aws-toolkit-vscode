@@ -129,7 +129,7 @@ export class AuthUtil {
                 Commands.tryExecute('aws.codeWhisperer.updateReferenceLog'),
             ])
 
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
 
             const memento = globals.context.globalState
             const shouldShowObject: HasAlreadySeenQWelcome = memento.get(this.mementoKey) ?? {
@@ -157,10 +157,10 @@ export class AuthUtil {
 
     public async setVscodeContextProps() {
         if (!isCloud9()) {
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
             await vscode.commands.executeCommand(
                 'setContext',
-                'aws.codewhisperer.disconnected',
+                'aws.codewhisperer.connectionExpired',
                 this.isConnectionExpired()
             )
         }

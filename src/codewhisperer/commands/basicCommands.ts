@@ -63,8 +63,8 @@ export const enableCodeSuggestions = Commands.declare(
     (context: ExtContext) =>
         async (isAuto: boolean = true) => {
             await CodeSuggestionsState.instance.setSuggestionsEnabled(isAuto)
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.disconnected', false)
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', true)
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connectionExpired', false)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             if (!isCloud9()) {
                 await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
