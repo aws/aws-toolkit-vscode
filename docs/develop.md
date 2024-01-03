@@ -22,7 +22,8 @@ We set the following keys:
 -   `isCloud9`: This is hardcoded by Cloud9 itself, not the Toolkit.
     -   Cloud9 _does not support setContext_. So this is the only usable key there.
 -   `aws.codecatalyst.connected`: CodeCatalyst connection is active.
--   `CODEWHISPERER_ENABLED`: CodeWhisperer connection is active.
+-   `aws.codewhisperer.connected`: CodeWhisperer connection is active.
+-   `aws.codewhisperer.connectionExpired`: CodeWhisperer connection is active, but the connection is expired.
 -   `aws.isDevMode`: AWS Toolkit is running in "developer mode".
 -   `aws.isWebExtHost`: true when the _extension host_ is running in a web browser, as opposed to
     nodejs (i.e. the environment has no "compute").
