@@ -46,7 +46,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
         })
     }
 
-    public async update() {
+    public update() {
         if (this._view) {
             const showPrompt = CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled()
             this._view.webview.html = this.getHtml(this._view.webview, showPrompt)

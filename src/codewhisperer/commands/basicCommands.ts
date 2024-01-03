@@ -248,7 +248,7 @@ export const updateReferenceLog = Commands.declare(
         logging: false,
     },
     () => () => {
-        return ReferenceLogViewProvider.instance.update()
+        ReferenceLogViewProvider.instance.update()
     }
 )
 

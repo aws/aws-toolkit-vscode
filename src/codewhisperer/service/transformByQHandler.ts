@@ -64,7 +64,7 @@ export function throwIfCancelled() {
 export async function getOpenProjects() {
     const folders = vscode.workspace.workspaceFolders
     if (folders === undefined) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         throw new ToolkitError('No Java projects found since no projects are open', { code: 'NoOpenProjects' })
     }
     const openProjects: vscode.QuickPickItem[] = []
@@ -86,7 +86,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const projectPath = project.description
     const buildSystem = await checkBuildSystem(projectPath!)
     if (buildSystem !== BuildSystem.Maven) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NonMavenProject',
@@ -101,7 +101,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         1
     )
     if (compiledJavaFiles.length < 1) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
@@ -116,7 +116,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
@@ -135,7 +135,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
         transformByQState.setSourceJDKVersionToJDK11()
     } else {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'UnsupportedJavaVersion',
