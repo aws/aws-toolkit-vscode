@@ -138,10 +138,10 @@ data class CodeModernizerSessionContext(
                 }.toFile()
                 if (depDirectory != null) ZipCreationResult.Succeeded(outputFile) else ZipCreationResult.Missing1P(outputFile)
             } catch (e: NoSuchFileException) {
-                throw CodeModernizerException("Source folder not found: ${root.path}")
+                throw CodeModernizerException("Source folder not found")
             } catch (e: Exception) {
                 LOG.error(e) { e.message.toString() }
-                throw CodeModernizerException("Unknown exception occurred ${root.path}")
+                throw CodeModernizerException("Unknown exception occurred")
             } finally {
                 depDirectory?.deleteRecursively()
             }

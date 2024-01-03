@@ -14,7 +14,6 @@ import software.amazon.awssdk.services.codewhispererruntime.model.Transformation
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationLanguage
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationPlan
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
-import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -94,9 +93,9 @@ class CodeModernizerSession(
                 codeTransformRunTimeLatency = calculateTotalLatency(startTime, Instant.now())
             )
         } catch (e: Exception) {
-            LOG.error(e) { e.message.toString() }
+            val errorMessage = "Failed to upload archive"
             CodetransformTelemetry.logGeneralError(
-                codeTransformApiErrorMessage = e.message.toString(),
+                codeTransformApiErrorMessage = errorMessage,
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
             )
             state.currentJobStatus = TransformationStatus.FAILED
@@ -124,11 +123,11 @@ class CodeModernizerSession(
             LOG.warn { e.localizedMessage }
             return CodeModernizerStartJobResult.Disposed
         } catch (e: Exception) {
-            LOG.warn { e.message.toString() }
+            val errorMessage = "Failed to start job"
             state.putJobHistory(sessionContext, "FAILED TO START")
             state.currentJobStatus = TransformationStatus.FAILED
             CodetransformTelemetry.logGeneralError(
-                codeTransformApiErrorMessage = e.message.toString(),
+                codeTransformApiErrorMessage = errorMessage,
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
             )
             CodeModernizerStartJobResult.UnableToStartJob(e.message.toString())

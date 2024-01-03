@@ -205,6 +205,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
 
     fun validateAndStart(srcStartComponent: CodeTransformStartSrcComponents = CodeTransformStartSrcComponents.DevToolsStartButton) =
         projectCoroutineScope(project).launch {
+            sendUserClickedTelemetry(srcStartComponent)
             if (isModernizationInProgress.getAndSet(true)) return@launch
             val validationResult = validate(project)
             runInEdt {
@@ -212,28 +213,30 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                     runModernize(validationResult.validatedBuildFiles) ?: isModernizationInProgress.set(false)
                 } else {
                     warnUnsupportedProject(validationResult.invalidReason)
+                    sendValidationResultTelemetry(validationResult)
                     isModernizationInProgress.set(false)
                 }
             }
-            sendValidationResultTelemetry(validationResult, srcStartComponent)
         }
 
-    private fun sendValidationResultTelemetry(validationResult: ValidationResult, srcStartComponent: CodeTransformStartSrcComponents) {
+    private fun sendUserClickedTelemetry(srcStartComponent: CodeTransformStartSrcComponents) {
         CodeTransformTelemetryState.instance.setSessionId()
         CodeTransformTelemetryState.instance.setStartTime()
-        if (validationResult.valid) {
-            CodetransformTelemetry.isDoubleClickedToTriggerUserModal(
-                codeTransformStartSrcComponents = srcStartComponent,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            )
-            return
-        }
-        CodetransformTelemetry.isDoubleClickedToTriggerInvalidProject(
-            codeTransformPreValidationError = validationResult.invalidTelemetryReason.category ?: CodeTransformPreValidationError.Unknown,
+        CodetransformTelemetry.isDoubleClickedToTriggerUserModal(
+            codeTransformStartSrcComponents = srcStartComponent,
             codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            result = Result.Failed,
-            reason = validationResult.invalidTelemetryReason.additonalInfo
         )
+    }
+
+    private fun sendValidationResultTelemetry(validationResult: ValidationResult) {
+        if (!validationResult.valid) {
+            CodetransformTelemetry.isDoubleClickedToTriggerInvalidProject(
+                codeTransformPreValidationError = validationResult.invalidTelemetryReason.category ?: CodeTransformPreValidationError.Unknown,
+                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+                result = Result.Failed,
+                reason = validationResult.invalidTelemetryReason.additonalInfo
+            )
+        }
     }
 
     fun stopModernize() {
@@ -603,7 +606,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                     // Code successfully stopped toast will display when post job is run after this
                     CodetransformTelemetry.totalRunTime(
                         codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformResultStatusMessage = "User initiated stop",
+                        codeTransformResultStatusMessage = "JobCanceled",
                         codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now())
                     )
                 }
@@ -612,7 +615,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 notifyTransformationFailedToStop(e.localizedMessage)
                 CodetransformTelemetry.totalRunTime(
                     codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformResultStatusMessage = "User initiated stop",
+                    codeTransformResultStatusMessage = "JobCanceled",
                     codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now())
                 )
             }
