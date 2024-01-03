@@ -29,6 +29,7 @@ import {
 import { getLogger } from '../../shared/logger'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
+import { GlobalState } from '../../shared/globalState'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -92,9 +93,9 @@ export class AuthUtil {
             return
         }
         this._isCustomizationFeatureEnabled = value
-        vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        void vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         void Commands.tryExecute('aws.amazonq.refresh')
-        vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+        void vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }
 
     public readonly secondaryAuth = getSecondaryAuth(
@@ -108,7 +109,7 @@ export class AuthUtil {
     public constructor(public readonly auth = Auth.instance) {
         this.auth.onDidChangeConnectionState(async e => {
             if (e.state !== 'authenticating') {
-                this.refreshCodeWhisperer()
+                await this.refreshCodeWhisperer()
             }
 
             await this.setVscodeContextProps()
@@ -116,7 +117,7 @@ export class AuthUtil {
 
         this.secondaryAuth.onDidChangeActiveConnection(async () => {
             if (this.isValidEnterpriseSsoInUse()) {
-                vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
+                void vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
             }
             await Promise.all([
                 // onDidChangeActiveConnection may trigger before these modules are activated.
@@ -130,8 +131,7 @@ export class AuthUtil {
 
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
 
-            const memento = globals.context.globalState
-            const shouldShowObject: HasAlreadySeenQWelcome = memento.get(this.mementoKey) ?? {
+            const shouldShowObject: HasAlreadySeenQWelcome = GlobalState.instance.get(this.mementoKey) ?? {
                 local: false,
                 devEnv: false,
                 ssh: false,
@@ -143,7 +143,7 @@ export class AuthUtil {
                 const key = getEnvType()
                 if (!shouldShowObject[key]) {
                     shouldShowObject[key] = true
-                    memento.update(this.mementoKey, shouldShowObject)
+                    GlobalState.instance.tryUpdate(this.mementoKey, shouldShowObject)
                     await vscode.commands.executeCommand('aws.amazonq.welcome', placeholder, key)
                 }
 
