@@ -181,7 +181,6 @@ export async function startTransformByQ() {
             uploadId = await uploadPayload(payloadFileName)
         } catch (error) {
             errorMessage = 'Failed to upload archive'
-            getLogger().error(errorMessage, error)
             telemetry.codeTransform_logGeneralError.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformApiErrorMessage: errorMessage,
@@ -202,7 +201,6 @@ export async function startTransformByQ() {
             jobId = await startJob(uploadId)
         } catch (error) {
             errorMessage = 'Failed to start job'
-            getLogger().error(errorMessage, error)
             telemetry.codeTransform_logGeneralError.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformApiErrorMessage: errorMessage,
@@ -315,6 +313,7 @@ export async function startTransformByQ() {
             codeTransformResultStatusMessage: resultStatusMessage,
             codeTransformRunTimeLatency: durationInMs,
             result: resultStatusMessage === 'JobCompletedSuccessfully' ? MetadataResult.Pass : MetadataResult.Fail,
+            reason: resultStatusMessage,
         })
 
         if (state.project) {
