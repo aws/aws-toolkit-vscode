@@ -35,9 +35,9 @@ export async function activate(context: ExtContext) {
 
         Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
             if (transformByQState.isRunning()) {
-                confirmStopTransformByQ(transformByQState.getJobId(), cancelSrc)
+                void confirmStopTransformByQ(transformByQState.getJobId(), cancelSrc)
             } else {
-                vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
+                void vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
             }
         }),
 
@@ -50,7 +50,10 @@ export async function activate(context: ExtContext) {
         }),
 
         Commands.register('aws.amazonq.showTransformationPlanInHub', async () => {
-            vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(transformByQState.getPlanFilePath()))
+            void vscode.commands.executeCommand(
+                'markdown.showPreview',
+                vscode.Uri.file(transformByQState.getPlanFilePath())
+            )
         })
     )
 

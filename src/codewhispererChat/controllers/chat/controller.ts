@@ -225,9 +225,9 @@ export class ChatController {
                     return
                 } else if (quickActionCommand === 'transform') {
                     this.generateStaticTextResponse('transform', triggerID)
-                    processTransformByQ()
-                    recordTelemetryChatRunCommand('transform')
-                    return
+                    return processTransformByQ().then(() => {
+                        return recordTelemetryChatRunCommand('transform')
+                    })
                 }
             })
             .catch(e => {

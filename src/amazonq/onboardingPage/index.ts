@@ -51,7 +51,7 @@ export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublis
 
                     case 'goToHelp':
                         telemetry.record({ elementId: 'amazonq_tryExamples' })
-                        vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
+                        void vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
                         return
                 }
             })

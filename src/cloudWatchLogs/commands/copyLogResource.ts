@@ -28,7 +28,7 @@ export async function copyLogResource(uri?: vscode.Uri): Promise<void> {
         }
         await copyToClipboard(resourceName)
     } catch (e) {
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.cwl.invalidEditor',
                 'Invalid Cloudwatch Log stream or group: {0}',

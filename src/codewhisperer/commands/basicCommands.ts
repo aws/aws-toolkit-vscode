@@ -80,7 +80,7 @@ export const showReferenceLog = Commands.declare(
 )
 
 export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
-    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
+    void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })
 
 export const showSecurityScan = Commands.declare(
@@ -95,7 +95,12 @@ export const showSecurityScan = Commands.declare(
                 if (codeScanState.isNotStarted()) {
                     // User intends to start as "Start Security Scan" is shown in the explorer tree
                     codeScanState.setToRunning()
-                    startSecurityScanWithProgress(securityPanelViewProvider, editor, client, context.extensionContext)
+                    void startSecurityScanWithProgress(
+                        securityPanelViewProvider,
+                        editor,
+                        client,
+                        context.extensionContext
+                    )
                 } else if (codeScanState.isRunning()) {
                     // User intends to stop as "Stop Security Scan" is shown in the explorer tree
                     // Cancel only when the code scan state is "Running"
@@ -103,7 +108,7 @@ export const showSecurityScan = Commands.declare(
                 }
                 await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             } else {
-                vscode.window.showInformationMessage('Open a valid file to scan.')
+                void vscode.window.showInformationMessage('Open a valid file to scan.')
             }
         }
 )
@@ -117,7 +122,7 @@ export const showTransformByQ = Commands.declare(
 
         if (transformByQState.isNotStarted()) {
             logCodeTransformInitiatedMetric(source)
-            startTransformByQWithProgress()
+            await startTransformByQWithProgress()
         } else if (transformByQState.isCancelled()) {
             vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
         } else if (transformByQState.isRunning()) {
