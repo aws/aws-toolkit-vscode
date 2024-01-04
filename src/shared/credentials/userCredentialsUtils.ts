@@ -6,7 +6,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { mkdirp, writeFile } from 'fs-extra'
-import { fileExists } from '../filesystemUtilities'
+import { fileOrFolderExists } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { isNonNullable } from '../utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
@@ -79,7 +79,7 @@ export class UserCredentialsUtils {
      */
     public static async generateCredentialDirectoryIfNonexistent(): Promise<void> {
         const filepath = path.dirname(getCredentialsFilename())
-        if (!(await fileExists(filepath))) {
+        if (!(await fileOrFolderExists(filepath))) {
             await mkdirp(filepath)
         }
     }

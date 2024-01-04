@@ -6,7 +6,7 @@
 import * as child_process from 'child_process'
 import { pushIf } from '../../utilities/collectionUtils'
 import * as nls from 'vscode-nls'
-import { fileExists } from '../../filesystemUtilities'
+import { fileOrFolderExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
@@ -285,11 +285,11 @@ export class SamCliLocalInvokeInvocation {
             throw new Error('template resource name is missing or empty')
         }
 
-        if (!(await fileExists(this.args.templatePath))) {
+        if (!(await fileOrFolderExists(this.args.templatePath))) {
             throw new Error(`template path does not exist: ${this.args.templatePath}`)
         }
 
-        if (this.args.eventPath !== undefined && !(await fileExists(this.args.eventPath))) {
+        if (this.args.eventPath !== undefined && !(await fileOrFolderExists(this.args.eventPath))) {
             throw new Error(`event path does not exist: ${this.args.eventPath}`)
         }
     }

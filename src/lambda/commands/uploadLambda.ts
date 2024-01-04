@@ -13,7 +13,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import {
-    fileExists,
+    fileOrFolderExists,
     cloud9Findfile,
     makeTemporaryToolkitFolder,
     tryRemoveFolder,
@@ -304,7 +304,7 @@ async function runUploadLambdaWithSamBuild(lambda: Required<LambdaFunction>, par
     // Detect if handler is present and provide strong guidance against proceeding if not.
     try {
         const handlerFile = path.join(parentDir.fsPath, getLambdaDetails(lambda.configuration).fileName)
-        if (!(await fileExists(handlerFile))) {
+        if (!(await fileOrFolderExists(handlerFile))) {
             const isConfirmed = await showConfirmationMessage({
                 prompt: localize(
                     'AWS.lambda.upload.handlerNotFound',
@@ -482,7 +482,7 @@ export async function findApplicationJsonFile(
     startPath: vscode.Uri,
     cloud9 = isCloud9()
 ): Promise<vscode.Uri | undefined> {
-    if (!(await fileExists(startPath.fsPath))) {
+    if (!(await fileOrFolderExists(startPath.fsPath))) {
         getLogger().error(
             'findApplicationJsonFile() invalid path (not accessible or does not exist): "%s"',
             startPath.fsPath

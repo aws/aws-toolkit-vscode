@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fileExists } from '../../filesystemUtilities'
+import { fileOrFolderExists } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import { pushIf } from '../../utilities/collectionUtils'
 
@@ -93,7 +93,7 @@ export async function buildSamCliStartApiArguments(args: SamCliStartApiArguments
 }
 
 async function validate(templatePath: string): Promise<void> {
-    if (!(await fileExists(templatePath))) {
+    if (!(await fileOrFolderExists(templatePath))) {
         throw new Error(`template path does not exist: ${templatePath}`)
     }
 }

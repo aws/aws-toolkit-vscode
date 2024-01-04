@@ -10,7 +10,7 @@ import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
-import { fileExists } from '../../shared/filesystemUtilities'
+import { fileOrFolderExists } from '../../shared/filesystemUtilities'
 import { Iot } from 'aws-sdk'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -110,9 +110,9 @@ async function saveCredentials(
     const privateKeyPath = path.join(dir, `${certName}-private.pem.key`)
     const publicKeyPath = path.join(dir, `${certName}-public.pem.key`)
 
-    const certExists = await fileExists(certPath)
-    const privateKeyExists = await fileExists(privateKeyPath)
-    const publicKeyExists = await fileExists(publicKeyPath)
+    const certExists = await fileOrFolderExists(certPath)
+    const privateKeyExists = await fileOrFolderExists(privateKeyPath)
+    const publicKeyExists = await fileOrFolderExists(publicKeyPath)
 
     if (certExists) {
         getLogger().error('Certificate path {0} already exists', certPath)

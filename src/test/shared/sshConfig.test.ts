@@ -12,7 +12,7 @@ import { Result } from '../../shared/utilities/result'
 import { ChildProcess, ChildProcessResult } from '../../shared/utilities/childProcess'
 import { SshConfig, ensureConnectScript, sshLogFileLocation } from '../../shared/sshConfig'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { fileOrFolderExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import {
     DevEnvironmentId,
     bearerTokenCacheLocation,
@@ -195,7 +195,7 @@ describe('CodeCatalyst Connect Script', function () {
 
     it('can get a connect script path, adding a copy to global storage', async function () {
         const script = (await ensureConnectScript(connectScriptPrefix, context)).unwrap().fsPath
-        assert.ok(await fileExists(script))
+        assert.ok(await fileOrFolderExists(script))
         assert.ok(isWithin(context.globalStorageUri.fsPath, script))
     })
 

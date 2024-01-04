@@ -10,7 +10,7 @@ import * as fs from 'fs-extra'
 
 import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { saveCurrentLogDataContent } from '../../../cloudWatchLogs/commands/saveCurrentLogDataContent'
-import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
+import { fileOrFolderExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { getTestWindow } from '../../shared/vscode/window'
 import {
     CloudWatchLogsGroupInfo,
@@ -64,7 +64,7 @@ describe('saveCurrentLogDataContent', async function () {
         getTestWindow().onDidShowDialog(d => d.selectItem(vscode.Uri.file(filename)))
         await saveCurrentLogDataContent()
 
-        assert.ok(await fileExists(filename))
+        assert.ok(await fileOrFolderExists(filename))
         assert.strictEqual(await readFileAsString(filename), expectedText)
     })
 
@@ -74,6 +74,6 @@ describe('saveCurrentLogDataContent', async function () {
             async () => await vscode.window.showTextDocument(vscode.Uri.parse(`notCloudWatch:hahahaha`))
         )
         await saveCurrentLogDataContent()
-        assert.strictEqual(await fileExists(filename), false)
+        assert.strictEqual(await fileOrFolderExists(filename), false)
     })
 })

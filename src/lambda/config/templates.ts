@@ -87,7 +87,7 @@ async function getLocalLambdaConfiguration(
         await saveDocumentIfDirty(configPath)
 
         let rawConfig: string = '{}'
-        if (await fsUtils.fileExists(configPath)) {
+        if (await fsUtils.fileOrFolderExists(configPath)) {
             rawConfig = await fsUtils.readFileAsString(configPath)
         }
 
@@ -114,7 +114,7 @@ export interface LoadTemplatesConfigContext {
 }
 
 export class DefaultLoadTemplatesConfigContext implements LoadTemplatesConfigContext {
-    public readonly fileExists = fsUtils.fileExists
+    public readonly fileExists = fsUtils.fileOrFolderExists
     public readonly readFile = fsUtils.readFileAsString
 
     public readonly saveDocumentIfDirty = saveDocumentIfDirty
@@ -415,7 +415,7 @@ export async function getExistingConfiguration(
 > {
     const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
 
-    if (await fsUtils.fileExists(configPath)) {
+    if (await fsUtils.fileOrFolderExists(configPath)) {
         const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
         try {
             const json = JSON.parse(await fsUtils.readFileAsString(configPath)) as TemplatesConfig

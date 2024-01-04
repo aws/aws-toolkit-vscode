@@ -8,7 +8,7 @@ import * as os from 'os'
 import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import {
-    fileExists,
+    fileOrFolderExists,
     getFileDistance,
     getNonexistentFilename,
     isInDirectory,
@@ -77,7 +77,7 @@ describe('filesystemUtilities', function () {
         })
 
         it('creates a folder', async function () {
-            assert.ok(await fileExists(tempFolder), `expected folder to exist: ${tempFolder}`)
+            assert.ok(await fileOrFolderExists(tempFolder), `expected folder to exist: ${tempFolder}`)
         })
 
         it('makes nested temp dirs', async function () {
@@ -90,7 +90,7 @@ describe('filesystemUtilities', function () {
                 nestedTempDirPath.startsWith(tempDirPath),
                 `expected nestedTempDirPath ('${nestedTempDirPath}') to be in tempDirPath ('${tempDirPath}')`
             )
-            const tmpDirExists = await fileExists(nestedTempDirPath)
+            const tmpDirExists = await fileOrFolderExists(nestedTempDirPath)
             assert(tmpDirExists, `tempFolder should exist: '${nestedTempDirPath}'`)
         })
     })

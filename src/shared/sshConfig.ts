@@ -16,7 +16,7 @@ import { showConfirmationMessage } from './utilities/messages'
 import { CancellationError } from './utilities/timeoutUtils'
 import { getSshConfigPath } from './extensions/ssh'
 import globals from './extensionGlobals'
-import { fileExists, readFileAsString } from './filesystemUtilities'
+import { fileOrFolderExists, readFileAsString } from './filesystemUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -210,7 +210,7 @@ export async function ensureConnectScript(
     const connectScript = vscode.Uri.joinPath(context.globalStorageUri, scriptName)
 
     try {
-        const exists = await fileExists(connectScript.fsPath)
+        const exists = await fileOrFolderExists(connectScript.fsPath)
         const contents1 = await readFileAsString(versionedScript.fsPath)
         const contents2 = exists ? await readFileAsString(connectScript.fsPath) : ''
         const isOutdated = contents1 !== contents2

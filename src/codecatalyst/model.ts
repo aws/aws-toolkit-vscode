@@ -25,7 +25,7 @@ import { isDevenvVscode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { areEqual } from '../shared/utilities/pathUtils'
-import { fileExists } from '../shared/filesystemUtilities'
+import { fileOrFolderExists } from '../shared/filesystemUtilities'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { ToolkitError } from '../shared/errors'
 import { Result } from '../shared/utilities/result'
@@ -287,13 +287,13 @@ export async function getDevfileLocation(client: DevEnvClient, root?: vscode.Uri
     async function checkDefaultLocations(rootDirectory: vscode.Uri): Promise<vscode.Uri> {
         // Check the projects root location
         const devfileRoot = vscode.Uri.joinPath(vscode.Uri.parse('/projects'), 'devfile.yaml')
-        if (await fileExists(devfileRoot.fsPath)) {
+        if (await fileOrFolderExists(devfileRoot.fsPath)) {
             return devfileRoot
         }
 
         // Check the location relative to the current directory
         const projectRoot = vscode.Uri.joinPath(rootDirectory, 'devfile.yaml')
-        if (await fileExists(projectRoot.fsPath)) {
+        if (await fileOrFolderExists(projectRoot.fsPath)) {
             return projectRoot
         }
 
@@ -315,12 +315,12 @@ export async function getDevfileLocation(client: DevEnvClient, root?: vscode.Uri
     const repo = path.basename(rootDirectory.fsPath)
     const splitDevfilePath = devfileLocation.split('/')
     const devfilePath = vscode.Uri.joinPath(rootDirectory, 'devfile.yaml')
-    if (repo === splitDevfilePath[0] && (await fileExists(devfilePath.fsPath))) {
+    if (repo === splitDevfilePath[0] && (await fileOrFolderExists(devfilePath.fsPath))) {
         return devfilePath
     }
 
     const baseLocation = vscode.Uri.joinPath(rootDirectory, devfileLocation)
-    if (await fileExists(baseLocation.fsPath)) {
+    if (await fileOrFolderExists(baseLocation.fsPath)) {
         return baseLocation
     }
 

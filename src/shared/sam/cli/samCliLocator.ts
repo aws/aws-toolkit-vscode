@@ -103,7 +103,7 @@ abstract class BaseSamCliLocator {
                 getSamCliInfo: async () => new SamCliInfoInvocation(fullPath).execute(),
             }
             const validator = new DefaultSamCliValidator(context)
-            if (await filesystemUtilities.fileExists(fullPath)) {
+            if (await filesystemUtilities.fileOrFolderExists(fullPath)) {
                 try {
                     const validationResult = await validator.getVersionValidatorResult()
                     if (validationResult.validation === SamCliVersionValidation.Valid) {

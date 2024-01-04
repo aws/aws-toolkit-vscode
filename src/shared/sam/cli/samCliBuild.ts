@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fileExists } from '../../filesystemUtilities'
+import { fileOrFolderExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { pushIf } from '../../utilities/collectionUtils'
@@ -66,7 +66,7 @@ export interface SamCliBuildInvocationArguments {
 }
 
 export interface FileFunctions {
-    fileExists: typeof fileExists
+    fileExists: typeof fileOrFolderExists
 }
 
 /**
@@ -183,6 +183,6 @@ export class SamCliBuildInvocation {
 
 function getDefaultFileFunctions(): FileFunctions {
     return {
-        fileExists,
+        fileExists: fileOrFolderExists,
     }
 }

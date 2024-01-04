@@ -16,7 +16,7 @@ import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { fileExists, tryRemoveFolder } from '../shared/filesystemUtilities'
+import { fileOrFolderExists, tryRemoveFolder } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import * as testUtils from './integrationTestsUtilities'
@@ -488,8 +488,8 @@ describe('SAM Integration Tests', async function () {
 
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
                     const readmePath = path.join(testDir, samApplicationName, 'README.md')
-                    assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
-                    assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
+                    assert.ok(await fileOrFolderExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
+                    assert.ok(await fileOrFolderExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
 
                     samAppCodeUri = await openSamAppFile(appPath)
                 })

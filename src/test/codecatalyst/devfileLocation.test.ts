@@ -47,7 +47,7 @@ describe('getDevfileLocation', function () {
 
     it('devfile without repo found in workspace root', async function () {
         const devfilePath = vscode.Uri.parse('/projects/WebApplication/devfile.yaml').fsPath
-        sandbox.stub(fileSystemUtils, 'fileExists').callsFake(async function (p: string) {
+        sandbox.stub(fileSystemUtils, 'fileOrFolderExists').callsFake(async function (p: string) {
             return p === devfilePath
         })
         const client = mockClient('devfile.yaml')
@@ -57,7 +57,7 @@ describe('getDevfileLocation', function () {
 
     it('devfile found in subfolder with repo', async function () {
         const devfilePath = vscode.Uri.parse('/projects/WebApplication/devfile.yaml').fsPath
-        sandbox.stub(fileSystemUtils, 'fileExists').callsFake(async function (p: string) {
+        sandbox.stub(fileSystemUtils, 'fileOrFolderExists').callsFake(async function (p: string) {
             return p === devfilePath
         })
         const client = mockClient('WebApplication/devfile.yaml')
@@ -66,7 +66,7 @@ describe('getDevfileLocation', function () {
     })
 
     it('throws when devfile is not found', async function () {
-        sandbox.stub(fileSystemUtils, 'fileExists').resolves(false)
+        sandbox.stub(fileSystemUtils, 'fileOrFolderExists').resolves(false)
         const client = mockClient('test/devfile.yaml')
         const location = getDevfileLocation(client, vscode.Uri.parse('/projects/WebApplication'))
         assert.rejects(location, new Error('Devfile location was not found'))
@@ -74,7 +74,7 @@ describe('getDevfileLocation', function () {
 
     it('falls back to default projects location when devfile cannot be located', async function () {
         const devfilePath = vscode.Uri.parse('/projects/devfile.yaml').fsPath
-        sandbox.stub(fileSystemUtils, 'fileExists').callsFake(async function (p: string) {
+        sandbox.stub(fileSystemUtils, 'fileOrFolderExists').callsFake(async function (p: string) {
             return p === devfilePath
         })
         const client = mockClient('WebApplication/devfile.yaml')
@@ -84,7 +84,7 @@ describe('getDevfileLocation', function () {
 
     it('falls back to default workspace location when devfile cannot be located', async function () {
         const devfilePath = vscode.Uri.parse('/projects/WebApplication/devfile.yaml').fsPath
-        sandbox.stub(fileSystemUtils, 'fileExists').callsFake(async function (p: string) {
+        sandbox.stub(fileSystemUtils, 'fileOrFolderExists').callsFake(async function (p: string) {
             return p === devfilePath
         })
         const client = mockClient('devfile.yaml')
@@ -94,7 +94,7 @@ describe('getDevfileLocation', function () {
 
     it('checks project root for devfile when location isnt specified', async function () {
         const devfilePath = vscode.Uri.parse('/projects/devfile.yaml').fsPath
-        sandbox.stub(fileSystemUtils, 'fileExists').callsFake(async function (p: string) {
+        sandbox.stub(fileSystemUtils, 'fileOrFolderExists').callsFake(async function (p: string) {
             return p === devfilePath
         })
         const client = mockClient(undefined)
@@ -104,7 +104,7 @@ describe('getDevfileLocation', function () {
 
     it('checks workspace root for devfile when location isnt specified', async function () {
         const devfilePath = vscode.Uri.parse('/projects/WebApplication/devfile.yaml').fsPath
-        sandbox.stub(fileSystemUtils, 'fileExists').callsFake(async function (p: string) {
+        sandbox.stub(fileSystemUtils, 'fileOrFolderExists').callsFake(async function (p: string) {
             return p === devfilePath
         })
         const client = mockClient(undefined)

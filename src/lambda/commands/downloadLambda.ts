@@ -12,7 +12,7 @@ import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 
-import { makeTemporaryToolkitFolder, fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, fileOrFolderExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
@@ -177,7 +177,7 @@ async function downloadAndUnzipLambda(
 }
 
 export async function openLambdaFile(lambdaLocation: string): Promise<void> {
-    if (!(await fileExists(lambdaLocation))) {
+    if (!(await fileOrFolderExists(lambdaLocation))) {
         const warning = localize(
             'AWS.lambda.download.fileNotFound',
             'Handler file {0} not found in downloaded function.',

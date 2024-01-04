@@ -16,7 +16,7 @@ import {
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import globals from '../../extensionGlobals'
 import { ExtContext } from '../../extensions'
-import { fileExists, readFileAsString } from '../../filesystemUtilities'
+import { fileOrFolderExists, readFileAsString } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
@@ -46,7 +46,7 @@ async function makePythonDebugManifest(params: {
     const manfestPath = path.join(params.samProjectCodeRoot, 'requirements.txt')
     // TODO: figure out how to get debugpy in the container without hacking the user's requirements
     const debugManifestPath = params.isImageLambda ? manfestPath : path.join(params.outputDir, 'debug-requirements.txt')
-    if (await fileExists(manfestPath)) {
+    if (await fileOrFolderExists(manfestPath)) {
         manifestText = await readFileAsString(manfestPath)
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)

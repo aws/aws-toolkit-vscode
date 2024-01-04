@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, mkdtemp, mkdirp, readFile, remove, existsSync, readdir, stat } from 'fs-extra'
+import { mkdtemp, mkdirp, readFile, remove, existsSync, readdir, stat } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as fsExtra from 'fs-extra'
 import * as os from 'os'
@@ -61,18 +61,20 @@ export function downloadsDir(): string {
 }
 
 /**
+ * @deprecated Use methods in {@link fsCommon} instead of this method.
+ * 
  * Checks if file or directory `p` exists.
  *
  * TODO: optionally check read/write permissions and return a granular status.
+ * 
+ 
  */
-export async function fileExists(p: string): Promise<boolean> {
+export async function fileOrFolderExists(p: string): Promise<boolean> {
     try {
-        await access(p)
+        return await fsCommon.exists(p)
     } catch (err) {
         return false
     }
-
-    return true
 }
 
 /**

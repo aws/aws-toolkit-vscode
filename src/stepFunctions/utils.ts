@@ -9,7 +9,7 @@ import { IAM, StepFunctions } from 'aws-sdk'
 import { mkdir, writeFile } from 'fs-extra'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
-import { fileExists } from '../shared/filesystemUtilities'
+import { fileOrFolderExists } from '../shared/filesystemUtilities'
 import { getLogger, Logger } from '../shared/logger'
 import {
     DiagnosticSeverity,
@@ -70,7 +70,7 @@ export class StateMachineGraphCache {
         this.cssFilePath = options.cssFilePath ?? globals.visualizationResourcePaths.visualizationLibraryCSS.fsPath
         this.jsFilePath = options.jsFilePath ?? globals.visualizationResourcePaths.visualizationLibraryScript.fsPath
         this.dirPath = options.dirPath ?? globals.visualizationResourcePaths.visualizationLibraryCachePath.fsPath
-        this.fileExists = fileExistsCustom ?? fileExists
+        this.fileExists = fileExistsCustom ?? fileOrFolderExists
     }
 
     public async updateCache(globalStorage: vscode.Memento): Promise<void> {

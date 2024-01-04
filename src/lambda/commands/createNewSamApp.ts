@@ -21,7 +21,7 @@ import {
 import { ActivationReloadState, SamInitState } from '../../shared/activationReloadState'
 import { AwsContext } from '../../shared/awsContext'
 
-import { fileExists, isInDirectory, readFileAsString } from '../../shared/filesystemUtilities'
+import { fileOrFolderExists, isInDirectory, readFileAsString } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getSamCliVersion, getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
@@ -367,7 +367,7 @@ export async function getProjectUri(
     for (const f of files) {
         file = f
         cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
-        if (await fileExists(cfnTemplatePath)) {
+        if (await fileOrFolderExists(cfnTemplatePath)) {
             return vscode.Uri.file(cfnTemplatePath)
         }
     }
