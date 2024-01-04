@@ -122,64 +122,64 @@ export class ChatController {
         })
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage(data => {
-            this.processPromptChatMessage(data)
+            return this.processPromptChatMessage(data)
         })
 
         this.chatControllerMessageListeners.processTabCreatedMessage.onMessage(data => {
-            this.processTabCreateMessage(data)
+            return this.processTabCreateMessage(data)
         })
 
         this.chatControllerMessageListeners.processTabClosedMessage.onMessage(data => {
-            this.processTabCloseMessage(data)
+            return this.processTabCloseMessage(data)
         })
 
         this.chatControllerMessageListeners.processTabChangedMessage.onMessage(data => {
-            this.processTabChangedMessage(data)
+            return this.processTabChangedMessage(data)
         })
 
         this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage(data => {
-            this.processInsertCodeAtCursorPosition(data)
+            return this.processInsertCodeAtCursorPosition(data)
         })
 
         this.chatControllerMessageListeners.processCopyCodeToClipboard.onMessage(data => {
-            this.processCopyCodeToClipboard(data)
+            return this.processCopyCodeToClipboard(data)
         })
 
         this.chatControllerMessageListeners.processContextMenuCommand.onMessage(data => {
-            this.processContextMenuCommand(data)
+            return this.processContextMenuCommand(data)
         })
 
         this.chatControllerMessageListeners.processTriggerTabIDReceived.onMessage(data => {
-            this.processTriggerTabIDReceived(data)
+            return this.processTriggerTabIDReceived(data)
         })
 
         this.chatControllerMessageListeners.processStopResponseMessage.onMessage(data => {
-            this.processStopResponseMessage(data)
+            return this.processStopResponseMessage(data)
         })
 
         this.chatControllerMessageListeners.processChatItemVotedMessage.onMessage(data => {
-            this.processChatItemVotedMessage(data)
+            return this.processChatItemVotedMessage(data)
         })
 
         this.chatControllerMessageListeners.processChatItemFeedbackMessage.onMessage(data => {
-            this.processChatItemFeedbackMessage(data)
+            return this.processChatItemFeedbackMessage(data)
         })
 
         this.chatControllerMessageListeners.processUIFocusMessage.onMessage(data => {
-            this.processUIFocusMessage(data)
+            return this.processUIFocusMessage(data)
         })
 
         this.chatControllerMessageListeners.processOnboardingPageInteraction.onMessage(data => {
-            this.processOnboardingPageInteraction(data)
+            return this.processOnboardingPageInteraction(data)
         })
         this.chatControllerMessageListeners.processSourceLinkClick.onMessage(data => {
-            this.processSourceLinkClick(data)
+            return this.processSourceLinkClick(data)
         })
         this.chatControllerMessageListeners.processResponseBodyLinkClick.onMessage(data => {
-            this.processResponseBodyLinkClick(data)
+            return this.processResponseBodyLinkClick(data)
         })
         this.chatControllerMessageListeners.processFooterInfoLinkClick.onMessage(data => {
-            this.processFooterInfoLinkClick(data)
+            return this.processFooterInfoLinkClick(data)
         })
     }
 
