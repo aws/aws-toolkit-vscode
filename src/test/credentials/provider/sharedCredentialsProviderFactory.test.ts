@@ -4,12 +4,13 @@
  */
 
 import assert from 'assert'
-import fs from 'fs-extra'
 import sinon from 'sinon'
 import { Uri, Range } from 'vscode'
 import { isEqual } from '../../../auth/providers/credentials'
 import { SharedCredentialsProviderFactory } from '../../../auth/providers/sharedCredentialsProviderFactory'
 import * as sharedCredentials from '../../../auth/credentials/sharedCredentials'
+import { fsCommon } from '../../../srcShared/fs'
+import vscode from 'vscode'
 
 describe('SharedCredentialsProviderFactory', async function () {
     let sandbox: sinon.SinonSandbox
@@ -39,10 +40,10 @@ describe('SharedCredentialsProviderFactory', async function () {
         sandbox = sinon.createSandbox()
 
         sharedCredentialsLastModifiedMillis = 1
-        sandbox.stub(fs, 'stat').callsFake(async () => {
+        sandbox.stub(fsCommon, 'stat').callsFake(async () => {
             return {
-                mtimeMs: sharedCredentialsLastModifiedMillis,
-            } as any as fs.Stats
+                mtime: sharedCredentialsLastModifiedMillis,
+            } as any as vscode.FileStat
         })
 
         sharedCredentialProfiles = new Map<string, sharedCredentials.Profile>()

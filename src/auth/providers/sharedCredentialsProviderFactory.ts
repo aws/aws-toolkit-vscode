@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
+import { fsCommon } from '../../srcShared/fs'
 import { getLogger, Logger } from '../../shared/logger'
 import { loadSharedCredentialsSections, updateAwsSdkLoadConfigEnvVar } from '../credentials/sharedCredentials'
 import { CredentialsProviderType } from './credentials'
@@ -80,9 +80,13 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
 
     private async getLastModifiedMillis(filepath: string): Promise<number | undefined> {
         try {
-            const stat = await fs.stat(filepath)
+            const stat = await fsCommon.stat(filepath)
 
-            return stat.mtimeMs
+            if (stat === undefined) {
+                throw new Error(`Cannot get stat() of ${filepath}`)
+            }
+
+            return stat.mtime
         } catch (err) {
             return undefined
         }
