@@ -5,7 +5,6 @@
 
 import { access, mkdtemp, mkdirp, readFile, remove, existsSync, readdir, stat } from 'fs-extra'
 import * as crypto from 'crypto'
-import * as fs from 'fs'
 import * as fsExtra from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
@@ -14,6 +13,7 @@ import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
 import { GlobalState } from './globalState'
+import { fsCommon } from '../srcShared/fs'
 
 const defaultEncoding: BufferEncoding = 'utf8'
 
@@ -198,18 +198,18 @@ export function getFileDistance(fileA: string, fileB: string): number {
  * @param suffix  Filename suffix, typically an extension (".txt"), may be empty
  * @param max  Stop searching if all permutations up to this number exist
  */
-export function getNonexistentFilename(dir: string, name: string, suffix: string, max: number = 99): string {
+export async function getNonexistentFilename(dir: string, name: string, suffix: string, max: number = 99): Promise<string> {
     if (!name) {
         throw new Error(`name is empty`)
     }
-    if (!fs.existsSync(dir)) {
+    if (!await fsCommon.directoryExists(dir)) {
         throw new Error(`directory does not exist: ${dir}`)
     }
     for (let i = 0; true; i++) {
         const filename =
             i === 0 ? `${name}${suffix}` : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
         const fullpath = path.join(dir, filename)
-        if (!fs.existsSync(fullpath) || i >= max + 99) {
+        if (!await fsCommon.fileExists(fullpath) || i >= max + 99) {
             return filename
         }
     }

@@ -28,7 +28,6 @@ import {
 } from '../models/samTemplates'
 import * as semver from 'semver'
 import { minSamCliVersionForArmSupport, minSamCliVersionForImageSupport } from '../../shared/sam/cli/samCliValidator'
-import * as fsutil from '../../shared/filesystemUtilities'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createFolderPrompt } from '../../shared/ui/common/location'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
@@ -37,6 +36,7 @@ import { createRegionPrompter } from '../../shared/ui/common/region'
 import { Region } from '../../shared/regions/endpoints'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
+import crypto from 'crypto'
 
 const localize = nls.loadMessageBundle()
 
@@ -274,12 +274,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
 
         this.form.name.bindPrompter(state =>
             createNamePrompter(
-                fsutil.getNonexistentFilename(
-                    state.location!.fsPath,
-                    `lambda-${state.runtimeAndPackage!.runtime}`,
-                    '',
-                    99
-                )
+                `${`lambda-${state.runtimeAndPackage!.runtime}`}-${crypto.randomBytes(4).toString('hex')}`
             )
         )
     }
