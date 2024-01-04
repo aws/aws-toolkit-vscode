@@ -28,13 +28,13 @@ export async function deleteRepository(node: EcrRepositoryNode): Promise<void> {
 
         getLogger().info(`deleted repository: ${repositoryName}`)
 
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize('AWS.ecr.deleteRepository.success', 'Deleted repository: {0}', repositoryName)
         )
         telemetry.ecr_deleteRepository.emit({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to delete repository ${repositoryName}: %s`, e)
-        showViewLogsMessage(
+        void showViewLogsMessage(
             localize('AWS.ecr.deleteRepository.failure', 'Failed to delete repository: {0}', repositoryName)
         )
         telemetry.ecr_deleteRepository.emit({ result: 'Failed' })
