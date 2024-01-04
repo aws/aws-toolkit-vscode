@@ -26,7 +26,9 @@ export class FeatureConfigProvider {
     static #instance: FeatureConfigProvider
 
     constructor() {
-        this.fetchFeatureConfigs()
+        this.fetchFeatureConfigs().catch(e => {
+            getLogger().error('fetchFeatureConfigs failed: %s', (e as Error).message)
+        })
 
         setInterval(this.fetchFeatureConfigs.bind(this), featureConfigPollIntervalInMs)
     }
