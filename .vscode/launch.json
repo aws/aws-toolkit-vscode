@@ -43,6 +43,15 @@
             "preLaunchTask": "npm: compile"
         },
         {
+            "name": "Extension (external chromium)",
+            "type": "chrome",
+            "request": "attach",
+            "preLaunchTask": "launchDebugBrowser",
+            "port": 9229,
+            "timeout": 10000,
+            "sourceMaps": true
+        },
+        {
             "name": "Extension Tests",
             "type": "extensionHost",
             "request": "launch",
