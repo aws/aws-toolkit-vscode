@@ -37,6 +37,7 @@ describe('ResourceManager', function () {
     const fakeTypeName = 'sometype'
     const fakeIdentifier = 'someidentifier'
     const fakeRegion = 'someregion'
+    const oldSchemaService = globals.schemaService
 
     const fakeResourceDescription = {
         Role: 'arn:aws:iam::1234:role/service-role/fooResource',
@@ -74,6 +75,10 @@ describe('ResourceManager', function () {
         sandbox.restore()
         await resourceManager.dispose()
         await remove(tempFolder)
+    })
+
+    after(function () {
+        globals.schemaService = oldSchemaService
     })
 
     it('opens resources in preview mode', async function () {
