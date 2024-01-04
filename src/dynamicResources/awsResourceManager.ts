@@ -157,7 +157,7 @@ export class AwsResourceManager {
         await this.initialize()
 
         const normalizedTypeName = getNormalizedTypeName(typeName)
-        const filename = getNonexistentFilename(
+        const filename = await getNonexistentFilename(
             this.folder!,
             encodeURIComponent(identifier),
             `.${normalizedTypeName}.awsResource.json`
