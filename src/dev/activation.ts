@@ -343,14 +343,14 @@ async function deleteSsoConnections() {
     const conns = Auth.instance.listConnections()
     const ssoConns = (await conns).filter(isAnySsoConnection)
     await Promise.all(ssoConns.map(conn => Auth.instance.deleteConnection(conn)))
-    vscode.window.showInformationMessage(`Deleted: ${ssoConns.map(c => c.startUrl).join(', ')}`)
+    void vscode.window.showInformationMessage(`Deleted: ${ssoConns.map(c => c.startUrl).join(', ')}`)
 }
 
 async function expireSsoConnections() {
     const conns = Auth.instance.listConnections()
     const ssoConns = (await conns).filter(isAnySsoConnection)
     await Promise.all(ssoConns.map(conn => Auth.instance.expireConnection(conn)))
-    vscode.window.showInformationMessage(`Expired: ${ssoConns.map(c => c.startUrl).join(', ')}`)
+    void vscode.window.showInformationMessage(`Expired: ${ssoConns.map(c => c.startUrl).join(', ')}`)
 }
 
 async function showState(path: string) {

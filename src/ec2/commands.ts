@@ -9,10 +9,14 @@ import { Ec2ConnectionManager } from './model'
 import { Ec2Prompter, instanceFilter, Ec2Selection } from './prompter'
 import { Ec2Instance, Ec2Client } from '../shared/clients/ec2Client'
 import { copyToClipboard } from '../shared/utilities/messages'
+import { getLogger } from '../shared/logger'
 
 export function refreshExplorer(node?: Ec2Node) {
     if (node) {
-        node instanceof Ec2InstanceNode ? node.parent.refreshNode() : node.refreshNode()
+        const n = node instanceof Ec2InstanceNode ? node.parent : node
+        n.refreshNode().catch(e => {
+            getLogger().error('refreshNode failed: %s', (e as Error).message)
+        })
     }
 }
 
