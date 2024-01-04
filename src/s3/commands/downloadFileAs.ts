@@ -110,7 +110,7 @@ export async function downloadFileAsCommand(node: S3FileNode, outputChannel = gl
     const sourcePath = readablePath(node)
 
     await telemetry.s3_downloadObject.run(async () => {
-        const downloadPath = getDefaultDownloadPath()
+        const downloadPath = await getDefaultDownloadPath()
 
         const saveLocation = await promptForSaveLocation(file.name, downloadPath)
         if (!saveLocation) {
