@@ -4,7 +4,7 @@
  */
 
 import TransportStream from 'winston-transport'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
 import { MESSAGE } from './consoleLogTransport'
@@ -39,7 +39,7 @@ export class SharedFileTransport extends TransportStream {
     private logFile: vscode.Uri
     constructor(
         opts: TransportStream.TransportStreamOptions & { logFile: vscode.Uri },
-        private readonly append = (f: vscode.Uri, s: string) => FileSystemCommon.instance.appendFile(f, s)
+        private readonly append = (f: vscode.Uri, s: string) => fsCommon.appendFile(f, s)
     ) {
         super(opts)
         this.logFile = opts.logFile

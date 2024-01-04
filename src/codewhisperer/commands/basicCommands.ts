@@ -28,7 +28,7 @@ import {
 } from '../util/customizationUtil'
 import { applyPatch } from 'diff'
 import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { showManageConnections } from '../../auth/ui/vue/show'
@@ -315,7 +315,7 @@ export const applySecurityFix = Commands.declare(
             }
 
             // writing the patch applied version of document into the file
-            await FileSystemCommon.instance.writeFile(filePath, updatedContent)
+            await fsCommon.writeFile(filePath, updatedContent)
             void vscode.window
                 .showInformationMessage(CodeWhispererConstants.codeFixAppliedSuccessMessage, {
                     title: CodeWhispererConstants.runSecurityScanButtonTitle,
