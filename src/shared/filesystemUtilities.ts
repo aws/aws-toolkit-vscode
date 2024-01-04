@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { mkdtemp, mkdirp, readFile } from 'fs-extra'
+import { mkdtemp, mkdirp } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as os from 'os'
 import * as path from 'path'
@@ -14,8 +14,6 @@ import globals from '../shared/extensionGlobals'
 import { GlobalState } from './globalState'
 import { fsCommon } from '../srcShared/fs'
 import fs from 'fs'
-
-const defaultEncoding: BufferEncoding = 'utf8'
 
 export const tempDirPath = path.join(
     // https://github.com/aws/aws-toolkit-vscode/issues/240
@@ -87,11 +85,8 @@ export async function fileExists(p: string): Promise<boolean> {
  *
  * @returns the contents of the file as a string
  */
-export async function readFileAsString(
-    pathLike: string,
-    options: { encoding: BufferEncoding; flag?: string } = { encoding: defaultEncoding }
-): Promise<string> {
-    return readFile(pathLike, options)
+export async function readFileAsString(pathLike: string): Promise<string> {
+    return fsCommon.readFileAsString(pathLike)
 }
 
 /**
