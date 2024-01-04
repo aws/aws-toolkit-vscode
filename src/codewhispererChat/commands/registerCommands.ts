@@ -15,7 +15,7 @@ const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
 
 export function registerCommands(controllerPublishers: ChatControllerMessagePublishers) {
     Commands.register('aws.amazonq.explainCode', async data => {
-        focusAmazonQPanel().then(() => {
+        return focusAmazonQPanel().then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.explainCode',
                 triggerType: getCommandTriggerType(data),
@@ -23,7 +23,7 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
         })
     })
     Commands.register('aws.amazonq.refactorCode', async data => {
-        focusAmazonQPanel().then(() => {
+        return focusAmazonQPanel().then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.refactorCode',
                 triggerType: getCommandTriggerType(data),
@@ -31,7 +31,7 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
         })
     })
     Commands.register('aws.amazonq.fixCode', async data => {
-        focusAmazonQPanel().then(() => {
+        return focusAmazonQPanel().then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.fixCode',
                 triggerType: getCommandTriggerType(data),
@@ -47,7 +47,7 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
         })
     })
     Commands.register('aws.amazonq.sendToPrompt', async data => {
-        focusAmazonQPanel().then(() => {
+        return focusAmazonQPanel().then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.sendToPrompt',
                 triggerType: getCommandTriggerType(data),

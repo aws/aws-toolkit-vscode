@@ -32,7 +32,7 @@ export async function invokeRecommendation(
      * IntelliSense in Cloud9 needs editor.suggest.showMethods
      */
     if (!config.isShowMethodsEnabled && isCloud9()) {
-        vscode.window.showWarningMessage('Turn on "editor.suggest.showMethods" to use CodeWhisperer')
+        void vscode.window.showWarningMessage('Turn on "editor.suggest.showMethods" to use CodeWhisperer')
         return
     }
     if (!editor) {
