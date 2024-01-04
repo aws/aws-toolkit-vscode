@@ -100,4 +100,4 @@ export class cloudformationDependencyGraph extends DependencyGraph {
     }
 }
 
-export class CsharpDependencyGraphError extends Error {}
+export class cloudformationDependencyGraphError extends Error {}
