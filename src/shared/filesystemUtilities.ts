@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { mkdtemp, mkdirp, readFile, remove, existsSync } from 'fs-extra'
+import { mkdtemp, mkdirp, readFile, remove } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as os from 'os'
 import * as path from 'path'
@@ -53,9 +53,9 @@ export async function getDirSize(
     return (await Promise.all(fileSizes)).reduce((accumulator, size) => accumulator + size, 0)
 }
 
-export function downloadsDir(): string {
+async function downloadsDir(): Promise<string> {
     const downloadPath = path.join(os.homedir(), 'Downloads')
-    if (existsSync(downloadPath)) {
+    if (await fsCommon.directoryExists(downloadPath)) {
         return downloadPath
     } else {
         return os.tmpdir()
@@ -263,7 +263,7 @@ export async function cloud9Findfile(dir: string, fileName: string): Promise<vsc
 /**
  * @returns  A string path to the last locally stored download location. If none, returns the users 'Downloads' directory path.
  */
-export function getDefaultDownloadPath(): string {
+export async function getDefaultDownloadPath(): Promise<string> {
     const lastUsedPath = globals.context.globalState.get('aws.downloadPath')
     if (lastUsedPath) {
         if (typeof lastUsedPath === 'string') {
