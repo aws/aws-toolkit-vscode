@@ -39,7 +39,7 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
         })
     })
     Commands.register('aws.amazonq.optimizeCode', async data => {
-        focusAmazonQPanel().then(() => {
+        return focusAmazonQPanel().then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.optimizeCode',
                 triggerType: getCommandTriggerType(data),

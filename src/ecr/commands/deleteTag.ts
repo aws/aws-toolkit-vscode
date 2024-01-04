@@ -32,7 +32,7 @@ export async function deleteTag(node: EcrTagNode): Promise<void> {
 
         getLogger().info(`Successfully deleted tag ${node.tag} from repository ${node.repository.repositoryName}`)
 
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.ecr.deleteTag.success',
                 'Deleted tag {0} from repository {1}',
@@ -43,7 +43,7 @@ export async function deleteTag(node: EcrTagNode): Promise<void> {
         telemetry.ecr_deleteTags.emit({ result: 'Succeeded', value: 1 })
     } catch (e) {
         getLogger().error(`Failed to delete tag ${node.tag} from repository ${node.repository.repositoryName}: %s`, e)
-        showViewLogsMessage(
+        void showViewLogsMessage(
             localize(
                 'AWS.ecr.deleteTag.failure',
                 'Failed to delete tag {0} from repository {1}',

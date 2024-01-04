@@ -30,7 +30,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             })
         }),
         Commands.register('aws.ecs.viewDocumentation', async () => {
-            openUrl(vscode.Uri.parse(ecsDocumentationUrl))
+            void openUrl(vscode.Uri.parse(ecsDocumentationUrl))
         })
     )
 }
