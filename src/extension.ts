@@ -103,7 +103,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
-        logAndShowError(error, info.id, defaultMessage)
+        void logAndShowError(error, info.id, defaultMessage)
     })
 
     registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
@@ -173,7 +173,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         try {
-            activateDev(extContext)
+            await activateDev(extContext)
         } catch (error) {
             getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }

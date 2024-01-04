@@ -75,7 +75,7 @@ export async function toggleExecuteCommandFlag(
         if (choice === undefined || choice === no) {
             throw new CancellationError('user')
         } else if (choice === yesDontAskAgain) {
-            settings.disablePrompt(prompt)
+            await settings.disablePrompt(prompt)
         }
     }
 

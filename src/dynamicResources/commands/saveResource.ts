@@ -91,7 +91,7 @@ export async function createResource(
                 })
                 const identifier = result.ProgressEvent!.Identifier!
                 getLogger().info(`Created resource type ${typeName} identifier ${identifier}`)
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize('aws.resources.createResource.success', 'Created resource {0} ({1})', identifier, typeName)
                 )
                 return identifier
@@ -102,7 +102,7 @@ export async function createResource(
                     getLogger().warn(
                         `Resource type ${typeName} does not support CREATE action in ${cloudControl.regionCode}`
                     )
-                    vscode.window.showWarningMessage(
+                    void vscode.window.showWarningMessage(
                         localize(
                             'aws.resources.createResource.unsupported',
                             '{0} does not currently support resource creation in {1}',
@@ -113,7 +113,7 @@ export async function createResource(
                 } else {
                     result = 'Failed'
                     getLogger().error(`Failed to create resource type ${typeName}: %O`, error.message)
-                    showViewLogsMessage(
+                    void showViewLogsMessage(
                         localize('aws.resources.createResource.failure', 'Failed to create resource ({0})', typeName)
                     )
                     throw e
@@ -158,7 +158,7 @@ export async function updateResource(
 
                 if (patch.length === 0) {
                     result = 'Cancelled'
-                    vscode.window.showWarningMessage(
+                    void vscode.window.showWarningMessage(
                         localize(
                             'aws.resources.updateResource.noDiff',
                             'Update cancelled - no diff between local and remote definitions',
@@ -176,7 +176,7 @@ export async function updateResource(
                 })
                 getLogger().info(`Updated resource type ${typeName} identifier ${identifier}`)
 
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize('aws.resources.updateResource.success', 'Updated resource {0} ({1})', identifier, typeName)
                 )
                 return true
@@ -187,7 +187,7 @@ export async function updateResource(
                     getLogger().warn(
                         `Resource type ${typeName} does not support UPDATE action in ${cloudControl.regionCode}`
                     )
-                    vscode.window.showWarningMessage(
+                    void vscode.window.showWarningMessage(
                         localize(
                             'aws.resources.createResource.unsupported',
                             '{0} does not currently support resource updating in {1}',
@@ -202,7 +202,7 @@ export async function updateResource(
                         `Failed to update resource type ${typeName} identifier ${identifier}: %O`,
                         error.message
                     )
-                    showViewLogsMessage(
+                    void showViewLogsMessage(
                         localize(
                             'aws.resources.updateResource.failure',
                             'Failed to update resource {0} ({1})',
@@ -234,5 +234,5 @@ export function updateDiagnostics(err: Error, doc: vscode.TextDocument, diagnost
     const range = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length))
     const diag = new vscode.Diagnostic(range, err.message)
     diagnostics.set(doc.uri, [diag])
-    vscode.commands.executeCommand('workbench.actions.view.problems')
+    void vscode.commands.executeCommand('workbench.actions.view.problems')
 }

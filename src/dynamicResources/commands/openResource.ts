@@ -39,7 +39,7 @@ export async function openResource(opts: {
             try {
                 const editor = await opts.resourceManager.open(resource, opts.preview)
                 if (!opts.preview) {
-                    vscode.window.showWarningMessage(
+                    void vscode.window.showWarningMessage(
                         localize(
                             'aws.resources.editResource.notice',
                             'You are editing an AWS resource. Any saved changes will be reflected on the remote resource.'
@@ -60,7 +60,7 @@ export async function openResource(opts: {
                     resource.parent.typeName
                 )
 
-                vscode.window.showErrorMessage(errorMessage)
+                void vscode.window.showErrorMessage(errorMessage)
                 getLogger().error('Error opening resource: %s', error)
                 result = 'Failed'
             } finally {
