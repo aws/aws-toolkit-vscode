@@ -16,6 +16,7 @@ export abstract class SecurityIssueProvider {
     }
 
     public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
+        // handleDocumentChange function may be triggered while testing by our own code generation. Adding a conditional check to return if we do not have event.
         if (!event.contentChanges || event.contentChanges.length === 0) {
             return
         }
