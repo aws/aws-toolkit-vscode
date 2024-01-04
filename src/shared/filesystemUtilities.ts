@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { mkdtemp, mkdirp } from 'fs-extra'
+import { mkdtemp } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as os from 'os'
 import * as path from 'path'
@@ -115,9 +115,7 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
 
     const tmpPath = path.join(tempDirPath, ...relativePathParts)
     const tmpPathParent = path.dirname(tmpPath)
-    // fs.makeTemporaryToolkitFolder fails on OSX if prefix contains path separator
-    // so we must create intermediate dirs if needed
-    await mkdirp(tmpPathParent)
+    await fsCommon.mkdir(tmpPathParent)
 
     return await mkdtemp(tmpPath)
 }
