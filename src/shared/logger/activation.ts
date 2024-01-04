@@ -16,13 +16,11 @@ import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
 import { isInBrowser } from '../../common/browserUtils'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 
 const localize = nls.loadMessageBundle()
 
 const defaultLogLevel: LogLevel = 'info'
-
-const fsCommon = FileSystemCommon.instance
 
 /**
  * Activate Logger functionality for the extension.

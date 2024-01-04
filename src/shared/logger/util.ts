@@ -5,9 +5,7 @@
 
 import * as path from 'path'
 import { getLogger } from '.'
-import { FileSystemCommon } from '../../srcShared/fs'
-
-const fs = FileSystemCommon.instance
+import { fsCommon } from '../../srcShared/fs'
 
 const defaultCleanupParams = {
     maxLogs: 100,
@@ -33,7 +31,7 @@ export async function cleanLogFiles(logDir: string, params = defaultCleanupParam
         const logFullPath = path.join(logDir, log)
         let logSize: number = 0
         try {
-            logSize = (await fs.stat(logFullPath))!.size
+            logSize = (await fsCommon.stat(logFullPath))!.size
         } catch (e) {
             getLogger().error('cleanLogFiles: fs.stat() failed on file "%s": %s', logFullPath, (e as Error).message)
         }
@@ -57,7 +55,7 @@ export async function cleanLogFiles(logDir: string, params = defaultCleanupParam
  * from the readdir() call.
  */
 async function readdir(dir: string): Promise<string[]> {
-    return (await fs.readdir(dir)).map(f => f[0])
+    return (await fsCommon.readdir(dir)).map(f => f[0])
 }
 
 /**
@@ -73,7 +71,7 @@ async function deleteOldLogFiles(logDir: string, files: string[], keepLatest: nu
         )
         for (const file of files) {
             try {
-                await fs.delete(path.join(logDir, file))
+                await fsCommon.delete(path.join(logDir, file))
             } catch (error) {
                 getLogger().error('cleanLogFiles: Failed to delete file: %s', file, (error as Error).message)
             }

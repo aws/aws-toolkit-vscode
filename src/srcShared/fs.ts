@@ -36,6 +36,7 @@ export class FileSystemCommon {
         return (this.#instance ??= new FileSystemCommon())
     }
 
+    /** Creates the directory as well as missing parent directories. */
     async mkdir(path: Uri | string): Promise<void> {
         const uriPath = FileSystemCommon.getUri(path)
 
@@ -60,6 +61,10 @@ export class FileSystemCommon {
         return FileSystemCommon.arrayToString(await this.readFile(path))
     }
 
+    /**
+     * The vscode fs implementation does not explicitly provide an append method
+     * so we must do it ourselves (this implementation is inefficient).
+     */
     async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
         path = FileSystemCommon.getUri(path)
 
@@ -159,3 +164,5 @@ export class FileSystemCommon {
         return vscode.Uri.file(path)
     }
 }
+
+export const fsCommon = FileSystemCommon.instance

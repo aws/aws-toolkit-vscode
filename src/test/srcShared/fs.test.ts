@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 import * as os from 'os'
 import { isMinimumVersion } from '../../shared/vscode/env'
 
@@ -18,11 +18,9 @@ function isWin() {
 
 describe('FileSystem', function () {
     let fakeContext: vscode.ExtensionContext
-    let fsCommon: FileSystemCommon
 
     before(async function () {
         fakeContext = await FakeExtensionContext.create()
-        fsCommon = FileSystemCommon.instance
     })
 
     beforeEach(async function () {
