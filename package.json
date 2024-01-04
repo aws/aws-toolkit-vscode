@@ -4275,7 +4275,6 @@
         "@types/js-yaml": "^4.0.5",
         "@types/lodash": "^4.14.180",
         "@types/markdown-it": "^13.0.2",
-        "@types/marked": "^6.0.0",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^10.0.0",
         "@types/node": "^14.18.63",
