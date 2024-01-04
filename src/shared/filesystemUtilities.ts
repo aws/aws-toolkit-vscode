@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { mkdtemp, mkdirp, readFile, remove, existsSync, readdir } from 'fs-extra'
+import { mkdtemp, mkdirp, readFile, remove, existsSync } from 'fs-extra'
 import * as crypto from 'crypto'
-import * as fsExtra from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -33,21 +32,19 @@ export async function getDirSize(
         getLogger().warn('getDirSize: exceeds time limit')
         return 0
     }
-    const files = await fsExtra.readdir(dirPath, { withFileTypes: true })
+    const files = await fsCommon.readdir(dirPath)
     const fileSizes = files.map(async file => {
-        const filePath = path.join(dirPath, file.name)
-        const stat = await fsCommon.stat(filePath)
+        const [fileName, type] = file
+        const filePath = path.join(dirPath, fileName)
 
-        if (stat === undefined) {
+        if (type === vscode.FileType.SymbolicLink) {
             return 0
         }
-        if (stat.type === vscode.FileType.SymbolicLink) {
-            return 0
-        }
-        if (stat.type === vscode.FileType.Directory) {
+        if (type === vscode.FileType.Directory) {
             return getDirSize(filePath, startTime, duration, fileExt)
         }
-        if (stat.type === vscode.FileType.File && file.name.endsWith(fileExt)) {
+        if (type === vscode.FileType.File && fileName.endsWith(fileExt)) {
+            const stat = (await fsCommon.stat(filePath))!
             return stat.size
         }
 
@@ -243,10 +240,11 @@ export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: v
  * @returns  List of one or zero Uris (for compat with vscode.workspace.findFiles())
  */
 export async function cloud9Findfile(dir: string, fileName: string): Promise<vscode.Uri[]> {
-    const files = await readdir(dir)
+    const files = await fsCommon.readdir(dir)
     const subDirs: vscode.Uri[] = []
     for (const file of files) {
-        const filePath = path.join(dir, file)
+        const [currentFileName] = file
+        const filePath = path.join(dir, currentFileName)
         if (filePath === path.join(dir, fileName)) {
             return [vscode.Uri.file(filePath)]
         }
