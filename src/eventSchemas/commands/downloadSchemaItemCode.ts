@@ -48,7 +48,7 @@ export async function downloadSchemaItemCode(node: SchemaItemNode, outputChannel
             return
         }
 
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.message.info.schemas.downloadCodeBindings.start',
                 'Downloading code for schema {0}...',
@@ -67,7 +67,7 @@ export async function downloadSchemaItemCode(node: SchemaItemNode, outputChannel
         }
         const schemaCodeDownloader = createSchemaCodeDownloaderObject(node.client, outputChannel)
         const coreCodeFilePath = await schemaCodeDownloader.downloadCode(request)
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.message.info.schemas.downloadCodeBindings.finished',
                 'Downloaded code for schema {0}!',
@@ -89,7 +89,7 @@ export async function downloadSchemaItemCode(node: SchemaItemNode, outputChannel
         if (error instanceof UserNotifiedError && error.message) {
             errorMessage = error.message
         }
-        vscode.window.showErrorMessage(errorMessage)
+        void vscode.window.showErrorMessage(errorMessage)
         logger.error('Error downloading schema: %s', error)
     } finally {
         telemetry.schemas_download.emit({ result: downloadResult })
@@ -140,7 +140,7 @@ export class SchemaCodeDownloader {
             const error = err as Error
             if (error.name === 'ResourceNotFound') {
                 //If the code generation wasn't previously kicked off, do so
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize(
                         'AWS.message.info.schemas.downloadCodeBindings.generate',
                         '{0}: Generating code (this may take a few seconds the first time)...',
@@ -153,7 +153,7 @@ export class SchemaCodeDownloader {
                 await this.poller.pollForCompletion(request)
 
                 //Download generated code bindings
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize(
                         'AWS.message.info.schemas.downloadCodeBindings.downloading',
                         '{0}: Downloading code...',
@@ -165,7 +165,7 @@ export class SchemaCodeDownloader {
                 throw err // Unexpected exception, throw
             }
         }
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.message.info.schemas.downloadCodeBindings.extracting',
                 '{0}: Extracting/copying code...',
@@ -318,7 +318,7 @@ export class CodeExtractor {
 
             return undefined
         } finally {
-            tryRemoveFolder(codeZipDir)
+            await tryRemoveFolder(codeZipDir)
         }
     }
 
