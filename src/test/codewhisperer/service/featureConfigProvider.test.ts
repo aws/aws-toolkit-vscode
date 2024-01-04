@@ -7,7 +7,6 @@ import assert from 'assert'
 import { FeatureConfigProvider, featureDefinitions } from '../../../codewhisperer/service/featureConfigProvider'
 import { createSpyClient } from '../testUtil'
 import sinon from 'sinon'
-import { anyString } from '../../utilities/mockito'
 import {
     FeatureEvaluation,
     ListFeatureEvaluationsResponse,
@@ -46,7 +45,7 @@ describe('CodeWhispererFeatureConfigServiceTest', () => {
             promise: () =>
                 Promise.resolve({
                     $response: {
-                        requestId: anyString(),
+                        requestId: '',
                     },
                     featureEvaluations: [testFeatureContext],
                 }),

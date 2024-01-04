@@ -10,8 +10,8 @@ import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { getTestWindow } from '../../shared/vscode/window'
+import assert from 'assert'
 
 describe('deleteThingCommand', function () {
     const thingName = 'iot-thing'
@@ -25,9 +25,9 @@ describe('deleteThingCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        iot = mock()
-        parentNode = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)))
-        node = new IotThingNode({ name: thingName, arn: 'arn' }, parentNode, instance(iot))
+        iot = {} as any as IotClient
+        parentNode = new IotThingFolderNode(iot, new IotNode(iot))
+        node = new IotThingNode({ name: thingName, arn: 'arn' }, parentNode, iot)
     })
 
     afterEach(function () {
@@ -35,20 +35,25 @@ describe('deleteThingCommand', function () {
     })
 
     it('confirms deletion, deletes thing, and refreshes node', async function () {
-        when(iot.listThingPrincipals(deepEqual({ thingName }))).thenResolve({ principals: [] })
+        const listStub = sinon.stub().resolves({ principals: [] })
+        iot.listThingPrincipals = listStub
+        const deleteStub = sinon.stub()
+        iot.deleteThing = deleteStub
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deleteThingCommand(node)
 
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete Thing iot-thing?')
 
-        verify(iot.deleteThing(deepEqual({ thingName }))).once()
+        assert(listStub.calledOnceWithExactly({ thingName }))
+        assert(deleteStub.calledOnceWithExactly({ thingName }))
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing if thing principals are attached', async function () {
-        when(iot.listThingPrincipals(deepEqual({ thingName }))).thenResolve({ principals: ['string'] })
+        const listStub = sinon.stub().resolves({ principals: ['string'] })
+        iot.listThingPrincipals = listStub
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deleteThingCommand(node)
@@ -57,18 +62,22 @@ describe('deleteThingCommand', function () {
             .getSecondMessage()
             .assertError(/Cannot delete Thing iot-thing/)
 
+        assert(listStub.calledOnceWithExactly({ thingName }))
         sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('does nothing when deletion is cancelled', async function () {
+        const deleteStub = sinon.stub()
+        iot.deleteThing = deleteStub
         getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
         await deleteThingCommand(node)
 
-        verify(iot.deleteThing(anything())).never()
+        assert(deleteStub.notCalled)
     })
 
     it('shows an error message and refreshes node when thing deletion fails', async function () {
-        when(iot.deleteThing(anything())).thenReject(new Error('Expected failure'))
+        const deleteStub = sinon.stub().rejects()
+        iot.deleteThing = deleteStub
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deleteThingCommand(node)
@@ -81,7 +90,8 @@ describe('deleteThingCommand', function () {
     })
 
     it('shows an error message and refreshes node if principals are not fetched', async function () {
-        when(iot.listThingPrincipals(anything())).thenReject(new Error('Expected failure'))
+        const listStub = sinon.stub().rejects()
+        iot.listThingPrincipals = listStub
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deleteThingCommand(node)

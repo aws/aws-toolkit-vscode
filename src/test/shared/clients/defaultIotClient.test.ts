@@ -4,9 +4,10 @@
  */
 
 import assert from 'assert'
-import { AWSError, Request, Iot } from 'aws-sdk'
-import { anything, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
+import { AWSError, Request, Iot, Endpoint, Config } from 'aws-sdk'
 import { DefaultIotClient, ListThingCertificatesResponse } from '../../../shared/clients/iotClient'
+import { Stub, stub } from '../../utilities/stubber'
+import sinon from 'sinon'
 
 class FakeAwsError extends Error {
     public region: string = 'us-west-2'
@@ -25,10 +26,20 @@ describe('DefaultIotClient', function () {
     const marker = nextToken
     const maxResults = 10
     const pageSize = maxResults
-    let mockIot: Iot
+    let mockIot: Stub<Iot>
 
     beforeEach(function () {
-        mockIot = mock()
+        mockIot = stub(Iot, {
+            config: stub(Config),
+            apiVersions: [],
+            endpoint: stub(Endpoint, {
+                host: '',
+                hostname: '',
+                href: '',
+                port: 0,
+                protocol: '',
+            }),
+        })
     })
 
     const error: AWSError = new FakeAwsError('Expected failure') as AWSError
@@ -46,7 +57,7 @@ describe('DefaultIotClient', function () {
     }
 
     function createClient({ regionCode = region }: { regionCode?: string } = {}): DefaultIotClient {
-        return new DefaultIotClient(regionCode, () => Promise.resolve(instance(mockIot)))
+        return new DefaultIotClient(regionCode, () => Promise.resolve(mockIot))
     }
 
     /* Functions that create or retrieve resources. */
@@ -54,21 +65,16 @@ describe('DefaultIotClient', function () {
     describe('createThing', function () {
         const expectedResponse: Iot.CreateThingResponse = { thingName: thingName, thingArn: 'arn' }
         it('creates a thing', async function () {
-            when(
-                mockIot.createThing(
-                    deepEqual({
-                        thingName: thingName,
-                    })
-                )
-            ).thenReturn(success(expectedResponse))
+            mockIot.createThing.returns(success(expectedResponse))
 
             const response = await createClient().createThing({ thingName })
 
+            assert(mockIot.createThing.calledOnceWithExactly)
             assert.deepStrictEqual(response, expectedResponse)
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.createThing(anything())).thenReturn(failure())
+            mockIot.createThing.returns(failure())
 
             await assert.rejects(createClient().createThing({ thingName }), error)
         })
@@ -85,7 +91,7 @@ describe('DefaultIotClient', function () {
         }
 
         it('creates Certificate and Key Pair', async function () {
-            when(mockIot.createKeysAndCertificate(deepEqual(input))).thenReturn(success(expectedResponse))
+            mockIot.createKeysAndCertificate.returns(success(expectedResponse))
 
             const response = await createClient().createCertificateAndKeys(input)
 
@@ -93,7 +99,7 @@ describe('DefaultIotClient', function () {
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.createKeysAndCertificate(anything())).thenReturn(failure())
+            mockIot.createKeysAndCertificate.returns(failure())
 
             await assert.rejects(createClient().createCertificateAndKeys(input), error)
         })
@@ -105,15 +111,16 @@ describe('DefaultIotClient', function () {
         const describeResponse: Iot.DescribeEndpointResponse = { endpointAddress }
 
         it('gets endpoint', async function () {
-            when(mockIot.describeEndpoint(deepEqual(input))).thenReturn(success(describeResponse))
+            mockIot.describeEndpoint.returns(success(describeResponse))
 
             const response = await createClient().getEndpoint()
 
+            mockIot.describeEndpoint.calledOnceWithExactly(sinon.match(input))
             assert.deepStrictEqual(response, endpointAddress)
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.describeEndpoint(anything())).thenReturn(failure())
+            mockIot.describeEndpoint.returns(failure())
 
             await assert.rejects(createClient().getEndpoint(), error)
         })
@@ -129,7 +136,7 @@ describe('DefaultIotClient', function () {
         }
 
         it('gets policy document for version', async function () {
-            when(mockIot.getPolicyVersion(deepEqual(input))).thenReturn(success(expectedResponse))
+            mockIot.getPolicyVersion.returns(success(expectedResponse))
 
             const response = await createClient().getPolicyVersion(input)
 
@@ -137,7 +144,7 @@ describe('DefaultIotClient', function () {
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.getPolicyVersion(anything())).thenReturn(failure())
+            mockIot.getPolicyVersion.returns(failure())
 
             await assert.rejects(createClient().getPolicyVersion(input), error)
         })
@@ -149,21 +156,15 @@ describe('DefaultIotClient', function () {
         const input: Iot.DeleteThingRequest = { thingName }
 
         it('deletes a thing', async function () {
-            when(
-                mockIot.deleteThing(
-                    deepEqual({
-                        thingName: thingName,
-                    })
-                )
-            ).thenReturn(success({} as Iot.DeleteThingResponse))
+            mockIot.deleteThing.returns(success({} as Iot.DeleteThingResponse))
 
             await createClient().deleteThing({ thingName })
 
-            verify(mockIot.deleteThing(deepEqual(input))).once()
+            assert(mockIot.deleteThing.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.deleteThing(anything())).thenReturn(failure())
+            mockIot.deleteThing.returns(failure())
 
             await assert.rejects(createClient().deleteThing({ thingName }), error)
         })
@@ -174,15 +175,15 @@ describe('DefaultIotClient', function () {
         const input: Iot.DeleteCertificateRequest = { certificateId, forceDelete: undefined }
 
         it('deletes a certificate', async function () {
-            when(mockIot.deleteCertificate(deepEqual(input))).thenReturn(success())
+            mockIot.deleteCertificate.returns(success())
 
             await createClient().deleteCertificate(input)
 
-            verify(mockIot.deleteCertificate(deepEqual(input))).once()
+            assert(mockIot.deleteCertificate.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.deleteCertificate(anything())).thenReturn(failure())
+            mockIot.deleteCertificate.returns(failure())
 
             await assert.rejects(createClient().deleteCertificate(input), error)
         })
@@ -193,15 +194,15 @@ describe('DefaultIotClient', function () {
         const input: Iot.UpdateCertificateRequest = { certificateId, newStatus: 'ACTIVE' }
 
         it('updates a certificate', async function () {
-            when(mockIot.updateCertificate(deepEqual(input))).thenReturn(success())
+            mockIot.updateCertificate.returns(success())
 
             await createClient().updateCertificate(input)
 
-            verify(mockIot.updateCertificate(deepEqual(input))).once()
+            assert(mockIot.updateCertificate.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.updateCertificate(anything())).thenReturn(failure())
+            mockIot.updateCertificate.returns(failure())
 
             await assert.rejects(createClient().updateCertificate(input), error)
         })
@@ -211,15 +212,15 @@ describe('DefaultIotClient', function () {
         const input: Iot.AttachThingPrincipalRequest = { thingName, principal: 'arn1' }
 
         it('attaches a certificate to a Thing', async function () {
-            when(mockIot.attachThingPrincipal(deepEqual(input))).thenReturn(success())
+            mockIot.attachThingPrincipal.returns(success())
 
             await createClient().attachThingPrincipal(input)
 
-            verify(mockIot.attachThingPrincipal(deepEqual(input))).once()
+            assert(mockIot.attachThingPrincipal.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.attachThingPrincipal(anything())).thenReturn(failure())
+            mockIot.attachThingPrincipal.returns(failure())
 
             await assert.rejects(createClient().attachThingPrincipal(input), error)
         })
@@ -229,15 +230,15 @@ describe('DefaultIotClient', function () {
         const input: Iot.DetachThingPrincipalRequest = { thingName, principal: 'arn1' }
 
         it('detaches a certificate from a Thing', async function () {
-            when(mockIot.detachThingPrincipal(deepEqual(input))).thenReturn(success())
+            mockIot.detachThingPrincipal.returns(success())
 
             await createClient().detachThingPrincipal(input)
 
-            verify(mockIot.detachThingPrincipal(deepEqual(input))).once()
+            assert(mockIot.detachThingPrincipal.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.detachThingPrincipal(anything())).thenReturn(failure())
+            mockIot.detachThingPrincipal.returns(failure())
 
             await assert.rejects(createClient().detachThingPrincipal(input), error)
         })
@@ -247,15 +248,15 @@ describe('DefaultIotClient', function () {
         const input: Iot.AttachPolicyRequest = { policyName, target: 'arn1' }
 
         it('attaches a policy to a certificate', async function () {
-            when(mockIot.attachPolicy(deepEqual(input))).thenReturn(success())
+            mockIot.attachPolicy.returns(success())
 
             await createClient().attachPolicy(input)
 
-            verify(mockIot.attachPolicy(deepEqual(input))).once()
+            assert(mockIot.attachPolicy.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.attachPolicy(anything())).thenReturn(failure())
+            mockIot.attachPolicy.returns(failure())
 
             await assert.rejects(createClient().attachPolicy(input), error)
         })
@@ -265,15 +266,15 @@ describe('DefaultIotClient', function () {
         const input: Iot.DetachPolicyRequest = { policyName, target: 'arn1' }
 
         it('detaches a policy from a certificate', async function () {
-            when(mockIot.detachPolicy(deepEqual(input))).thenReturn(success())
+            mockIot.detachPolicy.returns(success())
 
             await createClient().detachPolicy(input)
 
-            verify(mockIot.detachPolicy(deepEqual(input))).once()
+            assert(mockIot.detachPolicy.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.detachPolicy(anything())).thenReturn(failure())
+            mockIot.detachPolicy.returns(failure())
 
             await assert.rejects(createClient().detachPolicy(input), error)
         })
@@ -284,15 +285,15 @@ describe('DefaultIotClient', function () {
         const expectedResponse: Iot.CreatePolicyResponse = { policyName, policyDocument, policyArn: 'arn1' }
 
         it('creates a policy from a document', async function () {
-            when(mockIot.createPolicy(deepEqual(input))).thenReturn(success(expectedResponse))
+            mockIot.createPolicy.returns(success(expectedResponse))
 
             await createClient().createPolicy(input)
 
-            verify(mockIot.createPolicy(deepEqual(input))).once()
+            assert(mockIot.createPolicy.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.createPolicy(anything())).thenReturn(failure())
+            mockIot.createPolicy.returns(failure())
 
             await assert.rejects(createClient().createPolicy(input), error)
         })
@@ -302,15 +303,15 @@ describe('DefaultIotClient', function () {
         const input: Iot.DeletePolicyRequest = { policyName }
 
         it('deletes a policy', async function () {
-            when(mockIot.deletePolicy(deepEqual(input))).thenReturn(success())
+            mockIot.deletePolicy.returns(success())
 
             await createClient().deletePolicy(input)
 
-            verify(mockIot.deletePolicy(deepEqual(input))).once()
+            assert(mockIot.deletePolicy.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.deletePolicy(anything())).thenReturn(failure())
+            mockIot.deletePolicy.returns(failure())
 
             await assert.rejects(createClient().deletePolicy(input), error)
         })
@@ -321,15 +322,15 @@ describe('DefaultIotClient', function () {
         const expectedResponse: Iot.CreatePolicyVersionResponse = { policyDocument, policyArn: 'arn1' }
 
         it('creates a policy version from a document', async function () {
-            when(mockIot.createPolicyVersion(deepEqual(input))).thenReturn(success(expectedResponse))
+            mockIot.createPolicyVersion.returns(success(expectedResponse))
 
             await createClient().createPolicyVersion(input)
 
-            verify(mockIot.createPolicyVersion(deepEqual(input))).once()
+            assert(mockIot.createPolicyVersion.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.createPolicyVersion(anything())).thenReturn(failure())
+            mockIot.createPolicyVersion.returns(failure())
 
             await assert.rejects(createClient().createPolicyVersion(input), error)
         })
@@ -339,15 +340,15 @@ describe('DefaultIotClient', function () {
         const input: Iot.DeletePolicyVersionRequest = { policyName, policyVersionId: '1' }
 
         it('deletes a policy version', async function () {
-            when(mockIot.deletePolicyVersion(deepEqual(input))).thenReturn(success())
+            mockIot.deletePolicyVersion.returns(success())
 
             await createClient().deletePolicyVersion(input)
 
-            verify(mockIot.deletePolicyVersion(deepEqual(input))).once()
+            assert(mockIot.deletePolicyVersion.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.deletePolicyVersion(anything())).thenReturn(failure())
+            mockIot.deletePolicyVersion.returns(failure())
 
             await assert.rejects(createClient().deletePolicyVersion(input), error)
         })
@@ -357,28 +358,28 @@ describe('DefaultIotClient', function () {
         const input: Iot.SetDefaultPolicyVersionRequest = { policyName, policyVersionId: '1' }
 
         it('deletes a policy version', async function () {
-            when(mockIot.setDefaultPolicyVersion(deepEqual(input))).thenReturn(success())
+            mockIot.setDefaultPolicyVersion.returns(success())
 
             await createClient().setDefaultPolicyVersion(input)
 
-            verify(mockIot.setDefaultPolicyVersion(deepEqual(input))).once()
+            assert(mockIot.setDefaultPolicyVersion.calledOnceWithExactly(sinon.match(input)))
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.setDefaultPolicyVersion(anything())).thenReturn(failure())
+            mockIot.setDefaultPolicyVersion.returns(failure())
 
             await assert.rejects(createClient().setDefaultPolicyVersion(input), error)
         })
     })
 
-    /* Functions that list resources. */
+    // /* Functions that list resources.
 
     describe('listThings', function () {
         const input: Iot.ListThingsRequest = { maxResults, nextToken }
         const expectedResponse: Iot.ListThingsResponse = { things: [{ thingName: 'thing1' }], nextToken }
 
         it('lists things', async function () {
-            when(mockIot.listThings(deepEqual(input))).thenReturn(success(expectedResponse))
+            mockIot.listThings.returns(success(expectedResponse))
 
             const response = await createClient().listThings(input)
 
@@ -386,7 +387,7 @@ describe('DefaultIotClient', function () {
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.listThings(anything())).thenReturn(failure())
+            mockIot.listThings.returns(failure())
 
             await assert.rejects(createClient().listThings(input), error)
         })
@@ -400,7 +401,7 @@ describe('DefaultIotClient', function () {
         }
 
         it('lists certificates', async function () {
-            when(mockIot.listCertificates(deepEqual(input))).thenReturn(success(expectedResponse))
+            mockIot.listCertificates.returns(success(expectedResponse))
 
             const response = await createClient().listCertificates(input)
 
@@ -408,7 +409,7 @@ describe('DefaultIotClient', function () {
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.listCertificates(anything())).thenReturn(failure())
+            mockIot.listCertificates.returns(failure())
 
             await assert.rejects(createClient().listCertificates(input), error)
         })
@@ -431,23 +432,24 @@ describe('DefaultIotClient', function () {
         }
 
         it('lists certificates', async function () {
-            when(mockIot.listThingPrincipals(deepEqual(input))).thenReturn(success(principalsResponse))
-            when(mockIot.describeCertificate(deepEqual(describeInput))).thenReturn(success(describeResponse))
+            mockIot.listThingPrincipals.returns(success(principalsResponse))
+            mockIot.describeCertificate.returns(success(describeResponse))
 
             const response = await createClient().listThingCertificates(input)
 
+            mockIot.describeCertificate.calledOnceWithExactly(sinon.match(describeInput))
             assert.deepStrictEqual(response, expectedResponse)
         })
 
         it('throws an Error when certificate listing fails', async function () {
-            when(mockIot.listThingPrincipals(anything())).thenReturn(failure())
+            mockIot.listThingPrincipals.returns(failure())
 
             await assert.rejects(createClient().listThingCertificates(input), error)
         })
 
         it('throws an Error when certificate description fails', async function () {
-            when(mockIot.listThingPrincipals(deepEqual(input))).thenReturn(success(principalsResponse))
-            when(mockIot.describeCertificate(anything())).thenReturn(failure())
+            mockIot.listThingPrincipals.returns(success(principalsResponse))
+            mockIot.describeCertificate.returns(failure())
 
             await assert.rejects(createClient().listThingCertificates(input), error)
         })
@@ -459,7 +461,7 @@ describe('DefaultIotClient', function () {
         const expectedResponse = [thingName]
 
         it('lists things', async function () {
-            when(mockIot.listPrincipalThings(deepEqual(input))).thenReturn(success(listResponse))
+            mockIot.listPrincipalThings.returns(success(listResponse))
 
             const response = await createClient().listThingsForCert(input)
 
@@ -467,7 +469,7 @@ describe('DefaultIotClient', function () {
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.listPrincipalThings(anything())).thenReturn(failure())
+            mockIot.listPrincipalThings.returns(failure())
 
             await assert.rejects(createClient().listThingsForCert(input), error)
         })
@@ -478,7 +480,7 @@ describe('DefaultIotClient', function () {
         const expectedResponse: Iot.ListPoliciesResponse = { policies: [{ policyName }], nextMarker: marker }
 
         it('lists policies', async function () {
-            when(mockIot.listPolicies(deepEqual(input))).thenReturn(success(expectedResponse))
+            mockIot.listPolicies.returns(success(expectedResponse))
 
             const response = await createClient().listPolicies(input)
 
@@ -486,7 +488,7 @@ describe('DefaultIotClient', function () {
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.listPolicies(anything())).thenReturn(failure())
+            mockIot.listPolicies.returns(failure())
 
             await assert.rejects(createClient().listPolicies(input), error)
         })
@@ -502,7 +504,7 @@ describe('DefaultIotClient', function () {
         const expectedResponse: Iot.ListPoliciesResponse = { policies: [{ policyName }], nextMarker: marker }
 
         it('lists policies for certificate', async function () {
-            when(mockIot.listPrincipalPolicies(deepEqual(input))).thenReturn(success(expectedResponse))
+            mockIot.listPrincipalPolicies.returns(success(expectedResponse))
 
             const response = await createClient().listPrincipalPolicies(input)
 
@@ -510,7 +512,7 @@ describe('DefaultIotClient', function () {
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.listPrincipalPolicies(anything())).thenReturn(failure())
+            mockIot.listPrincipalPolicies.returns(failure())
 
             await assert.rejects(createClient().listPrincipalPolicies(input), error)
         })
@@ -522,7 +524,7 @@ describe('DefaultIotClient', function () {
         const listResponse: Iot.ListTargetsForPolicyResponse = { targets, nextMarker: marker }
 
         it('lists certificates', async function () {
-            when(mockIot.listTargetsForPolicy(deepEqual(input))).thenReturn(success(listResponse))
+            mockIot.listTargetsForPolicy.returns(success(listResponse))
 
             const response = await createClient().listPolicyTargets(input)
 
@@ -530,7 +532,7 @@ describe('DefaultIotClient', function () {
         })
 
         it('throws an Error on failure', async function () {
-            when(mockIot.listTargetsForPolicy(anything())).thenReturn(failure())
+            mockIot.listTargetsForPolicy.returns(failure())
 
             await assert.rejects(createClient().listPolicyTargets(input), error)
         })
@@ -543,7 +545,7 @@ describe('DefaultIotClient', function () {
         const listResponse: Iot.ListPolicyVersionsResponse = { policyVersions: [expectedVersion1, expectedVersion2] }
 
         it('lists policy versions', async function () {
-            when(mockIot.listPolicyVersions(deepEqual(input))).thenReturn(success(listResponse))
+            mockIot.listPolicyVersions.returns(success(listResponse))
 
             const iterable = createClient().listPolicyVersions(input)
             const responses = []
@@ -559,7 +561,7 @@ describe('DefaultIotClient', function () {
         })
 
         it('throws an Error on iterate failure', async function () {
-            when(mockIot.listPolicyVersions(anything())).thenReturn(failure())
+            mockIot.listPolicyVersions.returns(failure())
 
             const iterable = createClient().listPolicyVersions(input)
             await assert.rejects(iterable.next(), error)

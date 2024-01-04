@@ -10,11 +10,11 @@ import { attachCertificateCommand, CertGen } from '../../../iot/commands/attachC
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../../shared/ui/prompter'
 import globals from '../../../shared/extensionGlobals'
 import { getTestWindow } from '../../shared/vscode/window'
+import assert from 'assert'
 
 describe('attachCertCommand', function () {
     const thingName = 'iot-thing'
@@ -41,8 +41,8 @@ describe('attachCertCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        iot = mock()
-        thingNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, instance(iot))
+        iot = {} as any as IotClient
+        thingNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, iot)
         certs = [
             {
                 certificateId: 'cert1',
@@ -67,21 +67,27 @@ describe('attachCertCommand', function () {
     it('attaches selected certificate', async function () {
         // const executeCommand = stubVscodeExecuteCommand()
         selection = 0
-        when(iot.listCertificates(anything())).thenResolve({ certificates: certs })
+        const listStub = sinon.stub().resolves({ certificates: certs })
+        iot.listCertificates = listStub
+        const attachStub = sinon.stub()
+        iot.attachThingPrincipal = attachStub
         await attachCertificateCommand(thingNode, prompt)
 
-        verify(iot.attachThingPrincipal(deepEqual({ thingName, principal: 'arn1' }))).once()
+        assert(attachStub.calledOnceWithExactly({ thingName, principal: 'arn1' }))
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', thingNode)
     })
 
     it('shows an error message if certificates are not fetched', async function () {
-        when(iot.listCertificates(anything())).thenReject(new Error('Expected failure'))
+        const listStub = sinon.stub().rejects(new Error('Expected failure'))
+        iot.listCertificates = listStub
+        const attachStub = sinon.stub()
+        iot.attachThingPrincipal = attachStub
 
         selection = -1
         await attachCertificateCommand(thingNode, prompt)
 
-        verify(iot.attachThingPrincipal(anything())).never()
+        assert(attachStub.notCalled)
 
         getTestWindow()
             .getFirstMessage()
@@ -92,8 +98,10 @@ describe('attachCertCommand', function () {
 
     it('shows an error message if attaching certificate fails', async function () {
         selection = 1
-        when(iot.listCertificates(anything())).thenResolve({ certificates: certs })
-        when(iot.attachThingPrincipal(anything())).thenReject(new Error('Expected failure'))
+        const listStub = sinon.stub().resolves({ certificates: certs })
+        iot.listCertificates = listStub
+        const attachStub = sinon.stub().rejects(new Error('Expected failure'))
+        iot.attachThingPrincipal = attachStub
 
         await attachCertificateCommand(thingNode, prompt)
 
@@ -106,11 +114,14 @@ describe('attachCertCommand', function () {
 
     it('Does nothing if no certificate is chosen', async function () {
         selection = -1
-        when(iot.listCertificates(anything())).thenResolve({ certificates: certs })
+        const listStub = sinon.stub().resolves({ certificates: certs })
+        iot.listCertificates = listStub
+        const attachStub = sinon.stub().rejects(new Error('Expected failure'))
+        iot.attachThingPrincipal = attachStub
 
         await attachCertificateCommand(thingNode, prompt)
 
-        verify(iot.attachThingPrincipal(anything())).never()
+        assert(attachStub.notCalled)
 
         sandbox.assert.notCalled(spyExecuteCommand)
     })

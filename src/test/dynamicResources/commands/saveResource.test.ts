@@ -4,11 +4,11 @@
  */
 
 import assert from 'assert'
-import { instance, mock, when, verify, anything, deepEqual } from 'ts-mockito'
 import { createResource, updateResource } from '../../../dynamicResources/commands/saveResource'
 import { AddOperation } from 'fast-json-patch'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { getTestWindow } from '../../shared/vscode/window'
+import sinon from 'sinon'
 
 describe('createResource', function () {
     const fakeType = 'fakeType'
@@ -17,35 +17,26 @@ describe('createResource', function () {
     let mockCloudControl: CloudControlClient
 
     beforeEach(function () {
-        mockCloudControl = mock()
+        mockCloudControl = {} as any as CloudControlClient
     })
 
     it('creates resources, shows progress and confirmation', async function () {
         const newIdentifier = 'newIdentifier'
-
-        when(
-            mockCloudControl.createResource(
-                deepEqual({
-                    TypeName: fakeType,
-                    DesiredState: fakeDefinition,
-                })
-            )
-        ).thenResolve({
+        const createStub = sinon.stub().resolves({
             ProgressEvent: {
                 Identifier: newIdentifier,
             },
         })
+        mockCloudControl.createResource = createStub
 
-        await createResource(fakeType, fakeDefinition, instance(mockCloudControl))
+        await createResource(fakeType, fakeDefinition, mockCloudControl)
 
-        verify(
-            mockCloudControl.createResource(
-                deepEqual({
-                    TypeName: fakeType,
-                    DesiredState: fakeDefinition,
-                })
-            )
-        ).once()
+        assert(
+            createStub.calledOnceWithExactly({
+                TypeName: fakeType,
+                DesiredState: fakeDefinition,
+            })
+        )
         const progress = getTestWindow().getFirstMessage()
         assert.ok(!progress.cancellable)
         assert.deepStrictEqual(progress.progressReports, [{ message: `Creating resource (${fakeType})...` }])
@@ -53,17 +44,11 @@ describe('createResource', function () {
     })
 
     it('shows an error message when resource creation fails', async function () {
-        when(
-            mockCloudControl.createResource(
-                deepEqual({
-                    TypeName: fakeType,
-                    DesiredState: fakeDefinition,
-                })
-            )
-        ).thenReject(new Error())
+        const createStub = sinon.stub().rejects()
+        mockCloudControl.createResource = createStub
 
         try {
-            await createResource(fakeType, fakeDefinition, instance(mockCloudControl))
+            await createResource(fakeType, fakeDefinition, mockCloudControl)
         } catch (err) {
             getTestWindow().getSecondMessage().assertError(`Failed to create resource (${fakeType})`)
             return
@@ -72,10 +57,12 @@ describe('createResource', function () {
     })
 
     it('shows an error message when definition is not valid json', async function () {
+        const createStub = sinon.stub()
+        mockCloudControl.createResource = createStub
         try {
-            await createResource(fakeType, 'foo', instance(mockCloudControl))
+            await createResource(fakeType, 'foo', mockCloudControl)
         } catch (err) {
-            verify(mockCloudControl.createResource(anything())).never()
+            assert(createStub.notCalled)
             getTestWindow().getSecondMessage().assertError(`Failed to create resource (${fakeType})`)
             return
         }
@@ -85,16 +72,10 @@ describe('createResource', function () {
     it('shows a warning if unsupported action', async function () {
         const error = new Error('fake exception')
         error.name = 'UnsupportedActionException'
-        when(
-            mockCloudControl.createResource(
-                deepEqual({
-                    TypeName: fakeType,
-                    DesiredState: fakeDefinition,
-                })
-            )
-        ).thenReject(error)
+        const createStub = sinon.stub().rejects(error)
+        mockCloudControl.createResource = createStub
 
-        await createResource(fakeType, fakeDefinition, instance(mockCloudControl))
+        await createResource(fakeType, fakeDefinition, mockCloudControl)
         getTestWindow()
             .getSecondMessage()
             .assertWarn(new RegExp(`^${fakeType} does not currently support resource creation`))
@@ -111,33 +92,25 @@ describe('updateResource', function () {
     let mockCloudControl: CloudControlClient
 
     beforeEach(function () {
-        mockCloudControl = mock()
+        mockCloudControl = {} as any as CloudControlClient
     })
 
     it('updates resources, shows progress and confirmation', async function () {
         const patchJson = JSON.stringify(fakeDiff)
+        const updateStub = sinon.stub()
+        mockCloudControl.updateResource = updateStub
+        const getStub = sinon.stub()
+        mockCloudControl.getResource = getStub
 
-        when(
-            mockCloudControl.updateResource(
-                deepEqual({
-                    TypeName: fakeType,
-                    Identifier: fakeIdentifier,
-                    PatchDocument: patchJson,
-                })
-            )
-        ).thenResolve()
+        await updateResource(fakeType, fakeIdentifier, fakeDefinition, mockCloudControl, fakeDiff)
 
-        await updateResource(fakeType, fakeIdentifier, fakeDefinition, instance(mockCloudControl), fakeDiff)
-
-        verify(
-            mockCloudControl.updateResource(
-                deepEqual({
-                    TypeName: fakeType,
-                    Identifier: fakeIdentifier,
-                    PatchDocument: patchJson,
-                })
-            )
-        ).once()
+        assert(
+            updateStub.calledOnceWithExactly({
+                TypeName: fakeType,
+                Identifier: fakeIdentifier,
+                PatchDocument: patchJson,
+            })
+        )
         const progress = getTestWindow().getFirstMessage()
         assert.ok(!progress.cancellable)
         assert.deepStrictEqual(progress.progressReports, [
@@ -147,19 +120,11 @@ describe('updateResource', function () {
     })
 
     it('shows an error message when resource update fails', async function () {
-        const patchJson = JSON.stringify(fakeDiff)
-        when(
-            mockCloudControl.updateResource(
-                deepEqual({
-                    TypeName: fakeType,
-                    Identifier: fakeIdentifier,
-                    PatchDocument: patchJson,
-                })
-            )
-        ).thenReject(new Error())
+        const updateStub = sinon.stub().rejects()
+        mockCloudControl.updateResource = updateStub
 
         try {
-            await updateResource(fakeType, fakeIdentifier, fakeDefinition, instance(mockCloudControl), fakeDiff)
+            await updateResource(fakeType, fakeIdentifier, fakeDefinition, mockCloudControl, fakeDiff)
         } catch (err) {
             getTestWindow().getSecondMessage().assertError(`Failed to update resource ${fakeIdentifier} (${fakeType})`)
             return
@@ -168,28 +133,26 @@ describe('updateResource', function () {
     })
 
     it('shows a warning message when there is no diff', async function () {
-        await updateResource(fakeType, fakeIdentifier, fakeDefinition, instance(mockCloudControl), [])
+        const updateStub = sinon.stub()
+        mockCloudControl.updateResource = updateStub
+        const getStub = sinon.stub()
+        mockCloudControl.getResource = getStub
+        await updateResource(fakeType, fakeIdentifier, fakeDefinition, mockCloudControl, [])
 
-        verify(mockCloudControl.updateResource(anything())).never()
+        assert(updateStub.notCalled)
         getTestWindow()
             .getSecondMessage()
             .assertWarn(/^Update cancelled/)
     })
 
     it('shows a warning if unsupported action', async function () {
-        const patchJson = JSON.stringify(fakeDiff)
         const error = new Error('fake exception')
         error.name = 'UnsupportedActionException'
-        when(
-            mockCloudControl.updateResource(
-                deepEqual({
-                    TypeName: fakeType,
-                    Identifier: fakeIdentifier,
-                    PatchDocument: patchJson,
-                })
-            )
-        ).thenReject(error)
-        await updateResource(fakeType, fakeIdentifier, fakeDefinition, instance(mockCloudControl), fakeDiff)
+        const updateStub = sinon.stub().rejects(error)
+        mockCloudControl.updateResource = updateStub
+        const getStub = sinon.stub()
+        mockCloudControl.getResource = getStub
+        await updateResource(fakeType, fakeIdentifier, fakeDefinition, mockCloudControl, fakeDiff)
         getTestWindow()
             .getSecondMessage()
             .assertWarn(new RegExp(`^${fakeType} does not currently support resource updating`))

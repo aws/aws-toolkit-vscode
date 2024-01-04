@@ -17,8 +17,8 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { MockOutputChannel } from '../../mockOutputChannel'
-import { anything, mock, instance, when, capture } from '../../utilities/mockito'
 import { getTestWindow } from '../../shared/vscode/window'
+import sinon from 'sinon'
 
 describe('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
@@ -45,30 +45,24 @@ describe('uploadFileCommand', function () {
     let mockedUpload: S3.ManagedUpload
 
     beforeEach(function () {
-        mockedUpload = mock()
-        s3 = mock()
-        bucketNode = new S3BucketNode(
-            { name: bucketName, region: 'region', arn: 'arn' },
-            new S3Node(instance(s3)),
-            instance(s3)
-        )
+        mockedUpload = {} as any as S3.ManagedUpload
+        s3 = {} as any as S3Client
+        bucketNode = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
         outputChannel = new MockOutputChannel()
     })
 
     describe('with node parameter', async function () {
         this.beforeEach(function () {
-            s3 = mock()
-            bucketNode = new S3BucketNode(
-                { name: bucketName, region: 'region', arn: 'arn' },
-                new S3Node(instance(s3)),
-                instance(s3)
-            )
+            s3 = {} as any as S3Client
+            bucketNode = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
             outputChannel = new MockOutputChannel()
         })
 
         it('uploads successfully', async function () {
-            when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
-            when(mockedUpload.promise()).thenResolve()
+            const uploadStub = sinon.stub().resolves(mockedUpload)
+            s3.uploadFile = uploadStub
+            const promiseStub = sinon.stub().resolves()
+            mockedUpload.promise = promiseStub
 
             getFile = document => {
                 return new Promise((resolve, reject) => {
@@ -76,10 +70,9 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(instance(s3), bucketNode, statFile, undefined, getFile, outputChannel)
+            await uploadFileCommand(s3, bucketNode, statFile, undefined, getFile, outputChannel)
 
-            // eslint-disable-next-line @typescript-eslint/unbound-method
-            const [uploadFileRequest] = capture(s3.uploadFile).last()
+            const [uploadFileRequest] = uploadStub.lastCall.args
 
             assert.strictEqual(uploadFileRequest.bucketName, bucketName)
             assert.strictEqual(uploadFileRequest.key, key)
@@ -98,14 +91,14 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(instance(s3), bucketNode, statFile, undefined, getFile, outputChannel)
+            await uploadFileCommand(s3, bucketNode, statFile, undefined, getFile, outputChannel)
             assert.deepStrictEqual(outputChannel.lines, ['No file selected, cancelling upload'])
         })
     })
 
     describe('without node parameter', async function () {
         this.beforeEach(function () {
-            s3 = mock()
+            s3 = {} as any as S3Client
             outputChannel = new MockOutputChannel()
             getFile = document => {
                 return new Promise((resolve, reject) => {
@@ -121,10 +114,12 @@ describe('uploadFileCommand', function () {
         })
 
         it('uploads if user provides file and bucket', async function () {
-            when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
-            when(mockedUpload.promise()).thenResolve()
+            const uploadStub = sinon.stub().resolves(mockedUpload)
+            s3.uploadFile = uploadStub
+            const promiseStub = sinon.stub().resolves()
+            mockedUpload.promise = promiseStub
 
-            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel)
+            await uploadFileCommand(s3, undefined, statFile, getBucket, getFile, outputChannel)
 
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
@@ -139,7 +134,7 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel)
+            await uploadFileCommand(s3, undefined, statFile, getBucket, getFile, outputChannel)
             assert.deepStrictEqual(outputChannel.lines, ['No bucket selected, cancelling upload'])
         })
 
@@ -150,7 +145,7 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel)
+            await uploadFileCommand(s3, undefined, statFile, getBucket, getFile, outputChannel)
             assert.deepStrictEqual(outputChannel.lines, ['No file selected, cancelling upload'])
         })
     })
@@ -168,14 +163,16 @@ describe('uploadFileCommand', function () {
     }
 
     it('successfully upload file or folder', async function () {
-        when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
-        when(mockedUpload.promise()).thenResolve()
+        const uploadStub = sinon.stub().resolves(mockedUpload)
+        s3.uploadFile = uploadStub
+        const promiseStub = sinon.stub().resolves()
+        mockedUpload.promise = promiseStub
         getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
 
         // Upload to bucket.
-        await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, outputChannel)
+        await uploadFileCommand(s3, fileLocation, statFile, getBucket, getFile, outputChannel)
         // Upload to folder.
-        await uploadFileCommand(instance(s3), fileLocation, statFile, getFolder, getFile, outputChannel)
+        await uploadFileCommand(s3, fileLocation, statFile, getFolder, getFile, outputChannel)
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
@@ -186,12 +183,13 @@ describe('uploadFileCommand', function () {
     })
 
     it('errors when s3 call fails', async function () {
-        when(s3.uploadFile(anything())).thenReject(new Error('Expected failure'))
+        const uploadStub = sinon.stub().rejects(new Error('Expected failure'))
+        s3.uploadFile = uploadStub
         getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
         getTestWindow().onDidShowMessage(m => m.close())
 
         outputChannel = new MockOutputChannel()
-        await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, outputChannel)
+        await uploadFileCommand(s3, fileLocation, statFile, getBucket, getFile, outputChannel)
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
@@ -294,30 +292,33 @@ describe('promptUserForBucket', async function () {
     }
 
     beforeEach(function () {
-        s3 = mock()
+        s3 = {} as any as S3Client
         buckets = [{ Name: 'bucket 1' }, { Name: 'bucket 2' }, { Name: 'bucket 3' }]
         getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
     })
 
     it('Returns selected bucket', async function () {
-        when(s3.listAllBuckets()).thenResolve(buckets)
+        const stub = sinon.stub().resolves(buckets)
+        s3.listAllBuckets = stub
 
-        const response = await promptUserForBucket(instance(s3), promptSelect)
+        const response = await promptUserForBucket(s3, promptSelect)
         assert.deepStrictEqual(response, selection)
     })
 
     it('Returns "back" when selected', async function () {
-        when(s3.listAllBuckets()).thenResolve(buckets)
+        const stub = sinon.stub().resolves(buckets)
+        s3.listAllBuckets = stub
 
         selection.label = 'back'
         selection.bucket = undefined
 
-        const response = await promptUserForBucket(instance(s3), promptSelect)
+        const response = await promptUserForBucket(s3, promptSelect)
         assert.strictEqual(response, 'back')
     })
 
     it('Lets the user create a new bucket', async function () {
-        when(s3.listAllBuckets()).thenResolve(buckets)
+        const stub = sinon.stub().resolves(buckets)
+        s3.listAllBuckets = stub
 
         selection.label = 'Create new bucket'
         selection.bucket = undefined
@@ -325,19 +326,21 @@ describe('promptUserForBucket', async function () {
         const createBucket: (node?: S3Node) => Promise<void> = () => {
             throw new Error('Error expected')
         }
-        await assert.rejects(() => promptUserForBucket(instance(s3), promptSelect, createBucket))
+        await assert.rejects(() => promptUserForBucket(s3, promptSelect, createBucket))
     })
 
     it('Returns "cancel" when user doesn\'t select a bucket', async function () {
-        when(s3.listAllBuckets()).thenResolve(buckets)
+        const stub = sinon.stub().resolves(buckets)
+        s3.listAllBuckets = stub
 
-        const response = await promptUserForBucket(instance(s3), promptUndef)
+        const response = await promptUserForBucket(s3, promptUndef)
         assert.strictEqual(response, 'cancel')
     })
 
     it('Throws error when it is not possible to list buckets from client', async function () {
-        when(s3.listAllBuckets()).thenReject(new Error('Expected failure'))
-        await assert.rejects(() => promptUserForBucket(instance(s3)))
+        const stub = sinon.stub().rejects(new Error('Expected failure'))
+        s3.listAllBuckets = stub
+        await assert.rejects(() => promptUserForBucket(s3))
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to list buckets from client/)
