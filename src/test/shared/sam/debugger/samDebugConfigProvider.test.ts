@@ -285,7 +285,7 @@ describe('SamDebugConfigurationProvider', async function () {
     describe('makeConfig', async function () {
         describe('buildDir', function () {
             it('uses `buildDir` as `baseBuildDir` when provided', async function () {
-                const buildDir = path.resolve('/my', 'build', 'dir')
+                const buildDir = (await testutil.createTestWorkspaceFolder('my-build-dir')).uri.fsPath
                 const folder = testutil.getWorkspaceFolder(testutil.getProjectDir())
                 const launchConfig = await getConfig(
                     debugConfigProvider,
@@ -302,7 +302,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 )
 
                 const actual = await debugConfigProvider.makeConfig(folder, config)
-                assert.strictEqual(actual?.baseBuildDir, buildDir)
+                testutil.assertEqualPaths(actual?.baseBuildDir ?? '', buildDir)
             })
         })
 

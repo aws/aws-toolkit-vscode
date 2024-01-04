@@ -62,7 +62,7 @@ export class CsharpDependencyGraph extends DependencyGraph {
                     ? importStr.substring(indexOfStatic + staticKeyword.length).trim()
                     : importStr.substring(importStr.indexOf(usingKeyword) + usingKeyword.length).trim()
 
-            modulePaths = this.getModulePath(modulePathStr.replaceAll(' ', ''))
+            modulePaths = this.getModulePath(modulePathStr.replace(' ', ''))
         }
 
         return modulePaths
@@ -89,7 +89,7 @@ export class CsharpDependencyGraph extends DependencyGraph {
         const dependencies: string[] = []
         imports.forEach(importStr => {
             this.updateSysPaths(uri)
-            const importString = importStr.replaceAll(';', '')
+            const importString = importStr.replace(';', '')
             const findings = this.parseImport(importString, Array.from(this._sysPaths.values()))
             const validSourceFiles = findings.filter(finding => !this._pickedSourceFiles.has(finding))
             validSourceFiles.forEach(file => {

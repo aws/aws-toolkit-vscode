@@ -55,12 +55,36 @@ export class PrepareRepoFailedError extends ToolkitError {
     }
 }
 
+export class UploadCodeError extends ToolkitError {
+    constructor(statusCode: string) {
+        super('Unable to upload code', { code: `UploadCode-${statusCode}` })
+    }
+}
+
+export class IllegalStateTransition extends ToolkitError {
+    constructor() {
+        super('Illegal transition between states, restart the conversation', { code: 'IllegalStateTransition' })
+    }
+}
+
 export class ContentLengthError extends ToolkitError {
     constructor() {
         super(
             'The project you have selected for source code is too large to use as context. Please select a different folder to use for this conversation',
             { code: 'ContentLengthError' }
         )
+    }
+}
+
+export class UnknownApiError extends ToolkitError {
+    constructor(message: string, api: string) {
+        super(message, { code: `${api}-Unknown` })
+    }
+}
+
+export class ApiError extends ToolkitError {
+    constructor(message: string, api: string, errorName: string, errorCode: number) {
+        super(message, { code: `${api}-${errorName}-${errorCode}` })
     }
 }
 

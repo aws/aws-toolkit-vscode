@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeWhisperer: Security Scan Log output is blank if log level is not \"verbose\"."
+}

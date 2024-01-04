@@ -377,11 +377,11 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             }
         } catch (err) {
             if (err instanceof SamLaunchRequestError) {
-                err.showNotification()
+                void err.showNotification()
             } else if (err instanceof ToolkitError) {
-                new SamLaunchRequestError(err.message, { ...err }).showNotification()
+                void new SamLaunchRequestError(err.message, { ...err }).showNotification()
             } else {
-                SamLaunchRequestError.chain(err, 'Failed to run launch configuration').showNotification()
+                void SamLaunchRequestError.chain(err, 'Failed to run launch configuration').showNotification()
             }
         }
     }
@@ -443,7 +443,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             if (!rv.isValid) {
                 throw new ToolkitError(`Invalid launch configuration: ${rv.message}`, { code: 'BadLaunchConfig' })
             } else if (rv.message) {
-                vscode.window.showInformationMessage(rv.message)
+                void vscode.window.showInformationMessage(rv.message)
             }
             getLogger().verbose(`SAM debug: config: ${JSON.stringify(config.name)}`)
         }
@@ -460,7 +460,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const handlerName = await getHandlerName(folder, config)
 
         config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
-        fs.ensureDir(config.baseBuildDir)
+        await fs.ensureDir(config.baseBuildDir)
 
         if (templateInvoke?.templatePath) {
             // Normalize to absolute path.
@@ -521,7 +521,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         if (goRuntimes.includes(runtime) && !config.noDebug) {
             const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
             if (semver.lt(samCliVersion, minSamCliVersionForGoSupport)) {
-                vscode.window.showWarningMessage(
+                void vscode.window.showWarningMessage(
                     localize(
                         'AWS.output.sam.local.no.go.support',
                         'Debugging go1.x lambdas requires a minimum SAM CLI version of {0}. Function will run locally without debug.',

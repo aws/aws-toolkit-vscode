@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { selectCodeCatalystRepository, selectCodeCatalystResource } from './wizards/selectResource'
 import { openCodeCatalystUrl } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, placeholder } from '../shared/vscode/commands2'
 import { CodeCatalystClient, CodeCatalystResource, createClient } from '../shared/clients/codecatalystClient'
 import { DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
@@ -24,12 +24,12 @@ import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { Auth } from '../auth/auth'
-import { SsoConnection, defaultSsoRegion } from '../auth/connection'
-import { builderIdStartUrl } from '../auth/sso/model'
+import { SsoConnection } from '../auth/connection'
+import { showManageConnections } from '../auth/ui/vue/show'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
-    vscode.commands.executeCommand('workbench.action.quickOpen', '> CodeCatalyst')
+    await vscode.commands.executeCommand('workbench.action.quickOpen', '> CodeCatalyst')
 }
 
 /** "Clone CodeCatalyst Repository" command. */
@@ -231,7 +231,7 @@ export class CodeCatalystCommands {
 
     public stopDevEnv(...args: WithClient<typeof stopDevEnv>) {
         return this.withClient(stopDevEnv, ...args).then(() => {
-            vscode.commands.executeCommand('workbench.action.remote.close')
+            void vscode.commands.executeCommand('workbench.action.remote.close')
         })
     }
 
@@ -285,8 +285,12 @@ export class CodeCatalystCommands {
             telemetry.record({ source: 'CommandPalette' })
         }
 
-        // Try to ensure active connection, defaulting to BuilderID if not specified:
-        await this.authProvider.tryConnectTo(connection ?? { startUrl: builderIdStartUrl, region: defaultSsoRegion })
+        if (connection !== undefined) {
+            await this.authProvider.tryConnectTo(connection)
+        } else if (!this.authProvider.isConnectionValid()) {
+            void showManageConnections.execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
+            return
+        }
 
         return this.withClient(openDevEnv, devenv, targetPath)
     }

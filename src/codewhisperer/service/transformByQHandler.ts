@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { transformByQState, TransformByQStoppedError, ZipManifest } from '../models/model'
+import { BuildSystem, transformByQState, TransformByQStoppedError, ZipManifest } from '../models/model'
 import * as codeWhisperer from '../client/codewhisperer'
 import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger'
@@ -18,7 +18,7 @@ import { spawnSync } from 'child_process'
 import AdmZip from 'adm-zip'
 import fetch from '../../common/request'
 import globals from '../../shared/extensionGlobals'
-import { CodeTransformPreValidationError, telemetry } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
@@ -64,7 +64,7 @@ export function throwIfCancelled() {
 export async function getOpenProjects() {
     const folders = vscode.workspace.workspaceFolders
     if (folders === undefined) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         throw new ToolkitError('No Java projects found since no projects are open', { code: 'NoOpenProjects' })
     }
     const openProjects: vscode.QuickPickItem[] = []
@@ -84,17 +84,29 @@ export async function getOpenProjects() {
  */
 export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const projectPath = project.description
+    const buildSystem = await checkBuildSystem(projectPath!)
+    if (buildSystem !== BuildSystem.Maven) {
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'NonMavenProject',
+            result: MetadataResult.Fail,
+            reason: buildSystem === BuildSystem.Gradle ? buildSystem : 'NoPomFileFound',
+        })
+        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
+    }
     const compiledJavaFiles = await vscode.workspace.findFiles(
         new vscode.RelativePattern(projectPath!, '**/*.class'),
         '**/node_modules/**',
         1
     )
     if (compiledJavaFiles.length < 1) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'No Java project found' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
+            reason: 'NoJavaProjectsAvailable',
         })
         throw new TransformByQJavaProjectNotFound()
     }
@@ -104,11 +116,12 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'No Java project found' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
+            reason: 'CannotDetermineJavaVersion',
         })
         throw new ToolkitError('Unable to determine Java version', {
             code: 'CannotDetermineJavaVersion',
@@ -122,31 +135,14 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
         transformByQState.setSourceJDKVersionToJDK11()
     } else {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError:
-                'Project selected is not Java 8 or Java 11' as CodeTransformPreValidationError,
+            codeTransformPreValidationError: 'UnsupportedJavaVersion',
             result: MetadataResult.Fail,
             reason: javaVersion,
         })
         throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
-    }
-    const buildFile = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(projectPath!, 'pom.xml'), // check for pom.xml in root directory only
-        '**/node_modules/**',
-        1
-    )
-    if (buildFile.length < 1) {
-        const buildType = await checkIfGradle(projectPath!)
-        vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'Only Maven projects supported' as CodeTransformPreValidationError,
-            result: MetadataResult.Fail,
-            reason: buildType,
-        })
-        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }
 }
 
@@ -156,12 +152,9 @@ export function getSha256(fileName: string) {
     return hasher.digest('base64')
 }
 
-// TODO: later, consider enhancing the S3 client to include this functionality
-export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
-    const sha256 = getSha256(fileName)
-
+export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {
     let headersObj = {}
-    if (resp.kmsKeyArn === undefined || resp.kmsKeyArn.length === 0) {
+    if (kmsKeyArn === undefined || kmsKeyArn.length === 0) {
         headersObj = {
             'x-amz-checksum-sha256': sha256,
             'Content-Type': 'application/zip',
@@ -171,11 +164,17 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             'x-amz-checksum-sha256': sha256,
             'Content-Type': 'application/zip',
             'x-amz-server-side-encryption': 'aws:kms',
-            'x-amz-server-side-encryption-aws-kms-key-id': resp.kmsKeyArn,
+            'x-amz-server-side-encryption-aws-kms-key-id': kmsKeyArn,
         }
     }
+    return headersObj
+}
 
-    await sleep(2000) // pause to give time to recognize potential cancellation
+// TODO: later, consider enhancing the S3 client to include this functionality
+export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
+    const sha256 = getSha256(fileName)
+    const headersObj = getHeadersObj(sha256, resp.kmsKeyArn)
+
     throwIfCancelled()
     try {
         const apiStartTime = Date.now()
@@ -186,17 +185,20 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            // TODO: A nice to have would be getting the zipUploadSize
-            codeTransformTotalByteSize: 0,
+            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
+            result: MetadataResult.Pass,
         })
-        getLogger().info(`Status from S3 Upload = ${response.status}`)
+        getLogger().info(`CodeTransform: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in S3 UploadZip API call'
+        getLogger().error('CodeTransform: UploadZip error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
+            result: MetadataResult.Fail,
+            reason: 'UploadToS3Failed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -217,17 +219,20 @@ export async function stopJob(jobId: string) {
                     codeTransformJobId: jobId,
                     codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
                     codeTransformRequestId: response.$response.requestId,
+                    result: MetadataResult.Pass,
                 })
             }
         } catch (e: any) {
             const errorMessage = 'Error stopping job'
-            getLogger().error(errorMessage)
+            getLogger().error('CodeTransform: StopTransformation error = ', errorMessage)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'StopTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: jobId,
                 codeTransformApiErrorMessage: e?.message || errorMessage,
                 codeTransformRequestId: e?.requestId,
+                result: MetadataResult.Fail,
+                reason: 'StopTransformationFailed',
             })
             throw new ToolkitError(errorMessage, { cause: e as Error })
         }
@@ -236,7 +241,6 @@ export async function stopJob(jobId: string) {
 
 export async function uploadPayload(payloadFileName: string) {
     const sha256 = getSha256(payloadFileName)
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
     try {
         const apiStartTime = Date.now()
@@ -251,30 +255,45 @@ export async function uploadPayload(payloadFileName: string) {
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformUploadId: response.uploadId,
             codeTransformRequestId: response.$response.requestId,
+            result: MetadataResult.Pass,
         })
         await uploadArtifactToS3(payloadFileName, response)
         return response.uploadId
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in CreateUploadUrl API call'
+        getLogger().error('CodeTransform: CreateUploadUrl error: = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'CreateUploadUrl',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
+            result: MetadataResult.Fail,
+            reason: 'CreateUploadUrlFailed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
     }
 }
 
-function getFilesRecursively(dir: string): string[] {
+/**
+ * Gets all files in dir. We use this method to get the source code, then we run a mvn command to
+ * copy over dependencies into their own folder, then we use this method again to get those
+ * dependencies. If isDependenciesFolder is true, then we are getting all the files
+ * of the dependencies which were copied over by the previously-run mvn command, in which case
+ * we DO want to include any dependencies that may happen to be named "target", hence the check
+ * in the first part of the IF statement. The point of excluding folders named target is that
+ * "target" is also the name of the folder where .class files, large JARs, etc. are stored after
+ * building, and we do not want these included in the ZIP so we exclude these when calling
+ * getFilesRecursively on the source code folder.
+ */
+function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
     const entries = fs.readdirSync(dir, { withFileTypes: true })
     const files = entries.flatMap(entry => {
         const res = path.resolve(dir, entry.name)
-        // exclude 'target' directory from ZIP due to issues in backend
+        // exclude 'target' directory from ZIP (except if zipping dependencies) due to issues in backend
         if (entry.isDirectory()) {
-            if (entry.name !== 'target') {
-                return getFilesRecursively(res)
+            if (isDependenciesFolder || entry.name !== 'target') {
+                return getFilesRecursively(res, isDependenciesFolder)
             } else {
                 return []
             }
@@ -301,8 +320,8 @@ function getProjectDependencies(modulePath: string): string[] {
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: false, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage, { modal: true })
-        getLogger().error('Error in running Maven command:')
+        void vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
+        getLogger().error('CodeTransform: Error in running Maven command = ')
         // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
         if (spawnResult.error) {
             getLogger().error(spawnResult.error)
@@ -316,13 +335,11 @@ function getProjectDependencies(modulePath: string): string[] {
 }
 
 export async function zipCode(modulePath: string) {
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
     const zipStartTime = Date.now()
     const sourceFolder = modulePath
-    const sourceFiles = getFilesRecursively(sourceFolder)
+    const sourceFiles = getFilesRecursively(sourceFolder, false)
 
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
     let dependencyFolderInfo: string[] = []
@@ -336,7 +353,6 @@ export async function zipCode(modulePath: string) {
     const dependencyFolderPath = !mavenFailed ? dependencyFolderInfo[0] : ''
     const dependencyFolderName = !mavenFailed ? dependencyFolderInfo[1] : ''
 
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
     const zip = new AdmZip()
@@ -348,12 +364,11 @@ export async function zipCode(modulePath: string) {
         zip.addLocalFile(file, path.dirname(paddedPath))
     }
 
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
     let dependencyFiles: string[] = []
     if (!mavenFailed && fs.existsSync(dependencyFolderPath)) {
-        dependencyFiles = getFilesRecursively(dependencyFolderPath)
+        dependencyFiles = getFilesRecursively(dependencyFolderPath, true)
     }
 
     if (!mavenFailed && dependencyFiles.length > 0) {
@@ -363,12 +378,15 @@ export async function zipCode(modulePath: string) {
             zip.addLocalFile(file, path.dirname(paddedPath))
         }
         zipManifest.dependenciesRoot += `${dependencyFolderName}/`
+        telemetry.codeTransform_dependenciesCopied.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            result: MetadataResult.Pass,
+        })
     } else {
         zipManifest.dependenciesRoot = undefined
     }
     zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest), 'utf-8'))
 
-    await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
@@ -377,11 +395,14 @@ export async function zipCode(modulePath: string) {
         fs.rmSync(dependencyFolderPath, { recursive: true, force: true })
     }
 
+    // for now, use the pass/fail status of the maven command to determine this metric status
+    const mavenStatus = mavenFailed ? MetadataResult.Fail : MetadataResult.Pass
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-        // TODO: A nice to have would be getting the zipUploadSize
-        codeTransformTotalByteSize: 0,
+        codeTransformTotalByteSize: (await fs.promises.stat(tempFilePath)).size,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
+        result: mavenStatus,
+        reason: mavenFailed ? 'MavenCommandFailed' : undefined,
     })
     return tempFilePath
 }
@@ -408,15 +429,19 @@ export async function startJob(uploadId: string) {
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformJobId: response.transformationJobId,
             codeTransformRequestId: response.$response.requestId,
+            result: MetadataResult.Pass,
         })
         return response.transformationJobId
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in StartTransformation API call'
+        getLogger().error('CodeTransform: StartTransformation error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'StartTransformation',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
+            result: MetadataResult.Fail,
+            reason: 'StartTransformationFailed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -440,6 +465,7 @@ export async function getTransformationPlan(jobId: string) {
             codeTransformJobId: jobId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformRequestId: response.$response.requestId,
+            result: MetadataResult.Pass,
         })
         const logoAbsolutePath = globals.context.asAbsolutePath(
             path.join('resources', 'icons', 'aws', 'amazonq', 'transform-landing-page-icon.svg')
@@ -459,12 +485,15 @@ export async function getTransformationPlan(jobId: string) {
         return plan
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in GetTransformationPlan API call'
+        getLogger().error('CodeTransform: GetTransformationPlan error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
+            result: MetadataResult.Fail,
+            reason: 'GetTransformationPlanFailed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -484,16 +513,20 @@ export async function getTransformationSteps(jobId: string) {
             codeTransformJobId: jobId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformRequestId: response.$response.requestId,
+            result: MetadataResult.Pass,
         })
         return response.transformationPlan.transformationSteps
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in GetTransformationPlan API call'
+        getLogger().error('CodeTransform: GetTransformationPlan error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e?.requestId,
+            result: MetadataResult.Fail,
+            reason: 'GetTransformationPlanFailed',
         })
         throw e
     }
@@ -515,6 +548,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 codeTransformJobId: jobId,
                 codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
                 codeTransformRequestId: response.$response.requestId,
+                result: MetadataResult.Pass,
             })
             status = response.transformationJob.status!
             if (response.transformationJob.reason) {
@@ -527,6 +561,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: jobId,
                     codeTransformStatus: status,
+                    result: MetadataResult.Pass,
                 })
             }
             transformByQState.setPolledJobStatus(status)
@@ -544,12 +579,15 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
         } catch (e: any) {
             const errorMessage = e?.message || 'Error in GetTransformation API call'
+            getLogger().error('CodeTransform: GetTransformation error = ', errorMessage)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'GetTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: jobId,
                 codeTransformApiErrorMessage: errorMessage,
                 codeTransformRequestId: e?.requestId,
+                result: MetadataResult.Fail,
+                reason: 'GetTransformationFailed',
             })
             // Pass along error to callee function
             throw new ToolkitError(errorMessage, { cause: e as Error })
@@ -558,16 +596,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     return status
 }
 
-async function checkIfGradle(projectPath: string) {
-    const gradleBuildFile = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(projectPath, '**/build.gradle'),
-        '**/node_modules/**',
-        1
-    )
-
-    if (gradleBuildFile.length > 0) {
-        return 'Gradle'
-    } else {
-        return 'Unknown'
+export async function checkBuildSystem(projectPath: string) {
+    const mavenBuildFilePath = path.join(projectPath, 'pom.xml')
+    if (fs.existsSync(mavenBuildFilePath)) {
+        return BuildSystem.Maven
     }
+    const gradleBuildFilePath = path.join(projectPath, 'build.gradle')
+    if (fs.existsSync(gradleBuildFilePath)) {
+        return BuildSystem.Gradle
+    }
+    return BuildSystem.Unknown
 }

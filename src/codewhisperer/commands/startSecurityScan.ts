@@ -33,6 +33,7 @@ import { isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import { DependencyGraphConstants } from '../util/dependencyGraph/dependencyGraph'
+import path from 'path'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
@@ -72,7 +73,10 @@ export async function startSecurityScan(
     const codeScanStartTime = performance.now()
     let serviceInvocationStartTime = 0
     const codeScanTelemetryEntry: CodeScanTelemetryEntry = {
-        codewhispererLanguage: runtimeLanguageContext.getLanguageContext(editor.document.languageId).language,
+        codewhispererLanguage: runtimeLanguageContext.getLanguageContext(
+            editor.document.languageId,
+            path.extname(editor.document.fileName)
+        ).language,
         codewhispererCodeScanSrcPayloadBytes: 0,
         codewhispererCodeScanSrcZipFileBytes: 0,
         codewhispererCodeScanLines: 0,
@@ -186,10 +190,10 @@ export async function startSecurityScan(
         getLogger().verbose(`Security scan totally found ${total} issues. ${withFixes} of them have fixes.`)
         if (isCloud9()) {
             securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
-            vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
+            void vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
         } else {
             initSecurityScanRender(securityRecommendationCollection, context)
-            vscode.commands.executeCommand('workbench.action.problems.focus')
+            void vscode.commands.executeCommand('workbench.action.problems.focus')
         }
         populateCodeScanLogStream(truncation.scannedFiles)
         showScanCompletedNotification(total, truncation.scannedFiles, dependencyGraph.isProjectTruncated())
@@ -208,7 +212,7 @@ export async function startSecurityScan(
                 error.code === 'ThrottlingException' &&
                 error.message.includes(CodeWhispererConstants.throttlingMessage)
             ) {
-                vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReachedCodeScan)
+                void vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReachedCodeScan)
                 await vscode.commands.executeCommand('aws.codeWhisperer.refresh', true)
             }
         }
@@ -218,7 +222,7 @@ export async function startSecurityScan(
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
         codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
-        emitCodeScanTelemetry(editor, codeScanTelemetryEntry)
+        await emitCodeScanTelemetry(editor, codeScanTelemetryEntry)
     }
 }
 
@@ -240,7 +244,7 @@ export async function emitCodeScanTelemetry(editor: vscode.TextEditor, codeScanT
 
 export function errorPromptHelper(error: Error) {
     if (error instanceof JavaDependencyGraphError) {
-        vscode.window
+        void vscode.window
             .showWarningMessage(
                 'Try rebuilding the Java project or specify compilation output in Settings.',
                 viewSettings,
@@ -248,11 +252,13 @@ export function errorPromptHelper(error: Error) {
             )
             .then(async resp => {
                 if (resp === viewSettings) {
-                    openSettings('aws.codeWhisperer.javaCompilationOutput')
+                    openSettings('aws.codeWhisperer.javaCompilationOutput').catch(e => {
+                        getLogger().error('openSettings failed: %s', (e as Error).message)
+                    })
                 }
             })
     } else {
-        vscode.window.showWarningMessage(`Security scan failed. ${error}`, ok)
+        void vscode.window.showWarningMessage(`Security scan failed. ${error}`, ok)
     }
 }
 
@@ -261,14 +267,14 @@ function populateCodeScanLogStream(scannedFiles: Set<string>) {
     securityScanOutputChannel.clear()
     const numScannedFiles = scannedFiles.size
     if (numScannedFiles === 1) {
-        codeScanLogger.verbose(`${numScannedFiles} file was scanned during the last Security Scan.`)
+        codeScanLogger.info(`${numScannedFiles} file was scanned during the last Security Scan.`)
     } else {
-        codeScanLogger.verbose(`${numScannedFiles} files were scanned during the last Security Scan.`)
+        codeScanLogger.info(`${numScannedFiles} files were scanned during the last Security Scan.`)
     }
     // Log all the scanned files to codeScanLogger
     for (const file of scannedFiles) {
         const uri = vscode.Uri.file(file)
-        codeScanLogger.verbose(`File scanned: ${uri.fsPath}`)
+        codeScanLogger.info(`File scanned: ${uri.fsPath}`)
     }
 }
 
@@ -290,16 +296,16 @@ export function showScanCompletedNotification(total: number, scannedFiles: Set<s
     if (isProjectTruncated) {
         items.push(learnMore)
     }
-    vscode.window
+    void vscode.window
         .showInformationMessage(
             `Security scan completed for ${totalFiles}. ${totalIssues} found. ${fileSizeLimitReached}`,
             ...items
         )
         .then(value => {
             if (value === CodeWhispererConstants.showScannedFilesMessage) {
-                vscode.commands.executeCommand(CodeWhispererConstants.codeScanLogsOutputChannelId)
+                void vscode.commands.executeCommand(CodeWhispererConstants.codeScanLogsOutputChannelId)
             } else if (value === learnMore) {
-                openUrl(vscode.Uri.parse(CodeWhispererConstants.securityScanLearnMoreUri))
+                void openUrl(vscode.Uri.parse(CodeWhispererConstants.securityScanLearnMoreUri))
             }
         })
 }

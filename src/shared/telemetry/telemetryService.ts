@@ -17,7 +17,7 @@ import { accountMetadataKey, AccountStatus, computeRegionKey } from './telemetry
 import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { getClientId } from './util'
+import { getClientId, validateMetricEvent } from './util'
 import { telemetry } from './telemetry'
 import { FileSystemCommon } from '../../srcShared/fs'
 
@@ -148,6 +148,10 @@ export class DefaultTelemetryService {
 
     public record(event: MetricDatum, awsContext?: AwsContext): void {
         if (this.telemetryEnabled) {
+            // TODO: While this catches cases in code that is tested, untested code will still release incomplete metrics.
+            // Consider using custom lint rules to address these cases if possible.
+            validateMetricEvent(event, isAutomation())
+
             const actualAwsContext = awsContext || this.awsContext
             const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
             this._eventQueue.push(eventWithCommonMetadata)

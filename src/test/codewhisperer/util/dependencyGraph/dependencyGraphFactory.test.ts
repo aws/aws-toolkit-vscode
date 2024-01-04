@@ -6,9 +6,9 @@
 import assert from 'assert'
 import vscode from 'vscode'
 import { join } from 'path'
-import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
-import { DependencyGraphFactory } from '../../../codewhisperer/util/dependencyGraph/dependencyGraphFactory'
-import { terraformDependencyGraph } from './../../../codewhisperer/util/dependencyGraph/terraformDependencyGraph'
+import { getTestWorkspaceFolder } from '../../../../testInteg/integrationTestsUtilities'
+import { DependencyGraphFactory } from '../../../../codewhisperer/util/dependencyGraph/dependencyGraphFactory'
+import { terraformDependencyGraph } from '../../../../codewhisperer/util/dependencyGraph/terraformDependencyGraph'
 
 describe('DependencyGraphFactory', function () {
     const workspaceFolder = getTestWorkspaceFolder()

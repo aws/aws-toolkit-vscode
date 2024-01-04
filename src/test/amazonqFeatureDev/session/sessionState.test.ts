@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import sinon from 'sinon'
+import * as got from 'got'
 import { RefinementState, PrepareRefinementState } from '../../../amazonqFeatureDev/session/sessionState'
 import { SessionStateConfig, SessionStateAction } from '../../../amazonqFeatureDev/types'
 import { Messenger } from '../../../amazonqFeatureDev/controllers/chat/messenger/messenger'
@@ -14,6 +15,7 @@ import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { FeatureDevClient } from '../../../amazonqFeatureDev/client/featureDev'
 import { PrepareRepoFailedError } from '../../../amazonqFeatureDev/errors'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
+import { assertTelemetry } from '../../testUtil'
 
 const mockSessionStateAction = (msg?: string): SessionStateAction => {
     return {
@@ -54,8 +56,6 @@ describe('sessionState', () => {
     const tabId = 'tab-id'
     const testConfig = mockSessionStateConfig({ conversationId, uploadId })
 
-    beforeEach(() => {})
-
     afterEach(() => {
         sinon.restore()
     })
@@ -70,12 +70,30 @@ describe('sessionState', () => {
                 return new PrepareRefinementState(testConfig, testApproach, tabId).interact(testAction)
             }, PrepareRepoFailedError)
         })
+
+        it('emits telemetry when interaction succeeds', async () => {
+            sinon.stub(vscode.workspace, 'findFiles').resolves([])
+            mockCreateUploadUrl = sinon.stub().resolves({ uploadId: '', uploadUrl: '' })
+            mockGeneratePlan = sinon.stub().resolves(testApproach)
+            sinon.stub(got, 'default').resolves({ statusCode: 200 })
+
+            const testAction = mockSessionStateAction()
+            await new PrepareRefinementState(testConfig, testApproach, tabId).interact(testAction)
+
+            assertTelemetry('amazonq_createUpload', {
+                amazonqConversationId: conversationId,
+                amazonqRepositorySize: 0,
+                result: 'Succeeded',
+            })
+        })
     })
 
     describe('RefinementState', () => {
         const testAction = mockSessionStateAction()
 
         it('transitions to RefinementState and returns an approach', async () => {
+            sinon.stub(performance, 'now').returns(0)
+
             mockGeneratePlan = sinon.stub().resolves(testApproach)
             const state = new RefinementState(testConfig, testApproach, tabId, 0)
             const result = await state.interact(testAction)
@@ -85,6 +103,13 @@ describe('sessionState', () => {
                 interaction: {
                     content: `${testApproach}\n`,
                 },
+            })
+
+            assertTelemetry('amazonq_approachInvoke', {
+                result: 'Succeeded',
+                amazonqConversationId: conversationId,
+                amazonqGenerateApproachIteration: 0,
+                amazonqGenerateApproachLatency: 0,
             })
         })
 

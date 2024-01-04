@@ -36,19 +36,19 @@ export class ActivationReloadState {
     }
 
     public setSamInitState(state: SamInitState): void {
-        this.extensionContext.globalState.update(activationTemplatePathKey, state.template)
-        this.extensionContext.globalState.update(activationLaunchPathKey, state.readme)
-        this.extensionContext.globalState.update(samInitRuntimeKey, state.runtime)
-        this.extensionContext.globalState.update(samInitArchKey, state.architecture)
-        this.extensionContext.globalState.update(samInitImageBooleanKey, state.isImage)
+        void this.extensionContext.globalState.update(activationTemplatePathKey, state.template)
+        void this.extensionContext.globalState.update(activationLaunchPathKey, state.readme)
+        void this.extensionContext.globalState.update(samInitRuntimeKey, state.runtime)
+        void this.extensionContext.globalState.update(samInitArchKey, state.architecture)
+        void this.extensionContext.globalState.update(samInitImageBooleanKey, state.isImage)
     }
 
     public clearSamInitState(): void {
-        this.extensionContext.globalState.update(activationTemplatePathKey, undefined)
-        this.extensionContext.globalState.update(activationLaunchPathKey, undefined)
-        this.extensionContext.globalState.update(samInitRuntimeKey, undefined)
-        this.extensionContext.globalState.update(samInitArchKey, undefined)
-        this.extensionContext.globalState.update(samInitImageBooleanKey, undefined)
+        void this.extensionContext.globalState.update(activationTemplatePathKey, undefined)
+        void this.extensionContext.globalState.update(activationLaunchPathKey, undefined)
+        void this.extensionContext.globalState.update(samInitRuntimeKey, undefined)
+        void this.extensionContext.globalState.update(samInitArchKey, undefined)
+        void this.extensionContext.globalState.update(samInitImageBooleanKey, undefined)
     }
 
     protected get extensionContext(): vscode.ExtensionContext {

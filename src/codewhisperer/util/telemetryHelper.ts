@@ -102,7 +102,6 @@ export class TelemetryHelper {
         languageId: string,
         supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
-        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         telemetry.codewhisperer_userDecision.emit({
             codewhispererRequestId: requestIdList[0],
             codewhispererSessionId: sessionId ? sessionId : undefined,
@@ -113,7 +112,7 @@ export class TelemetryHelper {
             codewhispererSuggestionReferences: undefined,
             codewhispererSuggestionReferenceCount: 0,
             codewhispererCompletionType: 'Line',
-            codewhispererLanguage: languageContext.language,
+            codewhispererLanguage: language,
             codewhispererGettingStartedTask: session.taskType,
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
@@ -335,6 +334,7 @@ export class TelemetryHelper {
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
                         recommendationLatencyMilliseconds: e2eLatency,
                         timestamp: new Date(Date.now()),
+                        triggerToResponseLatencyMilliseconds: this.timeToFirstRecommendation,
                         suggestionReferenceCount: referenceCount,
                         generatedLine: generatedLines,
                         numberOfRecommendations: suggestionCount,

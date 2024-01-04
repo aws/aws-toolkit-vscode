@@ -42,7 +42,7 @@ function lazyProgress<T extends Record<string, any>>(timeout: Timeout): LazyProg
         getToken: () => timeout,
         report: value => {
             if (!progress) {
-                vscode.window.withProgress({ location, cancellable: true }, (p, t) => {
+                void vscode.window.withProgress({ location, cancellable: true }, (p, t) => {
                     progress = p
                     t.onCancellationRequested(e => timeout.cancel())
                     return thenable
@@ -97,7 +97,7 @@ export async function installVsixCommand(ctx: ExtContext) {
             await installVsix(ctx, client, progress, env).finally(() => progress.dispose())
         } catch (err) {
             getLogger().error(`installVsixCommand: installation failed: %O`, err)
-            showViewLogsMessage('VSIX installation failed')
+            void showViewLogsMessage('VSIX installation failed')
         }
     })
 }

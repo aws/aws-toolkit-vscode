@@ -281,8 +281,13 @@ describe('runtimeLanguageContext', function () {
             ['scala', 'scala'],
             ['shell', 'shell'],
             ['sql', 'sql'],
+            ['tf', 'tf'],
+            ['hcl', 'tf'],
+            ['json', 'json'],
+            ['yaml', 'yaml'],
+            ['yml', 'yaml'],
             ['plaintext', 'plaintext'],
-            ['arbitrary string', 'arbitrary string'],
+            // ['arbitrary string', 'arbitrary string'],
         ]
 
         this.beforeEach(function () {

@@ -159,12 +159,14 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
 export function validateRequest(
     req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
 ): boolean {
-    const isLanguageNameValid = !(
-        req.fileContext.programmingLanguage.languageName === undefined ||
-        req.fileContext.programmingLanguage.languageName.length < 1 ||
-        req.fileContext.programmingLanguage.languageName.length > 128 ||
-        !runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName)
-    )
+    const isLanguageNameValid =
+        req.fileContext.programmingLanguage.languageName !== undefined &&
+        req.fileContext.programmingLanguage.languageName.length >= 1 &&
+        req.fileContext.programmingLanguage.languageName.length <= 128 &&
+        (runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName) ||
+            runtimeLanguageContext.isFileFormatSupported(
+                req.fileContext.filename.substring(req.fileContext.filename.lastIndexOf('.') + 1)
+            ))
     const isFileNameValid = !(req.fileContext.filename === undefined || req.fileContext.filename.length < 1)
     const isFileContextValid = !(
         req.fileContext.leftFileContent.length > CodeWhispererConstants.charactersLimit ||

@@ -43,6 +43,7 @@ import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
+import path from 'path'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -180,7 +181,10 @@ export class RecommendationHandler {
         let latency = 0
         let nextToken = ''
         let shouldRecordServiceInvocation = true
-        session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
+        session.language = runtimeLanguageContext.getLanguageContext(
+            editor.document.languageId,
+            path.extname(editor.document.fileName)
+        ).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
         if (pagination) {
@@ -280,17 +284,17 @@ export class RecommendationHandler {
 
                 if (error?.code === 'AccessDeniedException' && errorMessage?.includes('no identity-based policy')) {
                     getLogger().error('CodeWhisperer AccessDeniedException : %s', (error as Error).message)
-                    vscode.window
+                    void vscode.window
                         .showErrorMessage(`CodeWhisperer: ${error?.message}`, CodeWhispererConstants.settingsLearnMore)
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                                void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
                     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions', false)
                 }
             } else {
-                errorMessage = error as string
+                errorMessage = error instanceof Error ? error.message : String(error)
                 reason = error ? String(error) : 'unknown'
             }
         } finally {
@@ -399,7 +403,10 @@ export class RecommendationHandler {
                     session.requestIdList,
                     sessionId,
                     page,
-                    editor.document.languageId,
+                    runtimeLanguageContext.getLanguageContext(
+                        editor.document.languageId,
+                        path.extname(editor.document.fileName)
+                    ).language,
                     session.requestContext.supplementalMetadata
                 )
             }
@@ -495,7 +502,9 @@ export class RecommendationHandler {
         if (isCloud9('any')) {
             this.clearRecommendations()
         } else if (isInlineCompletionEnabled()) {
-            this.clearInlineCompletionStates()
+            this.clearInlineCompletionStates().catch(e => {
+                getLogger().error('clearInlineCompletionStates failed: %s', (e as Error).message)
+            })
         }
     }
 
@@ -513,7 +522,7 @@ export class RecommendationHandler {
         }
         if (!this.isValidResponse()) {
             if (showPrompt) {
-                showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 3000)
+                void showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 3000)
             }
             reject()
             return false
@@ -554,7 +563,7 @@ export class RecommendationHandler {
             awsError.message.includes(CodeWhispererConstants.throttlingMessage)
         ) {
             if (triggerType === 'OnDemand') {
-                vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReached)
+                void vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReached)
             }
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh', true)
             await Commands.tryExecute('aws.amazonq.refresh', true)
@@ -685,7 +694,10 @@ export class RecommendationHandler {
     private sendPerceivedLatencyTelemetry() {
         if (vscode.window.activeTextEditor) {
             const languageContext = runtimeLanguageContext.getLanguageContext(
-                vscode.window.activeTextEditor.document.languageId
+                vscode.window.activeTextEditor.document.languageId,
+                vscode.window.activeTextEditor.document.fileName.substring(
+                    vscode.window.activeTextEditor.document.fileName.lastIndexOf('.') + 1
+                )
             )
             telemetry.codewhisperer_perceivedLatency.emit({
                 codewhispererRequestId: this.requestId,
@@ -697,6 +709,7 @@ export class RecommendationHandler {
                 passive: true,
                 credentialStartUrl: AuthUtil.instance.startUrl,
                 codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+                result: 'Succeeded',
             })
         }
     }

@@ -98,17 +98,14 @@ export class Connector {
             if (this.isUIReady) {
                 switch (this.tabsStorage.getTab(tabID)?.type) {
                     case 'featuredev':
-                        this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, payload)
-                        break
+                        return this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, payload)
                     default:
-                        this.cwChatConnector.requestGenerativeAIAnswer(tabID, payload)
-                        break
+                        return this.cwChatConnector.requestGenerativeAIAnswer(tabID, payload)
                 }
             } else {
-                setTimeout(() => {
-                    this.requestGenerativeAIAnswer(tabID, payload)
+                return setTimeout(() => {
+                    return this.requestGenerativeAIAnswer(tabID, payload)
                 }, 2000)
-                return
             }
         })
 
@@ -149,9 +146,9 @@ export class Connector {
         }
 
         if (messageData.sender === 'CWChat') {
-            this.cwChatConnector.handleMessageReceive(messageData)
+            await this.cwChatConnector.handleMessageReceive(messageData)
         } else if (messageData.sender === 'featureDevChat') {
-            this.featureDevChatConnector.handleMessageReceive(messageData)
+            await this.featureDevChatConnector.handleMessageReceive(messageData)
         }
     }
 

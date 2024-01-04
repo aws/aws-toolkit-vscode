@@ -78,7 +78,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    openUrl(vscode.Uri.parse(eventBridgeSchemasDocUrl))
+                    void openUrl(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
             },
         })
@@ -116,7 +116,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    openUrl(vscode.Uri.parse(eventBridgeSchemasDocUrl))
+                    void openUrl(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
             },
         })

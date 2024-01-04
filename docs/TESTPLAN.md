@@ -81,6 +81,7 @@ modifications/workarounds in `src/test/testRunner.ts`.
 -   Testing AWS SDK client functionality is cumbersome, verbose, and low-yield.
 -   Test code uses multiple “mocking” frameworks, which is confusing, error-prone, hard to onboard, and hard to use.
 -   Coverage not counted for integ tests (because of unresolved tooling issue).
+-   [Backlog](https://github.com/aws/aws-toolkit-vscode/blob/0f3685ab0dc8af3a214136ebfa233829d5d72b2c/src/shared/telemetry/exemptMetrics.ts) of metrics that do not pass validation but are temporarily exempted to not fail CI.
 
 ## Window
 

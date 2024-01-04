@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 import { isCloud9 } from '../shared/extensionUtilities'
+import { getLogger } from '../shared/logger'
 
 /** If we should be sending the dev env activity timestamps to track user activity */
 export function shouldTrackUserActivity(maxInactivityMinutes: DevEnvironment['inactivityTimeoutMinutes']): boolean {
@@ -48,7 +49,7 @@ export class InactivityMessage implements vscode.Disposable {
         })
 
         // Send an initial update to the dev env on startup
-        devEnvActivity.sendActivityUpdate()
+        await devEnvActivity.sendActivityUpdate()
     }
 
     private _setupMessage(
@@ -68,16 +69,25 @@ export class InactivityMessage implements vscode.Disposable {
 
         /** Wait until we are {@link InactivityMessage.firstMessageBeforeShutdown} minutes before shutdown. */
         this.#beforeMessageShown = globals.clock.setTimeout(() => {
-            const userIsActive = () => devEnvActivity.sendActivityUpdate()
+            const userIsActive = () => {
+                devEnvActivity.sendActivityUpdate().catch(e => {
+                    getLogger().error('DevEnvActivity.sendActivityUpdate failed: %s', (e as Error).message)
+                })
+            }
+
             const willRefreshOnStaleTimestamp = async () => await devEnvActivity.isLocalActivityStale()
 
-            this.message().show(
-                minutesSinceTimestamp + minutesUntilFirstMessage,
-                minutesUntilShutdown - minutesUntilFirstMessage,
-                userIsActive,
-                willRefreshOnStaleTimestamp,
-                relativeMinuteMillis
-            )
+            this.message()
+                .show(
+                    minutesSinceTimestamp + minutesUntilFirstMessage,
+                    minutesUntilShutdown - minutesUntilFirstMessage,
+                    userIsActive,
+                    willRefreshOnStaleTimestamp,
+                    relativeMinuteMillis
+                )
+                .catch(e => {
+                    getLogger().error('Message.show failed: %s', (e as Error).message)
+                })
         }, millisToWait + minutesUntilFirstMessage * relativeMinuteMillis)
     }
 
@@ -138,7 +148,7 @@ class Message implements vscode.Disposable {
      *
      * @param minutesUserWasInactive total minutes user was inactive.
      * @param minutesUntilShutdown remaining minutes until shutdown.
-     * @param userIsActive function to call when we want to indicate the user is active
+     * @param userIsActive Call this to signal that user is active.
      * @param willRefreshOnStaleTimestamp sanity checks with the dev env api that the latest activity timestamp
      *                                    is the same as what this client has locally. If stale, the warning message
      *                                    will be refreshed asynchronously. Returns true if the message will be refreshed.
@@ -148,7 +158,7 @@ class Message implements vscode.Disposable {
     async show(
         minutesUserWasInactive: number,
         minutesUntilShutdown: number,
-        userIsActive: () => Promise<any> | any,
+        userIsActive: () => void,
         willRefreshOnStaleTimestamp: () => Promise<boolean>,
         relativeMinuteMillis: number
     ) {
@@ -166,7 +176,7 @@ class Message implements vscode.Disposable {
             this.clearExistingMessage()
 
             const imHere = `I'm here!`
-            vscode.window
+            return vscode.window
                 .showWarningMessage(
                     `Your CodeCatalyst Dev Environment has been inactive for ${minutesUserWasInactive} minutes, and will stop soon.`,
                     imHere
@@ -176,7 +186,6 @@ class Message implements vscode.Disposable {
                         userIsActive()
                     }
                 })
-            return
         }
 
         this.currentWarningMessageTimeout.token.onCancellationRequested(c => {
@@ -185,7 +194,7 @@ class Message implements vscode.Disposable {
                 userIsActive()
             } else {
                 // The message timed out, show the updated message.
-                this.show(
+                void this.show(
                     minutesUserWasInactive + 1,
                     minutesUntilShutdown - 1,
                     userIsActive,
@@ -197,7 +206,7 @@ class Message implements vscode.Disposable {
 
         if (isCloud9()) {
             // C9 does not support message with progress, so just show a warning message.
-            vscode.window
+            return vscode.window
                 .showWarningMessage(
                     this.buildInactiveWarningMessage(minutesUserWasInactive, minutesUntilShutdown),
                     'Cancel'
@@ -206,7 +215,7 @@ class Message implements vscode.Disposable {
                     this.currentWarningMessageTimeout!.cancel()
                 })
         } else {
-            showMessageWithCancel(
+            return void showMessageWithCancel(
                 this.buildInactiveWarningMessage(minutesUserWasInactive, minutesUntilShutdown),
                 this.currentWarningMessageTimeout
             )

@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import moment from 'moment'
-import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { CloudWatchLogsEvent, CloudWatchLogsGroupInfo } from '../registry/logDataRegistry'
+import { formatDateTimestamp } from '../../shared/utilities/textUtilities'
 
 export const timestampSpaceEquivalent = '                             '
 
@@ -31,7 +30,7 @@ export function generateTextFromLogEvents(
         if (formatting?.timestamps) {
             // TODO: Handle different timezones and unix timestamps?
             const timestamp = event.timestamp
-                ? moment(event.timestamp).utc().format(INSIGHTS_TIMESTAMP_FORMAT)
+                ? formatDateTimestamp(true, new Date(event.timestamp))
                 : timestampSpaceEquivalent
             line = timestamp.concat('\t', line)
             // log entries containing newlines are indented to the same length as the timestamp.

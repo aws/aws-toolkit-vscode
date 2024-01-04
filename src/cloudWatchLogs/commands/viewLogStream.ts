@@ -7,14 +7,12 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import moment from 'moment'
 import * as picker from '../../shared/ui/picker'
 import { MultiStepWizard, WIZARD_RETRY, WIZARD_TERMINATE, WizardStep } from '../../shared/wizards/multiStepWizard'
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import {
     CloudWatchLogsGroupInfo,
@@ -27,6 +25,7 @@ import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { prepareDocument, searchLogGroup } from './searchLogGroup'
 import { telemetry, Result } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { formatLocalized } from '../../shared/utilities/textUtilities'
 
 export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
     await telemetry.cloudwatchlogs_open.run(async span => {
@@ -184,7 +183,7 @@ export function convertDescribeLogToQuickPickItems(
     return (response.logStreams ?? []).map<vscode.QuickPickItem>(stream => ({
         label: stream.logStreamName!,
         detail: stream.lastEventTimestamp
-            ? moment(stream.lastEventTimestamp).format(LOCALIZED_DATE_FORMAT)
+            ? formatLocalized(new Date(stream.lastEventTimestamp))
             : localize('AWS.cwl.viewLogStream.workflow.noStreams', '[No Log Events found]'),
     }))
 }

@@ -211,7 +211,7 @@ export class Connector {
             },
             messageData.command
         )
-        this.sendTriggerTabIDReceived(
+        await this.sendTriggerTabIDReceived(
             messageData.triggerID,
             triggerTabID !== undefined ? triggerTabID : 'no-available-tabs'
         )

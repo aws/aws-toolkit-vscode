@@ -113,7 +113,9 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
         const client = new DefaultSchemaClient(node.regionCode)
         const registryNames = await getRegistryNames(node, client)
         if (registryNames.length === 0) {
-            vscode.window.showInformationMessage(localize('AWS.schemas.search.no_registries', 'No Schema Registries'))
+            await vscode.window.showInformationMessage(
+                localize('AWS.schemas.search.no_registries', 'No Schema Registries')
+            )
 
             return
         }
@@ -153,7 +155,7 @@ export async function getRegistryNames(node: RegistryItemNode | SchemasNode, cli
         } catch (err) {
             const error = err as Error
             getLogger().error(error)
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize('AWS.message.error.schemas.search.failed_to_load_resources', 'Error loading Schemas resources')
             )
         }
@@ -193,7 +195,7 @@ export async function getSearchListForSingleRegistry(
         const err = error as Error
         getLogger().error(err)
 
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.schemas.search.failed_to_search_registry',
                 'Unable to search registry {0}',

@@ -22,7 +22,7 @@ import {
 
 import { MockOutputChannel } from '../../../test/mockOutputChannel'
 
-import admZip = require('adm-zip')
+import admZip from 'adm-zip'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 
@@ -608,7 +608,7 @@ describe('CodeExtractor', function () {
 
         it('should throw error if user picks Cancel when collision occurs', async function () {
             const error = new Error('Download code bindings cancelled')
-            sandbox.stub(codeExtractor, 'confirmOverwriteCollisions').returns(Promise.reject(error))
+            sandbox.stub(codeExtractor, 'confirmOverwriteCollisions').rejects(error)
 
             const fileName1 = 'test.txt'
             const zipFileName = path.join(destinationDirectory, 'test.zip')

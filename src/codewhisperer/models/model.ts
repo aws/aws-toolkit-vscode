@@ -241,6 +241,12 @@ export enum JDKVersion {
     JDK17 = '17',
 }
 
+export enum BuildSystem {
+    Maven = 'Maven',
+    Gradle = 'Gradle',
+    Unknown = 'Unknown',
+}
+
 export enum DropdownStep {
     STEP_1 = 1,
     STEP_2 = 2,
@@ -478,6 +484,7 @@ export interface RawCodeScanIssue {
     detectorId: string
     detectorName: string
     findingId: string
+    ruleId?: string
     relatedVulnerabilities: string[]
     severity: string
     remediation: Remediation
@@ -492,6 +499,7 @@ export interface CodeScanIssue {
     detectorId: string
     detectorName: string
     findingId: string
+    ruleId?: string
     relatedVulnerabilities: string[]
     severity: string
     recommendation: Recommendation

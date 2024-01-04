@@ -27,9 +27,15 @@ export class Session {
     // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
     public isAuthenticating: boolean
 
-    constructor(public readonly config: SessionConfig, private messenger: Messenger, public readonly tabID: string) {
-        this._state = new ConversationNotStartedState('', tabID)
-        this.proxyClient = new FeatureDevClient()
+    constructor(
+        public readonly config: SessionConfig,
+        private messenger: Messenger,
+        public readonly tabID: string,
+        initialState: Omit<SessionState, 'uploadId'> = new ConversationNotStartedState('', tabID),
+        proxyClient: FeatureDevClient = new FeatureDevClient()
+    ) {
+        this._state = initialState
+        this.proxyClient = proxyClient
 
         this.approachRetries = approachRetryLimit
 
@@ -45,7 +51,11 @@ export class Session {
             await this.setupConversation(msg)
             this.preloaderFinished = true
 
-            telemetry.amazonq_startChat.emit({ amazonqConversationId: this.conversationId, value: 1 })
+            telemetry.amazonq_startChat.emit({
+                amazonqConversationId: this.conversationId,
+                value: 1,
+                result: 'Succeeded',
+            })
 
             this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
         }
@@ -60,7 +70,10 @@ export class Session {
         // Store the initial message when setting up the conversation so that if it fails we can retry with this message
         this._latestMessage = msg
 
-        this._conversationId = await this.proxyClient.createConversation()
+        await telemetry.amazonq_startConversationInvoke.run(async span => {
+            this._conversationId = await this.proxyClient.createConversation()
+            span.record({ amazonqConversationId: this._conversationId })
+        })
 
         this._state = new PrepareRefinementState(
             {

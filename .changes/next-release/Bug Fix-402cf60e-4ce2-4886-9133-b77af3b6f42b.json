@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Help > View Toolkit Logs opens an empty file if other menu items were interacted with first."
-}

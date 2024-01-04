@@ -1,3 +1,20 @@
+## 2.4.0 2023-12-19
+
+- **Bug Fix** Amazon Q: `/dev` command may fail with "Conversation id must exist"
+- **Bug Fix** CodeWhisperer supports code generation for Iac languages without external extensions
+- **Feature** Code Transform Telemetry includes additional metadata
+
+## 2.3.0 2023-12-15
+
+- **Bug Fix** Help > View Toolkit Logs opens an empty file if other menu items were interacted with first.
+- **Bug Fix** CodeWhisperer: Increase polling frequency for security scans.
+- **Bug Fix** Opening a CodeCatalyst dev env triggers a builder ID login in certain situations.
+- **Bug Fix** Amazon Q: Fixed an issue where sometimes /transform won't appear when switching between idC/builder id
+- **Bug Fix** Amazon Q: 'Switch to Q Chat' button not working for some users.
+- **Feature** CodeWhisperer security scans support ruby files.
+- **Feature** The `aws.samcli.enableCodeLenses` setting now enables/disables SAM codelenses in `template.yaml` files, in addition to source code files.
+- **Feature** CodeWhisperer security scans now support Go files.
+
 ## 2.2.0 2023-12-06
 
 - **Breaking Change** validate that pom.xml is in root directory of project, not anywhere in project

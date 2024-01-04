@@ -4,13 +4,13 @@
  */
 
 import assert from 'assert'
-import { instance, mock, when, anything } from 'ts-mockito'
 import * as vscode from 'vscode'
 import {
     TemplateFunctionResource,
     TemplateSymbolProvider,
     TemplateSymbolResolver,
 } from '../../../shared/cloudformation/templateSymbolResolver'
+import { Stub, stub } from '../../utilities/stubber'
 
 const range = new vscode.Range(0, 0, 0, 0)
 
@@ -56,26 +56,27 @@ function symbol(name: string, kind: vscode.SymbolKind, children: vscode.Document
 
 describe('TemplateSymbolResolver', function () {
     let mockDocument: vscode.TextDocument
-    let document: vscode.TextDocument
 
-    let mockSymbolProvider: TemplateSymbolProvider
-    let symbolProvider: TemplateSymbolProvider
+    let mockSymbolProvider: Stub<TemplateSymbolProvider>
 
     beforeEach(function () {
-        mockDocument = mock()
-        document = instance(mockDocument)
-
-        mockSymbolProvider = mock()
-        symbolProvider = instance(mockSymbolProvider)
-
-        when(mockSymbolProvider.getSymbols(document, anything())).thenResolve(symbols)
-        when(mockSymbolProvider.getText(firstFunctionType, document)).thenReturn('"Type": "AWS::Serverless::Function"')
-        when(mockSymbolProvider.getText(secondFunctionType, document)).thenReturn('Type: AWS::Serverless::Function')
-        when(mockSymbolProvider.getText(looksLikeFunctionType, document)).thenReturn('Type: NotActuallyAFunction')
+        mockDocument = {} as any as vscode.TextDocument
+        mockSymbolProvider = stub(TemplateSymbolProvider)
+        mockSymbolProvider.getSymbols.resolves(symbols)
+        mockSymbolProvider.getText.callsFake((type, document) => {
+            if (type === firstFunctionType) {
+                return '"Type": "AWS::Serverless::Function"'
+            } else if (type === secondFunctionType) {
+                return 'Type: AWS::Serverless::Function'
+            } else if (type === looksLikeFunctionType) {
+                return 'Type: NotActuallyAFunction'
+            }
+            throw new Error('unexpected type for test')
+        })
     })
 
     it('gets function resources', async function () {
-        const symbolResolver = new TemplateSymbolResolver(document, symbolProvider)
+        const symbolResolver = new TemplateSymbolResolver(mockDocument, mockSymbolProvider)
         const functionResources = await symbolResolver.getResourcesOfKind('function', false)
 
         const expectedResources: TemplateFunctionResource[] = [

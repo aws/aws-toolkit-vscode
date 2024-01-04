@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import moment from 'moment'
 import { Iot } from 'aws-sdk'
 import { IotClient, IotPolicy } from '../../shared/clients/iotClient'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
@@ -11,7 +10,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { inspect } from 'util'
 import { IotPolicyWithVersionsNode } from './iotPolicyNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
+import { formatLocalized } from '../../shared/utilities/textUtilities'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
@@ -45,7 +44,7 @@ export class IotPolicyVersionNode extends AWSTreeNodeBase implements AWSResource
             this.policy.name,
             this.version.versionId,
             this.isDefault ? 'DEFAULT\n' : '',
-            moment(this.version.createDate).format(LOCALIZED_DATE_FORMAT)
+            formatLocalized(this.version.createDate)
         )
         this.label = localize(
             'AWS.explorerNode.iot.versionName',

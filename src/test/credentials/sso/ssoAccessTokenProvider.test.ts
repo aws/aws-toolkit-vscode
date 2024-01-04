@@ -10,7 +10,6 @@ import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider
 import { installFakeClock } from '../../testUtil'
 import { getCache } from '../../../auth/sso/cache'
 
-import { instance, mock, when, anything, reset, deepEqual } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { ClientRegistration, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
 import { OidcClient } from '../../../auth/sso/clients'
@@ -27,14 +26,15 @@ import { SeverityLevel } from '../../shared/vscode/message'
 import { ToolkitError } from '../../../shared/errors'
 import * as fs from 'fs'
 import * as path from 'path'
+import { Stub, stub } from '../../utilities/stubber'
 
 const hourInMs = 3600000
 
 describe('SsoAccessTokenProvider', function () {
     const region = 'fakeRegion'
     const startUrl = 'fakeUrl'
-    const oidcClient = mock(OidcClient)
 
+    let oidcClient: Stub<OidcClient>
     let sut: SsoAccessTokenProvider
     let cache: ReturnType<typeof getCache>
     let clock: FakeTimers.InstalledClock
@@ -84,15 +84,15 @@ describe('SsoAccessTokenProvider', function () {
     })
 
     beforeEach(async function () {
+        oidcClient = stub(OidcClient)
         tempDir = await makeTemporaryTokenCacheFolder()
         cache = getCache(tempDir)
-        sut = new SsoAccessTokenProvider({ region, startUrl }, cache, instance(oidcClient))
+        sut = new SsoAccessTokenProvider({ region, startUrl }, cache, oidcClient)
     })
 
     afterEach(async function () {
         sinon.restore()
         clock.reset()
-        reset(oidcClient)
         await tryRemoveFolder(tempDir)
     })
 
@@ -133,7 +133,7 @@ describe('SsoAccessTokenProvider', function () {
 
         it('refreshes expired tokens', async function () {
             const refreshedToken = createToken(hourInMs, { accessToken: 'newToken' })
-            when(oidcClient.createToken(anything())).thenResolve(refreshedToken)
+            oidcClient.createToken.resolves(refreshedToken)
 
             const refreshableToken = createToken(-hourInMs, { refreshToken: 'refreshToken' })
             const validRegistation = createRegistration(hourInMs)
@@ -158,7 +158,7 @@ describe('SsoAccessTokenProvider', function () {
         describe('Exceptions', function () {
             it('drops expired tokens if failure was a client-fault', async function () {
                 const exception = new UnauthorizedClientException({ message: '', $metadata: {} })
-                when(oidcClient.createToken(anything())).thenReject(exception)
+                oidcClient.createToken.rejects(exception)
 
                 const refreshableToken = createToken(-hourInMs, { refreshToken: 'refreshToken' })
                 const validRegistation = createRegistration(hourInMs)
@@ -172,7 +172,7 @@ describe('SsoAccessTokenProvider', function () {
 
             it('preserves expired tokens if failure was not a client-fault', async function () {
                 const exception = new InternalServerException({ message: '', $metadata: {} })
-                when(oidcClient.createToken(anything())).thenReject(exception)
+                oidcClient.createToken.rejects(exception)
 
                 const refreshableToken = createToken(-hourInMs, { refreshToken: 'refreshToken' })
                 const validRegistation = createRegistration(hourInMs)
@@ -203,12 +203,12 @@ describe('SsoAccessTokenProvider', function () {
             const token = createToken(hourInMs)
             const registration = createRegistration(hourInMs)
             const authorization = createAuthorization(hourInMs)
+            oidcClient.registerClient.resolves(registration)
 
-            when(oidcClient.registerClient(anything())).thenResolve(registration)
             if (!opts?.skipAuthorization) {
-                when(oidcClient.startDeviceAuthorization(anything())).thenResolve(authorization)
+                oidcClient.startDeviceAuthorization.resolves(authorization)
             }
-            when(oidcClient.createToken(anything())).thenResolve(token)
+            oidcClient.createToken.resolves(token)
 
             return { token, registration, authorization }
         }
@@ -241,8 +241,8 @@ describe('SsoAccessTokenProvider', function () {
             stubOpen()
             const exception = new AuthorizationPendingException({ message: '', $metadata: {} })
             const authorization = createAuthorization(1000)
-            when(oidcClient.createToken(anything())).thenReject(exception)
-            when(oidcClient.startDeviceAuthorization(anything())).thenResolve(authorization)
+            oidcClient.createToken.rejects(exception)
+            oidcClient.startDeviceAuthorization.resolves(authorization)
 
             const resp = sut.createToken()
             const progress = await getTestWindow().waitForMessage(/login page opened/i)
@@ -278,15 +278,7 @@ describe('SsoAccessTokenProvider', function () {
             // If we do not invalidate the expired registration, startDeviceAuthorization()
             // will be given expired registration values. The following ensures we only
             // return a value when startDeviceAuthorization() is given valid registration values.
-            when(
-                oidcClient.startDeviceAuthorization(
-                    deepEqual({
-                        startUrl: startUrl,
-                        clientId: validRegistration.clientId,
-                        clientSecret: validRegistration.clientSecret,
-                    })
-                )
-            ).thenResolve(authorization)
+            oidcClient.startDeviceAuthorization.resolves(authorization)
 
             // sanity check we have expired registration in cache
             assert.deepStrictEqual(await cache.registration.load(registrationKey), expiredRegistration)
@@ -294,6 +286,13 @@ describe('SsoAccessTokenProvider', function () {
             // a valid registration should be cached since the previous was expired
             assert.deepStrictEqual(await cache.registration.load(registrationKey), validRegistration)
             assert.deepStrictEqual(result, { ...token, identity: startUrl }) // verify final result
+            assert(
+                oidcClient.startDeviceAuthorization.calledWithExactly({
+                    startUrl: startUrl,
+                    clientId: validRegistration.clientId,
+                    clientSecret: validRegistration.clientSecret,
+                })
+            )
         })
 
         describe('Exceptions', function () {
@@ -301,8 +300,8 @@ describe('SsoAccessTokenProvider', function () {
                 const exception = new UnauthorizedClientException({ message: '', $metadata: {} })
                 const registration = createRegistration(hourInMs)
 
-                when(oidcClient.registerClient(anything())).thenResolve(registration)
-                when(oidcClient.startDeviceAuthorization(anything())).thenReject(exception)
+                oidcClient.registerClient.resolves(registration)
+                oidcClient.startDeviceAuthorization.rejects(exception)
 
                 await assert.rejects(sut.createToken(), exception)
                 assert.strictEqual(await cache.registration.load({ region }), undefined)
@@ -312,9 +311,9 @@ describe('SsoAccessTokenProvider', function () {
                 const exception = new InvalidClientException({ message: '', $metadata: {} })
                 const registration = createRegistration(hourInMs)
 
-                when(oidcClient.registerClient(anything())).thenResolve(registration)
-                when(oidcClient.startDeviceAuthorization(anything())).thenResolve(createAuthorization(hourInMs))
-                when(oidcClient.createToken(anything())).thenReject(exception)
+                oidcClient.registerClient.resolves(registration)
+                oidcClient.startDeviceAuthorization.resolves(createAuthorization(hourInMs))
+                oidcClient.createToken.rejects(exception)
 
                 stubOpen()
 
@@ -326,8 +325,8 @@ describe('SsoAccessTokenProvider', function () {
                 const exception = new InternalServerException({ message: '', $metadata: {} })
                 const registration = createRegistration(hourInMs)
 
-                when(oidcClient.registerClient(anything())).thenResolve(registration)
-                when(oidcClient.startDeviceAuthorization(anything())).thenReject(exception)
+                oidcClient.registerClient.resolves(registration)
+                oidcClient.startDeviceAuthorization.rejects(exception)
 
                 await assert.rejects(sut.createToken(), exception)
                 assert.deepStrictEqual(await cache.registration.load({ region }), registration)
@@ -338,7 +337,7 @@ describe('SsoAccessTokenProvider', function () {
             beforeEach(function () {
                 setupFlow()
                 const exception = new AuthorizationPendingException({ message: '', $metadata: {} })
-                when(oidcClient.createToken(anything())).thenReject(exception)
+                oidcClient.createToken.rejects(exception)
             })
 
             it('stops the flow if user does not click the link', async function () {

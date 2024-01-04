@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { anything, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 
 import * as assert from 'assert'
 import { FeedbackWebview } from '../../../feedback/vue/submitFeedback'
+import sinon from 'sinon'
 
 const comment = 'comment'
 const sentiment = 'Positive'
@@ -17,7 +17,7 @@ describe('submitFeedbackListener', function () {
     let mockTelemetry: TelemetryService
 
     beforeEach(function () {
-        mockTelemetry = mock()
+        mockTelemetry = {} as any as TelemetryService
     })
 
     const testCases = [
@@ -26,15 +26,18 @@ describe('submitFeedbackListener', function () {
     ]
     testCases.forEach(({ productName, expectedError }) => {
         it(`submits feedback for ${productName}, disposes, and handles errors`, async function () {
-            const webview = new FeedbackWebview(instance(mockTelemetry), productName)
+            const postStub = sinon.stub()
+            mockTelemetry.postFeedback = postStub
+            const webview = new FeedbackWebview(mockTelemetry, productName)
             await webview.submit(message)
-            verify(mockTelemetry.postFeedback(deepEqual({ comment: comment, sentiment: sentiment }))).once()
+            assert.ok(postStub.calledOnceWithExactly({ comment: comment, sentiment: sentiment }))
             assert.ok(webview.isDisposed)
         })
         it(`submits feedback for ${productName}, disposes, and handles errors`, async function () {
             const error = 'Expected failure'
-            when(mockTelemetry.postFeedback(anything())).thenThrow(new Error(error))
-            const webview = new FeedbackWebview(instance(mockTelemetry), productName)
+            const postStub = sinon.stub().rejects(new Error(error))
+            mockTelemetry.postFeedback = postStub
+            const webview = new FeedbackWebview(mockTelemetry, productName)
             const result = await webview.submit(message)
             assert.strictEqual(result, error)
         })

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import moment from 'moment'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
@@ -153,14 +152,23 @@ function getLogLevel(): LogLevel {
     return configuration.get('logLevel', defaultLogLevel)
 }
 
+/**
+ * Creates a name for the toolkit's logfile.
+ * Essentially an ISO string, but in the local timezone and without the trailing "Z"
+ * @returns Log filename
+ */
 function makeLogFilename(): string {
-    const m = moment()
-    const date = m.format('YYYYMMDD')
-    const time = m.format('HHmmss')
-    // the 'T' matches VS Code's log file name format
-    const datetime = `${date}T${time}`
+    const now = new Date()
+    // local to machine: use getMonth/Date instead of UTC equivalent
+    // month is zero-terminated: offset by 1
+    const m = (now.getMonth() + 1).toString().padStart(2, '0')
+    const d = now.getDate().toString().padStart(2, '0')
+    const h = now.getHours().toString().padStart(2, '0')
+    const mn = now.getMinutes().toString().padStart(2, '0')
+    const s = now.getSeconds().toString().padStart(2, '0')
+    const dt = `${now.getFullYear()}${m}${d}T${h}${mn}${s}`
 
-    return `aws_toolkit_${datetime}.log`
+    return `aws_toolkit_${dt}.log`
 }
 
 /**
@@ -190,7 +198,7 @@ async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable>
         }
         checking = true
         if (!(await fsCommon.fileExists(logFile))) {
-            vscode.window.showWarningMessage(
+            await vscode.window.showWarningMessage(
                 localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
             )
             watcher.close()
