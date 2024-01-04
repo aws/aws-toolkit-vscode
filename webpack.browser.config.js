@@ -2,6 +2,13 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+/**
+ * Notes:
+ *
+ * Followed guide from: https://code.visualstudio.com/api/extension-guides/web-extensions#webpack-configuration
+ *
+ */
 const webpack = require('webpack')
 
 const baseConfig = require('./webpack.base.config')
@@ -11,6 +18,10 @@ const webConfig = {
     ...baseConfig,
     name: 'web',
     target: 'webworker',
+    /**
+     * The keys in the following 'entry' object are the relative paths of the final output files in 'dist'.
+     * They are suffixed with '.js' implicitly.
+     */
     entry: {
         'src/extensionWeb': './src/extensionWeb.ts',
         'src/testBrowser/testRunner': './src/testBrowser/testRunner.ts',
@@ -39,6 +50,7 @@ const webConfig = {
             assert: require.resolve('assert'),
             fs: false,
             crypto: require.resolve('crypto-browserify'),
+            'fs-extra': false,
 
             // *** If one of these modules actually gets used an error will be raised ***
             // You may see something like: "TypeError: path_ignored_0.join is not a function"
@@ -54,6 +66,7 @@ const webConfig = {
             async_hooks: false,
         },
     },
+    mode: 'production', // lets see if we can change this to 'development' later
     optimization: {
         minimize: false,
     },
