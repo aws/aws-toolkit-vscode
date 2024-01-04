@@ -194,11 +194,11 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             assert.strictEqual(actualDevEnv.persistentStorage.sizeInGiB, 32)
         })
 
-        it('creates a Dev Environment using an existing branch', async function () {
-            // TODO: The CC API does not provide a way to create a repository
-            // due to this we'll want to revisit this test.
-            // For now, we can manually create repository in the test project
-            // and then continue this test from that point.
+        it.skip('creates a Dev Environment using an existing branch', async function () {
+            // TODO: Write this test now that an API is available in the SDK:
+            // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/CodeCatalyst.html#createSourceRepository-property
+            // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/CodeCatalyst.html#createSourceRepositoryBranch-property
+            // For now, the repository is manually created in the account.
         })
 
         it('prompts to install the ssh extension if not available', async function () {
@@ -355,7 +355,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             assert.ok(spaces.find(space => space.name === spaceName))
         })
 
-        // TODO: Re-add this test and delete the projects after the test suite with the appropriate SDK API.
+        // TODO: Re-add this test when the CoCa SDK offers a way to delete projects.
         it.skip('lists all projects for the given user', async function () {
             // Create lots of projects
             const ephemeralProjectNames = []
