@@ -75,6 +75,12 @@ describe('FileSystem', function () {
             assert.strictEqual(readFileSync(filePath, 'utf-8'), text)
         })
 
+        it('makes dirs if missing', async function () {
+            const filePath = createTestPath('dirA/dirB/myFileName.txt')
+            await fsCommon.writeFile(filePath, 'MyContent')
+            assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+        })
+
         it('throws when existing file + no permission', async function () {
             if (isWin()) {
                 console.log('Skipping since windows does not support mode permissions')

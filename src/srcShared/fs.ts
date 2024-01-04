@@ -6,6 +6,7 @@ import * as vscode from 'vscode'
 import * as actualFs from 'fs'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ToolkitError } from '../shared/errors'
+import _path from 'path'
 
 const fs = vscode.workspace.fs
 type Uri = vscode.Uri
