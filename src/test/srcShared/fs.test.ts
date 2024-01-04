@@ -111,6 +111,28 @@ describe('FileSystem', function () {
         })
     })
 
+    describe('outputFile()', function () {
+        it('creates a file when given an existing path', async function () {
+            // setup to make the directories
+            const dirPath = path.join(testRootPath(), 'folderA', 'folderB')
+            await fsCommon.mkdir(dirPath)
+
+            const filePath = path.join(dirPath, 'myFile.txt')
+            // method under test
+            await fsCommon.outputFile(filePath, 'MyText')
+
+            assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyText')
+        })
+
+        it('creates a file as well as the missing path', async function () {
+            const filePath = path.join(testRootPath(), 'folderA', 'folderB', 'myFile.txt')
+            // method under test
+            await fsCommon.outputFile(filePath, 'MyText')
+
+            assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyText')
+        })
+    })
+
     describe('fileExists()', function () {
         it('returns true for an existing file', async function () {
             const filePath = await makeFile('test.txt')

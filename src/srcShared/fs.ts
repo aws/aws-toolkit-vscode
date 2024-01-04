@@ -6,6 +6,7 @@ import * as vscode from 'vscode'
 import * as actualFs from 'fs'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ToolkitError } from '../shared/errors'
+import _path from 'path'
 
 const fs = vscode.workspace.fs
 type Uri = vscode.Uri
@@ -79,6 +80,20 @@ export class FileSystemCommon {
         finalContent.set(newContent, currentLength)
 
         return this.writeFile(path, finalContent)
+    }
+
+    /**
+     * The same as {@link writeFile} except it will also create the parent directories
+     * if missing.
+     */
+    async outputFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
+        path = FileSystemCommon.getUri(path)
+
+        // Create parent dirs if they do not exist
+        const parentDirPath = _path.dirname(path.fsPath)
+        await this.mkdir(parentDirPath)
+
+        return this.writeFile(path, content)
     }
 
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {

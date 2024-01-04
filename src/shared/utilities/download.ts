@@ -4,13 +4,13 @@
  */
 
 import path from 'path'
-import fs from 'fs-extra'
 import { CodeWhispererStreaming, ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
 import { ToolkitError } from '../errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { transformByQState } from '../../codewhisperer/models/model'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { telemetry } from '../telemetry/telemetry'
+import { fsCommon } from '../../srcShared/fs'
 
 /**
  * This class represents the structure of the archive returned by the ExportResultArchive endpoint
@@ -47,7 +47,7 @@ export async function downloadExportResultArchive(
         }
     }
 
-    fs.outputFileSync(toPath, Buffer.concat(buffer))
+    await fsCommon.outputFile(toPath, Buffer.concat(buffer))
     telemetry.codeTransform_logApiLatency.emit({
         codeTransformApiNames: 'ExportResultArchive',
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
