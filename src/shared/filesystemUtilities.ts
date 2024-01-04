@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, mkdtemp, mkdirp, readFile, remove, existsSync, readdir, stat } from 'fs-extra'
+import { mkdtemp, mkdirp, readFile, remove, existsSync, readdir } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as fsExtra from 'fs-extra'
 import * as os from 'os'
@@ -37,16 +37,21 @@ export async function getDirSize(
     const files = await fsExtra.readdir(dirPath, { withFileTypes: true })
     const fileSizes = files.map(async file => {
         const filePath = path.join(dirPath, file.name)
-        if (file.isSymbolicLink()) {
+        const stat = await fsCommon.stat(filePath)
+
+        if (stat === undefined) {
             return 0
         }
-        if (file.isDirectory()) {
+        if (stat.type === vscode.FileType.SymbolicLink) {
+            return 0
+        }
+        if (stat.type === vscode.FileType.Directory) {
             return getDirSize(filePath, startTime, duration, fileExt)
         }
-        if (file.isFile() && file.name.endsWith(fileExt)) {
-            const { size } = await fsExtra.stat(filePath)
-            return size
+        if (stat.type === vscode.FileType.File && file.name.endsWith(fileExt)) {
+            return stat.size
         }
+
         return 0
     })
     return (await Promise.all(fileSizes)).reduce((accumulator, size) => accumulator + size, 0)
@@ -282,7 +287,7 @@ export async function cloud9Findfile(dir: string, fileName: string): Promise<vsc
         if (filePath === path.join(dir, fileName)) {
             return [vscode.Uri.file(filePath)]
         }
-        if ((await stat(filePath)).isDirectory()) {
+        if (await fsCommon.directoryExists(filePath)) {
             subDirs.push(vscode.Uri.file(filePath))
         }
     }
@@ -310,8 +315,7 @@ export function getDefaultDownloadPath(): string {
 
 export async function setDefaultDownloadPath(downloadPath: string) {
     try {
-        const savePath = await stat(downloadPath)
-        if (savePath.isDirectory()) {
+        if (await fsCommon.directoryExists(downloadPath)) {
             GlobalState.instance.tryUpdate('aws.downloadPath', downloadPath)
         } else {
             GlobalState.instance.tryUpdate('aws.downloadPath', path.dirname(downloadPath))
