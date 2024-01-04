@@ -272,7 +272,7 @@ export async function startTransformByQ() {
         sessionPlanProgress['returnCode'] = StepProgress.Succeeded
     } catch (error) {
         if (transformByQState.isCancelled()) {
-            resultStatusMessage = 'JobCanceled'
+            resultStatusMessage = 'JobCancelled'
             try {
                 await stopJob(transformByQState.getJobId())
                 vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage)
