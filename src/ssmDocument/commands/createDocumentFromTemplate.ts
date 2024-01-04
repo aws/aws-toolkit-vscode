@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as YAML from 'yaml'
+import * as yaml from 'js-yaml'
 import { getLogger, Logger } from '../../shared/logger'
 import * as picker from '../../shared/ui/picker'
 import { promptUserForDocumentFormat } from '../util/util'
@@ -114,9 +114,9 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
     }
 }
 
-function yamlToJson(yaml: string): string {
-    const jsonObject = YAML.parse(yaml)
-    return JSON.stringify(jsonObject, undefined, '\t')
+function yamlToJson(yamlStr: string): string {
+    const jsonObject = yaml.load(yamlStr, { schema: yaml.JSON_SCHEMA })
+    return JSON.stringify(jsonObject, undefined, 4)
 }
 
 async function openTextDocumentFromSelection(

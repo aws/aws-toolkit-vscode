@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import admZip from 'adm-zip'
 import { existsSync, statSync } from 'fs'
 import { asyncCallWithTimeout } from '../commonUtil'
-import path = require('path')
+import * as path from 'path'
 import { tempDirPath } from '../../../shared/filesystemUtilities'
 import * as CodeWhispererConstants from '../../models/constants'
 import { getLogger } from '../../../shared/logger'
@@ -35,6 +35,11 @@ export const DependencyGraphConstants = {
     globalusing: 'global using',
     semicolon: ';',
     equals: '=',
+    require: 'require',
+    require_relative: 'require_relative',
+    load: 'load',
+    include: 'include',
+    extend: 'extend',
 
     /**
      * Regex
@@ -55,6 +60,8 @@ export const DependencyGraphConstants = {
     ymlExt: '.yml',
     tfExt: '.tf',
     hclExt: '.hcl',
+    rubyExt: '.rb',
+    goExt: '.go',
 }
 
 export abstract class DependencyGraph {

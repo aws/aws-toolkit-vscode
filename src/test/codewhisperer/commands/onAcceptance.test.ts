@@ -11,7 +11,6 @@ import { resetCodeWhispererGlobalVariables, createMockTextEditor } from '../test
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { assertTelemetryCurried } from '../../testUtil'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import globals from '../../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -91,7 +90,7 @@ describe('onAcceptance', function () {
             mockEditor.selection = new vscode.Selection(new vscode.Position(1, 0), new vscode.Position(1, 0))
             session.recommendations = [{ content: "print('Hello World!')" }]
             session.setSuggestionState(0, 'Showed')
-            TelemetryHelper.instance.triggerType = 'OnDemand'
+            session.triggerType = 'OnDemand'
             session.setCompletionType(0, session.recommendations[0])
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             const extensionContext = await FakeExtensionContext.create()

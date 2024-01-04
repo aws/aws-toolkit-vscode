@@ -364,7 +364,7 @@ async function runSyncInTerminal(proc: ChildProcess) {
             onStdout: text => globals.outputChannel.append(removeAnsi(text)),
             onStderr: text => globals.outputChannel.append(removeAnsi(text)),
         })
-        proc.send('\n')
+        await proc.send('\n')
 
         return handleResult(await result)
     }
@@ -421,7 +421,7 @@ export async function runSamSync(args: SyncParams) {
     }
 
     if ((parsedVersion?.compare('1.78.0') ?? 1) < 0) {
-        showOnce('sam.sync.updateMessage', async () => {
+        await showOnce('sam.sync.updateMessage', async () => {
             const message = `Your current version of SAM CLI (${parsedVersion?.version}) does not include performance improvements for "sam sync". Update to 1.78.0 or higher for faster deployments.`
             const learnMoreUrl = vscode.Uri.parse(
                 'https://aws.amazon.com/about-aws/whats-new/2023/03/aws-toolkits-jetbrains-vs-code-sam-accelerate/'
@@ -691,10 +691,14 @@ class ProcessTerminal implements vscode.Pseudoterminal {
 
         // enter
         if (data === '\u000D') {
-            this.process.send('\n')
+            this.process.send('\n').then(undefined, e => {
+                getLogger().error('ProcessTerminal: process.send() failed: %s', (e as Error).message)
+            })
             this.onDidWriteEmitter.fire('\r\n')
         } else {
-            this.process.send(data)
+            this.process.send(data).then(undefined, e => {
+                getLogger().error('ProcessTerminal: process.send() failed: %s', (e as Error).message)
+            })
             this.onDidWriteEmitter.fire(data)
         }
     }

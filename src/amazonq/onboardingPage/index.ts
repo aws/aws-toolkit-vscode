@@ -7,8 +7,9 @@ import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import path from 'path'
 import { MessagePublisher } from '../messages/messagePublisher'
-import { focusAmazonQPanel } from '../../codewhisperer/commands/basicCommands'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { focusAmazonQPanel } from '../../auth/ui/vue/show'
+import { getLogger } from '../../shared/logger'
 
 export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublisher: MessagePublisher<any>): void {
     const panel = vscode.window.createWebviewPanel(
@@ -34,18 +35,23 @@ export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublis
                 switch (message.command) {
                     case 'sendToQ':
                         telemetry.record({ elementId: 'amazonq_meet_askq' })
-                        focusAmazonQPanel().then(() => {
-                            cwcWebViewToAppsPublisher.publish({
-                                type: 'onboarding-page-cwc-button-clicked',
-                                command: 'onboarding-page-interaction',
-                            })
-                        })
+                        focusAmazonQPanel().then(
+                            () => {
+                                cwcWebViewToAppsPublisher.publish({
+                                    type: 'onboarding-page-cwc-button-clicked',
+                                    command: 'onboarding-page-interaction',
+                                })
+                            },
+                            e => {
+                                getLogger().error('focusAmazonQPanel failed: %s', (e as Error).message)
+                            }
+                        )
 
                         return
 
                     case 'goToHelp':
                         telemetry.record({ elementId: 'amazonq_tryExamples' })
-                        vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
+                        void vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
                         return
                 }
             })

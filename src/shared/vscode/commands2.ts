@@ -460,7 +460,7 @@ function getInstrumenter(
     if (!telemetryName && info?.startTime !== undefined && currentTime - info.startTime < threshold) {
         info.debounceCount += 1
         TelemetryDebounceInfo.instance.set(id, info)
-        getLogger().debug('commands: skipped telemetry for "%s" with key "%O"', id.id, id.compositeKey)
+        getLogger().debug('telemetry: collapsing %d "%s" metrics. key=%O', info.debounceCount, id.id, id.compositeKey)
 
         return undefined
     }

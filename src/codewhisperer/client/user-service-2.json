@@ -53,6 +53,8 @@
             "output": { "shape": "CreateUploadUrlResponse" },
             "errors": [
                 { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ResourceNotFoundException" },
                 { "shape": "InternalServerException" },
                 { "shape": "ValidationException" },
                 { "shape": "AccessDeniedException" }
@@ -116,6 +118,8 @@
             "output": { "shape": "GetTaskAssistCodeGenerationResponse" },
             "errors": [
                 { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ResourceNotFoundException" },
                 { "shape": "InternalServerException" },
                 { "shape": "ValidationException" },
                 { "shape": "AccessDeniedException" }
@@ -241,6 +245,8 @@
             "output": { "shape": "StartTaskAssistCodeGenerationResponse" },
             "errors": [
                 { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ResourceNotFoundException" },
                 { "shape": "InternalServerException" },
                 { "shape": "ValidationException" },
                 { "shape": "AccessDeniedException" }
@@ -301,7 +307,7 @@
             "type": "structure",
             "required": ["content"],
             "members": {
-                "messageId": { "shape": "AssistantResponseMessageMessageIdString" },
+                "messageId": { "shape": "MessageId" },
                 "content": { "shape": "AssistantResponseMessageContentString" },
                 "supplementaryWebLinks": { "shape": "SupplementaryWebLinks" },
                 "references": { "shape": "References" },
@@ -314,11 +320,6 @@
             "min": 0,
             "sensitive": true
         },
-        "AssistantResponseMessageMessageIdString": {
-            "type": "string",
-            "max": 128,
-            "min": 0
-        },
         "Base64EncodedPaginationToken": {
             "type": "string",
             "max": 2048,
@@ -329,11 +330,40 @@
             "type": "boolean",
             "box": true
         },
+        "ChatAddMessageEvent": {
+            "type": "structure",
+            "required": ["conversationId", "messageId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "messageId": { "shape": "MessageId" },
+                "userIntent": { "shape": "UserIntent" },
+                "hasCodeSnippet": { "shape": "Boolean" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "activeEditorTotalCharacters": { "shape": "Integer" },
+                "timeToFirstChunkMilliseconds": { "shape": "Double" },
+                "timeBetweenChunks": { "shape": "TimeBetweenChunks" },
+                "fullResponselatency": { "shape": "Double" },
+                "requestLength": { "shape": "Integer" },
+                "responseLength": { "shape": "Integer" }
+            }
+        },
         "ChatHistory": {
             "type": "list",
             "member": { "shape": "ChatMessage" },
             "max": 10,
             "min": 0
+        },
+        "ChatInteractWithMessageEvent": {
+            "type": "structure",
+            "required": ["conversationId", "messageId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "messageId": { "shape": "MessageId" },
+                "interactionType": { "shape": "ChatMessageInteractionType" },
+                "interactionTarget": { "shape": "String" },
+                "acceptedCharacterCount": { "shape": "Integer" },
+                "acceptedSnippetHasReference": { "shape": "Boolean" }
+            }
         },
         "ChatMessage": {
             "type": "structure",
@@ -342,6 +372,30 @@
                 "assistantResponseMessage": { "shape": "AssistantResponseMessage" }
             },
             "union": true
+        },
+        "ChatMessageInteractionType": {
+            "type": "string",
+            "enum": [
+                "INSERT_AT_CURSOR",
+                "COPY_SNIPPET",
+                "COPY",
+                "CLICK_LINK",
+                "CLICK_BODY_LINK",
+                "CLICK_FOLLOW_UP",
+                "HOVER_REFERENCE",
+                "UPVOTE",
+                "DOWNVOTE"
+            ]
+        },
+        "ChatUserModificationEvent": {
+            "type": "structure",
+            "required": ["conversationId", "messageId", "modificationPercentage"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "messageId": { "shape": "MessageId" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "modificationPercentage": { "shape": "Double" }
+            }
         },
         "ChatTriggerType": {
             "type": "string",
@@ -474,6 +528,7 @@
                 "contentMd5": { "shape": "CreateUploadUrlRequestContentMd5String" },
                 "contentChecksum": { "shape": "CreateUploadUrlRequestContentChecksumString" },
                 "contentChecksumType": { "shape": "ContentChecksumType" },
+                "contentLength": { "shape": "CreateUploadUrlRequestContentLengthLong" },
                 "artifactType": { "shape": "ArtifactType" },
                 "uploadIntent": { "shape": "UploadIntent" },
                 "uploadContext": { "shape": "UploadContext" }
@@ -484,6 +539,11 @@
             "max": 512,
             "min": 1,
             "sensitive": true
+        },
+        "CreateUploadUrlRequestContentLengthLong": {
+            "type": "long",
+            "box": true,
+            "min": 1
         },
         "CreateUploadUrlRequestContentMd5String": {
             "type": "string",
@@ -521,7 +581,7 @@
             "type": "string",
             "max": 950,
             "min": 0,
-            "pattern": "$|^arn:[-.a-z0-9]{1,63}:codewhisperer:([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
+            "pattern": "arn:[-.a-z0-9]{1,63}:codewhisperer:([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
         },
         "CustomizationName": {
             "type": "string",
@@ -912,6 +972,11 @@
             "type": "long",
             "box": true
         },
+        "MessageId": {
+            "type": "string",
+            "max": 128,
+            "min": 0
+        },
         "MetricData": {
             "type": "structure",
             "required": ["metricName", "metricValue", "timestamp"],
@@ -955,7 +1020,8 @@
         "PreSignedUrl": {
             "type": "string",
             "max": 2048,
-            "min": 1
+            "min": 1,
+            "sensitive": true
         },
         "PrimitiveInteger": { "type": "integer" },
         "ProgrammingLanguage": {
@@ -1260,7 +1326,10 @@
                 "codeCoverageEvent": { "shape": "CodeCoverageEvent" },
                 "userModificationEvent": { "shape": "UserModificationEvent" },
                 "codeScanEvent": { "shape": "CodeScanEvent" },
-                "metricData": { "shape": "MetricData" }
+                "metricData": { "shape": "MetricData" },
+                "chatAddMessageEvent": { "shape": "ChatAddMessageEvent" },
+                "chatInteractWithMessageEvent": { "shape": "ChatInteractWithMessageEvent" },
+                "chatUserModificationEvent": { "shape": "ChatUserModificationEvent" }
             },
             "union": true
         },
@@ -1311,6 +1380,12 @@
             },
             "exception": true,
             "retryable": { "throttling": true }
+        },
+        "TimeBetweenChunks": {
+            "type": "list",
+            "member": { "shape": "Double" },
+            "max": 100,
+            "min": 0
         },
         "Timestamp": { "type": "timestamp" },
         "TransformationJob": {
@@ -1442,7 +1517,9 @@
             "members": {
                 "ideCategory": { "shape": "IdeCategory" },
                 "operatingSystem": { "shape": "OperatingSystem" },
-                "product": { "shape": "UserContextProductString" }
+                "product": { "shape": "UserContextProductString" },
+                "clientId": { "shape": "UUID" },
+                "ideVersion": { "shape": "String" }
             }
         },
         "UserContextProductString": {
@@ -1517,8 +1594,10 @@
                 "suggestionState": { "shape": "SuggestionState" },
                 "recommendationLatencyMilliseconds": { "shape": "Double" },
                 "timestamp": { "shape": "Timestamp" },
+                "triggerToResponseLatencyMilliseconds": { "shape": "Double" },
                 "suggestionReferenceCount": { "shape": "PrimitiveInteger" },
-                "generatedLine": { "shape": "PrimitiveInteger" }
+                "generatedLine": { "shape": "PrimitiveInteger" },
+                "numberOfRecommendations": { "shape": "PrimitiveInteger" }
             }
         },
         "ValidationException": {

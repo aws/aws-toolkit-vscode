@@ -13,10 +13,7 @@ import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { AuthUtil } from '../util/authUtil'
 import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
 import { codeWhispererClient } from '../client/codewhisperer'
-import {
-    logSendTelemetryEventFailure,
-    mapToClientTelemetryEvent,
-} from '../../codewhispererChat/controllers/chat/telemetryHelper'
+import { logSendTelemetryEventFailure } from '../../codewhispererChat/controllers/chat/telemetryHelper'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -51,7 +48,9 @@ export class CodeWhispererTracker {
         }
 
         if (this._eventQueue.length >= 0) {
-            this.startTimer()
+            this.startTimer().catch(e => {
+                getLogger().error('startTimer failed: %s', (e as Error).message)
+            })
         }
 
         if (this._eventQueue.length >= CodeWhispererTracker.defaultMaxQueueSize) {
@@ -74,7 +73,7 @@ export class CodeWhispererTracker {
                 currentTime.getTime() - suggestion.time.getTime() >
                 CodeWhispererTracker.defaultModificationIntervalMillis
             ) {
-                this.emitTelemetryOnSuggestion(suggestion)
+                await this.emitTelemetryOnSuggestion(suggestion)
             } else {
                 newEventQueue.push(suggestion)
             }
@@ -111,7 +110,15 @@ export class CodeWhispererTracker {
                 telemetry.amazonq_modifyCode.emit(event)
 
                 codeWhispererClient
-                    .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_modifyCode', event))
+                    .sendTelemetryEvent({
+                        telemetryEvent: {
+                            chatUserModificationEvent: {
+                                conversationId: event.cwsprChatConversationId,
+                                messageId: event.cwsprChatMessageId,
+                                modificationPercentage: event.cwsprChatModificationPercentage,
+                            },
+                        },
+                    })
                     .then()
                     .catch(logSendTelemetryEventFailure)
             } else {
@@ -174,7 +181,7 @@ export class CodeWhispererTracker {
 
         if (globals.telemetry.telemetryEnabled) {
             try {
-                this.flush()
+                await this.flush()
             } finally {
                 this._eventQueue = []
             }

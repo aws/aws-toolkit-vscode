@@ -49,7 +49,7 @@ export async function saveCurrentLogDataContent(): Promise<void> {
             } catch (e) {
                 result = 'Failed'
                 const err = e as Error
-                vscode.window.showErrorMessage(
+                void vscode.window.showErrorMessage(
                     localize(
                         'AWS.command.saveCurrentLogDataContent.error',
                         'Error saving current log to {0}: {1}',
@@ -63,7 +63,7 @@ export async function saveCurrentLogDataContent(): Promise<void> {
         }
     } catch (e) {
         result = 'Failed'
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.cwl.invalidEditor',
                 'Not a Cloudwatch Log data source: {0}',

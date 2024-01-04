@@ -12,9 +12,9 @@ import { DocumentItemNodeWriteable } from '../../../ssmDocument/explorer/documen
 
 import * as picker from '../../../shared/ui/picker'
 import { FakeAwsContext } from '../../utilities/fakeAwsContext'
-import { mock } from '../../utilities/mockito'
 import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { stub } from '../../utilities/stubber'
+import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
 
 describe('openDocumentItem', async function () {
     afterEach(function () {
@@ -53,7 +53,28 @@ describe('openDocumentItem', async function () {
         sinon.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeVersionSelectionResult)
         sinon.stub(fakeAwsContext, 'getCredentialAccountId').returns('Amazon')
         const ssmClient = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
-        const documentNode = new DocumentItemNodeWriteable(fakeDoc, ssmClient, fakeRegion, mock())
+        const documentNode = new DocumentItemNodeWriteable(
+            fakeDoc,
+            ssmClient,
+            fakeRegion,
+            stub(RegistryItemNode, {
+                documentType: '',
+                regionCode: '',
+                registryName: '',
+                serviceId: undefined,
+                label: undefined,
+                id: undefined,
+                iconPath: undefined,
+                description: undefined,
+                resourceUri: undefined,
+                tooltip: undefined,
+                command: undefined,
+                collapsibleState: undefined,
+                contextValue: undefined,
+                accessibilityInformation: undefined,
+                checkboxState: undefined,
+            })
+        )
         sinon.stub(documentNode, 'listSchemaVersion').resolves(fakeSchemaList)
         const updateVersionStub = sinon.stub(documentNode, 'updateDocumentVersion')
         await updateDocumentVersion(documentNode, fakeAwsContext)

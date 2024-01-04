@@ -44,16 +44,6 @@
             "description": "Installed CLI"
         },
         {
-            "name": "findingId",
-            "type": "string",
-            "description": "The id of a security finding from a code scan"
-        },
-        {
-            "name": "detectorId",
-            "type": "string",
-            "description": "The id of the detector which produced the code scan issue"
-        },
-        {
             "name": "hasChatAuth",
             "type": "boolean",
             "description": "Whether the user has access to CodeWhisperer Chat"
@@ -281,56 +271,6 @@
             "name": "cwsprChatCommandName",
             "type": "string",
             "description": "Type of chat command name executed"
-        },
-        {
-            "name": "codeTransform_JobId",
-            "type": "string",
-            "description": "A string ID for the current job running"
-        },
-        {
-            "name": "codeTransform_SourceJavaVersion",
-            "type": "string",
-            "description": "The Java version of the project the customer has selected to transform"
-        },
-        {
-            "name": "codeTransform_ResultStatusMessage",
-            "type": "string",
-            "description": "A general string field to represent the ending status of the job"
-        },
-        {
-            "name": "codeTransform_ApiErrorId",
-            "type": "string",
-            "description": "A general string field to represent the key/id to be used so that we can map to a specific API error message"
-        },
-        {
-            "name": "codeTransform_RuntimeErrorId",
-            "type": "string",
-            "description": "A general string field to represent the key/id to be used so that we can map to a specific runtime error message"
-        },
-        {
-            "name": "codeTransform_SessionId",
-            "type": "string",
-            "description": "A general string field to represent the IDE session from when users start the transformation process"
-        },
-        {
-            "name": "codeTransform_ApiName",
-            "type": "string",
-            "description": "Names of allowed API calls in Gumby",
-            "allowedValues": [
-                "StartTransformation",
-                "StopTransformation",
-                "GetTransformation",
-                "GetTransformationPlan",
-                "UploadZip",
-                "CreateUploadUrl",
-                "ExportResultArchive"
-            ]
-        },
-        {
-            "name": "codeTransform_ProjectType",
-            "type": "string",
-            "description": "The type of the project the user calls transform on",
-            "allowedValues": ["maven", "gradle", "unknown"]
         }
     ],
     "metrics": [
@@ -662,16 +602,6 @@
             "metadata": [{ "type": "didSave" }]
         },
         {
-            "name": "codewhisperer_codeScanIssueHover",
-            "description": "Called when a code scan issue is hovered over",
-            "metadata": [{ "type": "findingId" }, { "type": "detectorId" }]
-        },
-        {
-            "name": "codewhisperer_codeScanIssueApplyFix",
-            "description": "Called when a code scan issue suggested fix is applied",
-            "metadata": [{ "type": "findingId" }, { "type": "detectorId" }, { "type": "component" }]
-        },
-        {
             "name": "amazonq_openChat",
             "description": "When user opens CWSPR chat panel"
         },
@@ -902,78 +832,6 @@
                 },
                 {
                     "type": "cwsprChatCommandName",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_codeTransformInvoke",
-            "description": "The user selects code transform on an open project",
-            "metadata": [
-                {
-                    "type": "codeTransform_SessionId",
-                    "required": true
-                },
-                {
-                    "type": "codeTransform_ApiName",
-                    "required": false
-                },
-                {
-                    "type": "codeTransform_ApiErrorId",
-                    "required": false
-                },
-                {
-                    "type": "codeTransform_JobId",
-                    "required": false
-                },
-                {
-                    "type": "codeTransform_ProjectType",
-                    "required": false
-                },
-                {
-                    "type": "codeTransform_SourceJavaVersion",
-                    "required": false
-                },
-                {
-                    "type": "codeTransform_ResultStatusMessage",
-                    "required": false
-                },
-                {
-                    "type": "duration",
-                    "required": true
-                },
-                {
-                    "type": "result",
-                    "required": true
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_codeTransformReview",
-            "description": "The user reviews the proposed results of a code transformation",
-            "metadata": [
-                {
-                    "type": "codeTransform_SessionId",
-                    "required": true
-                },
-                {
-                    "type": "codeTransform_JobId",
-                    "required": true
-                },
-                {
-                    "type": "codeTransform_ApiName",
-                    "required": false
-                },
-                {
-                    "type": "result",
-                    "required": true
-                },
-                {
-                    "type": "reason",
                     "required": false
                 }
             ]

@@ -45,7 +45,7 @@ export async function addLogEvents(
         } else {
             // contingency in case lock isn't busy but still locked out. Don't want to accidentally trigger making codelens not busy
             const error = e as Error
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize(
                     'AWS.cwl.searchLogGroup.errorRetrievingLogs2',
                     'Failed to get logs for {0}: {1}',

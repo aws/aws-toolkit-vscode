@@ -30,22 +30,38 @@ const reauth = Commands.register(
     }
 )
 
+const onboardCommand = Commands.register(
+    '_aws.codecatalyst.onboard',
+    async (authProvider: CodeCatalystAuthenticationProvider) => {
+        void authProvider.promptOnboarding()
+    }
+)
+
 async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
-    if (
-        !auth.activeConnection ||
-        !auth.isConnectionValid() ||
-        !(await auth.isConnectionOnboarded(auth.activeConnection))
-    ) {
+    const learnMoreNode = learnMoreCommand.build(docsUrl).asTreeNode({
+        label: 'Learn more about CodeCatalyst',
+        iconPath: getIcon('vscode-question'),
+    })
+
+    if (!auth.activeConnection || !auth.isConnectionValid()) {
         return [
             showManageConnections.build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst').asTreeNode({
                 label: 'Sign in to get started',
                 iconPath: getIcon('vscode-account'),
             }),
-            learnMoreCommand.build(docsUrl).asTreeNode({
-                label: 'Learn more about CodeCatalyst',
-                iconPath: getIcon('vscode-question'),
+            learnMoreNode,
+        ]
+    }
+
+    // We are connected but not onboarded, so show them button to onboard
+    if (!(await auth.isConnectionOnboarded(auth.activeConnection))) {
+        return [
+            onboardCommand.build(auth).asTreeNode({
+                label: 'Onboard CodeCatalyst to get started',
+                iconPath: getIcon('vscode-account'),
             }),
+            learnMoreNode,
         ]
     }
 

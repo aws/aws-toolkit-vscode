@@ -7,7 +7,12 @@ import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
-import { ListAvailableCustomizationsResponse, SendTelemetryEventRequest } from './codewhispereruserclient'
+import {
+    ListAvailableCustomizationsResponse,
+    ListFeatureEvaluationsRequest,
+    ListFeatureEvaluationsResponse,
+    SendTelemetryEventRequest,
+} from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { hasVendedIamCredentials } from '../../auth/auth'
@@ -22,6 +27,10 @@ import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger'
 import { indent } from '../../shared/utilities/textUtilities'
 import { keepAliveHeader } from './agent'
+import { getOptOutPreference } from '../util/commonUtil'
+import * as os from 'os'
+import { getClientId } from '../../shared/telemetry/util'
+import { extensionVersion } from '../../shared/vscode/env'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -95,7 +104,9 @@ export class DefaultCodeWhispererClient {
                                     resp.error?.code === 'AccessDeniedException' &&
                                     resp.error.message.match(/expired/i)
                                 ) {
-                                    AuthUtil.instance.reauthenticate()
+                                    AuthUtil.instance.reauthenticate().catch(e => {
+                                        getLogger().error('reauthenticate failed: %s', (e as Error).message)
+                                    })
                                     resp.error.retryable = true
                                 }
                             })
@@ -219,15 +230,46 @@ export class DefaultCodeWhispererClient {
     }
 
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
-        const requestWithOptOut: SendTelemetryEventRequest = {
+        const requestWithCommonFields: SendTelemetryEventRequest = {
             ...request,
-            optOutPreference: globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT',
+            optOutPreference: getOptOutPreference(),
+            userContext: {
+                ideCategory: 'VSCODE',
+                operatingSystem: this.getOperatingSystem(),
+                product: 'CodeWhisperer',
+                clientId: await getClientId(globals.context.globalState),
+                ideVersion: extensionVersion,
+            },
         }
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
             return
         }
-        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithOptOut).promise()
+        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithCommonFields).promise()
         getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
+    }
+
+    public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
+        const request: ListFeatureEvaluationsRequest = {
+            userContext: {
+                ideCategory: 'VSCODE',
+                operatingSystem: this.getOperatingSystem(),
+                product: 'CodeWhisperer',
+                clientId: await getClientId(globals.context.globalState),
+                ideVersion: extensionVersion,
+            },
+        }
+        return (await this.createUserSdkClient()).listFeatureEvaluations(request).promise()
+    }
+
+    private getOperatingSystem(): string {
+        const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
+        if (osId === 'darwin') {
+            return 'MAC'
+        } else if (osId === 'win32') {
+            return 'WINDOWS'
+        } else {
+            return 'LINUX'
+        }
     }
 
     /**

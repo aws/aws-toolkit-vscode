@@ -6,14 +6,12 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import moment from 'moment'
 import * as vscode from 'vscode'
-import { INSIGHTS_TIMESTAMP_FORMAT } from '../shared/constants'
 import globals from '../shared/extensionGlobals'
 import { PromptSettings } from '../shared/settings'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { showMessageWithCancel, showOutputMessage } from '../shared/utilities/messages'
-import { removeAnsi } from '../shared/utilities/textUtilities'
+import { formatDateTimestamp, removeAnsi } from '../shared/utilities/textUtilities'
 import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { EcsSettings } from './util'
@@ -77,7 +75,7 @@ export async function toggleExecuteCommandFlag(
         if (choice === undefined || choice === no) {
             throw new CancellationError('user')
         } else if (choice === yesDontAskAgain) {
-            settings.disablePrompt(prompt)
+            await settings.disablePrompt(prompt)
         }
     }
 
@@ -90,12 +88,12 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
 
         const { container, task, command } = await runCommandWizard(obj)
         const timeout = new Timeout(600000)
-        showMessageWithCancel('Running command...', timeout)
+        void showMessageWithCancel('Running command...', timeout)
 
         try {
             const { path, args, dispose } = await container.prepareCommandForTask(command, task)
             showOutputMessage(
-                `${moment().format(INSIGHTS_TIMESTAMP_FORMAT)}:  Container: "${
+                `${formatDateTimestamp(false)}:  Container: "${
                     container.description.name
                 }" Task ID: "${task}" Command: "${command}"`,
                 globals.outputChannel

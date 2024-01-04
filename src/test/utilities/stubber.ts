@@ -5,11 +5,20 @@
 
 import * as sinon from 'sinon'
 
-type Stub<T> = T & { [P in keyof T]: sinon.SinonStubbedMember<T[P]> }
+export type Stub<T> = T & { [P in keyof T]: sinon.SinonStubbedMember<T[P]> }
 type Fields<T> = { [P in FieldKeys<T>]-?: T[P] }
 type FieldKeys<T> = { [P in keyof T]: T[P] extends (...args: any[]) => unknown ? never : P }[keyof T]
 type PartialStub<T> = FieldKeys<T> extends never ? Stub<T> : Stub<Omit<T, FieldKeys<T>>>
 
+/**
+ * Stubs classes for testing. Does NOT work when an object is defined by an interface or type alone.
+ * To stub an interface/type, use the following:
+ * ```
+ * const mockObject = <ObjectType>{ <keyFromObjectType>: <overridden value> }
+ * ```
+ * @param ctor Class constructor
+ * @param fields _Optional_ fields to ensure class matches signature
+ */
 export function stub<T>(ctor: new (...args: any[]) => T): PartialStub<T>
 export function stub<T>(ctor: new (...args: any[]) => T, fields: Fields<T>): Stub<T>
 export function stub<T>(ctor: new (...args: any[]) => T, fields?: Fields<T>): Stub<T> {

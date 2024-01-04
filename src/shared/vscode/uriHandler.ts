@@ -35,7 +35,7 @@ export class UriHandler implements vscode.UriHandler {
         const uriNoQuery = uri.with({ query: '' }).toString()
 
         if (!this.handlers.has(uri.path)) {
-            showViewLogsMessage(localize('AWS.uriHandler.nohandler', 'No handler for URI: {0}', uriNoQuery))
+            void showViewLogsMessage(localize('AWS.uriHandler.nohandler', 'No handler for URI: {0}', uriNoQuery))
             getLogger().warn('UriHandler: no handler for path "%s" in handlers: %O', uri.path, this.handlers)
             return
         }
@@ -55,7 +55,7 @@ export class UriHandler implements vscode.UriHandler {
                 'Failed to parse URI query: {0}',
                 uriNoQuery
             )
-            showViewLogsMessage(failedParsedMessage)
+            void showViewLogsMessage(failedParsedMessage)
             getLogger().error(`UriHandler: query parsing failed for path "${uri.path}": %O`, err)
             return
         }
@@ -69,7 +69,7 @@ export class UriHandler implements vscode.UriHandler {
                 'Failed to handle URI: {0}',
                 uriNoQuery
             )
-            showViewLogsMessage(failedResolvedMessage)
+            void showViewLogsMessage(failedResolvedMessage)
             getLogger().error(`UriHandler: unexpected exception when handling "${uri.path}": %O`, err)
         }
     }

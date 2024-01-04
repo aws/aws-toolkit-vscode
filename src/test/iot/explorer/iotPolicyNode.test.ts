@@ -7,12 +7,12 @@ import assert from 'assert'
 import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
 import { Iot } from 'aws-sdk'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { TestSettings } from '../../utilities/testSettingsConfiguration'
+import sinon from 'sinon'
 
 describe('IotPolicyNode', function () {
     let iot: IotClient
@@ -32,26 +32,25 @@ describe('IotPolicyNode', function () {
     }
 
     beforeEach(function () {
-        iot = mock()
+        iot = {} as any as IotClient
         config = new TestSettings()
     })
 
     describe('getChildren', function () {
         it('gets children', async function () {
             const versions = [{ versionId: 'V1', isDefaultVersion: true }]
-            when(iot.listPolicyVersions(deepEqual({ policyName }))).thenReturn(
-                asyncGenerator<Iot.PolicyVersion>(versions)
-            )
-
+            const stub = sinon.stub().returns(asyncGenerator<Iot.PolicyVersion>(versions))
+            iot.listPolicyVersions = stub
             const node = new IotPolicyWithVersionsNode(
                 expectedPolicy,
                 {} as IotPolicyFolderNode,
-                instance(iot),
+                iot,
                 undefined,
                 config
             )
             const [policyVersionNode, ...otherNodes] = await node.getChildren()
 
+            assert(stub.calledOnceWithExactly({ policyName }))
             assertPolicyVersionNode(policyVersionNode, expectedPolicy, policyVersion)
             assert.strictEqual(otherNodes.length, 0)
         })

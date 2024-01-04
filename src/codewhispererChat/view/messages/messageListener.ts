@@ -8,6 +8,7 @@ import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
+import { getLogger } from '../../../shared/logger'
 
 export interface UIMessageListenerProps {
     readonly chatControllerMessagePublishers: ChatControllerMessagePublishers
@@ -81,7 +82,9 @@ export class UIMessageListener {
                 this.chatItemVoted(msg)
                 break
             case 'chat-item-feedback':
-                this.chatItemFeedback(msg)
+                this.chatItemFeedback(msg).catch(e => {
+                    getLogger().error('chatItemFeedback failed: %s', (e as Error).message)
+                })
                 break
             case 'ui-focus':
                 this.processUIFocus(msg)

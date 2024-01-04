@@ -31,7 +31,7 @@ export interface SamCliValidationNotificationAction {
 const actionGoToSamCli: SamCliValidationNotificationAction = {
     label: () => localize('AWS.samcli.userChoice.visit.install.url', 'Install latest SAM CLI'),
     invoke: async () => {
-        openUrl(samInstallUrl)
+        void openUrl(samInstallUrl)
     },
 }
 
@@ -43,7 +43,7 @@ const actionGoToVsCodeMarketplace: SamCliValidationNotificationAction = {
             getIdeProperties().company
         ),
     invoke: async () => {
-        showExtensionPage(VSCODE_EXTENSION_ID.awstoolkit)
+        void showExtensionPage(VSCODE_EXTENSION_ID.awstoolkit)
     },
 }
 

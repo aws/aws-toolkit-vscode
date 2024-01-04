@@ -14,7 +14,7 @@ import { TriggerPayload } from '../model'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
-const supportedLanguagesList = [
+export const supportedLanguagesList = [
     'python',
     'javascript',
     'java',

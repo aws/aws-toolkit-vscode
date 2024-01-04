@@ -10,8 +10,8 @@ import * as CodeWhispererConstants from '../models/constants'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import globals from '../../shared/extensionGlobals'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
+import { session } from '../util/codeWhispererSession'
 
 export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.codeWhisperer.referenceLog'
@@ -41,12 +41,12 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             webviewView.webview,
             CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled()
         )
-        this._view.webview.onDidReceiveMessage(data => {
-            vscode.commands.executeCommand('aws.codeWhisperer.configure', 'codewhisperer')
+        this._view.webview.onDidReceiveMessage(async data => {
+            await vscode.commands.executeCommand('aws.codeWhisperer.configure', 'codewhisperer')
         })
     }
 
-    public async update() {
+    public update() {
         if (this._view) {
             const showPrompt = CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled()
             this._view.webview.html = this.getHtml(this._view.webview, showPrompt)
@@ -70,13 +70,11 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
                 reference.recommendationContentSpan.end
             )
             const firstCharLineNumber =
-                editor.document.positionAt(
-                    TelemetryHelper.instance.cursorOffset + reference.recommendationContentSpan.start
-                ).line + 1
+                editor.document.positionAt(session.startCursorOffset + reference.recommendationContentSpan.start).line +
+                1
             const lastCharLineNumber =
-                editor.document.positionAt(
-                    TelemetryHelper.instance.cursorOffset + reference.recommendationContentSpan.end - 1
-                ).line + 1
+                editor.document.positionAt(session.startCursorOffset + reference.recommendationContentSpan.end - 1)
+                    .line + 1
             let lineInfo = ``
             if (firstCharLineNumber === lastCharLineNumber) {
                 lineInfo = `(line at ${firstCharLineNumber})`

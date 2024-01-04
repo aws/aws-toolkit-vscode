@@ -17,13 +17,20 @@ import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
+import fs from 'fs'
+import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
+import { FakeAwsContext } from '../utilities/fakeAwsContext'
+import { Service } from 'aws-sdk'
+import userApiConfig = require('./../../codewhisperer/client/user-service-2.json')
+import CodeWhispererUserClient = require('../../codewhisperer/client/codewhispereruserclient')
+import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
 
 export function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
     vsCodeState.isCodeWhispererEditing = false
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
-    session.language = 'python'
+    session.reset()
     CodeSuggestionsState.instance.setSuggestionsEnabled(false)
 }
 
@@ -147,6 +154,16 @@ export function createTextDocumentChangeEvent(document: vscode.TextDocument, ran
     }
 }
 
+// bryceitoc9: I'm not sure what this function does? spy functionality from Mockito wasn't used, and removing doesn't break anything
+export async function createSpyClient() {
+    const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
+    const clientSpy = (await builder.createAwsService(Service, {
+        apiConfig: userApiConfig,
+    } as ServiceOptions)) as CodeWhispererUserClient
+    sinon.stub(codeWhispererClient, 'createUserSdkClient').returns(Promise.resolve(clientSpy))
+    return clientSpy
+}
+
 export function createCodeScanIssue(overrides?: Partial<CodeScanIssue>): CodeScanIssue {
     return {
         startLine: 0,
@@ -179,4 +196,11 @@ export function createCodeActionContext(): vscode.CodeActionContext {
         only: vscode.CodeActionKind.Empty,
         triggerKind: vscode.CodeActionTriggerKind.Automatic,
     }
+}
+
+export function createMockDirentFile(fileName: string): fs.Dirent {
+    const dirent = new fs.Dirent()
+    dirent.isFile = () => true
+    dirent.name = fileName
+    return dirent
 }

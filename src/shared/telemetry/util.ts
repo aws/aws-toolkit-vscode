@@ -11,6 +11,10 @@ import { extensionVersion, isAutomation } from '../vscode/env'
 import { v4 as uuidv4 } from 'uuid'
 import { addTypeName } from '../utilities/typeConstructors'
 import globals from '../extensionGlobals'
+import { mapMetadata } from './telemetryLogger'
+import { Result } from './telemetry.gen'
+import { MetricDatum } from './clienttelemetry'
+import { isValidationExemptMetric } from './exemptMetrics'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -84,4 +88,41 @@ export async function getUserAgent(
     }
 
     return pairs.join(' ')
+}
+
+/**
+ * Validates that emitted telemetry metrics
+ * 1. contain a result property and
+ * 2. contain a reason propery if result = 'Failed'.
+ */
+export function validateMetricEvent(event: MetricDatum, fatal: boolean) {
+    const failedStr: Result = 'Failed'
+    const telemetryRunDocsStr =
+        'Consider using `.run()` instead of `.emit()`, which will set these properties automatically. ' +
+        'See https://github.com/aws/aws-toolkit-vscode/blob/master/docs/telemetry.md#guidelines'
+
+    if (!isValidationExemptMetric(event.MetricName) && event.Metadata) {
+        const metadata = mapMetadata([])(event.Metadata)
+
+        try {
+            if (metadata.result === undefined) {
+                throw new Error(
+                    `Metric \`${event.MetricName}\` was emitted without the \`result\` property. ` +
+                        `This property is always required. ${telemetryRunDocsStr}`
+                )
+            }
+
+            if (metadata.result === failedStr && metadata.reason === undefined) {
+                throw new Error(
+                    `Metric \`${event.MetricName}\` was emitted without the \`reason\` property. ` +
+                        `This property is always required when \`result\` = 'Failed'. ${telemetryRunDocsStr}`
+                )
+            }
+        } catch (err: any) {
+            if (fatal) {
+                throw err
+            }
+            getLogger().warn(`Metric Event did not pass validation: ${(err as Error).message}`)
+        }
+    }
 }

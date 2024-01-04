@@ -7,9 +7,8 @@ import { Ides } from 'aws-sdk/clients/codecatalyst'
 import * as vscode from 'vscode'
 import { CodeCatalystResource, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { pushIf } from '../shared/utilities/collectionUtils'
-import { CodeCatalystAuthenticationProvider } from './auth'
-import { Commands } from '../shared/vscode/commands2'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
+import { getLogger } from '../shared/logger'
 
 /**
  * Builds a web URL from the given CodeCatalyst object.
@@ -51,7 +50,9 @@ export function getHelpUrl(): string {
  */
 export function openCodeCatalystUrl(o: CodeCatalystResource) {
     const url = toCodeCatalystUrl(o)
-    vscode.env.openExternal(vscode.Uri.parse(url))
+    vscode.env.openExternal(vscode.Uri.parse(url)).then(undefined, e => {
+        getLogger().error('openExternal failed: %s', (e as Error).message)
+    })
 }
 
 /** Returns true if the dev env has a "vscode" IDE runtime. */
@@ -65,10 +66,3 @@ export function isDevenvVscode(ides: Ides | undefined): boolean {
 export function isInDevEnv(): boolean {
     return !!getCodeCatalystDevEnvId()
 }
-
-export const getStartedCommand = Commands.register(
-    'aws.codecatalyst.getStarted',
-    (auth: CodeCatalystAuthenticationProvider) => {
-        auth.connectToAwsBuilderId()
-    }
-)

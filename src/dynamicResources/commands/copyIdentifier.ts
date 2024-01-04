@@ -7,6 +7,6 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { copyToClipboard } from '../../shared/utilities/messages'
 
 export async function copyIdentifier(typeName: string, identifier: string) {
-    copyToClipboard(identifier, 'identifier')
+    await copyToClipboard(identifier, 'identifier')
     telemetry.dynamicresource_copyIdentifier.emit({ resourceType: typeName })
 }

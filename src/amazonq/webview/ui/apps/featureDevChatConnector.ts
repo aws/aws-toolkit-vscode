@@ -194,7 +194,7 @@ export class Connector {
         }
 
         if (messageData.type === 'authNeededException') {
-            this.processAuthNeededException(messageData)
+            await this.processAuthNeededException(messageData)
             return
         }
 

@@ -44,9 +44,9 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
     // used to keep track of whether or not featureDev is enabled and has an active idC
     let isFeatureDevEnabled = featureDevInitEnabled
 
-    const isGumbyEnabled = gumbyInitEnabled
+    let isGumbyEnabled = gumbyInitEnabled
 
-    const tabDataGenerator = new TabDataGenerator({
+    let tabDataGenerator = new TabDataGenerator({
         isFeatureDevEnabled,
         isGumbyEnabled,
     })
@@ -63,12 +63,22 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
     // eslint-disable-next-line prefer-const
     connector = new Connector({
         tabsStorage,
-        onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]): void => {
-            isFeatureDevEnabled = featureDevEnabled
+        onUpdateAuthentication: (isAmazonQEnabled: boolean, authenticatingTabIDs: string[]): void => {
+            isFeatureDevEnabled = isAmazonQEnabled
+            isGumbyEnabled = isAmazonQEnabled
 
-            quickActionHandler.isFeatureDevEnabled = isFeatureDevEnabled
-            tabDataGenerator.quickActionsGenerator.isFeatureDevEnabled = isFeatureDevEnabled
+            quickActionHandler = new QuickActionHandler({
+                mynahUI,
+                connector,
+                tabsStorage,
+                isFeatureDevEnabled,
+                isGumbyEnabled,
+            })
 
+            tabDataGenerator = new TabDataGenerator({
+                isFeatureDevEnabled,
+                isGumbyEnabled,
+            })
             // Set the new defaults for the quick action commands in all tabs now that isFeatureDevEnabled was enabled/disabled
             for (const tab of tabsStorage.getTabs()) {
                 mynahUI.updateStore(tab.id, {
@@ -77,7 +87,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
             }
 
             // Unlock every authenticated tab that is now authenticated
-            if (featureDevEnabled) {
+            if (isAmazonQEnabled) {
                 for (const tabID of authenticatingTabIDs) {
                     mynahUI.addChatItem(tabID, {
                         type: ChatItemType.ANSWER,

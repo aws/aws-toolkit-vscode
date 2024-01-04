@@ -53,7 +53,7 @@ export async function copyUrlCommand(node: RestApiNode, regionProvider: RegionPr
     }))
 
     if (quickPickItems.length === 0) {
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize('AWS.apig.copyUrlNoStages', "Failed to copy URL because '{0}' has no stages", node.name)
         )
         telemetry.apigateway_copyUrl.emit({ result: 'Failed' })

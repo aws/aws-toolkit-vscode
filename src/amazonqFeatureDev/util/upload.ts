@@ -8,6 +8,8 @@ import got from 'got'
 import { getLogger } from '../../shared/logger/logger'
 import { featureName } from '../constants'
 
+import { UploadCodeError } from '../errors'
+
 /**
  * uploadCode
  *
@@ -28,8 +30,8 @@ export async function uploadCode(url: string, buffer: Buffer, checksumSha256: st
                 }),
             },
         })
-    } catch (e) {
+    } catch (e: any) {
         getLogger().error(`${featureName}: failed to upload code to s3: ${(e as Error).message}`)
-        throw e
+        throw new UploadCodeError(e instanceof got.HTTPError ? `${e.response.statusCode}` : 'Unknown')
     }
 }

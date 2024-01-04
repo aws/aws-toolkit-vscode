@@ -7,22 +7,18 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
-import {
-    focusAmazonQPanel,
-    reconnect,
-    showTransformByQ,
-    transformTreeNode,
-} from '../../codewhisperer/commands/basicCommands'
+import { reconnect, showTransformByQ } from '../../codewhisperer/commands/basicCommands'
 import { transformByQState } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 
 const localize = nls.loadMessageBundle()
 
 export const learnMoreAmazonQCommand = Commands.declare('aws.amazonq.learnMore', () => () => {
-    vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
+    void vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
 })
 
 export const createLearnMoreNode = () =>
@@ -37,7 +33,7 @@ export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView',
         elementId: 'amazonq_switchToQChat',
         passive: false,
     })
-    focusAmazonQPanel()
+    void focusAmazonQPanel()
 })
 
 export const switchToAmazonQNode = () =>
@@ -54,8 +50,8 @@ export const switchToAmazonQNode = () =>
  */
 export const enableAmazonQNode = () =>
     // Simply trigger re-auth to obtain the proper scopes- same functionality as if requested in the chat window.
-    reconnect.build(placeholder, cwTreeNodeSource).asTreeNode({
-        label: localize('AWS.amazonq.enable', 'Enable Amazon Q (Preview)'),
+    reconnect.build(placeholder, cwTreeNodeSource, true).asTreeNode({
+        label: localize('AWS.amazonq.enable', 'Enable'),
         iconPath: getIcon('vscode-debug-start'),
         contextValue: 'awsEnableAmazonQ',
     })
@@ -64,9 +60,9 @@ export const createTransformByQ = () => {
     const prefix = transformByQState.getPrefixTextForButton()
     let status = transformByQState.getPolledJobStatus().toLowerCase()
     if (transformByQState.isRunning()) {
-        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
+        void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (status === '') {
-            // job is running but polling has not started yet, so display generic messsage
+            // job is running but polling has not started yet, so display generic message
             status = CodeWhispererConstants.transformByQStateRunningMessage
         }
     } else if (transformByQState.isCancelled()) {
@@ -80,7 +76,7 @@ export const createTransformByQ = () => {
     } else if (transformByQState.isNotStarted()) {
         status = ''
     }
-    return showTransformByQ.build(transformTreeNode).asTreeNode({
+    return showTransformByQ.build(CodeWhispererConstants.transformTreeNode).asTreeNode({
         label: status !== '' ? `${prefix} Transform [Job status: ` + status + `]` : `Transform`,
         iconPath: transformByQState.getIconForButton(),
         tooltip: `${prefix} Transform`,

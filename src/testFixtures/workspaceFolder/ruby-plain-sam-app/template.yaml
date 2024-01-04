@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sample SAM Template for ruby-plain-sam-app
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Resources:
+    RubyApplication:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src
+            Handler: dist/app.handler_beside_package_json
+            Runtime: ruby2.7

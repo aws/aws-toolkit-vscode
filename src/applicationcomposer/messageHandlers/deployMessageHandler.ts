@@ -21,7 +21,7 @@ export async function deployMessageHandler(message: DeployRequestMessage, contex
      */
     const result = (await vscode.commands.executeCommand('aws.samcli.sync', args, false)) as SamSyncResult
     if (result?.isSuccess) {
-        vscode.window.showInformationMessage('SAM Sync succeeded!')
+        void vscode.window.showInformationMessage('SAM Sync succeeded!')
         telemetry.appcomposer_deployCompleted.emit({ result: 'Succeeded' })
     } else {
         telemetry.appcomposer_deployCompleted.emit({ result: 'Failed' })
@@ -32,5 +32,5 @@ export async function deployMessageHandler(message: DeployRequestMessage, contex
         eventId: message.eventId,
         isSuccess: result?.isSuccess,
     }
-    context.panel.webview.postMessage(response)
+    await context.panel.webview.postMessage(response)
 }

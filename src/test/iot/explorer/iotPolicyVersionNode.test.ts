@@ -8,15 +8,14 @@ import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
 import { Iot } from 'aws-sdk'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
-import moment from 'moment'
-import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
 import { stringOrProp } from '../../../shared/utilities/tsUtils'
+import { formatLocalized } from '../../../shared/utilities/textUtilities'
 
 describe('IotPolicyVersionNode', function () {
     const policyName = 'policy'
     const expectedPolicy: IotPolicy = { name: policyName, arn: 'arn' }
     const createDate = new Date(2021, 1, 1)
-    const createDateFormatted = moment(createDate).format(LOCALIZED_DATE_FORMAT)
+    const createDateFormatted = formatLocalized(createDate)
     const policyVersion: Iot.PolicyVersion = { versionId: 'V1', isDefaultVersion: true, createDate }
     const nonDefaultVersion: Iot.PolicyVersion = { versionId: 'V2', isDefaultVersion: false, createDate }
 

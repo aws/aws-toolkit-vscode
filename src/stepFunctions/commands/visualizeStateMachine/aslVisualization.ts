@@ -10,18 +10,10 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../../shared/logger'
 import { isDocumentValid } from '../../utils'
-import * as yaml from 'yaml'
+import * as yaml from 'js-yaml'
 
 import { YAML_FORMATS } from '../../constants/aslFormats'
 import globals from '../../../shared/extensionGlobals'
-
-const yamlOptions: yaml.Options = {
-    merge: false,
-    maxAliasCount: 0,
-    schema: 'yaml-1.1',
-    version: '1.1',
-    prettyErrors: true,
-}
 
 export interface MessageObject {
     command: string
@@ -67,23 +59,21 @@ export class AslVisualization {
         const isYaml = YAML_FORMATS.includes(updatedTextDocument.languageId)
         const text = this.getText(updatedTextDocument)
         let stateMachineData = text
-        let yamlErrors: string[] = []
 
         if (isYaml) {
-            const parsed = yaml.parseDocument(text, yamlOptions)
-            yamlErrors = parsed.errors.map(error => error.message)
             let json: any
 
             try {
-                json = parsed.toJSON()
-            } catch (e) {
-                yamlErrors.push((e as Error).message)
+                json = yaml.load(text, { schema: yaml.JSON_SCHEMA })
+            } catch (e: any) {
+                const msg = e instanceof yaml.YAMLException ? e.message : 'unknown error'
+                getLogger().error(`Error parsing state machine YAML: ${msg}`)
             }
 
             stateMachineData = JSON.stringify(json)
         }
 
-        const isValid = (await isDocumentValid(stateMachineData, updatedTextDocument)) && !yamlErrors.length
+        const isValid = await isDocumentValid(stateMachineData, updatedTextDocument)
 
         const webview = this.getWebview()
         if (this.isPanelDisposed || !webview) {
@@ -96,7 +86,6 @@ export class AslVisualization {
             command: 'update',
             stateMachineData,
             isValid,
-            errors: yamlErrors,
         })
     }
 

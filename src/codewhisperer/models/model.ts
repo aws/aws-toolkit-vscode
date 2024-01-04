@@ -235,10 +235,16 @@ export enum StepProgress {
     Failed = 'Failed',
 }
 
-enum JDKVersion {
+export enum JDKVersion {
     JDK8 = '8',
     JDK11 = '11',
     JDK17 = '17',
+}
+
+export enum BuildSystem {
+    Maven = 'Maven',
+    Gradle = 'Gradle',
+    Unknown = 'Unknown',
 }
 
 export enum DropdownStep {
@@ -478,6 +484,7 @@ export interface RawCodeScanIssue {
     detectorId: string
     detectorName: string
     findingId: string
+    ruleId?: string
     relatedVulnerabilities: string[]
     severity: string
     remediation: Remediation
@@ -492,6 +499,7 @@ export interface CodeScanIssue {
     detectorId: string
     detectorName: string
     findingId: string
+    ruleId?: string
     relatedVulnerabilities: string[]
     severity: string
     recommendation: Recommendation

@@ -7,11 +7,21 @@ import assert from 'assert'
 import * as codewhispererClient from '../../../codewhisperer/client/codewhisperer'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { createMockTextEditor, createMockClientRequest, resetCodeWhispererGlobalVariables } from '../testUtil'
+import globals from '../../../shared/extensionGlobals'
+import { GenerateCompletionsRequest } from '../../../codewhisperer/client/codewhispereruserclient'
 
 describe('editorContext', function () {
+    let telemetryEnabledDefault: boolean
+
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
+        telemetryEnabledDefault = globals.telemetry.telemetryEnabled
     })
+
+    afterEach(function () {
+        globals.telemetry.telemetryEnabled = telemetryEnabledDefault
+    })
+
     describe('extractContextForCodeWhisperer', function () {
         it('Should return expected context', function () {
             const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
@@ -119,6 +129,20 @@ describe('editorContext', function () {
             const actual = EditorContext.getLeftContext(editor, 1)
             const expected = '...wo_sum(nums, target)'
             assert.strictEqual(actual, expected)
+        })
+    })
+
+    describe('buildListRecommendationRequest', function () {
+        it('Should return expected fields for optOut, nextToken and reference config', async function () {
+            const nextToken = 'testToken'
+            const optOutPreference = false
+            globals.telemetry.telemetryEnabled = false
+            const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
+            const actual = await EditorContext.buildListRecommendationRequest(editor, nextToken, optOutPreference)
+
+            assert.strictEqual(actual.request.nextToken, nextToken)
+            assert.strictEqual((actual.request as GenerateCompletionsRequest).optOutPreference, 'OPTOUT')
+            assert.strictEqual(actual.request.referenceTrackerConfiguration?.recommendationsWithReferences, 'BLOCK')
         })
     })
 })

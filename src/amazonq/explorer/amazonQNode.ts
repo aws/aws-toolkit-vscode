@@ -47,10 +47,10 @@ export class AmazonQNode implements TreeNode {
     }
 
     private getDescription(): string {
-        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
+        void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionValid()) {
             if (AuthUtil.instance.isEnterpriseSsoInUse()) {
-                vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
+                void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
                 return 'IAM Identity Center Connected'
             } else if (AuthUtil.instance.isBuilderIdInUse()) {
                 return 'AWS Builder ID Connected'
@@ -64,7 +64,7 @@ export class AmazonQNode implements TreeNode {
     }
 
     public getChildren() {
-        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
+        void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionExpired()) {
             return [createReconnect('tree'), createLearnMoreNode()]
         }
@@ -85,7 +85,7 @@ export class AmazonQNode implements TreeNode {
         } else {
             // logged in
             if (AuthUtil.instance.isConnectionValid() && AuthUtil.instance.isEnterpriseSsoInUse()) {
-                vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
+                void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
                 return [switchToAmazonQNode(), createTransformByQ(), createOpenReferenceLog('tree')] // transform only available for IdC users
             }
             return [switchToAmazonQNode(), createOpenReferenceLog('tree')]

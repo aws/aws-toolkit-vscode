@@ -22,7 +22,7 @@ export class QuickActionHandler {
     private connector: Connector
     private tabsStorage: TabsStorage
     private tabDataGenerator: TabDataGenerator
-    public isFeatureDevEnabled: boolean
+    private isFeatureDevEnabled: boolean
 
     constructor(props: QuickActionsHandlerProps) {
         this.mynahUI = props.mynahUI
@@ -123,7 +123,7 @@ export class QuickActionHandler {
                     promptInputDisabledState: true,
                 })
 
-                this.connector.requestGenerativeAIAnswer(affectedTabId, {
+                void this.connector.requestGenerativeAIAnswer(affectedTabId, {
                     chatMessage: realPromptText,
                 })
             }

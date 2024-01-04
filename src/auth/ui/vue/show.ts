@@ -169,19 +169,19 @@ export class AuthWebview extends VueWebview {
     }
 
     async showResourceExplorer(): Promise<void> {
-        vscode.commands.executeCommand('aws.explorer.focus')
+        await vscode.commands.executeCommand('aws.explorer.focus')
     }
 
     async showCodeWhispererView(): Promise<void> {
-        vscode.commands.executeCommand('aws.codewhisperer.focus')
+        await vscode.commands.executeCommand('aws.codewhisperer.focus')
     }
 
     async showCodeCatalystNode(): Promise<void> {
-        vscode.commands.executeCommand('aws.codecatalyst.maybeFocus')
+        await vscode.commands.executeCommand('aws.codecatalyst.maybeFocus')
     }
 
     async showAmazonQChat(): Promise<void> {
-        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+        return focusAmazonQPanel()
     }
 
     async getIdentityCenterRegion(): Promise<Region | undefined> {
@@ -228,6 +228,15 @@ export class AuthWebview extends VueWebview {
             await setupFunc()
             return
         } catch (e) {
+            if (e instanceof ToolkitError && e.code === 'NotOnboarded') {
+                /**
+                 * Connection is fine, they just skipped onboarding so not an actual error.
+                 *
+                 * The error comes from user cancelling prompt by {@link CodeCatalystAuthenticationProvider.promptOnboarding()}
+                 */
+                return
+            }
+
             if (
                 CancellationError.isUserCancelled(e) ||
                 (e instanceof ToolkitError && (CancellationError.isUserCancelled(e.cause) || e.cancelled === true))
@@ -401,7 +410,7 @@ export class AuthWebview extends VueWebview {
     }
 
     openFeedbackForm() {
-        submitFeedback.execute(placeholder, 'AWS Toolkit')
+        return submitFeedback.execute(placeholder, 'AWS Toolkit')
     }
 
     // -------------------- Telemetry Stuff --------------------
@@ -605,6 +614,8 @@ export class AuthWebview extends VueWebview {
             featureType,
             result: 'Succeeded',
             attempts: authAttempts,
+        }).catch(e => {
+            getLogger().error('emitAuthAttempt failed: %s', (e as Error).message)
         })
         this.addSuccessfulAuth(id)
     }
@@ -770,7 +781,9 @@ async function showAuthWebview(
         subscriptions = [
             webview.onDidDispose(() => {
                 if (activePanel) {
-                    emitWebviewClosed(activePanel.server)
+                    emitWebviewClosed(activePanel.server).catch(e => {
+                        getLogger().error('emitWebviewClosed failed: %s', (e as Error).message)
+                    })
                 }
                 vscode.Disposable.from(...(subscriptions ?? [])).dispose()
                 activePanel = undefined
@@ -842,4 +855,12 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
 
         return result
     }
+}
+
+/**
+ * Forces focus to Amazon Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
+ * Used on first load, and any time we want to directly populate chat.
+ */
+export async function focusAmazonQPanel(): Promise<void> {
+    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
 }

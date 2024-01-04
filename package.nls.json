@@ -17,7 +17,7 @@
     "AWS.configuration.description.telemetry": "Enable AWS Toolkit to send usage data to AWS. [Details](https://docs.aws.amazon.com/sdkref/latest/guide/support-maint-idetoolkits.html)",
     "AWS.configuration.description.telemetry.cn": "Enable Amazon Toolkit to send usage data to Amazon.",
     "AWS.configuration.description.suppressPrompts": "Prompts which ask for confirmation. Checking an item suppresses the prompt.",
-    "AWS.configuration.enableCodeLenses": "Enable SAM hints in source files",
+    "AWS.configuration.enableCodeLenses": "Enable SAM hints in source code and template.yaml files",
     "AWS.configuration.description.resources.enabledResources": "AWS resources to display in the 'Resources' portion of the explorer.",
     "AWS.configuration.description.experiments": "Try experimental features and give feedback. Note that experimental features may be removed at any time.\n * `jsonResourceModification` - Enables basic create, update, and delete support for cloud resources via the JSON Resources explorer component.\n * `samSyncCode` - Adds an additional code-only option when synchronizing SAM applications. Code-only synchronizations are faster but can cause drift in the CloudFormation stack. Does nothing when using the legacy SAM deploy feature.",
     "AWS.stepFunctions.asl.format.enable.desc": "Enables the default formatter used with Amazon States Language files",

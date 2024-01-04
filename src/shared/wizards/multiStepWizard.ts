@@ -212,7 +212,7 @@ export async function promptUserForLocation(
             if (button === vscode.QuickInputButtons.Back) {
                 resolve(undefined)
             } else if (button === additionalParams?.helpButton?.button) {
-                openUrl(vscode.Uri.parse(additionalParams.helpButton.url))
+                void openUrl(vscode.Uri.parse(additionalParams.helpButton.url))
             }
         },
     })

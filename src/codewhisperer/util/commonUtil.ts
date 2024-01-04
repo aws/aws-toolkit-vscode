@@ -8,6 +8,7 @@ import * as semver from 'semver'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getInlineSuggestEnabled } from '../../shared/utilities/editorUtilities'
 import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
 import { AWSTemplateCaseInsensitiveKeyWords, AWSTemplateKeyWords } from '../models/constants'
 
 export function getLocalDatetime() {
@@ -60,6 +61,10 @@ export function getPrefixSuffixOverlap(firstString: string, secondString: string
         i--
     }
     return secondString.slice(0, i)
+}
+
+export function getOptOutPreference() {
+    return globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT'
 }
 
 export function get(key: string, context: vscode.Memento): any {

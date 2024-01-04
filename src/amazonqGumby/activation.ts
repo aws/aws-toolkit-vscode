@@ -12,6 +12,10 @@ import { startTransformByQWithProgress, confirmStopTransformByQ } from '../codew
 import { transformByQState } from '../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformationResultsViewProvider'
+import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { CancelActionPositions, logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
+import { CodeTransformConstants } from './models/constants'
 
 export async function activate(context: ExtContext) {
     const transformationHubViewProvider = new TransformationHubViewProvider()
@@ -25,14 +29,15 @@ export async function activate(context: ExtContext) {
         vscode.window.registerWebviewViewProvider('aws.amazonq.transformationHub', transformationHubViewProvider),
 
         Commands.register('aws.amazonq.startTransformationInHub', async () => {
+            logCodeTransformInitiatedMetric(CodeTransformConstants.HubStartButton)
             await startTransformByQWithProgress()
         }),
 
-        Commands.register('aws.amazonq.stopTransformationInHub', async () => {
+        Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
             if (transformByQState.isRunning()) {
-                confirmStopTransformByQ(transformByQState.getJobId())
+                void confirmStopTransformByQ(transformByQState.getJobId(), cancelSrc)
             } else {
-                vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
+                void vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
             }
         }),
 
@@ -45,7 +50,33 @@ export async function activate(context: ExtContext) {
         }),
 
         Commands.register('aws.amazonq.showTransformationPlanInHub', async () => {
-            vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(transformByQState.getPlanFilePath()))
+            void vscode.commands.executeCommand(
+                'markdown.showPreview',
+                vscode.Uri.file(transformByQState.getPlanFilePath())
+            )
         })
     )
+
+    // Register an activation event listener to determine when the IDE opens, closes or users
+    // select to open a new workspace
+    vscode.workspace.onDidChangeWorkspaceFolders(event => {
+        // Register when the IDE is closed
+        if (event.added.length === 0 && event.removed.length === 0) {
+            // Only fire closed during running/active job status
+            if (transformByQState.isRunning()) {
+                telemetry.codeTransform_jobIsClosedDuringIdeRun.emit({
+                    codeTransformJobId: transformByQState.getJobId(),
+                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformStatus: transformByQState.getStatus(),
+                })
+            }
+        } else {
+            // Register when the workspace is changed to a new project, or IDE is opened
+            telemetry.codeTransform_jobIsResumedAfterIdeClose.emit({
+                codeTransformJobId: transformByQState.getJobId(),
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformStatus: transformByQState.getStatus(),
+            })
+        }
+    })
 }

@@ -10,7 +10,6 @@ import { onInlineAcceptance } from '../../../codewhisperer/commands/onInlineAcce
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from '../testUtil'
 import { assertTelemetryCurried } from '../../testUtil'
 import { FakeMemento } from '../../fakeExtensionContext'
-import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import globals from '../../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -63,12 +62,13 @@ describe('onInlineAcceptance', function () {
             const mockEditor = createMockTextEditor()
             session.requestIdList = ['test']
             RecommendationHandler.instance.requestId = 'test'
+            session.requestIdList = ['test']
             session.sessionId = 'test'
             session.startPos = new vscode.Position(1, 0)
             mockEditor.selection = new vscode.Selection(new vscode.Position(1, 0), new vscode.Position(1, 0))
             session.recommendations = [{ content: "print('Hello World!')" }]
             session.setSuggestionState(0, 'Showed')
-            TelemetryHelper.instance.triggerType = 'OnDemand'
+            session.triggerType = 'OnDemand'
             session.setCompletionType(0, session.recommendations[0])
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             const globalState = new FakeMemento()

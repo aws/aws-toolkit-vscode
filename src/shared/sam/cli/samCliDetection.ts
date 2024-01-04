@@ -49,7 +49,7 @@ export async function detectSamCli(args: { passive: boolean; showMessage: boolea
         if (notFound) {
             notifyUserSamCliNotDetected(config)
         } else if (args.showMessage === true) {
-            vscode.window.showInformationMessage(getSettingsUpdatedMessage(sam.path ?? '?'))
+            void vscode.window.showInformationMessage(getSettingsUpdatedMessage(sam.path ?? '?'))
         }
     }
 
@@ -60,7 +60,7 @@ export async function detectSamCli(args: { passive: boolean; showMessage: boolea
 
 function notifyUserSamCliNotDetected(SamCliSettings: SamCliSettings): void {
     // inform the user, but don't wait for this to complete
-    vscode.window
+    void vscode.window
         .showErrorMessage(
             localize(
                 'AWS.samcli.error.notFound',
@@ -83,7 +83,7 @@ function notifyUserSamCliNotDetected(SamCliSettings: SamCliSettings): void {
                 if (!!location && location.length === 1) {
                     const path: string = location[0].fsPath
                     await SamCliSettings.update('location', path)
-                    vscode.window.showInformationMessage(getSettingsUpdatedMessage(path))
+                    void vscode.window.showInformationMessage(getSettingsUpdatedMessage(path))
                 }
             }
         })
