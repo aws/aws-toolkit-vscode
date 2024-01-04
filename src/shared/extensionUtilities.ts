@@ -8,7 +8,6 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
 import { VSCODE_EXTENSION_ID, extensionAlphaVersion } from './extensions'
 import { BaseTemplates } from './templates/baseTemplates'
@@ -16,6 +15,7 @@ import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
 import { DevSettings } from './settings'
+import { fsCommon } from '../srcShared/fs'
 
 const localize = nls.loadMessageBundle()
 
@@ -210,7 +210,7 @@ export async function createQuickStartWebview(
     const baseTemplateFn = _.template(BaseTemplates.simpleHtml)
 
     const htmlBody = convertExtensionRootTokensToPath(
-        await readFileAsString(path.join(context.extensionPath, actualPage)),
+        await fsCommon.readFileAsString(path.join(context.extensionPath, actualPage)),
         context.extensionPath,
         view.webview
     )
