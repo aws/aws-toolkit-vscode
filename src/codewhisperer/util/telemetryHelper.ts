@@ -99,7 +99,7 @@ export class TelemetryHelper {
         requestIdList: string[],
         sessionId: string,
         paginationIndex: number,
-        languageId: string,
+        language: CodewhispererLanguage,
         supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         telemetry.codewhisperer_userDecision.emit({
