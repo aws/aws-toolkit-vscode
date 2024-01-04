@@ -191,7 +191,7 @@ export class ChatController {
         click: ResponseBodyLinkClickMessage | SourceLinkClickMessage | FooterInfoLinkClick
     ) {
         this.telemetryHelper.recordInteractWithMessage(click)
-        openUrl(Uri.parse(click.link))
+        void openUrl(Uri.parse(click.link))
     }
 
     private processResponseBodyLinkClick(click: ResponseBodyLinkClickMessage) {
@@ -220,11 +220,11 @@ export class ChatController {
                 })
 
                 if (quickActionCommand === 'help') {
-                    this.generateStaticTextResponse('quick-action-help', triggerID)
+                    void this.generateStaticTextResponse('quick-action-help', triggerID)
                     recordTelemetryChatRunCommand('help')
                     return
                 } else if (quickActionCommand === 'transform') {
-                    this.generateStaticTextResponse('transform', triggerID)
+                    void this.generateStaticTextResponse('transform', triggerID)
                     return processTransformByQ().then(() => {
                         return recordTelemetryChatRunCommand('transform')
                     })
@@ -255,11 +255,11 @@ export class ChatController {
                 })
 
                 if (interaction.type === 'onboarding-page-cwc-button-clicked') {
-                    this.generateStaticTextResponse('onboarding-help', triggerID)
+                    void this.generateStaticTextResponse('onboarding-help', triggerID)
                     return
                 }
 
-                this.generateResponse(
+                return this.generateResponse(
                     {
                         message: prompt,
                         trigger: ChatTriggerType.ChatMessage,
@@ -420,7 +420,7 @@ export class ChatController {
                     command,
                 })
 
-                this.generateResponse(
+                return this.generateResponse(
                     {
                         message: prompt,
                         trigger: ChatTriggerType.ChatMessage,
@@ -497,7 +497,7 @@ export class ChatController {
                 context: lastTriggerEvent.context,
             })
 
-            this.generateResponse(
+            return this.generateResponse(
                 {
                     message: message.message,
                     trigger: ChatTriggerType.ChatMessage,
@@ -529,7 +529,7 @@ export class ChatController {
                     type: 'chat_message',
                     context,
                 })
-                this.generateResponse(
+                return this.generateResponse(
                     {
                         message: message.message,
                         trigger: ChatTriggerType.ChatMessage,
@@ -563,7 +563,9 @@ export class ChatController {
 
         if (triggerEvent.tabID === undefined) {
             setTimeout(() => {
-                this.generateStaticTextResponse(responseType, triggerID)
+                this.generateStaticTextResponse(responseType, triggerID).catch(e => {
+                    getLogger().error('generateStaticTextResponse failed: %s', (e as Error).message)
+                })
             }, 20)
             return
         }
@@ -573,7 +575,7 @@ export class ChatController {
         const credentialsState = await getChatAuthState()
 
         if (credentialsState.codewhispererChat !== 'connected' && credentialsState.codewhispererCore !== 'connected') {
-            this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
+            await this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
         }
 
@@ -593,7 +595,9 @@ export class ChatController {
 
         if (triggerEvent.tabID === undefined) {
             setTimeout(() => {
-                this.generateResponse(triggerPayload, triggerID)
+                this.generateResponse(triggerPayload, triggerID).catch(e => {
+                    getLogger().error('generateResponse failed: %s', (e as Error).message)
+                })
             }, 20)
             return
         }
@@ -605,7 +609,7 @@ export class ChatController {
         if (
             !(credentialsState.codewhispererChat === 'connected' && credentialsState.codewhispererCore === 'connected')
         ) {
-            this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
+            await this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
         }
 
@@ -627,7 +631,7 @@ export class ChatController {
                     response.$metadata.requestId
                 } metadata: ${JSON.stringify(response.$metadata)}`
             )
-            this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
+            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, e?.$metadata?.httpStatusCode ?? 0)
             // clears session, record telemetry before this call
