@@ -116,7 +116,7 @@ export class DevDocumentProvider implements vscode.TextDocumentContentProvider {
  *
  * See {@link DevSettings} for more information.
  */
-export function activate(ctx: ExtContext): void {
+export async function activate(ctx: ExtContext): Promise<void> {
     const devSettings = DevSettings.instance
 
     async function updateMode() {
@@ -129,7 +129,7 @@ export function activate(ctx: ExtContext): void {
         vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider(ctx))
     )
 
-    updateMode()
+    await updateMode()
 
     const editor = new ObjectEditor(ctx.extensionContext)
     ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))

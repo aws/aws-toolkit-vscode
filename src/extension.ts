@@ -173,7 +173,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         try {
-            activateDev(extContext)
+            await activateDev(extContext)
         } catch (error) {
             getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }
