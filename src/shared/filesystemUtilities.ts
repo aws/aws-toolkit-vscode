@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { mkdtemp } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as os from 'os'
 import * as path from 'path'
@@ -113,11 +112,12 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
         relativePathParts.push('vsctk')
     }
 
-    const tmpPath = path.join(tempDirPath, ...relativePathParts)
-    const tmpPathParent = path.dirname(tmpPath)
-    await fsCommon.mkdir(tmpPathParent)
+    // Add random characters to the leaf folder to ensure it is unique
+    relativePathParts[relativePathParts.length - 1] = relativePathParts[relativePathParts.length - 1] + crypto.randomBytes(4).toString('hex')
 
-    return await mkdtemp(tmpPath)
+    const tmpPath = path.join(tempDirPath, ...relativePathParts)
+    await fsCommon.mkdir(tmpPath)
+    return tmpPath 
 }
 
 /**
