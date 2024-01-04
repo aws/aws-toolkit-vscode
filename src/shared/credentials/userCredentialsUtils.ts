@@ -5,11 +5,11 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { mkdirp, writeFile } from 'fs-extra'
 import { fileOrFolderExists } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { isNonNullable } from '../utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
+import { fsCommon } from '../../srcShared/fs'
 
 const header = `
 # AWS credentials file used by AWS CLI, SDKs, and tools.
@@ -80,7 +80,7 @@ export class UserCredentialsUtils {
     public static async generateCredentialDirectoryIfNonexistent(): Promise<void> {
         const filepath = path.dirname(getCredentialsFilename())
         if (!(await fileOrFolderExists(filepath))) {
-            await mkdirp(filepath)
+            await fsCommon.mkdir(filepath)
         }
     }
 
@@ -98,9 +98,6 @@ export class UserCredentialsUtils {
             contents.unshift(header)
         }
 
-        await writeFile(dest, contents.join('\n'), {
-            encoding: 'utf8',
-            mode: 0o100600, // basic file (type 100) with 600 permissions
-        })
+        await fsCommon.writeFile(dest, contents.join('\n'))
     }
 }
