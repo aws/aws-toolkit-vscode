@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { mkdtemp, mkdirp, readFile, remove } from 'fs-extra'
+import { mkdtemp, mkdirp, readFile } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as os from 'os'
 import * as path from 'path'
@@ -105,7 +105,7 @@ export async function tryRemoveFolder(folder?: string): Promise<boolean> {
             getLogger().warn('tryRemoveFolder: no folder given')
             return false
         }
-        await remove(folder)
+        await fsCommon.delete(folder)
     } catch (err) {
         getLogger().warn('tryRemoveFolder: failed to delete directory "%s": %O', folder, err as Error)
         return false
