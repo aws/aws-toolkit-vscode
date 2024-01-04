@@ -11,7 +11,7 @@ type FieldKeys<T> = { [P in keyof T]: T[P] extends (...args: any[]) => unknown ?
 type PartialStub<T> = FieldKeys<T> extends never ? Stub<T> : Stub<Omit<T, FieldKeys<T>>>
 
 /**
- * Stubs classes or testing. Does NOT work when an object is defined by an interface or type alone.
+ * Stubs classes for testing. Does NOT work when an object is defined by an interface or type alone.
  * To stub an interface/type, use the following:
  * ```
  * const mockObject = <ObjectType>{ <keyFromObjectType>: <overridden value> }
