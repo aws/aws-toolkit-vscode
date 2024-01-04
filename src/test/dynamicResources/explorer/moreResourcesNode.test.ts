@@ -10,11 +10,11 @@ import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resou
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { assertNodeListOnlyHasPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
-import { mock, instance, when } from 'ts-mockito'
 import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { Settings } from '../../../shared/settings'
 import { ResourcesSettings } from '../../../dynamicResources/commands/configure'
+import sinon from 'sinon'
 
 const unsortedText = ['zebra', 'Antelope', 'aardvark', 'elephant']
 const sortedText = ['aardvark', 'Antelope', 'elephant', 'zebra']
@@ -28,8 +28,8 @@ describe('ResourcesNode', function () {
     let resourceTypes: string[]
 
     before(async function () {
-        mockCloudFormation = mock()
-        mockCloudControl = mock()
+        mockCloudFormation = {} as any as CloudFormationClient
+        mockCloudControl = {} as any as CloudControlClient
     })
 
     beforeEach(async function () {
@@ -41,7 +41,7 @@ describe('ResourcesNode', function () {
     beforeEach(async function () {
         resourceTypes = ['type1', 'type2']
         prepareMock(resourceTypes)
-        testNode = new ResourcesNode('FAKE_REGION', instance(mockCloudFormation), instance(mockCloudControl), settings)
+        testNode = new ResourcesNode('FAKE_REGION', mockCloudFormation, mockCloudControl, settings)
 
         await setConfiguration(resourceTypes)
     })
@@ -100,7 +100,7 @@ describe('ResourcesNode', function () {
     }
 
     function prepareMock(resourceTypes: string[]) {
-        when(mockCloudFormation.listTypes()).thenReturn(
+        const listStub = sinon.stub().returns(
             asyncGenerator<CloudFormation.TypeSummary>(
                 resourceTypes.map<CloudFormation.TypeSummary>(resourceType => {
                     return {
@@ -109,5 +109,6 @@ describe('ResourcesNode', function () {
                 })
             )
         )
+        mockCloudFormation.listTypes = listStub
     }
 })

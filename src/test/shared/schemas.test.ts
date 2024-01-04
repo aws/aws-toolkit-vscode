@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import assert from 'assert'
-import { anything, deepEqual, instance, mock, verify } from '../utilities/mockito'
 import { YamlExtension } from '../../shared/extensions/yaml'
 import {
     JsonSchemaHandler,
@@ -16,6 +15,7 @@ import {
     YamlSchemaHandler,
 } from '../../shared/schemas'
 import { Settings } from '../../shared/settings'
+import sinon from 'sinon'
 
 describe('SchemaService', function () {
     let service: SchemaService
@@ -25,7 +25,7 @@ describe('SchemaService', function () {
     const samSchema = vscode.Uri.file('sam')
 
     beforeEach(async function () {
-        fakeYamlExtension = mock()
+        fakeYamlExtension = {} as any as YamlExtension
         config = new Settings(vscode.ConfigurationTarget.Workspace)
 
         service = new SchemaService({
@@ -35,12 +35,14 @@ describe('SchemaService', function () {
             },
             handlers: new Map<SchemaType, SchemaHandler>([
                 ['json', new JsonSchemaHandler(config)],
-                ['yaml', new YamlSchemaHandler(instance(fakeYamlExtension))],
+                ['yaml', new YamlSchemaHandler(fakeYamlExtension)],
             ]),
         })
     })
 
     it('assigns schemas to the yaml extension', async function () {
+        const stub = sinon.stub()
+        fakeYamlExtension.assignSchema = stub
         service.registerMapping({
             uri: vscode.Uri.parse('/foo'),
             type: 'yaml',
@@ -52,18 +54,20 @@ describe('SchemaService', function () {
             schema: 'sam',
         })
         await service.processUpdates()
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/bar')), samSchema)).once()
+        assert(stub.firstCall.calledWithExactly(vscode.Uri.file('/foo'), cfnSchema))
+        assert(stub.secondCall.calledWithExactly(vscode.Uri.file('/bar'), samSchema))
     })
 
     it('removes schemas from the yaml extension', async function () {
+        const stub = sinon.stub()
+        fakeYamlExtension.removeSchema = stub
         service.registerMapping({
             uri: vscode.Uri.parse('/foo'),
             type: 'yaml',
             schema: undefined,
         })
         await service.processUpdates()
-        verify(fakeYamlExtension.removeSchema(deepEqual(vscode.Uri.file('/foo')))).once()
+        assert(stub.calledOnceWithExactly(vscode.Uri.file('/foo')))
     })
 
     it('registers schemas to json configuration', async function () {
@@ -100,11 +104,12 @@ describe('SchemaService', function () {
     })
 
     it('processes no updates if schemas are unavailable', async function () {
-        fakeYamlExtension = mock()
+        const stub = sinon.stub()
+        fakeYamlExtension.assignSchema = stub
         service = new SchemaService({
             handlers: new Map<SchemaType, SchemaHandler>([
                 ['json', new JsonSchemaHandler()],
-                ['yaml', new YamlSchemaHandler(instance(fakeYamlExtension))],
+                ['yaml', new YamlSchemaHandler(fakeYamlExtension)],
             ]),
         })
 
@@ -114,11 +119,12 @@ describe('SchemaService', function () {
             schema: 'cfn',
         })
         await service.processUpdates()
-        verify(fakeYamlExtension.assignSchema(anything(), anything())).never()
+        assert(stub.notCalled)
     })
 
     it('processes no updates if yaml extension unavailable', async function () {
-        fakeYamlExtension = mock()
+        const stub = sinon.stub()
+        fakeYamlExtension.assignSchema = stub
         service = new SchemaService()
 
         service.registerMapping({
@@ -127,6 +133,6 @@ describe('SchemaService', function () {
             schema: 'cfn',
         })
         await service.processUpdates()
-        verify(fakeYamlExtension.assignSchema(anything(), anything())).never()
+        assert(stub.notCalled)
     })
 })

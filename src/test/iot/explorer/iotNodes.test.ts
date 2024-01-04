@@ -6,17 +6,16 @@
 import assert from 'assert'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { instance, mock } from '../../utilities/mockito'
 
 describe('IotNode', function () {
     let iot: IotClient
 
     beforeEach(function () {
-        iot = mock()
+        iot = {} as any as IotClient
     })
 
     it('gets children', async function () {
-        const node = new IotNode(instance(iot))
+        const node = new IotNode(iot)
         const [thingFolder, certFolder, policyFolder] = await node.getChildren()
 
         assert.strictEqual(thingFolder, node.thingFolderNode)
