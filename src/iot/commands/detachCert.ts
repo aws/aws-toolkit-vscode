@@ -43,10 +43,10 @@ export async function detachThingCertCommand(node: IotThingCertNode): Promise<vo
         await node.iot.detachThingPrincipal({ thingName, principal: certArn })
 
         getLogger().info(`detached certificate from Thing: ${thingName}`)
-        vscode.window.showInformationMessage(localize('AWS.iot.detachCert.success', 'Detached: {0}', certId))
+        void vscode.window.showInformationMessage(localize('AWS.iot.detachCert.success', 'Detached: {0}', certId))
     } catch (e) {
         getLogger().error(`Failed to detach certificate: ${certId}: %s`, e)
-        showViewLogsMessage(localize('AWS.iot.detachCert.error', 'Failed to detach: {0}', certId))
+        void showViewLogsMessage(localize('AWS.iot.detachCert.error', 'Failed to detach: {0}', certId))
     }
 
     //Refresh the parent Thing node
