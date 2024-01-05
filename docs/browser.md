@@ -57,3 +57,24 @@ To get to the AWS Toolkit logs:
 
 1. Open Command Palette: `cmd/ctrl` + `shift` + `p`
 2. Type: `AWS: View Toolkit Logs`
+
+## Finding incompatible transitive dependencies
+
+For example, if I have a Typescript module, `myFile.ts`, that imports a module, which imports another module (transitive dependency) such as `fs-extra`,
+when I execute `myFile.ts` in the browser it will break due to `fs-extra` not being browser compatible.
+
+It may be difficult to determine which module imported `fs-extra` due to a nested chain of transitive dependencies.
+
+As a solution, we can use [`dependency-cruiser`](https://www.npmjs.com/package/dependency-cruiser) to generate a dependency diagram
+to help us visualize the imports and determine which module is importing a certain module.
+
+### How to use
+
+1. Install the `graphiz` cli, this provides the `dot` cli command
+    - Mac: `brew install graphiz`
+    - Others: [See documentation](https://www.graphviz.org/download/)
+2. Run `npx depcruise {RELATIVE_PATH_TO_FILE}  --output-type dot | dot -T svg > dependency-graph.svg`
+    - For example, `npx depcruise src/srcShared/fs.ts  --output-type dot | dot -T svg > dependency-graph.svg` generates the following which shows `fs-extra` is imported by `fileSystemUtilities.ts`:
+      ![Dependency Graph](./images/dependency-graph.svg)
+    - Additionally specify a certain dependency with `--reaches` , `npx depcruise src/srcShared/fs.ts --reaches "fs-extra" --output-type dot | dot -T svg > dependency-graph.svg`, to hide unrelated dependencies:
+      ![Dependency Graph](./images/dependency-graph-small.svg)
