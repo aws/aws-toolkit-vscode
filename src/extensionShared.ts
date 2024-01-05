@@ -24,7 +24,7 @@ export function initializeManifestPaths(extensionContext: vscode.ExtensionContex
     )
 }
 
-export function activateGlobalCommands(extensionContext: vscode.ExtensionContext) {
+export function registerCommands(extensionContext: vscode.ExtensionContext) {
     extensionContext.subscriptions.push(
         // No-op command used for decoration-only codelenses.
         vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
