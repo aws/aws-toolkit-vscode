@@ -55,7 +55,7 @@ export class FeedbackWebview extends VueWebview {
 
         this.dispose()
 
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize('AWS.message.info.submitFeedback.success', 'Thanks for the feedback!')
         )
     }
