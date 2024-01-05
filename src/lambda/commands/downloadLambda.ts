@@ -41,7 +41,7 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
     const functionName = functionNode.configuration.FunctionName!
 
     if (workspaceFolders.length === 0) {
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.lambda.download.noWorkspaceFolders',
                 'Open a workspace and add a folder to it before downloading a Lambda function.'
@@ -97,7 +97,7 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
                 // show error and return a failure
                 const err = e as Error
                 getLogger().error(err)
-                vscode.window.showErrorMessage(
+                void vscode.window.showErrorMessage(
                     localize(
                         'AWS.lambda.download.downloadError',
                         'Error downloading Lambda function {0}: {1}',
@@ -172,7 +172,7 @@ async function downloadAndUnzipLambda(
         progress.report({ message: 'Extracting...' })
         new AdmZip(downloadLocation).extractAllTo(extractLocation, true)
     } finally {
-        tryRemoveFolder(tempDir)
+        await tryRemoveFolder(tempDir)
     }
 }
 
@@ -184,7 +184,7 @@ export async function openLambdaFile(lambdaLocation: string): Promise<void> {
             lambdaLocation
         )
         getLogger().warn(warning)
-        vscode.window.showWarningMessage(warning)
+        void vscode.window.showWarningMessage(warning)
         throw new Error()
     }
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(lambdaLocation))

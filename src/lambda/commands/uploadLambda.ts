@@ -52,7 +52,9 @@ class LambdaSettings extends fromExtensionManifest('aws.lambda', { recentlyUploa
         try {
             return this.get('recentlyUploaded')
         } catch (error) {
-            this.delete('recentlyUploaded')
+            this.delete('recentlyUploaded').catch(e => {
+                getLogger().error('TypedSettings.delete() failed: %s', (e as Error).message)
+            })
         }
     }
 
@@ -111,10 +113,10 @@ export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vsc
     } catch (err) {
         result = 'Failed'
         if (err instanceof ToolkitError) {
-            showViewLogsMessage(`Could not upload lambda: ${err.message}`)
+            void showViewLogsMessage(`Could not upload lambda: ${err.message}`)
             getLogger().error(`Lambda upload failed: %O`, err.cause ?? err)
         } else {
-            showViewLogsMessage(`Could not upload lambda (unexpected exception)`)
+            void showViewLogsMessage(`Could not upload lambda (unexpected exception)`)
             getLogger().error(`Lambda upload failed: %s`, err)
         }
     } finally {
@@ -125,7 +127,7 @@ export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vsc
         if (result === 'Succeeded') {
             const profile = globals.awsContext.getCredentialProfileName()
             if (profile && lambda) {
-                LambdaSettings.instance.setRecentLambda(profile, lambda.region, lambda.name)
+                await LambdaSettings.instance.setRecentLambda(profile, lambda.region, lambda.name)
             }
         }
     }
@@ -471,7 +473,7 @@ async function uploadZipBuffer(
         throw new ToolkitError('Failed to upload zip archive', { cause: err })
     })
 
-    vscode.window.showInformationMessage(
+    void vscode.window.showInformationMessage(
         localize('AWS.lambda.upload.done', 'Uploaded Lambda function: {0}', lambda.name)
     )
 }
