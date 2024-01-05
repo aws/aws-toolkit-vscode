@@ -111,6 +111,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
+        context.subscriptions.push(
+            Commands.register('aws.quickStart', async () => {
+                try {
+                    await showQuickStartWebview(context)
+                } finally {
+                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
+                }
+            })
+        )
     }
 
     try {
@@ -178,16 +187,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         registerCommands(context)
-        context.subscriptions.push(
-            Commands.register('aws.quickStart', async () => {
-                try {
-                    await showQuickStartWebview(context)
-                } finally {
-                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
-                }
-            }),
-            submitFeedback.register(context)
-        )
+        context.subscriptions.push(submitFeedback.register(context))
 
         // do not enable codecatalyst for sagemaker
         // TODO: remove setContext if SageMaker adds the context to their IDE
