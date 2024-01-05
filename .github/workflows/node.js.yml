@@ -42,7 +42,7 @@ jobs:
               uses: codecov/codecov-action@v3
               with:
                   verbose: true
-                  file: ./coverage/coverage-final.json
+                  file: ./coverage/lcov.info
                   flags: macos-unittests
             - name: Code coverage (CodeWhisperer)
               env:
@@ -52,7 +52,7 @@ jobs:
               uses: codecov/codecov-action@v3
               with:
                   verbose: true
-                  file: ./coverage/coverage-final.json
+                  file: ./coverage/lcov.info
                   flags: codewhisperer
 
     windows:
@@ -84,7 +84,7 @@ jobs:
               uses: codecov/codecov-action@v3
               with:
                   verbose: true
-                  file: ./coverage/coverage-final.json
+                  file: ./coverage/lcov.info
                   flags: windows-unittests
 
     lint:
