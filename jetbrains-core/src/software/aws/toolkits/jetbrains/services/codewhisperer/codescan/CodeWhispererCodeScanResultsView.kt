@@ -67,6 +67,9 @@ internal class CodeWhispererCodeScanResultsView(private val project: Project) : 
     }
     private val scannedFilesLabelLink = ActionLink().apply {
         border = BorderFactory.createEmptyBorder(0, 7, 0, 0)
+        addActionListener {
+            showScannedFiles(scannedFiles)
+        }
     }
     private val learnMoreLabelLink = ActionLink().apply {
         border = BorderFactory.createEmptyBorder(0, 7, 0, 0)
@@ -103,6 +106,8 @@ internal class CodeWhispererCodeScanResultsView(private val project: Project) : 
         add(BorderLayout.NORTH, completeInfoLabel)
     }
 
+    private var scannedFiles: List<VirtualFile> = listOf()
+
     init {
         add(BorderLayout.WEST, toolbar.component)
         add(BorderLayout.CENTER, resultsPanel)
@@ -119,9 +124,7 @@ internal class CodeWhispererCodeScanResultsView(private val project: Project) : 
             repaint()
         }
 
-        scannedFilesLabelLink.addActionListener {
-            showScannedFiles(scannedFiles)
-        }
+        this.scannedFiles = scannedFiles
 
         if (isProjectTruncated) {
             learnMoreLabelLink.addActionListener {

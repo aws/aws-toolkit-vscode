@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "CodeWhisperer: fix code scan UI of viewing scanned files not reflecting correct files"
+}
