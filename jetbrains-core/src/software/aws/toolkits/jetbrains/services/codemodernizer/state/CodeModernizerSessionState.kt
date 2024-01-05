@@ -29,23 +29,24 @@ class CodeModernizerSessionState {
     var transformationSummary: TransformationSummary? = null
     var currentJobId: JobId? = null
 
-    private fun getJobItemId(sessionContext: CodeModernizerSessionContext) = Path(sessionContext.configurationFile.path).toAbsolutePath().toString()
-    fun putJobHistory(sessionContext: CodeModernizerSessionContext, status: String, startedAt: Instant = Instant.now()) {
-        val id = getJobItemId(sessionContext)
+    private fun getJobModuleName(sessionContext: CodeModernizerSessionContext) = Path(sessionContext.configurationFile.path).toAbsolutePath().toString()
+    fun putJobHistory(sessionContext: CodeModernizerSessionContext, status: TransformationStatus, jobId: String = "", startedAt: Instant = Instant.now()) {
+        val moduleName = getJobModuleName(sessionContext)
         val jobHistoryItem = JobHistoryItem(
-            id,
-            status,
+            moduleName,
+            status.name,
             startedAt,
             Duration.ZERO,
+            jobId,
         )
-        previousJobHistory[id] = jobHistoryItem
+        previousJobHistory[moduleName] = jobHistoryItem
     }
 
-    fun updateJobHistory(sessionContext: CodeModernizerSessionContext, newStatus: String, endTime: Instant) {
-        val id = getJobItemId(sessionContext)
-        val jobStatus = previousJobHistory.get(id) ?: throw CodeModernizerException("Unable to update the job history for $id")
+    fun updateJobHistory(sessionContext: CodeModernizerSessionContext, newStatus: TransformationStatus, endTime: Instant) {
+        val moduleName = getJobModuleName(sessionContext)
+        val jobStatus = previousJobHistory.get(moduleName) ?: throw CodeModernizerException("Unable to update the job history for $moduleName")
         val timeTaken = Duration.between(jobStatus.startTime, endTime)
-        previousJobHistory[id] = jobStatus.copy(status = newStatus, runTime = timeTaken)
+        previousJobHistory[moduleName] = jobStatus.copy(status = newStatus.name, runTime = timeTaken)
     }
 
     fun getJobHistory(): Array<JobHistoryItem> = previousJobHistory.values.toTypedArray()

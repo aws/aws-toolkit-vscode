@@ -17,7 +17,7 @@ class CodeModernizerJobHistoryPanelTest {
     @Test
     fun `does render table with headers and text`() {
         val testData = arrayOf(
-            JobHistoryItem("Java8Test", "Completed", Instant.now(), Duration.ZERO),
+            JobHistoryItem("Java8Test", "Completed", Instant.now(), Duration.ZERO, "MockJobId"),
         )
         val tablePanelMock = spy(CodeModernizerJobHistoryTablePanel())
         tablePanelMock.setDefaultUI()
@@ -25,7 +25,7 @@ class CodeModernizerJobHistoryPanelTest {
         verify(tablePanelMock, times(1)).setDefaultUI()
         verify(tablePanelMock, times(1)).updateTableData(testData)
         assertThat(tablePanelMock.headerLabel.text).isEqualTo("Transformation job history")
-        assertThat(tablePanelMock.jbTable.columnCount).isEqualTo(4)
+        assertThat(tablePanelMock.jbTable.columnCount).isEqualTo(5)
         assertThat(tablePanelMock.jbTable.isEmpty).isFalse()
         assertThat(tablePanelMock.tableData).isEqualTo(testData)
     }

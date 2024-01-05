@@ -21,7 +21,8 @@ class CodeModernizerJobHistoryTablePanel : JPanel(BorderLayout()) {
         message("codemodernizer.toolwindow.table.header.module_name"),
         message("codemodernizer.toolwindow.table.header.status"),
         message("codemodernizer.toolwindow.table.header.date"),
-        message("codemodernizer.toolwindow.table.header.run_length")
+        message("codemodernizer.toolwindow.table.header.run_length"),
+        message("codemodernizer.toolwindow.table.header.job_id"),
     )
     var tableData: Array<JobHistoryItem> = emptyArray()
     var tableModel = JobHistoryTableModel(tableData, columnNames)

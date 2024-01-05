@@ -352,7 +352,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             codeTransformationSession = session
             initModernizationJobUI(false, project.getModuleOrProjectNameForFile(session.sessionContext.configurationFile))
             codeModernizerBottomWindowPanelManager.setResumeJobUI(currentJobResult, plan, session.sessionContext.sourceJavaVersion)
-            session.resumeJob(currentJobResult.creationTime())
+            session.resumeJob(currentJobResult.creationTime(), lastJobId)
             val result = handleJobStarted(lastJobId, session)
             postModernizationJob(result)
         } catch (e: Exception) {
@@ -606,7 +606,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                     // Code successfully stopped toast will display when post job is run after this
                     CodetransformTelemetry.totalRunTime(
                         codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformResultStatusMessage = "JobCanceled",
+                        codeTransformResultStatusMessage = "JobCancelled",
                         codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now())
                     )
                 }
@@ -615,7 +615,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 notifyTransformationFailedToStop(e.localizedMessage)
                 CodetransformTelemetry.totalRunTime(
                     codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformResultStatusMessage = "JobCanceled",
+                    codeTransformResultStatusMessage = "JobCancelled",
                     codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now())
                 )
             }

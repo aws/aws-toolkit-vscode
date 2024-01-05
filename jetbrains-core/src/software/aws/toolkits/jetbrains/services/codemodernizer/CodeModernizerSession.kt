@@ -116,7 +116,7 @@ class CodeModernizerSession(
                 return CodeModernizerStartJobResult.Cancelled
             }
             val startJobResponse = startJob(uploadId)
-            state.putJobHistory(sessionContext, "STARTED")
+            state.putJobHistory(sessionContext, TransformationStatus.STARTED, startJobResponse.transformationJobId())
             state.currentJobStatus = TransformationStatus.STARTED
             CodeModernizerStartJobResult.Started(JobId(startJobResponse.transformationJobId()))
         } catch (e: AlreadyDisposedException) {
@@ -124,7 +124,7 @@ class CodeModernizerSession(
             return CodeModernizerStartJobResult.Disposed
         } catch (e: Exception) {
             val errorMessage = "Failed to start job"
-            state.putJobHistory(sessionContext, "FAILED TO START")
+            state.putJobHistory(sessionContext, TransformationStatus.FAILED)
             state.currentJobStatus = TransformationStatus.FAILED
             CodetransformTelemetry.logGeneralError(
                 codeTransformApiErrorMessage = errorMessage,
@@ -161,7 +161,7 @@ class CodeModernizerSession(
             state.currentJobStatus = new
             sessionContext.project.refreshCwQTree()
             val instant = Instant.now()
-            state.updateJobHistory(sessionContext, new.name, instant)
+            state.updateJobHistory(sessionContext, new, instant)
             setCurrentJobStopTime(new, instant)
             setCurrentJobSummary(new)
             jobTransitionHandler(new, plan)
@@ -250,7 +250,7 @@ class CodeModernizerSession(
     /**
      * This will resume the job, i.e. it will resume the main job loop kicked of by [createModernizationJob]
      */
-    fun resumeJob(startTime: Instant) = state.putJobHistory(sessionContext, "Started", startTime)
+    fun resumeJob(startTime: Instant, jobId: JobId) = state.putJobHistory(sessionContext, TransformationStatus.STARTED, jobId.id, startTime)
 
     /*
      * Adapted from [CodeWhispererCodeScanSession]
@@ -412,7 +412,7 @@ class CodeModernizerSession(
                     isPartialSuccess = true
                 }
                 val instant = Instant.now()
-                state.updateJobHistory(sessionContext, new.name, instant)
+                state.updateJobHistory(sessionContext, new, instant)
                 setCurrentJobStopTime(new, instant)
                 jobTransitionHandler(new, plan)
                 LOG.warn { "in awaitJobCompletion, state changed for job $jobId: $old -> $new" }
