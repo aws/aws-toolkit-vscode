@@ -56,8 +56,10 @@ describe('ResourceManager', function () {
         cloudFormation = stub(DefaultCloudFormationClient, {
             regionCode: '',
         })
-        schemaService = stub(SchemaService)
-        schemaService.registerMapping = sinon.stub()
+        schemaService = stub(SchemaService, {
+            registerMapping: sinon.stub(),
+            isMapped: sinon.stub(),
+        })
         sandbox = sinon.createSandbox()
         mockClients()
         tempFolder = await makeTemporaryToolkitFolder()
