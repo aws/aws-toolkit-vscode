@@ -315,12 +315,20 @@ export const getAvailableCustomizationsList = async () => {
 // show notification that selected customization is not available, switching back to base
 export const switchToBaseCustomizationAndNotify = async () => {
     await setSelectedCustomization(baseCustomization)
-    void vscode.window.showInformationMessage(
+    const selectCustomizationLabel = localize(
+        'AWS.codewhisperer.customization.notification.selectCustomization',
+        'Select Another Customization'
+    )
+    const selection = await vscode.window.showWarningMessage(
         localize(
             'AWS.codewhisperer.customization.notification.selected_customization_not_available',
             'Selected CodeWhisperer customization is not available. Contact your administrator. Your instance of CodeWhisperer is using the foundation model.'
-        )
+        ),
+        selectCustomizationLabel
     )
+    if (selection === selectCustomizationLabel) {
+        await showCustomizationPrompt()
+    }
 }
 
 const renderDescriptionText = (label: string, isNewCustomization: boolean = false) => {
