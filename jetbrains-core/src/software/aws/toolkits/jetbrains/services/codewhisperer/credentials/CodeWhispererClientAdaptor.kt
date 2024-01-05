@@ -16,6 +16,8 @@ import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanResponse
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsRequest
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsResponse
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
+import software.amazon.awssdk.services.codewhispererruntime.model.ChatInteractWithMessageEvent
+import software.amazon.awssdk.services.codewhispererruntime.model.ChatMessageInteractionType
 import software.amazon.awssdk.services.codewhispererruntime.model.CompletionType
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
@@ -26,6 +28,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableC
 import software.amazon.awssdk.services.codewhispererruntime.model.ListFeatureEvaluationsResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.SuggestionState
+import software.amazon.awssdk.services.codewhispererruntime.model.UserIntent
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
@@ -116,6 +119,38 @@ interface CodeWhispererClientAdaptor : Disposable {
     fun listFeatureEvaluations(): ListFeatureEvaluationsResponse
 
     fun sendMetricDataTelemetry(eventName: String, metadata: Map<String, Any?>): SendTelemetryEventResponse
+
+    fun sendChatAddMessageTelemetry(
+        sessionId: String,
+        requestId: String,
+        userIntent: UserIntent?,
+        hasCodeSnippet: Boolean?,
+        programmingLanguage: String?,
+        activeEditorTotalCharacters: Int?,
+        timeToFirstChunkMilliseconds: Double?,
+        timeBetweenChunks: List<Double>?,
+        fullResponselatency: Double?,
+        requestLength: Int?,
+        responseLength: Int?,
+    ): SendTelemetryEventResponse
+
+    fun sendChatInteractWithMessageTelemetry(
+        sessionId: String,
+        requestId: String,
+        interactionType: ChatMessageInteractionType?,
+        interactionTarget: String?,
+        acceptedCharacterCount: Int?,
+        acceptedSnippetHasReference: Boolean?
+    ): SendTelemetryEventResponse
+
+    fun sendChatInteractWithMessageTelemetry(event: ChatInteractWithMessageEvent): SendTelemetryEventResponse
+
+    fun sendChatUserModificationTelemetry(
+        sessionId: String,
+        requestId: String,
+        language: String?,
+        modificationPercentage: Double
+    ): SendTelemetryEventResponse
 
     companion object {
         fun getInstance(project: Project): CodeWhispererClientAdaptor = project.service()
@@ -334,6 +369,83 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
             requestBuilder.optOutPreference(getTelemetryOptOutPreference())
             requestBuilder.userContext(ClientMetadata.DEFAULT_METADATA.codeWhispererUserContext)
         }
+
+    override fun sendChatAddMessageTelemetry(
+        sessionId: String,
+        requestId: String,
+        userIntent: UserIntent?,
+        hasCodeSnippet: Boolean?,
+        programmingLanguage: String?,
+        activeEditorTotalCharacters: Int?,
+        timeToFirstChunkMilliseconds: Double?,
+        timeBetweenChunks: List<Double>?,
+        fullResponselatency: Double?,
+        requestLength: Int?,
+        responseLength: Int?
+    ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
+        requestBuilder.telemetryEvent { telemetryEventBuilder ->
+            telemetryEventBuilder.chatAddMessageEvent {
+                it.conversationId(sessionId)
+                it.messageId(requestId)
+                it.userIntent(userIntent)
+                it.hasCodeSnippet(hasCodeSnippet)
+                if (programmingLanguage != null) it.programmingLanguage { langBuilder -> langBuilder.languageName(programmingLanguage) }
+                it.activeEditorTotalCharacters(activeEditorTotalCharacters)
+                it.timeToFirstChunkMilliseconds(timeToFirstChunkMilliseconds)
+                it.timeBetweenChunks(timeBetweenChunks)
+                it.fullResponselatency(fullResponselatency)
+                it.requestLength(requestLength)
+                it.responseLength(responseLength)
+            }
+        }
+        requestBuilder.optOutPreference(getTelemetryOptOutPreference())
+        requestBuilder.userContext(ClientMetadata.DEFAULT_METADATA.codeWhispererUserContext)
+    }
+
+    override fun sendChatInteractWithMessageTelemetry(
+        sessionId: String,
+        requestId: String,
+        interactionType: ChatMessageInteractionType?,
+        interactionTarget: String?,
+        acceptedCharacterCount: Int?,
+        acceptedSnippetHasReference: Boolean?
+    ): SendTelemetryEventResponse = sendChatInteractWithMessageTelemetry(
+        ChatInteractWithMessageEvent.builder().apply {
+            conversationId(sessionId)
+            messageId(requestId)
+            interactionType(interactionType)
+            interactionTarget(interactionTarget)
+            acceptedCharacterCount(acceptedCharacterCount)
+            acceptedSnippetHasReference(acceptedSnippetHasReference)
+        }.build()
+    )
+
+    override fun sendChatInteractWithMessageTelemetry(event: ChatInteractWithMessageEvent): SendTelemetryEventResponse =
+        bearerClient().sendTelemetryEvent { requestBuilder ->
+            requestBuilder.telemetryEvent { telemetryEventBuilder ->
+                telemetryEventBuilder.chatInteractWithMessageEvent(event)
+            }
+            requestBuilder.optOutPreference(getTelemetryOptOutPreference())
+            requestBuilder.userContext(ClientMetadata.DEFAULT_METADATA.codeWhispererUserContext)
+        }
+
+    override fun sendChatUserModificationTelemetry(
+        sessionId: String,
+        requestId: String,
+        language: String?,
+        modificationPercentage: Double
+    ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
+        requestBuilder.telemetryEvent { telemetryEventBuilder ->
+            telemetryEventBuilder.chatUserModificationEvent {
+                it.conversationId(sessionId)
+                it.messageId(requestId)
+                it.programmingLanguage { langBuilder -> langBuilder.languageName(language) }
+                it.modificationPercentage(modificationPercentage)
+            }
+        }
+        requestBuilder.optOutPreference(getTelemetryOptOutPreference())
+        requestBuilder.userContext(ClientMetadata.DEFAULT_METADATA.codeWhispererUserContext)
+    }
 
     override fun dispose() {
         if (this::mySigv4Client.isLazyInitialized) {

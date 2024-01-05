@@ -246,7 +246,7 @@
             "type":"structure",
             "required":["content"],
             "members":{
-                "messageId":{"shape":"AssistantResponseMessageMessageIdString"},
+                "messageId":{"shape":"MessageId"},
                 "content":{"shape":"AssistantResponseMessageContentString"},
                 "supplementaryWebLinks":{"shape":"SupplementaryWebLinks"},
                 "references":{"shape":"References"},
@@ -274,11 +274,40 @@
             "type":"boolean",
             "box":true
         },
+        "ChatAddMessageEvent": {
+            "type": "structure",
+            "required": ["conversationId", "messageId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "messageId": { "shape": "MessageId" },
+                "userIntent": { "shape": "UserIntent" },
+                "hasCodeSnippet": { "shape": "Boolean" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "activeEditorTotalCharacters": { "shape": "Integer" },
+                "timeToFirstChunkMilliseconds": { "shape": "Double" },
+                "timeBetweenChunks": { "shape": "TimeBetweenChunks" },
+                "fullResponselatency": { "shape": "Double" },
+                "requestLength": { "shape": "Integer" },
+                "responseLength": { "shape": "Integer" }
+            }
+        },
         "ChatHistory":{
             "type":"list",
             "member":{"shape":"ChatMessage"},
             "max":10,
             "min":0
+        },
+        "ChatInteractWithMessageEvent": {
+            "type": "structure",
+            "required": ["conversationId", "messageId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "messageId": { "shape": "MessageId" },
+                "interactionType": { "shape": "ChatMessageInteractionType" },
+                "interactionTarget": { "shape": "String" },
+                "acceptedCharacterCount": { "shape": "Integer" },
+                "acceptedSnippetHasReference": { "shape": "Boolean" }
+            }
         },
         "ChatMessage":{
             "type":"structure",
@@ -287,6 +316,30 @@
                 "assistantResponseMessage":{"shape":"AssistantResponseMessage"}
             },
             "union":true
+        },
+        "ChatMessageInteractionType": {
+            "type": "string",
+            "enum": [
+                "INSERT_AT_CURSOR",
+                "COPY_SNIPPET",
+                "COPY",
+                "CLICK_LINK",
+                "CLICK_BODY_LINK",
+                "CLICK_FOLLOW_UP",
+                "HOVER_REFERENCE",
+                "UPVOTE",
+                "DOWNVOTE"
+            ]
+        },
+        "ChatUserModificationEvent": {
+            "type": "structure",
+            "required": ["conversationId", "messageId", "modificationPercentage"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "messageId": { "shape": "MessageId" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "modificationPercentage": { "shape": "Double" }
+            }
         },
         "ChatTriggerType":{
             "type":"string",
@@ -883,6 +936,11 @@
             "type":"long",
             "box":true
         },
+        "MessageId": {
+            "type": "string",
+            "max": 128,
+            "min": 0
+        },
         "MetricData":{
             "type":"structure",
             "required":[
@@ -1257,7 +1315,10 @@
                 "codeCoverageEvent":{"shape":"CodeCoverageEvent"},
                 "userModificationEvent":{"shape":"UserModificationEvent"},
                 "codeScanEvent":{"shape":"CodeScanEvent"},
-                "metricData":{"shape":"MetricData"}
+                "metricData":{"shape":"MetricData"},
+                "chatAddMessageEvent": { "shape": "ChatAddMessageEvent" },
+                "chatInteractWithMessageEvent": { "shape": "ChatInteractWithMessageEvent" },
+                "chatUserModificationEvent": { "shape": "ChatUserModificationEvent" }
             },
             "union":true
         },
@@ -1314,6 +1375,12 @@
             },
             "exception":true,
             "retryable":{"throttling":true}
+        },
+        "TimeBetweenChunks": {
+            "type": "list",
+            "member": { "shape": "Double" },
+            "max": 100,
+            "min": 0
         },
         "Timestamp":{"type":"timestamp"},
         "TransformationJob":{

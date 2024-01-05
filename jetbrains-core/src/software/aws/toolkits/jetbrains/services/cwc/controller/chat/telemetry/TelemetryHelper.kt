@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry
 
+import software.amazon.awssdk.services.codewhispererruntime.model.ChatInteractWithMessageEvent
+import software.amazon.awssdk.services.codewhispererruntime.model.ChatMessageInteractionType
 import software.amazon.awssdk.services.codewhispererstreaming.model.UserIntent
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
 import software.aws.toolkits.core.utils.getLogger
@@ -12,6 +14,7 @@ import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitConte
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.ChatRequestData
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.TriggerType
+import software.aws.toolkits.jetbrains.services.cwc.clients.chat.v1.ChatSessionV1
 import software.aws.toolkits.jetbrains.services.cwc.controller.ChatController
 import software.aws.toolkits.jetbrains.services.cwc.messages.ChatMessage
 import software.aws.toolkits.jetbrains.services.cwc.messages.IncomingCwcMessage
@@ -29,6 +32,7 @@ import software.aws.toolkits.telemetry.CwsprChatUserIntent
 import software.aws.toolkits.telemetry.FeedbackTelemetry
 import java.time.Duration
 import java.time.Instant
+import software.amazon.awssdk.services.codewhispererruntime.model.UserIntent as CWClientUserIntent
 
 class TelemetryHelper(private val context: AmazonQAppInitContext, private val sessionStorage: ChatSessionStorage) {
 
@@ -94,36 +98,30 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
             cwsprChatSourceLinkCount = response.relatedSuggestions?.size,
             cwsprChatReferencesCount = 0, // TODO
             cwsprChatFollowUpCount = response.followUps?.size,
-            cwsprChatTimeToFirstChunk = getResponseStreamTimeToFirstChunk(response.tabId),
-            cwsprChatTimeBetweenChunks = "", // getResponseStreamTimeBetweenChunks(response.tabId), //TODO: allow '[', ']' and ',' chars
+            cwsprChatTimeToFirstChunk = getResponseStreamTimeToFirstChunk(response.tabId).toInt(),
+            cwsprChatTimeBetweenChunks = "[${getResponseStreamTimeBetweenChunks(response.tabId).joinToString(",")}]",
             cwsprChatFullResponseLatency = responseStreamTotalTime[response.tabId] ?: 0,
             cwsprChatRequestLength = data.message.length,
             cwsprChatResponseLength = responseLength,
             cwsprChatConversationType = CwsprChatConversationType.Chat,
         )
 
-        val metadata: Map<String, Any?> = mapOf(
-            "cwsprChatConversationId" to getConversationId(response.tabId).orEmpty(),
-            "cwsprChatMessageId" to response.messageId,
-            "cwsprChatTriggerInteraction" to getTelemetryTriggerType(data.triggerType),
-            "cwsprChatUserIntent" to data.userIntent?.let { getTelemetryUserIntent(it) },
-            "cwsprChatHasCodeSnippet" to (data.activeFileContext.focusAreaContext?.codeSelection?.isNotEmpty() ?: false),
-            "cwsprChatProgrammingLanguage" to data.activeFileContext.fileContext?.fileLanguage,
-            "cwsprChatActiveEditorTotalCharacters" to data.activeFileContext.focusAreaContext?.codeSelection?.length,
-            "cwsprChatActiveEditorImportCount" to data.activeFileContext.focusAreaContext?.codeNames?.fullyQualifiedNames?.used?.size,
-            "cwsprChatResponseCodeSnippetCount" to 0,
-            "cwsprChatResponseCode" to statusCode,
-            "cwsprChatSourceLinkCount" to response.relatedSuggestions?.size,
-            "cwsprChatReferencesCount" to 0, // TODO
-            "cwsprChatFollowUpCount" to response.followUps?.size,
-            "cwsprChatTimeToFirstChunk" to getResponseStreamTimeToFirstChunk(response.tabId),
-            "cwsprChatTimeBetweenChunks" to "", // getResponseStreamTimeBetweenChunks(response.tabId), //TODO: allow '[', ']' and ',' chars
-            "cwsprChatFullResponseLatency" to (responseStreamTotalTime[response.tabId] ?: 0),
-            "cwsprChatRequestLength" to data.message.length,
-            "cwsprChatResponseLength" to responseLength,
-            "cwsprChatConversationType" to CwsprChatConversationType.Chat
+        val programmingLanguage = data.activeFileContext.fileContext?.fileLanguage
+        val validProgrammingLanguage = if (ChatSessionV1.validLanguages.contains(programmingLanguage)) programmingLanguage else null
+
+        CodeWhispererClientAdaptor.getInstance(context.project).sendChatAddMessageTelemetry(
+            getConversationId(response.tabId).orEmpty(),
+            response.messageId,
+            CWClientUserIntent.fromValue(data.userIntent?.name),
+            (data.activeFileContext.focusAreaContext?.codeSelection?.isNotEmpty() ?: false),
+            validProgrammingLanguage,
+            data.activeFileContext.focusAreaContext?.codeSelection?.length,
+            getResponseStreamTimeToFirstChunk(response.tabId),
+            getResponseStreamTimeBetweenChunks(response.tabId),
+            (responseStreamTotalTime[response.tabId] ?: 0).toDouble(),
+            data.message.length,
+            responseLength,
         )
-        sendMetricData("amazonq_addMessage", metadata)
     }
 
     fun recordMessageResponseError(data: ChatRequestData, tabId: String, responseCode: Int) {
@@ -143,7 +141,7 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
 
     // When user interacts with a message (e.g. copy code, insert code, vote)
     suspend fun recordInteractWithMessage(message: IncomingCwcMessage) {
-        val metadata: Map<String, Any?> = when (message) {
+        val event: ChatInteractWithMessageEvent? = when (message) {
             is IncomingCwcMessage.ChatItemVoted -> {
                 AmazonqTelemetry.interactWithMessage(
                     cwsprChatConversationId = getConversationId(message.tabId).orEmpty(),
@@ -154,15 +152,17 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
                         else -> CwsprChatInteractionType.Unknown
                     },
                 )
-                mapOf(
-                    "cwsprChatConversationId" to getConversationId(message.tabId).orEmpty(),
-                    "cwsprChatMessageId" to message.messageId,
-                    "cwsprChatInteractionType" to when (message.vote) {
-                        "upvote" -> CwsprChatInteractionType.Upvote
-                        "downvote" -> CwsprChatInteractionType.Downvote
-                        else -> CwsprChatInteractionType.Unknown
-                    }
-                )
+                ChatInteractWithMessageEvent.builder().apply {
+                    conversationId(getConversationId(message.tabId).orEmpty())
+                    messageId(message.messageId)
+                    interactionType(
+                        when (message.vote) {
+                            "upvote" -> ChatMessageInteractionType.UPVOTE
+                            "downvote" -> ChatMessageInteractionType.DOWNVOTE
+                            else -> ChatMessageInteractionType.UNKNOWN_TO_SDK_VERSION
+                        }
+                    )
+                }.build()
             }
 
             is IncomingCwcMessage.FollowupClicked -> {
@@ -171,11 +171,11 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
                     cwsprChatMessageId = message.messageId.orEmpty(),
                     cwsprChatInteractionType = CwsprChatInteractionType.ClickFollowUp,
                 )
-                mapOf(
-                    "cwsprChatConversationId" to getConversationId(message.tabId).orEmpty(),
-                    "cwsprChatMessageId" to message.messageId.orEmpty(),
-                    "cwsprChatInteractionType" to CwsprChatInteractionType.ClickFollowUp,
-                )
+                ChatInteractWithMessageEvent.builder().apply {
+                    conversationId(getConversationId(message.tabId).orEmpty())
+                    messageId(message.messageId.orEmpty())
+                    interactionType(ChatMessageInteractionType.CLICK_FOLLOW_UP)
+                }.build()
             }
 
             is IncomingCwcMessage.CopyCodeToClipboard -> {
@@ -187,14 +187,13 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
                     cwsprChatInteractionTarget = message.insertionTargetType,
                     cwsprChatHasReference = null,
                 )
-                mapOf(
-                    "cwsprChatConversationId" to getConversationId(message.tabId).orEmpty(),
-                    "cwsprChatMessageId" to message.messageId,
-                    "cwsprChatInteractionType" to CwsprChatInteractionType.CopySnippet,
-                    "cwsprChatAcceptedCharactersLength" to message.code.length,
-                    "cwsprChatInteractionTarget" to message.insertionTargetType,
-                    "cwsprChatHasReference" to null,
-                )
+                ChatInteractWithMessageEvent.builder().apply {
+                    conversationId(getConversationId(message.tabId).orEmpty())
+                    messageId(message.messageId)
+                    interactionType(ChatMessageInteractionType.COPY_SNIPPET)
+                    interactionTarget(message.insertionTargetType)
+                    acceptedCharacterCount(message.code.length)
+                }.build()
             }
 
             is IncomingCwcMessage.InsertCodeAtCursorPosition -> {
@@ -206,14 +205,13 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
                     cwsprChatInteractionTarget = message.insertionTargetType,
                     cwsprChatHasReference = null,
                 )
-                mapOf(
-                    "cwsprChatConversationId" to getConversationId(message.tabId).orEmpty(),
-                    "cwsprChatMessageId" to message.messageId,
-                    "cwsprChatInteractionType" to CwsprChatInteractionType.InsertAtCursor,
-                    "cwsprChatAcceptedCharactersLength" to message.code.length,
-                    "cwsprChatInteractionTarget" to message.insertionTargetType,
-                    "cwsprChatHasReference" to null,
-                )
+                ChatInteractWithMessageEvent.builder().apply {
+                    conversationId(getConversationId(message.tabId).orEmpty())
+                    messageId(message.messageId)
+                    interactionType(ChatMessageInteractionType.INSERT_AT_CURSOR)
+                    interactionTarget(message.insertionTargetType)
+                    acceptedCharacterCount(message.code.length)
+                }.build()
             }
 
             is IncomingCwcMessage.ClickedLink -> {
@@ -232,24 +230,29 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
                     cwsprChatInteractionTarget = message.link,
                     cwsprChatHasReference = null,
                 )
-                mapOf(
-                    "cwsprChatConversationId" to getConversationId(message.tabId).orEmpty(),
-                    "cwsprChatMessageId" to message.messageId,
-                    "cwsprChatInteractionType" to linkInteractionType,
-                    "cwsprChatInteractionTarget" to message.link,
-                    "cwsprChatHasReference" to null,
-                )
+                ChatInteractWithMessageEvent.builder().apply {
+                    conversationId(getConversationId(message.tabId).orEmpty())
+                    messageId(message.messageId)
+                    interactionType(
+                        when (message.type) {
+                            LinkType.SourceLink -> ChatMessageInteractionType.CLICK_LINK
+                            LinkType.BodyLink -> ChatMessageInteractionType.CLICK_BODY_LINK
+                            else -> ChatMessageInteractionType.UNKNOWN_TO_SDK_VERSION
+                        }
+                    )
+                    interactionTarget(message.link)
+                }.build()
             }
 
             is IncomingCwcMessage.ChatItemFeedback -> {
                 recordFeedback(message)
-                emptyMap()
+                null
             }
 
-            else -> emptyMap()
+            else -> null
         }
 
-        sendMetricData("amazonq_interactWithMessage", metadata)
+        event?.let { CodeWhispererClientAdaptor.getInstance(context.project).sendChatInteractWithMessageTelemetry(it) }
     }
 
     private suspend fun recordFeedback(message: IncomingCwcMessage.ChatItemFeedback) {
@@ -312,32 +315,21 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
         responseStreamTotalTime[tabId] = totalTime
     }
 
-    private fun getResponseStreamTimeToFirstChunk(tabId: String): Int {
-        val chunkTimes = responseStreamTimeForChunks[tabId] ?: return 0
-        if (chunkTimes.size == 1) return Duration.between(chunkTimes[0], Instant.now()).toMillis().toInt()
-        return Duration.between(chunkTimes[0], chunkTimes[1]).toMillis().toInt()
+    private fun getResponseStreamTimeToFirstChunk(tabId: String): Double {
+        val chunkTimes = responseStreamTimeForChunks[tabId] ?: return 0.0
+        if (chunkTimes.size == 1) return Duration.between(chunkTimes[0], Instant.now()).toMillis().toDouble()
+        return Duration.between(chunkTimes[0], chunkTimes[1]).toMillis().toDouble()
     }
 
-//    private fun getResponseStreamTimeBetweenChunks(tabId: String): String = try {
-//        val chunkDeltaTimes = mutableListOf<Int>()
-//        val chunkTimes = responseStreamTimeForChunks[tabId] ?: listOf(Instant.now())
-//        for (idx in 0 until (chunkTimes.size - 1)) {
-//            chunkDeltaTimes += Duration.between(chunkTimes[idx], chunkTimes[idx + 1]).toMillis().toInt()
-//        }
-//
-//        val joined = "[" + chunkDeltaTimes.joinToString(",").take(2000)
-//        val fixed = if (joined.last() == ',') "${joined}0" else joined
-//        if (fixed.last() == ']') fixed else "$fixed]"
-//    } catch (e: Exception) {
-//        "[-1]"
-//    }
-
-    private fun sendMetricData(eventName: String, metadata: Map<String, Any?>) {
-        try {
-            CodeWhispererClientAdaptor.getInstance(context.project).sendMetricDataTelemetry(eventName, metadata)
-        } catch (e: Throwable) {
-            logger.warn(e) { "Failed to send metric data" }
+    private fun getResponseStreamTimeBetweenChunks(tabId: String): List<Double> = try {
+        val chunkDeltaTimes = mutableListOf<Double>()
+        val chunkTimes = responseStreamTimeForChunks[tabId] ?: listOf(Instant.now())
+        for (idx in 0 until (chunkTimes.size - 1)) {
+            chunkDeltaTimes += Duration.between(chunkTimes[idx], chunkTimes[idx + 1]).toMillis().toDouble()
         }
+        chunkDeltaTimes.take(100)
+    } catch (e: Exception) {
+        listOf(-1.0)
     }
 
     companion object {

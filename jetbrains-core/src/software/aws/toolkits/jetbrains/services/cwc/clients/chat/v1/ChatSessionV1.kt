@@ -295,7 +295,7 @@ class ChatSessionV1(
     companion object {
         private val logger = getLogger<ChatSessionV1>()
 
-        private val validLanguages = arrayOf(
+        val validLanguages = arrayOf(
             "python",
             "javascript",
             "java",

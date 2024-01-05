@@ -199,13 +199,7 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
             cwsprChatMessageId = insertedCode.messageId,
             cwsprChatModificationPercentage = percentage
         )
-
-        val metadata: Map<String, Any?> = mapOf(
-            "cwsprChatConversationId" to insertedCode.conversationId,
-            "cwsprChatMessageId" to insertedCode.messageId,
-            "cwsprChatModificationPercentage" to percentage
-        )
-        CodeWhispererClientAdaptor.getInstance(project).sendMetricDataTelemetry("amazonq_modifyCode", metadata)
+        CodeWhispererClientAdaptor.getInstance(project).sendChatUserModificationTelemetry(insertedCode.conversationId, insertedCode.messageId, null, percentage)
     }
 
 // temp disable user modfication event for further discussion on metric calculation
