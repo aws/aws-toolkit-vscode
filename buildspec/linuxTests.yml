@@ -33,11 +33,12 @@ phases:
                 fi
             - |
                 {
+                    # Ensure that "foo | run_and_report" fails correctly.
+                    set -o pipefail
                     . buildspec/shared/common.sh
                     2>&1 xvfb-run npm test --silent | run_and_report \
                         'rejected promise not handled' \
-                        'This typically indicates a bug. Read https://developer.mozilla.org/docs/Web/JavaScript/Guide/Using_promises#error_handling' \
-                        || true # TODO: fail the CI job
+                        'This typically indicates a bug. Read https://developer.mozilla.org/docs/Web/JavaScript/Guide/Using_promises#error_handling'
                 }
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
