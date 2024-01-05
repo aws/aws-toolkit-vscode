@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description": "Improved recursion when validating projects for Q Code Transform."
-}

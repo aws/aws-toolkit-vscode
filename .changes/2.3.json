@@ -1,0 +1,23 @@
+{
+  "date" : "2024-01-05",
+  "version" : "2.3",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Emit additional CodeTransform telemetry"
+  }, {
+    "type" : "feature",
+    "description" : "Amazon Q Transform: Use the IDE Maven runner as a fallback"
+  }, {
+    "type" : "feature",
+    "description" : "Add Job Id to Code Transform Job History"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Transform: Always execute IDE bundled maven whenever maven command fails"
+  }, {
+    "type" : "bugfix",
+    "description" : "Improved recursion when validating projects for Q Code Transform."
+  }, {
+    "type" : "bugfix",
+    "description" : "CodeWhisperer: fix code scan UI of viewing scanned files not reflecting correct files"
+  } ]
+}

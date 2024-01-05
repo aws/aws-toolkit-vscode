@@ -1,3 +1,16 @@
+# _2.2_ (2023-12-13)
+- **(Feature)** CodeWhisperer security scans support ruby files.
+- **(Feature)** Use MDE endpoint set by environment variable
+- **(Feature)** CodeWhisperer security scans now support Go files.
+- **(Bug Fix)** Normalize telemetry logging metrics for AmazonQ Transform
+- **(Bug Fix)** Fix telemetry logging for new Amazon Q Code Transform telemetry updates
+- **(Bug Fix)** CodeWhisperer: Increase polling frequency for security scans.
+- **(Bug Fix)** Fixed sign out button in the CodeWhisperer panel for Getting Started Page
+- **(Bug Fix)** Fix issue where the CodeWhisperer status bar widget is visible in a remote development environment
+- **(Bug Fix)** Amazon Q Transform: Fix to ensure backend gets necessary dependencies
+- **(Removal)** Removed support for 2022.3.x IDEs
+- **(Removal)** Removed support for Gateway 2023.2
+
 # _2.1_ (2023-12-04)
 - **(Feature)** CodeWhisperer: Simplify Learn More page
 - **(Bug Fix)** CodeWhisperer: Security scans for Java no longer require build artifacts
