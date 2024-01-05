@@ -1364,7 +1364,7 @@
                 },
                 {
                     "command": "aws.submitFeedback",
-                    "when": "view == aws.explorer",
+                    "when": "view == aws.explorer && !aws.isWebExtHost",
                     "group": "navigation@6"
                 },
                 {
@@ -2179,6 +2179,7 @@
             "aws.submenu.feedback": [
                 {
                     "command": "aws.submitFeedback",
+                    "when": "!aws.isWebExtHost",
                     "group": "1_feedback@1"
                 },
                 {
@@ -2981,6 +2982,7 @@
             {
                 "command": "aws.submitFeedback",
                 "title": "%AWS.command.submitFeedback%",
+                "enablement": "!aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": "$(comment)",
                 "cloud9": {

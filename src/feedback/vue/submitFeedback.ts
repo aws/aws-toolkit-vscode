@@ -4,8 +4,6 @@
  */
 
 import globals from '../../shared/extensionGlobals'
-import { ExtContext } from '../../shared/extensions'
-
 import { getLogger } from '../../shared/logger'
 import * as vscode from 'vscode'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
@@ -67,7 +65,7 @@ type FeedbackId = 'AWS Toolkit' | 'CodeWhisperer' | 'Amazon Q' | 'Application Co
 
 export const submitFeedback = Commands.declare(
     { id: 'aws.submitFeedback', autoconnect: false },
-    (context: ExtContext) => async (_: VsCodeCommandArg, id: FeedbackId) => {
+    (context: vscode.ExtensionContext) => async (_: VsCodeCommandArg, id: FeedbackId) => {
         if (_ !== placeholder) {
             // No args exist, we must supply them
             id = 'AWS Toolkit'
@@ -78,9 +76,9 @@ export const submitFeedback = Commands.declare(
 
 let activeWebview: VueWebviewPanel | undefined
 
-export async function showFeedbackView(context: ExtContext, feedbackName: string) {
+export async function showFeedbackView(context: vscode.ExtensionContext, feedbackName: string) {
     const Panel = VueWebview.compilePanel(FeedbackWebview)
-    activeWebview ??= new Panel(context.extensionContext, globals.telemetry, feedbackName)
+    activeWebview ??= new Panel(context, globals.telemetry, feedbackName)
 
     const webviewPanel = await activeWebview.show({
         title: localize('AWS.submitFeedback.title', 'Send Feedback'),

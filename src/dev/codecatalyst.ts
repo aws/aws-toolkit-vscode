@@ -11,7 +11,7 @@ import * as manifest from '../../package.json'
 import { promisify } from 'util'
 import { getLogger } from '../shared/logger'
 import { selectCodeCatalystResource } from '../codecatalyst/wizards/selectResource'
-import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { DevEnvironment, CodeCatalystClient } from '../shared/clients/codecatalystClient'
 import { prepareDevEnvConnection } from '../codecatalyst/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
@@ -53,8 +53,8 @@ function lazyProgress<T extends Record<string, any>>(timeout: Timeout): LazyProg
     }
 }
 
-export async function openTerminalCommand(ctx: ExtContext) {
-    const commands = CodeCatalystCommands.fromContext(ctx.extensionContext)
+export async function openTerminalCommand(ctx: vscode.ExtensionContext) {
+    const commands = CodeCatalystCommands.fromContext(ctx)
     const progress = lazyProgress<{ message: string }>(new Timeout(900000))
 
     await commands.withClient(openTerminal, progress).finally(() => progress.dispose())
@@ -83,8 +83,8 @@ async function openTerminal(client: CodeCatalystClient, progress: LazyProgress<{
     vscode.window.createTerminal(options).show()
 }
 
-export async function installVsixCommand(ctx: ExtContext) {
-    const commands = CodeCatalystCommands.fromContext(ctx.extensionContext)
+export async function installVsixCommand(ctx: vscode.ExtensionContext) {
+    const commands = CodeCatalystCommands.fromContext(ctx)
 
     await commands.withClient(async client => {
         const env = await selectCodeCatalystResource(client, 'devEnvironment')
@@ -103,12 +103,10 @@ export async function installVsixCommand(ctx: ExtContext) {
 }
 
 async function promptVsix(
-    ctx: ExtContext,
+    ctx: vscode.ExtensionContext,
     progress?: LazyProgress<{ message: string }>
 ): Promise<vscode.Uri | undefined> {
-    const folders = (vscode.workspace.workspaceFolders ?? [])
-        .map(f => f.uri)
-        .concat(vscode.Uri.file(ctx.extensionContext.extensionPath))
+    const folders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri).concat(vscode.Uri.file(ctx.extensionPath))
 
     enum ExtensionMode {
         Production = 1,
@@ -116,8 +114,8 @@ async function promptVsix(
         Test = 3,
     }
 
-    const isDevelopmentWindow = ctx.extensionContext.extensionMode === ExtensionMode.Development
-    const extPath = isDevelopmentWindow ? ctx.extensionContext.extensionPath : folders[0].fsPath
+    const isDevelopmentWindow = ctx.extensionMode === ExtensionMode.Development
+    const extPath = isDevelopmentWindow ? ctx.extensionPath : folders[0].fsPath
 
     const packageNew = {
         label: 'Create new VSIX',
@@ -200,7 +198,7 @@ async function promptVsix(
  * Bootstrap an environment for remote development/debugging
  */
 async function installVsix(
-    ctx: ExtContext,
+    ctx: vscode.ExtensionContext,
     client: CodeCatalystClient,
     progress: LazyProgress<{ message: string }>,
     env: DevEnvironment
@@ -269,8 +267,8 @@ async function installVsix(
     await startVscodeRemote(SessionProcess, hostname, '/projects', vscPath)
 }
 
-export async function deleteDevEnvCommand(ctx: ExtContext) {
-    const commands = CodeCatalystCommands.fromContext(ctx.extensionContext)
+export async function deleteDevEnvCommand(ctx: vscode.ExtensionContext) {
+    const commands = CodeCatalystCommands.fromContext(ctx)
 
     await commands.withClient(async client => {
         const devenv = await selectCodeCatalystResource(client, 'devEnvironment')
