@@ -73,7 +73,7 @@ import { isUserCancelledError, resolveErrorMessageToDisplay, ToolkitError } from
 import { Logging } from './shared/logger/commands'
 import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
 import { registerWebviewErrorHandler } from './webviews/server'
-import { activateGlobalCommands, initializeManifestPaths } from './extensionShared'
+import { registerCommands, initializeManifestPaths } from './extensionShared'
 import { ChildProcess } from './shared/utilities/childProcess'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
@@ -177,7 +177,7 @@ export async function activate(context: vscode.ExtensionContext) {
             getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }
 
-        activateGlobalCommands(context)
+        registerCommands(context)
         context.subscriptions.push(
             Commands.register('aws.quickStart', async () => {
                 try {

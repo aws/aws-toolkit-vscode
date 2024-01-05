@@ -24,6 +24,9 @@ export function initializeManifestPaths(extensionContext: vscode.ExtensionContex
     )
 }
 
+/**
+ * Registers generic commands used by both browser and node versions of the toolkit.
+ */
 export function registerCommands(extensionContext: vscode.ExtensionContext) {
     extensionContext.subscriptions.push(
         // No-op command used for decoration-only codelenses.
