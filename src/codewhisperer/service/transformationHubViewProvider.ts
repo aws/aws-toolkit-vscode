@@ -176,11 +176,27 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             }
         }
         const isJobInProgress = transformByQState.isRunning()
+        const codiconsUri = this._view?.webview.asWebviewUri(
+            vscode.Uri.joinPath(this._extensionUri, 'node_modules', '@vscode/codicons', 'dist', 'codicon.css')
+        )
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
             <title>Transformation Hub</title>
-            <script src="https://kit.fontawesome.com/f865aad943.js" crossorigin="anonymous"></script>
+            <style>
+                @keyframes spin {
+                    0% {
+                        transform: rotate(0deg);
+                    }
+                    100% {
+                        transform: rotate(359deg);
+                    }
+                }
+                .spinner {
+                    animation: spin 1s infinite;
+                }
+            </style>
+            <link href="${codiconsUri}" rel="stylesheet" />
             </head>
             <body>
             <div style="display: flex">
@@ -228,7 +244,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         if (stepStatus === StepProgress.Succeeded) {
             return `<span style="color: green"> ✓ </span>`
         } else if (stepStatus === StepProgress.Pending) {
-            return `<span> <i class="fas fa-spinner fa-spin"></i> </span>` // TODO: switch from FA to native VSCode icons
+            return `<span style="color: grey"> <i class="codicon codicon-loading spinner"></i> </span>`
         } else {
             return `<span style="color: red"> X </span>`
         }

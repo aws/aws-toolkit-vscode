@@ -173,8 +173,9 @@ export async function startTransformByQ() {
 
         let uploadId = ''
         throwIfCancelled()
+        let payloadFileName = undefined
         try {
-            const payloadFileName = await zipCode(state.project.description!)
+            payloadFileName = await zipCode(state.project.description!)
             await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
             uploadId = await uploadPayload(payloadFileName)
         } catch (error) {
@@ -197,6 +198,8 @@ export async function startTransformByQ() {
         }
         transformByQState.setJobId(encodeHTML(jobId))
         await vscode.commands.executeCommand('aws.amazonq.refresh')
+
+        fs.rmSync(payloadFileName, { recursive: true, force: true }) // delete ZIP after job has started
 
         await sleep(2000) // sleep before polling job to prevent ThrottlingException
         throwIfCancelled()

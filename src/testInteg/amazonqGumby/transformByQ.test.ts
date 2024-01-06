@@ -12,6 +12,7 @@ import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs-extra'
 import { setValidConnection, skipTestIfNoValidConn } from '../util/amazonQUtil'
+import AdmZip from 'adm-zip'
 
 describe('transformByQ', async function () {
     let tempDir = ''
@@ -67,7 +68,7 @@ describe('transformByQ', async function () {
         )
     })
 
-    it('WHEN createUploadUrl then URL uses HTTPS and sets 60 second expiration', async function () {
+    it('WHEN createUploadUrl THEN URL uses HTTPS and sets 60 second expiration', async function () {
         const sha256 = getSha256(zippedCodePath)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
@@ -77,5 +78,15 @@ describe('transformByQ', async function () {
         const uploadUrl = response.uploadUrl
         const usesHttpsAndExpiresAfter60Seconds = uploadUrl.includes('https') && uploadUrl.includes('X-Amz-Expires=60')
         assert.strictEqual(usesHttpsAndExpiresAfter60Seconds, true)
+    })
+
+    it('WHEN zipCode THEN ZIP contains all expected files and no unexpected files', async function () {
+        const zipFiles = new AdmZip(zippedCodePath).getEntries()
+        let zipFileNames: string[] = []
+        zipFiles.forEach(file => {
+            zipFileNames.push(file.name)
+        })
+        assert.strictEqual(zipFileNames.length, 2) // expecting only a dummy txt file and a manifest.json
+        assert.strictEqual(zipFileNames.includes(tempFileName) && zipFileNames.includes('manifest.json'), true)
     })
 })

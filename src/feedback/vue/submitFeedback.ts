@@ -13,6 +13,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Commands, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
+import { transformByQState } from '../../codewhisperer/models/model'
 
 export interface FeedbackMessage {
     comment: string
@@ -35,6 +36,11 @@ export class FeedbackWebview extends VueWebview {
 
         if (!message.sentiment) {
             return 'Choose a reaction (smile/frown)'
+        }
+
+        const jobId = transformByQState.getJobId()
+        if (jobId !== '') {
+            message.comment = `${message.comment}\n\nQ CodeTransform jobId: ${jobId}`
         }
 
         try {

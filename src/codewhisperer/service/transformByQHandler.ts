@@ -113,7 +113,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const classFilePath = compiledJavaFiles[0].fsPath
     const baseCommand = 'javap'
     const args = ['-v', classFilePath]
-    const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
+    const spawnResult = spawnSync(baseCommand, args, { shell: true, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
         vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
@@ -242,9 +242,10 @@ export async function stopJob(jobId: string) {
 export async function uploadPayload(payloadFileName: string) {
     const sha256 = getSha256(payloadFileName)
     throwIfCancelled()
+    let response = undefined
     try {
         const apiStartTime = Date.now()
-        const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
+        response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
             uploadIntent: CodeWhispererConstants.uploadIntent,
@@ -257,8 +258,6 @@ export async function uploadPayload(payloadFileName: string) {
             codeTransformRequestId: response.$response.requestId,
             result: MetadataResult.Pass,
         })
-        await uploadArtifactToS3(payloadFileName, response)
-        return response.uploadId
     } catch (e: any) {
         const errorMessage = e?.message || 'Error in CreateUploadUrl API call'
         getLogger().error('CodeTransform: CreateUploadUrl error: = ', errorMessage)
@@ -273,6 +272,13 @@ export async function uploadPayload(payloadFileName: string) {
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
     }
+    try {
+        await uploadArtifactToS3(payloadFileName, response)
+    } catch (e: any) {
+        const errorMessage = e?.message || 'Error in uploadArtifactToS3 call'
+        throw new Error(errorMessage)
+    }
+    return response.uploadId
 }
 
 /**
@@ -317,7 +323,7 @@ function getProjectDependencies(modulePath: string): string[] {
         '-Dmdep.copyPom=true',
         '-Dmdep.addParentPoms=true',
     ]
-    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: false, encoding: 'utf-8' })
+    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
         vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
