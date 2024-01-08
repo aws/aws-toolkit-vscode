@@ -267,7 +267,7 @@ export class ProposedTransformationExplorer {
             )
             telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
 
-            // This metric is emitted when user clicked download for proposed change
+            // This metric is emitted when user clicks Download Proposed Changes button
             telemetry.codeTransform_vcsViewerClicked.emit({
                 codeTransformVCSViewerSrcComponents: 'toastNotification',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
