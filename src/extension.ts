@@ -428,7 +428,7 @@ async function checkSettingsHealth(settings: Settings): Promise<boolean> {
             const openSettingsItem = 'Open settings.json'
             void showViewLogsMessage(msg, 'error', [openSettingsItem]).then(async resp => {
                 if (resp === openSettingsItem) {
-                    vscode.commands.executeCommand('workbench.action.openSettingsJson')
+                    await vscode.commands.executeCommand('workbench.action.openSettingsJson')
                 }
             })
             return false
