@@ -6,20 +6,20 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { setValidConnection, skiptTestIfNoValidConn } from '../../util/codewhispererUtil'
-import { ConfigurationEntry } from '../../../codewhisperer/models/model'
-import * as codewhispererClient from '../../../codewhisperer/client/codewhisperer'
-import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
+import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
+import { ConfigurationEntry } from '../../codewhisperer/models/model'
+import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
+import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 import {
     createMockTextEditor,
     createTextDocumentChangeEvent,
     resetCodeWhispererGlobalVariables,
-} from '../../../test/codewhisperer/testUtil'
-import { KeyStrokeHandler } from '../../../codewhisperer/service/keyStrokeHandler'
-import { sleep } from '../../../shared/utilities/timeoutUtils'
-import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
-import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
-import { session } from '../../../codewhisperer/util/codeWhispererSession'
+} from '../../test/codewhisperer/testUtil'
+import { KeyStrokeHandler } from '../../codewhisperer/service/keyStrokeHandler'
+import { sleep } from '../../shared/utilities/timeoutUtils'
+import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
+import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
+import { session } from '../../codewhisperer/util/codeWhispererSession'
 
 describe('CodeWhisperer service invocation', async function () {
     let validConnection: boolean
