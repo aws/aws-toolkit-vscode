@@ -52,8 +52,8 @@ describe('CodeWhisperer service invocation', async function () {
         validConnection = await setValidConnection()
     })
 
-    beforeEach(async function () {
-        await resetCodeWhispererGlobalVariables()
+    beforeEach(function () {
+        void resetCodeWhispererGlobalVariables()
         RecommendationHandler.instance.clearRecommendations()
         //TODO: remove this line (this.skip()) when these tests no longer auto-skipped
         this.skip()
