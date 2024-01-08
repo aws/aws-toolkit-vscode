@@ -192,10 +192,10 @@ export async function activate(context: vscode.ExtensionContext) {
         // do not enable codecatalyst for sagemaker
         // TODO: remove setContext if SageMaker adds the context to their IDE
         if (!isSageMaker()) {
-            vscode.commands.executeCommand('setContext', 'aws.isSageMaker', false)
+            await vscode.commands.executeCommand('setContext', 'aws.isSageMaker', false)
             await codecatalyst.activate(extContext)
         } else {
-            vscode.commands.executeCommand('setContext', 'aws.isSageMaker', true)
+            await vscode.commands.executeCommand('setContext', 'aws.isSageMaker', true)
         }
 
         await activateCloudFormationTemplateRegistry(context)
@@ -278,7 +278,9 @@ export async function activate(context: vscode.ExtensionContext) {
         //       this should be fired after planned activities have finished.
         if (isCloud9()) {
             new Timeout(5000).onCompletion(() => {
-                vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+                vscode.commands.executeCommand('aws.codeWhisperer.refresh').then(undefined, e => {
+                    getLogger().error('aws.codeWhisperer.refresh failed: %s', (e as Error).message)
+                })
             })
         }
     } catch (error) {
@@ -413,7 +415,9 @@ export function logAndShowWebviewError(err: unknown, webviewId: string, command:
     // detailed information in the logs.
     const detailedError = ToolkitError.chain(err, `Webview backend command failed: "${command}()"`)
     const userFacingError = ToolkitError.chain(detailedError, 'Webview error')
-    logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error')
+    logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch(e => {
+        getLogger().error('logAndShowError failed: %s', (e as Error).message)
+    })
 }
 
 async function checkSettingsHealth(settings: Settings): Promise<boolean> {
@@ -422,7 +426,7 @@ async function checkSettingsHealth(settings: Settings): Promise<boolean> {
         case 'invalid': {
             const msg = 'Failed to access settings. Check settings.json for syntax errors.'
             const openSettingsItem = 'Open settings.json'
-            showViewLogsMessage(msg, 'error', [openSettingsItem]).then(async resp => {
+            void showViewLogsMessage(msg, 'error', [openSettingsItem]).then(async resp => {
                 if (resp === openSettingsItem) {
                     vscode.commands.executeCommand('workbench.action.openSettingsJson')
                 }

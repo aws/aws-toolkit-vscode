@@ -24,7 +24,7 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
     try {
         if (!node) {
             deleteResult = 'Failed'
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize(
                     'AWS.message.error.cloudFormation.unsupported',
                     'Unable to delete a CloudFormation Stack. No stack provided.'
@@ -49,7 +49,7 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
 
             await client.deleteStack(stackName)
 
-            vscode.window.showInformationMessage(
+            void vscode.window.showInformationMessage(
                 localize('AWS.message.info.cloudFormation.delete', 'Deleted CloudFormation Stack {0}', stackName)
             )
 
@@ -59,7 +59,7 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
         deleteResult = 'Failed'
         logger.error(err as Error)
 
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.message.error.cloudFormation.delete',
                 'An error occurred while deleting {0}. Please check the stack events on the {1} Console',

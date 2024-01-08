@@ -19,7 +19,7 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 export async function activate(context: vscode.ExtensionContext) {
     setInBrowser(true) // THIS MUST ALWAYS BE FIRST
 
-    vscode.window.showInformationMessage(
+    void vscode.window.showInformationMessage(
         'AWS Toolkit: Browser Mode Under Development. No features are currently provided'
     )
 

@@ -37,7 +37,7 @@ export async function deleteThingCommand(node: IotThingNode): Promise<void> {
         const principalList = (await node.iot.listThingPrincipals({ thingName })).principals
         if (principalList?.length ?? 0 > 0) {
             getLogger().error(`Thing ${thingName} has attached principals: %O`, principalList)
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize(
                     'AWS.iot.deleteThing.error',
                     'Cannot delete Thing {0}. Thing {0} has attached principals: {1}',
@@ -50,12 +50,14 @@ export async function deleteThingCommand(node: IotThingNode): Promise<void> {
         await node.iot.deleteThing({ thingName })
 
         getLogger().info(`deleted Thing: ${thingName}`)
-        vscode.window.showInformationMessage(localize('AWS.iot.deleteThing.success', 'Deleted Thing: {0}', thingName))
+        void vscode.window.showInformationMessage(
+            localize('AWS.iot.deleteThing.success', 'Deleted Thing: {0}', thingName)
+        )
     } catch (e) {
         getLogger().error(`Failed to delete Thing: ${thingName}: %s`, e)
-        showViewLogsMessage(localize('AWS.iot.deleteThing.error', 'Failed to delete Thing: {0}', thingName))
+        void showViewLogsMessage(localize('AWS.iot.deleteThing.error', 'Failed to delete Thing: {0}', thingName))
     }
 
     //Refresh the Things Folder node
-    node.parent.refreshNode()
+    await node.parent.refreshNode()
 }
