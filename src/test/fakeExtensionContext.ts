@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { mkdirp } from 'fs-extra'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { CredentialsStore } from '../auth/credentials/store'
@@ -26,6 +25,7 @@ import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/c
 import { createTestWorkspaceFolder } from './testUtil'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { createTestRegionProvider } from './shared/regions/testUtil'
+import { fsCommon } from '../srcShared/fs'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -107,8 +107,8 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const folder = await createTestWorkspaceFolder('test')
         ctx.globalStorageUri = vscode.Uri.joinPath(folder.uri, 'globalStorage')
         ctx.logUri = vscode.Uri.joinPath(folder.uri, 'logs')
-        await mkdirp(ctx.globalStorageUri.fsPath)
-        await mkdirp(ctx.logUri.fsPath)
+        await fsCommon.mkdir(ctx.globalStorageUri.fsPath)
+        await fsCommon.mkdir(ctx.logUri.fsPath)
         return ctx
     }
 
