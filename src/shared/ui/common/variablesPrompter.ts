@@ -76,7 +76,7 @@ export function createVariablesPrompter(
             return parseEnvFile(contents.toString())
         } catch (err) {
             if ((err as Error).message !== 'Closed dialog') {
-                showViewLogsMessage(
+                void showViewLogsMessage(
                     localize('AWS.environmentVariables.prompt.failed', 'Failed to read environment variables')
                 )
             }
