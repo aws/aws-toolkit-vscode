@@ -8,8 +8,8 @@ import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referen
 import { LicenseUtil } from '../../../codewhisperer/util/licenseUtil'
 
 describe('referenceLogViewProvider', function () {
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
     describe('getReferenceLog', async function () {
         it('Should return expected reference log string with link to license if there is no url', function () {

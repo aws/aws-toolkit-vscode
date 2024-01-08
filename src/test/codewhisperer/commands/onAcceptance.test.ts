@@ -22,8 +22,8 @@ import { AcceptedSuggestionEntry } from '../../../codewhisperer/models/model'
 
 describe('onAcceptance', function () {
     describe('onAcceptance', function () {
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {

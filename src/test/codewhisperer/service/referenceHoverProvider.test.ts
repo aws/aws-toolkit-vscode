@@ -10,8 +10,8 @@ import { ReferenceHoverProvider } from '../../../codewhisperer/service/reference
 import { cast } from '../../../shared/utilities/typeConstructors'
 
 describe('referenceHoverProvider', function () {
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
     describe('provideHover', async function () {
         it('Should return a hover object that contains license name and repo name when reference code exists in document ', function () {
