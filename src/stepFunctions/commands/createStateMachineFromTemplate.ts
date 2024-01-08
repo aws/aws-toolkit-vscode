@@ -28,10 +28,10 @@ export async function createStateMachineFromTemplate(context: vscode.ExtensionCo
             response.templateFormat
         )
 
-        vscode.window.showTextDocument(textDocumentFromSelection)
+        await vscode.window.showTextDocument(textDocumentFromSelection)
     } catch (err) {
         getLogger().error(err as Error)
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.stepfunctions.getTextDocumentForSelectedItem',
                 'There was an error creating the State Machine Template, check log for details.'

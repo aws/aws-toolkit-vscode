@@ -63,7 +63,7 @@ async function downloadS3File(
     options?.timeout?.token.onCancellationRequested(({ agent }) => downloadStream.destroy(new CancellationError(agent)))
 
     if (options?.progressLocation) {
-        vscode.window.withProgress(
+        void vscode.window.withProgress(
             {
                 location: options.progressLocation,
                 title: localize('AWS.s3.downloadFile.progressTitle', 'Downloading {0}...', file.name),
@@ -116,7 +116,7 @@ export async function downloadFileAsCommand(node: S3FileNode, outputChannel = gl
         if (!saveLocation) {
             throw new CancellationError('user')
         }
-        setDefaultDownloadPath(saveLocation.fsPath)
+        await setDefaultDownloadPath(saveLocation.fsPath)
 
         showOutputMessage(`Downloading "${sourcePath}" to: ${saveLocation}`, outputChannel)
 

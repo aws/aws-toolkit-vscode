@@ -252,7 +252,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
                 }
             },
         })
@@ -292,7 +292,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                         if (button === vscode.QuickInputButtons.Back) {
                             resolve(undefined)
                         } else if (button === this.helpButton) {
-                            openUrl(vscode.Uri.parse(samDeployDocUrl))
+                            void openUrl(vscode.Uri.parse(samDeployDocUrl))
                         }
                     },
                 })
@@ -336,7 +336,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                         if (button === vscode.QuickInputButtons.Back) {
                             resolve(undefined)
                         } else if (button === this.helpButton) {
-                            openUrl(vscode.Uri.parse(samDeployDocUrl))
+                            void openUrl(vscode.Uri.parse(samDeployDocUrl))
                         }
                     },
                 })
@@ -385,7 +385,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
                 }
             },
         })
@@ -447,7 +447,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         // This will background load the S3 buckets and load them all (in one chunk) when the operation completes.
         // Not awaiting lets us display a "loading" quick pick for immediate feedback.
         // Does not use an IteratingQuickPick because listing S3 buckets by region is not a paginated operation.
-        populateS3QuickPick(quickPick, selectedRegion, SamCliSettings.instance, messages, profile, accountId)
+        populateS3QuickPick(quickPick, selectedRegion, SamCliSettings.instance, messages, profile, accountId).catch(
+            e => {
+                getLogger().error('populateS3QuickPick: %s', (e as Error).message)
+            }
+        )
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
             picker: quickPick,
@@ -455,7 +459,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
                 } else if (button === createBucket) {
                     resolve([{ label: CREATE_NEW_BUCKET }])
                 } else if (button === enterBucket) {
@@ -511,7 +515,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
                 } else if (bucketProps.buttonHandler) {
                     bucketProps.buttonHandler(button, inputBox, resolve, reject)
                 }
@@ -555,7 +559,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
                 }
             },
         })
@@ -608,7 +612,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
                 }
             },
         })
@@ -710,7 +714,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             // TODO: remove check when min version is high enough
             const samCliVersion = await getSamCliVersion(this.context.extContext.samCliContext())
             if (semver.lt(samCliVersion, minSamCliVersionForImageSupport)) {
-                vscode.window.showErrorMessage(
+                void vscode.window.showErrorMessage(
                     localize(
                         'AWS.output.sam.no.image.support',
                         'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
@@ -800,12 +804,12 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.name
                 this.response.s3Bucket = newBucketName
                 getLogger().info('Created bucket: %O', newBucketName)
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName)
                 )
                 telemetry.s3_createBucket.emit({ result: 'Succeeded' })
             } catch (e) {
-                showViewLogsMessage(
+                void showViewLogsMessage(
                     localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest)
                 )
                 telemetry.s3_createBucket.emit({ result: 'Failed' })

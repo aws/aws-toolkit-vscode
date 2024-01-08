@@ -24,6 +24,7 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { progressReporter } from '../progressReporter'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { GlobalState } from '../../shared/globalState'
 
 export interface FileSizeBytes {
     /**
@@ -101,7 +102,7 @@ export async function uploadFileCommand(
             })
         )
         if (node instanceof S3FolderNode) {
-            globals.context.globalState.update('aws.lastUploadedToS3Folder', {
+            GlobalState.instance.tryUpdate('aws.lastUploadedToS3Folder', {
                 bucket: node.bucket,
                 folder: node.folder,
             })
@@ -165,7 +166,7 @@ export async function uploadFileCommand(
             )
 
             if (bucketResponse.folder) {
-                globals.context.globalState.update('aws.lastUploadedToS3Folder', {
+                GlobalState.instance.tryUpdate('aws.lastUploadedToS3Folder', {
                     bucket: bucketResponse.bucket,
                     folder: bucketResponse.folder,
                 })
@@ -177,7 +178,7 @@ export async function uploadFileCommand(
 
     await runBatchUploads(uploadRequests, outputChannel)
 
-    vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
+    void vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
 }
 
 async function promptForFileLocation(): Promise<vscode.Uri[] | undefined> {
@@ -416,7 +417,7 @@ export async function promptUserForBucket(
         allBuckets = await s3client.listAllBuckets()
     } catch (e) {
         getLogger().error('Failed to list buckets from client', e)
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize('AWS.message.error.promptUserForBucket.listBuckets', 'Failed to list buckets from client')
         )
         throw new Error('Failed to list buckets from client')

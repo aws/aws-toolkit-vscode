@@ -16,8 +16,8 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 describe('codewhispererTracker', function () {
     describe('enqueue', function () {
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             CodeWhispererTracker.getTracker().shutdown()
         })
 
@@ -43,8 +43,8 @@ describe('codewhispererTracker', function () {
     })
 
     describe('flush', function () {
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             CodeWhispererTracker.getTracker().shutdown()
         })
 

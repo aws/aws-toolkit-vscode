@@ -45,7 +45,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
         result = 'Failed'
         const error = err as Error
         logger.error('Error on opening document: %0', error)
-        showViewLogsMessage(
+        void showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.openDocument.could_not_open',
                 'Could not fetch document: {0}',
@@ -58,11 +58,11 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
 }
 
 export async function openDocumentItemJson(node: DocumentItemNode, awsContext: AwsContext) {
-    openDocumentItem(node, awsContext, 'JSON')
+    await openDocumentItem(node, awsContext, 'JSON')
 }
 
 export async function openDocumentItemYaml(node: DocumentItemNode, awsContext: AwsContext) {
-    openDocumentItem(node, awsContext, 'YAML')
+    await openDocumentItem(node, awsContext, 'YAML')
 }
 
 async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {

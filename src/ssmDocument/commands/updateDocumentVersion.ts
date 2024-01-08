@@ -32,7 +32,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
                 if (!updateDocumentResult) {
                     result = 'Failed'
                     logger.error(`Update document version failed: empty document version`)
-                    vscode.window.showErrorMessage(
+                    void vscode.window.showErrorMessage(
                         localize(
                             'AWS.message.info.ssmDocument.updateDocumentVersion.failed.emptyversion',
                             'ould not update document {0} default version. An empty version was provided.',
@@ -40,7 +40,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
                         )
                     )
                 } else {
-                    vscode.window.showInformationMessage(
+                    void vscode.window.showInformationMessage(
                         localize(
                             'AWS.message.info.ssmDocument.updateDocumentVersion.success',
                             'Updated document {0} default version to {1}',
@@ -52,7 +52,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
             }
         } else {
             result = 'Failed'
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize(
                     'AWS.message.error.ssmDocument.updateDocumentVersion.does_not_own',
                     'Could not update document {0} default version. The current account does not have ownership of this document.',
@@ -63,7 +63,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
     } catch (err) {
         result = 'Failed'
         const error = err as Error
-        showViewLogsMessage(
+        void showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.updateDocumentVersion.could_not_update_version',
                 'Could not update default version for: {0}',
@@ -109,7 +109,7 @@ async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionI
         // User pressed escape and didn't select a template
         return versionSelection?.label
     } else {
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.message.info.ssmDocument.updateDocumentVersion.no_other_versions',
                 'Selected document has only one version. Unable to change default version.'

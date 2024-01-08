@@ -24,7 +24,7 @@ export async function publishSSMDocument(): Promise<void> {
     if (!textDocument) {
         const errorMsg = 'Could not get active text editor for local Systems Manager Document definition'
         logger.error(errorMsg)
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.ssmDocument.publishDocument.could_not_open',
                 'Could not get active text editor for local Systems Manager Document definition'
@@ -37,7 +37,7 @@ export async function publishSSMDocument(): Promise<void> {
         const supportedFormats = [ssmJson, ssmYaml]
         const errorMsg = 'Current editor language does not match the supported formats: ' + supportedFormats.join(', ')
         logger.error(errorMsg)
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.ssmDocument.publishDocument.invalid_format',
                 'Current editor language does not match the supported formats: {0}',
@@ -80,12 +80,12 @@ export async function createDocument(
 
         const createResult = await client.createDocument(request)
         logger.info(`Created Systems Manager Document: ${JSON.stringify(createResult.DocumentDescription)}`)
-        vscode.window.showInformationMessage(`Created Systems Manager Document: ${wizardResponse.name}`)
+        void vscode.window.showInformationMessage(`Created Systems Manager Document: ${wizardResponse.name}`)
     } catch (err) {
         const error = err as Error
         logger.error(`Failed to create Systems Manager Document "${wizardResponse.name}": %s`, error.message)
         result = 'Failed'
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             `Failed to create Systems Manager Document '${wizardResponse.name}'. \n${error.message}`
         )
     } finally {
@@ -115,7 +115,7 @@ export async function updateDocument(
         const updateResult = await client.updateDocument(request)
 
         logger.info(`Updated Systems Manager Document: ${JSON.stringify(updateResult.DocumentDescription)}`)
-        vscode.window.showInformationMessage(`Updated Systems Manager Document: ${wizardResponse.name}`)
+        void vscode.window.showInformationMessage(`Updated Systems Manager Document: ${wizardResponse.name}`)
 
         const isConfirmed = await showConfirmationMessage({
             prompt: localize(
@@ -135,14 +135,14 @@ export async function updateDocument(
                 if (documentVersion !== undefined) {
                     await client.updateDocumentVersion(wizardResponse.name, documentVersion)
                     logger.info('Updated Systems Manager Document default version')
-                    vscode.window.showInformationMessage('Updated Systems Manager Document default version')
+                    void vscode.window.showInformationMessage('Updated Systems Manager Document default version')
                 }
             } catch (err) {
                 logger.error(
                     `Failed to update Systems Manager Document default version for "${wizardResponse.name}": %s`,
                     (err as Error).message
                 )
-                vscode.window.showErrorMessage(
+                void vscode.window.showErrorMessage(
                     `Failed to update Systems Manager Document default version for: ${wizardResponse.name}`
                 )
             }
@@ -151,7 +151,7 @@ export async function updateDocument(
         const error = err as Error
         logger.error(`Failed to update Systems Manager Document '${wizardResponse.name}'. %0`, error)
         result = 'Failed'
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             `Failed to update Systems Manager Document '${wizardResponse.name}'. \n${error.message}`
         )
     } finally {

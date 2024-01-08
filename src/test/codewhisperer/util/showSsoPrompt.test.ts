@@ -14,8 +14,8 @@ import { getTestWindow } from '../../shared/vscode/window'
 import { assertTelemetryCurried } from '../../testUtil'
 
 describe('showConnectionPrompt', function () {
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
 
     afterEach(function () {

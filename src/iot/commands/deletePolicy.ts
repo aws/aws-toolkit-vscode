@@ -55,7 +55,7 @@ export async function deletePolicyCommand(node: IotPolicyWithVersionsNode): Prom
         }
         if (numVersions !== 1) {
             getLogger().error(`Policy ${policyName} has non-default versions`)
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize('AWS.iot.deletePolicy.versionError', 'Policy {0} has non-default versions', policyName)
             )
             return

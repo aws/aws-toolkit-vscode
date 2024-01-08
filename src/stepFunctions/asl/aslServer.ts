@@ -211,7 +211,12 @@ connection.onDidChangeConfiguration(change => {
                 })
             }
         } else if (formatterRegistration) {
-            formatterRegistration.then(r => r.dispose())
+            formatterRegistration.then(
+                r => r.dispose(),
+                e => {
+                    console.error('formatterRegistration failed: %s', (e as Error).message)
+                }
+            )
             formatterRegistration = undefined
         }
     }

@@ -117,7 +117,7 @@ describe('CodeWhisperer telemetry', async function () {
 
     async function resetStates() {
         await RecommendationHandler.instance.clearInlineCompletionStates()
-        resetCodeWhispererGlobalVariables()
+        await resetCodeWhispererGlobalVariables()
     }
 
     function mockClient(): DefaultCodeWhispererClient {
