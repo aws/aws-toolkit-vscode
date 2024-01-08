@@ -17,11 +17,7 @@ import {
     initializeComputeRegion,
     mostRecentVersionKey,
 } from '../../shared/extensionUtilities'
-import {
-    isDifferentVersion,
-    safeGet,
-    setMostRecentVersion,
-} from '../../shared/extensionUtilities'
+import { isDifferentVersion, safeGet, setMostRecentVersion } from '../../shared/extensionUtilities'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'

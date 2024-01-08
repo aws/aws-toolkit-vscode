@@ -113,11 +113,12 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
     }
 
     // Add random characters to the leaf folder to ensure it is unique
-    relativePathParts[relativePathParts.length - 1] = relativePathParts[relativePathParts.length - 1] + crypto.randomBytes(4).toString('hex')
+    relativePathParts[relativePathParts.length - 1] =
+        relativePathParts[relativePathParts.length - 1] + crypto.randomBytes(4).toString('hex')
 
     const tmpPath = path.join(tempDirPath, ...relativePathParts)
     await fsCommon.mkdir(tmpPath)
-    return tmpPath 
+    return tmpPath
 }
 
 /**
@@ -220,7 +221,7 @@ export async function getNonexistentFilename(
 /**
  * @deprecated this is a synchronous duplicate of {@link getNonexistentFilename}. We are only keeping it
  * since some code needs to do this process synchronously and the platform agnostic file system is async.
- * 
+ *
  * Returns `name.suffix` if it does not already exist in directory `dir`, else appends
  * a number ("foo-1.txt", "foo-2.txt", etc.).
  *

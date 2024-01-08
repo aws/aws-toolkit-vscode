@@ -442,8 +442,14 @@ describe('CloudFormation Template Registry', async function () {
         })
 
         it('checks for an exact handler match for C# files in a Dockerfile for image functions', async function () {
-            await toFile('CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]', path.join(helloPath, 'Dockerfile'))
-            await toFile('CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]', path.join(nestedPath, 'Dockerfile'))
+            await toFile(
+                'CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]',
+                path.join(helloPath, 'Dockerfile')
+            )
+            await toFile(
+                'CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]',
+                path.join(nestedPath, 'Dockerfile')
+            )
 
             const helloWorldResource = {
                 ...resource,

@@ -42,14 +42,10 @@ describe('filesystemUtilities', function () {
     describe('getNonexistentFilename()', function () {
         const methods = [getNonexistentFilename, getNonexistentFilenameSync]
 
-        methods.forEach((methodUnderTest) => {
+        methods.forEach(methodUnderTest => {
             it(`${methodUnderTest.name}: failure modes`, async function () {
-                await assert.rejects(async () => 
-                methodUnderTest('/bogus/directory/', 'foo', '.txt', 99)
-                )
-                await assert.rejects(async () => 
-                methodUnderTest('zzz', 'foo', '.txt', 99)
-                )
+                await assert.rejects(async () => methodUnderTest('/bogus/directory/', 'foo', '.txt', 99))
+                await assert.rejects(async () => methodUnderTest('zzz', 'foo', '.txt', 99))
             })
             it(`${methodUnderTest.name}: returns a filename that does not exist in the directory`, async function () {
                 const dir = tempFolder

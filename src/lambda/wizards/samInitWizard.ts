@@ -274,12 +274,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
 
         this.form.name.bindPrompter(state =>
             createNamePrompter(
-                getNonexistentFilenameSync(
-                    state.location!.fsPath,
-                    `lambda-${state.runtimeAndPackage!.runtime}`,
-                    '',
-                    99
-                )
+                getNonexistentFilenameSync(state.location!.fsPath, `lambda-${state.runtimeAndPackage!.runtime}`, '', 99)
             )
         )
     }
