@@ -27,7 +27,7 @@ export function refreshStepFunctionsTree(regionCode: string) {
     const node = sfnNodeMap.get(regionCode)
 
     if (node) {
-        vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
+        void vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
     }
 }
 
