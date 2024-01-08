@@ -2190,6 +2190,7 @@
             "aws.submenu.help": [
                 {
                     "command": "aws.quickStart",
+                    "when": "isCloud9",
                     "group": "1_help@1"
                 },
                 {
@@ -3162,6 +3163,7 @@
                 "command": "aws.quickStart",
                 "title": "%AWS.command.quickStart%",
                 "category": "%AWS.title%",
+                "enablement": "isCloud9",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
