@@ -242,7 +242,7 @@ export async function createNewSamApplication(
 
             await schemaCodeDownloader!.downloadCode(request!)
 
-            vscode.window.showInformationMessage(
+            void vscode.window.showInformationMessage(
                 localize(
                     'AWS.message.info.schemas.downloadCodeBindings.finished',
                     'Downloaded code for schema {0}!',

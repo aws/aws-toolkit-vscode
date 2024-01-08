@@ -89,7 +89,7 @@ export class SamInvokeWebview extends VueWebview {
             ? vscode.workspace.workspaceFolders[0]
             : undefined
         if (!workspaceFolder) {
-            vscode.window.showErrorMessage(localize('AWS.lambda.form.noFolder', 'No workspace folder found.'))
+            void vscode.window.showErrorMessage(localize('AWS.lambda.form.noFolder', 'No workspace folder found.'))
             return
         }
         const uri = workspaceFolder.uri
@@ -223,7 +223,9 @@ export class SamInvokeWebview extends VueWebview {
         const uri = getUriFromLaunchConfig(config)
         if (!uri) {
             // TODO Localize
-            vscode.window.showErrorMessage('Toolkit requires a target resource in order to save a debug configuration')
+            void vscode.window.showErrorMessage(
+                'Toolkit requires a target resource in order to save a debug configuration'
+            )
             return
         }
         const launchConfig = new LaunchConfiguration(uri)
@@ -264,12 +266,15 @@ export class SamInvokeWebview extends VueWebview {
             })
             const response = await input.promptUser({ inputBox: ib })
             if (response) {
-                launchConfig.addDebugConfiguration(finalizeConfig(config, response))
+                await launchConfig.addDebugConfiguration(finalizeConfig(config, response))
                 await openLaunchJsonFile()
             }
         } else {
             // use existing label
-            launchConfig.editDebugConfiguration(finalizeConfig(config, pickerResponse.label), pickerResponse.index)
+            await launchConfig.editDebugConfiguration(
+                finalizeConfig(config, pickerResponse.label),
+                pickerResponse.index
+            )
             await openLaunchJsonFile()
         }
     }
@@ -306,12 +311,13 @@ const WebviewPanel = VueWebview.compilePanel(SamInvokeWebview)
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return Commands.register('aws.launchConfigForm', async (launchConfig?: AwsSamDebuggerConfiguration) => {
         const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
-        webview.show({
-            title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
-            // TODO: make this only open `Beside` when executed via CodeLens
-            viewColumn: vscode.ViewColumn.Beside,
+        await telemetry.sam_openConfigUi.run(async span => {
+            webview.show({
+                title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
+                // TODO: make this only open `Beside` when executed via CodeLens
+                viewColumn: vscode.ViewColumn.Beside,
+            })
         })
-        telemetry.sam_openConfigUi.emit()
     })
 }
 
