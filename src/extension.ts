@@ -27,7 +27,6 @@ import {
     initializeComputeRegion,
     isCloud9,
     isSageMaker,
-    showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
@@ -78,6 +77,7 @@ import { ChildProcess } from './shared/utilities/childProcess'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
+import { showQuickStartWebview } from './shared/extensionStartupUtilities'
 
 let localize: nls.LocalizeFunc
 

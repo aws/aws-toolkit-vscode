@@ -18,7 +18,6 @@ import {
     mostRecentVersionKey,
 } from '../../shared/extensionUtilities'
 import {
-    createQuickStartWebview,
     isDifferentVersion,
     safeGet,
     setMostRecentVersion,
@@ -29,6 +28,7 @@ import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
 import { extensionVersion } from '../../shared/vscode/env'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import globals from '../../shared/extensionGlobals'
+import { createQuickStartWebview } from '../../shared/extensionStartupUtilities'
 
 describe('extensionUtilities', function () {
     describe('safeGet', function () {
