@@ -24,7 +24,7 @@ export async function copyLambdaUrl(
     const configs = await client.getFunctionUrlConfigs(node.name)
 
     if (configs.length === 0) {
-        vscode.window.showWarningMessage(noLambdaFuncMessage)
+        void vscode.window.showWarningMessage(noLambdaFuncMessage)
         vscode.window.setStatusBarMessage(addCodiconToString('circle-slash', 'No URL for Lambda function.'), 5000)
     } else {
         let url: string | undefined = undefined
@@ -35,7 +35,7 @@ export async function copyLambdaUrl(
         }
 
         if (url) {
-            copyToClipboard(url, 'URL')
+            await copyToClipboard(url, 'URL')
         }
     }
 }

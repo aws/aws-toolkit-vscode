@@ -37,15 +37,15 @@ export function registerCommands(extensionContext: vscode.ExtensionContext) {
         ),
         // register URLs in extension menu
         Commands.register('aws.help', async () => {
-            openUrl(vscode.Uri.parse(documentationUrl))
+            void openUrl(vscode.Uri.parse(documentationUrl))
             telemetry.aws_help.emit()
         }),
         Commands.register('aws.github', async () => {
-            openUrl(vscode.Uri.parse(githubUrl))
+            void openUrl(vscode.Uri.parse(githubUrl))
             telemetry.aws_showExtensionSource.emit()
         }),
         Commands.register('aws.createIssueOnGitHub', async () => {
-            openUrl(vscode.Uri.parse(githubCreateIssueUrl))
+            void openUrl(vscode.Uri.parse(githubCreateIssueUrl))
             telemetry.aws_reportPluginIssue.emit()
         }),
         Commands.register('aws.aboutToolkit', async () => {
