@@ -328,6 +328,12 @@ function getProjectDependencies(modulePath: string): string[] {
         } else {
             getLogger().error(spawnResult.stdout)
         }
+        telemetry.codeTransform_mvnBuildFailed.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformMavenBuildCommand: baseCommand,
+            result: MetadataResult.Fail,
+            reason: spawnResult.error ? spawnResult.error.message : spawnResult.stdout,
+        })
         throw new ToolkitError('Maven Dependency Error', { code: 'CannotRunMavenShellCommand' })
     }
 

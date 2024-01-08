@@ -266,6 +266,13 @@ export class ProposedTransformationExplorer {
                 TransformByQReviewStatus.PreparingReview
             )
             telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
+
+            // This metric is emitted when user clicked download for proposed change
+            telemetry.codeTransform_vcsViewerClicked.emit({
+                codeTransformVCSViewerSrcComponents: 'toastNotification',
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformJobId: transformByQState.getJobId(),
+            })
             const pathToArchive = path.join(
                 ProposedTransformationExplorer.TmpDir,
                 transformByQState.getJobId(),
@@ -344,13 +351,15 @@ export class ProposedTransformationExplorer {
                 })
             }
 
-            await vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
-            await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
+            // This metric is only emitted when placed before showInformationMessage
             telemetry.codeTransform_vcsDiffViewerVisible.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
                 result: MetadataResult.Pass,
             })
+
+            await vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
+            await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
