@@ -43,7 +43,7 @@ export async function deletePolicyVersionCommand(node: IotPolicyVersionNode): Pr
         await node.iot.deletePolicyVersion({ policyName, policyVersionId })
 
         getLogger().info(`deleted Policy Version: ${policyVersionId}`)
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.iot.deletePolicyVersion.success',
                 'Deleted Version {0} of Policy {1}',

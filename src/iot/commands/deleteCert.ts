@@ -86,7 +86,7 @@ export async function deleteCertCommand(node: IotCertWithPoliciesNode): Promise<
         }
     } catch (e) {
         getLogger().error(`Failed to retrieve Policies attached to cert ${node.certificate.id}: %s`, e)
-        showViewLogsMessage(
+        void showViewLogsMessage(
             localize('AWS.iot.deleteCert.retrieveError', 'Failed to retrieve {0} attached to certificate', 'policies')
         )
     }

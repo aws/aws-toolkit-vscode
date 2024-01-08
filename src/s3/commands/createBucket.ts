@@ -45,7 +45,9 @@ export async function createBucketCommand(node: S3Node): Promise<void> {
             .finally(() => refreshNode(node))
 
         getLogger().info('Created bucket: %O', bucket)
-        vscode.window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket: {0}', bucketName))
+        void vscode.window.showInformationMessage(
+            localize('AWS.s3.createBucket.success', 'Created bucket: {0}', bucketName)
+        )
     })
 }
 

@@ -13,8 +13,8 @@ import { RecommendationHandler } from '../../../codewhisperer/service/recommenda
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('completionProviderService', function () {
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
 
     describe('getLabel', function () {

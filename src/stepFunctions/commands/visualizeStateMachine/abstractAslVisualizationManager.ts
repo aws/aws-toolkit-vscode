@@ -29,7 +29,7 @@ export abstract class AbstractAslVisualizationManager<T extends AslVisualization
     }
 
     protected handleErr(err: Error, logger: Logger): void {
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.stepfunctions.visualisation.errors.rendering',
                 'There was an error rendering State Machine Graph, check logs for details.'

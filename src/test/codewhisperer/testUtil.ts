@@ -25,13 +25,13 @@ import userApiConfig = require('./../../codewhisperer/client/user-service-2.json
 import CodeWhispererUserClient = require('../../codewhisperer/client/codewhispereruserclient')
 import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
 
-export function resetCodeWhispererGlobalVariables() {
+export async function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
     vsCodeState.isCodeWhispererEditing = false
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
     session.reset()
-    CodeSuggestionsState.instance.setSuggestionsEnabled(false)
+    await CodeSuggestionsState.instance.setSuggestionsEnabled(false)
 }
 
 export function createMockDocument(

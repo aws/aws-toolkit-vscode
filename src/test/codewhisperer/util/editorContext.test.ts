@@ -13,8 +13,8 @@ import { GenerateCompletionsRequest } from '../../../codewhisperer/client/codewh
 describe('editorContext', function () {
     let telemetryEnabledDefault: boolean
 
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
         telemetryEnabledDefault = globals.telemetry.telemetryEnabled
     })
 

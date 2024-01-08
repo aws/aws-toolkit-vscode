@@ -29,19 +29,19 @@ describe('keyStrokeHandler', function () {
         isAutomatedTriggerEnabled: true,
         isSuggestionsWithCodeReferencesEnabled: true,
     }
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
     describe('processKeyStroke', async function () {
         let invokeSpy: sinon.SinonStub
         let startTimerSpy: sinon.SinonStub
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
-        beforeEach(function () {
+        beforeEach(async function () {
             invokeSpy = sinon.stub(KeyStrokeHandler.instance, 'invokeAutomatedTrigger')
             startTimerSpy = sinon.stub(KeyStrokeHandler.instance, 'startIdleTimeTriggerTimer')
             sinon.spy(RecommendationHandler.instance, 'getRecommendations')
             mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
             sinon.stub(mockClient, 'listRecommendations')
             sinon.stub(mockClient, 'generateRecommendations')
         })
@@ -159,10 +159,10 @@ describe('keyStrokeHandler', function () {
 
     describe('invokeAutomatedTrigger', function () {
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
-        beforeEach(function () {
+        beforeEach(async function () {
             sinon.restore()
             mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
             sinon.stub(mockClient, 'listRecommendations')
             sinon.stub(mockClient, 'generateRecommendations')
         })

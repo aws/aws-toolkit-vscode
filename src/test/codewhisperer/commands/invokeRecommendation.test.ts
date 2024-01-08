@@ -17,8 +17,8 @@ describe('invokeRecommendation', function () {
         let getRecommendationStub: sinon.SinonStub
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             getRecommendationStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
         })
 

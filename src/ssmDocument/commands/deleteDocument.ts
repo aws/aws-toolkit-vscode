@@ -40,7 +40,7 @@ export async function deleteDocument(node: DocumentItemNodeWriteable) {
         if (!deleteDocumentResult) {
             result = 'Failed'
             logger.error(`Delete document failed: Empty document name`)
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize(
                     'AWS.message.info.ssmDocument.deleteDocument.failed.empty_document_name',
                     'Delete document failed: Empty document name'
@@ -48,7 +48,7 @@ export async function deleteDocument(node: DocumentItemNodeWriteable) {
             )
         } else {
             logger.info(`Deleted Systems Manager Document: ${node.documentName}`)
-            vscode.window.showInformationMessage(
+            void vscode.window.showInformationMessage(
                 localize(
                     'AWS.message.info.ssmDocument.deleteDocument.delete_success',
                     'Deleted document: {0}',
@@ -61,7 +61,7 @@ export async function deleteDocument(node: DocumentItemNodeWriteable) {
         result = 'Failed'
         const error = err as Error
         logger.error('Error on deleting document: %0', error)
-        showViewLogsMessage(
+        void showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.deleteDocument.could_not_delete',
                 'Could not delete document {0}.',
