@@ -179,6 +179,7 @@ export async function startTransformByQ() {
             await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
             uploadId = await uploadPayload(payloadFileName)
         } catch (error) {
+            errorMessage = 'Failed to upload code'
             throw new TransformByQUploadArchiveFailed()
         }
         sessionPlanProgress['uploadCode'] = StepProgress.Succeeded

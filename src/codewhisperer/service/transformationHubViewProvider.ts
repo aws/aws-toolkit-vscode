@@ -114,7 +114,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             progressHtml = `<p><b>Transformation Status</b></p>`
             progressHtml += `<p> ${this.getProgressIconMarkup(
                 planProgress['uploadCode']
-            )} Upload code to secure build environment</p>`
+            )} Zip code and upload to secure build environment</p>`
             if (planProgress['uploadCode'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['buildCode']
@@ -243,7 +243,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         } else if (stepStatus === StepProgress.Pending) {
             return `<span style="color: grey" class="spinner"> ↻ </span>`
         } else {
-            return `<span style="color: red"> X </span>`
+            return `<span style="color: grey"> ✓ </span>`
         }
     }
 }
