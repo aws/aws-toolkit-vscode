@@ -176,9 +176,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             }
         }
         const isJobInProgress = transformByQState.isRunning()
-        const codiconsUri = this._view?.webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'node_modules', '@vscode/codicons', 'dist', 'codicon.css')
-        )
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
@@ -189,14 +186,14 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         transform: rotate(0deg);
                     }
                     100% {
-                        transform: rotate(359deg);
+                        transform: rotate(360deg);
                     }
                 }
                 .spinner {
+                    display: inline-block;
                     animation: spin 1s infinite;
                 }
             </style>
-            <link href="${codiconsUri}" rel="stylesheet" />
             </head>
             <body>
             <div style="display: flex">
@@ -244,7 +241,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         if (stepStatus === StepProgress.Succeeded) {
             return `<span style="color: green"> ✓ </span>`
         } else if (stepStatus === StepProgress.Pending) {
-            return `<span style="color: grey"> <i class="codicon codicon-loading spinner"></i> </span>`
+            return `<span style="color: grey" class="spinner"> ↻ </span>`
         } else {
             return `<span style="color: red"> X </span>`
         }
