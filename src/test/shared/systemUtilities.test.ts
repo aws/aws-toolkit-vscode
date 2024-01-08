@@ -107,7 +107,7 @@ describe('SystemUtilities', function () {
         assert.ok(tscGlobal === undefined || tscGlobal === 'tsc')
 
         // Create a fake "node_modules/.bin/tsc" in the test workspace.
-        testutil.createExecutableFile(tscNodemodules, 'echo "typescript Version 42"')
+        await testutil.createExecutableFile(tscNodemodules, 'echo "typescript Version 42"')
 
         const result = await SystemUtilities.findTypescriptCompiler()
         assert(result !== undefined)

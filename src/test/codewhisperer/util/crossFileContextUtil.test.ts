@@ -243,9 +243,9 @@ describe('crossFileContextUtil', function () {
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
         })
 
-        it('should split file to a chunk of 2 lines', function () {
+        it('should split file to a chunk of 2 lines', async function () {
             const filePath = path.join(tempFolder, 'file.txt')
-            toFile('line_1\nline_2\nline_3\nline_4\nline_5\nline_6\nline_7', filePath)
+            await toFile('line_1\nline_2\nline_3\nline_4\nline_5\nline_6\nline_7', filePath)
 
             const chunks = crossFile.splitFileToChunks(filePath, 2)
 
@@ -256,9 +256,9 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(chunks[3].content, 'line_7')
         })
 
-        it('should split file to a chunk of 5 lines', function () {
+        it('should split file to a chunk of 5 lines', async function () {
             const filePath = path.join(tempFolder, 'file.txt')
-            toFile('line_1\nline_2\nline_3\nline_4\nline_5\nline_6\nline_7', filePath)
+            await toFile('line_1\nline_2\nline_3\nline_4\nline_5\nline_6\nline_7', filePath)
 
             const chunks = crossFile.splitFileToChunks(filePath, 5)
 
@@ -267,9 +267,9 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(chunks[1].content, 'line_6\nline_7')
         })
 
-        it('codewhisperer crossfile config should use 10 lines', function () {
+        it('codewhisperer crossfile config should use 10 lines', async function () {
             const filePath = path.join(tempFolder, 'file.txt')
-            toFile(sampleFileOf60Lines, filePath)
+            await toFile(sampleFileOf60Lines, filePath)
 
             const chunks = crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
             assert.strictEqual(chunks.length, 6)

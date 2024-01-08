@@ -53,7 +53,7 @@ describe('createNewSamApp', function () {
         tempFolder = await makeTemporaryToolkitFolder()
         tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         fakeTarget = path.join(tempFolder, templateYaml)
-        testutil.toFile('target file', fakeTarget)
+        await testutil.toFile('target file', fakeTarget)
 
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(path.dirname(tempFolder)),
@@ -96,7 +96,7 @@ describe('createNewSamApp', function () {
             fs.unlinkSync(fakeTarget)
             tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yml'))
             fakeTarget = path.join(tempFolder, 'template.yml')
-            testutil.toFile('target file', fakeTarget)
+            await testutil.toFile('target file', fakeTarget)
             assert.strictEqual(
                 normalize((await getProjectUri(fakeResponse, samInitTemplateFiles))?.fsPath ?? ''),
                 normalize(fakeTarget)
@@ -112,7 +112,7 @@ describe('createNewSamApp', function () {
 
     describe('addInitialLaunchConfiguration', function () {
         it('produces and returns initial launch configurations', async function () {
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             // without runtime
             await (await globals.templateRegistry).addItem(tempTemplate)
@@ -147,7 +147,7 @@ describe('createNewSamApp', function () {
         })
 
         it('produces and returns initial launch configurations with runtime', async function () {
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             // without runtime
             await (await globals.templateRegistry).addItem(tempTemplate)
@@ -184,7 +184,7 @@ describe('createNewSamApp', function () {
         })
 
         it('returns a blank array if it does not match any launch configs', async function () {
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             await (await globals.templateRegistry).addItem(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
@@ -200,7 +200,7 @@ describe('createNewSamApp', function () {
         it('produces a launch config when config has a relative path', async function () {
             ;(fakeConfig as any).invokeTarget.templatePath = 'test.yaml'
 
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             await (await globals.templateRegistry).addItem(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
@@ -231,10 +231,10 @@ describe('createNewSamApp', function () {
             const otherTemplate1: vscode.Uri = vscode.Uri.file(path.join(otherFolder1, 'test.yaml'))
             const otherTemplate2: vscode.Uri = vscode.Uri.file(path.join(otherFolder2, 'test.yaml'))
 
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
-            testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate1.fsPath)
-            testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate2.fsPath)
-            testutil.toFile('target file', path.join(otherFolder1, templateYaml))
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate1.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate2.fsPath)
+            await testutil.toFile('target file', path.join(otherFolder1, templateYaml))
 
             await (await globals.templateRegistry).addItem(tempTemplate)
             await (await globals.templateRegistry).addItem(otherTemplate1)

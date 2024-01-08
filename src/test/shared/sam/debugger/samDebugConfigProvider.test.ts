@@ -179,7 +179,7 @@ describe('SamDebugConfigurationProvider', async function () {
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
 
             // Malformed template.yaml:
-            testutil.toFile('bogus', tempFile.fsPath)
+            await testutil.toFile('bogus', tempFile.fsPath)
             await (await globals.templateRegistry).addItem(tempFile)
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
@@ -187,14 +187,14 @@ describe('SamDebugConfigurationProvider', async function () {
         it('Ignores non function type resources', async function () {
             const bigYamlStr = `${makeSampleSamTemplateYaml(true)}\nTestResource2:\n .   Type: AWS::Serverless::Api`
 
-            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await testutil.toFile(bigYamlStr, tempFile.fsPath)
             await (await globals.templateRegistry).addItem(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 1)
         })
 
         it('returns one item if a template with one resource is in the workspace', async function () {
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
             await (await globals.templateRegistry).addItem(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
@@ -210,7 +210,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const bigYamlStr = `${makeSampleSamTemplateYaml(true, {
                 resourceName: resources[0],
             })}\n${makeSampleYamlResource({ resourceName: resources[1] })}`
-            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await testutil.toFile(bigYamlStr, tempFile.fsPath)
             await (await globals.templateRegistry).addItem(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
@@ -233,9 +233,12 @@ describe('SamDebugConfigurationProvider', async function () {
             await mkdir(nestedDir)
             await mkdir(tempFolderSimilarName)
 
-            testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[0] }), tempFile.fsPath)
-            testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[1] }), nestedYaml.fsPath)
-            testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: badResourceName }), similarNameYaml.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[0] }), tempFile.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[1] }), nestedYaml.fsPath)
+            await testutil.toFile(
+                makeSampleSamTemplateYaml(true, { resourceName: badResourceName }),
+                similarNameYaml.fsPath
+            )
 
             await (await globals.templateRegistry).addItem(tempFile)
             await (await globals.templateRegistry).addItem(nestedYaml)
@@ -260,7 +263,7 @@ describe('SamDebugConfigurationProvider', async function () {
                         Path: /hello
                         Method: get`
 
-            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await testutil.toFile(bigYamlStr, tempFile.fsPath)
             await (await globals.templateRegistry).addItem(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 2)
@@ -275,7 +278,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 HelloWorld2:
                     Type: HttpApi`
 
-            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await testutil.toFile(bigYamlStr, tempFile.fsPath)
             await (await globals.templateRegistry).addItem(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 1)
@@ -382,7 +385,7 @@ describe('SamDebugConfigurationProvider', async function () {
             }
             const config = (await debugConfigProvider.makeConfig(folder, input))!
 
-            assertFileText(
+            await assertFileText(
                 config.templatePath,
                 `Resources:
   go1plainsamapp:
@@ -458,7 +461,7 @@ describe('SamDebugConfigurationProvider', async function () {
         })
 
         it('rejects when resolving template debug configurations with a resource that has an invalid runtime in template', async function () {
-            testutil.toFile(
+            await testutil.toFile(
                 makeSampleSamTemplateYaml(true, { resourceName, runtime: 'moreLikeRanOutOfTime' }),
                 tempFile.fsPath
             )
@@ -488,7 +491,7 @@ describe('SamDebugConfigurationProvider', async function () {
         })
 
         it('supports workspace-relative template path ("./foo.yaml")', async function () {
-            testutil.toFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs18.x' }), tempFile.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs18.x' }), tempFile.fsPath)
             // Register with *full* path.
             await (await globals.templateRegistry).addItem(tempFile)
             // Simulates launch.json:
@@ -590,12 +593,15 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile!, '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}')
-            assertFileText(
+            await assertFileText(
+                expected.envFile!,
+                '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
+            )
+            await assertFileText(
                 expected.eventPayloadFile!,
                 '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
             )
-            assertFileText(
+            await assertFileText(
                 expected.templatePath,
                 `Resources:
   src:
@@ -744,12 +750,15 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile!, '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}')
-            assertFileText(
+            await assertFileText(
+                expected.envFile!,
+                '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
+            )
+            await assertFileText(
                 expected.eventPayloadFile!,
                 '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
             )
-            assertFileText(
+            await assertFileText(
                 expected.templatePath,
                 `Resources:
   src:
@@ -898,11 +907,11 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(
+            await assertFileText(
                 expected.envFile!,
                 '{"SourceCodeTwoFoldersDeep":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
             )
-            assertFileText(
+            await assertFileText(
                 expected.eventPayloadFile!,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
             )
@@ -1031,7 +1040,7 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(
+            await assertFileText(
                 expected.containerEnvFile!,
                 `{"NODE_OPTIONS":"--inspect=0.0.0.0:${actual.debugPort} --max-http-header-size 81920"}`
             )
@@ -1165,11 +1174,11 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(
+            await assertFileText(
                 expected.envFile!,
                 '{"SourceCodeTwoFoldersDeep":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
             )
-            assertFileText(
+            await assertFileText(
                 expected.eventPayloadFile!,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
             )
@@ -1243,7 +1252,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
             assertEqualLaunchConfigs(actual, expectedDebug)
 
-            assertFileText(
+            await assertFileText(
                 expected.templatePath,
                 `Resources:
   HelloWorldFunction:
@@ -1345,7 +1354,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
             assertEqualLaunchConfigs(actual, expectedDebug)
 
-            assertFileText(
+            await assertFileText(
                 expectedDebug.templatePath,
                 `Resources:
   HelloWorldFunction:
@@ -1453,8 +1462,8 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expectedDebug)
-            assertFileText(expectedDebug.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            assertFileText(expectedDebug.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
+            await assertFileText(expectedDebug.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            await assertFileText(expectedDebug.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
 
             //
             // Test noDebug=true.
@@ -1555,9 +1564,9 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expectedDebug)
-            assertFileText(expectedDebug.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            assertFileText(expectedDebug.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
-            assertFileText(
+            await assertFileText(expectedDebug.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            await assertFileText(expectedDebug.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
+            await assertFileText(
                 expectedDebug.containerEnvFile!,
                 `{"_JAVA_OPTIONS":"${expectedDebug.containerEnvVars!._JAVA_OPTIONS}"}`
             )
@@ -1668,7 +1677,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
             assertEqualLaunchConfigs(actual, expected)
 
-            assertFileText(
+            await assertFileText(
                 expected.templatePath,
                 `Resources:
   HelloWorld:
@@ -1834,8 +1843,8 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            assertFileText(expected.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
+            await assertFileText(expected.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            await assertFileText(expected.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
 
             //
             // Test pathMapping
@@ -1995,9 +2004,9 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            assertFileText(expected.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
-            assertFileText(expected.containerEnvFile!, '{"_AWS_LAMBDA_DOTNET_DEBUGGING":"1"}')
+            await assertFileText(expected.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            await assertFileText(expected.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
+            await assertFileText(expected.containerEnvFile!, '{"_AWS_LAMBDA_DOTNET_DEBUGGING":"1"}')
 
             // Windows: sourceFileMap driveletter must be uppercase.
             if (os.platform() === 'win32') {
@@ -2154,7 +2163,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
             assertEqualLaunchConfigs(actual, expected)
             assert.strictEqual(readFileSync(actual.eventPayloadFile!, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
-            assertFileText(
+            await assertFileText(
                 expected.templatePath,
                 `Resources:
   helloworld:
@@ -2679,7 +2688,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 readFileSync(actual.eventPayloadFile!, 'utf-8'),
                 readFileSync(input.lambda.payload.path, 'utf-8')
             )
-            assertFileText(
+            await assertFileText(
                 expected.templatePath,
                 `Resources:
   helloworld:
@@ -2864,7 +2873,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 ...awsSection,
             }
-            testutil.toFile(
+            await testutil.toFile(
                 makeSampleSamTemplateYaml(true, {
                     resourceName: resourceName,
                     runtime: 'nodejs18.x',
@@ -3007,15 +3016,15 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(
+            await assertFileText(
                 expected.envFile!,
                 '{"helloworld":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
             )
-            assertFileText(
+            await assertFileText(
                 expected.eventPayloadFile!,
                 '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
             )
-            assertFileText(
+            await assertFileText(
                 expected.templatePath,
                 `Resources:
   helloworld:
@@ -3169,7 +3178,7 @@ async function createAndRegisterYaml(
     file: vscode.Uri,
     registry: CloudFormationTemplateRegistry
 ) {
-    testutil.toFile(makeSampleSamTemplateYaml(true, subValues), file.fsPath)
+    await testutil.toFile(makeSampleSamTemplateYaml(true, subValues), file.fsPath)
     await registry.addItem(file)
 }
 
@@ -3345,13 +3354,16 @@ describe('debugConfiguration', function () {
         }
 
         // Template with relative path:
-        testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath, handler: 'handler' }), tempFile.fsPath)
+        await testutil.toFile(
+            makeSampleSamTemplateYaml(true, { codeUri: relativePath, handler: 'handler' }),
+            tempFile.fsPath
+        )
         await (await globals.templateRegistry).addItem(tempFile)
         assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
         assert.strictEqual(await debugConfiguration.getHandlerName(folder, config), 'handler')
 
         // Template with absolute path:
-        testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
+        await testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
         await (await globals.templateRegistry).addItem(tempFile)
         assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
 
@@ -3370,7 +3382,7 @@ describe('debugConfiguration', function () {
                 Default: 'notDoingAnything',
             },
         })
-        testutil.toFile(
+        await testutil.toFile(
             makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: 'handler' }, paramStr),
             tempFileRefs.fsPath
         )
@@ -3393,7 +3405,7 @@ describe('debugConfiguration', function () {
                 Default: 'thisWillOverride',
             },
         })
-        testutil.toFile(
+        await testutil.toFile(
             makeSampleSamTemplateYaml(
                 true,
                 { codeUri: fullPath, handler: '!Ref defaultOverride' },
@@ -3419,7 +3431,7 @@ describe('debugConfiguration', function () {
                 Type: 'String',
             },
         })
-        testutil.toFile(
+        await testutil.toFile(
             makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: '!Ref override' }, paramStrNoDefaultOverride),
             tempFileOverrideRef.fsPath
         )
