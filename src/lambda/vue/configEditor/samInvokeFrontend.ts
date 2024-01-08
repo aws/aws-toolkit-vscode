@@ -111,15 +111,30 @@ export default defineComponent({
         settingsPanel,
     },
     created() {
-        client.init().then(config => this.parseConfig(config))
+        client.init().then(
+            config => this.parseConfig(config),
+            e => {
+                console.error('client.init failed: %s', (e as Error).message)
+            }
+        )
 
-        client.getRuntimes().then(runtimes => {
-            this.runtimes = runtimes
-        })
+        client.getRuntimes().then(
+            runtimes => {
+                this.runtimes = runtimes
+            },
+            e => {
+                console.error('client.getRuntimes failed: %s', (e as Error).message)
+            }
+        )
 
-        client.getCompanyName().then(o => {
-            this.company = o
-        })
+        client.getCompanyName().then(
+            o => {
+                this.company = o
+            },
+            e => {
+                console.error('client.getCompanyName failed: %s', (e as Error).message)
+            }
+        )
     },
     mixins: [saveData],
     data(): SamInvokeVueData {
@@ -145,11 +160,17 @@ export default defineComponent({
         },
         launch() {
             const config = this.formatConfig()
-            config && client.invokeLaunchConfig(config)
+            config &&
+                client.invokeLaunchConfig(config).catch(e => {
+                    console.error('invokeLaunchConfig failed: %s', (e as Error).message)
+                })
         },
         save() {
             const config = this.formatConfig()
-            config && client.saveLaunchConfig(config)
+            config &&
+                client.saveLaunchConfig(config).catch(e => {
+                    console.error('saveLaunchConfig failed: %s', (e as Error).message)
+                })
         },
         loadConfig() {
             client.loadSamLaunchConfig().then(config => this.parseConfig(config))
@@ -183,12 +204,17 @@ export default defineComponent({
         },
         loadPayload() {
             this.resetJsonErrors()
-            client.getSamplePayload().then(sample => {
-                if (!sample) {
-                    return
+            client.getSamplePayload().then(
+                sample => {
+                    if (!sample) {
+                        return
+                    }
+                    this.payload.value = JSON.stringify(JSON.parse(sample), undefined, 4)
+                },
+                e => {
+                    console.error('client.getSamplePayload failed: %s', (e as Error).message)
                 }
-                this.payload.value = JSON.stringify(JSON.parse(sample), undefined, 4)
-            })
+            )
         },
         loadResource() {
             this.resetJsonErrors()

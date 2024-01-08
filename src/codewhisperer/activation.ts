@@ -111,7 +111,7 @@ export async function activate(context: ExtContext): Promise<void> {
             if (
                 configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.includeSuggestionsWithCodeReferences')
             ) {
-                await ReferenceLogViewProvider.instance.update()
+                ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
                         .showInformationMessage(

@@ -16,8 +16,8 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 describe('codewhispererTracker', function () {
     describe('enqueue', function () {
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             CodeWhispererTracker.getTracker().shutdown()
         })
 
@@ -43,8 +43,8 @@ describe('codewhispererTracker', function () {
     })
 
     describe('flush', function () {
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             CodeWhispererTracker.getTracker().shutdown()
         })
 
@@ -65,9 +65,11 @@ describe('codewhispererTracker', function () {
         })
 
         it('Should skip if telemetry is disabled', async function () {
+            globals.telemetry.telemetryEnabled = false
             const getTimeSpy = sinon.spy(Date.prototype, 'getTime')
             await CodeWhispererTracker.getTracker().flush()
             assert.ok(!getTimeSpy.called)
+            globals.telemetry.telemetryEnabled = true
         })
     })
 

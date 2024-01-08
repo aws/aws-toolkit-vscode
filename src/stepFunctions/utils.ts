@@ -113,7 +113,7 @@ export class StateMachineGraphCache {
             await this.writeToLocalStorage(options.filePath, response)
 
             // save the url of the downloaded and cached assets
-            options.globalStorage.update(options.lastDownloadedURLKey, options.currentURL)
+            void options.globalStorage.update(options.lastDownloadedURLKey, options.currentURL)
         }
     }
 

@@ -12,7 +12,6 @@ import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { Bucket, S3Client } from '../../../shared/clients/s3Client'
 import { assertNoErrorMessages, getTestWindow } from '../../shared/vscode/window'
-import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
 describe('deleteFileCommand', function () {
     const key = 'foo/bar.jpg'
@@ -30,9 +29,9 @@ describe('deleteFileCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        s3 = mock()
-        parentNode = new S3BucketNode(bucket, {} as S3Node, instance(s3))
-        node = new S3FileNode(bucket, { name, key, arn: 'arn' }, parentNode, instance(s3))
+        s3 = {} as any as S3Client
+        parentNode = new S3BucketNode(bucket, {} as S3Node, s3)
+        node = new S3FileNode(bucket, { name, key, arn: 'arn' }, parentNode, s3)
     })
 
     afterEach(function () {
@@ -41,29 +40,34 @@ describe('deleteFileCommand', function () {
 
     it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function () {
         getTestWindow().onDidShowMessage(m => m.selectItem('Delete'))
+        const stub = sinon.stub()
+        s3.deleteObject = stub
         await deleteFileCommand(node)
 
         getTestWindow()
             .getFirstMessage()
             .assertWarn('Are you sure you want to delete file s3://bucket-name/foo/bar.jpg?')
 
-        verify(s3.deleteObject(deepEqual({ bucketName, key }))).once()
+        assert(stub.calledOnceWithExactly({ bucketName, key }))
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when deletion is cancelled', async function () {
         getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        const stub = sinon.stub()
+        s3.deleteObject = stub
         await assert.rejects(() => deleteFileCommand(node), /cancelled/i)
 
-        verify(s3.deleteObject(anything())).never()
+        assert(stub.notCalled)
         assert.deepStrictEqual(getTestWindow().statusBar.messages, [])
         assertNoErrorMessages()
         sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message and refreshes node when file deletion fails', async function () {
-        when(s3.deleteObject(anything())).thenReject(new Error('Expected failure'))
+        const stub = sinon.stub().rejects(new Error('Expected failure'))
+        s3.deleteObject = stub
 
         getTestWindow().onDidShowMessage(m => m.selectItem('Delete'))
         await assert.rejects(() => deleteFileCommand(node), /failed to delete file bar.jpg/i)

@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import assert from 'assert'
-import { anything } from 'ts-mockito'
 import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resourcesNode'
 import { ResourceNode } from '../../../dynamicResources/explorer/nodes/resourceNode'
 import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
@@ -13,10 +12,10 @@ import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
-import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../../dynamicResources/model/resources'
+import sinon from 'sinon'
 
 const fakeTypeName = 'sometype'
 const unsortedText = ['zebra', 'Antelope', 'aardvark', 'elephant']
@@ -29,12 +28,12 @@ describe('ResourceTypeNode', function () {
     let cloudControl: CloudControlClient
 
     beforeEach(function () {
-        cloudControl = mock()
+        cloudControl = {} as any as CloudControlClient
 
         resourceIdentifiers = ['resource1', 'resource2', 'resource3']
         mockCloudControlClient(resourceIdentifiers)
 
-        testNode = generateTestNode(instance(cloudControl))
+        testNode = generateTestNode(cloudControl)
     })
 
     it('initializes name and tooltip', async function () {
@@ -46,7 +45,7 @@ describe('ResourceTypeNode', function () {
         const resourceIdentifiers: string[] = []
         mockCloudControlClient(resourceIdentifiers)
 
-        testNode = generateTestNode(instance(cloudControl))
+        testNode = generateTestNode(cloudControl)
 
         const childNodes = await testNode.getChildren()
 
@@ -74,7 +73,7 @@ describe('ResourceTypeNode', function () {
     })
 
     it('has child nodes with ResourceNode contextValue including single supported operation', async function () {
-        testNode = generateTestNode(instance(cloudControl), ['CREATE'])
+        testNode = generateTestNode(cloudControl, ['CREATE'])
         const childNodes = await testNode.getChildren()
 
         childNodes.forEach(node =>
@@ -87,7 +86,7 @@ describe('ResourceTypeNode', function () {
     })
 
     it('has child nodes with ResourceNode contextValue including multiple supported operations', async function () {
-        testNode = generateTestNode(instance(cloudControl), ['CREATE', 'DELETE'])
+        testNode = generateTestNode(cloudControl, ['CREATE', 'DELETE'])
         const childNodes = await testNode.getChildren()
 
         childNodes.forEach(node =>
@@ -103,7 +102,7 @@ describe('ResourceTypeNode', function () {
         resourceIdentifiers = unsortedText
         mockCloudControlClient(resourceIdentifiers)
 
-        testNode = generateTestNode(instance(cloudControl))
+        testNode = generateTestNode(cloudControl)
 
         const childNodes = await testNode.getChildren()
 
@@ -112,20 +111,18 @@ describe('ResourceTypeNode', function () {
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
-        cloudControl = mock()
-        when(cloudControl.listResources(anything())).thenThrow(new Error('foo'))
-        testNode = generateTestNode(instance(cloudControl))
+        cloudControl.listResources = sinon.stub().rejects(new Error('foo'))
+        testNode = generateTestNode(cloudControl)
 
         const childNodes = await testNode.getChildren()
         assertNodeListOnlyHasErrorNode(childNodes)
     })
 
     it('has a placeholder node for a child if unsupported action', async function () {
-        cloudControl = mock()
         const error = new Error('foo')
         error.name = 'UnsupportedActionException'
-        when(cloudControl.listResources(anything())).thenThrow(error)
-        testNode = generateTestNode(instance(cloudControl))
+        cloudControl.listResources = sinon.stub().rejects(error)
+        testNode = generateTestNode(cloudControl)
 
         const childNodes = await testNode.getChildren()
         assertNodeListOnlyHasPlaceholderNode(childNodes)
@@ -134,35 +131,35 @@ describe('ResourceTypeNode', function () {
     it('has Documented contextValue if documentation available', function () {
         mockCloudControlClient(resourceIdentifiers)
 
-        testNode = generateTestNode(instance(cloudControl), [], 'fooDocs')
+        testNode = generateTestNode(cloudControl, [], 'fooDocs')
         assert.strictEqual(testNode.contextValue, 'DocumentedResourceTypeNode')
     })
 
     it('has Creatable contextValue if create operation present', function () {
         mockCloudControlClient(resourceIdentifiers)
 
-        testNode = generateTestNode(instance(cloudControl), ['CREATE'])
+        testNode = generateTestNode(cloudControl, ['CREATE'])
         assert.strictEqual(testNode.contextValue, 'CreatableResourceTypeNode')
     })
 
     it('is non expandable if not available', function () {
         mockCloudControlClient(resourceIdentifiers)
 
-        testNode = generateTestNode(instance(cloudControl), undefined, undefined, false)
+        testNode = generateTestNode(cloudControl, undefined, undefined, false)
         assert.strictEqual(testNode.collapsibleState, vscode.TreeItemCollapsibleState.None)
     })
 
     it('has a suitable description if not available', function () {
         mockCloudControlClient(resourceIdentifiers)
 
-        testNode = generateTestNode(instance(cloudControl), undefined, undefined, false)
+        testNode = generateTestNode(cloudControl, undefined, undefined, false)
         assert.strictEqual(testNode.description, 'Unavailable in region')
     })
 
     it('has UnavailableResourceTypeNode contextValue if not available', function () {
         mockCloudControlClient(resourceIdentifiers)
 
-        testNode = generateTestNode(instance(cloudControl), undefined, undefined, false)
+        testNode = generateTestNode(cloudControl, undefined, undefined, false)
         assert.strictEqual(testNode.contextValue, 'UnavailableResourceTypeNode')
     })
 
@@ -181,14 +178,7 @@ describe('ResourceTypeNode', function () {
     }
 
     function mockCloudControlClient(resourceIdentifiers: string[]): void {
-        when(
-            cloudControl.listResources(
-                deepEqual({
-                    TypeName: fakeTypeName,
-                    NextToken: anything(),
-                })
-            )
-        ).thenResolve({
+        cloudControl.listResources = sinon.stub().resolves({
             TypeName: fakeTypeName,
             NextToken: undefined,
             ResourceDescriptions: resourceIdentifiers.map<CloudControl.ResourceDescription>(identifier => {

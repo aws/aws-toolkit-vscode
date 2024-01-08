@@ -284,11 +284,11 @@ export class RecommendationHandler {
 
                 if (error?.code === 'AccessDeniedException' && errorMessage?.includes('no identity-based policy')) {
                     getLogger().error('CodeWhisperer AccessDeniedException : %s', (error as Error).message)
-                    vscode.window
+                    void vscode.window
                         .showErrorMessage(`CodeWhisperer: ${error?.message}`, CodeWhispererConstants.settingsLearnMore)
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                                void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
                     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions', false)
@@ -502,7 +502,9 @@ export class RecommendationHandler {
         if (isCloud9('any')) {
             this.clearRecommendations()
         } else if (isInlineCompletionEnabled()) {
-            this.clearInlineCompletionStates()
+            this.clearInlineCompletionStates().catch(e => {
+                getLogger().error('clearInlineCompletionStates failed: %s', (e as Error).message)
+            })
         }
     }
 
@@ -520,7 +522,7 @@ export class RecommendationHandler {
         }
         if (!this.isValidResponse()) {
             if (showPrompt) {
-                showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 3000)
+                void showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 3000)
             }
             reject()
             return false
@@ -561,7 +563,7 @@ export class RecommendationHandler {
             awsError.message.includes(CodeWhispererConstants.throttlingMessage)
         ) {
             if (triggerType === 'OnDemand') {
-                vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReached)
+                void vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReached)
             }
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh', true)
             await Commands.tryExecute('aws.amazonq.refresh', true)

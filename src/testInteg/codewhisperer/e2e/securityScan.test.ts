@@ -57,7 +57,7 @@ describe('CodeWhisperer security scan', async function () {
     })
 
     beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+        void resetCodeWhispererGlobalVariables()
         //valid connection required to run tests
         skiptTestIfNoValidConn(validConnection, this)
     })

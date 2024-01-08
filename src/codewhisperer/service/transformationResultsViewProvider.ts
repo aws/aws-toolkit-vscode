@@ -339,7 +339,7 @@ export class ProposedTransformationExplorer {
                     e?.message ||
                     'Transform by Q experienced an error during the deserialization of the downloaded result archive'
                 getLogger().error('CodeTransform: ParseDiff error = ', deserializeErrorMessage)
-                vscode.window.showErrorMessage(deserializeErrorMessage)
+                void vscode.window.showErrorMessage(deserializeErrorMessage)
             } finally {
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -369,7 +369,11 @@ export class ProposedTransformationExplorer {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
-            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
+            await vscode.commands.executeCommand(
+                'setContext',
+                'gumby.reviewState',
+                TransformByQReviewStatus.NotStarted
+            )
             transformDataProvider.refresh()
             await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedMessage)
             fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true }) // delete result archive after changes accepted

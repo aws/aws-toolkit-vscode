@@ -59,7 +59,7 @@ export async function deploySamApplication(
         window = getDefaultWindowFunctions(),
         refreshFn = () => {
             // no need to await, doesn't need to block further execution (true -> no telemetry)
-            vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
+            void vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
         },
     }: {
         awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'>
@@ -130,7 +130,7 @@ export async function deploySamApplication(
     } catch (err) {
         deployResult = 'Failed'
         outputDeployError(err as Error)
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize('AWS.samcli.deploy.workflow.error', 'Failed to deploy SAM application.')
         )
     } finally {
@@ -192,7 +192,7 @@ async function packageOperation(
     buildSuccessful: boolean
 ): Promise<void> {
     if (!buildSuccessful) {
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.samcli.deploy.workflow.packaging.noBuild',
                 'Attempting to package source template directory directly since "sam build" failed'
@@ -287,7 +287,7 @@ async function deploy(params: {
         )
     )
 
-    params.window.showInformationMessage(
+    void params.window.showInformationMessage(
         localize('AWS.samcli.deploy.workflow.success.general', 'SAM Application deployment succeeded.')
     )
 }

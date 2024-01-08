@@ -11,7 +11,6 @@ import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { anything, mock, instance, when, deepEqual } from '../../utilities/mockito'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 
 const awsIotExamplePolicy =
@@ -27,18 +26,14 @@ describe('viewPolicyVersionCommand', function () {
     let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
-        iot = mock()
-        parentNode = new IotPolicyWithVersionsNode(
-            { name: policyName, arn: 'arn' },
-            {} as IotPolicyFolderNode,
-            instance(iot)
-        )
+        iot = {} as any as IotClient
+        parentNode = new IotPolicyWithVersionsNode({ name: policyName, arn: 'arn' }, {} as IotPolicyFolderNode, iot)
         node = new IotPolicyVersionNode(
             { name: policyName, arn: 'arn' },
             { versionId: 'V1', isDefaultVersion: false },
             false,
             parentNode,
-            instance(iot)
+            iot
         )
         sandbox = sinon.createSandbox()
     })
@@ -53,10 +48,11 @@ describe('viewPolicyVersionCommand', function () {
             .stub(vscode.workspace, 'openTextDocument')
             .returns(Promise.resolve(textEditor))
         const showTextDocumentStub = sandbox.stub(vscode.window, 'showTextDocument').resolves({} as vscode.TextEditor)
-
-        when(iot.getPolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).thenResolve({
+        const stub = sinon.stub().resolves({
             policyDocument: awsIotExamplePolicy,
         })
+        iot.getPolicyVersion = stub
+
         await viewPolicyVersionCommand(node)
 
         assert.strictEqual(openTextDocumentStub.calledOnce, true, 'should be called once')
@@ -77,7 +73,8 @@ describe('viewPolicyVersionCommand', function () {
         const openTextDocumentStub = sandbox
             .stub(vscode.workspace, 'openTextDocument')
             .returns(Promise.resolve({} as vscode.TextDocument))
-        when(iot.getPolicyVersion(anything())).thenReject(new Error('Expected failure'))
+        const stub = sinon.stub().rejects()
+        iot.getPolicyVersion = stub
 
         await viewPolicyVersionCommand(node)
 

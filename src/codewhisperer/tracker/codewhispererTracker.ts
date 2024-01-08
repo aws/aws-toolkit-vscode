@@ -48,7 +48,9 @@ export class CodeWhispererTracker {
         }
 
         if (this._eventQueue.length >= 0) {
-            this.startTimer()
+            this.startTimer().catch(e => {
+                getLogger().error('startTimer failed: %s', (e as Error).message)
+            })
         }
 
         if (this._eventQueue.length >= CodeWhispererTracker.defaultMaxQueueSize) {
@@ -71,7 +73,7 @@ export class CodeWhispererTracker {
                 currentTime.getTime() - suggestion.time.getTime() >
                 CodeWhispererTracker.defaultModificationIntervalMillis
             ) {
-                this.emitTelemetryOnSuggestion(suggestion)
+                await this.emitTelemetryOnSuggestion(suggestion)
             } else {
                 newEventQueue.push(suggestion)
             }
@@ -179,7 +181,7 @@ export class CodeWhispererTracker {
 
         if (globals.telemetry.telemetryEnabled) {
             try {
-                this.flush()
+                await this.flush()
             } finally {
                 this._eventQueue = []
             }

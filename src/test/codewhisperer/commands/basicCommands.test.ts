@@ -51,8 +51,8 @@ import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
 
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
 
     afterEach(function () {
@@ -94,8 +94,8 @@ describe('CodeWhisperer-basicCommands', function () {
 
         let codeSuggestionsState: CodeSuggestionsState
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             codeSuggestionsState = new TestCodeSuggestionsState()
         })
 
@@ -184,7 +184,7 @@ describe('CodeWhisperer-basicCommands', function () {
         let mockExtContext: ExtContext
 
         beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
             mockExtensionContext = await FakeExtensionContext.create()
             mockSecurityPanelViewProvider = new SecurityPanelViewProvider(mockExtensionContext)
             mockClient = stub(DefaultCodeWhispererClient)
@@ -225,7 +225,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
     describe('showReferenceLog', function () {
         beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {
@@ -242,7 +242,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
     describe('selectCustomizationPrompt', function () {
         beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {
@@ -259,7 +259,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
     describe('reconnect', function () {
         beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {
@@ -277,7 +277,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
     describe('signoutCodeWhisperer', function () {
         beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {

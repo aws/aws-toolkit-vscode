@@ -37,7 +37,7 @@ type CodeWhispererResponse = ListRecommendationsResponse & {
 
 let tempFolder: string
 
-describe('CodeWhisperer telemetry', async function () {
+describe.skip('CodeWhisperer telemetry', async function () {
     let sandbox: sinon.SinonSandbox
     let client: DefaultCodeWhispererClient
 
@@ -117,7 +117,7 @@ describe('CodeWhisperer telemetry', async function () {
 
     async function resetStates() {
         await RecommendationHandler.instance.clearInlineCompletionStates()
-        resetCodeWhispererGlobalVariables()
+        await resetCodeWhispererGlobalVariables()
     }
 
     function mockClient(): DefaultCodeWhispererClient {

@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import * as path from 'path'
-import { deepEqual, instance, mock, verify, when } from 'ts-mockito'
 import * as vscode from 'vscode'
 import {
     DebugConfigurationSource,
@@ -19,6 +18,8 @@ import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
 import globals from '../../../shared/extensionGlobals'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
+import { stub } from '../../utilities/stubber'
+import sinon from 'sinon'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     type: 'aws-sam',
@@ -92,6 +93,7 @@ const templateUri = vscode.Uri.file('/template.yaml')
 describe('LaunchConfiguration', function () {
     let mockConfigSource: DebugConfigurationSource
     let mockSamValidator: AwsSamDebugConfigurationValidator
+    const setDebugConfigurationsStub = sinon.stub()
 
     /** Test workspace. */
     const workspace = vscode.workspace.workspaceFolders![0]
@@ -110,13 +112,17 @@ describe('LaunchConfiguration', function () {
         await registry.rebuild()
 
         // TODO: remove mocks in favor of testing src/testFixtures/ data.
-        mockConfigSource = mock()
-        mockSamValidator = mock()
-        when(mockConfigSource.getDebugConfigurations()).thenReturn(debugConfigurations)
-        when(mockSamValidator.validate(deepEqual(samDebugConfiguration), registry)).thenResolve({ isValid: true })
+        mockConfigSource = {
+            getDebugConfigurations: () => debugConfigurations,
+            setDebugConfigurations: setDebugConfigurationsStub,
+        }
+        mockSamValidator = {
+            validate: async () => ({ isValid: true }),
+        }
     })
 
     afterEach(async function () {
+        setDebugConfigurationsStub.reset()
         ;(await globals.templateRegistry).reset()
     })
 
@@ -179,33 +185,25 @@ describe('LaunchConfiguration', function () {
     })
 
     it('adds single debug configuration', async function () {
-        const launchConfig = new LaunchConfiguration(
-            templateUri,
-            instance(mockConfigSource),
-            instance(mockSamValidator)
-        )
+        const launchConfig = new LaunchConfiguration(templateUri, mockConfigSource, mockSamValidator)
         await launchConfig.addDebugConfiguration(samDebugConfiguration)
 
         const expected = [samDebugConfiguration, ...debugConfigurations]
-        verify(mockConfigSource.setDebugConfigurations(deepEqual(expected))).once()
+        assert(setDebugConfigurationsStub.calledOnceWith(expected))
     })
 
     it('adds multiple debug configurations', async function () {
-        const launchConfig = new LaunchConfiguration(
-            templateUri,
-            instance(mockConfigSource),
-            instance(mockSamValidator)
-        )
+        const launchConfig = new LaunchConfiguration(templateUri, mockConfigSource, mockSamValidator)
         await launchConfig.addDebugConfigurations([samDebugConfiguration, samDebugConfiguration])
 
         const expected = [samDebugConfiguration, samDebugConfiguration, ...debugConfigurations]
-        verify(mockConfigSource.setDebugConfigurations(deepEqual(expected))).once()
+        assert(setDebugConfigurationsStub.calledOnceWith(expected))
     })
 })
 
 describe('getReferencedHandlerPaths', function () {
     it('includes all resources as absolute paths to root dir + handlers', async function () {
-        const mockLaunchConfig = instance(createMockLaunchConfig())
+        const mockLaunchConfig = createMockLaunchConfig()
 
         const resultSet = await getReferencedHandlerPaths(mockLaunchConfig)
         const workspaceFolder = mockLaunchConfig.workspaceFolder!.uri.fsPath
@@ -240,75 +238,74 @@ function createMockLaunchConfig(): LaunchConfiguration {
     const workspaceFolder = '/absolutely/this/is/the/right/path'
 
     // init mockLaunchConfig
-    const mockLaunchConfig: LaunchConfiguration = mock()
-    when(mockLaunchConfig.workspaceFolder).thenReturn({
-        uri: vscode.Uri.file(workspaceFolder),
-        name: 'mockAroundTheClock',
-        index: 1,
+    const mockLaunchConfig = stub(LaunchConfiguration, {
+        workspaceFolder: {
+            uri: vscode.Uri.file(workspaceFolder),
+            name: 'mockAroundTheClock',
+            index: 1,
+        },
+        scopedResource: vscode.Uri.file(path.join(workspaceFolder, 'template.yaml')),
     })
-    when(mockLaunchConfig.scopedResource).thenReturn(vscode.Uri.file(path.join(workspaceFolder, 'template.yaml')))
-    when(mockLaunchConfig.getSamDebugConfigurations()).thenReturn(
-        Promise.resolve([
-            // default: template target with not-in-workspace, absolute-pathed templatePath
-            createMockSamDebugConfig(),
-            createMockSamDebugConfig({
-                invokeTarget: {
-                    target: 'template',
-                    templatePath: 'template.yaml',
-                    logicalId: 'relativePathGoodTemplate',
-                },
-            }),
-            createMockSamDebugConfig({
-                invokeTarget: {
-                    target: 'template',
-                    templatePath: 'template2.yaml',
-                    logicalId: 'relativePathBadTemplate',
-                },
-            }),
-            createMockSamDebugConfig({
-                invokeTarget: {
-                    target: 'template',
-                    templatePath: pathutils.normalize(path.resolve(workspaceFolder, 'template.yaml')),
-                    logicalId: 'absolutePathGoodTemplate',
-                },
-            }),
-            createMockSamDebugConfig({
-                invokeTarget: {
-                    target: 'template',
-                    templatePath: pathutils.normalize(path.resolve(workspaceFolder, 'template2.yaml')),
-                    logicalId: 'absolutePathBadTemplate',
-                },
-            }),
-            createMockSamDebugConfig({
-                invokeTarget: {
-                    target: 'code',
-                    lambdaHandler: 'relativeRoot',
-                    projectRoot: 'inProject',
-                },
-            }),
-            createMockSamDebugConfig({
-                invokeTarget: {
-                    target: 'code',
-                    lambdaHandler: 'differentRelativeRoot',
-                    projectRoot: 'notInProject',
-                },
-            }),
-            createMockSamDebugConfig({
-                invokeTarget: {
-                    target: 'code',
-                    lambdaHandler: 'absoluteRoot',
-                    projectRoot: pathutils.normalize(path.resolve(workspaceFolder, 'inProject')),
-                },
-            }),
-            createMockSamDebugConfig({
-                invokeTarget: {
-                    target: 'code',
-                    lambdaHandler: 'differentAbsoluteRoot',
-                    projectRoot: pathutils.normalize(path.resolve(workspaceFolder, 'notInProject')),
-                },
-            }),
-        ])
-    )
+    mockLaunchConfig.getSamDebugConfigurations.resolves([
+        // default: template target with not-in-workspace, absolute-pathed templatePath
+        createMockSamDebugConfig(),
+        createMockSamDebugConfig({
+            invokeTarget: {
+                target: 'template',
+                templatePath: 'template.yaml',
+                logicalId: 'relativePathGoodTemplate',
+            },
+        }),
+        createMockSamDebugConfig({
+            invokeTarget: {
+                target: 'template',
+                templatePath: 'template2.yaml',
+                logicalId: 'relativePathBadTemplate',
+            },
+        }),
+        createMockSamDebugConfig({
+            invokeTarget: {
+                target: 'template',
+                templatePath: pathutils.normalize(path.resolve(workspaceFolder, 'template.yaml')),
+                logicalId: 'absolutePathGoodTemplate',
+            },
+        }),
+        createMockSamDebugConfig({
+            invokeTarget: {
+                target: 'template',
+                templatePath: pathutils.normalize(path.resolve(workspaceFolder, 'template2.yaml')),
+                logicalId: 'absolutePathBadTemplate',
+            },
+        }),
+        createMockSamDebugConfig({
+            invokeTarget: {
+                target: 'code',
+                lambdaHandler: 'relativeRoot',
+                projectRoot: 'inProject',
+            },
+        }),
+        createMockSamDebugConfig({
+            invokeTarget: {
+                target: 'code',
+                lambdaHandler: 'differentRelativeRoot',
+                projectRoot: 'notInProject',
+            },
+        }),
+        createMockSamDebugConfig({
+            invokeTarget: {
+                target: 'code',
+                lambdaHandler: 'absoluteRoot',
+                projectRoot: pathutils.normalize(path.resolve(workspaceFolder, 'inProject')),
+            },
+        }),
+        createMockSamDebugConfig({
+            invokeTarget: {
+                target: 'code',
+                lambdaHandler: 'differentAbsoluteRoot',
+                projectRoot: pathutils.normalize(path.resolve(workspaceFolder, 'notInProject')),
+            },
+        }),
+    ])
 
     return mockLaunchConfig
 }

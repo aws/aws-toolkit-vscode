@@ -101,7 +101,7 @@ function createRegistryPrompter(region: string, credentials?: AWS.Credentials): 
         .getRegistries(region, client, credentials!)
         .then(registryNames => {
             if (!registryNames) {
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize(
                         'AWS.samcli.initWizard.schemas.registry.failed_to_load_resources',
                         'Error loading registries.'
@@ -131,7 +131,7 @@ function createSchemaPrompter(
         .getSchemas(region, registry, client, credentials!)
         .then(schemas => {
             if (!schemas) {
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize(
                         'AWS.samcli.initWizard.schemas.failed_to_load_resources',
                         'Error loading schemas in registry {0}.',
@@ -142,7 +142,7 @@ function createSchemaPrompter(
             }
 
             if (schemas.length === 0) {
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize('AWS.samcli.initWizard.schemas.notFound"', 'No schemas found in registry {0}.', registry)
                 )
                 return []

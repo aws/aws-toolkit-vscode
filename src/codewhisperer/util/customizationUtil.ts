@@ -68,12 +68,14 @@ export async function notifyNewCustomizations() {
         'AWS.codewhisperer.customization.notification.new_customizations.learn_more',
         'Learn More'
     )
-    vscode.window.showInformationMessage(newCustomizationMessage, select, learnMore).then(async resp => {
+    void vscode.window.showInformationMessage(newCustomizationMessage, select, learnMore).then(async resp => {
         if (resp === select) {
-            showCustomizationPrompt().then()
+            showCustomizationPrompt().catch(e => {
+                getLogger().error('showCustomizationPrompt failed: %s', (e as Error).message)
+            })
         } else if (resp === learnMore) {
             // TODO: figure out the right uri
-            openUrl(vscode.Uri.parse(customLearnMoreUri))
+            void openUrl(vscode.Uri.parse(customLearnMoreUri))
         }
     })
 }
@@ -116,8 +118,8 @@ export const setSelectedCustomization = async (customization: Customization) => 
     getLogger().debug(`Selected customization ${customization.name} for ${AuthUtil.instance.conn.label}`)
 
     await set(selectedCustomizationKey, selectedCustomizationObj, globals.context.globalState)
-    vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-    vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
 }
 
 export const getPersistedCustomizations = (): Customization[] => {
@@ -145,7 +147,7 @@ export const getNewCustomizationAvailable = () => {
 
 export const setNewCustomizationAvailable = async (available: boolean) => {
     await set(newCustomizationAvailableKey, available, globals.context.globalState)
-    vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 }
 
 export async function showCustomizationPrompt() {
@@ -190,7 +192,7 @@ const createCustomizationItems = async () => {
         items.push(createBaseCustomizationItem())
 
         // TODO: finalize the url string with documentation
-        showMessageWithUrl(
+        void showMessageWithUrl(
             localize(
                 'AWS.codewhisperer.customization.noCustomizations.description',
                 'You dont have access to any CodeWhisperer customization. Contact your admin for access.'
@@ -289,7 +291,7 @@ export const selectCustomization = async (customization: Customization) => {
     await setSelectedCustomization(customization)
     const suffix =
         customization.arn === baseCustomization.arn ? customization.name : `${customization.name} customization.`
-    vscode.window.showInformationMessage(
+    void vscode.window.showInformationMessage(
         localize(
             'AWS.codewhisperer.customization.selected.message',
             'CodeWhisperer suggestions are now coming from the {0}',
@@ -313,7 +315,7 @@ export const getAvailableCustomizationsList = async () => {
 // show notification that selected customization is not available, switching back to base
 export const switchToBaseCustomizationAndNotify = async () => {
     await setSelectedCustomization(baseCustomization)
-    vscode.window.showInformationMessage(
+    void vscode.window.showInformationMessage(
         localize(
             'AWS.codewhisperer.customization.notification.selected_customization_not_available',
             'Selected CodeWhisperer customization is not available. Contact your administrator. Your instance of CodeWhisperer is using the foundation model.'

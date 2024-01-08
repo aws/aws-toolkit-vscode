@@ -155,7 +155,7 @@ export function getFamily(runtime: string): RuntimeFamily {
 
 function handleDeprecatedRuntime(runtime: Runtime) {
     const moreInfo = localize('AWS.generic.message.learnMore', 'Learn More')
-    vscode.window
+    void vscode.window
         .showErrorMessage(
             localize(
                 'AWS.samcli.deprecatedRuntime',
@@ -166,7 +166,7 @@ function handleDeprecatedRuntime(runtime: Runtime) {
         )
         .then(button => {
             if (button === moreInfo) {
-                openUrl(vscode.Uri.parse(supportedLambdaRuntimesUrl))
+                void openUrl(vscode.Uri.parse(supportedLambdaRuntimesUrl))
             }
         })
     throw new Error(`Runtime ${runtime} is deprecated, see: ${supportedLambdaRuntimesUrl}`)

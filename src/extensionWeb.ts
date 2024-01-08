@@ -12,14 +12,14 @@ import { getLogger } from './shared/logger'
 import { DefaultAwsContext } from './shared/awsContext'
 import { Settings } from './shared/settings'
 import globals, { initialize } from './shared/extensionGlobals'
-import { initializeManifestPaths } from './extensionShared'
+import { registerCommands, initializeManifestPaths } from './extensionShared'
 import { RegionProvider, defaultRegion } from './shared/regions/regionProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 
 export async function activate(context: vscode.ExtensionContext) {
     setInBrowser(true) // THIS MUST ALWAYS BE FIRST
 
-    vscode.window.showInformationMessage(
+    void vscode.window.showInformationMessage(
         'AWS Toolkit: Browser Mode Under Development. No features are currently provided'
     )
 
@@ -42,6 +42,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const settings = Settings.instance
 
         await activateTelemetry(context, awsContext, settings)
+        registerCommands(context)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long

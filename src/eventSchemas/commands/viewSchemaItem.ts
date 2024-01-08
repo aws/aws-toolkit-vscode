@@ -23,7 +23,7 @@ export async function viewSchemaItem(node: SchemaItemNode) {
     } catch (err) {
         viewResult = 'Failed'
         const error = err as Error
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.schemas.viewSchema.could_not_open',
                 'Could not fetch and display schema {0} contents',

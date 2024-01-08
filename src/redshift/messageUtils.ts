@@ -45,5 +45,5 @@ export function createLogsConnectionMessage(warehouseIdentifier: string, error: 
 export function showViewLogsFetchMessage(fetchType: string, identifier: string, error: Error) {
     const message = `Redshift: failed to fetch ${fetchType} for ${identifier}: ${(error as Error).message}`
     getLogger().error(message)
-    showViewLogsMessage(message)
+    void showViewLogsMessage(message)
 }

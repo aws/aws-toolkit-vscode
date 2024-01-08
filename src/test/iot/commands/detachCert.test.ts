@@ -10,9 +10,9 @@ import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotThingCertNode } from '../../../iot/explorer/iotCertificateNode'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import globals from '../../../shared/extensionGlobals'
 import { getTestWindow } from '../../shared/vscode/window'
+import assert from 'assert'
 
 describe('detachThingCertCommand', function () {
     const certificateId = 'test-certificate'
@@ -29,12 +29,12 @@ describe('detachThingCertCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        iot = mock()
-        parentNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, instance(iot))
+        iot = {} as any as IotClient
+        parentNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, iot)
         node = new IotThingCertNode(
             { id: certificateId, arn: principal, activeStatus: 'ACTIVE', creationDate: new globals.clock.Date() },
             parentNode,
-            instance(iot)
+            iot
         )
     })
 
@@ -43,6 +43,8 @@ describe('detachThingCertCommand', function () {
     })
 
     it('confirms detach, detaches certificate, and refreshes node', async function () {
+        const stub = sinon.stub()
+        iot.detachThingPrincipal = stub
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
         await detachThingCertCommand(node)
 
@@ -50,20 +52,23 @@ describe('detachThingCertCommand', function () {
             .getFirstMessage()
             .assertWarn('Are you sure you want to detach certificate from Thing iot-thing?')
 
-        verify(iot.detachThingPrincipal(deepEqual({ thingName, principal }))).once()
+        assert(stub.calledOnceWithExactly({ thingName, principal }))
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when cancelled', async function () {
+        const stub = sinon.stub()
+        iot.detachThingPrincipal = stub
         getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
         await detachThingCertCommand(node)
 
-        verify(iot.detachThingPrincipal(anything())).never()
+        assert(stub.notCalled)
     })
 
     it('shows an error message and refreshes node when thing detachment fails', async function () {
-        when(iot.detachThingPrincipal(anything())).thenReject(new Error('Expected failure'))
+        const stub = sinon.stub().rejects()
+        iot.detachThingPrincipal = stub
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
         await detachThingCertCommand(node)

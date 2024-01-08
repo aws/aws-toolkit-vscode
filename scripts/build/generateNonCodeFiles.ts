@@ -27,9 +27,11 @@ function translateReadmeToHtml(root: string, inputFile: string, outputFile: stri
         transformedText = transformedText.replace(/AWS/g, 'Amazon').replace(/-en.png/g, '-cn.png')
     }
 
-    marked.parse(transformedText, (err, result) => {
-        fs.writeFileSync(path.join(root, outputFile), result)
-    })
+    const r = marked.parse(transformedText, { async: false })
+    if (typeof r !== 'string') {
+        throw Error()
+    }
+    fs.writeFileSync(path.join(root, outputFile), r)
 }
 
 /**

@@ -36,7 +36,7 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+        void resetCodeWhispererGlobalVariables()
         RecommendationHandler.instance.clearRecommendations()
         //valid connection required to run tests
         skiptTestIfNoValidConn(validConnection, this)

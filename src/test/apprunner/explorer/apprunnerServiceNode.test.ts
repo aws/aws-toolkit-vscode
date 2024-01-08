@@ -6,7 +6,6 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { AppRunner } from 'aws-sdk'
-import { verify, instance, mock } from 'ts-mockito'
 import { AppRunnerNode } from '../../../apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../apprunner/explorer/apprunnerServiceNode'
 import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
@@ -39,14 +38,23 @@ describe('AppRunnerServiceNode', function () {
 
         mockApprunnerClient = stub(DefaultAppRunnerClient, { regionCode: 'us-east-1' })
         mockApprunnerClient.listOperations.resolves({ OperationSummaryList: [] })
-        mockParentNode = mock()
-        node = new AppRunnerServiceNode(
-            instance(mockParentNode),
-            mockApprunnerClient,
-            exampleInfo,
-            {},
-            cloudwatchClient
-        )
+        mockParentNode = stub(AppRunnerNode, {
+            regionCode: '',
+            client: mockApprunnerClient,
+            serviceId: undefined,
+            label: undefined,
+            id: undefined,
+            iconPath: undefined,
+            description: undefined,
+            resourceUri: undefined,
+            tooltip: undefined,
+            command: undefined,
+            collapsibleState: undefined,
+            contextValue: undefined,
+            accessibilityInformation: undefined,
+            checkboxState: undefined,
+        })
+        node = new AppRunnerServiceNode(mockParentNode, mockApprunnerClient, exampleInfo, {}, cloudwatchClient)
     })
 
     after(function () {
@@ -93,8 +101,10 @@ describe('AppRunnerServiceNode', function () {
             Service: { ...exampleInfo, Status: 'DELETED' },
             OperationId: '123',
         })
+        const deleteStub = sinon.stub()
+        mockParentNode.deleteNode = deleteStub
         await node.delete()
-        verify(mockParentNode.deleteNode(exampleInfo.ServiceArn))
+        assert(deleteStub.calledOnceWith(exampleInfo.ServiceArn))
     })
 
     it('can log', async function () {

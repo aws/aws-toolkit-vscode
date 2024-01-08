@@ -8,6 +8,7 @@ import globals from '../../shared/extensionGlobals'
 import { getJobHistory, getPlanProgress } from '../commands/startTransformByQ'
 import { StepProgress, transformByQState } from '../models/model'
 import { convertToTimeString, getTransformationSteps } from './transformByQHandler'
+import { getLogger } from '../../shared/logger'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
@@ -23,9 +24,13 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             if (this.lastClickedButton === 'job history') {
                 this._view!.webview.html = this.showJobHistory()
             } else {
-                this.showPlanProgress(startTime).then(planProgress => {
-                    this._view!.webview.html = planProgress
-                })
+                this.showPlanProgress(startTime)
+                    .then(planProgress => {
+                        this._view!.webview.html = planProgress
+                    })
+                    .catch(e => {
+                        getLogger().error('showPlanProgress failed: %s', (e as Error).message)
+                    })
             }
         }
     }
@@ -49,9 +54,13 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         if (this.lastClickedButton === 'job history') {
             this._view!.webview.html = this.showJobHistory()
         } else {
-            this.showPlanProgress(Date.now()).then(planProgress => {
-                this._view!.webview.html = planProgress
-            })
+            this.showPlanProgress(Date.now())
+                .then(planProgress => {
+                    this._view!.webview.html = planProgress
+                })
+                .catch(e => {
+                    getLogger().error('showPlanProgress failed: %s', (e as Error).message)
+                })
         }
     }
 
