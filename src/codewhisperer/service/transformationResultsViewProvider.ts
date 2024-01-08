@@ -369,14 +369,11 @@ export class ProposedTransformationExplorer {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
-            await vscode.commands.executeCommand(
-                'setContext',
-                'gumby.reviewState',
-                TransformByQReviewStatus.NotStarted
-            )
+            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
             await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedMessage)
-            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true }) // delete result archive after changes accepted
+            // delete result archive after changes accepted
+            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
             telemetry.codeTransform_vcsViewerSubmitted.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
@@ -390,7 +387,8 @@ export class ProposedTransformationExplorer {
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
-            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true }) // delete result archive after changes rejected
+            // delete result archive after changes rejected
+            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
             telemetry.codeTransform_vcsViewerCanceled.emit({
                 // eslint-disable-next-line id-length
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',
