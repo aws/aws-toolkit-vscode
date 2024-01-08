@@ -244,7 +244,7 @@ tasks.withType<RunIdeForUiTestTask>().all {
 // weird implicit dependency issue, maybe with how the task graph works?
 // or because tests are on the ide classpath for some reason?
 tasks.named("classpathIndexCleanup") {
-    dependsOn(tasks.named("compileIntegrationTestKotlin"))
+    mustRunAfter(tasks.named("compileIntegrationTestKotlin"))
 }
 
 configurations.instrumentedJar.configure {
