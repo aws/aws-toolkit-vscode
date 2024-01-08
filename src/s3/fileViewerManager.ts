@@ -246,7 +246,7 @@ export class S3FileViewerManager {
         }
 
         await activeTab?.dispose()
-        this.showEditNotification()
+        void this.showEditNotification()
 
         await this.createTab(file, TabMode.Edit)
     }
@@ -258,7 +258,7 @@ export class S3FileViewerManager {
             this.fs.registerProvider(uri, provider),
             provider.onDidChange(() => {
                 // TODO: find the correct node instead of refreshing it all
-                vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
+                void vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
             })
         )
     }

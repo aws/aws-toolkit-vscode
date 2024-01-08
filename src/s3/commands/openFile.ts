@@ -37,7 +37,7 @@ export async function editFileCommand(uriOrNode: vscode.Uri | S3FileNode, manage
 async function isFileSizeValid(size: number | undefined, fileNode: S3FileNode): Promise<boolean> {
     if (size && size > sizeLimit) {
         const downloadAs = localize('AWS.s3.button.downloadAs', 'Download as..')
-        vscode.window
+        void vscode.window
             .showErrorMessage(
                 localize(
                     'AWS.s3.fileViewer.error.invalidSize',
