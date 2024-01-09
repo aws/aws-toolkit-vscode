@@ -8,7 +8,7 @@
 //
 
 import * as child_process from 'child_process'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import { version } from '../../package.json'
 
@@ -17,7 +17,7 @@ const changesDirectory = path.join(cwd, '.changes')
 const nextReleaseDirectory = path.join(changesDirectory, 'next-release')
 const changesFile = path.join(changesDirectory, `${version}.json`)
 
-fs.mkdir(nextReleaseDirectory)
+fs.mkdirpSync(nextReleaseDirectory)
 
 const changeFiles = fs.readdirSync(nextReleaseDirectory)
 if (changeFiles.length === 0) {

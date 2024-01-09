@@ -18,7 +18,7 @@
 
 import type PackageJson from '../../package.json'
 import * as child_process from 'child_process'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 
 // Importing from `src` isn't great but it does make things simple
 import { betaUrl } from '../../src/dev/config'

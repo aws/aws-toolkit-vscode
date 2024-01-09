@@ -6,7 +6,7 @@
 import { resolve } from 'path'
 import { runTests } from '@vscode/test-electron'
 import { setupVSCodeTestInstance } from './launchTestUtilities'
-await (async () => {
+void (async () => {
     try {
         console.log('Running Main test suite...')
 
