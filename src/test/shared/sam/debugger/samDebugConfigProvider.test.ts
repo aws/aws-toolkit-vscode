@@ -147,7 +147,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
     beforeEach(async function () {
         fakeContext = await FakeExtensionContext.getFakeExtContext()
-        fakeContext.awsContext.setCredentials({
+        await fakeContext.awsContext.setCredentials({
             accountId: '9888888',
             credentials: fakeCredentials,
             credentialsId: 'profile:fake',

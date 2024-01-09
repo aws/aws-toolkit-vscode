@@ -83,7 +83,7 @@ export function registerWebviewServer(
 
             // TODO: check if webview has been disposed of before posting message (not necessary but nice)
             // We also get a boolean value back, maybe retry sending on false?
-            webview.postMessage({ id, command, data: result, ...metadata })
+            await webview.postMessage({ id, command, data: result, ...metadata })
         })
     )
 

@@ -70,8 +70,8 @@ describe('findParentProjectFile', async function () {
     })
 
     after(async function () {
-        remove(path.join(workspaceDir, 'someproject'))
-        remove(path.join(workspaceDir, 'someotherproject'))
+        await remove(path.join(workspaceDir, 'someproject'))
+        await remove(path.join(workspaceDir, 'someotherproject'))
         globals.codelensRootRegistry = globalRegistry
     })
 
@@ -81,7 +81,7 @@ describe('findParentProjectFile', async function () {
 
     afterEach(async function () {
         for (const file of filesToDelete) {
-            remove(file.fsPath)
+            await remove(file.fsPath)
         }
         filesToDelete = []
         globals.codelensRootRegistry.dispose()

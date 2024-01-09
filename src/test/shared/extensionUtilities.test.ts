@@ -106,7 +106,7 @@ describe('extensionUtilities', function () {
         it('returns false if the version exists and matches the existing version exactly', async function () {
             const goodVersion = '1.2.3'
             const extContext = await FakeExtensionContext.create()
-            extContext.globalState.update(mostRecentVersionKey, goodVersion)
+            await extContext.globalState.update(mostRecentVersionKey, goodVersion)
 
             assert.strictEqual(isDifferentVersion(extContext, goodVersion), false)
         })
@@ -121,7 +121,7 @@ describe('extensionUtilities', function () {
             const oldVersion = '1.2.3'
             const newVersion = '4.5.6'
             const extContext = await FakeExtensionContext.create()
-            extContext.globalState.update(mostRecentVersionKey, oldVersion)
+            await extContext.globalState.update(mostRecentVersionKey, oldVersion)
 
             assert.ok(isDifferentVersion(extContext, newVersion))
         })

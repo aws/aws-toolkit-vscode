@@ -97,7 +97,7 @@ describe('WinstonToolkitLogger', function () {
 
     it('throws when logging to a disposed object', async function () {
         const logger = new WinstonToolkitLogger('info')
-        logger.dispose()
+        await logger.dispose()
 
         assert.throws(() => logger.info('This should not log'))
     })
@@ -194,7 +194,7 @@ describe('WinstonToolkitLogger', function () {
 
         afterEach(async function () {
             if (testLogger) {
-                testLogger.dispose()
+                await testLogger.dispose()
                 testLogger = undefined
             }
         })
@@ -291,8 +291,8 @@ describe('WinstonToolkitLogger', function () {
             testLogger.logToFile(tempLogPath)
         })
 
-        afterEach(function () {
-            testLogger.dispose()
+        afterEach(async function () {
+            await testLogger.dispose()
         })
 
         it('get info log message', async function () {

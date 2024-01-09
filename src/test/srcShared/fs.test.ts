@@ -159,9 +159,9 @@ describe('FileSystem', function () {
 
     describe('readdir()', function () {
         it('lists files in a directory', async function () {
-            makeFile('a.txt')
-            makeFile('b.txt')
-            makeFile('c.txt')
+            await makeFile('a.txt')
+            await makeFile('b.txt')
+            await makeFile('c.txt')
             mkdirSync(createTestPath('dirA'))
             mkdirSync(createTestPath('dirB'))
             mkdirSync(createTestPath('dirC'))

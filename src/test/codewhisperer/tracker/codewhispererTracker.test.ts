@@ -18,7 +18,7 @@ describe('codewhispererTracker', function () {
     describe('enqueue', function () {
         beforeEach(async function () {
             await resetCodeWhispererGlobalVariables()
-            CodeWhispererTracker.getTracker().shutdown()
+            await CodeWhispererTracker.getTracker().shutdown()
         })
 
         afterEach(function () {
@@ -45,7 +45,7 @@ describe('codewhispererTracker', function () {
     describe('flush', function () {
         beforeEach(async function () {
             await resetCodeWhispererGlobalVariables()
-            CodeWhispererTracker.getTracker().shutdown()
+            await CodeWhispererTracker.getTracker().shutdown()
         })
 
         afterEach(function () {

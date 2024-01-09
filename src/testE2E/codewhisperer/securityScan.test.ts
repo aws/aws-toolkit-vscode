@@ -68,8 +68,8 @@ describe('CodeWhisperer security scan', async function () {
         }
     })
 
-    after(function () {
-        closeAllEditors()
+    after(async function () {
+        await closeAllEditors()
     })
 
     const openTestFile = async (filePath: string) => {

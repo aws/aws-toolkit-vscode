@@ -15,7 +15,7 @@ import { getTestWindow } from '../../shared/vscode/window'
 
 describe('cliUtils', async function () {
     afterEach(async function () {
-        fs.remove(path.join(globals.context.globalStorageUri.fsPath, 'tools'))
+        await fs.remove(path.join(globals.context.globalStorageUri.fsPath, 'tools'))
     })
 
     describe('installCli', async function () {
