@@ -101,11 +101,10 @@ describe('keyStrokeHandler', function () {
 
         it('Should skip invoking if there is immediate right context on the same line and not a single }', async function () {
             const casesForSuppressTokenFilling = [
-                // TODO: temporarily disabling this test until Zoe can fix it.
-                // {
-                //     rightContext: 'add',
-                //     shouldInvoke: false,
-                // },
+                {
+                    rightContext: 'add',
+                    shouldInvoke: false,
+                },
                 {
                     rightContext: '}',
                     shouldInvoke: true,
@@ -147,7 +146,7 @@ describe('keyStrokeHandler', function () {
             rightContext: string = '',
             userGroup: CodeWhispererConstants.UserGroup = CodeWhispererConstants.UserGroup.Control
         ) {
-            const mockEditor = createMockTextEditor(rightContext, 'test.js', 'javascript')
+            const mockEditor = createMockTextEditor(rightContext, 'test.js', 'javascript', 0, 0)
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
