@@ -32,15 +32,15 @@ describe('SharedFileTransport', function () {
         // This test will write logs at different points in time,
         // and should all be in the log file at the end.
 
-        instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a1' }, nextFunc)
+        void instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a1' }, nextFunc)
         await sleep(flushIntervalMillis + 1) // wait a full flush interval
 
-        instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a2' }, nextFunc)
-        instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a3' }, nextFunc)
+        void instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a2' }, nextFunc)
+        void instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a3' }, nextFunc)
         await sleep(flushIntervalMillis + 1) // wait a full flush interval
 
-        instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a4' }, nextFunc)
-        instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a5' }, nextFunc)
+        void instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a4' }, nextFunc)
+        void instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a5' }, nextFunc)
         await sleep(flushIntervalMillis / 2) // wait half a flush interval
 
         const lastLog = instance.log({ level: 'info', message: 'hello', [MESSAGE]: 'a6' }, nextFunc)
