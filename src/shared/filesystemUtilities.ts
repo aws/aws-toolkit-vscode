@@ -53,7 +53,7 @@ export async function getDirSize(
 
 async function downloadsDir(): Promise<string> {
     const downloadPath = path.join(os.homedir(), 'Downloads')
-    if (await fsCommon.directoryExists(downloadPath)) {
+    if (await fsCommon.existsDir(downloadPath)) {
         return downloadPath
     } else {
         return os.tmpdir()
@@ -204,14 +204,14 @@ export async function getNonexistentFilename(
     if (!name) {
         throw new Error(`name is empty`)
     }
-    if (!(await fsCommon.directoryExists(dir))) {
+    if (!(await fsCommon.existsDir(dir))) {
         throw new Error(`directory does not exist: ${dir}`)
     }
     for (let i = 0; true; i++) {
         const filename =
             i === 0 ? `${name}${suffix}` : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
         const fullpath = path.join(dir, filename)
-        if (!(await fsCommon.fileExists(fullpath)) || i >= max + 99) {
+        if (!(await fsCommon.existsFile(fullpath)) || i >= max + 99) {
             return filename
         }
     }
@@ -278,7 +278,7 @@ export async function cloud9Findfile(dir: string, fileName: string): Promise<vsc
         if (filePath === path.join(dir, fileName)) {
             return [vscode.Uri.file(filePath)]
         }
-        if (await fsCommon.directoryExists(filePath)) {
+        if (await fsCommon.existsDir(filePath)) {
             subDirs.push(vscode.Uri.file(filePath))
         }
     }
@@ -306,7 +306,7 @@ export async function getDefaultDownloadPath(): Promise<string> {
 
 export async function setDefaultDownloadPath(downloadPath: string) {
     try {
-        if (await fsCommon.directoryExists(downloadPath)) {
+        if (await fsCommon.existsDir(downloadPath)) {
             GlobalState.instance.tryUpdate('aws.downloadPath', downloadPath)
         } else {
             GlobalState.instance.tryUpdate('aws.downloadPath', path.dirname(downloadPath))

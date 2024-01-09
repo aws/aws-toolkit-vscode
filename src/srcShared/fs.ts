@@ -69,7 +69,7 @@ export class FileSystemCommon {
     async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
         path = FileSystemCommon.getUri(path)
 
-        const currentContent: Uint8Array = (await this.fileExists(path)) ? await this.readFile(path) : new Uint8Array(0)
+        const currentContent: Uint8Array = (await this.existsFile(path)) ? await this.readFile(path) : new Uint8Array(0)
         const currentLength = currentContent.length
 
         const newContent = FileSystemCommon.asArray(content)
@@ -93,11 +93,11 @@ export class FileSystemCommon {
         }
     }
 
-    async fileExists(path: Uri | string): Promise<boolean> {
+    async existsFile(path: Uri | string): Promise<boolean> {
         return this.exists(path, vscode.FileType.File)
     }
 
-    async directoryExists(path: Uri | string): Promise<boolean> {
+    async existsDir(path: Uri | string): Promise<boolean> {
         return this.exists(path, vscode.FileType.Directory)
     }
 

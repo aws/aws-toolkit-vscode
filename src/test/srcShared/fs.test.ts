@@ -117,34 +117,34 @@ describe('FileSystem', function () {
         })
     })
 
-    describe('fileExists()', function () {
+    describe('existsFile()', function () {
         it('returns true for an existing file', async function () {
             const filePath = await makeFile('test.txt')
-            const existantFile = await fsCommon.fileExists(filePath)
+            const existantFile = await fsCommon.existsFile(filePath)
             assert.strictEqual(existantFile, true)
         })
 
         it('returns false for a non-existant file', async function () {
-            const nonExistantFile = await fsCommon.fileExists(createTestPath('thisDoesNotExist.txt'))
+            const nonExistantFile = await fsCommon.existsFile(createTestPath('thisDoesNotExist.txt'))
             assert.strictEqual(nonExistantFile, false)
         })
 
         it('returns false when directory with same name exists', async function () {
             const directoryPath = await makeFolder('thisIsDirectory')
-            const existantFile = await fsCommon.fileExists(directoryPath)
+            const existantFile = await fsCommon.existsFile(directoryPath)
             assert.strictEqual(existantFile, false)
         })
     })
 
-    describe('directoryExists()', function () {
+    describe('existsDir()', function () {
         it('returns true for an existing directory', async function () {
             const dirPath = await makeFolder('myDir')
-            const existantDirectory = await fsCommon.directoryExists(dirPath)
+            const existantDirectory = await fsCommon.existsDir(dirPath)
             assert.strictEqual(existantDirectory, true)
         })
 
         it('returns false for a non-existant directory', async function () {
-            const nonExistantDirectory = await fsCommon.directoryExists(createTestPath('thisDirDoesNotExist'))
+            const nonExistantDirectory = await fsCommon.existsDir(createTestPath('thisDirDoesNotExist'))
             assert.strictEqual(nonExistantDirectory, false)
         })
     })

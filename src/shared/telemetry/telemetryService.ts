@@ -167,7 +167,7 @@ export class DefaultTelemetryService {
      * VSCode provides the URI of the folder, but it is not guaranteed to exist.
      */
     private static async ensureGlobalStorageExists(context: ExtensionContext): Promise<void> {
-        if (!fsCommon.fileExists(context.globalStorageUri)) {
+        if (!fsCommon.existsFile(context.globalStorageUri)) {
             await fsCommon.mkdir(context.globalStorageUri)
         }
     }
@@ -289,7 +289,7 @@ export class DefaultTelemetryService {
 
     private static async readEventsFromCache(cachePath: string): Promise<MetricDatum[]> {
         try {
-            if ((await fsCommon.fileExists(cachePath)) === false) {
+            if ((await fsCommon.existsFile(cachePath)) === false) {
                 getLogger().info(`telemetry cache not found: '${cachePath}'`)
 
                 return []

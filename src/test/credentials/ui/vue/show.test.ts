@@ -174,8 +174,8 @@ describe('Add Connection webview', function () {
         const projectRoot = Uri.joinPath(Uri.file(getProjectDir()), '..', '..')
         const marketplaceImagesRoot = Uri.joinPath(projectRoot, 'docs/marketplace/vscode')
 
-        assert(await fsCommon.fileExists(Uri.joinPath(marketplaceImagesRoot, 'CC_dev_env.gif')))
-        assert(await fsCommon.fileExists(Uri.joinPath(marketplaceImagesRoot, 'awsExplorer.gif')))
-        assert(await fsCommon.fileExists(Uri.joinPath(marketplaceImagesRoot, 'codewhispererChat.gif')))
+        assert(await fsCommon.existsFile(Uri.joinPath(marketplaceImagesRoot, 'CC_dev_env.gif')))
+        assert(await fsCommon.existsFile(Uri.joinPath(marketplaceImagesRoot, 'awsExplorer.gif')))
+        assert(await fsCommon.existsFile(Uri.joinPath(marketplaceImagesRoot, 'codewhispererChat.gif')))
     })
 })

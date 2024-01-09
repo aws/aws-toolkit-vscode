@@ -39,7 +39,7 @@ export class CodeWhispererWebview extends VueWebview {
         const fileContent = name[1]
 
         const localFilePath = this.getLocalFilePath(fileName)
-        if ((await fsCommon.fileExists(localFilePath)) && this.isFileSaved) {
+        if ((await fsCommon.existsFile(localFilePath)) && this.isFileSaved) {
             const fileUri = vscode.Uri.file(localFilePath)
             await vscode.workspace.openTextDocument(fileUri).then(async doc => {
                 await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {

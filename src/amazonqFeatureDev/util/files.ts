@@ -133,5 +133,5 @@ export async function prepareRepoData(
 
 export async function getSourceCodePath(workspaceRoot: string, projectRoot: string) {
     const srcRoot = path.join(workspaceRoot, projectRoot)
-    return (await fsCommon.directoryExists(srcRoot)) ? srcRoot : workspaceRoot
+    return (await fsCommon.existsDir(srcRoot)) ? srcRoot : workspaceRoot
 }
