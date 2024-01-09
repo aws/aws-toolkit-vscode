@@ -93,7 +93,7 @@ async function copy(task: CopyTask): Promise<void> {
     }
 }
 
-;(async () => {
+void (async () => {
     const args = process.argv.slice(2)
 
     // To use this something like: "npm run copyFiles -- --webpacked"

@@ -58,6 +58,7 @@ async function generateConfigurationAttributes(): Promise<void> {
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 ;(async () => {
     await generateConfigurationAttributes()
 })()
