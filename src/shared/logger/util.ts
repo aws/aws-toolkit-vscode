@@ -31,7 +31,7 @@ export async function cleanLogFiles(logDir: string, params = defaultCleanupParam
         const logFullPath = path.join(logDir, log)
         let logSize: number = 0
         try {
-            logSize = (await fsCommon.stat(logFullPath))!.size
+            logSize = (await fsCommon.stat(logFullPath)).size
         } catch (e) {
             getLogger().error('cleanLogFiles: fs.stat() failed on file "%s": %s', logFullPath, (e as Error).message)
         }

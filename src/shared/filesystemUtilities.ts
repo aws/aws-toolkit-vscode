@@ -42,7 +42,7 @@ export async function getDirSize(
             return getDirSize(filePath, startTime, duration, fileExt)
         }
         if (type === vscode.FileType.File && fileName.endsWith(fileExt)) {
-            const stat = (await fsCommon.stat(filePath))!
+            const stat = await fsCommon.stat(filePath)
             return stat.size
         }
 

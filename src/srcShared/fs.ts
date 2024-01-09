@@ -84,15 +84,13 @@ export class FileSystemCommon {
 
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
         path = FileSystemCommon.getUri(path)
-        const stat = await this.stat(path)
-
-        // No specific filetype, so only check if anything exists
-        if (fileType === undefined) {
-            return stat !== undefined
+        try {
+            const stat = await this.stat(path)
+            // check filetype if it was given
+            return fileType === undefined ? true : stat.type === fileType
+        } catch (e) {
+            return false
         }
-
-        // Check if file exists and is expected filetype
-        return stat === undefined ? false : stat.type === fileType
     }
 
     async fileExists(path: Uri | string): Promise<boolean> {
@@ -111,16 +109,9 @@ export class FileSystemCommon {
     /**
      * The stat of the file, undefined if the file does not exist, otherwise an error is thrown.
      */
-    async stat(uri: vscode.Uri | string): Promise<vscode.FileStat | undefined> {
+    async stat(uri: vscode.Uri | string): Promise<vscode.FileStat> {
         const path = FileSystemCommon.getUri(uri)
-        try {
-            return await fs.stat(path)
-        } catch (err) {
-            if (err instanceof vscode.FileSystemError && err.code === 'FileNotFound') {
-                return undefined
-            }
-            throw err
-        }
+        return await fs.stat(path)
     }
 
     async delete(uri: vscode.Uri | string): Promise<void> {

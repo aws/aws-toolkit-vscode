@@ -81,11 +81,6 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     private async getLastModifiedMillis(filepath: string): Promise<number | undefined> {
         try {
             const stat = await fsCommon.stat(filepath)
-
-            if (stat === undefined) {
-                throw new Error(`Cannot get stat() of ${filepath}`)
-            }
-
             return stat.mtime
         } catch (err) {
             return undefined

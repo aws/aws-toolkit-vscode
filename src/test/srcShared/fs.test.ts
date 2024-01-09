@@ -219,10 +219,9 @@ describe('FileSystem', function () {
             assert.strictEqual(stat.type, vscode.FileType.File)
         })
 
-        it('return undefined if no file exists', async function () {
+        it('throws if no file exists', async function () {
             const filePath = createTestPath('thisDoesNotExist.txt')
-            const stat = await fsCommon.stat(filePath)
-            assert.strictEqual(stat, undefined)
+            await assert.rejects(() => fsCommon.stat(filePath))
         })
     })
 
