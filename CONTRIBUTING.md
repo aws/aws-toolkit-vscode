@@ -176,11 +176,11 @@ To run a single test in VSCode, do any one of:
 
     -   Unix/macOS/POSIX shell:
         ```
-        TEST_FILE=src/test/foo.test npm run test
+        TEST_FILE=src/test/foo.test.ts npm run test
         ```
     -   Powershell:
         ```
-        $Env:TEST_FILE = "src/test/foo.test"; npm run test
+        $Env:TEST_FILE = "src/test/foo.test.ts"; npm run test
         ```
 
 -   To run all tests in a particular subdirectory, you can edit
