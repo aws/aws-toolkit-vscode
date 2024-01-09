@@ -134,9 +134,9 @@ describe('keyStrokeHandler', function () {
                     shouldInvoke: true,
                 },
             ]
-            casesForSuppressTokenFilling.forEach(async ({ rightContext, shouldInvoke }) => {
-                await testShouldInvoke('{', shouldInvoke, rightContext)
-            })
+            for (const o of casesForSuppressTokenFilling) {
+                await testShouldInvoke('{', o.shouldInvoke, o.rightContext)
+            }
         })
 
         async function testShouldInvoke(
@@ -145,7 +145,7 @@ describe('keyStrokeHandler', function () {
             rightContext: string = '',
             userGroup: CodeWhispererConstants.UserGroup = CodeWhispererConstants.UserGroup.Control
         ) {
-            const mockEditor = createMockTextEditor(rightContext, 'test.js', 'javascript')
+            const mockEditor = createMockTextEditor(rightContext, 'test.js', 'javascript', 0, 0)
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
