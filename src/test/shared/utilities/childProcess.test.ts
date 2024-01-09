@@ -63,7 +63,9 @@ describe('ChildProcess', async function () {
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
-                childProcess.run()
+                childProcess.run().catch(() => {
+                    // Do nothing.
+                })
 
                 try {
                     await childProcess.run()
@@ -93,7 +95,9 @@ describe('ChildProcess', async function () {
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
-                childProcess.run()
+                childProcess.run().catch(() => {
+                    // Do nothing.
+                })
 
                 try {
                     await childProcess.run()
@@ -242,7 +246,9 @@ describe('ChildProcess', async function () {
                 const childProcess = new ChildProcess(batchFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
-                childProcess.run()
+                childProcess.run().catch(() => {
+                    // Do nothing.
+                })
 
                 assert.strictEqual(childProcess.stopped, false)
                 childProcess.stop()
@@ -257,7 +263,9 @@ describe('ChildProcess', async function () {
                 const childProcess = new ChildProcess(batchFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
-                childProcess.run()
+                childProcess.run().catch(() => {
+                    // Do nothing.
+                })
 
                 childProcess.stop()
                 await waitUntil(async () => childProcess.stopped, { timeout: 1000, interval: 100, truthy: true })

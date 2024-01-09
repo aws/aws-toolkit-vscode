@@ -47,7 +47,7 @@ describe('createQuickPick', function () {
         let resolveItems!: (items: DataQuickPickItem<string>[]) => void
         const itemsPromise = new Promise<DataQuickPickItem<string>[]>(resolve => (resolveItems = resolve))
         const prompter = createQuickPick(itemsPromise)
-        prompter.prompt()
+        void prompter.prompt()
         assert.strictEqual(prompter.quickPick.busy, true)
 
         resolveItems(items)
@@ -186,7 +186,7 @@ describe('QuickPickPrompter', function () {
     it('shows a `noItemsFound` item if no items are loaded', async function () {
         const noItemsFoundItem = { label: 'placeholder', data: 0 }
         testPrompter = new QuickPickPrompter(picker, { noItemsFoundItem })
-        testPrompter.clearAndLoadItems([])
+        void testPrompter.clearAndLoadItems([])
         assert.deepStrictEqual(picker.items, [noItemsFoundItem])
     })
 
@@ -196,7 +196,7 @@ describe('QuickPickPrompter', function () {
         const noItemsFoundItem = { label: 'placeholder', data: 0 }
 
         testPrompter = new QuickPickPrompter(picker, { noItemsFoundItem })
-        testPrompter.clearAndLoadItems(itemsPromise)
+        void testPrompter.clearAndLoadItems(itemsPromise)
         assert.strictEqual(picker.items.length, 0)
         assert.strictEqual(picker.busy, true)
         resolveItems(testItems)
@@ -265,7 +265,7 @@ describe('QuickPickPrompter', function () {
         }
 
         picker.show()
-        testPrompter.clearAndLoadItems(generator())
+        void testPrompter.clearAndLoadItems(generator())
         picker.hide()
         await new Promise(r => picker.onDidHide(r))
         unlock()
@@ -321,7 +321,7 @@ describe('FilterBoxQuickPickPrompter', function () {
                     picker.acceptItem(items[0])
                 }
             })
-            picker.setFilter(input)
+            void picker.setFilter(input)
         })
 
         assert.strictEqual(await loadAndPrompt(), Number(input))
@@ -337,7 +337,7 @@ describe('FilterBoxQuickPickPrompter', function () {
                 }
             })
 
-            picker.setFilter(input)
+            void picker.setFilter(input)
 
             const newItems = [{ label: 'item4', data: 3 }]
             const newItemsPromise = Promise.resolve(newItems)
@@ -360,7 +360,7 @@ describe('FilterBoxQuickPickPrompter', function () {
             })
 
             testPrompter.recentItem = { data: customUserInput, description: input } as any
-            picker.setFilter(input)
+            void picker.setFilter(input)
         })
 
         assert.strictEqual(await loadAndPrompt(), Number(input))
@@ -386,11 +386,11 @@ describe('FilterBoxQuickPickPrompter', function () {
                     })
                     picker.acceptItem(picker.items[0])
                     disposable.dispose()
-                    picker.setFilter()
+                    void picker.setFilter()
                 }
             })
 
-            picker.setFilter(input)
+            void picker.setFilter(input)
         })
 
         assert.strictEqual(await loadAndPrompt(), testItems[0].data)
