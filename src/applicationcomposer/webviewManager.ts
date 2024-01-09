@@ -106,7 +106,7 @@ export class ApplicationComposerManager {
     protected handleErr(err: Error): void {
         void vscode.window.showInformationMessage(
             localize(
-                'AWS.applicationcomposer.visualisation.errors.rendering',
+                'AWS.applicationComposer.visualisation.errors.rendering',
                 'There was an error rendering Application Composer, check logs for details.'
             )
         )

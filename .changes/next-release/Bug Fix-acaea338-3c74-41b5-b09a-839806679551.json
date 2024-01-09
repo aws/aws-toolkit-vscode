@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Add invalid auth handling to Application Composer's Sync button"
+}
