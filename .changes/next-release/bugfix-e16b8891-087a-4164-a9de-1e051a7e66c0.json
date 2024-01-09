@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Code Transform uploaded artifact file paths when submitting from Windows machine"
+}

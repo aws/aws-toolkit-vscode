@@ -127,13 +127,23 @@ data class CodeModernizerSessionContext(
                         dependencyfiles.forEach { depfile ->
                             val relativePath = File(depfile.path).relativeTo(depDirectory.parentFile)
                             val paddedPath = depSources.resolve(relativePath)
-                            it.putNextEntry(paddedPath.toPath().toString(), depfile.inputStream())
+                            var paddedPathString = paddedPath.toPath().toString()
+                            // Convert Windows file path to work on Linux
+                            if (File.separatorChar != '/') {
+                                paddedPathString = paddedPathString.replace('\\', '/')
+                            }
+                            it.putNextEntry(paddedPathString, depfile.inputStream())
                         }
                     }
                     files.forEach { file ->
                         val relativePath = File(file.path).relativeTo(sourceFolder)
                         val paddedPath = zipSources.resolve(relativePath)
-                        it.putNextEntry(paddedPath.toPath().toString(), file.inputStream)
+                        var paddedPathString = paddedPath.toPath().toString()
+                        // Convert Windows file path to work on Linux
+                        if (File.separatorChar != '/') {
+                            paddedPathString = paddedPathString.replace('\\', '/')
+                        }
+                        it.putNextEntry(paddedPathString, file.inputStream)
                     }
                 }.toFile()
                 if (depDirectory != null) ZipCreationResult.Succeeded(outputFile) else ZipCreationResult.Missing1P(outputFile)
