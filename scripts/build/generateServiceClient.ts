@@ -4,7 +4,7 @@
  */
 
 import * as child_process from 'child_process'
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
 import * as path from 'path'
 
 const repoRoot = process.cwd()
@@ -225,9 +225,7 @@ ${fileContents}
     fs.writeFileSync(generatedClientPath, fileContents)
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-
-;(async () => {
+await (async () => {
     const serviceClientDefinitions: ServiceClientDefinition[] = [
         {
             serviceJsonPath: 'src/shared/telemetry/service-2.json',

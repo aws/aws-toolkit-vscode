@@ -7,7 +7,7 @@
         },
         "incremental": true,
         "module": "commonjs",
-        "target": "es2021",
+        "target": "es2022",
         "outDir": "dist",
         "sourceMap": true,
         "moduleResolution": "node",

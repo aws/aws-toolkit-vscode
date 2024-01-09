@@ -5,7 +5,7 @@
 
 import webfont from 'webfont'
 import * as path from 'path'
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
 import packageJson from '../../package.json'
 
 const fontId = 'aws-toolkit-icons'
@@ -220,4 +220,4 @@ async function main() {
     await generate(mappings)
 }
 
-main()
+await main()

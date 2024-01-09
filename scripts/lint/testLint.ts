@@ -5,7 +5,7 @@
 
 import glob from 'glob'
 import Mocha from 'mocha'
-;(async () => {
+await (async () => {
     try {
         console.log('Running linting tests...')
 

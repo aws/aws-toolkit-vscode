@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
 import * as path from 'path'
 
 // Moves all dependencies into `dist`
@@ -93,7 +93,7 @@ async function copy(task: CopyTask): Promise<void> {
     }
 }
 
-;(async () => {
+await (async () => {
     const args = process.argv.slice(2)
 
     // To use this something like: "npm run copyFiles -- --webpacked"
