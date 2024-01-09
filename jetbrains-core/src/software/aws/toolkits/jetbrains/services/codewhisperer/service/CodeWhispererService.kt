@@ -80,7 +80,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CrossFileStra
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.UtgStrategy
 import software.aws.toolkits.jetbrains.utils.isInjectedText
-import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererSuggestionState
@@ -289,11 +289,18 @@ class CodeWhispererService {
                     }
                     logServiceInvocation(requestId, requestContext, responseContext, emptyList(), null, exceptionType)
 
-                    notifyInfo(
+                    notifyWarn(
                         title = "",
                         content = message("codewhisperer.notification.custom.not_available"),
                         project = requestContext.project,
-                        notificationActions = listOf(NotificationAction.create("Got it") { _, notification -> notification.expire() })
+                        notificationActions = listOf(
+                            NotificationAction.create(
+                                message("codewhisperer.notification.custom.simple.button.select_another_customization")
+                            ) { _, notification ->
+                                CodeWhispererModelConfigurator.getInstance().showConfigDialog(requestContext.project)
+                                notification.expire()
+                            }
+                        )
                     )
                     CodeWhispererInvocationStatus.getInstance().finishInvocation()
                     CodeWhispererInvocationStatus.getInstance().setInvocationComplete()

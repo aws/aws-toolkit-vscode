@@ -26,19 +26,21 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWh
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.calculateIfIamIdentityCenterConnection
 import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicBoolean
 
 private fun notifyInvalidSelectedCustomization(project: Project) {
-    notifyInfo(
+    notifyWarn(
         title = message("codewhisperer.custom.dialog.title"),
         content = message("codewhisperer.notification.custom.not_available"),
         project = project,
         notificationActions = listOf(
-            NotificationAction.create(
-                message("codewhisperer.notification.custom.simple.button.got_it")
-            ) { _, notification -> notification.expire() }
+            NotificationAction.create(message("codewhisperer.notification.custom.simple.button.select_another_customization")) { _, notification ->
+                CodeWhispererModelConfigurator.getInstance().showConfigDialog(project)
+                notification.expire()
+            }
         )
     )
 }
