@@ -41,7 +41,7 @@ describe('UriHandler', function () {
     it('can dispose handlers', async function () {
         return new Promise((resolve, reject) => {
             uriHandler.onPath(testPath, () => reject(new Error('this should not be called'))).dispose()
-            uriHandler.handleUri(makeUri()).then(resolve)
+            return uriHandler.handleUri(makeUri()).then(resolve)
         })
     })
 
