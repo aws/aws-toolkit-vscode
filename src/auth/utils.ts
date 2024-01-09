@@ -53,7 +53,7 @@ import { isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUt
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
 
-export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Promise<Connection | void> {
+export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' | 'sso'): Promise<Connection | void> {
     const resp = await createConnectionPrompter(auth, type).prompt()
     if (!isValidResponse(resp)) {
         throw new CancellationError('user')
@@ -331,7 +331,7 @@ export const createDeleteConnectionButton: () => vscode.QuickInputButton = () =>
     return { tooltip: deleteConnection, iconPath: getIcon('vscode-trash') }
 }
 
-export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
+export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' | 'sso') {
     const addNewConnection = {
         label: codicon`${getIcon('vscode-plus')} Add New Connection`,
         data: 'addNewConnection' as const,
@@ -341,7 +341,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
         data: 'editCredentials' as const,
     }
     const placeholder =
-        type === 'iam'
+        type === 'iam' || type === 'iam-only'
             ? localize('aws.auth.promptConnection.iam.placeholder', 'Select an IAM credential')
             : localize('aws.auth.promptConnection.all.placeholder', 'Select a connection')
 
@@ -375,7 +375,8 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
         return 2
     }
 
-    const prompter = createQuickPick(loadItems(), {
+    const excludeSso = type === 'iam-only'
+    const prompter = createQuickPick(loadItems(excludeSso), {
         placeholder,
         title: localize('aws.auth.promptConnection.title', 'Switch Connection'),
         buttons: [refreshButton, createExitButton()],
@@ -404,10 +405,13 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
 
     return prompter
 
-    async function* loadItems(): AsyncGenerator<
-        DataQuickPickItem<Connection | 'addNewConnection' | 'editCredentials'>[]
-    > {
-        const connections = auth.listAndTraverseConnections()
+    async function* loadItems(
+        excludeSso?: boolean
+    ): AsyncGenerator<DataQuickPickItem<Connection | 'addNewConnection' | 'editCredentials'>[]> {
+        let connections = auth.listAndTraverseConnections()
+        if (excludeSso) {
+            connections = connections.filter(item => item.type !== 'sso')
+        }
 
         let hasShownEdit = false
 

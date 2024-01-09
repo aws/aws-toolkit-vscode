@@ -35,16 +35,17 @@ export function makeFailedWriteMessage(filename: string): string {
 function showMessageWithItems(
     message: string,
     kind: 'info' | 'warn' | 'error' = 'error',
-    items: string[] = []
+    items: string[] = [],
+    useModal: boolean = false
 ): Thenable<string | undefined> {
     switch (kind) {
         case 'info':
-            return vscode.window.showInformationMessage(message, ...items)
+            return vscode.window.showInformationMessage(message, { modal: useModal }, ...items)
         case 'warn':
-            return vscode.window.showWarningMessage(message, ...items)
+            return vscode.window.showWarningMessage(message, { modal: useModal }, ...items)
         case 'error':
         default:
-            return vscode.window.showErrorMessage(message, ...items)
+            return vscode.window.showErrorMessage(message, { modal: useModal }, ...items)
     }
 }
 
@@ -56,6 +57,7 @@ function showMessageWithItems(
  * @param urlItem URL button text (default: "View Documentation")
  * @param kind  Kind of message to show
  * @param extraItems  Extra buttons shown _before_ the "View Documentation" button
+ * @param useModal Flag to use a modal instead of a toast notification
  * @returns Promise that resolves when a button is clicked or the message is
  * dismissed, and returns the selected button text.
  */
@@ -64,12 +66,13 @@ export async function showMessageWithUrl(
     url: string | vscode.Uri,
     urlItem: string = localizedText.viewDocs,
     kind: 'info' | 'warn' | 'error' = 'error',
-    extraItems: string[] = []
+    extraItems: string[] = [],
+    useModal: boolean = false
 ): Promise<string | undefined> {
     const uri = typeof url === 'string' ? vscode.Uri.parse(url) : url
     const items = [...extraItems, urlItem]
 
-    const p = showMessageWithItems(message, kind, items)
+    const p = showMessageWithItems(message, kind, items, useModal)
     return p.then<string | undefined>(selection => {
         if (selection === urlItem) {
             void openUrl(uri)
