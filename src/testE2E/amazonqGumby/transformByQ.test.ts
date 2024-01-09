@@ -11,7 +11,7 @@ import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs-extra'
-import { setValidConnection, skipTestIfNoValidConn } from '../util/amazonQUtil'
+import { setValidConnection, skipTestIfNoValidConn } from '../../testInteg/util/amazonQUtil'
 import AdmZip from 'adm-zip'
 
 describe('transformByQ', async function () {
