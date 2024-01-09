@@ -63,7 +63,7 @@ export class FileSystemCommon {
     }
 
     /**
-     * The vscode fs implementation does not explicitly provide an append method
+     * The {@link vscode.workspace.fs} implementation does not explicitly provide an append method
      * so we must do it ourselves (this implementation is inefficient).
      */
     async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
@@ -101,6 +101,10 @@ export class FileSystemCommon {
         return this.exists(path, vscode.FileType.Directory)
     }
 
+    /**
+     * - Writes a file with `utf-8` encoding and `644` (rw-r--r--) permissions.
+     * - Creates missing directories in the given path.
+     */
     async writeFile(path: Uri | string, data: string | Uint8Array): Promise<void> {
         path = FileSystemCommon.getUri(path)
         return fs.writeFile(path, FileSystemCommon.asArray(data))
