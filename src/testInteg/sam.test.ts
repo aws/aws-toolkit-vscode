@@ -387,7 +387,7 @@ describe('SAM Integration Tests', async function () {
 
     before(async function () {
         javaLanguageSetting = config.get('server.launchMode')
-        config.update('server.launchMode', 'Standard')
+        await config.update('server.launchMode', 'Standard')
 
         await activateExtensions()
         await testUtils.configureAwsToolkitExtension()
@@ -402,7 +402,7 @@ describe('SAM Integration Tests', async function () {
         await tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
-        config.update('server.launchMode', javaLanguageSetting)
+        await config.update('server.launchMode', javaLanguageSetting)
         console.log(`DebugSessions seen in this run:\n${sessionReport}`)
     })
 
@@ -637,7 +637,7 @@ describe('SAM Integration Tests', async function () {
                         // This only applies for our internal systems
                         if (scenario.language === 'go') {
                             const dockerfilePath: string = path.join(path.dirname(appPath), 'Dockerfile')
-                            insertTextIntoFile('ENV GOPROXY=direct', dockerfilePath, 1)
+                            await insertTextIntoFile('ENV GOPROXY=direct', dockerfilePath, 1)
                         }
                     }
 

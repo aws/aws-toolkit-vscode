@@ -156,7 +156,7 @@ describe('StateMachineGraphCache', function () {
                 dirPath: '',
             })
 
-            assert.rejects(cache.confirmCacheExists())
+            await assert.rejects(cache.confirmCacheExists())
         })
 
         it('creates assets directory when it does not exist', async function () {

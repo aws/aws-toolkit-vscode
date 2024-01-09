@@ -9,6 +9,7 @@ import { DataQuickPickItem, QuickPickPrompter } from '../../../shared/ui/pickerP
 import { PromptResult } from '../../../shared/ui/prompter'
 import { isKeyOf } from '../../../shared/utilities/tsUtils'
 import { isTestQuickPick, PickerTester, TestQuickPick } from '../vscode/quickInput'
+import { getLogger } from '../../../shared/logger'
 
 type Methods<T> = PickerTester<DataQuickPickItem<T>> & {
     /**
@@ -115,7 +116,9 @@ export function createQuickPickPrompterTester<T>(
     }
 
     async function result(expected?: PromptResult<T>): Promise<PromptResult<T>> {
-        start()
+        start().catch(e => {
+            getLogger().error('createQuickPickPrompterTester.start failed: %s', (e as Error).message)
+        })
         const result = await prompter.prompt()
         if (errors.length > 0) {
             // TODO: combine errors into a single one

@@ -212,7 +212,7 @@ describe('FileViewerManager', function () {
     })
 
     it('prompts if file size is greater than 4MB', async function () {
-        fileViewerManager.openInReadMode({ ...bigImage, bucket })
+        void fileViewerManager.openInReadMode({ ...bigImage, bucket })
         await getTestWindow()
             .waitForMessage(/File size is more than 4MB/)
             .then(message => message.selectItem(/Continue/))

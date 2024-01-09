@@ -62,26 +62,26 @@ describe('CodeWhisperer-basicCommands', function () {
 
     it('test get()', async function () {
         const fakeMemeto = new FakeMemento()
-        fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, true)
+        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, true)
 
         let res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
         assert.strictEqual(res, true)
 
-        fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, undefined)
+        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, undefined)
         res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
         assert.strictEqual(res, undefined)
 
-        fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, false)
+        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, false)
         res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
         assert.strictEqual(res, false)
     })
 
     it('test set()', async function () {
         const fakeMemeto = new FakeMemento()
-        set(CodeWhispererConstants.autoTriggerEnabledKey, true, fakeMemeto)
+        await set(CodeWhispererConstants.autoTriggerEnabledKey, true, fakeMemeto)
         assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), true)
 
-        set(CodeWhispererConstants.autoTriggerEnabledKey, false, fakeMemeto)
+        await set(CodeWhispererConstants.autoTriggerEnabledKey, false, fakeMemeto)
         assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), false)
     })
 

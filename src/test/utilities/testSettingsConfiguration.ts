@@ -74,7 +74,7 @@ export class TestSettings implements ClassToInterfaceType<Settings> {
                 delete this.data[section]
             },
             update: async (key, value) => {
-                this.update(`${section}.${key}`, value)
+                await this.update(`${section}.${key}`, value)
             },
         }
     }

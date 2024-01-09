@@ -57,7 +57,7 @@ export async function mochaGlobalSetup(this: Mocha.Runner) {
 }
 
 export async function mochaGlobalTeardown(this: Mocha.Context) {
-    testUtil.deleteTestTempDirs()
+    await testUtil.deleteTestTempDirs()
 }
 
 export const mochaHooks = {

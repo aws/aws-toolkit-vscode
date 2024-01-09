@@ -173,7 +173,12 @@ export default defineComponent({
                 })
         },
         loadConfig() {
-            client.loadSamLaunchConfig().then(config => this.parseConfig(config))
+            client.loadSamLaunchConfig().then(
+                config => this.parseConfig(config),
+                e => {
+                    console.error('client.loadSamLaunchConfig failed: %s', (e as Error).message)
+                }
+            )
         },
         parseConfig(config?: AwsSamDebuggerConfiguration) {
             if (!config) {
@@ -218,14 +223,19 @@ export default defineComponent({
         },
         loadResource() {
             this.resetJsonErrors()
-            client.getTemplate().then(template => {
-                if (!template) {
-                    return
+            client.getTemplate().then(
+                template => {
+                    if (!template) {
+                        return
+                    }
+                    this.launchConfig.invokeTarget.target = 'template'
+                    this.launchConfig.invokeTarget.logicalId = template.logicalId
+                    this.launchConfig.invokeTarget.templatePath = template.template
+                },
+                e => {
+                    console.error('client.getTemplate failed: %s', (e as Error).message)
                 }
-                this.launchConfig.invokeTarget.target = 'template'
-                this.launchConfig.invokeTarget.logicalId = template.logicalId
-                this.launchConfig.invokeTarget.templatePath = template.template
-            })
+            )
         },
         formatFieldToStringArray(field: string | undefined) {
             if (!field) {
