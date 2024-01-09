@@ -62,13 +62,14 @@ export function downloadsDir(): string {
 }
 
 /**
+ * @deprecated use {@link fsCommon} exist methods instead.
  * Checks if file or directory `p` exists.
  *
  * TODO: optionally check read/write permissions and return a granular status.
  */
 export async function fileExists(p: string): Promise<boolean> {
     try {
-        await access(p)
+        return fsCommon.exists(p)
     } catch (err) {
         return false
     }
@@ -199,18 +200,23 @@ export function getFileDistance(fileA: string, fileB: string): number {
  * @param suffix  Filename suffix, typically an extension (".txt"), may be empty
  * @param max  Stop searching if all permutations up to this number exist
  */
-export async function getNonexistentFilename(dir: string, name: string, suffix: string, max: number = 99): Promise<string> {
+export async function getNonexistentFilename(
+    dir: string,
+    name: string,
+    suffix: string,
+    max: number = 99
+): Promise<string> {
     if (!name) {
         throw new Error(`name is empty`)
     }
-    if (!await fsCommon.directoryExists(dir)) {
+    if (!(await fsCommon.directoryExists(dir))) {
         throw new Error(`directory does not exist: ${dir}`)
     }
     for (let i = 0; true; i++) {
         const filename =
             i === 0 ? `${name}${suffix}` : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
         const fullpath = path.join(dir, filename)
-        if (!await fsCommon.fileExists(fullpath) || i >= max + 99) {
+        if (!(await fsCommon.fileExists(fullpath)) || i >= max + 99) {
             return filename
         }
     }
