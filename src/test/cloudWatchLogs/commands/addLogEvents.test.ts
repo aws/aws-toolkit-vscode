@@ -121,13 +121,11 @@ describe('addLogEvents', async function () {
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
-        addLogEvents(document, fakeRegistry, 'head', fakeEvent)
+        void addLogEvents(document, fakeRegistry, 'head', fakeEvent)
+        void addLogEvents(document, fakeRegistry, 'head', fakeEvent)
+        void addLogEvents(document, fakeRegistry, 'head', fakeEvent)
 
-        addLogEvents(document, fakeRegistry, 'head', fakeEvent)
-
-        addLogEvents(document, fakeRegistry, 'head', fakeEvent)
-
-        new Promise<void>(resolve => {
+        void new Promise<void>(resolve => {
             clock.setTimeout(() => {
                 sandbox.assert.calledTwice(setBusyStatus)
                 sandbox.assert.calledWith(setBusyStatus.firstCall, uri, true)
