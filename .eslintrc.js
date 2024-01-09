@@ -93,14 +93,13 @@ module.exports = {
         'no-null/no-null': 'error',
         '@typescript-eslint/no-empty-function': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
-        // New rules --> New TODOs
+        '@typescript-eslint/no-floating-promises': 'error', // Promises must catch errors or be awaited.
         '@typescript-eslint/no-var-requires': 'off', // Should be able to remove with the full migration of SDK v3
         '@typescript-eslint/no-unsafe-member-access': 'off', // use typeguard before accessing a member
         '@typescript-eslint/no-unsafe-assignment': 'off', // 112 errors, similar to above
         '@typescript-eslint/no-unsafe-return': 'off', // 26 errors, similar to above
         '@typescript-eslint/no-unsafe-call': 'off', // 24 errors, need types for imported constructors
         '@typescript-eslint/restrict-template-expressions': 'off', // 294 errors, forces template literals to be a certain type
-        '@typescript-eslint/no-floating-promises': 'off', // 274 errors, promises should catch errors or be awaited
         '@typescript-eslint/ban-ts-comment': 'off', // 27 errors, bans compiler error exceptions
         '@typescript-eslint/explicit-module-boundary-types': 'off', // Remove this once 'explicit-function-return-type' is on
         // Do not check loops so while(true) works. Potentially reevalute this.

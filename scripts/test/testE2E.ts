@@ -5,6 +5,6 @@
 
 import { resolve } from 'path'
 import { e2eSuite, runToolkitTests } from './launchTestUtilities'
-;(async () => {
+void (async () => {
     await runToolkitTests(e2eSuite, resolve('dist', 'src', 'testE2E', 'index.js'))
 })()
