@@ -86,7 +86,7 @@ class CodeModernizerUIConstants {
         )
         val TRANSFORMATION_STEPS_INFO_AWSQ_BORDER = BorderFactory.createCompoundBorder(
             BorderFactory.createCompoundBorder(
-                BorderFactory.createEmptyBorder(0, 5, 0, 5),
+                BorderFactory.createEmptyBorder(0, 0, 0, 10),
                 BorderFactory.createLineBorder(Color.GRAY, 1, true)
             ),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)

@@ -34,6 +34,7 @@ import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.help.HelpIds
+import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.telemetry.ClientMetadata
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -145,10 +146,12 @@ class FeedbackDialog(
                             mapOf(FEEDBACK_SOURCE to "CodeWhisperer onboarding")
                         )
                     } else if (isAmazonQ()) {
+                        val sessionState = CodeModernizerSessionState.getInstance(project)
+                        val jobId: String = sessionState.currentJobId?.id ?: "None"
                         TelemetryService.getInstance().sendFeedback(
                             sentiment,
                             "Amazon Q onboarding: $commentText",
-                            mapOf(FEEDBACK_SOURCE to "Amazon Q onboarding")
+                            mapOf(FEEDBACK_SOURCE to "Amazon Q onboarding", "JobId" to jobId)
                         )
                     } else {
                         TelemetryService.getInstance().sendFeedback(sentiment, commentText)
