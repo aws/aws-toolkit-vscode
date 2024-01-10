@@ -7,7 +7,7 @@ import { AuthFollowUpType } from '../../../amazonq/auth/model'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { featureDevChat } from '../../constants'
 import { ChatItemType } from '../../models'
-import { ChatItemFollowUp, SourceLink } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp, SourceLink } from '@aws/mynah-ui'
 
 class UiMessage {
     readonly time: number = Date.now()
