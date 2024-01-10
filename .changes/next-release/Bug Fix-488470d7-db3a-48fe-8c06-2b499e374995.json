@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Make maven command less error prone; delete temp files"
+	"description": "Amazon Q Transform: make copy-dependencies command less error prone"
 }
