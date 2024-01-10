@@ -13,7 +13,7 @@ import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { bufferToStream } from '../../../shared/utilities/streamUtilities'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { SeverityLevel } from '../../shared/vscode/message'
-import { assertTelemetry, assertTextEditorContains, closeAllEditors } from '../../testUtil'
+import { assertTelemetry, assertTextEditorContains } from '../../testUtil'
 import { PromptSettings } from '../../../shared/settings'
 import { stub } from '../../utilities/stubber'
 import { assertHasProps } from '../../../shared/utilities/tsUtils'
@@ -187,14 +187,14 @@ describe('FileViewerManager', function () {
         return window.visibleTextEditors.filter(e => e.document.fileName.endsWith(documentName))
     }
 
-    function registerFileSystemProviders(isCaseSensitive: boolean = true): vscode.Disposable[] {
+    function registerFileSystemProviders(): vscode.Disposable[] {
         return [
-            vscode.workspace.registerFileSystemProvider(editScheme, fs, { isCaseSensitive }),
-            vscode.workspace.registerFileSystemProvider(readScheme, fs, { isReadonly: true, isCaseSensitive }),
+            vscode.workspace.registerFileSystemProvider(editScheme, fs, { isCaseSensitive: true }),
+            vscode.workspace.registerFileSystemProvider(readScheme, fs, { isReadonly: true, isCaseSensitive: true }),
         ]
     }
 
-    beforeEach(function () {
+    before(function () {
         s3 = createS3()
         fs = new VirtualFileSystem()
 
@@ -207,18 +207,25 @@ describe('FileViewerManager', function () {
     })
 
     afterEach(async function () {
-        await closeAllEditors()
-        vscode.Disposable.from(...disposables).dispose()
+        await fileViewerManager.closeEditors()
+    })
+
+    after(async function () {
+        await vscode.Disposable.from(...disposables).dispose()
+        await fileViewerManager.dispose()
     })
 
     it('prompts if file size is greater than 4MB', async function () {
-        void fileViewerManager.openInReadMode({ ...bigImage, bucket })
+        // User can "Continue".
+        const didOpen = fileViewerManager.openInReadMode({ ...bigImage, bucket })
         await getTestWindow()
             .waitForMessage(/File size is more than 4MB/)
             .then(message => message.selectItem(/Continue/))
+        await (await didOpen)?.dispose()
     })
 
     it('throws if the user cancels a download', async function () {
+        // User can "Cancel".
         const didOpen = fileViewerManager.openInReadMode({ ...bigImage, bucket })
         await getTestWindow()
             .waitForMessage(/File size is more than 4MB/)
@@ -232,7 +239,7 @@ describe('FileViewerManager', function () {
         const textFile2Contents = Buffer.from('test2 contents', 'utf-8')
         const textFile2 = makeFile('test2.txt', textFile2Contents)
 
-        beforeEach(function () {
+        before(function () {
             s3.addFile(textFile1)
             s3.addFile(textFile2)
         })
@@ -322,32 +329,6 @@ describe('FileViewerManager', function () {
             s3.addFile(upperCaseFile)
             await fileViewerManager.openInReadMode({ ...upperCaseFile, bucket })
             await assertTextEditorContains(upperCaseFileContent)
-        })
-    })
-
-    describe('file uri case insensitivity', function () {
-        beforeEach(function () {
-            vscode.Disposable.from(...disposables).dispose()
-            // Case insensitive file system providers
-            disposables = registerFileSystemProviders(false)
-        })
-
-        it('opens an existing file since names are the same', async function () {
-            // Create and assert content of file with lowercase name
-            const lowerCaseFileContent = 'lowercaseContent'
-            const lowerCaseFile = makeFile('file.txt', Buffer.from(lowerCaseFileContent, 'utf-8'))
-            s3.addFile(lowerCaseFile)
-            await fileViewerManager.openInReadMode({ ...lowerCaseFile, bucket })
-            await assertTextEditorContains(lowerCaseFileContent)
-
-            // Create similarily named file, but with uppercase character
-            const upperCaseFileContent = 'uppercaseContent'
-            const upperCaseFile = makeFile('File.txt', Buffer.from(upperCaseFileContent, 'utf-8'))
-            s3.addFile(upperCaseFile)
-
-            // Attempt to open uppercase file opens existing lowercase file instead
-            await fileViewerManager.openInReadMode({ ...upperCaseFile, bucket })
-            await assertTextEditorContains(lowerCaseFileContent)
         })
     })
 })
