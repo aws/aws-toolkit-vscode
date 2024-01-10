@@ -101,11 +101,7 @@ export class RecommendationHandler {
     }
 
     isValidResponse(): boolean {
-        return (
-            session.recommendations !== undefined &&
-            session.recommendations.length > 0 &&
-            session.recommendations.filter(option => option.content.length > 0).length > 0
-        )
+        return session.recommendations.some(r => r.content.trim() !== '')
     }
 
     async getServerResponse(
