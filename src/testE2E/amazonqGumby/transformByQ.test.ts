@@ -32,7 +32,7 @@ describe('transformByQ', async function () {
     })
 
     beforeEach(function () {
-        skipTestIfNoValidConn(validConnection, this) // need valid IdC
+        skipTestIfNoValidConn(validConnection, this) // need valid IdC connection
     })
 
     after(async function () {
@@ -67,7 +67,7 @@ describe('transformByQ', async function () {
             })
         )
     })
-  
+
     it('WHEN createUploadUrl THEN URL uses HTTPS and sets 60 second expiration', async function () {
         const sha256 = getSha256(zippedCodePath)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
