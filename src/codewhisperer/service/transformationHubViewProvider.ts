@@ -246,6 +246,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </html>`
     }
 
+    // TODO: replace these pasted icons with codicons
     private getProgressIconMarkup(stepStatus: StepProgress) {
         if (stepStatus === StepProgress.Succeeded) {
             return `<span style="color: green"> ✓ </span>`
