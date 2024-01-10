@@ -1,3 +1,11 @@
+# _2.3_ (2024-01-05)
+- **(Feature)** Emit additional CodeTransform telemetry
+- **(Feature)** Amazon Q Transform: Use the IDE Maven runner as a fallback
+- **(Feature)** Add Job Id to Code Transform Job History
+- **(Bug Fix)** Amazon Q Transform: Always execute IDE bundled maven whenever maven command fails
+- **(Bug Fix)** Improved recursion when validating projects for Q Code Transform.
+- **(Bug Fix)** CodeWhisperer: fix code scan UI of viewing scanned files not reflecting correct files
+
 # _2.2_ (2023-12-13)
 - **(Feature)** CodeWhisperer security scans support ruby files.
 - **(Feature)** Use MDE endpoint set by environment variable
