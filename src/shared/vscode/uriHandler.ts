@@ -8,7 +8,7 @@ import { getLogger } from '../logger/logger'
 
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../utilities/messages'
-import { URL, URLSearchParams } from 'url'
+import { URL, URLSearchParams } from 'whatwg-url'
 
 const localize = nls.loadMessageBundle()
 
