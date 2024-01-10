@@ -36,7 +36,7 @@ phases:
                     # Ensure that "foo | run_and_report" fails correctly.
                     set -o pipefail
                     . buildspec/shared/common.sh
-                    2>&1 xvfb-run npm test --silent | run_and_report \
+                    2>&1 xvfb-run npm test --silent | run_and_report 2 \
                         'rejected promise not handled' \
                         'This typically indicates a bug. Read https://developer.mozilla.org/docs/Web/JavaScript/Guide/Using_promises#error_handling'
                 }

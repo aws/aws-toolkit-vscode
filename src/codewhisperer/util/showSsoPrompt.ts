@@ -52,9 +52,9 @@ export async function awsIdSignIn() {
     } catch (e) {
         throw ToolkitError.chain(e, failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
     }
-    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    await Commands.tryExecute('aws.codeWhisperer.refresh')
     await Commands.tryExecute('aws.amazonq.refresh')
-    await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
+    await Commands.tryExecute('aws.codeWhisperer.enableCodeSuggestions')
 }
 
 export const createCodeWhispererIamItem = () => {

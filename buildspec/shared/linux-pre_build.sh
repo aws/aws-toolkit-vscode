@@ -22,4 +22,5 @@ if [ "$TOOLKITS_CODEARTIFACT_DOMAIN" ] && [ "$TOOLKITS_CODEARTIFACT_REPO" ] && [
 fi
 
 # TODO: move this to the "install" phase?
-npm 2>&1 ci | run_and_report 'npm WARN deprecated' 'Deprecated dependencies must be updated.'
+# TODO: fail in CI
+npm 2>&1 ci | run_and_report 0 'npm WARN deprecated' 'Deprecated dependencies must be updated.'

@@ -93,9 +93,9 @@ export class AuthUtil {
             return
         }
         this._isCustomizationFeatureEnabled = value
-        void vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        void Commands.tryExecute('aws.codeWhisperer.refresh')
         void Commands.tryExecute('aws.amazonq.refresh')
-        void vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+        void Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
     }
 
     public readonly secondaryAuth = getSecondaryAuth(
@@ -332,11 +332,11 @@ export class AuthUtil {
 
     public async refreshCodeWhisperer() {
         await Promise.all([
-            vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
-            vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+            Commands.tryExecute('aws.codeWhisperer.refresh'),
+            Commands.tryExecute('aws.codeWhisperer.refreshRootNode'),
             Commands.tryExecute('aws.amazonq.refresh'),
-            vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
-            vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
+            Commands.tryExecute('aws.amazonq.refreshRootNode'),
+            Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
         ])
     }
 

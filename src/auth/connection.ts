@@ -300,6 +300,10 @@ export async function* loadLinkedProfilesIntoStore(
 
     const stream = client
         .listAccounts()
+        .catch(e => {
+            getLogger().error('listAccounts() failed: %s', (e as Error).message)
+            return []
+        })
         .flatten()
         .map(resp => {
             accounts.add(resp.accountId)

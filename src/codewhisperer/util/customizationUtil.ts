@@ -23,6 +23,7 @@ import { codicon, getIcon } from '../../shared/icons'
 import { getLogger } from '../../shared/logger'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
+import { Commands } from '../../shared/vscode/commands2'
 
 /**
  *
@@ -118,8 +119,8 @@ export const setSelectedCustomization = async (customization: Customization) => 
     getLogger().debug(`Selected customization ${customization.name} for ${AuthUtil.instance.conn.label}`)
 
     await set(selectedCustomizationKey, selectedCustomizationObj, globals.context.globalState)
-    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-    await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+    await Commands.tryExecute('aws.codeWhisperer.refresh')
+    await Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
 }
 
 export const getPersistedCustomizations = (): Customization[] => {
@@ -147,7 +148,7 @@ export const getNewCustomizationAvailable = () => {
 
 export const setNewCustomizationAvailable = async (available: boolean) => {
     await set(newCustomizationAvailableKey, available, globals.context.globalState)
-    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    await Commands.tryExecute('aws.codeWhisperer.refresh')
 }
 
 export async function showCustomizationPrompt() {
