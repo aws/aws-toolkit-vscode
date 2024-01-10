@@ -135,7 +135,7 @@ export const showTransformByQ = Commands.declare(
                 passive: false,
             })
         }
-        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        await Commands.tryExecute('aws.codeWhisperer.refresh')
     }
 )
 

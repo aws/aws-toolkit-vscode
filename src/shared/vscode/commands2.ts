@@ -154,7 +154,10 @@ export class Commands {
             getLogger().debug('command not found: "%s"', id)
             return undefined
         }
-        return this.commands.executeCommand<ReturnType<T>>(id, ...args)
+        return this.commands.executeCommand<ReturnType<T>>(id, ...args)?.then(undefined, (e: Error) => {
+            getLogger().warn('command failed (not registered?): "%s"', id)
+            return undefined
+        })
     }
 
     /** See {@link Commands.register}. */

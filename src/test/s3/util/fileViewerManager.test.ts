@@ -204,6 +204,9 @@ describe('FileViewerManager', function () {
         })
 
         disposables = registerFileSystemProviders()
+
+        const bigImageFile = makeFile('big-image.jpg', Buffer.from('fake image', 'utf-8'))
+        s3.addFile(bigImageFile)
     })
 
     afterEach(async function () {

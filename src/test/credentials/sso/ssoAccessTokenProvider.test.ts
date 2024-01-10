@@ -237,6 +237,13 @@ describe('SsoAccessTokenProvider', function () {
         })
 
         it('respects the device authorization expiration time', async function () {
+            // XXX: Don't know how to fix this "unhandled rejection" caused by this test:
+            //      rejected promise not handled within 1 second: Error: Timed-out waiting for browser login flow to complete
+            //          at poll (…/src/auth/sso/ssoAccessTokenProvider.ts:251:15)
+            //          at async SsoAccessTokenProvider.authorize (…/src/auth/sso/ssoAccessTokenProvider.ts:188:23)
+            //          at async SsoAccessTokenProvider.runFlow (…/src/auth/sso/ssoAccessTokenProvider.ts:113:20)
+            //          at async SsoAccessTokenProvider.createToken (…/src/auth/sso/ssoAccessTokenProvider.ts:102:24)
+
             setupFlow()
             stubOpen()
             const exception = new AuthorizationPendingException({ message: '', $metadata: {} })
