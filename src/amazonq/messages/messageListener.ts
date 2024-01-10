@@ -9,6 +9,6 @@ export class MessageListener<T> {
     constructor(private readonly eventEmitter: EventEmitter<T>) {}
 
     public onMessage(listener: (e: T) => any) {
-        this.eventEmitter.event(listener)
+        return this.eventEmitter.event(listener)
     }
 }

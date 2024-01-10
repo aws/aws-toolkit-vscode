@@ -20,6 +20,14 @@ export class WebViewContentGenerator {
         return `<!DOCTYPE html>
         <html>
             <head>
+                <style>
+                body.vscode-dark,
+                body.vscode-high-contrast:not(.vscode-high-contrast-light) {
+                    --mynah-color-light: rgba(255, 255, 255, 0.05);
+                    --mynah-color-highlight: rgba(0, 137, 255, 0.2);
+                    --mynah-color-highlight-text: rgba(0, 137, 255, 1);
+                }                
+                </style>
                 <meta http-equiv="Content-Security-Policy" content="${contentPolicy}">
                 <title>Amazon Q (Preview)</title>                
                 ${await this.generateJS(extensionURI, webView)}                
