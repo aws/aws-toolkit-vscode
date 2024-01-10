@@ -769,7 +769,8 @@
                 {
                     "type": "webview",
                     "id": "aws.amazonq.transformationHub",
-                    "name": "Status"
+                    "name": "Status",
+                    "when": "gumby.isTransformAvailable || gumby.isStopButtonAvailable"
                 },
                 {
                     "id": "aws.amazonq.transformationProposedChangesTree",
@@ -1364,7 +1365,7 @@
                 },
                 {
                     "command": "aws.submitFeedback",
-                    "when": "view == aws.explorer",
+                    "when": "view == aws.explorer && !aws.isWebExtHost",
                     "group": "navigation@6"
                 },
                 {
@@ -1463,23 +1464,18 @@
                     "group": "1_amazonQ@1"
                 },
                 {
-                    "command": "aws.auth.switchConnections",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && CODEWHISPERER_ENABLED",
-                    "group": "2_amazonQ@1"
-                },
-                {
                     "command": "aws.codewhisperer.manageConnections",
-                    "when": "view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && !aws.codewhisperer.connected",
                     "group": "2_amazonQ@2"
                 },
                 {
                     "command": "aws.codewhisperer.signout",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && CODEWHISPERER_ENABLED",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.connected",
                     "group": "2_amazonQ@4"
                 },
                 {
                     "command": "aws.codewhisperer.reconnect",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.disconnected",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.connectionExpired",
                     "group": "2_amazonQ@3"
                 }
             ],
@@ -2184,6 +2180,7 @@
             "aws.submenu.feedback": [
                 {
                     "command": "aws.submitFeedback",
+                    "when": "!aws.isWebExtHost",
                     "group": "1_feedback@1"
                 },
                 {
@@ -2194,6 +2191,7 @@
             "aws.submenu.help": [
                 {
                     "command": "aws.quickStart",
+                    "when": "isCloud9",
                     "group": "1_help@1"
                 },
                 {
@@ -2986,6 +2984,7 @@
             {
                 "command": "aws.submitFeedback",
                 "title": "%AWS.command.submitFeedback%",
+                "enablement": "!aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": "$(comment)",
                 "cloud9": {
@@ -3165,6 +3164,7 @@
                 "command": "aws.quickStart",
                 "title": "%AWS.command.quickStart%",
                 "category": "%AWS.title%",
+                "enablement": "isCloud9",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3897,23 +3897,23 @@
                 "command": "aws.codeWhisperer",
                 "key": "alt+c",
                 "mac": "alt+c",
-                "when": "editorTextFocus && CODEWHISPERER_ENABLED || isCloud9 && editorTextFocus"
+                "when": "editorTextFocus && aws.codewhisperer.connected || isCloud9 && editorTextFocus"
             },
             {
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED || isCloud9 && suggestWidgetVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected || isCloud9 && suggestWidgetVisible && !editorReadonly"
             },
             {
                 "key": "right",
                 "command": "editor.action.inlineSuggest.showNext",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
                 "key": "left",
                 "command": "editor.action.inlineSuggest.showPrevious",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             }
         ],
         "grammars": [
@@ -4240,10 +4240,10 @@
         "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes && npm run buildCustomLintPlugin",
-        "testCompile": "npm run buildScripts && tsc -p ./ && npm run instrument",
-        "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
-        "testE2E": "npm run testCompile && ts-node ./scripts/test/testE2E.ts && npm run report",
-        "testInteg": "npm run testCompile && ts-node ./scripts/test/testInteg.ts && npm run report",
+        "testCompile": "npm run buildScripts && tsc -p ./",
+        "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
+        "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts",
+        "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
         "lint": "ts-node ./scripts/lint/testLint.ts && npm run format",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts . && npm run formatfix",
         "buildCustomLintPlugin": "cd ./plugins/eslint-plugin-aws-toolkits && npm run build",
@@ -4258,9 +4258,7 @@
         "generateConfigurationAttributes": "ts-node ./scripts/build/generateConfigurationAttributes.ts",
         "newChange": "ts-node ./scripts/newChange.ts",
         "createRelease": "ts-node ./scripts/build/createRelease.ts",
-        "serve": "webpack serve --config-name vue-hmr --mode development",
-        "instrument": "nyc instrument --in-place ./dist/src",
-        "report": "nyc report --reporter=html --reporter=json"
+        "serve": "webpack serve --config-name vue-hmr --mode development"
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
@@ -4276,17 +4274,14 @@
         "@types/diff": "^5.0.7",
         "@types/fs-extra": "^9.0.11",
         "@types/glob": "^7.1.1",
-        "@types/he": "^1.2.3",
         "@types/js-yaml": "^4.0.5",
         "@types/lodash": "^4.14.180",
         "@types/markdown-it": "^13.0.2",
-        "@types/marked": "^5.0.0",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^10.0.0",
         "@types/node": "^14.18.63",
         "@types/node-fetch": "^2.6.8",
         "@types/prismjs": "^1.26.0",
-        "@types/proxyquire": "^1.3.31",
         "@types/readline-sync": "^1.4.3",
         "@types/sanitize-html": "2.3.1",
         "@types/semver": "^7.5.0",
@@ -4305,6 +4300,7 @@
         "@vscode/test-web": "^0.0.48",
         "@vscode/vsce": "^2.19.0",
         "@vue/compiler-sfc": "^3.3.2",
+        "c8": "^9.0.0",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.7.3",
         "diff": "^5.1.0",
@@ -4318,11 +4314,10 @@
         "glob": "^7.1.7",
         "husky": "^7.0.2",
         "json-schema-to-typescript": "^13.0.2",
-        "marked": "^5.0.4",
+        "marked": "^11.1.1",
         "mocha": "^10.1.0",
         "mocha-junit-reporter": "^2.2.1",
         "mocha-multi-reporters": "^1.5.1",
-        "nyc": "^15.1.0",
         "prettier": "^2.8.8",
         "prettier-plugin-sh": "^0.12.8",
         "pretty-quick": "^3.1.3",
@@ -4331,7 +4326,6 @@
         "sass-loader": "^12.6.0",
         "sinon": "^14.0.0",
         "style-loader": "^3.3.1",
-        "ts-mockito": "^2.5.0",
         "ts-node": "^10.9.1",
         "umd-compat-loader": "^2.1.2",
         "vscode-nls-dev": "^4.0.4",
@@ -4352,12 +4346,12 @@
         "@aws-sdk/credential-provider-process": "3.37.0",
         "@aws-sdk/credential-provider-sso": "^3.345.0",
         "@aws-sdk/property-provider": "3.46.0",
-        "@aws-sdk/shared-ini-file-loader": "^3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
         "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@3.3.2",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
+        "@smithy/shared-ini-file-loader": "^2.2.8",
         "@vscode/debugprotocol": "^1.57.0",
         "adm-zip": "^0.5.10",
         "amazon-states-language-service": "^1.11.0",
