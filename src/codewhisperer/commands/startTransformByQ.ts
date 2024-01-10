@@ -334,7 +334,7 @@ export async function startTransformByQ() {
         }
 
         if (payloadFileName !== '') {
-            fs.rmSync(payloadFileName, { recursive: true, force: true }) // delete ZIP
+            fs.rmSync(payloadFileName, { recursive: true, force: true }) // delete ZIP if it exists
         }
     }
     clearInterval(intervalId)
