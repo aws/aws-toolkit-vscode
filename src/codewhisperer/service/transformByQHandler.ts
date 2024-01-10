@@ -190,13 +190,13 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
         })
         getLogger().info(`CodeTransform: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in S3 UploadZip API call'
+        const errorMessage = (e as Error).message ?? 'Error in S3 UploadZip API call'
         getLogger().error('CodeTransform: UploadZip error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e?.requestId,
+            codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'UploadToS3Failed',
         })
@@ -229,8 +229,8 @@ export async function stopJob(jobId: string) {
                 codeTransformApiNames: 'StopTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: jobId,
-                codeTransformApiErrorMessage: e?.message || errorMessage,
-                codeTransformRequestId: e?.requestId,
+                codeTransformApiErrorMessage: (e as Error).message ?? errorMessage,
+                codeTransformRequestId: e.requestId ?? '',
                 result: MetadataResult.Fail,
                 reason: 'StopTransformationFailed',
             })
@@ -259,13 +259,13 @@ export async function uploadPayload(payloadFileName: string) {
             result: MetadataResult.Pass,
         })
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in CreateUploadUrl API call'
+        const errorMessage = (e as Error).message ?? 'Error in CreateUploadUrl API call'
         getLogger().error('CodeTransform: CreateUploadUrl error: = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'CreateUploadUrl',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e?.requestId,
+            codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'CreateUploadUrlFailed',
         })
@@ -275,8 +275,8 @@ export async function uploadPayload(payloadFileName: string) {
     try {
         await uploadArtifactToS3(payloadFileName, response)
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in uploadArtifactToS3 call'
-        throw new Error(errorMessage)
+        const errorMessage = (e as Error).message ?? 'Error in uploadArtifactToS3 call'
+        throw new ToolkitError(errorMessage, { cause: e as Error })
     }
     return response.uploadId
 }
@@ -445,13 +445,13 @@ export async function startJob(uploadId: string) {
         })
         return response.transformationJobId
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in StartTransformation API call'
+        const errorMessage = (e as Error).message ?? 'Error in StartTransformation API call'
         getLogger().error('CodeTransform: StartTransformation error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'StartTransformation',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e?.requestId,
+            codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'StartTransformationFailed',
         })
@@ -496,14 +496,14 @@ export async function getTransformationPlan(jobId: string) {
 
         return plan
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in GetTransformationPlan API call'
+        const errorMessage = (e as Error).message ?? 'Error in GetTransformationPlan API call'
         getLogger().error('CodeTransform: GetTransformationPlan error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e?.requestId,
+            codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'GetTransformationPlanFailed',
         })
@@ -529,14 +529,14 @@ export async function getTransformationSteps(jobId: string) {
         })
         return response.transformationPlan.transformationSteps
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in GetTransformationPlan API call'
+        const errorMessage = (e as Error).message ?? 'Error in GetTransformationPlan API call'
         getLogger().error('CodeTransform: GetTransformationPlan error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e?.requestId,
+            codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'GetTransformationPlanFailed',
         })
@@ -590,14 +590,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 throw new Error('Transform by Q timed out')
             }
         } catch (e: any) {
-            const errorMessage = e?.message || 'Error in GetTransformation API call'
+            const errorMessage = (e as Error).message ?? 'Error in GetTransformation API call'
             getLogger().error('CodeTransform: GetTransformation error = ', errorMessage)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'GetTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: jobId,
                 codeTransformApiErrorMessage: errorMessage,
-                codeTransformRequestId: e?.requestId,
+                codeTransformRequestId: e.requestId ?? '',
                 result: MetadataResult.Fail,
                 reason: 'GetTransformationFailed',
             })

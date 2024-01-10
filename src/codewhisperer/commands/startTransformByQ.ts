@@ -164,6 +164,7 @@ export async function startTransformByQ() {
     let intervalId = undefined
     let errorMessage = ''
     let resultStatusMessage = ''
+    let payloadFileName = ''
 
     try {
         intervalId = setInterval(() => {
@@ -175,7 +176,6 @@ export async function startTransformByQ() {
 
         let uploadId = ''
         throwIfCancelled()
-        let payloadFileName = undefined
         try {
             payloadFileName = await zipCode(state.project.description!)
             await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
@@ -212,8 +212,6 @@ export async function startTransformByQ() {
         }
         transformByQState.setJobId(encodeHTML(jobId))
         await vscode.commands.executeCommand('aws.amazonq.refresh')
-
-        fs.rmSync(payloadFileName, { recursive: true, force: true }) // delete ZIP after job has started
 
         await sleep(2000) // sleep before polling job to prevent ThrottlingException
         throwIfCancelled()
@@ -333,6 +331,10 @@ export async function startTransformByQ() {
             void vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompletedMessage)
         } else if (transformByQState.isPartiallySucceeded()) {
             void vscode.window.showInformationMessage(CodeWhispererConstants.transformByQPartiallyCompletedMessage)
+        }
+
+        if (payloadFileName !== '') {
+            fs.rmSync(payloadFileName, { recursive: true, force: true }) // delete ZIP
         }
     }
     clearInterval(intervalId)
