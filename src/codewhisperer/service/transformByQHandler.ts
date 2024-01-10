@@ -110,7 +110,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         })
         throw new TransformByQJavaProjectNotFound()
     }
-    const classFilePath = compiledJavaFiles[0].fsPath
+    const classFilePath = `"${compiledJavaFiles[0].fsPath}"`
     const baseCommand = 'javap'
     const args = ['-v', classFilePath]
     const spawnResult = spawnSync(baseCommand, args, { shell: true, encoding: 'utf-8' })
