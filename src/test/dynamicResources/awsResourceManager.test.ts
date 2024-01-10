@@ -16,7 +16,6 @@ import { CloudControlClient, DefaultCloudControlClient } from '../../shared/clie
 import { CloudFormationClient, DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { SchemaService } from '../../shared/schemas'
 import { remove } from 'fs-extra'
 import { existsSync } from 'fs'
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
@@ -31,13 +30,12 @@ describe('ResourceManager', function () {
     let resourceNode: ResourceNode
     let resourceTypeNode: ResourceTypeNode
     let resourceManager: AwsResourceManager
-    let schemaService: Stub<SchemaService>
     let tempFolder: string
+    let registerMappingSpy: sinon.SinonSpy
 
     const fakeTypeName = 'sometype'
     const fakeIdentifier = 'someidentifier'
     const fakeRegion = 'someregion'
-    const oldSchemaService = globals.schemaService
 
     const fakeResourceDescription = {
         Role: 'arn:aws:iam::1234:role/service-role/fooResource',
@@ -56,10 +54,6 @@ describe('ResourceManager', function () {
         cloudFormation = stub(DefaultCloudFormationClient, {
             regionCode: '',
         })
-        schemaService = stub(SchemaService, {
-            registerMapping: sinon.stub(),
-            isMapped: sinon.stub(),
-        })
         sandbox = sinon.createSandbox()
         mockClients()
         tempFolder = await makeTemporaryToolkitFolder()
@@ -70,17 +64,14 @@ describe('ResourceManager', function () {
         const fakeContext = await FakeExtensionContext.create()
         fakeContext.globalStorageUri = vscode.Uri.file(tempFolder)
         resourceManager = new AwsResourceManager(fakeContext)
-        globals.schemaService = schemaService
+        registerMappingSpy = sinon.spy(globals.schemaService, 'registerMapping')
     })
 
     afterEach(async function () {
+        registerMappingSpy.restore()
         sandbox.restore()
         await resourceManager.dispose()
         await remove(tempFolder)
-    })
-
-    after(function () {
-        globals.schemaService = oldSchemaService
     })
 
     it('opens resources in preview mode', async function () {
@@ -193,9 +184,9 @@ describe('ResourceManager', function () {
 
     it('registers schema mappings when opening in edit', async function () {
         const editor = await resourceManager.open(resourceNode, false)
-        assert(schemaService.registerMapping.calledOnce)
+        assert(registerMappingSpy.calledOnce)
 
-        const [mapping] = schemaService.registerMapping.args[schemaService.registerMapping.args.length - 1]
+        const [mapping] = registerMappingSpy.args[registerMappingSpy.args.length - 1]
 
         const expectedSchemaLocation = path.join(tempFolder, 'sometype.schema.json')
         assert.ok(existsSync(expectedSchemaLocation))
@@ -212,17 +203,17 @@ describe('ResourceManager', function () {
         sandbox.stub(vscode.window, 'showTextDocument').resolves(mockTextEditor)
 
         await resourceManager.open(resourceNode, true)
-        assert(schemaService.registerMapping.notCalled)
+        assert(registerMappingSpy.notCalled)
         assert(cloudFormation.describeType.notCalled)
     })
 
     it('deletes resource mapping on file close', async function () {
         const editor = await resourceManager.open(resourceNode, false)
         await resourceManager.close(editor.document.uri)
-        assert(schemaService.registerMapping.firstCall.calledWith(sinon.match.any, true))
-        assert(schemaService.registerMapping.secondCall.calledWith(sinon.match.any))
+        assert(registerMappingSpy.firstCall.calledWith(sinon.match.any, true))
+        assert(registerMappingSpy.secondCall.calledWith(sinon.match.any))
 
-        const [mapping] = schemaService.registerMapping.args[schemaService.registerMapping.args.length - 1]
+        const [mapping] = registerMappingSpy.args[registerMappingSpy.args.length - 1]
 
         assert.strictEqual(mapping.type, 'json')
         testutil.assertEqualPaths(mapping.uri.fsPath, editor.document.uri.fsPath)
