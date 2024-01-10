@@ -17,7 +17,7 @@ import {
     OpenNewTabMessage,
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
-import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp } from '@aws/mynah-ui'
 
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}

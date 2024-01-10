@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemType, ChatPrompt, MynahUI } from '@aws/mynah-ui-chat'
+import { ChatItemType, ChatPrompt, MynahUI } from '@aws/mynah-ui'
 import { Connector } from '../connector'
 import { TabsStorage } from '../storages/tabsStorage'
 
@@ -31,13 +31,6 @@ export class TextMessageHandler {
         this.mynahUI.addChatItem(tabID, {
             type: ChatItemType.PROMPT,
             body: chatPrompt.escapedPrompt,
-            ...(chatPrompt.attachment !== undefined
-                ? {
-                      relatedContent: {
-                          content: [chatPrompt.attachment],
-                      },
-                  }
-                : {}),
         })
 
         this.mynahUI.updateStore(tabID, {
