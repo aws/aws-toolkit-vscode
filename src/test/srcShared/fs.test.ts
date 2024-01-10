@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 import * as os from 'os'
 import { isMinimumVersion } from '../../shared/vscode/env'
 
@@ -18,11 +18,9 @@ function isWin() {
 
 describe('FileSystem', function () {
     let fakeContext: vscode.ExtensionContext
-    let fsCommon: FileSystemCommon
 
     before(async function () {
         fakeContext = await FakeExtensionContext.create()
-        fsCommon = FileSystemCommon.instance
     })
 
     beforeEach(async function () {
@@ -77,6 +75,12 @@ describe('FileSystem', function () {
             assert.strictEqual(readFileSync(filePath, 'utf-8'), text)
         })
 
+        it('makes dirs if missing', async function () {
+            const filePath = createTestPath('dirA/dirB/myFileName.txt')
+            await fsCommon.writeFile(filePath, 'MyContent')
+            assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+        })
+
         it('throws when existing file + no permission', async function () {
             if (isWin()) {
                 console.log('Skipping since windows does not support mode permissions')
@@ -113,34 +117,34 @@ describe('FileSystem', function () {
         })
     })
 
-    describe('fileExists()', function () {
+    describe('existsFile()', function () {
         it('returns true for an existing file', async function () {
             const filePath = await makeFile('test.txt')
-            const existantFile = await fsCommon.fileExists(filePath)
+            const existantFile = await fsCommon.existsFile(filePath)
             assert.strictEqual(existantFile, true)
         })
 
         it('returns false for a non-existant file', async function () {
-            const nonExistantFile = await fsCommon.fileExists(createTestPath('thisDoesNotExist.txt'))
+            const nonExistantFile = await fsCommon.existsFile(createTestPath('thisDoesNotExist.txt'))
             assert.strictEqual(nonExistantFile, false)
         })
 
         it('returns false when directory with same name exists', async function () {
             const directoryPath = await makeFolder('thisIsDirectory')
-            const existantFile = await fsCommon.fileExists(directoryPath)
+            const existantFile = await fsCommon.existsFile(directoryPath)
             assert.strictEqual(existantFile, false)
         })
     })
 
-    describe('directoryExists()', function () {
+    describe('existsDir()', function () {
         it('returns true for an existing directory', async function () {
             const dirPath = await makeFolder('myDir')
-            const existantDirectory = await fsCommon.directoryExists(dirPath)
+            const existantDirectory = await fsCommon.existsDir(dirPath)
             assert.strictEqual(existantDirectory, true)
         })
 
         it('returns false for a non-existant directory', async function () {
-            const nonExistantDirectory = await fsCommon.directoryExists(createTestPath('thisDirDoesNotExist'))
+            const nonExistantDirectory = await fsCommon.existsDir(createTestPath('thisDirDoesNotExist'))
             assert.strictEqual(nonExistantDirectory, false)
         })
     })
@@ -215,10 +219,9 @@ describe('FileSystem', function () {
             assert.strictEqual(stat.type, vscode.FileType.File)
         })
 
-        it('return undefined if no file exists', async function () {
+        it('throws if no file exists', async function () {
             const filePath = createTestPath('thisDoesNotExist.txt')
-            const stat = await fsCommon.stat(filePath)
-            assert.strictEqual(stat, undefined)
+            await assert.rejects(() => fsCommon.stat(filePath))
         })
     })
 

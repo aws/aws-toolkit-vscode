@@ -99,7 +99,7 @@ describe('LaunchConfiguration', function () {
     const workspace = vscode.workspace.workspaceFolders![0]
     const testLaunchJson = vscode.Uri.file(path.join(workspace.uri.fsPath, '.vscode/launch.json'))
     /** Object representation of the launch.json test file. */
-    const testLaunchJsonData = JSON.parse(testutil.fromFile(testLaunchJson.fsPath))
+    let testLaunchJsonData: any
     const templateUriJsPlainApp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'js-plain-sam-app/template.yaml'))
     const templateUriPython37 = vscode.Uri.file(
         path.join(workspace.uri.fsPath, 'python3.7-plain-sam-app/template.yaml')
@@ -107,6 +107,7 @@ describe('LaunchConfiguration', function () {
     const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp6-zip/template.yaml'))
 
     beforeEach(async function () {
+        testLaunchJsonData = JSON.parse(await testutil.fromFile(testLaunchJson.fsPath))
         const registry = await globals.templateRegistry
         registry.addWatchPatterns([CloudFormation.templateFileGlobPattern])
         await registry.rebuild()

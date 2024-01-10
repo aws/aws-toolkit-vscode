@@ -25,7 +25,7 @@ describe('awsFiletypes', function () {
         // so this will trigger "file_editAwsFile" telemetry.
         const awsConfigFile = path.join(sysutil.SystemUtilities.getHomeDirectory(), '.aws/test_awstoolkit')
         awsConfigUri = vscode.Uri.file(awsConfigFile)
-        testUtil.toFile('Test file from the aws-toolkit-vscode test suite.', awsConfigFile)
+        await testUtil.toFile('Test file from the aws-toolkit-vscode test suite.', awsConfigFile)
 
         const cfnFile = workspaceUtils.tryGetAbsolutePath(
             vscode.workspace.workspaceFolders?.[0],

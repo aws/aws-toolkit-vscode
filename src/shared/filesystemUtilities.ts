@@ -3,10 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, mkdtemp, mkdirp, readFile, remove, existsSync, readdir, stat } from 'fs-extra'
 import * as crypto from 'crypto'
-import * as fs from 'fs'
-import * as fsExtra from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -14,8 +11,8 @@ import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
 import { GlobalState } from './globalState'
-
-const defaultEncoding: BufferEncoding = 'utf8'
+import { fsCommon } from '../srcShared/fs'
+import fs from 'fs'
 
 export const tempDirPath = path.join(
     // https://github.com/aws/aws-toolkit-vscode/issues/240
@@ -33,27 +30,30 @@ export async function getDirSize(
         getLogger().warn('getDirSize: exceeds time limit')
         return 0
     }
-    const files = await fsExtra.readdir(dirPath, { withFileTypes: true })
+    const files = await fsCommon.readdir(dirPath)
     const fileSizes = files.map(async file => {
-        const filePath = path.join(dirPath, file.name)
-        if (file.isSymbolicLink()) {
+        const [fileName, type] = file
+        const filePath = path.join(dirPath, fileName)
+
+        if (type === vscode.FileType.SymbolicLink) {
             return 0
         }
-        if (file.isDirectory()) {
+        if (type === vscode.FileType.Directory) {
             return getDirSize(filePath, startTime, duration, fileExt)
         }
-        if (file.isFile() && file.name.endsWith(fileExt)) {
-            const { size } = await fsExtra.stat(filePath)
-            return size
+        if (type === vscode.FileType.File && fileName.endsWith(fileExt)) {
+            const stat = await fsCommon.stat(filePath)
+            return stat.size
         }
+
         return 0
     })
     return (await Promise.all(fileSizes)).reduce((accumulator, size) => accumulator + size, 0)
 }
 
-export function downloadsDir(): string {
+async function downloadsDir(): Promise<string> {
     const downloadPath = path.join(os.homedir(), 'Downloads')
-    if (existsSync(downloadPath)) {
+    if (await fsCommon.existsDir(downloadPath)) {
         return downloadPath
     } else {
         return os.tmpdir()
@@ -61,13 +61,14 @@ export function downloadsDir(): string {
 }
 
 /**
+ * @deprecated use {@link fsCommon} exist methods instead.
  * Checks if file or directory `p` exists.
  *
  * TODO: optionally check read/write permissions and return a granular status.
  */
 export async function fileExists(p: string): Promise<boolean> {
     try {
-        await access(p)
+        return fsCommon.exists(p)
     } catch (err) {
         return false
     }
@@ -83,11 +84,8 @@ export async function fileExists(p: string): Promise<boolean> {
  *
  * @returns the contents of the file as a string
  */
-export async function readFileAsString(
-    pathLike: string,
-    options: { encoding: BufferEncoding; flag?: string } = { encoding: defaultEncoding }
-): Promise<string> {
-    return readFile(pathLike, options)
+export async function readFileAsString(pathLike: string): Promise<string> {
+    return fsCommon.readFileAsString(pathLike)
 }
 
 /**
@@ -101,7 +99,7 @@ export async function tryRemoveFolder(folder?: string): Promise<boolean> {
             getLogger().warn('tryRemoveFolder: no folder given')
             return false
         }
-        await remove(folder)
+        await fsCommon.delete(folder)
     } catch (err) {
         getLogger().warn('tryRemoveFolder: failed to delete directory "%s": %O', folder, err as Error)
         return false
@@ -114,13 +112,13 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
         relativePathParts.push('vsctk')
     }
 
-    const tmpPath = path.join(tempDirPath, ...relativePathParts)
-    const tmpPathParent = path.dirname(tmpPath)
-    // fs.makeTemporaryToolkitFolder fails on OSX if prefix contains path separator
-    // so we must create intermediate dirs if needed
-    await mkdirp(tmpPathParent)
+    // Add random characters to the leaf folder to ensure it is unique
+    relativePathParts[relativePathParts.length - 1] =
+        relativePathParts[relativePathParts.length - 1] + crypto.randomBytes(4).toString('hex')
 
-    return await mkdtemp(tmpPath)
+    const tmpPath = path.join(tempDirPath, ...relativePathParts)
+    await fsCommon.mkdir(tmpPath)
+    return tmpPath
 }
 
 /**
@@ -198,7 +196,44 @@ export function getFileDistance(fileA: string, fileB: string): number {
  * @param suffix  Filename suffix, typically an extension (".txt"), may be empty
  * @param max  Stop searching if all permutations up to this number exist
  */
-export function getNonexistentFilename(dir: string, name: string, suffix: string, max: number = 99): string {
+export async function getNonexistentFilename(
+    dir: string,
+    name: string,
+    suffix: string,
+    max: number = 99
+): Promise<string> {
+    if (!name) {
+        throw new Error(`name is empty`)
+    }
+    if (!(await fsCommon.existsDir(dir))) {
+        throw new Error(`directory does not exist: ${dir}`)
+    }
+    for (let i = 0; true; i++) {
+        const filename =
+            i === 0 ? `${name}${suffix}` : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
+        const fullpath = path.join(dir, filename)
+        if (!(await fsCommon.existsFile(fullpath)) || i >= max + 99) {
+            return filename
+        }
+    }
+}
+
+/**
+ * @deprecated this is a synchronous duplicate of {@link getNonexistentFilename}. We are only keeping it
+ * since some code needs to do this process synchronously and the platform agnostic file system is async.
+ *
+ * Returns `name.suffix` if it does not already exist in directory `dir`, else appends
+ * a number ("foo-1.txt", "foo-2.txt", etc.).
+ *
+ * To avoid excessive filesystem activity, if all filenames up to `max` exist,
+ * the function instead appends a random string.
+ *
+ * @param dir  Path to a directory
+ * @param name  Filename without extension
+ * @param suffix  Filename suffix, typically an extension (".txt"), may be empty
+ * @param max  Stop searching if all permutations up to this number exist
+ */
+export function getNonexistentFilenameSync(dir: string, name: string, suffix: string, max: number = 99): string {
     if (!name) {
         throw new Error(`name is empty`)
     }
@@ -236,14 +271,15 @@ export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: v
  * @returns  List of one or zero Uris (for compat with vscode.workspace.findFiles())
  */
 export async function cloud9Findfile(dir: string, fileName: string): Promise<vscode.Uri[]> {
-    const files = await readdir(dir)
+    const files = await fsCommon.readdir(dir)
     const subDirs: vscode.Uri[] = []
     for (const file of files) {
-        const filePath = path.join(dir, file)
+        const [currentFileName] = file
+        const filePath = path.join(dir, currentFileName)
         if (filePath === path.join(dir, fileName)) {
             return [vscode.Uri.file(filePath)]
         }
-        if ((await stat(filePath)).isDirectory()) {
+        if (await fsCommon.existsDir(filePath)) {
             subDirs.push(vscode.Uri.file(filePath))
         }
     }
@@ -258,7 +294,7 @@ export async function cloud9Findfile(dir: string, fileName: string): Promise<vsc
 /**
  * @returns  A string path to the last locally stored download location. If none, returns the users 'Downloads' directory path.
  */
-export function getDefaultDownloadPath(): string {
+export async function getDefaultDownloadPath(): Promise<string> {
     const lastUsedPath = globals.context.globalState.get('aws.downloadPath')
     if (lastUsedPath) {
         if (typeof lastUsedPath === 'string') {
@@ -271,8 +307,7 @@ export function getDefaultDownloadPath(): string {
 
 export async function setDefaultDownloadPath(downloadPath: string) {
     try {
-        const savePath = await stat(downloadPath)
-        if (savePath.isDirectory()) {
+        if (await fsCommon.existsDir(downloadPath)) {
             GlobalState.instance.tryUpdate('aws.downloadPath', downloadPath)
         } else {
             GlobalState.instance.tryUpdate('aws.downloadPath', path.dirname(downloadPath))
