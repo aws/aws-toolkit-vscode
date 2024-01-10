@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemType, MynahUI, NotificationType } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemType, MynahUI, NotificationType } from '@aws/mynah-ui'
 import { Connector } from '../connector'
 import { TabType, TabsStorage } from '../storages/tabsStorage'
 import { TabDataGenerator } from '../tabs/generator'

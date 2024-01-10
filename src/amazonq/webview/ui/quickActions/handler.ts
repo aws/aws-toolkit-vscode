@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemType, ChatPrompt, MynahUI, NotificationType } from '@aws/mynah-ui-chat'
+import { ChatItemType, ChatPrompt, MynahUI, NotificationType } from '@aws/mynah-ui'
 import { TabDataGenerator } from '../tabs/generator'
 import { Connector } from '../connector'
 import { TabsStorage } from '../storages/tabsStorage'
@@ -104,13 +104,6 @@ export class QuickActionHandler {
                 this.mynahUI.addChatItem(affectedTabId, {
                     type: ChatItemType.PROMPT,
                     body: realPromptText,
-                    ...(chatPrompt.attachment !== undefined
-                        ? {
-                              relatedContent: {
-                                  content: [chatPrompt.attachment],
-                              },
-                          }
-                        : {}),
                 })
 
                 this.mynahUI.addChatItem(affectedTabId, {
