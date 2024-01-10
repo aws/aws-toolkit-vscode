@@ -787,7 +787,7 @@
             },
             {
                 "view": "aws.amazonq.transformationProposedChangesTree",
-                "contents": "Project transformation is complete.\n Downloading the updated code.",
+                "contents": "Project transformation is complete.\n Downloading the proposed changes...",
                 "when": "gumby.reviewState == PreparingReview"
             }
         ],
@@ -1343,11 +1343,11 @@
                 },
                 {
                     "command": "aws.amazonq.transformationHub.summary.reveal",
-                    "when": "view == aws.amazonq.transformationHub && gumby.reviewState == InReview"
+                    "when": "view == aws.amazonq.transformationHub"
                 },
                 {
                     "command": "aws.amazonq.transformationHub.reviewChanges.reveal",
-                    "when": "view == aws.amazonq.transformationHub && gumby.reviewState == InReview"
+                    "when": "view == aws.amazonq.transformationHub"
                 },
                 {
                     "command": "aws.amazonq.showTransformationPlanInHub",
@@ -2414,15 +2414,18 @@
             },
             {
                 "command": "aws.amazonq.transformationHub.summary.reveal",
-                "title": "%AWS.command.q.transform.showChangeSummary%"
+                "title": "%AWS.command.q.transform.showChangeSummary%",
+                "enablement": "gumby.reviewState == InReview"
             },
             {
                 "command": "aws.amazonq.transformationHub.reviewChanges.reveal",
-                "title": "%AWS.command.q.transform.showChanges%"
+                "title": "%AWS.command.q.transform.showChanges%",
+                "enablement": "gumby.reviewState == InReview"
             },
             {
                 "command": "aws.amazonq.showTransformationPlanInHub",
-                "title": "%AWS.command.q.transform.showTransformationPlan%"
+                "title": "%AWS.command.q.transform.showTransformationPlan%",
+                "enablement": "gumby.isPlanAvailable"
             },
             {
                 "command": "aws.auth.switchConnections",

@@ -164,6 +164,7 @@ export async function startTransformByQ() {
     let intervalId = undefined
     let errorMessage = ''
     let resultStatusMessage = ''
+    let payloadFileName = ''
 
     try {
         intervalId = setInterval(() => {
@@ -176,11 +177,11 @@ export async function startTransformByQ() {
         let uploadId = ''
         throwIfCancelled()
         try {
-            const payloadFileName = await zipCode(state.project.description!)
+            payloadFileName = await zipCode(state.project.description!)
             await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
             uploadId = await uploadPayload(payloadFileName)
         } catch (error) {
-            errorMessage = 'Failed to upload archive'
+            errorMessage = 'Failed to upload code'
             telemetry.codeTransform_logGeneralError.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformApiErrorMessage: errorMessage,
@@ -330,6 +331,10 @@ export async function startTransformByQ() {
             void vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompletedMessage)
         } else if (transformByQState.isPartiallySucceeded()) {
             void vscode.window.showInformationMessage(CodeWhispererConstants.transformByQPartiallyCompletedMessage)
+        }
+
+        if (payloadFileName !== '') {
+            fs.rmSync(payloadFileName, { recursive: true, force: true }) // delete ZIP if it exists
         }
     }
     clearInterval(intervalId)

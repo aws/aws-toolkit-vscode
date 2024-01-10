@@ -151,14 +151,14 @@ export class DiffModel {
             const originalPath = path.join(pathToWorkspace, file.from !== undefined ? file.from : '')
             const tmpChangedPath = path.join(pathToTmpSrcDir, file.to !== undefined ? file.to : '')
 
-            const originalFileExist = fs.existsSync(originalPath)
+            const originalFileExists = fs.existsSync(originalPath)
             const changedFileExists = fs.existsSync(tmpChangedPath)
 
-            if (originalFileExist && changedFileExists) {
+            if (originalFileExists && changedFileExists) {
                 return new ModifiedChangeNode(originalPath, tmpChangedPath)
-            } else if (!originalFileExist && changedFileExists) {
+            } else if (!originalFileExists && changedFileExists) {
                 return new AddedChangeNode(originalPath, tmpChangedPath)
-            } else if (originalFileExist && !changedFileExists) {
+            } else if (originalFileExists && !changedFileExists) {
                 return new RemovedChangeNode(originalPath)
             }
             return []
@@ -267,7 +267,7 @@ export class ProposedTransformationExplorer {
             )
             telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
 
-            // This metric is emitted when user clicked download for proposed change
+            // This metric is emitted when user clicks Download Proposed Changes button
             telemetry.codeTransform_vcsViewerClicked.emit({
                 codeTransformVCSViewerSrcComponents: 'toastNotification',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -314,9 +314,10 @@ export class ProposedTransformationExplorer {
 
             let deserializeErrorMessage
             const deserializeArchiveStartTime = Date.now()
+            let pathContainingArchive = ''
             try {
                 // Download and deserialize the zip
-                const pathContainingArchive = path.dirname(pathToArchive)
+                pathContainingArchive = path.dirname(pathToArchive)
                 const zip = new AdmZip(pathToArchive)
                 zip.extractAllTo(pathContainingArchive)
                 diffModel.parseDiff(
@@ -351,6 +352,8 @@ export class ProposedTransformationExplorer {
                 })
             }
 
+            transformByQState.setResultArchiveFilePath(pathContainingArchive)
+
             // This metric is only emitted when placed before showInformationMessage
             telemetry.codeTransform_vcsDiffViewerVisible.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -366,13 +369,11 @@ export class ProposedTransformationExplorer {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
-            await vscode.commands.executeCommand(
-                'setContext',
-                'gumby.reviewState.notStarted',
-                TransformByQReviewStatus.NotStarted
-            )
+            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
             await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedMessage)
+            // delete result archive after changes accepted
+            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
             telemetry.codeTransform_vcsViewerSubmitted.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
@@ -384,8 +385,10 @@ export class ProposedTransformationExplorer {
             diffModel.rejectChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
-            await vscode.commands.executeCommand('setCommand', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
+            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
+            // delete result archive after changes rejected
+            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
             telemetry.codeTransform_vcsViewerCanceled.emit({
                 // eslint-disable-next-line id-length
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',

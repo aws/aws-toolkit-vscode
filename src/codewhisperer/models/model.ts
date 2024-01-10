@@ -274,6 +274,8 @@ export class TransformByQState {
     private planFilePath: string = ''
     private summaryFilePath: string = ''
 
+    private resultArchiveFilePath: string = ''
+
     private polledJobStatus: string = ''
 
     private jobFailureReason: string = ''
@@ -338,6 +340,10 @@ export class TransformByQState {
         return this.summaryFilePath
     }
 
+    public getResultArchiveFilePath() {
+        return this.resultArchiveFilePath
+    }
+
     public getJobFailureReason() {
         return this.jobFailureReason
     }
@@ -400,6 +406,10 @@ export class TransformByQState {
 
     public setSummaryFilePath(filePath: string) {
         this.summaryFilePath = filePath
+    }
+
+    public setResultArchiveFilePath(filePath: string) {
+        this.resultArchiveFilePath = filePath
     }
 
     public setJobFailureReason(reason: string) {
