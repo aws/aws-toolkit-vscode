@@ -180,8 +180,12 @@ export class S3FileViewerManager {
 
     private async closeEditor(editor: vscode.TextEditor | undefined): Promise<void> {
         if (editor && !editor.document.isClosed) {
-            await vscode.window.showTextDocument(editor.document, { preserveFocus: false })
-            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            await vscode.window.showTextDocument(editor.document, { preserveFocus: false }).then(
+                r => vscode.commands.executeCommand('workbench.action.closeActiveEditor'),
+                e => {
+                    getLogger().warn('S3FileViewer: showTextDocument failed to open: "%s"', editor.document.uri)
+                }
+            )
         }
     }
 

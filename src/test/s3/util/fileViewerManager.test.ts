@@ -212,6 +212,7 @@ describe('FileViewerManager', function () {
 
     after(async function () {
         await vscode.Disposable.from(...disposables).dispose()
+        await fileViewerManager.dispose()
     })
 
     it('prompts if file size is greater than 4MB', async function () {
@@ -220,7 +221,7 @@ describe('FileViewerManager', function () {
         await getTestWindow()
             .waitForMessage(/File size is more than 4MB/)
             .then(message => message.selectItem(/Continue/))
-        await assert.doesNotReject(didOpen)
+        await (await didOpen)?.dispose()
     })
 
     it('throws if the user cancels a download', async function () {
