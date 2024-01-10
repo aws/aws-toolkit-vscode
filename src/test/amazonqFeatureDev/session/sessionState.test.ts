@@ -66,7 +66,7 @@ describe('sessionState', () => {
             mockCreateUploadUrl = sinon.stub().resolves({ uploadId: '', uploadUrl: '' })
             const testAction = mockSessionStateAction()
 
-            assert.rejects(() => {
+            await assert.rejects(() => {
                 return new PrepareRefinementState(testConfig, testApproach, tabId).interact(testAction)
             }, PrepareRepoFailedError)
         })

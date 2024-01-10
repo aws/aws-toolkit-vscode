@@ -5,24 +5,24 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import * as codewhispererClient from '../../../codewhisperer/client/codewhisperer'
-import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
+import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
+import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as path from 'path'
-import * as testutil from '../../../test/testUtil'
+import * as testutil from '../../test/testUtil'
 import * as fs from 'fs-extra'
-import { setValidConnection, skiptTestIfNoValidConn } from '../../util/codewhispererUtil'
-import { resetCodeWhispererGlobalVariables } from '../../../test/codewhisperer/testUtil'
-import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
-import { closeAllEditors } from '../../../test/testUtil'
-import { DependencyGraphFactory } from '../../../codewhisperer/util/dependencyGraph/dependencyGraphFactory'
+import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
+import { resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
+import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
+import { closeAllEditors } from '../../test/testUtil'
+import { DependencyGraphFactory } from '../../codewhisperer/util/dependencyGraph/dependencyGraphFactory'
 import { statSync } from 'fs'
 import {
     getPresignedUrlAndUpload,
     createScanJob,
     pollScanJobStatus,
     listScanResults,
-} from '../../../codewhisperer/service/securityScanHandler'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+} from '../../codewhisperer/service/securityScanHandler'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 
 const filePromptWithSecurityIssues = `from flask import app
 
@@ -68,8 +68,8 @@ describe('CodeWhisperer security scan', async function () {
         }
     })
 
-    after(function () {
-        closeAllEditors()
+    after(async function () {
+        await closeAllEditors()
     })
 
     const openTestFile = async (filePath: string) => {

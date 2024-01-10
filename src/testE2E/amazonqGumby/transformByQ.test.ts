@@ -11,8 +11,8 @@ import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs-extra'
-import { setValidConnection, skipTestIfNoValidConn } from '../../testInteg/util/amazonQUtil'
 import AdmZip from 'adm-zip'
+import { setValidConnection, skipTestIfNoValidConn } from '../util/amazonQUtil'
 
 describe('transformByQ', async function () {
     let tempDir = ''
@@ -67,7 +67,7 @@ describe('transformByQ', async function () {
             })
         )
     })
-
+  
     it('WHEN createUploadUrl THEN URL uses HTTPS and sets 60 second expiration', async function () {
         const sha256 = getSha256(zippedCodePath)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({

@@ -69,7 +69,7 @@ describe('getDevfileLocation', function () {
         sandbox.stub(fileSystemUtils, 'fileExists').resolves(false)
         const client = mockClient('test/devfile.yaml')
         const location = getDevfileLocation(client, vscode.Uri.parse('/projects/WebApplication'))
-        assert.rejects(location, new Error('Devfile location was not found'))
+        await assert.rejects(location, new Error('Devfile location was not found'))
     })
 
     it('falls back to default projects location when devfile cannot be located', async function () {

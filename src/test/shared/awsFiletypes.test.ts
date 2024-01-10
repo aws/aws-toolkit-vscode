@@ -18,7 +18,7 @@ describe('awsFiletypes', function () {
     let cfnUri: vscode.Uri | undefined
 
     beforeEach(async function () {
-        testUtil.closeAllEditors()
+        await testUtil.closeAllEditors()
 
         // Create a dummy file in ~/.aws on the system.
         // Note: We consider _any_ file in ~/.aws to be an "AWS config" file,
@@ -35,7 +35,7 @@ describe('awsFiletypes', function () {
     })
 
     after(async function () {
-        testUtil.closeAllEditors()
+        await testUtil.closeAllEditors()
     })
 
     it('emit telemetry when opened by user', async function () {
@@ -83,7 +83,7 @@ describe('awsFiletypes', function () {
         }
         // Wait for metrics...
         await getMetrics()
-        testUtil.closeAllEditors()
+        await testUtil.closeAllEditors()
         await vscode.commands.executeCommand('vscode.open', cfnUri)
         await vscode.commands.executeCommand('vscode.open', cfnUri)
 

@@ -144,8 +144,8 @@ describe.skip('GitExtension', function () {
     })
 
     it('can get repository config', async function () {
-        testRepo.setConfig('user.name', 'name')
-        testRepo.setConfig('user.email', 'email')
+        await testRepo.setConfig('user.name', 'name')
+        await testRepo.setConfig('user.email', 'email')
         const config = await git.getConfig(testRepo).catch(parseGitError)
         assert.strictEqual(config['user.name'], 'name')
         assert.strictEqual(config['user.email'], 'email')

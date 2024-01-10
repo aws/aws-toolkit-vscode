@@ -227,7 +227,7 @@ ${fileContents}
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-;(async () => {
+void (async () => {
     const serviceClientDefinitions: ServiceClientDefinition[] = [
         {
             serviceJsonPath: 'src/shared/telemetry/service-2.json',

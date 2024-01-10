@@ -73,14 +73,14 @@ describe('messages', function () {
         it('does not show if Timeout completes before "showAfterMs"', async function () {
             const msg = 'test message'
             const timeout = new Timeout(1) // Completes in 1 ms.
-            showMessageWithCancel(msg, timeout, 20)
+            void showMessageWithCancel(msg, timeout, 20)
             await assert.rejects(getTestWindow().waitForMessage(msg, 50))
         })
 
         it('shows after "showAfterMs"', async function () {
             const msg = 'test message'
             const timeout = new Timeout(9999) // Completes in 1 ms.
-            showMessageWithCancel(msg, timeout, 50)
+            void showMessageWithCancel(msg, timeout, 50)
             // timeout.cancel()  // Force complete.
             await getTestWindow()
                 .waitForMessage(msg)

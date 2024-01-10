@@ -141,8 +141,8 @@ describe('startSecurityScan', function () {
     afterEach(function () {
         sinon.restore()
     })
-    after(function () {
-        closeAllEditors()
+    after(async function () {
+        await closeAllEditors()
     })
     const createClient = () => {
         const mockClient = stub(DefaultCodeWhispererClient)
