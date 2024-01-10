@@ -69,7 +69,7 @@ describe('Controller', () => {
         it('uses file location when file is found locally and /src is not available', async () => {
             sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
             const newFileLocation = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'mynewfile.js')
-            toFile('', newFileLocation)
+            await toFile('', newFileLocation)
             const executedDiff = await openDiff('mynewfile.js')
             assert.strictEqual(
                 executedDiff.calledWith(
@@ -86,7 +86,7 @@ describe('Controller', () => {
         it('uses file location when file is found locally and /src is available', async () => {
             sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
             const newFileLocation = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'src', 'mynewfile.js')
-            toFile('', newFileLocation)
+            await toFile('', newFileLocation)
             const executedDiff = await openDiff(path.join('src', 'mynewfile.js'))
             assert.strictEqual(
                 executedDiff.calledWith(
@@ -103,7 +103,7 @@ describe('Controller', () => {
         it('uses file location when file is found locally and source folder was picked', async () => {
             sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
             const newFileLocation = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'foo', 'fi', 'mynewfile.js')
-            toFile('', newFileLocation)
+            await toFile('', newFileLocation)
             sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(controllerSetup.workspaceFolder)
             session.config.sourceRoot = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'foo', 'fi')
             const executedDiff = await openDiff(path.join('foo', 'fi', 'mynewfile.js'))

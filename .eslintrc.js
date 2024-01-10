@@ -115,5 +115,13 @@ module.exports = {
             { lineEndings: 'unix' },
         ],
         'aws-toolkits/no-only-in-tests': 'error',
+        // The following will place an error on the `fs-extra` import since we do not want it to be used for browser compatibility reasons.
+        // "no-restricted-imports": [
+        //     "error",
+        //     {
+        //         "name": "fs-extra",
+        //         "message": "Avoid fs-extra, use FileSystemCommon. Notify the Toolkit team if your required functionality is not available."
+        //     }
+        // ],
     },
 }
