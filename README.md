@@ -2,7 +2,7 @@
 
 [![Coverage](https://img.shields.io/codecov/c/github/aws/aws-toolkit-vscode/master.svg)](https://codecov.io/gh/aws/aws-toolkit-vscode/branch/master) [![Marketplace Version](https://img.shields.io/vscode-marketplace/v/AmazonWebServices.aws-toolkit-vscode.svg) ![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/AmazonWebServices.aws-toolkit-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode)
 
-The AWS Toolkit for Visual Studio Code is an [extension](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode) for connecting your IDE to your AWS resources:
+AWS Toolkit is a [VS Code extension](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode) for connecting your IDE to your AWS resources:
 
 -   Connect with [IAM credentials](https://docs.aws.amazon.com/sdkref/latest/guide/access-users.html),
     [IAM Identity Center (SSO)](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html),
@@ -15,22 +15,15 @@ The AWS Toolkit for Visual Studio Code is an [extension](https://marketplace.vis
 -   `Search Log Group` on your CloudWatch logs
 -   Browse your AWS resources
 
-The Toolkit is available from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode).
-
-This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull
-requests or any positive contribution. See [CONTRIBUTING.md](CONTRIBUTING.md).
+This project is open source. We love issues, feature requests, code reviews, pull requests or any
+positive contribution. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 
 ## Documentation
 
--   The [Quick Start Guide](README.quickstart.vscode.md) provides an overview
-    of common Toolkit tasks.
--   The [User Guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome)
-    contains full instructions for using the Toolkit.
--   See other [AWS SDKs and Tools](https://docs.aws.amazon.com/sdkref/latest/guide/overview.html).
-
-## Frequently Asked Questions (FAQ) / Troubleshooting
-
-[Go to page.](./docs/faq-credentials.md)
+-   [Quick Start Guide](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode)
+-   [FAQ / Troubleshooting](./docs/faq-credentials.md)
+-   [User Guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome)
+-   General info about [AWS SDKs and Tools](https://docs.aws.amazon.com/sdkref/latest/guide/overview.html)
 
 ## Feedback
 
@@ -40,7 +33,7 @@ We want your feedback!
 -   [Ask a question](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=guidance&template=guidance_request.md)
 -   [Request a new feature](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=feature-request&template=feature_request.md)
 -   [File an issue](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=bug&template=bug_report.md)
--   Or send a pull request!
+-   Or [send a pull request](CONTRIBUTING.md)!
 
 ## License
 
