@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q Transform: delete temp files we create when no longer needed"
-}

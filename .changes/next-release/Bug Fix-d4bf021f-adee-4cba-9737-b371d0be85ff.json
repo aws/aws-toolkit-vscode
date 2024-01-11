@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q: \"Transformation Hub\" is always visible, even if Transform feature is not enabled or used"
-}

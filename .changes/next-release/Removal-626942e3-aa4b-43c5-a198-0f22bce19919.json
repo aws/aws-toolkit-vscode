@@ -1,4 +1,0 @@
-{
-	"type": "Removal",
-	"description": "Commands: Remove redundant 'View Quick Start' command from appearing in non-Cloud9 versions of the toolkit."
-}
