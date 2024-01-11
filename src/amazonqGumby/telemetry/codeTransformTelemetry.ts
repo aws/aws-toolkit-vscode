@@ -63,4 +63,28 @@ export const JDKToTelemetryValue = (
     }
 }
 
+/**
+ * @description We want the output of our Java versions found
+ * that are not supported to match IntelliJ output. IntelliJ
+ * can read the version easily and for VSCode we must exec
+ * the javaP command
+ * @param javapCommandOutput
+ * @returns
+ */
+export const javaPCommandLineToTelemetryValue = (javapCommandOutput: string) => {
+    switch (javapCommandOutput) {
+        case CodeWhispererConstants.JDK8VersionNumber:
+            return 'JDK_1_8'
+        case CodeWhispererConstants.JDK11VersionNumber:
+            return 'JDK_11'
+        case '51':
+            return 'JDK_1_7'
+        case '61':
+            return 'JDK_17'
+        default:
+            // If nothing found. Output the number
+            return javapCommandOutput
+    }
+}
+
 export const calculateTotalLatency = (startTime: number, endTime: number = Date.now()): number => endTime - startTime

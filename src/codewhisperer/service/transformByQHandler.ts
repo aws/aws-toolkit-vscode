@@ -21,7 +21,10 @@ import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import {
+    calculateTotalLatency,
+    javaPCommandLineToTelemetryValue,
+} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { TransformByQJavaProjectNotFound } from '../../amazonqGumby/models/model'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
@@ -140,7 +143,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'UnsupportedJavaVersion',
             result: MetadataResult.Fail,
-            reason: javaVersion,
+            reason: javaPCommandLineToTelemetryValue(javaVersion),
         })
         throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
     }
