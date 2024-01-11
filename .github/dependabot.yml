@@ -6,22 +6,28 @@ updates:
     - package-ecosystem: 'npm'
       directory: '/' # Location of package manifests.
       target-branch: 'master' # Avoid updates to "staging".
+      commit-message:
+          prefix: 'deps'
       schedule:
           interval: 'daily'
+      allow:
+          - dependency-name: '*'
       groups:
           aws-sdk:
-              dependency-type: 'production'
               patterns:
                   - '@aws-sdk/*'
           vscode-lsp:
-              dependency-type: 'production'
               patterns:
                   - 'vscode-lang*'
     - package-ecosystem: 'github-actions'
       directory: '/'
       target-branch: 'master' # Avoid updates to "staging".
+      commit-message:
+          prefix: 'deps'
       schedule:
           interval: 'daily'
+      allow:
+          - dependency-name: '*'
       groups:
           github-actions:
               patterns:
