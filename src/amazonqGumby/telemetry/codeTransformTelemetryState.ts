@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto'
 interface ICodeTransformerTelemetryState {
     sessionId: string
     sessionStartTime: number
+    resultStatus: string
 }
 
 class CodeTransformerTelemetryState {
@@ -17,6 +18,7 @@ class CodeTransformerTelemetryState {
         this.mainState = {
             sessionId: randomUUID(),
             sessionStartTime: Date.now(),
+            resultStatus: '',
         }
     }
 
@@ -30,12 +32,16 @@ class CodeTransformerTelemetryState {
 
     public getSessionId = () => this.mainState.sessionId
     public getStartTime = () => this.mainState.sessionStartTime
+    public getResultStatus = () => this.mainState.resultStatus
 
     public setSessionId = () => {
         this.mainState.sessionId = randomUUID()
     }
     public setStartTime = () => {
         this.mainState.sessionStartTime = Date.now()
+    }
+    public setResultStatus = (newValue: string) => {
+        this.mainState.resultStatus = newValue
     }
 }
 
