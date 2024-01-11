@@ -4272,7 +4272,7 @@
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.4.0",
         "@types/bytes": "^3.1.0",
-        "@types/circular-dependency-plugin": "^5.0.5",
+        "@types/circular-dependency-plugin": "^5.0.8",
         "@types/cross-spawn": "^6.0.0",
         "@types/diff": "^5.0.7",
         "@types/fs-extra": "^9.0.11",
