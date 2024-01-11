@@ -201,7 +201,7 @@ export async function pollTransformationStatusTillPlanReady(jobId: string) {
     try {
         await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForGettingPlan)
     } catch (error) {
-        errorMessage = 'Failed to poll transformation job for plan availability, or job itself failed'
+        const errorMessage = 'Failed to poll transformation job for plan availability, or job itself failed'
         getLogger().error(errorMessage, error)
         throw new ToolkitError(errorMessage, { cause: error as Error })
     }
