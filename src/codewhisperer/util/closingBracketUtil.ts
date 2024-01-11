@@ -30,6 +30,9 @@ const openToClose: bracketMapType = {
 }
 
 /**
+ * LeftContext | Recommendation | RightContext
+ * This function aims to resolve symbols which are redundant and need to be removed
+ * @param recommendation: "effective" recommendation written by CodeWhisperer ("typeahead should not be considered as written by CodeWhisperer")
  * @param endPosition: end position of the recommendation
  * @param startPosition: start position of the recommendation
  */
@@ -39,6 +42,15 @@ export async function handleExtraBrackets(
     endPosition: vscode.Position,
     startPosition: vscode.Position
 ) {
+    /**
+     * recommendation provided in the function argument is the original recommendation, whereas here what we need is "effective recommendation"
+     * for example given file context ('|' is where we trigger the service)
+     * anArray.pu|
+     * recommendation returned: "sh(element);"
+     * typeahead: sh(
+     * the effective recommendation "written" by CodeWhisperer: element);
+     */
+    recommendation = editor.document.getText(new vscode.Range(startPosition, endPosition))
     const endOffset = editor.document.offsetAt(endPosition)
     const startOffset = editor.document.offsetAt(startPosition)
     const leftContext = editor.document.getText(

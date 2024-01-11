@@ -122,6 +122,7 @@ export interface AcceptedSuggestionEntry {
 export interface OnRecommendationAcceptanceEntry {
     readonly editor: vscode.TextEditor | undefined
     readonly range: vscode.Range
+    readonly effectiveRange: vscode.Range
     readonly acceptIndex: number
     readonly recommendation: string
     readonly requestId: string
