@@ -13,8 +13,6 @@ updates:
           prefix: 'deps'
       schedule:
           interval: 'daily'
-      allow:
-          - dependency-name: '*'
       groups:
           aws-sdk:
               patterns:
@@ -29,8 +27,6 @@ updates:
           prefix: 'deps'
       schedule:
           interval: 'daily'
-      allow:
-          - dependency-name: '*'
       groups:
           github-actions:
               patterns:
