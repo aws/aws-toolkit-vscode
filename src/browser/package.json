@@ -9,6 +9,6 @@
         "stream-browserify": "^3.0.0"
     },
     "devDependencies": {
-        "assert": "^2.0.0"
+        "assert": "^2.1.0"
     }
 }
