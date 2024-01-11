@@ -1,6 +1,6 @@
 # AWS Toolkit for Visual Studio Code
 
-[![GitHub CI status](https://github.com/aws/aws-toolkit-vscode/workflows/CI/badge.svg?event=push&branch=master)](https://github.com/aws/aws-toolkit-vscode/actions?query=branch%3Amaster) [![Coverage](https://img.shields.io/codecov/c/github/aws/aws-toolkit-vscode/master.svg)](https://codecov.io/gh/aws/aws-toolkit-vscode/branch/master) [![Marketplace Version](https://img.shields.io/vscode-marketplace/v/AmazonWebServices.aws-toolkit-vscode.svg) ![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/AmazonWebServices.aws-toolkit-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode)
+[![Coverage](https://img.shields.io/codecov/c/github/aws/aws-toolkit-vscode/master.svg)](https://codecov.io/gh/aws/aws-toolkit-vscode/branch/master) [![Marketplace Version](https://img.shields.io/vscode-marketplace/v/AmazonWebServices.aws-toolkit-vscode.svg) ![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/AmazonWebServices.aws-toolkit-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode)
 
 The AWS Toolkit for Visual Studio Code is an [extension](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode) for connecting your IDE to your AWS resources:
 

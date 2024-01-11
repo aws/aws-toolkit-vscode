@@ -11,8 +11,6 @@ phases:
 
     build:
         commands:
-            # Disable engine-strict in CI.
-            - sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - |
                 echo "Removing SNAPSHOT from version string"
                 git config --global user.name "aws-toolkit-automation"

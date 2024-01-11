@@ -19,8 +19,6 @@ phases:
             - apt-get install -y libasound2-plugins
     build:
         commands:
-            # Disable engine-strict in CI.
-            - sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             # --unsafe-perm is needed because we run as root
             - npm ci --unsafe-perm
             - cp ./README.quickstart.vscode.md ./README.md
