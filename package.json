@@ -4316,7 +4316,7 @@
         "file-loader": "^6.2.0",
         "glob": "^7.1.7",
         "husky": "^7.0.2",
-        "json-schema-to-typescript": "^13.0.2",
+        "json-schema-to-typescript": "^13.1.1",
         "marked": "^11.1.1",
         "mocha": "^10.1.0",
         "mocha-junit-reporter": "^2.2.1",
