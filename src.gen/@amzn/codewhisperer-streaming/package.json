@@ -57,7 +57,7 @@
     },
     "devDependencies": {
         "@tsconfig/node14": "1.0.3",
-        "concurrently": "7.0.0",
+        "concurrently": "8.2.2",
         "downlevel-dts": "0.10.1",
         "rimraf": "^3.0.0",
         "typedoc": "0.23.23",
