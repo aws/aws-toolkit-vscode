@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CodeWhisperer: Fixes a bug where accepting a recommendation in AWS Cloud9 will trigger another suggestion"
-}

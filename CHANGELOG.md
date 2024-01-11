@@ -1,3 +1,19 @@
+## 2.5.0 2024-01-11
+
+- **Bug Fix** CodeWhisperer: Fixes a bug where accepting a recommendation in AWS Cloud9 will trigger another suggestion
+- **Bug Fix** Amazon Q: correct code selection range for one-line selections
+- **Bug Fix** CodeWhisperer: Security Scan Log output is blank if log level is not "verbose".
+- **Bug Fix** Amazon Q Chat: Fixed code block text background
+- **Bug Fix** Amazon Q Transform: delete temp files we create when no longer needed
+- **Bug Fix** Amazon Q Transform: make copy-dependencies command less error prone
+- **Bug Fix** CodeWhisperer: fix incorrect error handling causing TypeError .includes is not a function
+- **Bug Fix** Amazon Q: "Transformation Hub" is always visible, even if Transform feature is not enabled or used
+- **Feature** CodeWhisperer: add select customization action to notification
+- **Feature** feat(sam): python 3.12 support for SAM, lambda
+- **Feature** Browser: Enable generic global commands in ellipses menus, e.g. About Toolkit, Report Toolkit Issue, etc.
+- **Removal** Commands: Remove redundant 'View Quick Start' command from appearing in non-Cloud9 versions of the toolkit.
+- **Removal** Amazon Q, CodeWhisperer: Remove 'Switch Connections' menu item, and only show 'Add new connection' when not signed in.
+
 ## 2.4.0 2023-12-19
 
 - **Bug Fix** Amazon Q: `/dev` command may fail with "Conversation id must exist"

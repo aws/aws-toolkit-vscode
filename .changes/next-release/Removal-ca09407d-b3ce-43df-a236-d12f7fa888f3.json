@@ -1,4 +1,0 @@
-{
-	"type": "Removal",
-	"description": "Amazon Q, CodeWhisperer: Remove 'Switch Connections' menu item, and only show 'Add new connection' when not signed in."
-}
