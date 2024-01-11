@@ -51,8 +51,8 @@ import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
 
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
 
     afterEach(function () {
@@ -62,26 +62,26 @@ describe('CodeWhisperer-basicCommands', function () {
 
     it('test get()', async function () {
         const fakeMemeto = new FakeMemento()
-        fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, true)
+        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, true)
 
         let res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
         assert.strictEqual(res, true)
 
-        fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, undefined)
+        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, undefined)
         res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
         assert.strictEqual(res, undefined)
 
-        fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, false)
+        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, false)
         res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
         assert.strictEqual(res, false)
     })
 
     it('test set()', async function () {
         const fakeMemeto = new FakeMemento()
-        set(CodeWhispererConstants.autoTriggerEnabledKey, true, fakeMemeto)
+        await set(CodeWhispererConstants.autoTriggerEnabledKey, true, fakeMemeto)
         assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), true)
 
-        set(CodeWhispererConstants.autoTriggerEnabledKey, false, fakeMemeto)
+        await set(CodeWhispererConstants.autoTriggerEnabledKey, false, fakeMemeto)
         assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), false)
     })
 
@@ -94,8 +94,8 @@ describe('CodeWhisperer-basicCommands', function () {
 
         let codeSuggestionsState: CodeSuggestionsState
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             codeSuggestionsState = new TestCodeSuggestionsState()
         })
 
@@ -184,7 +184,7 @@ describe('CodeWhisperer-basicCommands', function () {
         let mockExtContext: ExtContext
 
         beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
             mockExtensionContext = await FakeExtensionContext.create()
             mockSecurityPanelViewProvider = new SecurityPanelViewProvider(mockExtensionContext)
             mockClient = stub(DefaultCodeWhispererClient)
@@ -225,7 +225,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
     describe('showReferenceLog', function () {
         beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {
@@ -242,7 +242,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
     describe('selectCustomizationPrompt', function () {
         beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {
@@ -259,7 +259,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
     describe('reconnect', function () {
         beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {
@@ -277,7 +277,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
     describe('signoutCodeWhisperer', function () {
         beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {

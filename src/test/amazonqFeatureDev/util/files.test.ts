@@ -60,8 +60,8 @@ describe('file utils', () => {
 
         const workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
 
-        const writeFile = (pathParts: string[], fileContent: string) => {
-            toFile(fileContent, workspace.uri.fsPath, ...pathParts)
+        const writeFile = async (pathParts: string[], fileContent: string) => {
+            await toFile(fileContent, workspace.uri.fsPath, ...pathParts)
         }
 
         sinon.stub(vscode.workspace, 'workspaceFolders').value([workspace])
@@ -74,26 +74,26 @@ describe('file utils', () => {
 
         range_file[0-5]
         `
-        writeFile(['.gitignore'], gitignoreContent)
+        await writeFile(['.gitignore'], gitignoreContent)
 
-        writeFile(['build', `ignored1`], fileContent)
-        writeFile(['build', `ignored2`], fileContent)
+        await writeFile(['build', `ignored1`], fileContent)
+        await writeFile(['build', `ignored2`], fileContent)
 
-        writeFile(['node_modules', `ignored1`], fileContent)
-        writeFile(['node_modules', `ignored2`], fileContent)
+        await writeFile(['node_modules', `ignored1`], fileContent)
+        await writeFile(['node_modules', `ignored2`], fileContent)
 
-        writeFile([`range_file0`], fileContent)
-        writeFile([`range_file9`], fileContent)
+        await writeFile([`range_file0`], fileContent)
+        await writeFile([`range_file9`], fileContent)
 
         const gitignore2 = 'folder1\n'
-        writeFile(['src', '.gitignore'], gitignore2)
-        writeFile(['src', 'folder2', 'a.js'], fileContent)
+        await writeFile(['src', '.gitignore'], gitignore2)
+        await writeFile(['src', 'folder2', 'a.js'], fileContent)
 
         const gitignore3 = `negate_test*
         !negate_test[0-5]`
-        writeFile(['src', 'folder3', '.gitignore'], gitignore3)
-        writeFile(['src', 'folder3', 'negate_test1'], fileContent)
-        writeFile(['src', 'folder3', 'negate_test6'], fileContent)
+        await writeFile(['src', 'folder3', '.gitignore'], gitignore3)
+        await writeFile(['src', 'folder3', 'negate_test1'], fileContent)
+        await writeFile(['src', 'folder3', 'negate_test6'], fileContent)
 
         const result = await collectFiles(workspace.uri.fsPath, true)
         result.sort((l, r) => l.filePath.localeCompare(r.filePath))
@@ -146,14 +146,14 @@ describe('file utils', () => {
         const fileContent = ''
         for (const fmt of ['txt', 'md']) {
             // root license files
-            toFile(fileContent, workspace.uri.fsPath, `license.${fmt}`)
-            toFile(fileContent, workspace.uri.fsPath, `License.${fmt}`)
-            toFile(fileContent, workspace.uri.fsPath, `LICENSE.${fmt}`)
+            await toFile(fileContent, workspace.uri.fsPath, `license.${fmt}`)
+            await toFile(fileContent, workspace.uri.fsPath, `License.${fmt}`)
+            await toFile(fileContent, workspace.uri.fsPath, `LICENSE.${fmt}`)
 
             // nested license files
-            toFile(fileContent, workspace.uri.fsPath, 'src', `license.${fmt}`)
-            toFile(fileContent, workspace.uri.fsPath, 'src', `License.${fmt}`)
-            toFile(fileContent, workspace.uri.fsPath, 'src', `LICENSE.${fmt}`)
+            await toFile(fileContent, workspace.uri.fsPath, 'src', `license.${fmt}`)
+            await toFile(fileContent, workspace.uri.fsPath, 'src', `License.${fmt}`)
+            await toFile(fileContent, workspace.uri.fsPath, 'src', `LICENSE.${fmt}`)
         }
 
         const result = await collectFiles(workspace.uri.fsPath, true)

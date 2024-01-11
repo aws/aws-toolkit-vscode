@@ -50,7 +50,7 @@ async function withoutShellIntegration<T>(cb: () => T | Promise<T>): Promise<T> 
         await Settings.instance.update('terminal.integrated.shellIntegration.enabled', false)
         return await cb()
     } finally {
-        Settings.instance.update('terminal.integrated.shellIntegration.enabled', userValue)
+        await Settings.instance.update('terminal.integrated.shellIntegration.enabled', userValue)
     }
 }
 

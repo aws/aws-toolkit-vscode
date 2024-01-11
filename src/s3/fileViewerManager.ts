@@ -130,9 +130,12 @@ export class S3FileViewerManager {
         this.disposables.push(this.registerTabCleanup())
     }
 
-    /**
-     * Removes all active editors as well as any underlying files
-     */
+    /** Disposes all active editors and underlying files. */
+    public async closeEditors(): Promise<void> {
+        await Promise.all([...Object.values(this.activeTabs).map(v => v?.dispose())])
+    }
+
+    /** Disposes all active editors, underlying files, providers, and other resources. */
     public async dispose(): Promise<void> {
         await Promise.all([
             ...Object.values(this.activeTabs).map(v => v?.dispose()),
@@ -177,8 +180,12 @@ export class S3FileViewerManager {
 
     private async closeEditor(editor: vscode.TextEditor | undefined): Promise<void> {
         if (editor && !editor.document.isClosed) {
-            await vscode.window.showTextDocument(editor.document, { preserveFocus: false })
-            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            await vscode.window.showTextDocument(editor.document, { preserveFocus: false }).then(
+                r => vscode.commands.executeCommand('workbench.action.closeActiveEditor'),
+                e => {
+                    getLogger().warn('S3FileViewer: showTextDocument failed to open: "%s"', editor.document.uri)
+                }
+            )
         }
     }
 
@@ -209,7 +216,7 @@ export class S3FileViewerManager {
      *
      * @param file
      */
-    public async openInReadMode(file: S3File): Promise<void> {
+    public async openInReadMode(file: S3File): Promise<S3Tab | undefined> {
         const contentType = mime.contentType(path.extname(file.name))
         const isTextDocument = contentType && mime.charset(contentType) === 'UTF-8'
 
@@ -223,7 +230,7 @@ export class S3FileViewerManager {
             return this.openInEditMode(file)
         }
 
-        await this.createTab(file, TabMode.Read)
+        return this.createTab(file, TabMode.Read)
     }
 
     /**
@@ -232,7 +239,7 @@ export class S3FileViewerManager {
      *
      * @param uriOrFile to be opened
      */
-    public async openInEditMode(uriOrFile: vscode.Uri | S3File): Promise<void> {
+    public async openInEditMode(uriOrFile: vscode.Uri | S3File): Promise<S3Tab | undefined> {
         const uri = uriOrFile instanceof vscode.Uri ? uriOrFile : this.fileToUri(uriOrFile, TabMode.Edit)
         const activeTab = await this.tryFocusTab(uri, uri.with({ scheme: this.schemes.read }))
         const file = activeTab?.file ?? uriOrFile
@@ -246,9 +253,9 @@ export class S3FileViewerManager {
         }
 
         await activeTab?.dispose()
-        this.showEditNotification()
+        void this.showEditNotification()
 
-        await this.createTab(file, TabMode.Edit)
+        return this.createTab(file, TabMode.Edit)
     }
 
     private registerProvider(file: S3File, uri: vscode.Uri): vscode.Disposable {
@@ -258,7 +265,7 @@ export class S3FileViewerManager {
             this.fs.registerProvider(uri, provider),
             provider.onDidChange(() => {
                 // TODO: find the correct node instead of refreshing it all
-                vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
+                void vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
             })
         )
     }
@@ -266,7 +273,7 @@ export class S3FileViewerManager {
     /**
      * Creates a new tab based on the mode
      */
-    private async createTab(file: S3File, mode: TabMode): Promise<void> {
+    private async createTab(file: S3File, mode: TabMode): Promise<S3Tab | undefined> {
         if (!(await this.canContinueDownload(file))) {
             throw new CancellationError('user')
         }
@@ -291,6 +298,8 @@ export class S3FileViewerManager {
                 }
             },
         }
+
+        return this.activeTabs[key]
     }
 
     private async canContinueDownload(file: S3File): Promise<boolean> {

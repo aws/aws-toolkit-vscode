@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as config from './config'
-import { ExtContext } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { SkipPrompter } from '../shared/ui/common/skipPrompter'
@@ -26,7 +25,7 @@ interface MenuOption {
     readonly label: string
     readonly description?: string
     readonly detail?: string
-    readonly executor: (ctx: ExtContext) => Promise<unknown> | unknown
+    readonly executor: (ctx: vscode.ExtensionContext) => Promise<unknown> | unknown
 }
 
 /**
@@ -91,7 +90,7 @@ const menuOptions: Record<string, MenuOption> = {
  * re-appears after vscode restart. Ideally there should be only one scheme (aws-dev:/).
  */
 export class DevDocumentProvider implements vscode.TextDocumentContentProvider {
-    constructor(private readonly ctx: ExtContext) {}
+    constructor(private readonly ctx: vscode.ExtensionContext) {}
     provideTextDocumentContent(uri: vscode.Uri): string {
         if (uri.path === '/envvars') {
             let s = 'Environment variables known to AWS Toolkit:\n\n'
@@ -102,7 +101,7 @@ export class DevDocumentProvider implements vscode.TextDocumentContentProvider {
         } else if (uri.path === '/globalstate') {
             // lol hax
             // as of November 2023, all of a memento's properties are stored as property `f` when minified
-            return JSON.stringify((this.ctx.extensionContext.globalState as any).f, undefined, 4)
+            return JSON.stringify((this.ctx.globalState as any).f, undefined, 4)
         } else {
             return `unknown URI path: ${uri}`
         }
@@ -116,30 +115,30 @@ export class DevDocumentProvider implements vscode.TextDocumentContentProvider {
  *
  * See {@link DevSettings} for more information.
  */
-export function activate(ctx: ExtContext): void {
+export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     const devSettings = DevSettings.instance
 
     async function updateMode() {
         await vscode.commands.executeCommand('setContext', 'aws.isDevMode', devSettings.isDevMode())
     }
 
-    ctx.extensionContext.subscriptions.push(
+    ctx.subscriptions.push(
         devSettings.onDidChangeActiveSettings(updateMode),
         vscode.commands.registerCommand('aws.dev.openMenu', () => openMenu(ctx, menuOptions)),
         vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider(ctx))
     )
 
-    updateMode()
+    await updateMode()
 
-    const editor = new ObjectEditor(ctx.extensionContext)
-    ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))
+    const editor = new ObjectEditor(ctx)
+    ctx.subscriptions.push(openStorageCommand.register(editor))
 
     if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
-        ctx.extensionContext.subscriptions.push(watchBetaVSIX(config.betaUrl))
+        ctx.subscriptions.push(watchBetaVSIX(config.betaUrl))
     }
 }
 
-async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {
+async function openMenu(ctx: vscode.ExtensionContext, options: typeof menuOptions): Promise<void> {
     const items = entries(options).map(([_, v]) => ({
         label: v.label,
         detail: v.detail,
@@ -285,7 +284,7 @@ class ObjectEditor {
     }
 }
 
-async function openStorageFromInput(ctx: ExtContext) {
+async function openStorageFromInput(ctx: vscode.ExtensionContext) {
     const wizard = new (class extends Wizard<{ target: 'globalsView' | 'globals' | 'secrets'; key: string }> {
         constructor() {
             super()
@@ -312,7 +311,7 @@ async function openStorageFromInput(ctx: ExtContext) {
                     return new SkipPrompter('')
                 } else if (target === 'globals') {
                     // List all globalState keys in the quickpick menu.
-                    const items = ctx.extensionContext.globalState
+                    const items = ctx.globalState
                         .keys()
                         .map(key => {
                             return {
@@ -343,14 +342,14 @@ async function deleteSsoConnections() {
     const conns = Auth.instance.listConnections()
     const ssoConns = (await conns).filter(isAnySsoConnection)
     await Promise.all(ssoConns.map(conn => Auth.instance.deleteConnection(conn)))
-    vscode.window.showInformationMessage(`Deleted: ${ssoConns.map(c => c.startUrl).join(', ')}`)
+    void vscode.window.showInformationMessage(`Deleted: ${ssoConns.map(c => c.startUrl).join(', ')}`)
 }
 
 async function expireSsoConnections() {
     const conns = Auth.instance.listConnections()
     const ssoConns = (await conns).filter(isAnySsoConnection)
     await Promise.all(ssoConns.map(conn => Auth.instance.expireConnection(conn)))
-    vscode.window.showInformationMessage(`Expired: ${ssoConns.map(c => c.startUrl).join(', ')}`)
+    void vscode.window.showInformationMessage(`Expired: ${ssoConns.map(c => c.startUrl).join(', ')}`)
 }
 
 async function showState(path: string) {

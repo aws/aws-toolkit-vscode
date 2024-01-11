@@ -12,7 +12,7 @@ import { Uri } from 'vscode'
 import { GitIgnoreFilter } from './gitignore'
 
 import AdmZip from 'adm-zip'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 import { TelemetryHelper } from './telemetryHelper'
 import { PrepareRepoFailedError } from '../errors'
 import { getLogger } from '../../shared/logger/logger'
@@ -133,6 +133,5 @@ export async function prepareRepoData(
 
 export async function getSourceCodePath(workspaceRoot: string, projectRoot: string) {
     const srcRoot = path.join(workspaceRoot, projectRoot)
-    const srcFound = await FileSystemCommon.instance.stat(srcRoot)
-    return srcFound !== undefined ? srcRoot : workspaceRoot
+    return (await fsCommon.existsDir(srcRoot)) ? srcRoot : workspaceRoot
 }

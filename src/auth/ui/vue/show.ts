@@ -169,19 +169,19 @@ export class AuthWebview extends VueWebview {
     }
 
     async showResourceExplorer(): Promise<void> {
-        vscode.commands.executeCommand('aws.explorer.focus')
+        await vscode.commands.executeCommand('aws.explorer.focus')
     }
 
     async showCodeWhispererView(): Promise<void> {
-        vscode.commands.executeCommand('aws.codewhisperer.focus')
+        await vscode.commands.executeCommand('aws.codewhisperer.focus')
     }
 
     async showCodeCatalystNode(): Promise<void> {
-        vscode.commands.executeCommand('aws.codecatalyst.maybeFocus')
+        await vscode.commands.executeCommand('aws.codecatalyst.maybeFocus')
     }
 
     async showAmazonQChat(): Promise<void> {
-        focusAmazonQPanel()
+        return focusAmazonQPanel()
     }
 
     async getIdentityCenterRegion(): Promise<Region | undefined> {
@@ -410,7 +410,7 @@ export class AuthWebview extends VueWebview {
     }
 
     openFeedbackForm() {
-        submitFeedback.execute(placeholder, 'AWS Toolkit')
+        return submitFeedback.execute(placeholder, 'AWS Toolkit')
     }
 
     // -------------------- Telemetry Stuff --------------------
@@ -614,6 +614,8 @@ export class AuthWebview extends VueWebview {
             featureType,
             result: 'Succeeded',
             attempts: authAttempts,
+        }).catch(e => {
+            getLogger().error('emitAuthAttempt failed: %s', (e as Error).message)
         })
         this.addSuccessfulAuth(id)
     }
@@ -779,7 +781,9 @@ async function showAuthWebview(
         subscriptions = [
             webview.onDidDispose(() => {
                 if (activePanel) {
-                    emitWebviewClosed(activePanel.server)
+                    emitWebviewClosed(activePanel.server).catch(e => {
+                        getLogger().error('emitWebviewClosed failed: %s', (e as Error).message)
+                    })
                 }
                 vscode.Disposable.from(...(subscriptions ?? [])).dispose()
                 activePanel = undefined

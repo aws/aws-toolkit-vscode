@@ -40,16 +40,15 @@ export function showLoginFailedMessage(credentialsId: string, errMsg: string): v
     // TODO: getHelp page for Cloud9.
     const buttons = isCloud9() ? [editCreds] : [editCreds, getHelp]
 
-    showViewLogsMessage(
+    void showViewLogsMessage(
         localize('AWS.message.credentials.invalid', 'Credentials "{0}" failed to connect: {1}', credentialsId, errMsg),
         'error',
         buttons
     ).then((selection: string | undefined) => {
         if (selection === getHelp) {
-            openUrl(vscode.Uri.parse(authHelpUrl))
-        }
-        if (selection === editCreds) {
-            vscode.commands.executeCommand('aws.credentials.edit')
+            return openUrl(vscode.Uri.parse(authHelpUrl))
+        } else if (selection === editCreds) {
+            return vscode.commands.executeCommand('aws.credentials.edit')
         }
     })
 }
@@ -80,7 +79,7 @@ export async function resolveProviderWithCancel(
     globals.clock.setTimeout(() => {
         timeout = timeout as Timeout // Typescript lost scope of the correct type here
         if (timeout.completed !== true) {
-            showMessageWithCancel(
+            void showMessageWithCancel(
                 localize('AWS.message.credentials.pending', 'Getting credentials for profile: {0}', profile),
                 timeout
             )

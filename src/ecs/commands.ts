@@ -75,7 +75,7 @@ export async function toggleExecuteCommandFlag(
         if (choice === undefined || choice === no) {
             throw new CancellationError('user')
         } else if (choice === yesDontAskAgain) {
-            settings.disablePrompt(prompt)
+            await settings.disablePrompt(prompt)
         }
     }
 
@@ -88,7 +88,7 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
 
         const { container, task, command } = await runCommandWizard(obj)
         const timeout = new Timeout(600000)
-        showMessageWithCancel('Running command...', timeout)
+        void showMessageWithCancel('Running command...', timeout)
 
         try {
             const { path, args, dispose } = await container.prepareCommandForTask(command, task)

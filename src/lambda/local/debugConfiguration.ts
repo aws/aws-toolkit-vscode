@@ -171,7 +171,7 @@ export async function getHandlerName(
         }
         default: {
             // Should never happen.
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize(
                     'AWS.sam.debugger.invalidTarget',
                     'Debug Configuration has an unsupported target type. Supported types: {0}',
@@ -257,7 +257,7 @@ export function getArchitecture(
 
         if (!isArch) {
             getLogger('channel').warn('SAM Invoke: Invalid architecture. Defaulting to x86_64.')
-            vscode.window.showWarningMessage(
+            void vscode.window.showWarningMessage(
                 localize(
                     'AWS.output.sam.invalidArchitecture',
                     'Invalid architecture specified in {0}. Defaulting to x86_64 architecture for invocation.',

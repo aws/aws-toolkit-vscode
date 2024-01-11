@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { AuthUtil, amazonQScopes } from './authUtil'
@@ -35,7 +34,7 @@ export async function connectToEnterpriseSso(startUrl: string, region: Region['i
             code: 'FailedToConnect',
         })
     }
-    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    await Commands.tryExecute('aws.codeWhisperer.refresh')
     await Commands.tryExecute('aws.amazonq.refresh')
-    await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
+    await Commands.tryExecute('aws.codeWhisperer.enableCodeSuggestions')
 }

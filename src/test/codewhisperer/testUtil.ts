@@ -20,19 +20,18 @@ import { session } from '../../codewhisperer/util/codeWhispererSession'
 import fs from 'fs'
 import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
-import { spy } from '../utilities/mockito'
 import { Service } from 'aws-sdk'
 import userApiConfig = require('./../../codewhisperer/client/user-service-2.json')
 import CodeWhispererUserClient = require('../../codewhisperer/client/codewhispereruserclient')
 import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
 
-export function resetCodeWhispererGlobalVariables() {
+export async function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
     vsCodeState.isCodeWhispererEditing = false
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
     session.reset()
-    CodeSuggestionsState.instance.setSuggestionsEnabled(false)
+    await CodeSuggestionsState.instance.setSuggestionsEnabled(false)
 }
 
 export function createMockDocument(
@@ -155,13 +154,12 @@ export function createTextDocumentChangeEvent(document: vscode.TextDocument, ran
     }
 }
 
+// bryceitoc9: I'm not sure what this function does? spy functionality from Mockito wasn't used, and removing doesn't break anything
 export async function createSpyClient() {
     const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
-    const clientSpy = spy(
-        (await builder.createAwsService(Service, {
-            apiConfig: userApiConfig,
-        } as ServiceOptions)) as CodeWhispererUserClient
-    )
+    const clientSpy = (await builder.createAwsService(Service, {
+        apiConfig: userApiConfig,
+    } as ServiceOptions)) as CodeWhispererUserClient
     sinon.stub(codeWhispererClient, 'createUserSdkClient').returns(Promise.resolve(clientSpy))
     return clientSpy
 }

@@ -179,7 +179,7 @@ export function showTemplatesConfigurationError(
 ): void {
     const logger: Logger = getLogger()
 
-    showErrorMessage(
+    void showErrorMessage(
         localize(
             'AWS.lambda.configure.error.fieldtype',
             'Your templates.json file has an issue. {0} was detected as {1} instead of one of the following: [{2}]. Please change or remove this field, and try again.',
@@ -197,7 +197,7 @@ export function showTemplatesConfigurationError(
 }
 
 export async function ensureTemplatesConfigFileExists(path: string): Promise<void> {
-    ensureDir(_path.dirname(path))
+    await ensureDir(_path.dirname(path))
     try {
         await access(path)
     } catch {

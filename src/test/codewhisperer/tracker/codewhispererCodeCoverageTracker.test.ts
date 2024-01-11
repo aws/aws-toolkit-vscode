@@ -22,8 +22,8 @@ describe('codewhispererCodecoverageTracker', function () {
     const language = 'python'
 
     describe('test getTracker', function () {
-        afterEach(function () {
-            resetCodeWhispererGlobalVariables()
+        afterEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             CodeWhispererCodeCoverageTracker.instances.clear()
         })
 
@@ -67,8 +67,8 @@ describe('codewhispererCodecoverageTracker', function () {
         const fakeMemeto = new FakeMemento()
         let tracker: CodeWhispererCodeCoverageTracker | undefined
 
-        afterEach(function () {
-            resetCodeWhispererGlobalVariables()
+        afterEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             CodeWhispererCodeCoverageTracker.instances.clear()
             sinon.restore()
         })
@@ -112,8 +112,8 @@ describe('codewhispererCodecoverageTracker', function () {
     describe('updateAcceptedTokensCount', function () {
         let tracker: CodeWhispererCodeCoverageTracker | undefined
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
             if (tracker) {
                 sinon.stub(tracker, 'isActive').returns(true)
@@ -145,8 +145,8 @@ describe('codewhispererCodecoverageTracker', function () {
     describe('getUnmodifiedAcceptedTokens', function () {
         let tracker: CodeWhispererCodeCoverageTracker | undefined
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
             if (tracker) {
                 sinon.stub(tracker, 'isActive').returns(true)
@@ -173,8 +173,8 @@ describe('codewhispererCodecoverageTracker', function () {
     describe('countAcceptedTokens', function () {
         let tracker: CodeWhispererCodeCoverageTracker | undefined
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
             if (tracker) {
                 sinon.stub(tracker, 'isActive').returns(true)
@@ -211,8 +211,8 @@ describe('codewhispererCodecoverageTracker', function () {
     describe('countTotalTokens', function () {
         let tracker: CodeWhispererCodeCoverageTracker | undefined
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
             if (tracker) {
                 sinon.stub(tracker, 'isActive').returns(true)
@@ -323,8 +323,8 @@ describe('codewhispererCodecoverageTracker', function () {
     describe('flush', function () {
         let tracker: CodeWhispererCodeCoverageTracker | undefined
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
             if (tracker) {
                 sinon.stub(tracker, 'isActive').returns(true)
@@ -357,8 +357,8 @@ describe('codewhispererCodecoverageTracker', function () {
     describe('emitCodeWhispererCodeContribution', function () {
         let tracker: CodeWhispererCodeCoverageTracker | undefined
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
             if (tracker) {
                 sinon.stub(tracker, 'isActive').returns(true)

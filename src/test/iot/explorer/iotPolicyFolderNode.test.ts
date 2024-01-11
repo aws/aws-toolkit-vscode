@@ -9,10 +9,10 @@ import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
 import { Iot } from 'aws-sdk'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { TestSettings } from '../../utilities/testSettingsConfiguration'
+import sinon from 'sinon'
 
 describe('IotPolicyFolderNode', function () {
     const nextMarker = 'nextMarker'
@@ -33,37 +33,45 @@ describe('IotPolicyFolderNode', function () {
     }
 
     beforeEach(function () {
-        iot = mock()
+        iot = {} as any as IotClient
         config = new TestSettings()
     })
 
     describe('getChildren', function () {
         it('gets children', async function () {
-            when(iot.listPolicies(deepEqual({ marker: undefined, pageSize }))).thenResolve({
+            const policiesStub = sinon.stub().resolves({
                 policies: [policy],
                 nextMarker: undefined,
             })
-            when(iot.listPolicyTargets(deepEqual({ policyName: 'policy' }))).thenResolve([])
+            iot.listPolicies = policiesStub
+            const targetsStub = sinon.stub().resolves([])
+            iot.listPolicyTargets = targetsStub
 
             await config.getSection('aws').update('iot.maxItemsPerPage', pageSize)
-            const node = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)), config)
+            const node = new IotPolicyFolderNode(iot, new IotNode(iot), config)
             const [policyNode, ...otherNodes] = await node.getChildren()
 
+            assert(policiesStub.calledOnceWithExactly({ marker: undefined, pageSize }))
+            assert(targetsStub.calledOnceWithExactly({ policyName: 'policy' }))
             assertPolicyNode(policyNode, expectedPolicy)
             assert.strictEqual(otherNodes.length, 0)
         })
 
         it('gets children with node for loading more results', async function () {
-            when(iot.listPolicies(deepEqual({ marker: undefined, pageSize }))).thenResolve({
+            const policiesStub = sinon.stub().resolves({
                 policies: [policy],
                 nextMarker,
             })
-            when(iot.listPolicyTargets(deepEqual({ policyName: 'policy' }))).thenResolve([])
+            iot.listPolicies = policiesStub
+            const targetsStub = sinon.stub().resolves([])
+            iot.listPolicyTargets = targetsStub
 
             await config.getSection('aws').update('iot.maxItemsPerPage', pageSize)
-            const node = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)), config)
+            const node = new IotPolicyFolderNode(iot, new IotNode(iot), config)
             const [policyNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
+            assert(policiesStub.calledOnceWithExactly({ marker: undefined, pageSize }))
+            assert(targetsStub.calledOnceWithExactly({ policyName: 'policy' }))
             assertPolicyNode(policyNode, expectedPolicy)
             assertMoreResultsNode(moreResultsNode)
             assert.strictEqual(otherNodes.length, 0)

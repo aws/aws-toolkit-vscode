@@ -64,7 +64,7 @@ export function throwIfCancelled() {
 export async function getOpenProjects() {
     const folders = vscode.workspace.workspaceFolders
     if (folders === undefined) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         throw new ToolkitError('No Java projects found since no projects are open', { code: 'NoOpenProjects' })
     }
     const openProjects: vscode.QuickPickItem[] = []
@@ -86,7 +86,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const projectPath = project.description
     const buildSystem = await checkBuildSystem(projectPath!)
     if (buildSystem !== BuildSystem.Maven) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NonMavenProject',
@@ -101,7 +101,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         1
     )
     if (compiledJavaFiles.length < 1) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
@@ -110,13 +110,13 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         })
         throw new TransformByQJavaProjectNotFound()
     }
-    const classFilePath = compiledJavaFiles[0].fsPath
+    const classFilePath = `"${compiledJavaFiles[0].fsPath}"`
     const baseCommand = 'javap'
     const args = ['-v', classFilePath]
-    const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
+    const spawnResult = spawnSync(baseCommand, args, { shell: true, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
@@ -135,7 +135,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
         transformByQState.setSourceJDKVersionToJDK11()
     } else {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'UnsupportedJavaVersion',
@@ -190,13 +190,13 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
         })
         getLogger().info(`CodeTransform: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in S3 UploadZip API call'
+        const errorMessage = (e as Error).message ?? 'Error in S3 UploadZip API call'
         getLogger().error('CodeTransform: UploadZip error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e?.requestId,
+            codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'UploadToS3Failed',
         })
@@ -229,8 +229,8 @@ export async function stopJob(jobId: string) {
                 codeTransformApiNames: 'StopTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: jobId,
-                codeTransformApiErrorMessage: e?.message || errorMessage,
-                codeTransformRequestId: e?.requestId,
+                codeTransformApiErrorMessage: (e as Error).message ?? errorMessage,
+                codeTransformRequestId: e.requestId ?? '',
                 result: MetadataResult.Fail,
                 reason: 'StopTransformationFailed',
             })
@@ -242,9 +242,10 @@ export async function stopJob(jobId: string) {
 export async function uploadPayload(payloadFileName: string) {
     const sha256 = getSha256(payloadFileName)
     throwIfCancelled()
+    let response = undefined
     try {
         const apiStartTime = Date.now()
-        const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
+        response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
             uploadIntent: CodeWhispererConstants.uploadIntent,
@@ -257,22 +258,27 @@ export async function uploadPayload(payloadFileName: string) {
             codeTransformRequestId: response.$response.requestId,
             result: MetadataResult.Pass,
         })
-        await uploadArtifactToS3(payloadFileName, response)
-        return response.uploadId
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in CreateUploadUrl API call'
+        const errorMessage = (e as Error).message ?? 'Error in CreateUploadUrl API call'
         getLogger().error('CodeTransform: CreateUploadUrl error: = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'CreateUploadUrl',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e?.requestId,
+            codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'CreateUploadUrlFailed',
         })
         // Pass along error to callee function
         throw new ToolkitError(errorMessage, { cause: e as Error })
     }
+    try {
+        await uploadArtifactToS3(payloadFileName, response)
+    } catch (e: any) {
+        const errorMessage = (e as Error).message ?? 'Error in uploadArtifactToS3 call'
+        throw new ToolkitError(errorMessage, { cause: e as Error })
+    }
+    return response.uploadId
 }
 
 /**
@@ -317,10 +323,10 @@ function getProjectDependencies(modulePath: string): string[] {
         '-Dmdep.copyPom=true',
         '-Dmdep.addParentPoms=true',
     ]
-    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: false, encoding: 'utf-8' })
+    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
+        void vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
         getLogger().error('CodeTransform: Error in running Maven command = ')
         // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
         if (spawnResult.error) {
@@ -328,6 +334,12 @@ function getProjectDependencies(modulePath: string): string[] {
         } else {
             getLogger().error(spawnResult.stdout)
         }
+        telemetry.codeTransform_mvnBuildFailed.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformMavenBuildCommand: baseCommand,
+            result: MetadataResult.Fail,
+            reason: spawnResult.error ? spawnResult.error.message : spawnResult.stdout,
+        })
         throw new ToolkitError('Maven Dependency Error', { code: 'CannotRunMavenShellCommand' })
     }
 
@@ -433,13 +445,13 @@ export async function startJob(uploadId: string) {
         })
         return response.transformationJobId
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in StartTransformation API call'
+        const errorMessage = (e as Error).message ?? 'Error in StartTransformation API call'
         getLogger().error('CodeTransform: StartTransformation error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'StartTransformation',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e?.requestId,
+            codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'StartTransformationFailed',
         })
@@ -484,14 +496,14 @@ export async function getTransformationPlan(jobId: string) {
 
         return plan
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in GetTransformationPlan API call'
+        const errorMessage = (e as Error).message ?? 'Error in GetTransformationPlan API call'
         getLogger().error('CodeTransform: GetTransformationPlan error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e?.requestId,
+            codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'GetTransformationPlanFailed',
         })
@@ -517,14 +529,14 @@ export async function getTransformationSteps(jobId: string) {
         })
         return response.transformationPlan.transformationSteps
     } catch (e: any) {
-        const errorMessage = e?.message || 'Error in GetTransformationPlan API call'
+        const errorMessage = (e as Error).message ?? 'Error in GetTransformationPlan API call'
         getLogger().error('CodeTransform: GetTransformationPlan error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e?.requestId,
+            codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'GetTransformationPlanFailed',
         })
@@ -578,14 +590,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 throw new Error('Transform by Q timed out')
             }
         } catch (e: any) {
-            const errorMessage = e?.message || 'Error in GetTransformation API call'
+            const errorMessage = (e as Error).message ?? 'Error in GetTransformation API call'
             getLogger().error('CodeTransform: GetTransformation error = ', errorMessage)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'GetTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: jobId,
                 codeTransformApiErrorMessage: errorMessage,
-                codeTransformRequestId: e?.requestId,
+                codeTransformRequestId: e.requestId ?? '',
                 result: MetadataResult.Fail,
                 reason: 'GetTransformationFailed',
             })

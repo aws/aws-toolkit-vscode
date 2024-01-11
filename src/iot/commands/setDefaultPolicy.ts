@@ -23,7 +23,7 @@ export async function setDefaultPolicy(node: IotPolicyVersionNode): Promise<void
             policyName: node.policy.name,
             policyVersionId: node.version.versionId!,
         })
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.iot.setDefaultPolicy.success',
                 'Set {0} as default version of {1}',
@@ -33,7 +33,7 @@ export async function setDefaultPolicy(node: IotPolicyVersionNode): Promise<void
         )
     } catch (e) {
         getLogger().error('Failed to set default policy version: %s', e)
-        showViewLogsMessage(localize('AWS.iot.setDefaultPolicy.error', 'Failed to set default policy version'))
+        void showViewLogsMessage(localize('AWS.iot.setDefaultPolicy.error', 'Failed to set default policy version'))
     }
 
     await refreshBase(node.parent)

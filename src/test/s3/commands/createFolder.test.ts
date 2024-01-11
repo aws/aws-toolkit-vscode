@@ -11,7 +11,6 @@ import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { getTestWindow } from '../../shared/vscode/window'
-import { anything, mock, instance, when, deepEqual } from '../../utilities/mockito'
 
 describe('createFolderCommand', function () {
     const invalidFolderNames: { folderName: string; error: string }[] = [
@@ -32,12 +31,8 @@ describe('createFolderCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        s3 = mock()
-        node = new S3BucketNode(
-            { name: bucketName, region: 'region', arn: 'arn' },
-            new S3Node(instance(s3)),
-            instance(s3)
-        )
+        s3 = {} as any as S3Client
+        node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
     })
 
     afterEach(function () {
@@ -45,9 +40,10 @@ describe('createFolderCommand', function () {
     })
 
     it('prompts for folder name, creates folder, shows success, and refreshes node', async function () {
-        when(s3.createFolder(deepEqual({ path: folderPath, bucketName }))).thenResolve({
+        const stub = sinon.stub().resolves({
             folder: { name: folderName, path: folderPath, arn: 'arn' },
         })
+        s3.createFolder = stub
 
         getTestWindow().onDidShowInputBox(input => {
             assert.strictEqual(input.prompt, 'Enter a folder to create in s3://bucket-name')
@@ -60,6 +56,7 @@ describe('createFolderCommand', function () {
             .getFirstMessage()
             .assertInfo(/Created folder: foo/)
 
+        assert(stub.calledOnceWithExactly({ path: folderPath, bucketName }))
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
@@ -69,7 +66,8 @@ describe('createFolderCommand', function () {
     })
 
     it('shows an error message and refreshes node when folder creation fails', async function () {
-        when(s3.createFolder(anything())).thenReject(new Error('Expected failure'))
+        const stub = sinon.stub().rejects(new Error('Expected failure'))
+        s3.createFolder = stub
 
         getTestWindow().onDidShowInputBox(input => input.acceptValue(folderName))
         await assert.rejects(() => createFolderCommand(node), /failed to create folder/i)

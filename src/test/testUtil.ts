@@ -4,10 +4,9 @@
  */
 
 import assert from 'assert'
+import fs from 'fs'
 import * as path from 'path'
-import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
-import * as fsextra from 'fs-extra'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
@@ -15,6 +14,7 @@ import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
+import { fsCommon } from '../srcShared/fs'
 
 const testTempDirs: string[] = []
 
@@ -23,19 +23,19 @@ const testTempDirs: string[] = []
  *
  * Creates parent directories in `filePathParts`, if necessary.
  */
-export function toFile(o: any, ...filePathParts: string[]) {
+export async function toFile(o: any, ...filePathParts: string[]) {
     const text = o ? o.toString() : ''
     const filePath = path.join(...filePathParts)
     const dir = path.dirname(filePath)
-    fsextra.mkdirpSync(dir)
-    fsextra.writeFileSync(filePath, text, 'utf8')
+    await fsCommon.mkdir(dir)
+    await fsCommon.writeFile(filePath, text)
 }
 
 /**
  * Gets the contents of `filepath` as UTF-8 encoded string.
  */
-export function fromFile(filepath: string): string {
-    return fsextra.readFileSync(filepath, { encoding: 'utf8' })
+export async function fromFile(filepath: string): Promise<string> {
+    return fsCommon.readFileAsString(filepath)
 }
 
 /** Gets the full path to the Toolkit source root on this machine. */
@@ -73,7 +73,7 @@ export async function createTestFile(fileName: string): Promise<vscode.Uri> {
     const tempFolder = await makeTemporaryToolkitFolder()
     testTempDirs.push(tempFolder) // ensures this is deleted at the end
     const tempFilePath = path.join(tempFolder, fileName)
-    fs.writeFileSync(tempFilePath, '')
+    await fsCommon.writeFile(tempFilePath, '')
     return vscode.Uri.file(tempFilePath)
 }
 
@@ -99,7 +99,7 @@ export async function createTestWorkspace(
 
     do {
         const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}`)
-        fs.writeFileSync(tempFilePath, fileContent)
+        await fsCommon.writeFile(tempFilePath, fileContent)
     } while (--n > 0)
 
     return workspace
@@ -129,8 +129,8 @@ export function assertEqualPaths(actual: string, expected: string, message?: str
 /**
  * Asserts that UTF-8 contents of `file` are equal to `expected`.
  */
-export function assertFileText(file: string, expected: string, message?: string | Error) {
-    const actualContents = fsextra.readFileSync(file, 'utf-8')
+export async function assertFileText(file: string, expected: string, message?: string | Error) {
+    const actualContents = await fsCommon.readFileAsString(file)
     assert.strictEqual(actualContents, expected, message)
 }
 
@@ -143,12 +143,12 @@ export async function tickPromise<T>(promise: Promise<T>, clock: FakeTimers.Inst
 /**
  * Creates an executable file (including any parent directories) with the given contents.
  */
-export function createExecutableFile(filepath: string, contents: string): void {
-    fs.mkdirpSync(path.dirname(filepath))
+export async function createExecutableFile(filepath: string, contents: string): Promise<void> {
+    await fsCommon.mkdir(path.dirname(filepath))
     if (process.platform === 'win32') {
-        fs.writeFileSync(filepath, `@echo OFF$\r\n${contents}\r\n`)
+        await fsCommon.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
     } else {
-        fs.writeFileSync(filepath, `#!/bin/sh\n${contents}`)
+        await fsCommon.writeFile(filepath, `#!/bin/sh\n${contents}`)
         fs.chmodSync(filepath, 0o744)
     }
 }
@@ -303,7 +303,7 @@ export async function openATextEditorWithText(
 ): Promise<vscode.TextEditor> {
     const myWorkspaceFolder = folder ? folder : (await createTestWorkspaceFolder()).uri.fsPath
     const filePath = path.join(myWorkspaceFolder, fileName)
-    toFile(fileText, filePath)
+    await toFile(fileText, filePath)
 
     const textDocument = await vscode.workspace.openTextDocument(filePath)
 

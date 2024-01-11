@@ -35,10 +35,12 @@ export async function createThingCommand(node: IotThingFolderNode): Promise<void
         const thing = await node.iot.createThing({ thingName })
 
         getLogger().info('Created thing: %O', thing)
-        vscode.window.showInformationMessage(localize('AWS.iot.createThing.success', 'Created Thing {0}', thingName))
+        void vscode.window.showInformationMessage(
+            localize('AWS.iot.createThing.success', 'Created Thing {0}', thingName)
+        )
     } catch (e) {
         getLogger().error(`Failed to create Thing ${thingName}: %s`, e)
-        showViewLogsMessage(localize('AWS.iot.createThing.error', 'Failed to create Thing: {0}', thingName))
+        void showViewLogsMessage(localize('AWS.iot.createThing.error', 'Failed to create Thing: {0}', thingName))
     }
 
     //Refresh the Things Folder node

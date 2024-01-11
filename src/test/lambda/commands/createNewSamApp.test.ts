@@ -17,7 +17,6 @@ import {
     writeToolkitReadme,
 } from '../../../lambda/commands/createNewSamApp'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
-import { anything, capture, instance, mock, when } from 'ts-mockito'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { ExtContext } from '../../../shared/extensions'
@@ -29,6 +28,8 @@ import { normalize } from '../../../shared/utilities/pathUtils'
 import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 import globals from '../../../shared/extensionGlobals'
 import { Runtime } from '../../../shared/telemetry/telemetry'
+import { stub } from '../../utilities/stubber'
+import sinon from 'sinon'
 
 const templateYaml = 'template.yaml'
 
@@ -41,14 +42,18 @@ describe('createNewSamApp', function () {
     let fakeResponse: { location: vscode.Uri; name: string }
     let fakeTarget: string
     let fakeConfig: vscode.DebugConfiguration
+    let addDebugStub: sinon.SinonStub<any[], any>
 
     beforeEach(async function () {
-        mockLaunchConfiguration = mock()
+        mockLaunchConfiguration = stub(LaunchConfiguration, {
+            workspaceFolder: undefined,
+            scopedResource: vscode.Uri.parse(''),
+        })
         fakeContext = await FakeExtensionContext.getFakeExtContext()
         tempFolder = await makeTemporaryToolkitFolder()
         tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         fakeTarget = path.join(tempFolder, templateYaml)
-        testutil.toFile('target file', fakeTarget)
+        await testutil.toFile('target file', fakeTarget)
 
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(path.dirname(tempFolder)),
@@ -69,8 +74,9 @@ describe('createNewSamApp', function () {
 
         fakeResponse = { location: fakeWorkspaceFolder.uri, name: path.basename(tempFolder) }
 
-        when(mockLaunchConfiguration.getDebugConfigurations()).thenReturn([fakeConfig])
-        when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
+        mockLaunchConfiguration.getDebugConfigurations = sinon.stub().returns([fakeConfig])
+        addDebugStub = sinon.stub().resolves()
+        mockLaunchConfiguration.addDebugConfigurations = addDebugStub
     })
 
     afterEach(async function () {
@@ -90,7 +96,7 @@ describe('createNewSamApp', function () {
             fs.unlinkSync(fakeTarget)
             tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yml'))
             fakeTarget = path.join(tempFolder, 'template.yml')
-            testutil.toFile('target file', fakeTarget)
+            await testutil.toFile('target file', fakeTarget)
             assert.strictEqual(
                 normalize((await getProjectUri(fakeResponse, samInitTemplateFiles))?.fsPath ?? ''),
                 normalize(fakeTarget)
@@ -106,7 +112,7 @@ describe('createNewSamApp', function () {
 
     describe('addInitialLaunchConfiguration', function () {
         it('produces and returns initial launch configurations', async function () {
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             // without runtime
             await (await globals.templateRegistry).addItem(tempTemplate)
@@ -115,11 +121,10 @@ describe('createNewSamApp', function () {
                 fakeWorkspaceFolder,
                 (await getProjectUri(fakeResponse, samInitTemplateFiles))!,
                 undefined,
-                instance(mockLaunchConfiguration)
+                mockLaunchConfiguration
             )
 
-            // eslint-disable-next-line @typescript-eslint/unbound-method
-            const [arg] = capture(mockLaunchConfiguration.addDebugConfigurations).last()
+            const [arg] = addDebugStub.lastCall.args
             assert.ok(
                 pathutils.areEqual(
                     fakeWorkspaceFolder.uri.fsPath,
@@ -142,7 +147,7 @@ describe('createNewSamApp', function () {
         })
 
         it('produces and returns initial launch configurations with runtime', async function () {
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             // without runtime
             await (await globals.templateRegistry).addItem(tempTemplate)
@@ -151,11 +156,10 @@ describe('createNewSamApp', function () {
                 fakeWorkspaceFolder,
                 tempTemplate,
                 'someruntime' as Runtime,
-                instance(mockLaunchConfiguration)
+                mockLaunchConfiguration
             )) as AwsSamDebuggerConfiguration[]
 
-            // eslint-disable-next-line @typescript-eslint/unbound-method
-            const [arg] = capture(mockLaunchConfiguration.addDebugConfigurations).last()
+            const [arg] = addDebugStub.lastCall.args
             assert.ok(
                 pathutils.areEqual(
                     fakeWorkspaceFolder.uri.fsPath,
@@ -180,7 +184,7 @@ describe('createNewSamApp', function () {
         })
 
         it('returns a blank array if it does not match any launch configs', async function () {
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             await (await globals.templateRegistry).addItem(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
@@ -188,7 +192,7 @@ describe('createNewSamApp', function () {
                 fakeWorkspaceFolder,
                 vscode.Uri.file(path.join(tempFolder, 'otherFolder', 'thisAintIt.yaml')),
                 undefined,
-                instance(mockLaunchConfiguration)
+                mockLaunchConfiguration
             )
             assert.deepStrictEqual(launchConfigs, [])
         })
@@ -196,7 +200,7 @@ describe('createNewSamApp', function () {
         it('produces a launch config when config has a relative path', async function () {
             ;(fakeConfig as any).invokeTarget.templatePath = 'test.yaml'
 
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             await (await globals.templateRegistry).addItem(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
@@ -204,7 +208,7 @@ describe('createNewSamApp', function () {
                 fakeWorkspaceFolder,
                 (await getProjectUri(fakeResponse, samInitTemplateFiles))!,
                 undefined,
-                instance(mockLaunchConfiguration)
+                mockLaunchConfiguration
             )
             assert.ok(launchConfigs?.length !== 0)
         })
@@ -227,10 +231,10 @@ describe('createNewSamApp', function () {
             const otherTemplate1: vscode.Uri = vscode.Uri.file(path.join(otherFolder1, 'test.yaml'))
             const otherTemplate2: vscode.Uri = vscode.Uri.file(path.join(otherFolder2, 'test.yaml'))
 
-            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
-            testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate1.fsPath)
-            testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate2.fsPath)
-            testutil.toFile('target file', path.join(otherFolder1, templateYaml))
+            await testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate1.fsPath)
+            await testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate2.fsPath)
+            await testutil.toFile('target file', path.join(otherFolder1, templateYaml))
 
             await (await globals.templateRegistry).addItem(tempTemplate)
             await (await globals.templateRegistry).addItem(otherTemplate1)
@@ -241,7 +245,7 @@ describe('createNewSamApp', function () {
                 fakeWorkspaceFolder,
                 (await getProjectUri(fakeResponse, samInitTemplateFiles))!,
                 undefined,
-                instance(mockLaunchConfiguration)
+                mockLaunchConfiguration
             )
 
             const launchConfigs2 = await addInitialLaunchConfiguration(
@@ -252,7 +256,7 @@ describe('createNewSamApp', function () {
                     samInitTemplateFiles
                 ))!,
                 undefined,
-                instance(mockLaunchConfiguration)
+                mockLaunchConfiguration
             )
 
             assert.notDeepStrictEqual(launchConfigs1, launchConfigs2)

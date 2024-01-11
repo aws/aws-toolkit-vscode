@@ -4,13 +4,13 @@
  */
 
 import assert from 'assert'
-import * as codewhispererClient from '../../../codewhisperer/client/codewhisperer'
-import { ConfigurationEntry } from '../../../codewhisperer/models/model'
-import { setValidConnection, skiptTestIfNoValidConn } from '../../util/codewhispererUtil'
-import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
-import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../../test/codewhisperer/testUtil'
-import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
-import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
+import { ConfigurationEntry } from '../../codewhisperer/models/model'
+import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
+import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
+import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
+import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
+import { session } from '../../codewhisperer/util/codeWhispererSession'
 
 /*
 New model deployment may impact references returned. 
@@ -53,7 +53,7 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+        void resetCodeWhispererGlobalVariables()
         RecommendationHandler.instance.clearRecommendations()
         //TODO: remove this line (this.skip()) when these tests no longer auto-skipped
         this.skip()

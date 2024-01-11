@@ -7,6 +7,7 @@ import { Webview } from 'vscode'
 import { MessagePublisher } from '../../messages/messagePublisher'
 import { MessageListener } from '../../messages/messageListener'
 import { TabType } from '../ui/storages/tabsStorage'
+import { getLogger } from '../../../shared/logger'
 
 export function dispatchWebViewMessagesToApps(
     webview: Webview,
@@ -23,6 +24,8 @@ export function dispatchWebViewMessagesToApps(
 
 export function dispatchAppsMessagesToWebView(webView: Webview, appsMessageListener: MessageListener<any>) {
     appsMessageListener.onMessage(msg => {
-        webView.postMessage(JSON.stringify(msg))
+        webView.postMessage(JSON.stringify(msg)).then(undefined, e => {
+            getLogger().error('webView.postMessage failed: %s', (e as Error).message)
+        })
     })
 }

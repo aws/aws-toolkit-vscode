@@ -8,6 +8,7 @@ import globals from '../../shared/extensionGlobals'
 import { getJobHistory, getPlanProgress } from '../commands/startTransformByQ'
 import { StepProgress, transformByQState } from '../models/model'
 import { convertToTimeString, getTransformationSteps } from './transformByQHandler'
+import { getLogger } from '../../shared/logger'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
@@ -23,9 +24,13 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             if (this.lastClickedButton === 'job history') {
                 this._view!.webview.html = this.showJobHistory()
             } else {
-                this.showPlanProgress(startTime).then(planProgress => {
-                    this._view!.webview.html = planProgress
-                })
+                this.showPlanProgress(startTime)
+                    .then(planProgress => {
+                        this._view!.webview.html = planProgress
+                    })
+                    .catch(e => {
+                        getLogger().error('showPlanProgress failed: %s', (e as Error).message)
+                    })
             }
         }
     }
@@ -49,9 +54,13 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         if (this.lastClickedButton === 'job history') {
             this._view!.webview.html = this.showJobHistory()
         } else {
-            this.showPlanProgress(Date.now()).then(planProgress => {
-                this._view!.webview.html = planProgress
-            })
+            this.showPlanProgress(Date.now())
+                .then(planProgress => {
+                    this._view!.webview.html = planProgress
+                })
+                .catch(e => {
+                    getLogger().error('showPlanProgress failed: %s', (e as Error).message)
+                })
         }
     }
 
@@ -114,7 +123,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             progressHtml = `<p><b>Transformation Status</b></p>`
             progressHtml += `<p> ${this.getProgressIconMarkup(
                 planProgress['uploadCode']
-            )} Upload code to secure build environment</p>`
+            )} Zip code and upload to secure build environment</p>`
             if (planProgress['uploadCode'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['buildCode']
@@ -180,7 +189,20 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             <html lang="en">
             <head>
             <title>Transformation Hub</title>
-            <script src="https://kit.fontawesome.com/f865aad943.js" crossorigin="anonymous"></script>
+            <style>
+                @keyframes spin {
+                    0% {
+                        transform: rotate(0deg);
+                    }
+                    100% {
+                        transform: rotate(360deg);
+                    }
+                }
+                .spinner {
+                    display: inline-block;
+                    animation: spin 1s infinite;
+                }
+            </style>
             </head>
             <body>
             <div style="display: flex">
@@ -224,13 +246,14 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </html>`
     }
 
+    // TODO: replace these pasted icons with codicons
     private getProgressIconMarkup(stepStatus: StepProgress) {
         if (stepStatus === StepProgress.Succeeded) {
             return `<span style="color: green"> ✓ </span>`
         } else if (stepStatus === StepProgress.Pending) {
-            return `<span> <i class="fas fa-spinner fa-spin"></i> </span>` // TODO: switch from FA to native VSCode icons
+            return `<span style="color: grey" class="spinner"> ↻ </span>`
         } else {
-            return `<span style="color: red"> X </span>`
+            return `<span style="color: grey"> ✓ </span>`
         }
     }
 }

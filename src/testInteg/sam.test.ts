@@ -94,6 +94,16 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.78.0',
     },
     {
+        runtime: 'python3.12',
+        displayName: 'python 3.12 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
         runtime: 'java8',
         displayName: 'java8 (Gradle ZIP)',
         path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
@@ -176,6 +186,17 @@ const scenarios: TestScenario[] = [
         runtime: 'python3.11',
         displayName: 'python 3.11 (ZIP)',
         baseImage: 'amazon/python3.11-base',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
+        runtime: 'python3.12',
+        displayName: 'python 3.12 (ZIP)',
+        baseImage: 'amazon/python3.12-base',
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
@@ -345,7 +366,9 @@ async function stopDebugger(logMsg: string | undefined): Promise<void> {
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
     await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.python, false)
-    await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.go, false)
+    // TODO: Must be reactivated when go tests are enabled above.
+    // Caveat: v0.40.1 of the go extension breaks this line (see changelog for this version)
+    // await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.go, false)
     await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.java, false)
     await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.javadebug, false)
     console.log('Extensions activated')
@@ -364,7 +387,7 @@ describe('SAM Integration Tests', async function () {
 
     before(async function () {
         javaLanguageSetting = config.get('server.launchMode')
-        config.update('server.launchMode', 'Standard')
+        await config.update('server.launchMode', 'Standard')
 
         await activateExtensions()
         await testUtils.configureAwsToolkitExtension()
@@ -379,7 +402,7 @@ describe('SAM Integration Tests', async function () {
         await tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
-        config.update('server.launchMode', javaLanguageSetting)
+        await config.update('server.launchMode', javaLanguageSetting)
         console.log(`DebugSessions seen in this run:\n${sessionReport}`)
     })
 
@@ -614,7 +637,7 @@ describe('SAM Integration Tests', async function () {
                         // This only applies for our internal systems
                         if (scenario.language === 'go') {
                             const dockerfilePath: string = path.join(path.dirname(appPath), 'Dockerfile')
-                            insertTextIntoFile('ENV GOPROXY=direct', dockerfilePath, 1)
+                            await insertTextIntoFile('ENV GOPROXY=direct', dockerfilePath, 1)
                         }
                     }
 

@@ -72,7 +72,7 @@ describe('fetch()', function () {
         }, 0)
 
         // The response and the wrapped fetch request pushed to the microtask queue.
-        assert.rejects(
+        await assert.rejects(
             () => request.response,
             e => {
                 return e instanceof RequestCancelledError

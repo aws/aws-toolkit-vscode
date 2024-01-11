@@ -56,6 +56,6 @@ export const refreshCdkExplorer = (provider?: ResourceTreeDataProvider) =>
     })
 
 Commands.register('aws.cdk.viewDocs', () => {
-    openUrl(vscode.Uri.parse(cdkDocumentationUrl))
+    void openUrl(vscode.Uri.parse(cdkDocumentationUrl))
     telemetry.aws_help.emit({ name: 'cdk' })
 })

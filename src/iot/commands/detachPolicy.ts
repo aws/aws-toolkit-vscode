@@ -45,10 +45,10 @@ export async function detachPolicyCommand(node: IotPolicyCertNode): Promise<void
         await node.iot.detachPolicy({ policyName, target: certArn })
 
         getLogger().info(`detached policy: ${policyName}`)
-        vscode.window.showInformationMessage(localize('AWS.iot.detachPolicy.success', 'Detached: {0}', policyName))
+        void vscode.window.showInformationMessage(localize('AWS.iot.detachPolicy.success', 'Detached: {0}', policyName))
     } catch (e) {
         getLogger().error(`Failed to detach certificate: ${certId}: %s`, e)
-        showViewLogsMessage(localize('AWS.iot.detachPolicy.error', 'Failed to detach: {0}', policyName))
+        void showViewLogsMessage(localize('AWS.iot.detachPolicy.error', 'Failed to detach: {0}', policyName))
     }
 
     /* Refresh both things and certificates nodes so the status is updated in

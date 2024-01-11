@@ -283,3 +283,10 @@ export function formatDateTimestamp(forceUTC: boolean, d: Date = new Date()): st
     // trim 'Z' (last char of iso string) and add offset string
     return `${iso.substring(0, iso.length - 1)}${offsetString}`
 }
+
+/**
+ * To satisfy a pentesting concern, encodes HTML to mitigate risk of HTML injection
+ */
+export function encodeHTML(str: string) {
+    return str.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}

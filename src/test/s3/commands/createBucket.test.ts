@@ -11,7 +11,6 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { getTestWindow } from '../../shared/vscode/window'
-import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
 describe('createBucketCommand', function () {
     const bucketName = 'buc.ket-n4.m3'
@@ -24,8 +23,8 @@ describe('createBucketCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        s3 = mock()
-        node = new S3Node(instance(s3))
+        s3 = {} as any as S3Client
+        node = new S3Node(s3)
     })
 
     afterEach(function () {
@@ -33,9 +32,10 @@ describe('createBucketCommand', function () {
     })
 
     it('prompts for bucket name, creates bucket, shows success, and refreshes node', async function () {
-        when(s3.createBucket(deepEqual({ bucketName }))).thenResolve({
+        const stub = sinon.stub().resolves({
             bucket: { name: bucketName, region: 'region', arn: 'arn' },
         })
+        s3.createBucket = stub
 
         getTestWindow().onDidShowInputBox(input => {
             assert.strictEqual(input.prompt, 'Enter a new bucket name')
@@ -48,18 +48,22 @@ describe('createBucketCommand', function () {
             .getFirstMessage()
             .assertInfo(/Created bucket: buc.ket-n4.m3/)
 
+        assert(stub.calledOnceWithExactly({ bucketName }))
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when prompt is cancelled', async function () {
+        const stub = sinon.stub()
+        s3.createBucket = stub
         getTestWindow().onDidShowInputBox(input => input.hide())
         await assert.rejects(() => createBucketCommand(node), CancellationError)
 
-        verify(s3.createFolder(anything())).never()
+        assert(stub.notCalled)
     })
 
     it('throws an error and refreshes node when bucket creation fails', async function () {
-        when(s3.createBucket(anything())).thenReject(new Error('Expected failure'))
+        const stub = sinon.stub().rejects()
+        s3.createBucket = stub
 
         getTestWindow().onDidShowInputBox(input => input.acceptValue(bucketName))
         await assert.rejects(() => createBucketCommand(node), /Failed to create bucket/)

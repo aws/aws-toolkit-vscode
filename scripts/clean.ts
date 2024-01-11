@@ -83,7 +83,7 @@ async function getGenerated(): Promise<string[]> {
     }
 }
 
-;(async () => {
+void (async () => {
     const args = process.argv.slice(2).concat(await getGenerated())
     await Promise.all(args.map(tryDeleteRelative))
 })()

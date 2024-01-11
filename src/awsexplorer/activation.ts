@@ -35,7 +35,7 @@ import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { amazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQNode'
-import { submitFeedback } from '../feedback/vue/submitFeedback'
+import { GlobalState } from '../shared/globalState'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -54,7 +54,7 @@ export async function activate(args: {
     })
     view.onDidExpandElement(element => {
         if (element.element instanceof S3FolderNode) {
-            globals.context.globalState.update('aws.lastTouchedS3Folder', {
+            GlobalState.instance.tryUpdate('aws.lastTouchedS3Folder', {
                 bucket: element.element.bucket,
                 folder: element.element.folder,
             })
@@ -160,7 +160,6 @@ async function registerAwsExplorerCommands(
                 telemetry.vscode_activeRegions.emit({ value: awsExplorer.getRegionNodesSize() })
             }
         }),
-        submitFeedback.register(context),
         Commands.register({ id: 'aws.refreshAwsExplorer', autoconnect: true }, async (passive: boolean = false) => {
             awsExplorer.refresh()
 

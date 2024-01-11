@@ -66,7 +66,9 @@ function getCreateNotebookClickedHandler(redshiftNotebookController: RedshiftNot
             redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(region)
         } catch (e) {
             const err = e as Error
-            showViewLogsMessage(localize('AWS.command.notebook.fail', 'Failed to create notebook: {0}', err.message))
+            void showViewLogsMessage(
+                localize('AWS.command.notebook.fail', 'Failed to create notebook: {0}', err.message)
+            )
         }
     }
 }

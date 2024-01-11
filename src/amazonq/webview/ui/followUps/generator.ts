@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MynahIcons } from '@aws/mynah-ui-chat'
+import { MynahIcons } from '@aws/mynah-ui'
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpsBlock } from './model'
 

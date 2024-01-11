@@ -80,7 +80,7 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
 
     if (!config.noDebug) {
         if (config.architecture === 'arm64') {
-            vscode.window.showWarningMessage(
+            await vscode.window.showWarningMessage(
                 localize(
                     'AWS.sam.noArm.dotnet.debug',
                     'The vsdbg debugger does not currently support the arm64 architecture. Function will run locally without debug.'

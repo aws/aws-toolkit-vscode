@@ -253,7 +253,7 @@ export async function credentialProfileSelector(
         ]
         const item = await dataProvider.pickCredentialProfile(input, actions, state)
         if (item.label === actions[0].label) {
-            vscode.commands.executeCommand('aws.credentials.edit')
+            await vscode.commands.executeCommand('aws.credentials.edit')
         } else {
             state.credentialProfile = item
         }

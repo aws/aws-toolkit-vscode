@@ -158,7 +158,7 @@ export async function activate(extensionContext: ExtensionContext) {
         toDispose.push(config.onDidChange(({ key }) => key === 'format.enable' && updateFormatterRegistration()))
 
         client.onNotification(ResultLimitReached, message => {
-            window.showInformationMessage(
+            void window.showInformationMessage(
                 `${message}\nUse setting 'aws.stepfunctions.asl.maxItemsComputed' to configure the limit.`
             )
         })

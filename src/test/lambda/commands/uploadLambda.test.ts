@@ -38,7 +38,7 @@ describe('uploadLambda', async function () {
     })
 
     it('finds application.json file from dir path - flat', async function () {
-        toFile('top secret data', path.join(tempFolder, '.application.json'))
+        await toFile('top secret data', path.join(tempFolder, '.application.json'))
         assertEqualPaths(
             (await findApplicationJsonFile(folderUri))?.fsPath ?? '',
             path.join(tempFolder, '.application.json')
@@ -53,7 +53,7 @@ describe('uploadLambda', async function () {
     it('finds application.json file from dir path - nested', async function () {
         const subfolder = path.join(tempFolder, 'one', 'two')
         const appjsonPath = path.join(subfolder, '.application.json')
-        toFile('top secret data', appjsonPath)
+        await toFile('top secret data', appjsonPath)
 
         assertEqualPaths((await findApplicationJsonFile(folderUri))?.fsPath ?? '', appjsonPath)
         // Also test Cloud9 temporary workaround.
@@ -63,8 +63,8 @@ describe('uploadLambda', async function () {
     it('finds application.json file from template file path', async function () {
         const templateUri = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
         const appjsonPath = path.join(tempFolder, '.application.json')
-        toFile('SAM stuff...', templateUri.fsPath)
-        toFile('top secret data', appjsonPath)
+        await toFile('SAM stuff...', templateUri.fsPath)
+        await toFile('top secret data', appjsonPath)
 
         assertEqualPaths((await findApplicationJsonFile(templateUri))?.fsPath ?? '', appjsonPath)
         // Also test Cloud9 temporary workaround.
@@ -73,7 +73,7 @@ describe('uploadLambda', async function () {
 
     it('lists functions from .application.json', async function () {
         const filePath = path.join(tempFolder, '.application.json')
-        toFile(dotApplicationJsonData, filePath)
+        await toFile(dotApplicationJsonData, filePath)
         const foundFunctions1 = getFunctionNames(vscode.Uri.file(filePath), 'us-west-2')
         const foundFunctions2 = getFunctionNames(vscode.Uri.file(filePath), 'us-east-1')
         assert.deepStrictEqual(foundFunctions1, ['sampleFunction-w2'])
@@ -83,7 +83,7 @@ describe('uploadLambda', async function () {
     it('invalid .application.json', async function () {
         const filePath = path.join(tempFolder, '.application.json')
         const invalidJson = '{ "DeploymentMethod": "lambda", "Functions": { ?? } }'
-        toFile(invalidJson, filePath)
+        await toFile(invalidJson, filePath)
         assert.deepStrictEqual(getFunctionNames(vscode.Uri.file(filePath), 'us-west-2'), undefined)
         assert.deepStrictEqual(getFunctionNames(vscode.Uri.file(filePath), 'us-east-1'), undefined)
     })

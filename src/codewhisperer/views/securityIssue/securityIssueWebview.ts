@@ -32,7 +32,7 @@ export class SecurityIssueWebview extends VueWebview {
 
     public applyFix() {
         const args: [CodeScanIssue | undefined, string | undefined, Component] = [this.issue, this.filePath, 'webview']
-        vscode.commands.executeCommand('aws.codeWhisperer.applySecurityFix', ...args)
+        void vscode.commands.executeCommand('aws.codeWhisperer.applySecurityFix', ...args)
     }
 
     public getRelativePath() {
@@ -46,7 +46,7 @@ export class SecurityIssueWebview extends VueWebview {
         if (this.issue && this.filePath) {
             const range = new vscode.Range(this.issue.startLine, 0, this.issue.endLine, 0)
             return vscode.workspace.openTextDocument(this.filePath).then(doc => {
-                vscode.window.showTextDocument(doc, {
+                void vscode.window.showTextDocument(doc, {
                     selection: range,
                     viewColumn: vscode.ViewColumn.One,
                     preview: true,

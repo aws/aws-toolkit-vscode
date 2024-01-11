@@ -220,4 +220,4 @@ async function main() {
     await generate(mappings)
 }
 
-main()
+void main()

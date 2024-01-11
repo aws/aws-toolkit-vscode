@@ -167,12 +167,12 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         this.disposables.push(
             vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
                 if (isUntitledScheme(event.document.uri)) {
-                    this.addItem(event.document.uri, true, event.document.getText())
+                    return this.addItem(event.document.uri, true, event.document.getText())
                 }
             }),
             vscode.workspace.onDidCloseTextDocument((event: vscode.TextDocument) => {
                 if (isUntitledScheme(event.uri)) {
-                    this.remove(event.uri)
+                    return this.remove(event.uri)
                 }
             })
         )

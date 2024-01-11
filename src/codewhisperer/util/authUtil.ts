@@ -27,9 +27,9 @@ import {
     isIdcSsoConnection,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
-import globals from '../../shared/extensionGlobals'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
+import { GlobalState } from '../../shared/globalState'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -93,9 +93,9 @@ export class AuthUtil {
             return
         }
         this._isCustomizationFeatureEnabled = value
-        vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        void Commands.tryExecute('aws.codeWhisperer.refresh')
         void Commands.tryExecute('aws.amazonq.refresh')
-        vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+        void Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
     }
 
     public readonly secondaryAuth = getSecondaryAuth(
@@ -109,7 +109,7 @@ export class AuthUtil {
     public constructor(public readonly auth = Auth.instance) {
         this.auth.onDidChangeConnectionState(async e => {
             if (e.state !== 'authenticating') {
-                this.refreshCodeWhisperer()
+                await this.refreshCodeWhisperer()
             }
 
             await this.setVscodeContextProps()
@@ -117,7 +117,7 @@ export class AuthUtil {
 
         this.secondaryAuth.onDidChangeActiveConnection(async () => {
             if (this.isValidEnterpriseSsoInUse()) {
-                vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
+                void vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
             }
             await Promise.all([
                 // onDidChangeActiveConnection may trigger before these modules are activated.
@@ -129,10 +129,9 @@ export class AuthUtil {
                 Commands.tryExecute('aws.codeWhisperer.updateReferenceLog'),
             ])
 
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
 
-            const memento = globals.context.globalState
-            const shouldShowObject: HasAlreadySeenQWelcome = memento.get(this.mementoKey) ?? {
+            const shouldShowObject: HasAlreadySeenQWelcome = GlobalState.instance.get(this.mementoKey) ?? {
                 local: false,
                 devEnv: false,
                 ssh: false,
@@ -144,12 +143,12 @@ export class AuthUtil {
                 const key = getEnvType()
                 if (!shouldShowObject[key]) {
                     shouldShowObject[key] = true
-                    memento.update(this.mementoKey, shouldShowObject)
+                    GlobalState.instance.tryUpdate(this.mementoKey, shouldShowObject)
                     await vscode.commands.executeCommand('aws.amazonq.welcome', placeholder, key)
                 }
 
                 // start the feature config polling job
-                vscode.commands.executeCommand('aws.codeWhisperer.fetchFeatureConfigs')
+                await vscode.commands.executeCommand('aws.codeWhisperer.fetchFeatureConfigs')
             }
             await this.setVscodeContextProps()
         })
@@ -157,10 +156,10 @@ export class AuthUtil {
 
     public async setVscodeContextProps() {
         if (!isCloud9()) {
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
             await vscode.commands.executeCommand(
                 'setContext',
-                'aws.codewhisperer.disconnected',
+                'aws.codewhisperer.connectionExpired',
                 this.isConnectionExpired()
             )
         }
@@ -327,17 +326,17 @@ export class AuthUtil {
         } catch (err) {
             throw ToolkitError.chain(err, 'Unable to authenticate connection')
         } finally {
-            this.setVscodeContextProps()
+            await this.setVscodeContextProps()
         }
     }
 
     public async refreshCodeWhisperer() {
         await Promise.all([
-            vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
-            vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+            Commands.tryExecute('aws.codeWhisperer.refresh'),
+            Commands.tryExecute('aws.codeWhisperer.refreshRootNode'),
             Commands.tryExecute('aws.amazonq.refresh'),
-            vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
-            vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
+            Commands.tryExecute('aws.amazonq.refreshRootNode'),
+            Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
         ])
     }
 
@@ -358,7 +357,7 @@ export class AuthUtil {
                 if (resp === CodeWhispererConstants.connectWithAWSBuilderId) {
                     await this.reauthenticate()
                 } else if (resp === CodeWhispererConstants.DoNotShowAgain) {
-                    settings.disablePrompt('codeWhispererConnectionExpired')
+                    await settings.disablePrompt('codeWhispererConnectionExpired')
                 }
             })
         if (isAutoTrigger) {
@@ -367,8 +366,8 @@ export class AuthUtil {
     }
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
-        this.showReauthenticatePrompt(isAutoTrigger)
-        this.setVscodeContextProps()
+        void this.showReauthenticatePrompt(isAutoTrigger)
+        await this.setVscodeContextProps()
     }
 }
 

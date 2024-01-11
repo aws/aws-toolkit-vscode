@@ -6,7 +6,7 @@
 import * as AWS from '@aws-sdk/types'
 import { AssumeRoleParams, fromIni } from '@aws-sdk/credential-provider-ini'
 import { fromProcess } from '@aws-sdk/credential-provider-process'
-import { ParsedIniData, SharedConfigFiles } from '@aws-sdk/shared-ini-file-loader'
+import { ParsedIniData, SharedConfigFiles } from '@smithy/shared-ini-file-loader'
 import { chain } from '@aws-sdk/property-provider'
 import { fromInstanceMetadata, fromContainerMetadata } from '@aws-sdk/credential-provider-imds'
 import { fromEnv } from '@aws-sdk/credential-provider-env'

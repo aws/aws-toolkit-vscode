@@ -97,8 +97,8 @@ describe('telemetryHelper', function () {
     describe('sendUserTriggerDecisionTelemetry', function () {
         let sut: TelemetryHelper
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             sut = new TelemetryHelper()
             CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Control
         })
@@ -208,8 +208,8 @@ describe('telemetryHelper', function () {
 
     describe('getSuggestionState', function () {
         let telemetryHelper = new TelemetryHelper()
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
             telemetryHelper = new TelemetryHelper()
         })
 
@@ -252,8 +252,8 @@ describe('telemetryHelper', function () {
     })
 
     describe('recordUserDecisionTelemetry', function () {
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {

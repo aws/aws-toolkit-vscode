@@ -16,13 +16,11 @@ import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
 import { isInBrowser } from '../../common/browserUtils'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 
 const localize = nls.loadMessageBundle()
 
 const defaultLogLevel: LogLevel = 'info'
-
-const fsCommon = FileSystemCommon.instance
 
 /**
  * Activate Logger functionality for the extension.
@@ -180,7 +178,7 @@ async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable>
         return { dispose: () => {} }
     }
 
-    const exists = await waitUntil(() => fsCommon.fileExists(logFile), { interval: 1000, timeout: 60000 })
+    const exists = await waitUntil(() => fsCommon.existsFile(logFile), { interval: 1000, timeout: 60000 })
 
     if (!exists) {
         getLogger().warn(`Log file ${logFile.path} does not exist!`)
@@ -197,8 +195,8 @@ async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable>
             return
         }
         checking = true
-        if (!(await fsCommon.fileExists(logFile))) {
-            vscode.window.showWarningMessage(
+        if (!(await fsCommon.existsFile(logFile))) {
+            await vscode.window.showWarningMessage(
                 localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
             )
             watcher.close()

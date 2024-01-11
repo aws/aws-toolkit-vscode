@@ -57,7 +57,7 @@ describe('InactivityMessages', function () {
     })
 
     it('shows expected messages 5 minutes before shutdown on a 15 minute inactivity timeout', async function () {
-        instance.setupMessage(15, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
+        await instance.setupMessage(15, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
 
         await assertMessagesShown([
             ['Your CodeCatalyst Dev Environment has been inactive for 10 minutes, shutting it down in 5 minutes.', 10],
@@ -69,7 +69,7 @@ describe('InactivityMessages', function () {
     })
 
     it('shows expected messages 5 minutes before shutdown on a 60 minute inactivity timeout', async function () {
-        instance.setupMessage(60, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
+        await instance.setupMessage(60, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
 
         await assertMessagesShown([
             ['Your CodeCatalyst Dev Environment has been inactive for 55 minutes, shutting it down in 5 minutes.', 55],
@@ -97,7 +97,7 @@ describe('InactivityMessages', function () {
             message.selectItem('Cancel')
         })
 
-        instance.setupMessage(7, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
+        await instance.setupMessage(7, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
 
         await assertMessagesShown([
             ['Your CodeCatalyst Dev Environment has been inactive for 2 minutes, shutting it down in 5 minutes.', 2],
@@ -127,7 +127,7 @@ describe('InactivityMessages', function () {
             inactiveMinutes - Math.ceil(initialOffsetMinutes) - InactivityMessage.firstMessageBeforeShutdown
         setInitialOffset(initialOffsetMinutes)
 
-        instance.setupMessage(inactiveMinutes, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
+        await instance.setupMessage(inactiveMinutes, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
 
         await assertMessagesShown([
             [
@@ -160,7 +160,7 @@ describe('InactivityMessages', function () {
             return true
         })
 
-        instance.setupMessage(
+        await instance.setupMessage(
             InactivityMessage.firstMessageBeforeShutdown + 1,
             devEnvActivity as unknown as DevEnvActivity,
             relativeMinuteMillis

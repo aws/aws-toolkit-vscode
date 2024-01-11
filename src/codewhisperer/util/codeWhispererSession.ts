@@ -27,7 +27,7 @@ class CodeWhispererSession {
     leftContextOfCurrentLine = ''
     requestContext: {
         request: ListRecommendationsRequest | GenerateRecommendationsRequest
-        supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+        supplementalMetadata: CodeWhispererSupplementalContext | undefined
     } = { request: {} as any, supplementalMetadata: {} as any }
     language: CodewhispererLanguage = 'python'
     taskType: CodewhispererGettingStartedTask | undefined

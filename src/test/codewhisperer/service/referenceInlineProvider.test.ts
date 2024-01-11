@@ -7,8 +7,8 @@ import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 
 describe('referenceInlineProvider', function () {
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
     describe('setInlineReference', async function () {
         it('Reference codelens message should contain license name and Code Reference Log', function () {

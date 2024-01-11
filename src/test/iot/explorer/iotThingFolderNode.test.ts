@@ -11,8 +11,8 @@ import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotClient, IotThing } from '../../../shared/clients/iotClient'
 import { Iot } from 'aws-sdk'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { TestSettings } from '../../utilities/testSettingsConfiguration'
+import sinon from 'sinon'
 
 describe('IotThingFolderNode', function () {
     const nextToken = 'nextToken'
@@ -33,35 +33,39 @@ describe('IotThingFolderNode', function () {
     }
 
     beforeEach(function () {
-        iot = mock()
+        iot = {} as any as IotClient
         config = new TestSettings()
     })
 
     describe('getChildren', function () {
         it('gets children', async function () {
-            when(iot.listThings(deepEqual({ nextToken: undefined, maxResults }))).thenResolve({
+            const stub = sinon.stub().resolves({
                 things: [thing],
                 nextToken: undefined,
             })
+            iot.listThings = stub
 
             await config.getSection('aws').update('iot.maxItemsPerPage', maxResults)
-            const node = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)), config)
+            const node = new IotThingFolderNode(iot, new IotNode(iot), config)
             const [thingNode, ...otherNodes] = await node.getChildren()
 
+            assert(stub.calledOnceWithExactly({ nextToken: undefined, maxResults }))
             assertThingNode(thingNode, expectedThing)
             assert.strictEqual(otherNodes.length, 0)
         })
 
         it('gets children with node for loading more results', async function () {
-            when(iot.listThings(deepEqual({ nextToken: undefined, maxResults }))).thenResolve({
+            const stub = sinon.stub().resolves({
                 things: [thing],
                 nextToken,
             })
+            iot.listThings = stub
 
             await config.getSection('aws').update('iot.maxItemsPerPage', maxResults)
-            const node = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)), config)
+            const node = new IotThingFolderNode(iot, new IotNode(iot), config)
             const [thingNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
+            assert(stub.calledOnceWithExactly({ nextToken: undefined, maxResults }))
             assertThingNode(thingNode, expectedThing)
             assertMoreResultsNode(moreResultsNode)
             assert.strictEqual(otherNodes.length, 0)

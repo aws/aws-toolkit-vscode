@@ -28,7 +28,7 @@ import {
 } from '../util/customizationUtil'
 import { applyPatch } from 'diff'
 import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { showManageConnections } from '../../auth/ui/vue/show'
@@ -63,8 +63,8 @@ export const enableCodeSuggestions = Commands.declare(
     (context: ExtContext) =>
         async (isAuto: boolean = true) => {
             await CodeSuggestionsState.instance.setSuggestionsEnabled(isAuto)
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.disconnected', false)
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', true)
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connectionExpired', false)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             if (!isCloud9()) {
                 await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
@@ -80,7 +80,7 @@ export const showReferenceLog = Commands.declare(
 )
 
 export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
-    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
+    void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })
 
 export const showSecurityScan = Commands.declare(
@@ -95,7 +95,12 @@ export const showSecurityScan = Commands.declare(
                 if (codeScanState.isNotStarted()) {
                     // User intends to start as "Start Security Scan" is shown in the explorer tree
                     codeScanState.setToRunning()
-                    startSecurityScanWithProgress(securityPanelViewProvider, editor, client, context.extensionContext)
+                    void startSecurityScanWithProgress(
+                        securityPanelViewProvider,
+                        editor,
+                        client,
+                        context.extensionContext
+                    )
                 } else if (codeScanState.isRunning()) {
                     // User intends to stop as "Stop Security Scan" is shown in the explorer tree
                     // Cancel only when the code scan state is "Running"
@@ -103,7 +108,7 @@ export const showSecurityScan = Commands.declare(
                 }
                 await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             } else {
-                vscode.window.showInformationMessage('Open a valid file to scan.')
+                void vscode.window.showInformationMessage('Open a valid file to scan.')
             }
         }
 )
@@ -117,9 +122,9 @@ export const showTransformByQ = Commands.declare(
 
         if (transformByQState.isNotStarted()) {
             logCodeTransformInitiatedMetric(source)
-            startTransformByQWithProgress()
+            await startTransformByQWithProgress()
         } else if (transformByQState.isCancelled()) {
-            vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
+            void vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
         } else if (transformByQState.isRunning()) {
             await confirmStopTransformByQ(transformByQState.getJobId(), CancelActionPositions.DevToolsSidePanel)
         }
@@ -130,7 +135,7 @@ export const showTransformByQ = Commands.declare(
                 passive: false,
             })
         }
-        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        await Commands.tryExecute('aws.codeWhisperer.refresh')
     }
 )
 
@@ -145,7 +150,7 @@ export const selectCustomizationPrompt = Commands.declare(
     { id: 'aws.codeWhisperer.selectCustomization', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
-        showCustomizationPrompt().then()
+        void showCustomizationPrompt().then()
     }
 )
 
@@ -225,7 +230,7 @@ export const showLearnMore = Commands.declare(
     { id: 'aws.codeWhisperer.learnMore', compositeKey: { 0: 'source' } },
     () => async (source: CodeWhispererSource) => {
         telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
-        openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
+        void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
     }
 )
 
@@ -233,7 +238,7 @@ export const showLearnMore = Commands.declare(
 export const showFreeTierLimit = Commands.declare(
     { id: 'aws.codeWhisperer.freeTierLimit', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+        void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
     }
 )
 
@@ -243,14 +248,14 @@ export const updateReferenceLog = Commands.declare(
         logging: false,
     },
     () => () => {
-        return ReferenceLogViewProvider.instance.update()
+        ReferenceLogViewProvider.instance.update()
     }
 )
 
 export const openSecurityIssuePanel = Commands.declare(
     'aws.codeWhisperer.openSecurityIssuePanel',
-    (context: ExtContext) => (issue: CodeScanIssue, filePath: string) => {
-        showSecurityIssueWebview(context.extensionContext, issue, filePath)
+    (context: ExtContext) => async (issue: CodeScanIssue, filePath: string) => {
+        await showSecurityIssueWebview(context.extensionContext, issue, filePath)
 
         telemetry.codewhisperer_codeScanIssueViewDetails.emit({
             findingId: issue.findingId,
@@ -263,14 +268,16 @@ export const openSecurityIssuePanel = Commands.declare(
 export const notifyNewCustomizationsCmd = Commands.declare(
     { id: 'aws.codeWhisperer.notifyNewCustomizations', logging: false },
     () => () => {
-        notifyNewCustomizations().then()
+        notifyNewCustomizations().catch(e => {
+            getLogger().error('notifyNewCustomizations failed: %s', (e as Error).message)
+        })
     }
 )
 
 export const fetchFeatureConfigsCmd = Commands.declare(
     { id: 'aws.codeWhisperer.fetchFeatureConfigs', logging: false },
-    () => () => {
-        FeatureConfigProvider.instance.fetchFeatureConfigs()
+    () => async () => {
+        await FeatureConfigProvider.instance.fetchFeatureConfigs()
     }
 )
 
@@ -297,7 +304,7 @@ export const applySecurityFix = Commands.declare(
 
             const updatedContent = applyPatch(fileContent, patch)
             if (!updatedContent) {
-                vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
+                void vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
                 throw Error('Failed to get updated content from applying diff patch')
             }
 
@@ -308,17 +315,17 @@ export const applySecurityFix = Commands.declare(
             }
 
             // writing the patch applied version of document into the file
-            await FileSystemCommon.instance.writeFile(filePath, updatedContent)
-            vscode.window
+            await fsCommon.writeFile(filePath, updatedContent)
+            void vscode.window
                 .showInformationMessage(CodeWhispererConstants.codeFixAppliedSuccessMessage, {
                     title: CodeWhispererConstants.runSecurityScanButtonTitle,
                 })
                 .then(res => {
                     if (res?.title === CodeWhispererConstants.runSecurityScanButtonTitle) {
-                        vscode.commands.executeCommand('aws.codeWhisperer.security.scan')
+                        void vscode.commands.executeCommand('aws.codeWhisperer.security.scan')
                     }
                 })
-            closeSecurityIssueWebview(issue.findingId)
+            await closeSecurityIssueWebview(issue.findingId)
         } catch (err) {
             getLogger().error(`Apply fix command failed. ${err}`)
             applyFixTelemetryEntry.result = 'Failed'

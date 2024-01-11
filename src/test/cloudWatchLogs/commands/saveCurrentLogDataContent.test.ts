@@ -58,7 +58,7 @@ describe('saveCurrentLogDataContent', async function () {
         const uri = createURIFromArgs(logGroupInfo, {})
         LogDataRegistry.instance.registerInitialLog(uri, testFilterLogEvents)
         await LogDataRegistry.instance.fetchNextLogEvents(uri)
-        vscode.window.showTextDocument(uri)
+        await vscode.window.showTextDocument(uri)
         await assertTextEditorContains(expectedText, false) // Wait for document provider.
 
         getTestWindow().onDidShowDialog(d => d.selectItem(vscode.Uri.file(filename)))
@@ -70,7 +70,9 @@ describe('saveCurrentLogDataContent', async function () {
 
     it('does not do anything if the URI is invalid', async function () {
         getTestWindow().onDidShowDialog(d => d.selectItem(vscode.Uri.file(filename)))
-        vscode.window.showTextDocument(vscode.Uri.parse(`notCloudWatch:hahahaha`))
+        await assert.rejects(
+            async () => await vscode.window.showTextDocument(vscode.Uri.parse(`notCloudWatch:hahahaha`))
+        )
         await saveCurrentLogDataContent()
         assert.strictEqual(await fileExists(filename), false)
     })
