@@ -4,7 +4,7 @@
  */
 
 import { resolve } from 'path'
-import { integrationSuite, runToolkitTests } from './launchTestUtilities'
+import { runToolkitTests } from './launchTestUtilities'
 void (async () => {
-    await runToolkitTests(integrationSuite, resolve('dist', 'src', 'testInteg', 'index.js'))
+    await runToolkitTests('integration', resolve('dist', 'src', 'testInteg', 'index.js'))
 })()

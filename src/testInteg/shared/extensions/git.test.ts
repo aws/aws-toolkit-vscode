@@ -13,7 +13,7 @@ import { realpath } from 'fs-extra'
 import { execFileSync } from 'child_process'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger/logger'
-import { getMinVsCodeVersion } from '../../../../scripts/test/launchTestUtilities' // TODO: don't use stuff from 'scripts'
+import { getMinVscodeVersion } from '../../../shared/vscode/env'
 
 const testRemoteName = 'test-origin'
 const testRemoteUrl = 'https://github.com/aws/aws-toolkit-vscode'
@@ -69,7 +69,7 @@ describe.skip('GitExtension', function () {
 
     before(async function () {
         // extension is missing some functionality on the minimum version
-        if (vscode.version === getMinVsCodeVersion()) {
+        if (vscode.version === getMinVscodeVersion()) {
             this.test?.skip()
         }
 
