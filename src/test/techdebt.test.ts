@@ -44,14 +44,6 @@ describe('tech debt', function () {
         )
     })
 
-    it('stop skipping CodeCatalyst E2E Tests', function () {
-        // https://issues.amazon.com/issues/IDE-10496
-        assert(
-            new Date() < new Date(2024, 1, 15),
-            'Re-evaluate if we should still keep skipping CodeCatalyst E2E Tests'
-        )
-    })
-
     it('stop not using latest python extension version in integration CI tests', function () {
         /**
          * The explicitly set version is done in {@link installVSCodeExtension}
