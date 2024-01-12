@@ -107,7 +107,7 @@ export async function startTransformByQ() {
     const userInputState = await validateTransformJob()
 
     // Set the default state variables for our store and the UI
-    await setModernizationToRunningState(userInputState)
+    await setTransformationToRunningState(userInputState)
 
     try {
         // Set web view UI to poll for progress
@@ -299,7 +299,7 @@ export async function validateTransformJob() {
     return userInputState
 }
 
-export async function setModernizationToRunningState(userInputState: UserInputState) {
+export async function setTransformationToRunningState(userInputState: UserInputState) {
     transformByQState.setToRunning()
     transformByQState.setProjectPath(userInputState.project.description!)
     sessionPlanProgress['uploadCode'] = StepProgress.Pending
