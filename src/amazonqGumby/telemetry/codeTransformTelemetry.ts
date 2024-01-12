@@ -69,7 +69,7 @@ export const JDKToTelemetryValue = (
  * can read the version easily and for VSCode we must exec
  * the javap -v command.
  */
-export const javaPCommandLineToTelemetryValue = (javapCommandLineOutput: string) => {
+export const javapOutputToTelemetryValue = (javapCommandLineOutput: string) => {
     switch (javapCommandLineOutput) {
         case '49':
             return 'JDK_1_5'
