@@ -233,14 +233,19 @@ a changelog item(s). Update the changelog via:
 
     npm run newChange
 
+> [!TIP]
+> To update an _existing_ changelog item, just edit its `.changes/next-release/….json` file, you
+> don't need to re-run `npm run newChange`.
+
 Guidelines:
 
+-   If there are multiple unrelated changes, run `npm run newChange` for each change.
 -   Describe the change in a way that is meaningful to the _customer_.
     -   ❌ `Remove the cache when the connection wizard is re-launched`
     -   ✅ `Connection wizard sometimes shows the old (stale) connection`
--   If there are multiple unrelated changes, run `npm run newChange` for each change.
--   **Bug Fix** changes should describe the _problem being fixed_. This tends to produce simpler,
-    more-readable descriptions. It's redundant to mention "Fixed" in the description. Example:
+-   "Bug Fix" changes should describe the _problem being fixed_. This tends to produce simpler,
+    more-intuitive descriptions. It's redundant to say "Fixed" in the description, because the
+    generated changelog will say that. Example:
     -   ❌ `Fixed S3 bug which caused filenames to be uppercase`
     -   ✅ `S3 filenames are always uppercase`
 
