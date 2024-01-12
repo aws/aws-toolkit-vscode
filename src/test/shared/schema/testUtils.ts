@@ -38,7 +38,7 @@ export async function getCITestSchemas(): Promise<TestSchemas> {
         )
     }
 
-    repo.dispose()
+    await repo.dispose()
 
     const samSchema = JSON.parse(samSchemaFile)
     const cfnSchema = JSON.parse(cfnSchemaFile)

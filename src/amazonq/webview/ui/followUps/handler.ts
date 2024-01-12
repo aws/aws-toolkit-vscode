@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp, ChatItemType, MynahUI } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp, ChatItemType, MynahUI } from '@aws/mynah-ui'
 import { Connector } from '../connector'
 import { TabsStorage } from '../storages/tabsStorage'
 import { WelcomeFollowupType } from '../apps/amazonqCommonsConnector'
@@ -60,7 +60,7 @@ export class FollowUpInteractionHandler {
             this.tabsStorage.resetTabTimer(tabID)
 
             if (followUp.type !== undefined && followUp.type === 'init-prompt') {
-                this.connector.requestGenerativeAIAnswer(tabID, {
+                void this.connector.requestGenerativeAIAnswer(tabID, {
                     chatMessage: followUp.prompt,
                 })
                 return

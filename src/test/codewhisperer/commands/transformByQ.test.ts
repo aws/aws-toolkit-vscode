@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as model from '../../../codewhisperer/models/model'
 import * as startTransformByQ from '../../../codewhisperer/commands/startTransformByQ'
-import proxyquire from 'proxyquire'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -21,7 +20,11 @@ import {
     stopJob,
     pollTransformationJob,
     validateProjectSelection,
+    getOpenProjects,
+    getHeadersObj,
 } from '../../../codewhisperer/service/transformByQHandler'
+import path from 'path'
+import { createTestWorkspaceFolder, toFile } from '../../testUtil'
 
 describe('transformByQ', function () {
     afterEach(function () {
@@ -68,42 +71,31 @@ describe('transformByQ', function () {
         assert.strictEqual(model.transformByQState.getStatus(), 'Cancelled')
     })
 
-    it('WHEN validateProjectSelection called on valid project THEN correctly extracts JDK8 version', async function () {
-        const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
-        findFilesStub.onFirstCall().resolves([vscode.Uri.file('/user/sample/project/ClassFile.class')])
-        findFilesStub.onSecondCall().resolves([vscode.Uri.file('/user/sample/project/pom.xml')])
-
-        const spawnSyncResult = {
-            stdout: 'major version: 52',
-            stderr: '',
-            error: undefined,
-            status: 0,
-            pid: 12345,
-            signal: undefined,
-            output: ['', 'major version: 52', ''],
-        }
-        const spawnSyncStub = sinon.stub().returns(spawnSyncResult)
-
-        const { validateProjectSelection } = proxyquire('../../../codewhisperer/service/transformByQHandler', {
-            child_process: { spawnSync: spawnSyncStub },
-        })
-
+    it('WHEN validateProjectSelection called on non-Maven project THEN throws error', async function () {
         const dummyQuickPickItem: vscode.QuickPickItem = {
             label: 'SampleProject',
             description: '/dummy/path/here',
         }
-        await assert.doesNotReject(async () => {
-            await validateProjectSelection(dummyQuickPickItem)
-        })
-        assert.strictEqual(model.transformByQState.getSourceJDKVersion(), '8')
+        await assert.rejects(
+            async () => {
+                await validateProjectSelection(dummyQuickPickItem)
+            },
+            {
+                name: 'Error',
+                message: 'No valid Maven build file found',
+            }
+        )
     })
 
-    it('WHEN validateProjectSelection called on project with no class files THEN throws error', async function () {
+    it('WHEN validateProjectSelection called on project with pom.xml but no class files THEN throws error', async function () {
+        const folder = await createTestWorkspaceFolder()
+        const dummyPomPath = path.join(folder.uri.fsPath, 'pom.xml')
+        await toFile('', dummyPomPath)
         const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
         findFilesStub.onFirstCall().resolves([])
         const dummyQuickPickItem: vscode.QuickPickItem = {
             label: 'SampleProject',
-            description: '/dummy/path/here',
+            description: folder.uri.fsPath,
         }
 
         await assert.rejects(
@@ -113,6 +105,29 @@ describe('transformByQ', function () {
             {
                 name: 'Error',
                 message: 'No Java projects found',
+            }
+        )
+    })
+
+    it('WHEN getOpenProjects called on non-empty workspace THEN returns open projects', async function () {
+        sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .get(() => [{ uri: vscode.Uri.file('/user/test/project/'), name: 'TestProject', index: 0 }])
+
+        const openProjects = await getOpenProjects()
+        assert.strictEqual(openProjects[0].label, 'TestProject')
+    })
+
+    it('WHEN getOpenProjects called on empty workspace THEN throws error', async function () {
+        sinon.stub(vscode.workspace, 'workspaceFolders').get(() => undefined)
+
+        await assert.rejects(
+            async () => {
+                await getOpenProjects()
+            },
+            {
+                name: 'Error',
+                message: 'No Java projects found since no projects are open',
             }
         )
     })
@@ -169,6 +184,26 @@ describe('transformByQ', function () {
                 id: '123',
             },
         ]
+        assert.deepStrictEqual(actual, expected)
+    })
+
+    it(`WHEN get headers for upload artifact to S3 THEN returns correct header with kms key arn`, function () {
+        const actual = getHeadersObj('dummy-sha-256', 'dummy-kms-key-arn')
+        const expected = {
+            'x-amz-checksum-sha256': 'dummy-sha-256',
+            'Content-Type': 'application/zip',
+            'x-amz-server-side-encryption': 'aws:kms',
+            'x-amz-server-side-encryption-aws-kms-key-id': 'dummy-kms-key-arn',
+        }
+        assert.deepStrictEqual(actual, expected)
+    })
+
+    it(`WHEN get headers for upload artifact to S3 THEN returns correct headers without kms key arn`, function () {
+        const actual = getHeadersObj('dummy-sha-256', '')
+        const expected = {
+            'x-amz-checksum-sha256': 'dummy-sha-256',
+            'Content-Type': 'application/zip',
+        }
         assert.deepStrictEqual(actual, expected)
     })
 })

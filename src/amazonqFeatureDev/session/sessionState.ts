@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MynahIcons } from '@aws/mynah-ui-chat'
+import { MynahIcons } from '@aws/mynah-ui'
 import { randomUUID } from 'crypto'
 import * as path from 'path'
 import sanitizeHtml from 'sanitize-html'
@@ -16,7 +16,7 @@ import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { featureDevScheme } from '../constants'
-import { UserMessageNotFoundError } from '../errors'
+import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
 import {
     FollowUpTypes,
     NewFileContents,
@@ -43,9 +43,7 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
     }
 
     async interact(_action: SessionStateAction): Promise<SessionStateInteraction> {
-        throw new ToolkitError('Illegal transition between states, restart the conversation', {
-            code: 'IllegalStateTransition',
-        })
+        throw new IllegalStateTransition()
     }
 }
 
@@ -56,15 +54,24 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.sourceRoot, action.telemetry)
+        const uploadId = await telemetry.amazonq_createUpload.run(async span => {
+            span.record({ amazonqConversationId: this.config.conversationId })
+            const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
+                this.config.sourceRoot,
+                action.telemetry,
+                span
+            )
 
-        const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
-            this.config.conversationId,
-            zipFileChecksum,
-            zipFileBuffer.length
-        )
+            const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
+                this.config.conversationId,
+                zipFileChecksum,
+                zipFileBuffer.length
+            )
 
-        await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
+            await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
+            return uploadId
+        })
+
         const nextState = new RefinementState({ ...this.config, uploadId }, this.approach, this.tabID, 0)
         return nextState.interact(action)
     }
@@ -394,22 +401,30 @@ export class PrepareCodeGenState implements SessionState {
         this.conversationId = config.conversationId
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        action.messenger.sendAnswer({
-            message: 'Uploading code ...',
-            type: 'answer-part',
-            tabID: this.tabID,
+        const uploadId = await telemetry.amazonq_createUpload.run(async span => {
+            action.messenger.sendAnswer({
+                message: 'Uploading code ...',
+                type: 'answer-part',
+                tabID: this.tabID,
+            })
+
+            const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
+                this.config.sourceRoot,
+                action.telemetry,
+                span
+            )
+
+            const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
+                this.config.conversationId,
+                zipFileChecksum,
+                zipFileBuffer.length
+            )
+
+            await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
+            return uploadId
         })
 
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.sourceRoot, action.telemetry)
-
-        const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
-            this.config.conversationId,
-            zipFileChecksum,
-            zipFileBuffer.length
-        )
-
         this.uploadId = uploadId
-        await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
         const nextState = new CodeGenState(
             { ...this.config, uploadId },
             '',

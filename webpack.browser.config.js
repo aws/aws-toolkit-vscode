@@ -38,6 +38,7 @@ const webConfig = {
             path: require.resolve('path-browserify'),
             assert: require.resolve('assert'),
             fs: false,
+            crypto: require.resolve('crypto-browserify'),
 
             // *** If one of these modules actually gets used an error will be raised ***
             // You may see something like: "TypeError: path_ignored_0.join is not a function"
@@ -48,7 +49,6 @@ const webConfig = {
             https: false, // https: require.resolve('https-browserify'),
             zlib: false, // zlib: require.resolve('browserify-zlib'),
             constants: false, //constants: require.resolve('constants-browserify'),
-            crypto: false, // crypto: require.resolve('crypto-browserify'),
             // These do not have a straight forward replacement
             child_process: false, // Reason for error: 'TypeError: The "original" argument must be of type Function'
             async_hooks: false,

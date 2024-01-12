@@ -33,8 +33,8 @@ describe('recommendationHandler', function () {
         isAutomatedTriggerEnabled: true,
         isSuggestionsWithCodeReferencesEnabled: true,
     }
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
 
     describe('getRecommendations', async function () {
@@ -43,9 +43,9 @@ describe('recommendationHandler', function () {
         const mockEditor = createMockTextEditor()
         const testStartUrl = 'testStartUrl'
 
-        beforeEach(function () {
+        beforeEach(async function () {
             sinon.restore()
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
             RecommendationHandler.instance.clearRecommendations()

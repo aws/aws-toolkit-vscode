@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import { instance, mock, when } from 'ts-mockito'
 
 import * as CloudFormation from '../../../../shared/cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../../../shared/fs/templateRegistry'
@@ -16,6 +15,7 @@ import {
 import { DefaultAwsSamDebugConfigurationValidator } from '../../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import { createBaseTemplate } from '../../cloudformation/cloudformationTestUtils'
 import { WatchedItem } from '../../../../shared/fs/watchedFiles'
+import { stub } from '../../../utilities/stubber'
 
 function createTemplateConfig(): AwsSamDebuggerConfiguration {
     return {
@@ -98,16 +98,16 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
     const templateData = createTemplateData()
     const imageTemplateData = createImageTemplateData()
 
-    const mockRegistry: CloudFormationTemplateRegistry = mock()
-    const mockFolder: vscode.WorkspaceFolder = mock()
+    const mockRegistry = stub(CloudFormationTemplateRegistry, { name: '', items: [] })
+    const mockFolder = <vscode.WorkspaceFolder>{ uri: vscode.Uri.file('/test') }
 
     let validator: DefaultAwsSamDebugConfigurationValidator
 
     beforeEach(function () {
-        when(mockRegistry.getItem('/')).thenReturn(templateData)
-        when(mockRegistry.getItem('/image')).thenReturn(imageTemplateData)
+        mockRegistry.getItem.withArgs('/').returns(templateData)
+        mockRegistry.getItem.withArgs('/image').returns(imageTemplateData)
 
-        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
+        validator = new DefaultAwsSamDebugConfigurationValidator(mockFolder)
     })
 
     it('returns invalid when resolving debug configurations with an invalid request type', async () => {
@@ -125,10 +125,10 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
     })
 
     it("returns invalid when resolving template debug configurations with a template that isn't in the registry", async () => {
-        const mockEmptyRegistry: CloudFormationTemplateRegistry = mock()
-        when(mockEmptyRegistry.getItem('/')).thenReturn(undefined)
+        const mockEmptyRegistry = stub(CloudFormationTemplateRegistry, { name: '', items: [] })
+        mockEmptyRegistry.getItem.withArgs('/').returns(undefined)
 
-        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
+        validator = new DefaultAwsSamDebugConfigurationValidator(mockFolder)
 
         const result = await validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
@@ -161,6 +161,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
     it("API config returns invalid when resolving with a template that isn't serverless", async () => {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.logicalId = 'OtherResource'
+        mockRegistry.addItem.resolves()
 
         const result = await validator.validate(apiConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
@@ -169,6 +170,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
     it('API config is invalid when it does not have an API field', async () => {
         const config = createApiConfig()
         config.api = undefined
+        mockRegistry.addItem.resolves()
 
         const result = await validator.validate(config, mockRegistry)
         assert.strictEqual(result.isValid, false)
@@ -178,6 +180,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         const config = createApiConfig()
 
         config.api!.path = 'noleadingslash'
+        mockRegistry.addItem.resolves()
 
         const result = await validator.validate(config, mockRegistry)
         assert.strictEqual(result.isValid, false)

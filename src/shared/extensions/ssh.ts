@@ -64,7 +64,7 @@ exit !$?
             })
 
             if (!result.stdout.includes(runningMessage) && !result.stderr) {
-                vscode.window.showInformationMessage(
+                await vscode.window.showInformationMessage(
                     localize('AWS.ssh.ssh-agent.start', 'The SSH agent has been started.')
                 )
             }
@@ -130,7 +130,10 @@ export async function startVscodeRemote(
     const workspaceUri = `vscode-remote://ssh-remote+${userAt}${hostname}${targetDirectory}`
 
     const settings = new RemoteSshSettings()
-    settings.ensureDefaultExtension(VSCODE_EXTENSION_ID.awstoolkit)
+    settings.ensureDefaultExtension(VSCODE_EXTENSION_ID.awstoolkit).catch(e => {
+        // Non-fatal. Some users intentionally have readonly settings.
+        getLogger().warn('startVscodeRemote: failed to set "defaultExtensions": %s', (e as Error).message)
+    })
 
     if (process.platform === 'win32') {
         await Promise.all([

@@ -97,7 +97,7 @@ export class AwsResourceManager {
             }
 
             if (uri.scheme === 'file') {
-                remove(uri.fsPath)
+                await remove(uri.fsPath)
 
                 globals.schemaService.registerMapping({
                     uri,
@@ -157,7 +157,7 @@ export class AwsResourceManager {
         await this.initialize()
 
         const normalizedTypeName = getNormalizedTypeName(typeName)
-        const filename = getNonexistentFilename(
+        const filename = await getNonexistentFilename(
             this.folder!,
             encodeURIComponent(identifier),
             `.${normalizedTypeName}.awsResource.json`

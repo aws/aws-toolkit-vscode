@@ -30,6 +30,7 @@ import {
 import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
 import { DevSettings } from '../settings'
+import { RetryDelayOptions } from 'aws-sdk/lib/config-base'
 
 export interface CodeCatalystConfig {
     readonly region: string
@@ -119,16 +120,24 @@ function toBranch(
     }
 }
 
+interface RetryOptions {
+    retryDelayOptions?: RetryDelayOptions
+    maxRetries?: number
+}
+
 async function createCodeCatalystClient(
     connection: SsoConnection,
-    regionCode = getCodeCatalystConfig().region,
-    endpoint = getCodeCatalystConfig().endpoint
+    regionCode: string,
+    endpoint: string | AWS.Endpoint,
+    retryOptions: RetryOptions
 ): Promise<CodeCatalyst> {
     const c = await globals.sdkClientBuilder.createAwsService(CodeCatalyst, {
         region: regionCode,
         correctClockSkew: true,
         endpoint: endpoint,
         token: new TokenProvider(connection),
+        retryDelayOptions: retryOptions.retryDelayOptions,
+        maxRetries: retryOptions.maxRetries,
     } as ServiceConfigurationOptions)
 
     return c
@@ -155,9 +164,10 @@ export type CodeCatalystClientFactory = () => Promise<CodeCatalystClient>
 export async function createClient(
     connection: SsoConnection,
     regionCode = getCodeCatalystConfig().region,
-    endpoint = getCodeCatalystConfig().endpoint
+    endpoint = getCodeCatalystConfig().endpoint,
+    retryOptions: RetryOptions = {}
 ): Promise<CodeCatalystClient> {
-    const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint)
+    const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint, retryOptions)
     const c = new CodeCatalystClientInternal(connection, sdkClient)
     await c.verifySession()
 
@@ -276,7 +286,8 @@ class CodeCatalystClientInternal {
                         }
                         resolve(defaultVal)
                     } else {
-                        reject(e)
+                        const err = e as AWS.AWSError
+                        reject(new ToolkitError(`CodeCatalyst: ${err.code}`, { code: err.code, cause: err }))
                     }
                     return
                 }

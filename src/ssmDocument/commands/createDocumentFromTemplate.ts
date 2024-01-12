@@ -91,7 +91,7 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
                 selectedDocumentFormat
             )
             if (textDocument !== undefined) {
-                vscode.window.showTextDocument(textDocument)
+                await vscode.window.showTextDocument(textDocument)
             } else {
                 result = 'Cancelled'
             }
@@ -99,7 +99,7 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
     } catch (err) {
         result = 'Failed'
         logger.error(err as Error)
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.ssmDocument.openTextDocumentFromSelection',
                 'There was an error creating the SSM Document from the template, check log for details.'

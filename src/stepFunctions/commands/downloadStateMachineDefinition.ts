@@ -53,7 +53,7 @@ export async function downloadStateMachineDefinition(params: {
                 fs.writeFileSync(filePath, stateMachineDetails.definition, 'utf8')
                 const openPath = vscode.Uri.file(filePath)
                 const doc = await vscode.workspace.openTextDocument(openPath)
-                vscode.window.showTextDocument(doc)
+                await vscode.window.showTextDocument(doc)
             }
         }
     } catch (err) {

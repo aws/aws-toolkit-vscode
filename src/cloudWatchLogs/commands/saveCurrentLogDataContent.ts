@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { telemetry, CloudWatchResourceType, Result } from '../../shared/telemetry/telemetry'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 
 /** Prompts the user to select a file location to save the currently visible "aws-cwl:" document to. */
 export async function saveCurrentLogDataContent(): Promise<void> {
@@ -45,11 +45,11 @@ export async function saveCurrentLogDataContent(): Promise<void> {
 
         if (selectedUri && content) {
             try {
-                await FileSystemCommon.instance.writeFile(selectedUri, content)
+                await fsCommon.writeFile(selectedUri, content)
             } catch (e) {
                 result = 'Failed'
                 const err = e as Error
-                vscode.window.showErrorMessage(
+                void vscode.window.showErrorMessage(
                     localize(
                         'AWS.command.saveCurrentLogDataContent.error',
                         'Error saving current log to {0}: {1}',
@@ -63,7 +63,7 @@ export async function saveCurrentLogDataContent(): Promise<void> {
         }
     } catch (e) {
         result = 'Failed'
-        vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.cwl.invalidEditor',
                 'Not a Cloudwatch Log data source: {0}',

@@ -10,7 +10,6 @@ import { copyEndpointCommand } from '../../../iot/commands/copyEndpoint'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { getTestWindow } from '../../shared/vscode/window'
-import { mock, instance, when } from '../../utilities/mockito'
 import { FakeClipboard } from '../../shared/vscode/fakeEnv'
 
 describe('copyEndpointCommand', function () {
@@ -23,12 +22,13 @@ describe('copyEndpointCommand', function () {
     let node: IotNode
 
     beforeEach(function () {
-        iot = mock()
-        node = new IotNode(instance(iot))
+        iot = {} as any as IotClient
+        node = new IotNode(iot)
     })
 
     it('copies endpoint to clipboard', async function () {
-        when(iot.getEndpoint()).thenResolve('endpoint')
+        const endpointStub = sinon.stub().resolves('endpoint')
+        iot.getEndpoint = endpointStub
 
         await copyEndpointCommand(node)
 
@@ -36,7 +36,8 @@ describe('copyEndpointCommand', function () {
     })
 
     it('shows an error message when retrieval fails', async function () {
-        when(iot.getEndpoint()).thenReject(new Error('Expected failure'))
+        const endpointStub = sinon.stub().rejects(new Error('Expected failure'))
+        iot.getEndpoint = endpointStub
 
         await copyEndpointCommand(node)
 

@@ -65,26 +65,23 @@ function parseEnvFile(contents: string): { [key: string]: string } {
 export function createVariablesPrompter(
     buttons?: PrompterButtons<string>
 ): QuickPickPrompter<{ [name: string]: string }> {
-    const openDialog = () => {
-        return promisifyThenable(vscode.window.showOpenDialog({ canSelectMany: false }))
-            .then(resp => {
-                if (resp === undefined) {
-                    throw new Error('Closed dialog')
-                }
-
-                return resp[0].fsPath
-            })
-            .then(path => fs.promises.readFile(path))
-            .then(contents => parseEnvFile(contents.toString()))
-            .catch(err => {
-                if (err.message !== 'Closed dialog') {
-                    showViewLogsMessage(
-                        localize('AWS.environmentVariables.prompt.failed', 'Failed to read environment variables')
-                    )
-                }
-
-                return WIZARD_RETRY
-            })
+    const openDialog = async () => {
+        try {
+            const resp = await promisifyThenable(vscode.window.showOpenDialog({ canSelectMany: false }))
+            if (resp === undefined) {
+                throw new Error('Closed dialog')
+            }
+            const path = resp[0].fsPath
+            const contents = await fs.promises.readFile(path)
+            return parseEnvFile(contents.toString())
+        } catch (err) {
+            if ((err as Error).message !== 'Closed dialog') {
+                void showViewLogsMessage(
+                    localize('AWS.environmentVariables.prompt.failed', 'Failed to read environment variables')
+                )
+            }
+            return WIZARD_RETRY
+        }
     }
 
     const items: DataQuickPickItem<{ [name: string]: string }>[] = [

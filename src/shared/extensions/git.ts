@@ -382,7 +382,7 @@ export class GitExtension {
 
             return { files, dispose: () => tryRemoveFolder(tmpDir), stats: { downloadSize } }
         } catch (err) {
-            tryRemoveFolder(tmpDir)
+            void tryRemoveFolder(tmpDir)
             throw err
         }
     }

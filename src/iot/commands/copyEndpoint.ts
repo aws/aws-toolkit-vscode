@@ -22,9 +22,9 @@ export async function copyEndpointCommand(node: IotNode): Promise<void> {
         endpoint = await node.getEndpoint()
     } catch (e) {
         getLogger().error('Failed to retrieve endpoint: %s', e)
-        showViewLogsMessage(localize('AWS.iot.copyEndpoint.error', 'Failed to retrieve endpoint'))
+        void showViewLogsMessage(localize('AWS.iot.copyEndpoint.error', 'Failed to retrieve endpoint'))
         return
     }
 
-    copyToClipboard(endpoint, 'URL')
+    await copyToClipboard(endpoint, 'URL')
 }

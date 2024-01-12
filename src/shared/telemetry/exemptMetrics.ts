@@ -16,7 +16,6 @@
  */
 const validationExemptMetrics: Set<string> = new Set([
     'amazonq_runCommand',
-    'amazonq_isReviewedChanges',
     'apigateway_copyUrl',
     'aws_loadCredentials',
     'aws_validateCredentials',

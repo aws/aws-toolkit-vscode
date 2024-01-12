@@ -1,3 +1,36 @@
+## 2.5.0 2024-01-11
+
+- **Bug Fix** CodeWhisperer: Fixes a bug where accepting a recommendation in AWS Cloud9 will trigger another suggestion
+- **Bug Fix** Amazon Q: correct code selection range for one-line selections
+- **Bug Fix** CodeWhisperer: Security Scan Log output is blank if log level is not "verbose".
+- **Bug Fix** Amazon Q Chat: Fixed code block text background
+- **Bug Fix** Amazon Q Transform: delete temp files we create when no longer needed
+- **Bug Fix** Amazon Q Transform: make copy-dependencies command less error prone
+- **Bug Fix** CodeWhisperer: fix incorrect error handling causing TypeError .includes is not a function
+- **Bug Fix** Amazon Q: "Transformation Hub" is always visible, even if Transform feature is not enabled or used
+- **Feature** CodeWhisperer: add select customization action to notification
+- **Feature** feat(sam): python 3.12 support for SAM, lambda
+- **Feature** Browser: Enable generic global commands in ellipses menus, e.g. About Toolkit, Report Toolkit Issue, etc.
+- **Removal** Commands: Remove redundant 'View Quick Start' command from appearing in non-Cloud9 versions of the toolkit.
+- **Removal** Amazon Q, CodeWhisperer: Remove 'Switch Connections' menu item, and only show 'Add new connection' when not signed in.
+
+## 2.4.0 2023-12-19
+
+- **Bug Fix** Amazon Q: `/dev` command may fail with "Conversation id must exist"
+- **Bug Fix** CodeWhisperer supports code generation for Iac languages without external extensions
+- **Feature** Code Transform Telemetry includes additional metadata
+
+## 2.3.0 2023-12-15
+
+- **Bug Fix** Help > View Toolkit Logs opens an empty file if other menu items were interacted with first.
+- **Bug Fix** CodeWhisperer: Increase polling frequency for security scans.
+- **Bug Fix** Opening a CodeCatalyst dev env triggers a builder ID login in certain situations.
+- **Bug Fix** Amazon Q: Fixed an issue where sometimes /transform won't appear when switching between idC/builder id
+- **Bug Fix** Amazon Q: 'Switch to Q Chat' button not working for some users.
+- **Feature** CodeWhisperer security scans support ruby files.
+- **Feature** The `aws.samcli.enableCodeLenses` setting now enables/disables SAM codelenses in `template.yaml` files, in addition to source code files.
+- **Feature** CodeWhisperer security scans now support Go files.
+
 ## 2.2.0 2023-12-06
 
 - **Breaking Change** validate that pom.xml is in root directory of project, not anywhere in project

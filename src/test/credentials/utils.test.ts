@@ -17,7 +17,7 @@ describe('ExtensionUse.isFirstUse()', function () {
     beforeEach(async function () {
         fakeState = (await FakeExtensionContext.create()).globalState
         instance = new ExtensionUse()
-        fakeState.update(ExtensionUse.instance.isExtensionFirstUseKey, true)
+        await fakeState.update(ExtensionUse.instance.isExtensionFirstUseKey, true)
     })
 
     it('is true only on first startup', function () {

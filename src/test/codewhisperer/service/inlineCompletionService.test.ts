@@ -18,8 +18,8 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { listCodeWhispererCommandsId } from '../../../codewhisperer/commands/statusBarCommands'
 
 describe('inlineCompletionService', function () {
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
 
     describe('getPaginatedRecommendation', function () {
@@ -32,9 +32,9 @@ describe('inlineCompletionService', function () {
 
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
 
-        beforeEach(function () {
+        beforeEach(async function () {
             mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
-            resetCodeWhispererGlobalVariables()
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {
@@ -154,13 +154,13 @@ describe('inlineCompletionService', function () {
 })
 
 describe('CWInlineCompletionProvider', function () {
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
     })
 
     describe('provideInlineCompletionItems', function () {
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {
@@ -195,8 +195,8 @@ describe('codewhisperer status bar', function () {
         }
     }
 
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
         sandbox = sinon.createSandbox()
         statusBar = new TestStatusBar()
         service = new InlineCompletionService(statusBar)

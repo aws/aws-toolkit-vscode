@@ -60,7 +60,9 @@ export function createRegionPrompter(
 
     return prompter.transform(item => {
         getLogger().debug('createRegionPrompter: selected %O', item)
-        globals.context.globalState.update(lastRegionKey, item)
+        globals.context.globalState.update(lastRegionKey, item).then(undefined, e => {
+            getLogger().error('globalState.update() failed: %s', (e as Error).message)
+        })
         return item
     })
 }

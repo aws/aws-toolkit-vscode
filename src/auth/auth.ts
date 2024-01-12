@@ -845,7 +845,9 @@ export class Auth implements AuthService, ConnectionManager {
                 getLogger().info(`auth: automatically connected with "${id}"`)
                 // Removes the setting from the UI
                 if (id === legacyProfile) {
-                    new CredentialsSettings().delete('profile')
+                    new CredentialsSettings().delete('profile').catch(e => {
+                        getLogger().warn('CredentialsSettings.delete("profile") failed: %s', (e as Error).message)
+                    })
                 }
             }
         }

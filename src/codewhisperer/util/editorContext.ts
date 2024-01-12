@@ -97,7 +97,7 @@ export async function buildListRecommendationRequest(
     allowCodeWithReference: boolean
 ): Promise<{
     request: codewhispererClient.ListRecommendationsRequest
-    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+    supplementalMetadata: CodeWhispererSupplementalContext | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
 
@@ -107,17 +107,6 @@ export async function buildListRecommendationRequest(
     }, supplementalContextTimeoutInMs)
 
     const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-
-    const supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined =
-        supplementalContexts
-            ? {
-                  isUtg: supplementalContexts.isUtg,
-                  isProcessTimeout: supplementalContexts.isProcessTimeout,
-                  contentsLength: supplementalContexts.contentsLength,
-                  latency: supplementalContexts.latency,
-                  strategy: supplementalContexts.strategy,
-              }
-            : undefined
 
     logSupplementalContext(supplementalContexts)
 
@@ -139,13 +128,13 @@ export async function buildListRecommendationRequest(
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             optOutPreference: getOptOutPreference(),
         },
-        supplementalMetadata: supplementalMetadata,
+        supplementalMetadata: supplementalContexts,
     }
 }
 
 export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
     request: codewhispererClient.GenerateRecommendationsRequest
-    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+    supplementalMetadata: CodeWhispererSupplementalContext | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
 
@@ -154,17 +143,6 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
         tokenSource.cancel()
     }, supplementalContextTimeoutInMs)
     const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-    let supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
-
-    if (supplementalContexts) {
-        supplementalMetadata = {
-            isUtg: supplementalContexts.isUtg,
-            isProcessTimeout: supplementalContexts.isProcessTimeout,
-            contentsLength: supplementalContexts.contentsLength,
-            latency: supplementalContexts.latency,
-            strategy: supplementalContexts.strategy,
-        }
-    }
 
     logSupplementalContext(supplementalContexts)
 
@@ -174,19 +152,21 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
             maxResults: CodeWhispererConstants.maxRecommendations,
             supplementalContexts: supplementalContexts?.supplementalContextItems ?? [],
         },
-        supplementalMetadata: supplementalMetadata,
+        supplementalMetadata: supplementalContexts,
     }
 }
 
 export function validateRequest(
     req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
 ): boolean {
-    const isLanguageNameValid = !(
-        req.fileContext.programmingLanguage.languageName === undefined ||
-        req.fileContext.programmingLanguage.languageName.length < 1 ||
-        req.fileContext.programmingLanguage.languageName.length > 128 ||
-        !runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName)
-    )
+    const isLanguageNameValid =
+        req.fileContext.programmingLanguage.languageName !== undefined &&
+        req.fileContext.programmingLanguage.languageName.length >= 1 &&
+        req.fileContext.programmingLanguage.languageName.length <= 128 &&
+        (runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName) ||
+            runtimeLanguageContext.isFileFormatSupported(
+                req.fileContext.filename.substring(req.fileContext.filename.lastIndexOf('.') + 1)
+            ))
     const isFileNameValid = !(req.fileContext.filename === undefined || req.fileContext.filename.length < 1)
     const isFileContextValid = !(
         req.fileContext.leftFileContent.length > CodeWhispererConstants.charactersLimit ||

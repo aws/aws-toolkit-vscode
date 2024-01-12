@@ -12,12 +12,14 @@ import { Uri } from 'vscode'
 import { GitIgnoreFilter } from './gitignore'
 
 import AdmZip from 'adm-zip'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 import { TelemetryHelper } from './telemetryHelper'
 import { PrepareRepoFailedError } from '../errors'
 import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../limits'
 import { createHash } from 'crypto'
+
+import { AmazonqCreateUpload, Metric } from '../../shared/telemetry/telemetry'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -81,7 +83,11 @@ const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('ba
 /**
  * given the root path of the repo it zips its files in memory and generates a checksum for it.
  */
-export async function prepareRepoData(repoRootPath: string, telemetry: TelemetryHelper) {
+export async function prepareRepoData(
+    repoRootPath: string,
+    telemetry: TelemetryHelper,
+    span: Metric<AmazonqCreateUpload>
+) {
     try {
         const zip = new AdmZip()
 
@@ -89,16 +95,14 @@ export async function prepareRepoData(repoRootPath: string, telemetry: Telemetry
             new vscode.RelativePattern(repoRootPath, '**'),
             getExcludePattern()
         )
-        const files = await filterOutGitignoredFiles(repoRootPath, allFiles)
 
+        const files = await filterOutGitignoredFiles(repoRootPath, allFiles)
         let totalBytes = 0
         for (const file of files) {
             const fileSize = (await vscode.workspace.fs.stat(vscode.Uri.file(file.fsPath))).size
-
             if (fileSize >= maxFileSizeBytes) {
                 continue
             }
-
             totalBytes += fileSize
 
             const relativePath = getWorkspaceRelativePath(file.fsPath)
@@ -112,7 +116,10 @@ export async function prepareRepoData(repoRootPath: string, telemetry: Telemetry
                 )
             }
         }
+
         telemetry.setRepositorySize(totalBytes)
+        span.record({ amazonqRepositorySize: totalBytes })
+
         const zipFileBuffer = zip.toBuffer()
         return {
             zipFileBuffer,
@@ -126,6 +133,5 @@ export async function prepareRepoData(repoRootPath: string, telemetry: Telemetry
 
 export async function getSourceCodePath(workspaceRoot: string, projectRoot: string) {
     const srcRoot = path.join(workspaceRoot, projectRoot)
-    const srcFound = await FileSystemCommon.instance.stat(srcRoot)
-    return srcFound !== undefined ? srcRoot : workspaceRoot
+    return (await fsCommon.existsDir(srcRoot)) ? srcRoot : workspaceRoot
 }

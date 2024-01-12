@@ -211,10 +211,12 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
             )
         }
 
+        let itemsPromise: Promise<T[]>
+
         if (Array.isArray(items)) {
-            setItems(items)
+            itemsPromise = Promise.resolve(items)
         } else if (items instanceof Promise) {
-            items.then(setItems)
+            itemsPromise = items
         } else {
             // Not sure what this type is
             throw new Error('Not implemented')
@@ -227,14 +229,20 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
         picker.matchOnDescription = options?.matchOnDescription ?? false
         token?.onCancellationRequested(() => picker.dispose())
 
-        return new Promise((resolve, reject) => {
-            picker.onDidHide(() => resolve(undefined))
-            picker.onDidAccept(() => {
-                const selected = picker.selectedItems.map(i => (isKeyOf(stringItem, i) ? (i[stringItem] as string) : i))
-                resolve(picker.canSelectMany ? (selected as any) : (selected[0] as any))
-            })
+        return itemsPromise.then(items => {
+            setItems(items)
 
-            picker.show()
+            return new Promise((resolve, reject) => {
+                picker.onDidHide(() => resolve(undefined))
+                picker.onDidAccept(() => {
+                    const selected = picker.selectedItems.map(i =>
+                        isKeyOf(stringItem, i) ? (i[stringItem] as string) : i
+                    )
+                    resolve(picker.canSelectMany ? (selected as any) : (selected[0] as any))
+                })
+
+                picker.show()
+            })
         })
     }
 
@@ -259,8 +267,11 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
                 ) {
                     inputBox.validationMessage = isNonNullable(validationMessage) ? validationMessage : undefined
                 } else {
-                    validationMessage?.then(val =>
-                        val || val === undefined ? (inputBox.validationMessage = val) : void 0
+                    validationMessage?.then(
+                        val => (val || val === undefined ? (inputBox.validationMessage = val) : void 0),
+                        e => {
+                            console.error('showInputBox.validationMessage: %s', (e as Error).message)
+                        }
                     )
                 }
             })
@@ -302,7 +313,7 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
                 fireOnDidShowMessage(message)
             })
 
-            showMessage(options.title ?? '', ...items).then(resp => {
+            void showMessage(options.title ?? '', ...items).then(resp => {
                 if (resp === cancelItem) {
                     tokenSource.cancel()
                 }

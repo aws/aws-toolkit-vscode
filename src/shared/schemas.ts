@@ -15,7 +15,7 @@ import { GlobalStorage } from './globalStorage'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
-import { writeFile } from 'fs-extra'
+import { fsCommon } from '../srcShared/fs'
 import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 import { telemetry } from './telemetry/telemetry'
@@ -81,7 +81,11 @@ export class SchemaService {
     }
 
     public async start(): Promise<void> {
-        getDefaultSchemas().then(schemas => (this.schemas = schemas))
+        getDefaultSchemas()
+            .then(schemas => (this.schemas = schemas))
+            .catch(e => {
+                getLogger().error('getDefaultSchemas failed: %s', (e as Error).message)
+            })
         await this.startTimer()
     }
 
@@ -94,7 +98,9 @@ export class SchemaService {
     public registerMapping(mapping: SchemaMapping, flush?: boolean): void {
         this.updateQueue.push(mapping)
         if (flush === true) {
-            this.processUpdates()
+            this.processUpdates().catch(e => {
+                getLogger().error('SchemaService: processUpdates() failed: %s', (e as Error).message)
+            })
         }
     }
 
@@ -323,7 +329,7 @@ async function doCacheContent(
     const parsedFile = { ...JSON.parse(content), title: params.title }
     const dir = vscode.Uri.joinPath(params.destination, '..')
     await SystemUtilities.createDirectory(dir)
-    await writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
+    await fsCommon.writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
     await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, err => {
         getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
     })

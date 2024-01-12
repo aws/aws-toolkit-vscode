@@ -82,7 +82,7 @@ export class AslVisualization {
 
         logger.debug('Sending update message to webview.')
 
-        webview.postMessage({
+        await webview.postMessage({
             command: 'update',
             stateMachineData,
             isValid,
@@ -131,7 +131,7 @@ export class AslVisualization {
             vscode.workspace.onDidCloseTextDocument(documentWillSaveEvent => {
                 if (!this.trackedDocumentDoesExist(documentUri) && !this.isPanelDisposed) {
                     panel.dispose()
-                    vscode.window.showInformationMessage(
+                    void vscode.window.showInformationMessage(
                         localize(
                             'AWS.stepfunctions.visualisation.errors.rename',
                             'State machine visualization closed due to file renaming or closure.'
@@ -171,7 +171,7 @@ export class AslVisualization {
                     case 'viewDocument':
                         try {
                             const document = await vscode.workspace.openTextDocument(documentUri)
-                            vscode.window.showTextDocument(document, vscode.ViewColumn.One)
+                            void vscode.window.showTextDocument(document, vscode.ViewColumn.One)
                         } catch (e) {
                             logger.error(e as Error)
                         }

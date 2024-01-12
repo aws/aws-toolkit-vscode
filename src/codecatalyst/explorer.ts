@@ -33,7 +33,7 @@ const reauth = Commands.register(
 const onboardCommand = Commands.register(
     '_aws.codecatalyst.onboard',
     async (authProvider: CodeCatalystAuthenticationProvider) => {
-        authProvider.promptOnboarding()
+        void authProvider.promptOnboarding()
     }
 )
 

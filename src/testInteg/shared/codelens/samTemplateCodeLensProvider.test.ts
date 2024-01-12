@@ -6,7 +6,6 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as semver from 'semver'
-import { anything, instance, mock, when } from 'ts-mockito'
 import { TemplateSymbolResolver } from '../../../shared/cloudformation/templateSymbolResolver'
 import { SamTemplateCodeLensProvider } from '../../../shared/codelens/samTemplateCodeLensProvider'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
@@ -14,20 +13,21 @@ import { API_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../../../shared/sam/debug
 import * as workspaceUtils from '../../../shared/utilities/workspaceUtils'
 import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
 import { activateExtension } from '../../../shared/utilities/vsCodeUtils'
+import { stub } from '../../../test/utilities/stubber'
 
 describe('SamTemplateCodeLensProvider', async function () {
     let codeLensProvider: SamTemplateCodeLensProvider = new SamTemplateCodeLensProvider()
     let document: vscode.TextDocument
     let launchConfig: LaunchConfiguration
     let templateUri: vscode.Uri
-    let mockCancellationToken: vscode.CancellationToken
+    // not used in `provideCodeLenses`
+    const mockCancellationToken: vscode.CancellationToken = {} as any as vscode.CancellationToken
 
     beforeEach(async function () {
         codeLensProvider = new SamTemplateCodeLensProvider()
         document = (await workspaceUtils.openTextDocument('python3.7-plain-sam-app/template.yaml'))!
         templateUri = document.uri
         launchConfig = new LaunchConfiguration(document.uri)
-        mockCancellationToken = mock()
     })
 
     it('provides a CodeLens for a file with a new resource', async function () {
@@ -40,7 +40,7 @@ describe('SamTemplateCodeLensProvider', async function () {
 
         const codeLenses = await codeLensProvider.provideCodeLenses(
             document,
-            instance(mockCancellationToken),
+            mockCancellationToken,
             new TemplateSymbolResolver(document),
             launchConfig,
             true
@@ -73,13 +73,13 @@ describe('SamTemplateCodeLensProvider', async function () {
     })
 
     it('provides no code lenses for a file with no resources', async function () {
-        const mockSymbolResolver: TemplateSymbolResolver = mock()
-        when(mockSymbolResolver.getResourcesOfKind('function', anything())).thenResolve([])
+        const resolver = stub(TemplateSymbolResolver)
+        resolver.getResourcesOfKind.resolves([])
 
         const codeLenses = await codeLensProvider.provideCodeLenses(
             document,
-            instance(mockCancellationToken),
-            instance(mockSymbolResolver),
+            mockCancellationToken,
+            resolver,
             launchConfig
         )
 

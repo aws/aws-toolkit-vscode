@@ -8,7 +8,7 @@ import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client, Bucket } from '../../../shared/clients/s3Client'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { instance, mock, when } from '../../utilities/mockito'
+import sinon from 'sinon'
 
 describe('S3Node', function () {
     const firstBucket: Bucket = { name: 'first-bucket-name', region: 'firstRegion', arn: 'firstArn' }
@@ -22,15 +22,16 @@ describe('S3Node', function () {
     }
 
     beforeEach(function () {
-        s3 = mock()
+        s3 = {} as any as S3Client
     })
 
     it('gets children', async function () {
-        when(s3.listBuckets()).thenResolve({
+        const stub = sinon.stub().resolves({
             buckets: [firstBucket, secondBucket],
         })
+        s3.listBuckets = stub
 
-        const node = new S3Node(instance(s3))
+        const node = new S3Node(s3)
         const [firstBucketNode, secondBucketNode, ...otherNodes] = await node.getChildren()
 
         assertBucketNode(firstBucketNode, firstBucket)

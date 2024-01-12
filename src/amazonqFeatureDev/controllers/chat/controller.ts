@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp, MynahIcons } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp, MynahIcons } from '@aws/mynah-ui'
 import { existsSync } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -70,50 +70,47 @@ export class FeatureDevController {
         })
 
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
-            this.processUserChatMessage(data)
+            this.processUserChatMessage(data).catch(e => {
+                getLogger().error('processUserChatMessage failed: %s', (e as Error).message)
+            })
         })
         this.chatControllerMessageListeners.processChatItemVotedMessage.event(data => {
-            this.processChatItemVotedMessage(data.tabID, data.messageId, data.vote)
+            this.processChatItemVotedMessage(data.tabID, data.messageId, data.vote).catch(e => {
+                getLogger().error('processChatItemVotedMessage failed: %s', (e as Error).message)
+            })
         })
         this.chatControllerMessageListeners.followUpClicked.event(data => {
             switch (data.followUp.type) {
                 case FollowUpTypes.WriteCode:
-                    this.writeCodeClicked(data)
-                    break
+                    return this.writeCodeClicked(data)
                 case FollowUpTypes.AcceptCode:
-                    this.acceptCode(data)
-                    break
+                    return this.acceptCode(data)
                 case FollowUpTypes.ProvideFeedbackAndRegenerateCode:
-                    this.provideFeedbackAndRegenerateCode(data)
-                    break
+                    return this.provideFeedbackAndRegenerateCode(data)
                 case FollowUpTypes.Retry:
-                    this.retryRequest(data)
-                    break
+                    return this.retryRequest(data)
                 case FollowUpTypes.ModifyDefaultSourceFolder:
-                    this.modifyDefaultSourceFolder(data)
-                    break
+                    return this.modifyDefaultSourceFolder(data)
                 case FollowUpTypes.DevExamples:
                     this.initialExamples(data)
                     break
                 case FollowUpTypes.NewTask:
-                    this.newTask(data)
-                    break
+                    return this.newTask(data)
                 case FollowUpTypes.CloseSession:
-                    this.closeSession(data)
-                    break
+                    return this.closeSession(data)
                 case FollowUpTypes.SendFeedback:
                     this.sendFeedback()
                     break
             }
         })
         this.chatControllerMessageListeners.openDiff.event(data => {
-            this.openDiff(data)
+            return this.openDiff(data)
         })
         this.chatControllerMessageListeners.stopResponse.event(data => {
-            this.stopResponse(data)
+            return this.stopResponse(data)
         })
         this.chatControllerMessageListeners.tabOpened.event(data => {
-            this.tabOpened(data)
+            return this.tabOpened(data)
         })
         this.chatControllerMessageListeners.tabClosed.event(data => {
             this.tabClosed(data)
@@ -138,11 +135,13 @@ export class FeatureDevController {
                     telemetry.amazonq_approachThumbsUp.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
+                        result: 'Succeeded',
                     })
                 } else if (vote === 'downvote') {
                     telemetry.amazonq_approachThumbsDown.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
+                        result: 'Succeeded',
                     })
                 }
                 break
@@ -187,7 +186,7 @@ export class FeatureDevController {
 
             const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
-                this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
                 return
             }
@@ -583,15 +582,19 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 
     private async openDiff(message: OpenDiffMessage) {
         const session = await this.sessionStorage.getSession(message.tabID)
-        telemetry.amazonq_isReviewedChanges.emit({ amazonqConversationId: session.conversationId, enabled: true })
+        telemetry.amazonq_isReviewedChanges.emit({
+            amazonqConversationId: session.conversationId,
+            enabled: true,
+            result: 'Succeeded',
+        })
 
         if (message.deleted) {
             const fileUri = this.getOriginalFileUri(message, session)
             const basename = path.basename(message.filePath)
-            vscode.commands.executeCommand('vscode.open', fileUri, {}, `${basename} (Deleted)`)
+            await vscode.commands.executeCommand('vscode.open', fileUri, {}, `${basename} (Deleted)`)
         } else {
             const { left, right } = this.getFileDiffUris(message, session)
-            vscode.commands.executeCommand('vscode.diff', left, right)
+            await vscode.commands.executeCommand('vscode.diff', left, right)
         }
     }
 
@@ -608,7 +611,7 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 
             const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
-                this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
                 return
             }
@@ -641,6 +644,7 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 
     private async newTask(message: any) {
         // Old session for the tab is ending, delete it so we can create a new one for the message id
+        await this.closeSession(message)
         this.sessionStorage.deleteSession(message.tabID)
 
         // Re-run the opening flow, where we check auth + create a session
@@ -668,15 +672,16 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         telemetry.amazonq_endChat.emit({
             amazonqConversationId: session.conversationId,
             amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
+            result: 'Succeeded',
         })
     }
 
     private sendFeedback() {
-        submitFeedback.execute(placeholder, 'Amazon Q')
+        void submitFeedback.execute(placeholder, 'Amazon Q')
     }
 
     private processLink(message: any) {
-        openUrl(vscode.Uri.parse(message.link))
+        void openUrl(vscode.Uri.parse(message.link))
     }
 
     private insertCodeAtPosition(message: any) {

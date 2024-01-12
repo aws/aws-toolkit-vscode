@@ -17,18 +17,14 @@ import {
     initializeComputeRegion,
     mostRecentVersionKey,
 } from '../../shared/extensionUtilities'
-import {
-    createQuickStartWebview,
-    isDifferentVersion,
-    safeGet,
-    setMostRecentVersion,
-} from '../../shared/extensionUtilities'
+import { isDifferentVersion, safeGet, setMostRecentVersion } from '../../shared/extensionUtilities'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
 import { extensionVersion } from '../../shared/vscode/env'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import globals from '../../shared/extensionGlobals'
+import { createQuickStartWebview } from '../../shared/extensionStartup'
 
 describe('extensionUtilities', function () {
     describe('safeGet', function () {
@@ -106,7 +102,7 @@ describe('extensionUtilities', function () {
         it('returns false if the version exists and matches the existing version exactly', async function () {
             const goodVersion = '1.2.3'
             const extContext = await FakeExtensionContext.create()
-            extContext.globalState.update(mostRecentVersionKey, goodVersion)
+            await extContext.globalState.update(mostRecentVersionKey, goodVersion)
 
             assert.strictEqual(isDifferentVersion(extContext, goodVersion), false)
         })
@@ -121,7 +117,7 @@ describe('extensionUtilities', function () {
             const oldVersion = '1.2.3'
             const newVersion = '4.5.6'
             const extContext = await FakeExtensionContext.create()
-            extContext.globalState.update(mostRecentVersionKey, oldVersion)
+            await extContext.globalState.update(mostRecentVersionKey, oldVersion)
 
             assert.ok(isDifferentVersion(extContext, newVersion))
         })

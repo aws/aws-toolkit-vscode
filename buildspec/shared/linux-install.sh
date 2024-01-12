@@ -11,9 +11,6 @@ test -n "$VSCODE_TEST_VERSION" || {
 }
 set -x
 
-# Disable engine-strict in CI.
-sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
-
 # Without this, "Unable to locate package libatk1.0-0".
 apt-get > /dev/null -yqq update
 # Dependencies for running vscode.

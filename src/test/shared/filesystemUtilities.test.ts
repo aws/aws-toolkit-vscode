@@ -11,6 +11,7 @@ import {
     fileExists,
     getFileDistance,
     getNonexistentFilename,
+    getNonexistentFilenameSync,
     isInDirectory,
     makeTemporaryToolkitFolder,
     tempDirPath,
@@ -39,29 +40,29 @@ describe('filesystemUtilities', function () {
     })
 
     describe('getNonexistentFilename()', function () {
-        it('failure modes', async function () {
-            assert.throws(() => {
-                getNonexistentFilename('/bogus/directory/', 'foo', '.txt', 99)
+        const methods = [getNonexistentFilename, getNonexistentFilenameSync]
+
+        methods.forEach(methodUnderTest => {
+            it(`${methodUnderTest.name}: failure modes`, async function () {
+                await assert.rejects(async () => methodUnderTest('/bogus/directory/', 'foo', '.txt', 99))
+                await assert.rejects(async () => methodUnderTest('zzz', 'foo', '.txt', 99))
             })
-            assert.throws(() => {
-                getNonexistentFilename('', 'foo', '.txt', 99)
+            it(`${methodUnderTest.name}: returns a filename that does not exist in the directory`, async function () {
+                const dir = tempFolder
+                await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
+                await writeFile(path.join(dir, 'foo-0.txt'), '', 'utf8')
+                await writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
+                await writeFile(path.join(dir, 'foo-2.txt'), '', 'utf8')
+                assert.strictEqual(await methodUnderTest(dir, 'foo', '.txt', 99), 'foo-3.txt')
+                assert.strictEqual(await methodUnderTest(dir, 'foo', '', 99), 'foo')
             })
-        })
-        it('returns a filename that does not exist in the directory', async function () {
-            const dir = tempFolder
-            await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
-            await writeFile(path.join(dir, 'foo-0.txt'), '', 'utf8')
-            await writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
-            await writeFile(path.join(dir, 'foo-2.txt'), '', 'utf8')
-            assert.strictEqual(getNonexistentFilename(dir, 'foo', '.txt', 99), 'foo-3.txt')
-            assert.strictEqual(getNonexistentFilename(dir, 'foo', '', 99), 'foo')
-        })
-        it('returns "foo-RANDOM.txt" if max is reached', async function () {
-            const dir = tempFolder
-            await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
-            await writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
-            // Looks like "foo-75446d5d.txt".
-            assert.ok(/^foo-[a-fA-F0-9]{8}.txt$/.test(getNonexistentFilename(dir, 'foo', '.txt', 1)))
+            it(`${methodUnderTest.name}: returns "foo-RANDOM.txt" if max is reached`, async function () {
+                const dir = tempFolder
+                await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
+                await writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
+                // Looks like "foo-75446d5d.txt".
+                assert.ok(/^foo-[a-fA-F0-9]{8}.txt$/.test(await methodUnderTest(dir, 'foo', '.txt', 1)))
+            })
         })
     })
 

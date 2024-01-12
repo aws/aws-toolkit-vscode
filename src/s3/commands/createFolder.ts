@@ -55,7 +55,9 @@ export async function createFolderCommand(node: S3BucketNode | S3FolderNode): Pr
             .finally(() => refreshNode(node))
 
         getLogger().info('created folder: %O', folder)
-        vscode.window.showInformationMessage(localize('AWS.s3.createFolder.success', 'Created folder: {0}', folderName))
+        void vscode.window.showInformationMessage(
+            localize('AWS.s3.createFolder.success', 'Created folder: {0}', folderName)
+        )
     })
 }
 

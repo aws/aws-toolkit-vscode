@@ -23,7 +23,7 @@ export async function viewPolicyVersionCommand(node: IotPolicyVersionNode) {
         await showPolicyContent(document)
     } catch (e) {
         getLogger().error('Failed to retrieve policy document')
-        showViewLogsMessage(localize('AWS.iot.viewPolicyVersion.error', 'Failed to retrieve policy document'))
+        void showViewLogsMessage(localize('AWS.iot.viewPolicyVersion.error', 'Failed to retrieve policy document'))
         return undefined
     }
 }

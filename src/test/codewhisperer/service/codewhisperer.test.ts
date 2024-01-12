@@ -4,7 +4,6 @@
  */
 
 import sinon from 'sinon'
-import { anyString } from '../../utilities/mockito'
 import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import CodeWhispererUserClient, {
     SendTelemetryEventResponse,
@@ -22,8 +21,8 @@ describe('codewhisperer', async function () {
     let telemetryEnabledDefault: boolean
     const userTriggerDecisionPayload: TelemetryEvent = {
         userTriggerDecisionEvent: {
-            sessionId: anyString(),
-            requestId: anyString(),
+            sessionId: '',
+            requestId: '',
             programmingLanguage: { languageName: 'python' },
             completionType: 'BLOCK',
             suggestionState: 'ACCEPT',
@@ -52,7 +51,7 @@ describe('codewhisperer', async function () {
         const payload = {
             codeScanEvent: {
                 programmingLanguage: { languageName: 'python' },
-                codeScanJobId: anyString(),
+                codeScanJobId: '',
                 timestamp: new Date(),
             },
         }
@@ -76,8 +75,8 @@ describe('codewhisperer', async function () {
     it('sendTelemetryEvent for userModification should respect telemetry optout status', async function () {
         const payload = {
             userModificationEvent: {
-                sessionId: anyString(),
-                requestId: anyString(),
+                sessionId: '',
+                requestId: '',
                 programmingLanguage: { languageName: 'python' },
                 modificationPercentage: 2.0,
                 timestamp: new Date(),
@@ -108,7 +107,7 @@ describe('codewhisperer', async function () {
             promise: () =>
                 Promise.resolve({
                     $response: {
-                        requestId: anyString(),
+                        requestId: '',
                     },
                 }),
         } as Request<SendTelemetryEventResponse, AWSError>)
@@ -144,7 +143,7 @@ describe('codewhisperer', async function () {
             promise: () =>
                 Promise.resolve({
                     $response: {
-                        requestId: anyString(),
+                        requestId: '',
                     },
                 }),
         } as Request<SendTelemetryEventResponse, AWSError>)

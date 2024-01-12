@@ -54,7 +54,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     }
 
     public async refreshNode(): Promise<void> {
-        this.clearChildren()
-        vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
+        await this.clearChildren()
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 }

@@ -111,7 +111,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         }),
         vscode.workspace.onDidCloseTextDocument(closeDocumentEvent => {
-            resourceManager.close(closeDocumentEvent.uri, true)
+            return resourceManager.close(closeDocumentEvent.uri, true)
         }),
         vscode.languages.registerCodeLensProvider(
             {

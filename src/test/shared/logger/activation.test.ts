@@ -23,7 +23,7 @@ describe('makeLogger', function () {
 
     after(async function () {
         if (testLogger && testLogger instanceof WinstonToolkitLogger) {
-            testLogger.dispose()
+            await testLogger.dispose()
         }
 
         testLogger = undefined

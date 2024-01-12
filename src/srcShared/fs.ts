@@ -6,6 +6,7 @@ import * as vscode from 'vscode'
 import * as actualFs from 'fs'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ToolkitError } from '../shared/errors'
+import _path from 'path'
 
 const fs = vscode.workspace.fs
 type Uri = vscode.Uri
@@ -36,6 +37,7 @@ export class FileSystemCommon {
         return (this.#instance ??= new FileSystemCommon())
     }
 
+    /** Creates the directory as well as missing parent directories. */
     async mkdir(path: Uri | string): Promise<void> {
         const uriPath = FileSystemCommon.getUri(path)
 
@@ -60,10 +62,14 @@ export class FileSystemCommon {
         return FileSystemCommon.arrayToString(await this.readFile(path))
     }
 
+    /**
+     * The {@link vscode.workspace.fs} implementation does not explicitly provide an append method
+     * so we must do it ourselves (this implementation is inefficient).
+     */
     async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
         path = FileSystemCommon.getUri(path)
 
-        const currentContent: Uint8Array = (await this.fileExists(path)) ? await this.readFile(path) : new Uint8Array(0)
+        const currentContent: Uint8Array = (await this.existsFile(path)) ? await this.readFile(path) : new Uint8Array(0)
         const currentLength = currentContent.length
 
         const newContent = FileSystemCommon.asArray(content)
@@ -78,25 +84,27 @@ export class FileSystemCommon {
 
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
         path = FileSystemCommon.getUri(path)
-        const stat = await this.stat(path)
-
-        // No specific filetype, so only check if anything exists
-        if (fileType === undefined) {
-            return stat !== undefined
+        try {
+            const stat = await this.stat(path)
+            // check filetype if it was given
+            return fileType === undefined ? true : stat.type === fileType
+        } catch (e) {
+            return false
         }
-
-        // Check if file exists and is expected filetype
-        return stat === undefined ? false : stat.type === fileType
     }
 
-    async fileExists(path: Uri | string): Promise<boolean> {
+    async existsFile(path: Uri | string): Promise<boolean> {
         return this.exists(path, vscode.FileType.File)
     }
 
-    async directoryExists(path: Uri | string): Promise<boolean> {
+    async existsDir(path: Uri | string): Promise<boolean> {
         return this.exists(path, vscode.FileType.Directory)
     }
 
+    /**
+     * - Writes a file with `utf-8` encoding and `644` (rw-r--r--) permissions.
+     * - Creates missing directories in the given path.
+     */
     async writeFile(path: Uri | string, data: string | Uint8Array): Promise<void> {
         path = FileSystemCommon.getUri(path)
         return fs.writeFile(path, FileSystemCommon.asArray(data))
@@ -105,16 +113,9 @@ export class FileSystemCommon {
     /**
      * The stat of the file, undefined if the file does not exist, otherwise an error is thrown.
      */
-    async stat(uri: vscode.Uri | string): Promise<vscode.FileStat | undefined> {
+    async stat(uri: vscode.Uri | string): Promise<vscode.FileStat> {
         const path = FileSystemCommon.getUri(uri)
-        try {
-            return await fs.stat(path)
-        } catch (err) {
-            if (err instanceof vscode.FileSystemError && err.code === 'FileNotFound') {
-                return undefined
-            }
-            throw err
-        }
+        return await fs.stat(path)
     }
 
     async delete(uri: vscode.Uri | string): Promise<void> {
@@ -159,3 +160,5 @@ export class FileSystemCommon {
         return vscode.Uri.file(path)
     }
 }
+
+export const fsCommon = FileSystemCommon.instance

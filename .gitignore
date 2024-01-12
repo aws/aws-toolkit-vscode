@@ -2,7 +2,6 @@ out
 dist
 node_modules
 .vscode-test/
-.nyc_output/
 coverage/
 *.vsix
 *.bk
@@ -14,6 +13,9 @@ README.quickstart.cloud9.md
 README.quickstart.vscode.md
 .gitcommit
 resources/debugger/__pycache__
+
+# Generated if running the `depcruise` command from the documentation example
+/dependency-graph.svg
 
 # Auto generated definitions
 src/**/*.gen.ts

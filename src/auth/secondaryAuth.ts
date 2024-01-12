@@ -124,7 +124,9 @@ export class SecondaryAuth<T extends Connection = Connection> {
         })
 
         // Register listener and handle connection immediately in case we were instantiated late
-        handleConnectionChanged(this.auth.activeConnection)
+        handleConnectionChanged(this.auth.activeConnection).catch(e => {
+            getLogger().error('handleConnectionChanged() failed: %s', (e as Error).message)
+        })
         this.auth.onDidChangeActiveConnection(handleConnectionChanged)
         this.auth.onDidDeleteConnection(async (deletedConnId: Connection['id']) => {
             if (deletedConnId === this.#activeConnection?.id) {
