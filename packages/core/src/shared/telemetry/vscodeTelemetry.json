@@ -115,6 +115,16 @@
             "description": "Whether the user saved"
         },
         {
+            "name": "resourceCounts",
+            "type": "string",
+            "description": "Per-resource count of each resource in an opened template"
+        },
+        {
+            "name": "totalResourceCount",
+            "type": "int",
+            "description": "Total count of resources in an opened template"
+        },
+        {
             "name": "cwsprChatTriggerInteraction",
             "type": "string",
             "allowedValues": ["hotkeys", "click", "contextMenu"],
@@ -605,6 +615,11 @@
             "name": "appcomposer_closeWfs",
             "description": "Called when Step Functions Workflow Studio is closed",
             "metadata": [{ "type": "didSave" }]
+        },
+        {
+            "name": "appcomposer_resourceCount",
+            "description": "Called to count resources in a template when it is opened",
+            "metadata": [{ "type": "resourceCounts" }, { "type": "totalResourceCount" }]
         },
         {
             "name": "amazonq_openChat",
