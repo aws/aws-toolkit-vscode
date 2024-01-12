@@ -132,8 +132,8 @@ export async function startTransformByQ() {
         const status = await pollTransformationTillComplete(jobId)
 
         // Set the result state variables for our store and the UI
-        await setTransformationJobStatus(status)
-    } catch (error) {
+        await finalizeTransformationJob(status)
+    } catch (error: any) {
         await modernizationJobErrorHandler(error)
     } finally {
         await postTransformJob(userInputState)
@@ -237,7 +237,7 @@ export async function pollTransformationTillComplete(jobId: string) {
     return status
 }
 
-export async function setTransformationJobStatus(status: string) {
+export async function finalizeTransformationJob(status: string) {
     if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
         const errorMessage = 'Failed to complete transformation'
         getLogger().error(errorMessage)
@@ -368,7 +368,7 @@ export async function postTransformJob(userInputState: UserInputState) {
     }
 }
 
-export async function modernizationJobErrorHandler(error: unknown) {
+export async function modernizationJobErrorHandler(error: any) {
     if (transformByQState.isCancelled()) {
         codeTransformTelemetryState.setResultStatus('JobCancelled')
         try {
@@ -399,6 +399,8 @@ export async function modernizationJobErrorHandler(error: unknown) {
     if (sessionPlanProgress['returnCode'] !== StepProgress.Succeeded) {
         sessionPlanProgress['returnCode'] = StepProgress.Failed
     }
+    // Log error to VSCode logs
+    getLogger().error('Amazon Q Code Transform', error)
 }
 
 export async function cleanupTransformJob(intervalId: NodeJS.Timeout | undefined) {
