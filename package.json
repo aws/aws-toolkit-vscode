@@ -4342,7 +4342,7 @@
     },
     "dependencies": {
         "@amzn/codewhisperer-streaming": "file:./src.gen/@amzn/codewhisperer-streaming",
-        "@aws-sdk/client-cognito-identity": "3.46.0",
+        "@aws-sdk/client-cognito-identity": "3.490.0",
         "@aws-sdk/client-lambda": "3.385.0",
         "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.181.0",
@@ -4395,7 +4395,7 @@
         "whatwg-url": "^14.0.0",
         "winston": "^3.7.1",
         "winston-transport": "^4.5.0",
-        "xml2js": "^0.6.0",
+        "xml2js": "^0.6.1",
         "yaml-cfn": "^0.3.2"
     },
     "prettier": {
