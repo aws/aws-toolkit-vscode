@@ -19,9 +19,7 @@ import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getClientId, validateMetricEvent } from './util'
 import { telemetry } from './telemetry'
-import { FileSystemCommon } from '../../srcShared/fs'
-
-const fs = FileSystemCommon.instance
+import { fsCommon } from '../../srcShared/fs'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
@@ -106,7 +104,7 @@ export class DefaultTelemetryService {
             telemetry.session_end.emit({ value: currTime.getTime() - this.startTime.getTime() })
 
             try {
-                await fs.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
+                await fsCommon.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
             } catch {}
         }
     }
@@ -169,8 +167,8 @@ export class DefaultTelemetryService {
      * VSCode provides the URI of the folder, but it is not guaranteed to exist.
      */
     private static async ensureGlobalStorageExists(context: ExtensionContext): Promise<void> {
-        if (!fs.fileExists(context.globalStorageUri)) {
-            await fs.mkdir(context.globalStorageUri)
+        if (!fsCommon.existsFile(context.globalStorageUri)) {
+            await fsCommon.mkdir(context.globalStorageUri)
         }
     }
 
@@ -291,12 +289,12 @@ export class DefaultTelemetryService {
 
     private static async readEventsFromCache(cachePath: string): Promise<MetricDatum[]> {
         try {
-            if ((await fs.fileExists(cachePath)) === false) {
+            if ((await fsCommon.existsFile(cachePath)) === false) {
                 getLogger().info(`telemetry cache not found: '${cachePath}'`)
 
                 return []
             }
-            const input = JSON.parse(await fs.readFileAsString(cachePath))
+            const input = JSON.parse(await fsCommon.readFileAsString(cachePath))
             const events = filterTelemetryCacheEvents(input)
 
             return events

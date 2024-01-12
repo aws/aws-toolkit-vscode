@@ -193,7 +193,7 @@ describe('codeLensUtils', async function () {
     })
 
     describe('pickAddSamDebugConfiguration', function () {
-        it('should use CODE_TARGET_TYPE with no templateConfigs', function () {
+        it('should use CODE_TARGET_TYPE with no templateConfigs', async function () {
             const addSamStub = sandbox.stub(AddSamDebugConfiguration, 'addSamDebugConfiguration')
             const codeConfig: AddSamDebugConfiguration.AddSamDebugConfigurationInput = {
                 resourceName: 'codeResource',
@@ -201,7 +201,7 @@ describe('codeLensUtils', async function () {
             }
             const templateConfigs: AddSamDebugConfiguration.AddSamDebugConfigurationInput[] = []
 
-            codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs, false)
+            await codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs, false)
 
             assert.strictEqual(addSamStub.calledOnceWith(codeConfig, CODE_TARGET_TYPE, false), true)
         })

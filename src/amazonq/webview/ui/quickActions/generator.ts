@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { QuickActionCommandGroup } from '@aws/mynah-ui-chat/dist/static'
+import { QuickActionCommandGroup } from '@aws/mynah-ui/dist/static'
 import { TabType } from '../storages/tabsStorage'
 
 export interface QuickActionGeneratorProps {

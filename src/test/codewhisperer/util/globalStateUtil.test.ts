@@ -13,8 +13,8 @@ import { getLogger } from '../../../shared/logger/logger'
 describe('globalStateUtil', function () {
     let loggerSpy: sinon.SinonSpy
 
-    beforeEach(function () {
-        resetCodeWhispererGlobalVariables()
+    beforeEach(async function () {
+        await resetCodeWhispererGlobalVariables()
         vsCodeState.isIntelliSenseActive = true
         loggerSpy = sinon.spy(getLogger(), 'info')
     })

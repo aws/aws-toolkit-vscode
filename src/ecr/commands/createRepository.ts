@@ -31,13 +31,13 @@ export async function createRepository(node: EcrNode): Promise<void> {
         const repository = await node.createRepository(repositoryName)
 
         getLogger().info('created repository: %O', repository)
-        vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize('AWS.ecr.createRepository.success', 'Created repository: {0}', repositoryName)
         )
         telemetry.ecr_createRepository.emit({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to create repository ${repositoryName}: %s`, e)
-        showViewLogsMessage(
+        void showViewLogsMessage(
             localize('AWS.ecr.createRepository.failure', 'Failed to create repository: {0}', repositoryName)
         )
         telemetry.ecr_createRepository.emit({ result: 'Failed' })

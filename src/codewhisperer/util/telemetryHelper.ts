@@ -68,7 +68,7 @@ export class TelemetryHelper {
         language: CodewhispererLanguage,
         taskType: CodewhispererGettingStartedTask | undefined,
         reason: string,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+        supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         const event = {
             codewhispererRequestId: requestId ? requestId : undefined,
@@ -99,10 +99,9 @@ export class TelemetryHelper {
         requestIdList: string[],
         sessionId: string,
         paginationIndex: number,
-        languageId: string,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+        language: CodewhispererLanguage,
+        supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
-        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         telemetry.codewhisperer_userDecision.emit({
             codewhispererRequestId: requestIdList[0],
             codewhispererSessionId: sessionId ? sessionId : undefined,
@@ -113,7 +112,7 @@ export class TelemetryHelper {
             codewhispererSuggestionReferences: undefined,
             codewhispererSuggestionReferenceCount: 0,
             codewhispererCompletionType: 'Line',
-            codewhispererLanguage: languageContext.language,
+            codewhispererLanguage: language,
             codewhispererGettingStartedTask: session.taskType,
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
@@ -141,7 +140,7 @@ export class TelemetryHelper {
         paginationIndex: number,
         completionTypes: Map<number, CodewhispererCompletionType>,
         recommendationSuggestionState?: Map<number, string>,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+        supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         const events: CodewhispererUserDecision[] = []
         // emit user decision telemetry
@@ -214,7 +213,7 @@ export class TelemetryHelper {
         events: CodewhispererUserDecision[],
         requestId: string,
         sessionId: string,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+        supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         // the request level user decision will contain information from both the service_invocation event
         // and the user_decision events for recommendations within that request
@@ -250,7 +249,7 @@ export class TelemetryHelper {
         sessionId: string,
         acceptedRecommendationContent: string,
         referenceCount: number,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+        supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         // the user trigger decision will aggregate information from request level user decisions within one session
         // and add additional session level insights
@@ -335,6 +334,7 @@ export class TelemetryHelper {
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
                         recommendationLatencyMilliseconds: e2eLatency,
                         timestamp: new Date(Date.now()),
+                        triggerToResponseLatencyMilliseconds: this.timeToFirstRecommendation,
                         suggestionReferenceCount: referenceCount,
                         generatedLine: generatedLines,
                         numberOfRecommendations: suggestionCount,

@@ -11,7 +11,7 @@ import { VueWebview } from '../../webviews/main'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals from '../../shared/extensionGlobals'
 import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../srcShared/fs'
 import { getLogger } from '../../shared/logger'
 import { PromptSettings } from '../../shared/settings'
 import { CodeWhispererSource } from '../commands/types'
@@ -39,10 +39,10 @@ export class CodeWhispererWebview extends VueWebview {
         const fileContent = name[1]
 
         const localFilePath = this.getLocalFilePath(fileName)
-        if ((await FileSystemCommon.instance.fileExists(localFilePath)) && this.isFileSaved) {
+        if ((await fsCommon.existsFile(localFilePath)) && this.isFileSaved) {
             const fileUri = vscode.Uri.file(localFilePath)
-            vscode.workspace.openTextDocument(fileUri).then(doc => {
-                vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
+            await vscode.workspace.openTextDocument(fileUri).then(async doc => {
+                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
                     const endOfDocument = new vscode.Position(
                         doc.lineCount - 1,
                         doc.lineAt(doc.lineCount - 1).text.length
@@ -51,18 +51,18 @@ export class CodeWhispererWebview extends VueWebview {
                 })
             })
         } else {
-            this.saveFileLocally(localFilePath, fileContent)
+            await this.saveFileLocally(localFilePath, fileContent)
         }
     }
 
     // This function saves and open the file in the editor.
     private async saveFileLocally(localFilePath: string, fileContent: string): Promise<void> {
         try {
-            await FileSystemCommon.instance.writeFile(localFilePath, fileContent)
+            await fsCommon.writeFile(localFilePath, fileContent)
             this.isFileSaved = true
             // Opening the text document
-            vscode.workspace.openTextDocument(localFilePath).then(doc => {
-                vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
+            await vscode.workspace.openTextDocument(localFilePath).then(async doc => {
+                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
                     // Set the selection to the end of the document
                     const endOfDocument = new vscode.Position(
                         doc.lineCount - 1,
@@ -72,7 +72,7 @@ export class CodeWhispererWebview extends VueWebview {
                 })
             })
         } catch (error) {
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize(
                     'AWS.message.error.codewhispererLearnPage.saveFileLocally',
                     'There was an error in saving the file, check log for details.'
@@ -88,12 +88,12 @@ export class CodeWhispererWebview extends VueWebview {
 
     //This function opens the Keyboard shortcuts in VSCode
     async openShortCuts(): Promise<void> {
-        vscode.commands.executeCommand('workbench.action.openGlobalKeybindings', 'codewhisperer')
+        await vscode.commands.executeCommand('workbench.action.openGlobalKeybindings', 'codewhisperer')
     }
 
     //This function opens the Feedback CodeWhisperer page in the webview
     async openFeedBack(): Promise<void> {
-        submitFeedback.execute(placeholder, 'CodeWhisperer')
+        return submitFeedback.execute(placeholder, 'CodeWhisperer')
     }
 
     //------Telemetry------

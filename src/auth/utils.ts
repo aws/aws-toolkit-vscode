@@ -62,7 +62,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Pro
     if (resp === 'addNewConnection') {
         // TODO: Cannot call function directly due to circular dependency. Refactor to fix this.
         const source: AuthSource = 'addConnectionQuickPick' // enforcing type sanity check
-        vscode.commands.executeCommand(showConnectionsPageCommand, placeholder, source)
+        await vscode.commands.executeCommand(showConnectionsPageCommand, placeholder, source)
         return undefined
     }
 
@@ -235,7 +235,7 @@ export async function showRegionPrompter(
 }
 
 Commands.register('aws.auth.help', async () => {
-    openUrl(vscode.Uri.parse(authHelpUrl))
+    await openUrl(vscode.Uri.parse(authHelpUrl))
     telemetry.aws_help.emit()
 })
 
@@ -391,6 +391,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
     prompter.quickPick.onDidTriggerItemButton(async e => {
         // User wants to delete a specific connection
         if (e.button.tooltip === deleteConnection) {
+            telemetry.ui_click.emit({ elementId: 'connection_deleteFromList' })
             const conn = e.item.data as Connection
 
             // Set prompter in to a busy state so that
@@ -557,7 +558,10 @@ export class AuthNode implements TreeNode<Auth> {
 
     public getTreeItem() {
         // Calling this here is robust but `TreeShim` must be instantiated lazily to stop side-effects
-        this.resource.tryAutoConnect()
+        // TODO: this is a race!
+        this.resource.tryAutoConnect().catch(e => {
+            getLogger().error('tryAutoConnect failed: %s', (e as Error).message)
+        })
 
         if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
@@ -724,7 +728,9 @@ export class ExtensionUse {
         }
 
         // Update state, so next time it is not first use
-        state.update(this.isExtensionFirstUseKey, false)
+        state.update(this.isExtensionFirstUseKey, false).then(undefined, e => {
+            getLogger().error('Memento.update failed: %s', (e as Error).message)
+        })
 
         return this.isFirstUseCurrentSession
     }

@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { AggregatedCodeScanIssue } from '../models/model'
-
 export abstract class SecurityIssueProvider {
     private _issues: AggregatedCodeScanIssue[] = []
     public get issues() {
@@ -17,6 +16,10 @@ export abstract class SecurityIssueProvider {
     }
 
     public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
+        // handleDocumentChange function may be triggered while testing by our own code generation.
+        if (!event.contentChanges || event.contentChanges.length === 0) {
+            return
+        }
         const changedRange = event.contentChanges[0].range
         const changedText = event.contentChanges[0].text
         const lineOffset = this._getLineOffset(changedRange, changedText)

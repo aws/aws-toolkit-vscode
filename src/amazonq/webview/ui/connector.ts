@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemFollowUp, FeedbackPayload, Engagement } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemFollowUp, FeedbackPayload, Engagement } from '@aws/mynah-ui'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
 import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
@@ -98,17 +98,14 @@ export class Connector {
             if (this.isUIReady) {
                 switch (this.tabsStorage.getTab(tabID)?.type) {
                     case 'featuredev':
-                        this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, payload)
-                        break
+                        return this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, payload)
                     default:
-                        this.cwChatConnector.requestGenerativeAIAnswer(tabID, payload)
-                        break
+                        return this.cwChatConnector.requestGenerativeAIAnswer(tabID, payload)
                 }
             } else {
-                setTimeout(() => {
-                    this.requestGenerativeAIAnswer(tabID, payload)
+                return setTimeout(() => {
+                    return this.requestGenerativeAIAnswer(tabID, payload)
                 }, 2000)
-                return
             }
         })
 
@@ -149,9 +146,9 @@ export class Connector {
         }
 
         if (messageData.sender === 'CWChat') {
-            this.cwChatConnector.handleMessageReceive(messageData)
+            await this.cwChatConnector.handleMessageReceive(messageData)
         } else if (messageData.sender === 'featureDevChat') {
-            this.featureDevChatConnector.handleMessageReceive(messageData)
+            await this.featureDevChatConnector.handleMessageReceive(messageData)
         }
     }
 

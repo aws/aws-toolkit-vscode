@@ -154,7 +154,10 @@ export class Commands {
             getLogger().debug('command not found: "%s"', id)
             return undefined
         }
-        return this.commands.executeCommand<ReturnType<T>>(id, ...args)
+        return this.commands.executeCommand<ReturnType<T>>(id, ...args)?.then(undefined, (e: Error) => {
+            getLogger().warn('command failed (not registered?): "%s"', id)
+            return undefined
+        })
     }
 
     /** See {@link Commands.register}. */
@@ -460,7 +463,7 @@ function getInstrumenter(
     if (!telemetryName && info?.startTime !== undefined && currentTime - info.startTime < threshold) {
         info.debounceCount += 1
         TelemetryDebounceInfo.instance.set(id, info)
-        getLogger().debug('commands: skipped telemetry for "%s" with key "%O"', id.id, id.compositeKey)
+        getLogger().debug('telemetry: collapsing %d "%s" metrics. key=%O', info.debounceCount, id.id, id.compositeKey)
 
         return undefined
     }

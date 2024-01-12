@@ -30,8 +30,6 @@ jobs:
             - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
-            - name: Disable engine-strict check
-              run: sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v4
               with:
@@ -57,7 +55,7 @@ jobs:
                   npm run generateNonCodeFiles
                   cp ./README.quickstart.vscode.md ./README.md
                   npm run package -- --feature "$FEAT_NAME"
-            - uses: actions/upload-artifact@v3
+            - uses: actions/upload-artifact@v4
               with:
                   name: artifacts
                   path: '*.vsix'
@@ -93,9 +91,7 @@ jobs:
             # Must perform checkout first, it deletes the target directory
             # before running, thus would delete the downloaded artifacts.
             - uses: actions/checkout@v4
-            - name: Disable engine-strict check
-              run: sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
             - name: Delete existing prerelease
               # "prerelease" (main branch) or "pre-<feature>"
               if: "env.TAG_NAME == 'prerelease' || startsWith(env.TAG_NAME, 'pre-')"

@@ -6,10 +6,15 @@
  * CodeTransform
  */
 
-import { telemetry } from '../../shared/telemetry/telemetry'
+import {
+    CodeTransformJavaSourceVersionsAllowed,
+    CodeTransformJavaTargetVersionsAllowed,
+    telemetry,
+} from '../../shared/telemetry/telemetry'
 import { JDKVersion } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { codeTransformTelemetryState } from './codeTransformTelemetryState'
+import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
 export enum CancelActionPositions {
     ApiError = 'apiError',
@@ -32,26 +37,29 @@ export const logCodeTransformInitiatedMetric = (source: string): void => {
         telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
             codeTransformStartSrcComponents: StartActionPositions.DevToolsSidePanel,
             ...commonMetrics,
+            result: MetadataResult.Pass,
         })
     } else if (source === StartActionPositions.BottomHubPanel) {
         telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
             codeTransformStartSrcComponents: StartActionPositions.BottomHubPanel,
             ...commonMetrics,
+            result: MetadataResult.Pass,
         })
     }
 }
 
-//TODO: it would be better to expand JDKVersion from an enum to a class
-export const toJDKMetricValue = (source: JDKVersion): string => {
+export const JDKToTelemetryValue = (
+    source: JDKVersion
+): CodeTransformJavaSourceVersionsAllowed | CodeTransformJavaTargetVersionsAllowed | undefined => {
     switch (source) {
         case JDKVersion.JDK8:
-            return 'jdk8'
+            return 'JDK_1_8'
         case JDKVersion.JDK11:
-            return 'jdk11'
+            return 'JDK_11'
         case JDKVersion.JDK17:
-            return 'jdk17'
+            return 'JDK_17'
         default:
-            return ''
+            return undefined
     }
 }
 

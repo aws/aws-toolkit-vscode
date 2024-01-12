@@ -47,7 +47,7 @@ export async function publishStateMachine(
             )
 
             logger.error(error as Error)
-            showViewLogsMessage(localizedMsg)
+            void showViewLogsMessage(localizedMsg)
             return
         }
     }
@@ -110,7 +110,7 @@ async function createStateMachine(
             'Failed to create state machine: {0}',
             wizardResponse.name
         )
-        showViewLogsMessage(msg)
+        void showViewLogsMessage(msg)
         outputChannel.appendLine(msg)
         outputChannel.appendLine('')
         logger.error(`Failed to create state machine '${wizardResponse.name}': %O`, err as Error)
@@ -155,7 +155,7 @@ async function updateStateMachine(
             'Failed to update state machine: {0}',
             wizardResponse.stateMachineArn
         )
-        showViewLogsMessage(msg)
+        void showViewLogsMessage(msg)
         outputChannel.appendLine(msg)
         outputChannel.appendLine('')
         logger.error(`Failed to update state machine '${wizardResponse.stateMachineArn}': %O`, err as Error)

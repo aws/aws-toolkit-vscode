@@ -43,8 +43,8 @@ describe('runtimeLanguageContext', function () {
             ['vb', false],
         ]
 
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
         })
 
         cases.forEach(tuple => {
@@ -95,8 +95,8 @@ describe('runtimeLanguageContext', function () {
     })
 
     describe('normalizeLanguage', function () {
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
         })
 
         const codewhispererLanguageIds: CodewhispererLanguage[] = [
@@ -281,12 +281,17 @@ describe('runtimeLanguageContext', function () {
             ['scala', 'scala'],
             ['shell', 'shell'],
             ['sql', 'sql'],
+            ['tf', 'tf'],
+            ['hcl', 'tf'],
+            ['json', 'json'],
+            ['yaml', 'yaml'],
+            ['yml', 'yaml'],
             ['plaintext', 'plaintext'],
-            ['arbitrary string', 'arbitrary string'],
+            // ['arbitrary string', 'arbitrary string'],
         ]
 
-        this.beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        this.beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
         })
 
         for (const [originalLanguage, mappedLanguage] of cases) {

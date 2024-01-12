@@ -222,7 +222,7 @@ export const codeScanJobTimeoutSeconds = 50
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
-export const codeScanJobPollingIntervalSeconds = 5
+export const codeScanJobPollingIntervalSeconds = 1
 
 export const artifactTypeSource = 'SourceCode'
 
@@ -299,18 +299,29 @@ export const transformByQFailedMessage = 'Transformation failed'
 
 export const transformByQCancelledMessage = 'Transformation cancelled'
 
-export const transformByQCompleted = 'Transformation completed'
+export const transformByQCompletedMessage = 'Transformation completed'
 
 export const transformByQPartiallyCompletedMessage = 'Transformation partially completed'
 
 export const noPomXmlFoundMessage =
-    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations. Be sure to also build your project.'
+    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml in the root directory to identify build configurations. Be sure to also build your project.'
+
+export const noActiveIdCMessage = 'Transform by Q requires an active IAM Identity Center connection'
 
 export const noOngoingJobMessage = 'No job is in-progress at the moment'
 
 export const jobInProgressMessage = 'Job is already in-progress'
 
 export const cancellationInProgressMessage = 'Cancellation is in-progress'
+
+export const errorStoppingJobMessage = 'Error stopping job'
+
+export const errorDownloadingDiffMessage = 'Transform by Q experienced an error when downloading the diff'
+
+export const viewProposedChangesMessage =
+    'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.'
+
+export const changesAppliedMessage = 'Changes applied'
 
 export const noSupportedJavaProjectsFoundMessage =
     'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11. Be sure to also build your project.'
@@ -321,7 +332,7 @@ export const dependencyDisclaimer =
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
 export const dependencyErrorMessage =
-    'Failed to execute Maven. It is possible that the upload does not include all dependencies.'
+    'Failed to execute Maven. It is possible that the upload does not include all dependencies. We will still attempt to complete the transformation.'
 
 export const planIntroductionMessage =
     'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'

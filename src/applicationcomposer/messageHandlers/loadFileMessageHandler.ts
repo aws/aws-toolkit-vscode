@@ -55,5 +55,5 @@ export async function loadFileMessageHandler(request: LoadFileRequestMessage, co
             failureReason: (e as Error).message,
         }
     }
-    context.panel.webview.postMessage(loadFileResponseMessage)
+    await context.panel.webview.postMessage(loadFileResponseMessage)
 }

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
-import { vsCodeState, ConfigurationEntry, GetRecommendationsResponse } from '../models/model'
+import { ConfigurationEntry } from '../models/model'
 import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
@@ -14,11 +14,9 @@ import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/teleme
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
-import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
-import { isIamConnection } from '../../auth/connection'
-import { session } from '../util/codeWhispererSession'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
+import { RecommendationService } from './recommendationService'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -67,14 +65,16 @@ export class KeyStrokeHandler {
                 return
             }
 
-            try {
-                this.invokeAutomatedTrigger('IdleTime', editor, client, config, event)
-            } finally {
-                if (this.idleTriggerTimer) {
-                    clearInterval(this.idleTriggerTimer)
-                    this.idleTriggerTimer = undefined
-                }
-            }
+            this.invokeAutomatedTrigger('IdleTime', editor, client, config, event)
+                .catch(e => {
+                    getLogger().error('invokeAutomatedTrigger failed: %s', (e as Error).message)
+                })
+                .finally(() => {
+                    if (this.idleTriggerTimer) {
+                        clearInterval(this.idleTriggerTimer)
+                        this.idleTriggerTimer = undefined
+                    }
+                })
         }, CodeWhispererConstants.idleTimerPollPeriod)
     }
 
@@ -104,11 +104,12 @@ export class KeyStrokeHandler {
                 return
             }
 
-            // Skip Cloud9 IntelliSense acceptance event
-            if (isCloud9() && event.contentChanges.length > 0 && session.recommendations.length > 0) {
-                if (event.contentChanges[0].text === session.recommendations[0].content) {
-                    return
-                }
+            // In Cloud9, do not auto trigger when
+            // 1. The input is from IntelliSense acceptance event
+            // 2. The input is from copy and paste some code
+            // event.contentChanges[0].text.length > 1 is a close estimate of 1 and 2
+            if (isCloud9() && event.contentChanges.length > 0 && event.contentChanges[0].text.length > 1) {
+                return
             }
 
             const { rightFileContent } = extractContextForCodeWhisperer(editor)
@@ -149,7 +150,7 @@ export class KeyStrokeHandler {
             }
 
             if (triggerType) {
-                this.invokeAutomatedTrigger(triggerType, editor, client, config, event)
+                await this.invokeAutomatedTrigger(triggerType, editor, client, config, event)
             }
         } catch (error) {
             getLogger().verbose(`Automated Trigger Exception : ${error}`)
@@ -167,58 +168,13 @@ export class KeyStrokeHandler {
             return
         }
         // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
-        if (isCloud9('any')) {
-            if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
-                return
-            }
-            RecommendationHandler.instance.checkAndResetCancellationTokens()
-            vsCodeState.isIntelliSenseActive = false
-            RecommendationHandler.instance.isGenerateRecommendationInProgress = true
-            try {
-                let response: GetRecommendationsResponse = {
-                    result: 'Failed',
-                    errorMessage: undefined,
-                }
-                if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
-                    response = await RecommendationHandler.instance.getRecommendations(
-                        client,
-                        editor,
-                        'AutoTrigger',
-                        config,
-                        autoTriggerType,
-                        false
-                    )
-                } else {
-                    if (AuthUtil.instance.isConnectionExpired()) {
-                        await AuthUtil.instance.showReauthenticatePrompt()
-                    }
-                    response = await RecommendationHandler.instance.getRecommendations(
-                        client,
-                        editor,
-                        'AutoTrigger',
-                        config,
-                        autoTriggerType,
-                        true
-                    )
-                }
-                if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, false, response)) {
-                    await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
-                        vsCodeState.isIntelliSenseActive = true
-                    })
-                }
-            } finally {
-                RecommendationHandler.instance.isGenerateRecommendationInProgress = false
-            }
-        } else if (isInlineCompletionEnabled()) {
-            await InlineCompletionService.instance.getPaginatedRecommendation(
-                client,
-                editor,
-                'AutoTrigger',
-                config,
-                autoTriggerType,
-                event
-            )
-        }
+        await RecommendationService.instance.generateRecommendation(
+            client,
+            editor,
+            'AutoTrigger',
+            config,
+            autoTriggerType
+        )
     }
 }
 

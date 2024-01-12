@@ -8,11 +8,11 @@ import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
 import { IotCertificate, IotClient } from '../../../shared/clients/iotClient'
 import { Iot } from 'aws-sdk'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { IotThingCertNode } from '../../../iot/explorer/iotCertificateNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { TestSettings } from '../../utilities/testSettingsConfiguration'
+import sinon from 'sinon'
 
 describe('IotThingNode', function () {
     const nextToken = 'nextToken'
@@ -45,35 +45,39 @@ describe('IotThingNode', function () {
     }
 
     beforeEach(function () {
-        iot = mock()
+        iot = {} as any as IotClient
         config = new TestSettings()
     })
 
     describe('getChildren', function () {
         it('gets children', async function () {
-            when(iot.listThingCertificates(deepEqual({ thingName, nextToken: undefined, maxResults }))).thenResolve({
+            const stub = sinon.stub().resolves({
                 certificates: [cert],
                 nextToken: undefined,
             })
+            iot.listThingCertificates = stub
 
             await config.getSection('aws').update('iot.maxItemsPerPage', maxResults)
-            const node = new IotThingNode(thing, {} as IotThingFolderNode, instance(iot), config)
+            const node = new IotThingNode(thing, {} as IotThingFolderNode, iot, config)
             const [certNode, ...otherNodes] = await node.getChildren()
 
+            assert(stub.calledOnceWithExactly({ thingName, nextToken: undefined, maxResults }))
             assertCertNode(certNode, expectedCert)
             assert.strictEqual(otherNodes.length, 0)
         })
 
         it('gets children with node for loading more results', async function () {
-            when(iot.listThingCertificates(deepEqual({ thingName, nextToken: undefined, maxResults }))).thenResolve({
+            const stub = sinon.stub().resolves({
                 certificates: [cert],
                 nextToken,
             })
+            iot.listThingCertificates = stub
 
             await config.getSection('aws').update('iot.maxItemsPerPage', maxResults)
-            const node = new IotThingNode(thing, {} as IotThingFolderNode, instance(iot), config)
+            const node = new IotThingNode(thing, {} as IotThingFolderNode, iot, config)
             const [certNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
+            assert(stub.calledOnceWithExactly({ thingName, nextToken: undefined, maxResults }))
             assertCertNode(certNode, expectedCert)
             assertMoreResultsNode(moreResultsNode)
             assert.strictEqual(otherNodes.length, 0)

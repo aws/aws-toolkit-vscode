@@ -57,7 +57,7 @@ export const amazonQWelcomeCommand = Commands.declare(
     { id: 'aws.amazonq.welcome', compositeKey: { 1: 'source' } },
     (context: ExtensionContext, publisher: MessagePublisher<any>) => (_: VsCodeCommandArg, source: string) => {
         telemetry.ui_click.run(() => {
-            focusAmazonQPanel()
+            void focusAmazonQPanel()
             welcome(context, publisher)
             telemetry.record({ elementId: 'toolkit_openedWelcomeToAmazonQPage', source })
         })

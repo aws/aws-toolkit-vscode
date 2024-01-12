@@ -113,7 +113,7 @@ export async function activate(extensionContext: ExtensionContext) {
 
     return client.onReady().then(() => {
         client.onNotification(ResultLimitReached, message => {
-            window.showInformationMessage(
+            void window.showInformationMessage(
                 `${message}\nUse setting 'aws.ssmDocument.ssm.maxItemsComputed' to configure the limit.`
             )
         })

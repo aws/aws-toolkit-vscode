@@ -11,7 +11,7 @@ import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { getTestWindow } from '../../shared/vscode/window'
-import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
+import assert from 'assert'
 
 describe('deletePolicyVersionCommand', function () {
     const policyName = 'test-policy'
@@ -26,18 +26,14 @@ describe('deletePolicyVersionCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        iot = mock()
-        parentNode = new IotPolicyWithVersionsNode(
-            { name: policyName, arn: 'arn' },
-            {} as IotPolicyFolderNode,
-            instance(iot)
-        )
+        iot = {} as any as IotClient
+        parentNode = new IotPolicyWithVersionsNode({ name: policyName, arn: 'arn' }, {} as IotPolicyFolderNode, iot)
         node = new IotPolicyVersionNode(
             { name: policyName, arn: 'arn' },
             { versionId: 'V1', isDefaultVersion: false },
             false,
             parentNode,
-            instance(iot)
+            iot
         )
     })
 
@@ -46,6 +42,8 @@ describe('deletePolicyVersionCommand', function () {
     })
 
     it('confirms deletion, deletes policy, and refreshes node', async function () {
+        const deleteStub = sinon.stub()
+        iot.deletePolicyVersion = deleteStub
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deletePolicyVersionCommand(node)
 
@@ -53,20 +51,23 @@ describe('deletePolicyVersionCommand', function () {
             .getFirstMessage()
             .assertWarn('Are you sure you want to delete Version V1 of Policy test-policy?')
 
-        verify(iot.deletePolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).once()
+        assert(deleteStub.calledOnceWithExactly({ policyName, policyVersionId: 'V1' }))
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode')
     })
 
     it('does nothing when deletion is cancelled', async function () {
+        const deleteStub = sinon.stub()
+        iot.deletePolicyVersion = deleteStub
         getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
         await deletePolicyVersionCommand(node)
 
-        verify(iot.deletePolicyVersion(anything())).never()
+        assert(deleteStub.notCalled)
     })
 
     it('shows an error message and refreshes node when deletion fails', async function () {
-        when(iot.deletePolicyVersion(anything())).thenReject(new Error('Expected failure'))
+        const deleteStub = sinon.stub().rejects()
+        iot.deletePolicyVersion = deleteStub
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deletePolicyVersionCommand(node)

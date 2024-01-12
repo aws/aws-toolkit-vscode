@@ -18,17 +18,15 @@ import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
-import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
+import { endpointsFileUrl } from './shared/constants'
 import { DefaultAwsContext } from './shared/awsContext'
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
-    aboutToolkit,
     getIdeProperties,
     getToolkitEnvironmentDetails,
     initializeComputeRegion,
     isCloud9,
     isSageMaker,
-    showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
@@ -70,14 +68,16 @@ import { Commands, registerErrorHandler as registerCommandErrorHandler } from '.
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
-import { openUrl } from './shared/utilities/vsCodeUtils'
 import { isUserCancelledError, resolveErrorMessageToDisplay, ToolkitError } from './shared/errors'
 import { Logging } from './shared/logger/commands'
 import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
 import { registerWebviewErrorHandler } from './webviews/server'
-import { initializeManifestPaths } from './extensionShared'
+import { registerCommands, initializeManifestPaths } from './extensionShared'
 import { ChildProcess } from './shared/utilities/childProcess'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
+import { Timeout } from './shared/utilities/timeoutUtils'
+import { submitFeedback } from './feedback/vue/submitFeedback'
+import { showQuickStartWebview } from './shared/extensionStartup'
 
 let localize: nls.LocalizeFunc
 
@@ -102,7 +102,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
-        logAndShowError(error, info.id, defaultMessage)
+        void logAndShowError(error, info.id, defaultMessage)
     })
 
     registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
@@ -111,6 +111,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
+        context.subscriptions.push(
+            Commands.register('aws.quickStart', async () => {
+                try {
+                    await showQuickStartWebview(context)
+                } finally {
+                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
+                }
+            })
+        )
     }
 
     try {
@@ -172,46 +181,21 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         try {
-            activateDev(extContext)
+            await activateDev(context)
         } catch (error) {
             getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }
 
-        context.subscriptions.push(
-            // No-op command used for decoration-only codelenses.
-            vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
-            // "Show AWS Commands..."
-            Commands.register('aws.listCommands', () =>
-                vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
-            ),
-            // register URLs in extension menu
-            Commands.register('aws.help', async () => {
-                openUrl(vscode.Uri.parse(documentationUrl))
-                telemetry.aws_help.emit()
-            }),
-            Commands.register('aws.github', async () => {
-                openUrl(vscode.Uri.parse(githubUrl))
-                telemetry.aws_showExtensionSource.emit()
-            }),
-            Commands.register('aws.createIssueOnGitHub', async () => {
-                openUrl(vscode.Uri.parse(githubCreateIssueUrl))
-                telemetry.aws_reportPluginIssue.emit()
-            }),
-            Commands.register('aws.quickStart', async () => {
-                try {
-                    await showQuickStartWebview(context)
-                } finally {
-                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
-                }
-            }),
-            Commands.register('aws.aboutToolkit', async () => {
-                await aboutToolkit()
-            })
-        )
+        registerCommands(context)
+        context.subscriptions.push(submitFeedback.register(context))
 
         // do not enable codecatalyst for sagemaker
+        // TODO: remove setContext if SageMaker adds the context to their IDE
         if (!isSageMaker()) {
+            await vscode.commands.executeCommand('setContext', 'aws.isSageMaker', false)
             await codecatalyst.activate(extContext)
+        } else {
+            await vscode.commands.executeCommand('setContext', 'aws.isSageMaker', true)
         }
 
         await activateCloudFormationTemplateRegistry(context)
@@ -255,8 +239,10 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSchemas(extContext)
 
         if (!isCloud9()) {
-            await activateCWChat(extContext.extensionContext)
-            await activateQGumby(extContext)
+            if (!isSageMaker()) {
+                await activateCWChat(extContext.extensionContext)
+                await activateQGumby(extContext)
+            }
             await activateApplicationComposer(context)
         }
 
@@ -282,6 +268,20 @@ export async function activate(context: vscode.ExtensionContext) {
 
         if (!isReleaseVersion()) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        }
+        // HACK: Cloud9 currently has some issues with the Codewhisperer view,
+        //       where `getChildren` calls are executed on load but the UI doesn't respond
+        //       (the extension host disposes the commands and recreates them,
+        //       but the nodes remain tied to the old commands).
+        //       This forces a refresh after 5 seconds to ensure a refresh happens at the end of initial extension load.
+        //       If the issue is due to activity on the views,
+        //       this should be fired after planned activities have finished.
+        if (isCloud9()) {
+            new Timeout(5000).onCompletion(() => {
+                vscode.commands.executeCommand('aws.codeWhisperer.refresh').then(undefined, e => {
+                    getLogger().error('aws.codeWhisperer.refresh failed: %s', (e as Error).message)
+                })
+            })
         }
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
@@ -415,7 +415,9 @@ export function logAndShowWebviewError(err: unknown, webviewId: string, command:
     // detailed information in the logs.
     const detailedError = ToolkitError.chain(err, `Webview backend command failed: "${command}()"`)
     const userFacingError = ToolkitError.chain(detailedError, 'Webview error')
-    logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error')
+    logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch(e => {
+        getLogger().error('logAndShowError failed: %s', (e as Error).message)
+    })
 }
 
 async function checkSettingsHealth(settings: Settings): Promise<boolean> {
@@ -424,9 +426,9 @@ async function checkSettingsHealth(settings: Settings): Promise<boolean> {
         case 'invalid': {
             const msg = 'Failed to access settings. Check settings.json for syntax errors.'
             const openSettingsItem = 'Open settings.json'
-            showViewLogsMessage(msg, 'error', [openSettingsItem]).then(async resp => {
+            void showViewLogsMessage(msg, 'error', [openSettingsItem]).then(async resp => {
                 if (resp === openSettingsItem) {
-                    vscode.commands.executeCommand('workbench.action.openSettingsJson')
+                    await vscode.commands.executeCommand('workbench.action.openSettingsJson')
                 }
             })
             return false

@@ -38,7 +38,7 @@ export async function attachCertificateCommand(node: IotThingNode, promptFun = p
         await node.iot.attachThingPrincipal({ thingName, principal: cert.certificateArn! })
     } catch (e) {
         getLogger().error(`Failed to attach certificate ${cert.certificateId}: %s`, e)
-        showViewLogsMessage(
+        void showViewLogsMessage(
             localize('AWS.iot.attachCert.error', 'Failed to attach certificate {0}', cert.certificateId)
         )
         return undefined
@@ -85,7 +85,7 @@ async function* getCertList(iot: IotClient) {
                 ) ?? []
         } catch (e) {
             getLogger().error(`Failed to retrieve certificates: %s`, e)
-            showViewLogsMessage(localize('AWS.iot.attachCert.error', 'Failed to retrieve certificates'))
+            void showViewLogsMessage(localize('AWS.iot.attachCert.error', 'Failed to retrieve certificates'))
             return
         }
         yield filteredCerts.map(cert => ({ label: cert.certificateId!, data: cert }))

@@ -53,7 +53,7 @@ export async function deleteLambda(
             lambda.FunctionName
         )
 
-        showViewLogsMessage(message)
+        void showViewLogsMessage(message)
     } finally {
         telemetry.lambda_delete.emit({
             result: deleteResult,

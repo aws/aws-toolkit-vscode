@@ -15,7 +15,7 @@ import { onceChanged } from '../shared/utilities/functionUtils'
 
 /** Shows an error message unless it is the same as the last one shown. */
 const warnOnce = onceChanged((s: string, url: string) => {
-    showMessageWithUrl(s, url, undefined, 'error')
+    void showMessageWithUrl(s, url, undefined, 'error')
 })
 
 export const scopesCodeCatalyst = ['codecatalyst:read_write']
@@ -300,6 +300,10 @@ export async function* loadLinkedProfilesIntoStore(
 
     const stream = client
         .listAccounts()
+        .catch(e => {
+            getLogger().error('listAccounts() failed: %s', (e as Error).message)
+            return []
+        })
         .flatten()
         .map(resp => {
             accounts.add(resp.accountId)

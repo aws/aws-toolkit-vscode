@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { instance, when } from 'ts-mockito'
+import sinon from 'sinon'
 import { createOrgPrompter, createProjectPrompter } from '../../../codecatalyst/wizards/selectResource'
 import { CodeCatalystOrg, CodeCatalystClient, CodeCatalystProject } from '../../../shared/clients/codecatalystClient'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { createQuickPickPrompterTester } from '../../shared/ui/testUtils'
-import { mock } from '../../utilities/mockito'
 
 describe('Prompts', function () {
     let orgs: CodeCatalystOrg[]
@@ -24,12 +23,16 @@ describe('Prompts', function () {
     })
 
     function mockClient(): CodeCatalystClient {
-        const client = mock<CodeCatalystClient>()
+        const client = {
+            listSpaces: sinon.stub().returns(intoCollection([orgs])),
+            listResources: sinon.stub().callsFake((arg: string) => {
+                if (arg === 'project') {
+                    return intoCollection([projects])
+                }
+            }),
+        } as any as CodeCatalystClient
 
-        when(client.listSpaces()).thenReturn(intoCollection([orgs]))
-        when(client.listResources('project')).thenReturn(intoCollection([projects]))
-
-        return instance(client)
+        return client
     }
 
     it('can list spaces (organizations)', async function () {

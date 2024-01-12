@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp } from '@aws/mynah-ui'
 import { ExtensionMessage } from '../commands'
 import { AuthFollowUpType } from '../followUps/generator'
 

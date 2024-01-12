@@ -50,7 +50,7 @@ export async function deleteResource(
 
                 getLogger().info(`Deleted resource type ${typeName} identifier ${identifier}`)
 
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize('aws.resources.deleteResource.success', 'Deleted resource {0} ({1})', identifier, typeName)
                 )
                 return true
@@ -61,7 +61,7 @@ export async function deleteResource(
                     getLogger().warn(
                         `Resource type ${typeName} does not support DELETE action in ${cloudControl.regionCode}`
                     )
-                    vscode.window.showWarningMessage(
+                    void vscode.window.showWarningMessage(
                         localize(
                             'aws.resources.deleteResource.unsupported',
                             'Resource type {0} does not currently support delete in {1}',
@@ -73,7 +73,7 @@ export async function deleteResource(
                 }
                 result = 'Failed'
                 getLogger().error(`Failed to delete resource type ${typeName} identifier ${identifier}: %s`, e)
-                showViewLogsMessage(
+                void showViewLogsMessage(
                     localize(
                         'aws.resources.deleteResource.failure',
                         'Failed to delete resource {0} ({1})',

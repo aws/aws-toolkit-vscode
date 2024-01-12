@@ -23,8 +23,6 @@ jobs:
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
             - uses: actions/checkout@v4
-            - name: Disable engine-strict check
-              run: sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v4
               with:
@@ -42,7 +40,7 @@ jobs:
               uses: codecov/codecov-action@v3
               with:
                   verbose: true
-                  file: ./coverage/coverage-final.json
+                  file: ./coverage/lcov.info
                   flags: macos-unittests
             - name: Code coverage (CodeWhisperer)
               env:
@@ -52,13 +50,14 @@ jobs:
               uses: codecov/codecov-action@v3
               with:
                   verbose: true
-                  file: ./coverage/coverage-final.json
+                  file: ./coverage/lcov.info
                   flags: codewhisperer
 
     windows:
         name: test Windows
         runs-on: windows-2019
         strategy:
+            fail-fast: false
             matrix:
                 node-version: [16.x]
                 vscode-version: [stable, insiders]
@@ -67,8 +66,6 @@ jobs:
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
             - uses: actions/checkout@v4
-            - name: Disable engine-strict check
-              run: sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v4
               with:
@@ -84,7 +81,7 @@ jobs:
               uses: codecov/codecov-action@v3
               with:
                   verbose: true
-                  file: ./coverage/coverage-final.json
+                  file: ./coverage/lcov.info
                   flags: windows-unittests
 
     lint:
@@ -98,8 +95,6 @@ jobs:
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
             - uses: actions/checkout@v4
-            - name: Disable engine-strict check
-              run: sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v4
               with:

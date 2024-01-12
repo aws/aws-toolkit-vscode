@@ -29,7 +29,7 @@ export async function initializeAwsCredentialsStatusBarItem(
 
     const update = debounce(() => updateItem(statusBarItem, devSettings))
 
-    update()
+    await update()
     context.subscriptions.push(
         statusBarItem,
         onDidChangeConnections(() => update()),

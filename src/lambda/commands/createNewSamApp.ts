@@ -71,7 +71,7 @@ export async function resumeCreateNewSamApp(
             reason = 'error'
             // Should never happen, because `samInitState.path` is only set if
             // `uri` is in the newly-added workspace folder.
-            vscode.window.showErrorMessage(
+            void vscode.window.showErrorMessage(
                 localize(
                     'AWS.samcli.initWizard.source.error.notInWorkspace',
                     "Could not open file '{0}'. If this file exists on disk, try adding it to your workspace.",
@@ -242,7 +242,7 @@ export async function createNewSamApplication(
 
             await schemaCodeDownloader!.downloadCode(request!)
 
-            vscode.window.showInformationMessage(
+            void vscode.window.showInformationMessage(
                 localize(
                     'AWS.message.info.schemas.downloadCodeBindings.finished',
                     'Downloaded code for schema {0}!',
@@ -290,7 +290,10 @@ export async function createNewSamApplication(
             )
             tryOpenReadme = await writeToolkitReadme(readmeUri.fsPath, newLaunchConfigs)
             if (newLaunchConfigs && newLaunchConfigs.length > 0) {
-                showCompletionNotification(config.name, `"${newLaunchConfigs.map(config => config.name).join('", "')}"`)
+                void showCompletionNotification(
+                    config.name,
+                    `"${newLaunchConfigs.map(config => config.name).join('", "')}"`
+                )
             }
             reason = 'complete'
         } else {
@@ -298,7 +301,7 @@ export async function createNewSamApplication(
             reason = 'fileNotFound'
 
             const helpText = localize('AWS.generic.message.getHelp', 'Get Help...')
-            vscode.window
+            void vscode.window
                 .showWarningMessage(
                     localize(
                         'AWS.samcli.initWizard.launchConfigFail',
@@ -310,7 +313,7 @@ export async function createNewSamApplication(
                 )
                 .then(async buttonText => {
                     if (buttonText === helpText) {
-                        openUrl(vscode.Uri.parse(launchConfigDocUrl))
+                        void openUrl(vscode.Uri.parse(launchConfigDocUrl))
                     }
                 })
         }
@@ -368,7 +371,7 @@ export async function getProjectUri(
             return vscode.Uri.file(cfnTemplatePath)
         }
     }
-    vscode.window.showWarningMessage(
+    void vscode.window.showWarningMessage(
         localize(
             'AWS.samcli.initWizard.source.error.notFound',
             'Project created successfully, but {0} file not found: {1}',
@@ -435,7 +438,7 @@ async function showCompletionNotification(appName: string, configs: string): Pro
     if (action === openJson) {
         await openLaunchJsonFile()
     } else if (action === learnMore) {
-        openUrl(vscode.Uri.parse(debugNewSamAppUrl))
+        void openUrl(vscode.Uri.parse(debugNewSamAppUrl))
     }
 }
 

@@ -10,14 +10,14 @@ import { omit } from 'lodash'
 import * as vscode from 'vscode'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
-import { ToolkitError } from '../../shared/errors'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
-import { ContentLengthError } from '../errors'
+import { ApiError, ContentLengthError, UnknownApiError } from '../errors'
+import { ToolkitError, isAwsError, isCodeWhispererStreamingServiceException } from '../../shared/errors'
 
 type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
 const getCodeWhispererRegionAndEndpoint = () => {
@@ -68,8 +68,17 @@ async function createFeatureDevStreamingClient(): Promise<CodeWhispererStreaming
     return streamingClient
 }
 
+const streamResponseErrors: Record<string, number> = {
+    ValidationException: 400,
+    AccessDeniedException: 403,
+    ResourceNotFoundException: 404,
+    ConflictException: 409,
+    ThrottlingException: 429,
+    InternalServerException: 500,
+}
+
 export class FeatureDevClient {
-    private async getClient() {
+    public async getClient() {
         // Should not be stored for the whole session.
         // Client has to be reinitialized for each request so we always have a fresh bearerToken
         return await createFeatureDevProxyClient()
@@ -92,12 +101,14 @@ export class FeatureDevClient {
             })
             return conversationId
         } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to start conversation: ${(e as Error).message} RequestId: ${
-                    (e as any).requestId
-                }`
-            )
-            throw new ToolkitError((e as Error).message, { code: 'CreateConversationFailed' })
+            if (isAwsError(e)) {
+                getLogger().error(
+                    `${featureName}: failed to start conversation: ${e.message} RequestId: ${e.requestId}`
+                )
+                throw new ApiError(e.message, 'CreateConversation', e.code, e.statusCode ?? 400)
+            }
+
+            throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'CreateConversation')
         }
     }
 
@@ -123,16 +134,18 @@ export class FeatureDevClient {
                 requestId: response.$response.requestId,
             })
             return response
-        } catch (e: any) {
-            getLogger().error(
-                `${featureName}: failed to generate presigned url: ${(e as Error).message} RequestId: ${
-                    (e as any).requestId
-                }`
-            )
-            if (e.code === 'ValidationException' && e.message.includes('Invalid contentLength')) {
-                throw new ContentLengthError()
+        } catch (e) {
+            if (isAwsError(e)) {
+                getLogger().error(
+                    `${featureName}: failed to generate presigned url: ${e.message} RequestId: ${e.requestId}`
+                )
+                if (e.code === 'ValidationException' && e.message.includes('Invalid contentLength')) {
+                    throw new ContentLengthError()
+                }
+                throw new ApiError(e.message, 'CreateUploadUrl', e.code, e.statusCode ?? 400)
             }
-            throw new ToolkitError((e as Error).message, { code: 'CreateUploadUrlFailed' })
+
+            throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'CreateUploadUrl')
         }
     }
     public async generatePlan(conversationId: string, uploadId: string, userMessage: string) {
@@ -167,10 +180,21 @@ export class FeatureDevClient {
             }
             return assistantResponse.join(' ')
         } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to execute planning: ${(e as Error).message} RequestId: ${(e as any).requestId}`
-            )
-            throw new ToolkitError((e as Error).message, { code: 'GeneratePlanFailed' })
+            if (isCodeWhispererStreamingServiceException(e)) {
+                getLogger().error(
+                    `${featureName}: failed to execute planning: ${e.message} RequestId: ${
+                        e.$metadata.requestId ?? 'unknown'
+                    }`
+                )
+                throw new ApiError(
+                    e.message,
+                    'GeneratePlan',
+                    e.name,
+                    e.$metadata?.httpStatusCode ?? streamResponseErrors[e.name] ?? 500
+                )
+            }
+
+            throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'GeneratePlan')
         }
     }
 

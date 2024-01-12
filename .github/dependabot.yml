@@ -1,25 +1,30 @@
 # Documentation for configuration options:
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Troubleshooting: Insights tab > Dependency Graph > Dependabot
+# https://github.com/aws/aws-toolkit-vscode/network/updates
 
 version: 2
 updates:
     - package-ecosystem: 'npm'
       directory: '/' # Location of package manifests.
       target-branch: 'master' # Avoid updates to "staging".
+      commit-message:
+          prefix: 'deps'
       schedule:
           interval: 'daily'
       groups:
           aws-sdk:
-              dependency-type: 'production'
               patterns:
                   - '@aws-sdk/*'
           vscode-lsp:
-              dependency-type: 'production'
               patterns:
                   - 'vscode-lang*'
     - package-ecosystem: 'github-actions'
       directory: '/'
       target-branch: 'master' # Avoid updates to "staging".
+      commit-message:
+          prefix: 'deps'
       schedule:
           interval: 'daily'
       groups:

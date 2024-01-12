@@ -18,7 +18,7 @@ import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 const localize = nls.loadMessageBundle()
 
 export const learnMoreAmazonQCommand = Commands.declare('aws.amazonq.learnMore', () => () => {
-    vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
+    void vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
 })
 
 export const createLearnMoreNode = () =>
@@ -33,7 +33,7 @@ export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView',
         elementId: 'amazonq_switchToQChat',
         passive: false,
     })
-    focusAmazonQPanel()
+    void focusAmazonQPanel()
 })
 
 export const switchToAmazonQNode = () =>
@@ -50,7 +50,7 @@ export const switchToAmazonQNode = () =>
  */
 export const enableAmazonQNode = () =>
     // Simply trigger re-auth to obtain the proper scopes- same functionality as if requested in the chat window.
-    reconnect.build(placeholder, cwTreeNodeSource).asTreeNode({
+    reconnect.build(placeholder, cwTreeNodeSource, true).asTreeNode({
         label: localize('AWS.amazonq.enable', 'Enable'),
         iconPath: getIcon('vscode-debug-start'),
         contextValue: 'awsEnableAmazonQ',
@@ -60,7 +60,7 @@ export const createTransformByQ = () => {
     const prefix = transformByQState.getPrefixTextForButton()
     let status = transformByQState.getPolledJobStatus().toLowerCase()
     if (transformByQState.isRunning()) {
-        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
+        void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (status === '') {
             // job is running but polling has not started yet, so display generic message
             status = CodeWhispererConstants.transformByQStateRunningMessage

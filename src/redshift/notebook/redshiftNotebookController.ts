@@ -29,13 +29,13 @@ export class RedshiftNotebookController {
         this._controller.dispose()
     }
 
-    private _executeAll(
+    private async _executeAll(
         cells: vscode.NotebookCell[],
         _notebook: vscode.NotebookDocument,
         _controller: vscode.NotebookController
-    ): void {
+    ): Promise<void> {
         for (const cell of cells) {
-            this._doExecution(cell)
+            await this._doExecution(cell)
         }
     }
 
@@ -54,9 +54,9 @@ export class RedshiftNotebookController {
             })
             const cellOutput = await Promise.race([resultPromise, cancellationPromise])
             success = true
-            execution.replaceOutput([cellOutput])
+            await execution.replaceOutput([cellOutput])
         } catch (err: unknown) {
-            execution.replaceOutput([
+            await execution.replaceOutput([
                 new vscode.NotebookCellOutput([vscode.NotebookCellOutputItem.error(err as Error)]),
             ])
             success = false

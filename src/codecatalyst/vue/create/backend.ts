@@ -183,7 +183,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
 
     public async submit(settings: DevEnvironmentSettings, source: SourceResponse) {
         const devenv = await this.createDevEnvOfType(settings, source)
-        this.commands.openDevEnv.execute(devenv)
+        void this.commands.openDevEnv.execute(devenv)
     }
 
     public async createDevEnvOfType(settings: DevEnvironmentSettings, source: SourceResponse) {

@@ -8,10 +8,10 @@ import * as vscode from 'vscode'
 import { DocumentItemNodeWriteable } from '../../../ssmDocument/explorer/documentItemNodeWriteable'
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { deleteDocument } from '../../../ssmDocument/commands/deleteDocument'
-import { mock } from '../../utilities/mockito'
 import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
 import { SSM } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
+import { stub } from '../../utilities/stubber'
 
 describe('deleteDocument', async function () {
     let ssmClient: SsmDocumentClient
@@ -34,8 +34,28 @@ describe('deleteDocument', async function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        ssmClient = mock()
-        parentNode = mock()
+        ssmClient = {
+            deleteDocument: async (doc: string) => {
+                return {}
+            },
+        } as any as SsmDocumentClient
+        parentNode = stub(RegistryItemNode, {
+            regionCode: '',
+            registryName: '',
+            documentType: '',
+            serviceId: undefined,
+            label: undefined,
+            id: undefined,
+            iconPath: undefined,
+            description: undefined,
+            resourceUri: undefined,
+            tooltip: undefined,
+            command: undefined,
+            collapsibleState: undefined,
+            contextValue: undefined,
+            accessibilityInformation: undefined,
+            checkboxState: undefined,
+        })
         node = new DocumentItemNodeWriteable(fakeDoc, ssmClient, fakeRegion, parentNode)
     })
 

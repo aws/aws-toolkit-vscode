@@ -20,8 +20,8 @@ import { session } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('onInlineAcceptance', function () {
     describe('onInlineAcceptance', function () {
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {

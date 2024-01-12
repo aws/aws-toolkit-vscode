@@ -8,7 +8,7 @@ import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { CodeReference } from '../../../amazonq/webview/ui/connector'
 import { featureDevChat, licenseText } from '../../constants'
 import { ChatItemType } from '../../models'
-import { ChatItemFollowUp, SourceLink } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp, SourceLink } from '@aws/mynah-ui'
 
 class UiMessage {
     readonly time: number = Date.now()

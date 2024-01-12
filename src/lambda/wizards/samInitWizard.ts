@@ -28,7 +28,6 @@ import {
 } from '../models/samTemplates'
 import * as semver from 'semver'
 import { minSamCliVersionForArmSupport, minSamCliVersionForImageSupport } from '../../shared/sam/cli/samCliValidator'
-import * as fsutil from '../../shared/filesystemUtilities'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createFolderPrompt } from '../../shared/ui/common/location'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
@@ -37,6 +36,7 @@ import { createRegionPrompter } from '../../shared/ui/common/region'
 import { Region } from '../../shared/regions/endpoints'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
+import { getNonexistentFilenameSync } from '../../shared/filesystemUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -101,7 +101,7 @@ function createRegistryPrompter(region: string, credentials?: AWS.Credentials): 
         .getRegistries(region, client, credentials!)
         .then(registryNames => {
             if (!registryNames) {
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize(
                         'AWS.samcli.initWizard.schemas.registry.failed_to_load_resources',
                         'Error loading registries.'
@@ -131,7 +131,7 @@ function createSchemaPrompter(
         .getSchemas(region, registry, client, credentials!)
         .then(schemas => {
             if (!schemas) {
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize(
                         'AWS.samcli.initWizard.schemas.failed_to_load_resources',
                         'Error loading schemas in registry {0}.',
@@ -142,7 +142,7 @@ function createSchemaPrompter(
             }
 
             if (schemas.length === 0) {
-                vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize('AWS.samcli.initWizard.schemas.notFound"', 'No schemas found in registry {0}.', registry)
                 )
                 return []
@@ -274,12 +274,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
 
         this.form.name.bindPrompter(state =>
             createNamePrompter(
-                fsutil.getNonexistentFilename(
-                    state.location!.fsPath,
-                    `lambda-${state.runtimeAndPackage!.runtime}`,
-                    '',
-                    99
-                )
+                getNonexistentFilenameSync(state.location!.fsPath, `lambda-${state.runtimeAndPackage!.runtime}`, '', 99)
             )
         )
     }

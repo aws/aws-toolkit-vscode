@@ -7,6 +7,7 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as got from 'got'
+import * as semver from 'semver'
 import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import * as startSecurityScan from '../../../codewhisperer/commands/startSecurityScan'
 import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
@@ -141,8 +142,8 @@ describe('startSecurityScan', function () {
     afterEach(function () {
         sinon.restore()
     })
-    after(function () {
-        closeAllEditors()
+    after(async function () {
+        await closeAllEditors()
     })
     const createClient = () => {
         const mockClient = stub(DefaultCodeWhispererClient)
@@ -251,6 +252,9 @@ describe('startSecurityScan', function () {
     })
 
     it('Should highlight files after scan is completed', async function () {
+        if (semver.lt(vscode.version, '1.78.0')) {
+            this.skip()
+        }
         const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
         sinon.stub(got, 'default').resolves({ statusCode: 200 })
         const testWindow = getTestWindow()

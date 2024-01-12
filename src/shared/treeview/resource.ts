@@ -12,6 +12,7 @@ import { once } from '../utilities/functionUtils'
 import { Commands } from '../vscode/commands2'
 import { TreeNode } from './resourceTreeDataProvider'
 import { createErrorItem, createPlaceholderItem } from './utils'
+import { getLogger } from '../logger'
 
 interface SimpleResourceProvider<T = unknown> {
     readonly paginated?: false
@@ -60,7 +61,9 @@ export class PageLoader<T> {
     public dispose(): void {
         this.pages.length = 0
         this.isDone = true
-        this.iterator?.return?.()
+        this.iterator?.return?.().catch(e => {
+            getLogger().error('PageLoader.dispose() failed: %s', (e as Error).message)
+        })
     }
 
     private async next(): Promise<T[] | undefined> {

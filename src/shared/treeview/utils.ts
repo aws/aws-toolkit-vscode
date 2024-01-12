@@ -95,7 +95,9 @@ export class TreeShim<T = unknown> extends AWSTreeNodeBase {
 
     public constructor(public readonly node: TreeNode<T>) {
         super('Loading...')
-        this.updateTreeItem()
+        this.updateTreeItem().catch(e => {
+            getLogger().error('TreeShim.updateTreeItem() failed: %s', (e as Error).message)
+        })
 
         this.node.onDidChangeChildren?.(() => {
             this.children = undefined

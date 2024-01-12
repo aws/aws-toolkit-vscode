@@ -241,6 +241,12 @@ export enum JDKVersion {
     JDK17 = '17',
 }
 
+export enum BuildSystem {
+    Maven = 'Maven',
+    Gradle = 'Gradle',
+    Unknown = 'Unknown',
+}
+
 export enum DropdownStep {
     STEP_1 = 1,
     STEP_2 = 2,
@@ -267,6 +273,8 @@ export class TransformByQState {
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
+
+    private resultArchiveFilePath: string = ''
 
     private polledJobStatus: string = ''
 
@@ -332,6 +340,10 @@ export class TransformByQState {
         return this.summaryFilePath
     }
 
+    public getResultArchiveFilePath() {
+        return this.resultArchiveFilePath
+    }
+
     public getJobFailureReason() {
         return this.jobFailureReason
     }
@@ -394,6 +406,10 @@ export class TransformByQState {
 
     public setSummaryFilePath(filePath: string) {
         this.summaryFilePath = filePath
+    }
+
+    public setResultArchiveFilePath(filePath: string) {
+        this.resultArchiveFilePath = filePath
     }
 
     public setJobFailureReason(reason: string) {
@@ -478,6 +494,7 @@ export interface RawCodeScanIssue {
     detectorId: string
     detectorName: string
     findingId: string
+    ruleId?: string
     relatedVulnerabilities: string[]
     severity: string
     remediation: Remediation
@@ -492,6 +509,7 @@ export interface CodeScanIssue {
     detectorId: string
     detectorName: string
     findingId: string
+    ruleId?: string
     relatedVulnerabilities: string[]
     severity: string
     recommendation: Recommendation

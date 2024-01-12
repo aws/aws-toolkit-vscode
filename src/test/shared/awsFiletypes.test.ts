@@ -18,14 +18,14 @@ describe('awsFiletypes', function () {
     let cfnUri: vscode.Uri | undefined
 
     beforeEach(async function () {
-        testUtil.closeAllEditors()
+        await testUtil.closeAllEditors()
 
         // Create a dummy file in ~/.aws on the system.
         // Note: We consider _any_ file in ~/.aws to be an "AWS config" file,
         // so this will trigger "file_editAwsFile" telemetry.
         const awsConfigFile = path.join(sysutil.SystemUtilities.getHomeDirectory(), '.aws/test_awstoolkit')
         awsConfigUri = vscode.Uri.file(awsConfigFile)
-        testUtil.toFile('Test file from the aws-toolkit-vscode test suite.', awsConfigFile)
+        await testUtil.toFile('Test file from the aws-toolkit-vscode test suite.', awsConfigFile)
 
         const cfnFile = workspaceUtils.tryGetAbsolutePath(
             vscode.workspace.workspaceFolders?.[0],
@@ -35,7 +35,7 @@ describe('awsFiletypes', function () {
     })
 
     after(async function () {
-        testUtil.closeAllEditors()
+        await testUtil.closeAllEditors()
     })
 
     it('emit telemetry when opened by user', async function () {
@@ -83,7 +83,7 @@ describe('awsFiletypes', function () {
         }
         // Wait for metrics...
         await getMetrics()
-        testUtil.closeAllEditors()
+        await testUtil.closeAllEditors()
         await vscode.commands.executeCommand('vscode.open', cfnUri)
         await vscode.commands.executeCommand('vscode.open', cfnUri)
 
