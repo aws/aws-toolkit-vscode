@@ -4,15 +4,14 @@
  */
 
 import 'mocha' // Imports mocha for the browser, defining the `mocha` global.
-import { activate as activateBrowserExtension } from '../extensionWeb'
-import vscode from 'vscode'
+import * as vscode from 'vscode'
+import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 
-export function run(): Promise<void> {
+export async function run(): Promise<void> {
+    await activateToolkitExtension()
     return new Promise(async (resolve, reject) => {
         setupMocha()
         gatherTestFiles()
-        stubVscodeWindow()
-        await runBrowserExtensionActivation()
 
         try {
             runMochaTests(resolve, reject)
@@ -36,23 +35,14 @@ function gatherTestFiles() {
     importAll(require.context('.', true, /\.test$/))
 }
 
-function stubVscodeWindow() {
-    // We skip this for now since getTestWindow() has transitive imports
-    // that import 'fs' and cause issues.
-    // TODO: Go through the transitive imports and swap the 'fs' uses
-    // with our own browser compatible ones.
-    // globalSandbox.replace(vscode, 'window', getTestWindow())
-}
-
 /**
- * This is the root function that activates the toolkit extension in a browser
- * context.
+ * Typically extensions activate depending on their configuration in `package.json#activationEvents`, but in tests
+ * there is a race condition for when the extension has finished activating and when we start the tests.
+ *
+ * So this function ensures the extension has fully activated.
  */
-async function runBrowserExtensionActivation() {
-    await activateBrowserExtension({
-        logUri: vscode.Uri.parse('./tempLogFile.txt'),
-        subscriptions: [],
-    } as any)
+async function activateToolkitExtension() {
+    await vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.activate()
 }
 
 function runMochaTests(resolve: (value: void | PromiseLike<void>) => void, reject: (reason?: any) => void) {

@@ -78,3 +78,46 @@ to help us visualize the imports and determine which module is importing a certa
       ![Dependency Graph](./images/dependency-graph.svg)
     - Additionally specify a certain dependency with `--reaches` , `npx depcruise src/srcShared/fs.ts --reaches "fs-extra" --output-type dot | dot -T svg > dependency-graph.svg`, to hide unrelated dependencies:
       ![Dependency Graph](./images/dependency-graph-small.svg)
+
+## Global Scoped Objects + Testing behavior
+
+### Summary
+
+-   **When in Browser mode**, state is not shared between the actual extension code and the unit test code. I.e you cannot modify a global variable in the extension code and see that change in the unit tests
+-   State will need to be stored somewhere in `globalThis` to be accessible by tests. Any state not in `globalThis` will not be the same as the actual extension, they are separate.
+
+With the introduction of Browser support, it was discovered that the context between the extension code and test code is not shared.
+Though it is shared in the Node version of the extension.
+
+Example:
+
+```typescript
+// extension.ts
+export let myGlobal = 'A'
+
+function activate() {
+    // Change the global variable value
+    myGlobal = 'B'
+}
+```
+
+```typescript
+// Browser unit test
+import { myGlobal } from '../src/extension.ts'
+
+describe('test', function () {
+    it('test', function () {
+        assert.strictEqual(myGlobal, 'B') // this fails only in Browser, it is actually 'A'
+    })
+})
+```
+
+### Web Worker
+
+The assumption for the behavior is due to how Web Workers work. We (VS Code) use them run our extension and unit test code when in the Browser. Here scripts share global values differently from when run in a different environment such as Node.js.
+
+-   [`WorkerGlobalScope`](https://developer.mozilla.org/en-US/docs/Web/API/WorkerGlobalScope)
+    -   The context of the executing code is contained within itself and is not accessible to other scripts (eg: unit tests)
+    -   VS Code uses Dedicated Workers since `globalThis` is indicated as a [`DedicatedWorkerGlobalScope`](https://developer.mozilla.org/en-US/docs/Web/API/DedicatedWorkerGlobalScope) when debugging
+    -   `globalThis` is one object (that I could find so far) which **is shared** between our extension and test scripts. A guess to why is that the main script spawns another web worker (for unit tests) and passes the `DedicatedWorkerGlobalScope`. See [`"Workers can also spawn other workers"`](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Functions_and_classes_available_to_workers).
+    -   `globalThis` returns `global` in Node.js, or a `WorkerGlobalScope` in the browser
