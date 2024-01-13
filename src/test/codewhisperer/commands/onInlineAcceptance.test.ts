@@ -26,6 +26,7 @@ describe('onInlineAcceptance', function () {
 
         afterEach(function () {
             sinon.restore()
+            session.reset()
             CodeWhispererUserGroupSettings.instance.reset()
         })
 
