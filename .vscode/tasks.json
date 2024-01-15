@@ -41,6 +41,7 @@
             "type": "npm",
             "script": "buildBrowserDebug",
             "detail": "Builds the webpacked browser bundle for debuggin",
+            // Not sure why if we really need this, but it was in the guide.
             "problemMatcher": ["$ts-webpack-watch", "$tslint-webpack-watch"]
         },
         {

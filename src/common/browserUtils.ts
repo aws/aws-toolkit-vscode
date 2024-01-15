@@ -15,5 +15,5 @@ export function setInBrowser(value: boolean) {
 }
 /** Return true if we are running in the browser, false otherwise. */
 export function isInBrowser() {
-    return globals.isInBrowser ??= false
+    return (globals.isInBrowser ??= false)
 }

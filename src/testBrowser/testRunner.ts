@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * The following was influenced by this guide: https://code.visualstudio.com/api/extension-guides/web-extensions
+ */
+
 import 'mocha' // Imports mocha for the browser, defining the `mocha` global.
 import * as vscode from 'vscode'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
