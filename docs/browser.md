@@ -89,10 +89,9 @@ to help us visualize the imports and determine which module is importing a certa
 With the introduction of Browser support, it was discovered that the context between the extension code and test code is not shared.
 Though it is shared in the Node version of the extension.
 
-Example:
+Example that does NOT work in the Browser:
 
 ```typescript
-// extension.ts
 export let myGlobal = 'A'
 
 function activate() {
@@ -107,17 +106,36 @@ import { myGlobal } from '../src/extension.ts'
 
 describe('test', function () {
     it('test', function () {
-        assert.strictEqual(myGlobal, 'B') // this fails only in Browser, it is actually 'A'
+        assert.strictEqual(myGlobal, 'B') // this fails in Browser (but not Node.js). The value here is actually 'A'.
+    })
+})
+```
+
+Example that DOES work in the Browser:
+
+```typescript
+;(globalThis as any).myGlobal = 'A'
+
+function activate() {
+    ;(globalThis as any).myGlobal = 'B'
+}
+```
+
+```typescript
+// Browser unit test
+describe('test', function () {
+    it('test', function () {
+        assert.strictEqual((globalThis as any).myGlobal, 'B') // this succeeds in Browser and Node.js
     })
 })
 ```
 
 ### Web Worker
 
-The assumption for the behavior is due to how Web Workers work. We (VS Code) use them run our extension and unit test code when in the Browser. Here scripts share global values differently from when run in a different environment such as Node.js.
+The assumption for the behavior is due to how Web Workers work. We (VS Code) use them to run our extension and unit test code when in the Browser. The scripts share global values differently compared to a different environment such as Node.js.
 
 -   [`WorkerGlobalScope`](https://developer.mozilla.org/en-US/docs/Web/API/WorkerGlobalScope)
-    -   The context of the executing code is contained within itself and is not accessible to other scripts (eg: unit tests)
+    -   The context of the executing code is contained within itself and is not accessible to other scripts (eg: extension code context is not accessible by unit tests)
     -   VS Code uses Dedicated Workers since `globalThis` is indicated as a [`DedicatedWorkerGlobalScope`](https://developer.mozilla.org/en-US/docs/Web/API/DedicatedWorkerGlobalScope) when debugging
-    -   `globalThis` is one object (that I could find so far) which **is shared** between our extension and test scripts. A guess to why is that the main script spawns another web worker (for unit tests) and passes the `DedicatedWorkerGlobalScope`. See [`"Workers can also spawn other workers"`](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Functions_and_classes_available_to_workers).
+    -   `globalThis` is one object (that I could find so far) which **is shared** between our extension and test scripts. A guess to why is that the main script spawns another web worker (for unit tests) and passes on the `DedicatedWorkerGlobalScope`. See [`"Workers can also spawn other workers"`](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Functions_and_classes_available_to_workers).
     -   `globalThis` returns `global` in Node.js, or a `WorkerGlobalScope` in the browser
