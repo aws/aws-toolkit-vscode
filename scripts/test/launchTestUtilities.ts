@@ -25,7 +25,8 @@ type SuiteName = 'integration' | 'e2e' | 'unit'
  * setup vscode and then run tests. An important thing to note is that in CI we do not have VS Code installed,
  * so this script needs to do this itself.
  *
- * If you want to run the tests manually you should use the `Run & Debug` menu in VS Code instead.
+ * If you want to run the tests manually you should use the `Run & Debug` menu in VS Code instead
+ * to be able to use to breakpoints.
  */
 export async function runToolkitTests(suite: SuiteName, relativeTestEntryPoint: string) {
     try {
