@@ -145,7 +145,9 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             }
         }
 
-        if (!resources || !Object.keys(resources).includes(templateTarget.logicalId)) {
+        const resource = resources?.[templateTarget.logicalId]
+
+        if (!resource) {
             return {
                 isValid: false,
                 message: localize(
@@ -157,14 +159,12 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             }
         }
 
-        const resource = resources[templateTarget.logicalId]
-
-        if (resource?.Type !== CloudFormation.SERVERLESS_FUNCTION_TYPE) {
+        if (![CloudFormation.SERVERLESS_FUNCTION_TYPE, CloudFormation.LAMBDA_FUNCTION_TYPE].includes(resource.Type)) {
             return {
                 isValid: false,
                 message: localize(
                     'AWS.sam.debugger.resourceNotAFunction',
-                    'Template Resource {0} in Template file {1} needs to be of type {2} or {3}',
+                    'Template Resource {0} in Template file {1} must be of type {2} or {3}',
                     templateTarget.logicalId,
                     templateTarget.templatePath,
                     CloudFormation.SERVERLESS_FUNCTION_TYPE,
