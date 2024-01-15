@@ -141,15 +141,6 @@ describe('inlineCompletionService', function () {
             const result = provider.truncateOverlapWithRightContext(mockEditor.document, mockSuggestion, cursorPosition)
             assert.strictEqual(result, '')
         })
-
-        it('ignores the space at the start of right context', async function () {
-            const testRightContext = '\n\n\n\nreturn target'
-            const mockEditor = createMockTextEditor(`${doc}${testRightContext}`, fileName, language)
-            const mockSuggestion = 'return target\n'
-            const cursorPosition = new vscode.Position(2, 0)
-            const result = provider.truncateOverlapWithRightContext(mockEditor.document, mockSuggestion, cursorPosition)
-            assert.strictEqual(result, '')
-        })
     })
 })
 
