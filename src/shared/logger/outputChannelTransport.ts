@@ -44,8 +44,6 @@ export class OutputChannelTransport extends Transport {
     public override log(info: LogEntry, next: () => void): void {
         globals.clock.setImmediate(() => {
             if (this.isLogChan) {
-                const c = this.outputChannel as vscode.LogOutputChannel
-                const msg = this.stripAnsi ? removeAnsi(info.message) : info.message
                 // Example input:
                 //      message: 'Preparing to debug locally: Lambda "index.handler"'
                 //      raw: true
@@ -53,9 +51,13 @@ export class OutputChannelTransport extends Transport {
                 //      Symbol(message): '2024-01-16 08:54:30 [INFO]: Preparing to debug locally: Lambda "index.handler"'
                 //      Symbol(splat): (1) [{…}]
                 //      timestamp: '2024-01-16 08:54:30'
-                // We want the "raw" form without the frontmatter, because `vscode.LogOutputChannel`
-                // presents its own timestamp + loglevel.
+                // We want the "raw" (unformatted) message without the frontmatter, because
+                // `vscode.LogOutputChannel` presents its own timestamp + loglevel.
+                const unformattedMsg = this.stripAnsi ? removeAnsi(info.message) : info.message
+                // Avoid extra line breaks.
+                const msg = info.raw ? unformattedMsg.trim() : unformattedMsg
 
+                const c = this.outputChannel as vscode.LogOutputChannel
                 const loglevel = info.level as LogLevel
                 if (loglevel === 'error') {
                     c.error(msg)
