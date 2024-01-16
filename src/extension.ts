@@ -331,7 +331,7 @@ function recordToolkitInitialization(activationStartedOn: number, settingsValid:
         const duration = activationFinishedOn - activationStartedOn
 
         if (settingsValid) {
-            telemetry.toolkit_init.emit({ duration })
+            telemetry.toolkit_init.emit({ duration, result: 'Succeeded' })
         } else {
             telemetry.toolkit_init.emit({ duration, result: 'Failed', reason: 'UserSettings' })
         }
