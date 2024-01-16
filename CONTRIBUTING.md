@@ -286,28 +286,36 @@ generating SDKs, etc.
 
 ### Toolkit developer settings (`aws.dev.*`)
 
-The [DevSettngs](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts#L553) class defines various developer-only settings that change the behavior of the
+The [DevSettings](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts#L553) class defines various developer-only settings that change the behavior of the
 Toolkit for testing and development purposes. To use a setting just add it to
 your `settings.json`. At runtime, if the Toolkit reads any of these settings,
 the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45).
 
-The setting `aws.dev.forceDevMode` will take precedence over all dev settings and enable dev mode on `"aws.dev.forceDevMode": true` or disable on `"aws.dev.forceDevMode": false`.
+The `aws.dev.forceDevMode` setting enables or disables Toolkit "dev mode". Without this setting, the presence of any other `aws.dev.*` setting defined in `DevSettings` implicitly enables "dev mode".
 
 ### Logging
 
-The `aws.dev.logfile` setting allows you to set the path of the logfile. This makes it easy to
-follow and filter the logfile using shell tools like `tail` and `grep`. For example in
-settings.json,
-
+-   Use the `aws.dev.logfile` setting to set the logfile path to a fixed location, so you can easily
+    follow and filter the logfile using shell tools like `tail` and `grep`. For example in
+    settings.json,
+    ```
     "aws.dev.logfile": "~/awstoolkit.log",
-
-then following the log with:
-
+    ```
+    then you can tail the logfile in your terminal:
+    ```
     tail -F ~/awstoolkit.log
+    ```
+-   Use the `AWS (Developer): Watch Logs` command to watch and filter Toolkit logs (including
+    telemetry) in VSCode.
+    -   Only available if you enabled "dev mode" (`aws.dev.forceDevMode` setting, see above).
+    -   Sets `aws.logLevel` to "debug".
+    -   Enter text in the Debug Console filter box to show only log messages with that text. <br/>
+        <img src="./docs/images/debug-console-filter.png" alt="VSCode Debug Console" width="320"/>
 
 ### Telemetry
 
-See [docs/telemetry.md](./docs/telemetry.md) for notes on emitting telemetry in this project.
+-   See [docs/telemetry.md](./docs/telemetry.md) for guidelines on developing telemetry in this project.
+-   To watch Toolkit telemetry events, use the `AWS (Developer): Watch Logs` command (see [Logging](#logging) above) and enter "telemetry" in the Debug Console filter box.
 
 ### Service Endpoints
 
