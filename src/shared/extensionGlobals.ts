@@ -75,7 +75,27 @@ function getBrowserAlternatives() {
     return alternatives
 }
 
-const globals = { clock: copyClock() } as ToolkitGlobals
+/**
+ * Why was the following implemented this way?
+ *
+ * With the introduction of browser support + setting up browser unit tests,
+ * it was discovered that variables declared at the global scope were not available
+ * between the actual extension code and the unit tests. Though for the regular desktop/node
+ * tests, global scope variables WERE shared and the following was not required.
+ *
+ * So as a solution, any global scoped objects must be stored in `globalThis` so that if defined
+ * in Browser-compatible extension code, it shares the same context/scope as the Browser unit test code.
+ *
+ * See `browser.md` for more info.
+ */
+function resolveGlobalsObject() {
+    if ((globalThis as any).globals === undefined) {
+        ;(globalThis as any).globals = { clock: copyClock() } as ToolkitGlobals
+    }
+    return (globalThis as any).globals
+}
+
+const globals: ToolkitGlobals = resolveGlobalsObject()
 
 export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
@@ -145,4 +165,6 @@ interface ToolkitGlobals {
         endpoints: string
         lambdaSampleRequests: string
     }
+    /** If this extension is running in the Browser (webworker), compared to running on the desktop (node) */
+    isInBrowser: boolean
 }

@@ -4,16 +4,16 @@
  */
 
 import * as vscode from 'vscode'
+import globals from '../shared/extensionGlobals'
 
-let inBrowser = false
 /** Set the value of if we are in the browser. Impacts {@link isInBrowser}. */
 export function setInBrowser(value: boolean) {
-    inBrowser = value
+    globals.isInBrowser = value
     vscode.commands.executeCommand('setContext', 'aws.isWebExtHost', true).then(undefined, e => {
         console.error('setContext failed: %s', (e as Error).message)
     })
 }
 /** Return true if we are running in the browser, false otherwise. */
 export function isInBrowser() {
-    return inBrowser
+    return (globals.isInBrowser ??= false)
 }
