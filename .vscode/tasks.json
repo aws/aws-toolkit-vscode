@@ -37,11 +37,10 @@
             }
         },
         {
-            "label": "npm: buildBrowser",
+            "label": "buildBrowserDebug",
             "type": "npm",
-            "script": "buildBrowser",
-            "dependsOn": ["watch"],
-            "detail": "Builds the webpacked browser bundle"
+            "script": "buildBrowserDebug",
+            "detail": "Builds the webpacked browser bundle for debugging"
         },
         {
             "type": "npm",
