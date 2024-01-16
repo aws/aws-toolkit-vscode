@@ -362,7 +362,7 @@ export class ProposedTransformationExplorer {
             })
 
             // Do not await this so that the summary reveals without user needing to close this notification
-            vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
+            void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
             await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
         })
 
