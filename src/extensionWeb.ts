@@ -24,24 +24,17 @@ export async function activate(context: vscode.ExtensionContext) {
     )
 
     try {
-        setupGlobalStubs()
-
         // Setup the logger
         const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
         await activateLogger(context, toolkitOutputChannel)
+
+        setupGlobals()
 
         await initializeComputeRegion()
         initialize(context)
         initializeManifestPaths(context)
 
-        const awsContext = new DefaultAwsContext()
-        globals.awsContext = awsContext
-
-        globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
-
-        const settings = Settings.instance
-
-        await activateTelemetry(context, awsContext, settings)
+        await activateTelemetry(context, globals.awsContext, Settings.instance)
         registerCommands(context)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
@@ -52,6 +45,14 @@ export async function activate(context: vscode.ExtensionContext) {
         getLogger().error('Failed to activate extension in Browser', error)
         throw error
     }
+}
+
+/** Set up values for the `globals` object */
+function setupGlobals() {
+    globals.awsContext = new DefaultAwsContext()
+    globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
+
+    setupGlobalsTempStubs()
 }
 
 /**
@@ -65,7 +66,7 @@ export async function activate(context: vscode.ExtensionContext) {
  * If needed we can eventually create the real implementations instead
  * of stubbing.
  */
-function setupGlobalStubs() {
+function setupGlobalsTempStubs() {
     // This is required for telemetry to run.
     // The default region is arbitrary for now.
     // We didn't create an actual instance since it
