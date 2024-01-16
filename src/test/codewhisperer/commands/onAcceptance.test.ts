@@ -24,6 +24,7 @@ describe('onAcceptance', function () {
     describe('onAcceptance', function () {
         beforeEach(async function () {
             await resetCodeWhispererGlobalVariables()
+            session.reset()
         })
 
         afterEach(function () {
