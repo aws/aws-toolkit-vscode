@@ -281,6 +281,10 @@ export class TransformByQState {
 
     private jobFailureReason: string = ''
 
+    private payloadFilePath: string = ''
+
+    private jobFailureErrorMessage: string = ''
+
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
     }
@@ -347,6 +351,14 @@ export class TransformByQState {
 
     public getJobFailureReason() {
         return this.jobFailureReason
+    }
+
+    public getPayloadFilePath() {
+        return this.payloadFilePath
+    }
+
+    public getJobFailureErrorMessage() {
+        return this.jobFailureErrorMessage
     }
 
     public setToNotStarted() {
@@ -417,6 +429,14 @@ export class TransformByQState {
         this.jobFailureReason = reason
     }
 
+    public setPayloadFilePath(payloadFilePath: string) {
+        this.payloadFilePath = payloadFilePath
+    }
+
+    public setJobFailureErrorMessage(errorMessage: string) {
+        this.jobFailureErrorMessage = errorMessage
+    }
+
     public getPrefixTextForButton() {
         switch (this.transformByQState) {
             case TransformByQStatus.NotStarted:
@@ -435,6 +455,13 @@ export class TransformByQState {
             default:
                 return getIcon('vscode-stop-circle')
         }
+    }
+
+    public setJobDefaults() {
+        this.setToNotStarted() // so that the "Transform by Q" button resets
+        this.polledJobStatus = '' // reset polled job status too
+        this.jobFailureErrorMessage = ''
+        this.payloadFilePath = ''
     }
 }
 
