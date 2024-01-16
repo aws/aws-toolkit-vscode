@@ -110,10 +110,10 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         })
         throw new TransformByQJavaProjectNotFound()
     }
-    const classFilePath = `"${compiledJavaFiles[0].fsPath}"`
+    const classFilePath = `${compiledJavaFiles[0].fsPath}`
     const baseCommand = 'javap'
     const args = ['-v', classFilePath]
-    const spawnResult = spawnSync(baseCommand, args, { shell: true, encoding: 'utf-8' })
+    const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
