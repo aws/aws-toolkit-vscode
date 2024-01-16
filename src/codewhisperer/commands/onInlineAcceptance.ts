@@ -34,6 +34,7 @@ export const acceptSuggestion = Commands.declare(
     (context: ExtContext) =>
         async (
             range: vscode.Range,
+            effectiveRange: vscode.Range,
             acceptIndex: number,
             recommendation: string,
             requestId: string,
@@ -49,6 +50,7 @@ export const acceptSuggestion = Commands.declare(
                 {
                     editor,
                     range,
+                    effectiveRange,
                     acceptIndex,
                     recommendation,
                     requestId,
@@ -88,7 +90,7 @@ export async function onInlineAcceptance(
         try {
             // Do not handle extra bracket if there is a right context merge
             if (acceptanceEntry.recommendation === session.recommendations[acceptanceEntry.acceptIndex].content) {
-                await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end, start)
+                await handleExtraBrackets(acceptanceEntry.editor, end, acceptanceEntry.effectiveRange.start)
             }
             await ImportAdderProvider.instance.onAcceptRecommendation(
                 acceptanceEntry.editor,

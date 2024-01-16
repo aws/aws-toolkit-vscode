@@ -96,6 +96,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         if (!r.content.startsWith(prefix)) {
             return undefined
         }
+        const effectiveStart = document.positionAt(document.offsetAt(start) + prefix.length)
         const truncatedSuggestion = this.truncateOverlapWithRightContext(document, r.content, end)
         if (truncatedSuggestion.length === 0) {
             if (session.getSuggestionState(index) !== 'Showed') {
@@ -111,6 +112,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                 title: 'On acceptance',
                 arguments: [
                     new vscode.Range(start, end),
+                    new vscode.Range(effectiveStart, end),
                     index,
                     truncatedSuggestion,
                     this.requestId,

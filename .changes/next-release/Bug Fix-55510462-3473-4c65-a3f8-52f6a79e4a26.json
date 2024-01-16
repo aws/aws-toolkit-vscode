@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeWhisperer not handling extra closing symbols (parenthesis, brackets, quotes) when user typeahead exists"
+}
