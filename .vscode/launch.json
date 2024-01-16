@@ -31,7 +31,7 @@
             "request": "launch",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}", "--extensionDevelopmentKind=web"],
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "npm: buildBrowser"
+            "preLaunchTask": "buildBrowserDebug"
         },
         {
             "name": "Extension (webpack)",
@@ -85,14 +85,13 @@
             "debugWebWorkerHost": true,
             "request": "launch",
             "args": [
-                "--disable-extensions",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionDevelopmentKind=web",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/testBrowser/testRunner",
                 "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
-            "preLaunchTask": "npm: buildBrowser"
+            "preLaunchTask": "buildBrowserDebug"
         },
         {
             "name": "Integration Tests",

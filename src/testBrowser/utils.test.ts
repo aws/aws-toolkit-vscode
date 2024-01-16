@@ -8,6 +8,7 @@ import { isInBrowser } from '../common/browserUtils'
 
 describe('isInBrowser', function () {
     it('returns true when in browser', function () {
+        // Note that this only works since the state is indirectly stored in `globalThis`, see browser.md for more info
         assert.strictEqual(isInBrowser(), true)
     })
 })

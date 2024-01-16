@@ -32,7 +32,6 @@ const baseConfig = {
         path: path.resolve(__dirname, 'dist'),
         filename: '[name].js',
         libraryTarget: 'commonjs2',
-        devtoolModuleFilenameTemplate: '../[resource-path]',
     },
     devtool: 'source-map',
     externals: {
