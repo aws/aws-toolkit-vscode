@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "CodeWhisperer suggestions may be skipped under certain criteria"
+	"description": "CodeWhisperer suggestions may be trimmed under certain criteria"
 }
