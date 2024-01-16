@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix CodeWhisperer suggestions will be swallowed under certain criteria"
+}
