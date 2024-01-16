@@ -37,7 +37,7 @@ export class OutputChannelTransport extends Transport {
         this.stripAnsi = options.stripAnsi ?? false
 
         const c = this.outputChannel
-        this.isLogChan = (c as any).info && (c as any).trace && (c as any).debug && (c as any).warn && (c as any).error
+        this.isLogChan = !!((c as any).info && (c as any).debug && (c as any).warn && (c as any).error)
         // Else: we got `vscode.debug.activeDebugConsole` which does not yet implement `vscode.LogOutputChannel`.
     }
 
