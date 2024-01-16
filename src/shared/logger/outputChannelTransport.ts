@@ -53,9 +53,9 @@ export class OutputChannelTransport extends Transport {
                 //      timestamp: '2024-01-16 08:54:30'
                 // We want the "raw" (unformatted) message without the frontmatter, because
                 // `vscode.LogOutputChannel` presents its own timestamp + loglevel.
-                const unformattedMsg = this.stripAnsi ? removeAnsi(info.message) : info.message
+                const untrimmed = this.stripAnsi ? removeAnsi(info.message) : info.message
                 // Avoid extra line breaks.
-                const msg = info.raw ? unformattedMsg.trim() : unformattedMsg
+                const msg = untrimmed.trim()
 
                 const c = this.outputChannel as vscode.LogOutputChannel
                 const loglevel = info.level as LogLevel
