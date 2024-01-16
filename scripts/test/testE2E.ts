@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { resolve } from 'path'
-import { e2eSuite, runToolkitTests } from './launchTestUtilities'
+import { runToolkitTests } from './launchTestUtilities'
 void (async () => {
-    await runToolkitTests(e2eSuite, resolve('dist', 'src', 'testE2E', 'index.js'))
+    await runToolkitTests('e2e', 'dist/src/testE2E/index.js')
 })()

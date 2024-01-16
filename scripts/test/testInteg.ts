@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { resolve } from 'path'
-import { integrationSuite, runToolkitTests } from './launchTestUtilities'
+import { runToolkitTests } from './launchTestUtilities'
 void (async () => {
-    await runToolkitTests(integrationSuite, resolve('dist', 'src', 'testInteg', 'index.js'))
+    await runToolkitTests('integration', 'dist/src/testInteg/index.js')
 })()
