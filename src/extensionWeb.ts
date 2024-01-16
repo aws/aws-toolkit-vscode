@@ -27,7 +27,7 @@ export async function activate(context: vscode.ExtensionContext) {
         setupGlobalStubs()
 
         // Setup the logger
-        const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit')
+        const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
         await activateLogger(context, toolkitOutputChannel)
 
         await initializeComputeRegion()

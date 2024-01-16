@@ -27,7 +27,7 @@ const defaultLogLevel: LogLevel = 'info'
  */
 export async function activate(
     extensionContext: vscode.ExtensionContext,
-    outputChannel: vscode.OutputChannel
+    outputChannel: vscode.LogOutputChannel
 ): Promise<void> {
     const chan = logOutputChannel
     const settings = Settings.instance.getSection('aws')
