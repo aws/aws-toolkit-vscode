@@ -51,6 +51,7 @@ describe('onAcceptance', function () {
                 {
                     editor: mockEditor,
                     range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
+                    effectiveRange: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
                     acceptIndex: 0,
                     recommendation: "print('Hello World!')",
                     requestId: '',
@@ -99,6 +100,7 @@ describe('onAcceptance', function () {
                 {
                     editor: mockEditor,
                     range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
+                    effectiveRange: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
                     acceptIndex: 0,
                     recommendation: "print('Hello World!')",
                     requestId: '',

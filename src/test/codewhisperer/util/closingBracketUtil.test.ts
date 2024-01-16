@@ -36,7 +36,7 @@ describe('closingBracketUtil', function () {
             assert.strictEqual(right, rightContext)
             assert.strictEqual(reco, recommendation)
 
-            await handleExtraBrackets(editor, recommendation, end, start)
+            await handleExtraBrackets(editor, end, start)
 
             assert.strictEqual(editor.document.getText(), expected)
         }
