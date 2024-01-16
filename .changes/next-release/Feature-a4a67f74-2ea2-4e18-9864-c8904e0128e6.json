@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM lambda debugging: SAM output and other logs are now presented with VSCode's log highlighting"
+}

@@ -80,7 +80,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         this.logger.verbose('SAM: pid %d: stdout: %s', childProcess.pid(), removeAnsi(text))
                     },
                     onStderr: (text: string): void => {
-                        getLogger('debugConsole').error(text, { raw: true })
+                        getLogger('debugConsole').info(text, { raw: true })
                         // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                         params.timeout?.refresh()
                         this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
