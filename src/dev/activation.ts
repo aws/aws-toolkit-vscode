@@ -20,6 +20,7 @@ import { entries } from '../shared/utilities/tsUtils'
 import { isReleaseVersion } from '../shared/vscode/env'
 import { isAnySsoConnection } from '../auth/connection'
 import { Auth } from '../auth/auth'
+import { getLogger } from '../shared/logger'
 
 interface MenuOption {
     readonly label: string
@@ -55,9 +56,9 @@ const menuOptions: Record<string, MenuOption> = {
         executor: deleteDevEnvCommand,
     },
     editStorage: {
-        label: 'Show or Edit Global Storage',
+        label: 'Show or Edit globalState',
         description: 'VS Code',
-        detail: 'Shows all globalState values, or edit a specific globalState/secret key as a JSON document',
+        detail: 'Shows all globalState values, or edit a globalState/secret item',
         executor: openStorageFromInput,
     },
     showEnvVars: {
@@ -124,8 +125,23 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
     ctx.subscriptions.push(
         devSettings.onDidChangeActiveSettings(updateMode),
+        vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider(ctx)),
+        // "AWS (Developer): Open Developer Menu"
         vscode.commands.registerCommand('aws.dev.openMenu', () => openMenu(ctx, menuOptions)),
-        vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider(ctx))
+        // "AWS (Developer): Watch Logs"
+        Commands.register('aws.dev.viewLogs', async () => {
+            // HACK: Use startDebugging() so we can use the DEBUG CONSOLE (which supports
+            // user-defined filtering, unlike the OUTPUT panel).
+            await vscode.debug.startDebugging(undefined, {
+                name: 'aws-dev-log',
+                request: 'launch',
+                type: 'node', // Nonsense, to force the debugger to start.
+            })
+            getLogger().enableDebugConsole()
+            if (!getLogger().logLevelEnabled('debug')) {
+                getLogger().setLogLevel('debug')
+            }
+        })
     )
 
     await updateMode()

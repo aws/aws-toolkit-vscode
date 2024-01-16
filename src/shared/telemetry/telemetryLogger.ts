@@ -4,6 +4,7 @@
  */
 
 import { getLogger } from '../logger'
+import { DevSettings } from '../settings'
 import { isReleaseVersion } from '../vscode/env'
 import { MetricDatum, MetadataEntry } from './clienttelemetry'
 
@@ -28,7 +29,14 @@ function isValidEntry(datum: MetadataEntry): datum is Required<MetadataEntry> {
 }
 
 /**
- * Telemetry currently sends metadata as an array of key/value pairs, but this is unintuitive for JS
+ * Takes a Telemetry metadata key-value pairs array:
+ * ```
+ *      [ {Key:'a',Value:…}, {Key:'b',Value:…}, … ]
+ * ```
+ * and produces an object:
+ * ```
+ *      {a:…, b:…}
+ * ```
  */
 export const mapMetadata = (excludeKeys: string[]) => (metadata: Required<MetricDatum>['Metadata']) => {
     const result: Metadata = {}
@@ -38,6 +46,16 @@ export const mapMetadata = (excludeKeys: string[]) => (metadata: Required<Metric
         .reduce((a, b) => ((a[b.Key] = b.Value), a), result)
 }
 
+/** Transforms a metric for human readability in logs, etc. */
+function scrubMetric(metric: MetricDatum): any {
+    const metaMap = mapMetadata(['MetricName'])(metric.Metadata ?? [])
+    metaMap.awsAccount = metaMap.awsAccount && metaMap.awsAccount.length > 10 ? '[omitted]' : metaMap.awsAccount
+    const metricCopy = { ...metric, Metadata: metaMap } as any
+    delete metricCopy.MetricName // Redundant.
+    delete metricCopy.EpochTimestamp // Not interesting.
+    return metricCopy
+}
+
 /**
  * Simple class to log queryable metrics.
  *
@@ -45,6 +63,12 @@ export const mapMetadata = (excludeKeys: string[]) => (metadata: Required<Metric
  */
 export class TelemetryLogger {
     private readonly _metrics: MetricDatum[] = []
+    private readonly isDevMode: boolean
+
+    public constructor() {
+        const devSettings = DevSettings.instance
+        this.isDevMode = devSettings.isDevMode()
+    }
 
     public get metricCount(): number {
         return this._metrics.length
@@ -55,13 +79,13 @@ export class TelemetryLogger {
     }
 
     public log(metric: MetricDatum): void {
-        const msg = `telemetry: emitted metric "${metric.MetricName}"`
+        const msg = `telemetry: ${metric.MetricName}`
 
-        if (!isReleaseVersion()) {
+        if (this.isDevMode || !isReleaseVersion()) {
             this._metrics.push(metric)
             if (getLogger().logLevelEnabled('debug')) {
-                const stringified = JSON.stringify(metric)
-                getLogger().debug(`${msg} -> ${stringified}`)
+                const metricCopy = scrubMetric(metric)
+                getLogger().debug(`${msg} %O`, metricCopy)
             } else {
                 getLogger().verbose(msg)
             }

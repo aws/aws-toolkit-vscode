@@ -27,6 +27,8 @@ export interface Logger {
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
     getLogById(logID: number, file: Uri): string | undefined
+    /** HACK: Enables logging to vscode Debug Console. */
+    enableDebugConsole(): void
 }
 
 /**
@@ -97,6 +99,7 @@ export class NullLogger implements Logger {
     public getLogById(logID: number, file: Uri): string | undefined {
         return undefined
     }
+    public enableDebugConsole(): void {}
 }
 
 /**
@@ -131,6 +134,7 @@ export class ConsoleLogger implements Logger {
     public getLogById(logID: number, file: Uri): string | undefined {
         return undefined
     }
+    public enableDebugConsole(): void {}
 }
 
 export function getNullLogger(type?: 'channel' | 'debugConsole' | 'main'): Logger {

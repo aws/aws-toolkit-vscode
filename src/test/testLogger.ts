@@ -18,6 +18,8 @@ export class TestLogger implements Logger {
     private count: number = 0
     public constructor(private logLevel: LogLevel = 'debug') {}
 
+    public enableDebugConsole(): void {}
+
     public debug(...message: Loggable[]): number {
         return this.addLoggedEntries('debug', message)
     }
