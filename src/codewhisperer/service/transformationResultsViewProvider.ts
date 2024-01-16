@@ -302,8 +302,8 @@ export class ProposedTransformationExplorer {
                     codeTransformApiNames: 'ExportResultArchive',
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformApiErrorMessage: e?.message || errorMessage,
-                    codeTransformRequestId: e?.requestId,
+                    codeTransformApiErrorMessage: (e as Error).message ?? errorMessage,
+                    codeTransformRequestId: e.requestId ?? '',
                     result: MetadataResult.Fail,
                     reason: 'ExportResultArchiveFailed',
                 })
@@ -336,7 +336,7 @@ export class ProposedTransformationExplorer {
                 )
             } catch (e: any) {
                 deserializeErrorMessage =
-                    e?.message ||
+                    (e as Error).message ??
                     'Transform by Q experienced an error during the deserialization of the downloaded result archive'
                 getLogger().error('CodeTransform: ParseDiff error = ', deserializeErrorMessage)
                 void vscode.window.showErrorMessage(deserializeErrorMessage)
@@ -361,7 +361,8 @@ export class ProposedTransformationExplorer {
                 result: MetadataResult.Pass,
             })
 
-            await vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
+            // Do not await this so that the summary reveals without user needing to close this notification
+            void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
             await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
         })
 
