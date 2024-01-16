@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 
-export const logOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Toolkit Logs')
+export const logOutputChannel = vscode.window.createOutputChannel('AWS Toolkit Logs', { log: true })
 
 /**
  * Shows the log output channel.
