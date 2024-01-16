@@ -32,25 +32,24 @@ const openToClose: bracketMapType = {
 /**
  * LeftContext | Recommendation | RightContext
  * This function aims to resolve symbols which are redundant and need to be removed
- * @param recommendation: "effective" recommendation written by CodeWhisperer ("typeahead should not be considered as written by CodeWhisperer")
- * @param endPosition: end position of the recommendation
- * @param startPosition: start position of the recommendation
+ * The high level logic is as followed
+ *   1. Pair non-paired closing symbols(parenthesis, brackets, quotes) existing in the "recommendation" with non-paired symbols existing in the "leftContext"
+ *   2. Remove non-paired closing symbols existing in the "rightContext"
+ * @param endPosition: end position of the effective recommendation written by CodeWhisperer
+ * @param startPosition: start position of the effective recommendation by CodeWhisperer
+ *
+ * for example given file context ('|' is where we trigger the service):
+ * anArray.pu|
+ * recommendation returned: "sh(element);"
+ * typeahead: "sh("
+ * the effective recommendation written by CodeWhisperer: "element);"
  */
 export async function handleExtraBrackets(
     editor: vscode.TextEditor,
-    recommendation: string,
     endPosition: vscode.Position,
     startPosition: vscode.Position
 ) {
-    /**
-     * recommendation provided in the function argument is the original recommendation, whereas here what we need is "effective recommendation"
-     * for example given file context ('|' is where we trigger the service)
-     * anArray.pu|
-     * recommendation returned: "sh(element);"
-     * typeahead: sh(
-     * the effective recommendation "written" by CodeWhisperer: element);
-     */
-    recommendation = editor.document.getText(new vscode.Range(startPosition, endPosition))
+    const recommendation = editor.document.getText(new vscode.Range(startPosition, endPosition))
     const endOffset = editor.document.offsetAt(endPosition)
     const startOffset = editor.document.offsetAt(startPosition)
     const leftContext = editor.document.getText(
