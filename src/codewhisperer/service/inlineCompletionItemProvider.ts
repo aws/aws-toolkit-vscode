@@ -75,7 +75,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         const trimmedSuggestion = suggestion.trim()
         // limit of 5000 for right context matching
         const rightContext = document.getText(new vscode.Range(pos, document.positionAt(document.offsetAt(pos) + 5000)))
-        const overlap = getPrefixSuffixOverlap(trimmedSuggestion, rightContext.trim())
+        const overlap = getPrefixSuffixOverlap(trimmedSuggestion, rightContext)
         const overlapIndex = suggestion.lastIndexOf(overlap)
         if (overlapIndex >= 0) {
             const truncated = suggestion.slice(0, overlapIndex)
