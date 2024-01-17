@@ -65,7 +65,7 @@ class Browser(parent: Disposable) {
                                 $postMessageToJavaJsCode
                             }
                         },
-                        false, // change to true to enable weaverbird
+                        true, // change to true to enable weaverbird
                         $isGumbyAvailable, // whether /transform is available
                     ); 
                 }
