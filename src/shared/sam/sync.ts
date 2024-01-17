@@ -41,12 +41,13 @@ import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
-import { samSyncUrl, samInitDocUrl, samUpgradeUrl } from '../constants'
+import { samSyncUrl, samInitDocUrl, samUpgradeUrl, credentialHelpUrl } from '../constants'
 import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
-import { showOnce } from '../utilities/messages'
-import { IamConnection } from '../../auth/connection'
+import { showMessageWithUrl, showOnce } from '../utilities/messages'
+import { IamConnection, StatefulConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
+import { promptAndUseConnection } from '../../auth/utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -535,6 +536,34 @@ export type SamSyncResult = {
     isSuccess: boolean
 }
 
+async function promptReauth(connection?: StatefulConnection) {
+    let errorMessage = localize(
+        'aws.sam.sync.authModal.message',
+        'Syncing requires authentication with IAM credentials.'
+    )
+    if (connection?.state === 'valid') {
+        errorMessage =
+            localize(
+                'aws.sam.sync.authModal.invalidAuth',
+                'Authentication through Builder ID or IAM Identity Center detected. '
+            ) + errorMessage
+    }
+    const acceptMessage = localize('aws.sam.sync.authModal.accept', 'Authenticate with IAM credentials')
+    const docMessage = localize('aws.sam.sync.authModal.docLink', 'Open documentation')
+    const modalResponse = await showMessageWithUrl(
+        errorMessage,
+        credentialHelpUrl,
+        docMessage,
+        'info',
+        [acceptMessage],
+        true
+    )
+    if (modalResponse !== acceptMessage) {
+        return
+    }
+    await promptAndUseConnection(Auth.instance, 'iam-only')
+}
+
 export function registerSync() {
     async function runSync(
         deployType: SyncParams['deployType'],
@@ -543,9 +572,15 @@ export function registerSync() {
     ): Promise<SamSyncResult> {
         telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly' })
 
-        const connection = Auth.instance.activeConnection
-        if (connection?.type !== 'iam') {
-            throw new ToolkitError('Syncing SAM applications requires IAM credentials', { code: 'NoIAMCredentials' })
+        let connection = Auth.instance.activeConnection
+        if (connection?.type !== 'iam' || connection?.state !== 'valid') {
+            await promptReauth(connection)
+            connection = Auth.instance.activeConnection
+            if (connection?.type !== 'iam' || connection?.state !== 'valid') {
+                throw new ToolkitError('Syncing SAM applications requires IAM credentials', {
+                    code: 'NoIAMCredentials',
+                })
+            }
         }
 
         // Constructor of `vscode.Uri` is marked private but that shouldn't matter when checking the instance type

@@ -7,45 +7,6 @@ import vscode from 'vscode'
 import { Command, DeployRequestMessage, DeployResponseMessage, MessageType, WebviewContext } from '../types'
 import { SamSyncResult } from '../../shared/sam/sync'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { Auth } from '../../auth/auth'
-import { promptAndUseConnection } from '../../auth/utils'
-import { StatefulConnection } from '../../auth/connection'
-import * as nls from 'vscode-nls'
-import { showMessageWithUrl } from '../../shared/utilities/messages'
-import { credentialHelpUrl } from '../../shared/constants'
-
-const localize = nls.loadMessageBundle()
-
-async function promptReauth(connection?: StatefulConnection) {
-    let errorMessage = localize(
-        'aws.applicationComposer.deploy.authModal.message',
-        'Syncing requires authentication with IAM credentials.'
-    )
-    if (connection?.state === 'valid') {
-        errorMessage =
-            localize(
-                'aws.applicationComposer.deploy.authModal.invalidAuth',
-                'Authentication through Builder ID or IAM Identity Center detected. '
-            ) + errorMessage
-    }
-    const acceptMessage = localize(
-        'aws.applicationComposer.deploy.authModal.accept',
-        'Authenticate with IAM credentials'
-    )
-    const docMessage = localize('aws.applicationComposer.deploy.authModal.docLink', 'Open documentation')
-    const modalResponse = await showMessageWithUrl(
-        errorMessage,
-        credentialHelpUrl,
-        docMessage,
-        'info',
-        [acceptMessage],
-        true
-    )
-    if (modalResponse !== acceptMessage) {
-        return
-    }
-    await promptAndUseConnection(Auth.instance, 'iam-only')
-}
 
 export async function deployMessageHandler(message: DeployRequestMessage, context: WebviewContext) {
     // SAM already handles success/failure, so we only log that the user clicked the deploy button
@@ -58,21 +19,6 @@ export async function deployMessageHandler(message: DeployRequestMessage, contex
      * so we instead check for an undefined response to determine failure. The downside is that
      * we don't get failure reasons.
      */
-    let connection = Auth.instance.activeConnection
-    if (connection?.type !== 'iam' || connection?.state !== 'valid') {
-        await promptReauth(connection)
-        connection = Auth.instance.activeConnection
-        if (connection?.type !== 'iam' || connection?.state !== 'valid') {
-            const response: DeployResponseMessage = {
-                command: Command.DEPLOY,
-                messageType: MessageType.RESPONSE,
-                eventId: message.eventId,
-                isSuccess: false,
-            }
-            await context.panel.webview.postMessage(response)
-            return
-        }
-    }
     const result = (await vscode.commands.executeCommand('aws.samcli.sync', args, false)) as SamSyncResult
     if (result?.isSuccess) {
         void vscode.window.showInformationMessage('SAM Sync succeeded!')

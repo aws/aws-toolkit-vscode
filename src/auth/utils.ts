@@ -53,6 +53,8 @@ import { isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUt
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
 
+// iam-only excludes Builder ID and IAM Identity Center from the list of valid connections
+// TODO: Understand if "iam" should include these from the list at all
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' | 'sso'): Promise<Connection | void> {
     const resp = await createConnectionPrompter(auth, type).prompt()
     if (!isValidResponse(resp)) {
