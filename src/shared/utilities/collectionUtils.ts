@@ -511,3 +511,36 @@ export function createCollectionFromPages<T>(...pages: T[]): AsyncCollection<T> 
         return pages[pages.length - 1]
     })
 }
+
+export class MRUList<T> {
+    private readonly internalList: T[] = []
+
+    constructor(private readonly maxSize: number) {}
+
+    add(element: T) {
+        const index = this.internalList.indexOf(element)
+        if (index !== -1) {
+            this.internalList.splice(index, 1)
+        }
+
+        this.internalList.unshift(element)
+        this.trimToSize()
+    }
+
+    elements(level?: number): T[] {
+        if (level) {
+            return this.internalList.slice(0, level)
+        }
+        return this.internalList
+    }
+
+    clear() {
+        this.internalList.splice(0, this.internalList.length)
+    }
+
+    private trimToSize() {
+        while (this.internalList.length > this.maxSize) {
+            this.internalList.splice(this.internalList.length - 1, 1)
+        }
+    }
+}

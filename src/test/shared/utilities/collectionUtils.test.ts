@@ -29,6 +29,7 @@ import {
     join,
     toStream,
     joinAll,
+    MRUList,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
@@ -662,6 +663,45 @@ describe('CollectionUtils', async function () {
                 const iterable = joinAll(toAsyncIterable(iterables))
                 assert.deepStrictEqual(await iterateAll(iterable), expected)
             })
+        })
+    })
+
+    describe('MRUList', function () {
+        let sut: MRUList<any>
+
+        beforeEach(function () {
+            sut = new MRUList(3)
+        })
+
+        it('should evict the oldest and return elements by most recently used order', function () {
+            sut.add('foo')
+            sut.add('bar')
+            sut.add('baz')
+            sut.add('fiz')
+
+            assert.deepStrictEqual(sut.elements(), ['fiz', 'baz', 'bar'])
+            assert.deepStrictEqual(sut.elements(2), ['fiz', 'baz'])
+            assert.deepStrictEqual(sut.elements(1), ['fiz'])
+        })
+
+        it('should move up re-added element', function () {
+            sut.add('foo')
+            sut.add('bar')
+            sut.add('baz')
+            sut.add('foo')
+
+            assert.deepStrictEqual(sut.elements(), ['foo', 'baz', 'bar'])
+            assert.deepStrictEqual(sut.elements(2), ['foo', 'baz'])
+            assert.deepStrictEqual(sut.elements(1), ['foo'])
+        })
+
+        it('clear', function () {
+            sut.add('foo')
+            sut.add('bar')
+            sut.add('baz')
+            sut.clear()
+
+            assert.deepStrictEqual(sut.elements(), [])
         })
     })
 })
