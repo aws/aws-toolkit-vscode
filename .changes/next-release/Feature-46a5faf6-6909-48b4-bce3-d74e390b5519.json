@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Amazon Q CodeTransform: use Maven wrapper (if present) to copy dependencies if Maven not installed"
+}
