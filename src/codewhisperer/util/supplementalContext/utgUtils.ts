@@ -4,7 +4,6 @@
  */
 
 import glob from 'glob'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import {
@@ -24,6 +23,7 @@ import { UserGroup } from '../../models/constants'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem, UtgStrategy } from '../../models/model'
+import { fsCommon } from '../../../srcShared/fs'
 
 type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
 
@@ -78,7 +78,7 @@ export async function fetchSupplementalContextForTest(
         // TODO (Metrics): 2. Success count for fetchSourceFileByName (find source file by name)
         getLogger().debug(`CodeWhisperer finished fetching utg context by file name`)
         return {
-            supplementalContextItems: generateSupplementalContextFromFocalFile(
+            supplementalContextItems: await generateSupplementalContextFromFocalFile(
                 crossSourceFile,
                 'ByName',
                 cancellationToken
@@ -93,7 +93,7 @@ export async function fetchSupplementalContextForTest(
         // TODO (Metrics): 3. Success count for fetchSourceFileByContent (find source file by content)
         getLogger().debug(`CodeWhisperer finished fetching utg context by file content`)
         return {
-            supplementalContextItems: generateSupplementalContextFromFocalFile(
+            supplementalContextItems: await generateSupplementalContextFromFocalFile(
                 crossSourceFile,
                 'ByContent',
                 cancellationToken
@@ -110,12 +110,12 @@ export async function fetchSupplementalContextForTest(
     }
 }
 
-function generateSupplementalContextFromFocalFile(
+async function generateSupplementalContextFromFocalFile(
     filePath: string,
     strategy: UtgStrategy,
     cancellationToken: vscode.CancellationToken
-): CodeWhispererSupplementalContextItem[] {
-    const fileContent = fs.readFileSync(vscode.Uri.file(filePath!).fsPath, 'utf-8')
+): Promise<CodeWhispererSupplementalContextItem[]> {
+    const fileContent = await fsCommon.readFileAsString(vscode.Uri.file(filePath!).fsPath)
 
     // DO NOT send code chunk with empty content
     if (fileContent.trim().length === 0) {
@@ -135,7 +135,7 @@ async function findSourceFileByContent(
     languageConfig: utgLanguageConfig,
     cancellationToken: vscode.CancellationToken
 ): Promise<string | undefined> {
-    const testFileContent = fs.readFileSync(editor.document.fileName, 'utf-8')
+    const testFileContent = await fsCommon.readFileAsString(editor.document.fileName)
     const testElementList = extractFunctions(testFileContent, languageConfig.functionExtractionPattern)
 
     throwIfCancelled(cancellationToken)
@@ -157,18 +157,18 @@ async function findSourceFileByContent(
     throwIfCancelled(cancellationToken)
 
     // TODO (Metrics):Add metrics for relevantFilePaths length
-    relevantFilePaths.forEach(filePath => {
+    for (const fp of relevantFilePaths) {
         throwIfCancelled(cancellationToken)
 
-        const fileContent = fs.readFileSync(filePath, 'utf-8')
+        const fileContent = await fsCommon.readFileAsString(fp)
         const elementList = extractFunctions(fileContent, languageConfig.functionExtractionPattern)
         elementList.push(...extractClasses(fileContent, languageConfig.classExtractionPattern))
         const matchCount = countSubstringMatches(elementList, testElementList)
         if (matchCount > maxMatchCount) {
             maxMatchCount = matchCount
-            sourceFilePath = filePath
+            sourceFilePath = fp
         }
-    })
+    }
     return sourceFilePath
 }
 
@@ -216,7 +216,7 @@ async function findSourceFileByName(
     }
     newPath = path.join(newPath, basenameSuffix + languageConfig.extension)
     // TODO: Add metrics here, as we are not able to find the source file by name.
-    if (fs.existsSync(newPath)) {
+    if (await fsCommon.exists(newPath)) {
         return newPath
     }
 

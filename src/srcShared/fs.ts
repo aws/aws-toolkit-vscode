@@ -57,6 +57,9 @@ export class FileSystemCommon {
         return fs.readFile(path)
     }
 
+    /**
+     * Uses UTF-8 encoding.
+     */
     async readFileAsString(path: Uri | string): Promise<string> {
         path = FileSystemCommon.getUri(path)
         return FileSystemCommon.arrayToString(await this.readFile(path))
@@ -110,6 +113,10 @@ export class FileSystemCommon {
         return fs.writeFile(path, FileSystemCommon.asArray(data))
     }
 
+    async copy(source: Uri, target: Uri, overwrite?: boolean) {
+        return fs.copy(source, target, { overwrite })
+    }
+
     /**
      * The stat of the file, undefined if the file does not exist, otherwise an error is thrown.
      */
@@ -121,6 +128,20 @@ export class FileSystemCommon {
     async delete(uri: vscode.Uri | string): Promise<void> {
         const path = FileSystemCommon.getUri(uri)
         return fs.delete(path, { recursive: true })
+    }
+
+    /**
+     * Unlike delete(), does not throw an error if the path does not exist.
+     * TODO: Refactor into delete().
+     */
+    async safeDelete(uri: vscode.Uri | string): Promise<void> {
+        try {
+            return await this.delete(uri)
+        } catch (e) {
+            if (!(e instanceof vscode.FileSystemError.FileNotFound)) {
+                throw e
+            }
+        }
     }
 
     async readdir(uri: vscode.Uri | string): Promise<[string, vscode.FileType][]> {

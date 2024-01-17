@@ -5,11 +5,11 @@
 
 import AdmZip from 'adm-zip'
 import os from 'os'
-import fs from 'fs-extra'
 import parseDiff from 'parse-diff'
 import path from 'path'
 import vscode from 'vscode'
 
+import { fsCommon } from '../../srcShared/fs'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { TransformByQReviewStatus, transformByQState } from '../models/model'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
@@ -27,11 +27,11 @@ export abstract class ProposedChangeNode {
 
     abstract generateCommand(): vscode.Command
     abstract generateDescription(): string
-    abstract saveFile(): void
+    abstract saveFile(): Promise<void>
 
-    public saveChange(): void {
+    public async saveChange() {
         try {
-            this.saveFile()
+            await this.saveFile()
         } catch (err) {
             //to do: file system-related error handling
             if (err instanceof Error) {
@@ -67,8 +67,8 @@ export class ModifiedChangeNode extends ProposedChangeNode {
         return 'M'
     }
 
-    override saveFile(): void {
-        fs.copyFileSync(this.tmpChangedPath, this.originalPath)
+    override async saveFile() {
+        return await fsCommon.copy(vscode.Uri.file(this.tmpChangedPath), vscode.Uri.file(this.originalPath))
     }
 }
 
@@ -97,8 +97,8 @@ export class AddedChangeNode extends ProposedChangeNode {
         return 'A'
     }
 
-    override saveFile(): void {
-        fs.copyFileSync(this.pathToTmpFile, this.pathToWorkspaceFile)
+    override async saveFile(): Promise<void> {
+        await fsCommon.copy(vscode.Uri.file(this.pathToTmpFile), vscode.Uri.file(this.pathToWorkspaceFile))
     }
 }
 
@@ -122,8 +122,8 @@ export class RemovedChangeNode extends ProposedChangeNode {
     override generateDescription(): string {
         return 'R'
     }
-    override saveFile(): void {
-        fs.removeSync(this.pathToOldContents)
+    override async saveFile() {
+        await fsCommon.safeDelete(this.pathToOldContents)
     }
 }
 
@@ -143,26 +143,30 @@ export class DiffModel {
      * @param pathToWorkspace Path to the current open workspace directory
      * @returns
      */
-    public parseDiff(pathToDiff: string, pathToTmpSrcDir: string, pathToWorkspace: string): ProposedChangeNode[] {
-        const diffContents = fs.readFileSync(pathToDiff, 'utf8')
+    public async parseDiff(
+        pathToDiff: string,
+        pathToTmpSrcDir: string,
+        pathToWorkspace: string
+    ): Promise<ProposedChangeNode[]> {
+        const diffContents = await fsCommon.readFileAsString(pathToDiff)
         const changedFiles = parseDiff(diffContents)
 
-        this.changes = changedFiles.flatMap(file => {
+        this.changes = []
+        for (const file of changedFiles) {
             const originalPath = path.join(pathToWorkspace, file.from !== undefined ? file.from : '')
             const tmpChangedPath = path.join(pathToTmpSrcDir, file.to !== undefined ? file.to : '')
 
-            const originalFileExists = fs.existsSync(originalPath)
-            const changedFileExists = fs.existsSync(tmpChangedPath)
+            const originalFileExists = await fsCommon.exists(originalPath)
+            const changedFileExists = await fsCommon.exists(tmpChangedPath)
 
             if (originalFileExists && changedFileExists) {
-                return new ModifiedChangeNode(originalPath, tmpChangedPath)
+                this.changes.push(new ModifiedChangeNode(originalPath, tmpChangedPath))
             } else if (!originalFileExists && changedFileExists) {
-                return new AddedChangeNode(originalPath, tmpChangedPath)
+                this.changes.push(new AddedChangeNode(originalPath, tmpChangedPath))
             } else if (originalFileExists && !changedFileExists) {
-                return new RemovedChangeNode(originalPath)
+                this.changes.push(new RemovedChangeNode(originalPath))
             }
-            return []
-        })
+        }
 
         return this.changes
     }
@@ -175,10 +179,10 @@ export class DiffModel {
         return this.changes[0]
     }
 
-    public saveChanges() {
-        this.changes.forEach(file => {
-            file.saveChange()
-        })
+    public async saveChanges() {
+        for (const file of this.changes) {
+            await file.saveChange()
+        }
 
         this.clearChanges()
     }
@@ -310,7 +314,7 @@ export class ProposedTransformationExplorer {
                 throw new ToolkitError(errorMessage)
             }
 
-            const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
+            const exportResultsArchiveSize = (await fsCommon.stat(pathToArchive)).size
 
             let deserializeErrorMessage
             const deserializeArchiveStartTime = Date.now()
@@ -320,7 +324,7 @@ export class ProposedTransformationExplorer {
                 pathContainingArchive = path.dirname(pathToArchive)
                 const zip = new AdmZip(pathToArchive)
                 zip.extractAllTo(pathContainingArchive)
-                diffModel.parseDiff(
+                await diffModel.parseDiff(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSourceDir),
                     transformByQState.getProjectPath()
@@ -367,14 +371,14 @@ export class ProposedTransformationExplorer {
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
-            diffModel.saveChanges()
+            await diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
             await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedMessage)
             // delete result archive after changes accepted
-            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
+            await fsCommon.safeDelete(transformByQState.getResultArchiveFilePath())
             telemetry.codeTransform_vcsViewerSubmitted.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
@@ -389,7 +393,7 @@ export class ProposedTransformationExplorer {
             await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
             // delete result archive after changes rejected
-            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
+            await fsCommon.safeDelete(transformByQState.getResultArchiveFilePath())
             telemetry.codeTransform_vcsViewerCanceled.emit({
                 // eslint-disable-next-line id-length
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',

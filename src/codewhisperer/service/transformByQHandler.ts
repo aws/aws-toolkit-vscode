@@ -10,7 +10,6 @@ import { getLogger } from '../../shared/logger'
 import { CreateUploadUrlResponse } from '../client/codewhispereruserclient'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as CodeWhispererConstants from '../models/constants'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as os from 'os'
 import * as vscode from 'vscode'
@@ -24,6 +23,7 @@ import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTr
 import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { TransformByQJavaProjectNotFound } from '../../amazonqGumby/models/model'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
+import { fsCommon } from '../../srcShared/fs'
 
 /* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
@@ -146,9 +146,9 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     }
 }
 
-export function getSha256(fileName: string) {
+export async function getSha256(fileName: string) {
     const hasher = crypto.createHash('sha256')
-    hasher.update(fs.readFileSync(fileName))
+    hasher.update(await fsCommon.readFile(fileName))
     return hasher.digest('base64')
 }
 
@@ -172,20 +172,22 @@ export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {
 
 // TODO: later, consider enhancing the S3 client to include this functionality
 export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
-    const sha256 = getSha256(fileName)
+    const sha256 = await getSha256(fileName)
     const headersObj = getHeadersObj(sha256, resp.kmsKeyArn)
 
     throwIfCancelled()
     try {
         const apiStartTime = Date.now()
-        const response = await fetch('PUT', resp.uploadUrl, { body: fs.readFileSync(fileName), headers: headersObj })
-            .response
+        const response = await fetch('PUT', resp.uploadUrl, {
+            body: await fsCommon.readFile(fileName),
+            headers: headersObj,
+        }).response
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
+            codeTransformTotalByteSize: (await fsCommon.stat(fileName)).size,
             result: MetadataResult.Pass,
         })
         getLogger().info(`CodeTransform: Status from S3 Upload = ${response.status}`)
@@ -240,7 +242,7 @@ export async function stopJob(jobId: string) {
 }
 
 export async function uploadPayload(payloadFileName: string) {
-    const sha256 = getSha256(payloadFileName)
+    const sha256 = await getSha256(payloadFileName)
     throwIfCancelled()
     let response = undefined
     try {
@@ -292,21 +294,24 @@ export async function uploadPayload(payloadFileName: string) {
  * building, and we do not want these included in the ZIP so we exclude these when calling
  * getFilesRecursively on the source code folder.
  */
-function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
-    const entries = fs.readdirSync(dir, { withFileTypes: true })
-    const files = entries.flatMap(entry => {
-        const res = path.resolve(dir, entry.name)
+async function getFilesRecursively(dir: string, isDependenciesFolder: boolean): Promise<string[]> {
+    const entries = await fsCommon.readdir(dir)
+    const files = []
+
+    for (const e of entries) {
+        const name = e[0]
+        const fileType = e[1]
+
+        const res = path.resolve(dir, name)
         // exclude 'target' directory from ZIP (except if zipping dependencies) due to issues in backend
-        if (entry.isDirectory()) {
-            if (isDependenciesFolder || entry.name !== 'target') {
-                return getFilesRecursively(res, isDependenciesFolder)
-            } else {
-                return []
+        if (fileType === vscode.FileType.Directory) {
+            if (isDependenciesFolder || name !== 'target') {
+                files.concat(await getFilesRecursively(res, isDependenciesFolder))
             }
         } else {
-            return [res]
+            files.push(res)
         }
-    })
+    }
     return files
 }
 
@@ -350,7 +355,7 @@ export async function zipCode(modulePath: string) {
     throwIfCancelled()
     const zipStartTime = Date.now()
     const sourceFolder = modulePath
-    const sourceFiles = getFilesRecursively(sourceFolder, false)
+    const sourceFiles = await getFilesRecursively(sourceFolder, false)
 
     throwIfCancelled()
 
@@ -379,8 +384,8 @@ export async function zipCode(modulePath: string) {
     throwIfCancelled()
 
     let dependencyFiles: string[] = []
-    if (!mavenFailed && fs.existsSync(dependencyFolderPath)) {
-        dependencyFiles = getFilesRecursively(dependencyFolderPath, true)
+    if (!mavenFailed && (await fsCommon.exists(dependencyFolderPath))) {
+        dependencyFiles = await getFilesRecursively(dependencyFolderPath, true)
     }
 
     if (!mavenFailed && dependencyFiles.length > 0) {
@@ -402,16 +407,16 @@ export async function zipCode(modulePath: string) {
     throwIfCancelled()
 
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
-    fs.writeFileSync(tempFilePath, zip.toBuffer())
+    await fsCommon.writeFile(tempFilePath, zip.toBuffer())
     if (!mavenFailed) {
-        fs.rmSync(dependencyFolderPath, { recursive: true, force: true })
+        await fsCommon.delete(dependencyFolderPath)
     }
 
     // for now, use the pass/fail status of the maven command to determine this metric status
     const mavenStatus = mavenFailed ? MetadataResult.Fail : MetadataResult.Pass
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-        codeTransformTotalByteSize: (await fs.promises.stat(tempFilePath)).size,
+        codeTransformTotalByteSize: (await fsCommon.stat(tempFilePath)).size,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
         result: mavenStatus,
         reason: mavenFailed ? 'MavenCommandFailed' : undefined,
@@ -460,8 +465,8 @@ export async function startJob(uploadId: string) {
     }
 }
 
-export function getImageAsBase64(filePath: string) {
-    const fileContents = fs.readFileSync(filePath, { encoding: 'base64' })
+export async function getImageAsBase64(filePath: string) {
+    const fileContents = Buffer.from(await fsCommon.readFile(filePath)).toString('base64')
     return `data:image/svg+xml;base64,${fileContents}`
 }
 
@@ -482,7 +487,7 @@ export async function getTransformationPlan(jobId: string) {
         const logoAbsolutePath = globals.context.asAbsolutePath(
             path.join('resources', 'icons', 'aws', 'amazonq', 'transform-landing-page-icon.svg')
         )
-        const logoBase64 = getImageAsBase64(logoAbsolutePath)
+        const logoBase64 = await getImageAsBase64(logoAbsolutePath)
         let plan = `![Transform by Q](${logoBase64}) \n # Code Transformation Plan by Amazon Q \n\n`
         plan += CodeWhispererConstants.planIntroductionMessage.replace(
             'JAVA_VERSION_HERE',
@@ -610,11 +615,11 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 
 export async function checkBuildSystem(projectPath: string) {
     const mavenBuildFilePath = path.join(projectPath, 'pom.xml')
-    if (fs.existsSync(mavenBuildFilePath)) {
+    if (await fsCommon.exists(mavenBuildFilePath)) {
         return BuildSystem.Maven
     }
     const gradleBuildFilePath = path.join(projectPath, 'build.gradle')
-    if (fs.existsSync(gradleBuildFilePath)) {
+    if (await fsCommon.exists(gradleBuildFilePath)) {
         return BuildSystem.Gradle
     }
     return BuildSystem.Unknown

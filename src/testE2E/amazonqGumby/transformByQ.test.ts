@@ -42,7 +42,7 @@ describe('transformByQ', async function () {
     })
 
     it('WHEN upload payload with missing sha256 in headers THEN fails to upload', async function () {
-        const sha256 = getSha256(zippedCodePath)
+        const sha256 = await getSha256(zippedCodePath)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
@@ -69,7 +69,7 @@ describe('transformByQ', async function () {
     })
 
     it('WHEN createUploadUrl THEN URL uses HTTPS and sets 60 second expiration', async function () {
-        const sha256 = getSha256(zippedCodePath)
+        const sha256 = await getSha256(zippedCodePath)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,

@@ -211,6 +211,13 @@ describe('FileSystem', function () {
         })
     })
 
+    describe('safeDelete()', function () {
+        it('does not throw error when deleting a non-existant path', async function () {
+            const dirPath = createTestPath('thingToDelete')
+            assert.doesNotThrow(async () => await fsCommon.delete(dirPath))
+        })
+    })
+
     describe('stat()', function () {
         it('gets stat of a file', async function () {
             const filePath = await makeFile('test.txt', 'hello world')
