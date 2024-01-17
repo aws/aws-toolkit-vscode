@@ -7,6 +7,8 @@ env:
     # For "pipefail".
     shell: bash
     variables:
+        # Set a fixed timezone for tests. Intentionally _not_ UTC.
+        TZ: 'US/Pacific'
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
 
 phases:

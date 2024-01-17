@@ -11,7 +11,10 @@ import {
     truncate,
     truncateProps,
     indent,
+    formatLocalized,
+    formatDateTimestamp,
 } from '../../../shared/utilities/textUtilities'
+import globals from '../../../shared/extensionGlobals'
 
 describe('textUtilities', async function () {
     it('truncateProps()', async function () {
@@ -67,6 +70,18 @@ describe('textUtilities', async function () {
         assert.deepStrictEqual(indent('abc\n 123\n', 2, true), '  abc\n  123\n')
         assert.deepStrictEqual(indent('   abc\n\n  \n123\nfoo\n', 4, false), '       abc\n\n      \n    123\n    foo\n')
         assert.deepStrictEqual(indent('   abc\n\n    \n123\nfoo\n', 4, true), '    abc\n\n    \n    123\n    foo\n')
+    })
+
+    it('formatLocalized()', async function () {
+        const d = new globals.clock.Date(globals.clock.Date.UTC(2013, 11, 17, 3, 24, 0))
+        assert.deepStrictEqual(formatLocalized(d, false), 'Dec 16, 2013 7:24:00 PM GMT-8')
+        assert.deepStrictEqual(formatLocalized(d, true), 'Dec 16, 2013 7:24:00 PM PST')
+    })
+
+    it('formatDateTimestamp()', async function () {
+        const d = new globals.clock.Date(globals.clock.Date.UTC(2013, 11, 17, 3, 24, 0))
+        assert.deepStrictEqual(formatDateTimestamp(true, d), '2013-12-17T03:24:00.000-08:00')
+        assert.deepStrictEqual(formatDateTimestamp(false, d), '2013-12-16T19:24:00.000+00:00')
     })
 })
 
