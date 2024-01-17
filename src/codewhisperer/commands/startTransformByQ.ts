@@ -9,7 +9,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
-import { transformByQState, StepProgress, DropdownStep, TransformByQReviewStatus } from '../models/model'
+import { transformByQState, StepProgress, TransformByQReviewStatus } from '../models/model'
 import {
     throwIfCancelled,
     startJob,
@@ -24,7 +24,6 @@ import {
     validateProjectSelection,
 } from '../service/transformByQHandler'
 import { QuickPickItem } from 'vscode'
-import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
@@ -73,38 +72,25 @@ interface UserInputState {
     project: QuickPickItem
 }
 
-async function collectInputs(validProjects: vscode.QuickPickItem[] | undefined) {
-    // const targetLanguages: QuickPickItem[] = CodeWhispererConstants.targetLanguages.map(label => ({ label }))
+async function collectInput(validProjects: vscode.QuickPickItem[]) {
     const state = {} as Partial<UserInputState>
-    // only supporting target language of Java and target version of JDK17 for now, so skip to pickModule prompt
     transformByQState.setTargetJDKVersionToJDK17()
-    await MultiStepInputFlowController.run(input => pickProject(input, state, validProjects))
-    // await MultiStepInputFlowController.run(input => pickTargetLanguage(input, state, targetLanguages, validModules))
-    return state as UserInputState
-}
-
-async function pickProject(
-    input: MultiStepInputFlowController,
-    state: Partial<UserInputState>,
-    validProjects: vscode.QuickPickItem[] | undefined
-) {
-    const pick = await input.showQuickPick({
+    const pick = await vscode.window.showQuickPick(validProjects, {
         title: CodeWhispererConstants.transformByQWindowTitle,
-        step: DropdownStep.STEP_1,
-        totalSteps: DropdownStep.STEP_1,
-        placeholder: CodeWhispererConstants.selectModulePrompt,
-        items: validProjects!,
-        shouldResume: () => Promise.resolve(false),
+        placeHolder: CodeWhispererConstants.selectModulePrompt,
     })
-    state.project = pick
-    transformByQState.setProjectName(encodeHTML(state.project.label)) // encode to avoid HTML injection risk
+    if (pick) {
+        state.project = pick
+        transformByQState.setProjectName(encodeHTML(state.project.label)) // encode to avoid HTML injection risk
+    }
+    return state as UserInputState
 }
 
 export async function startTransformByQ() {
     let intervalId = undefined
 
-    // 1: Validate inputs. If failed, Error will be thrown and execution stops
-    const userInputState = await validateTransformJob()
+    // Validate inputs. If failed, Error will be thrown and execution stops
+    const userInputState = await validateTransformationJob()
 
     // Set the default state variables for our store and the UI
     await setTransformationToRunningState(userInputState)
@@ -119,29 +105,28 @@ export async function startTransformByQ() {
         }, CodeWhispererConstants.progressIntervalMs)
 
         // step 1: CreateCodeUploadUrl and upload code
-        const uploadId = await preTransformUploadCode(userInputState)
+        const uploadId = await preTransformationUploadCode(userInputState)
 
         // step 2: StartJob and store the returned jobId in TransformByQState
-        const jobId = await transformStartJob(uploadId)
+        const jobId = await startTransformationJob(uploadId)
 
         // step 3 (intermediate step): show transformation-plan.md file
-        // TO-DO: on IDE restart, resume here if a job was ongoing
-        await pollTransformationStatusTillPlanReady(jobId)
+        await pollTransformationStatusUntilPlanReady(jobId)
 
         // step 4: poll until artifacts are ready to download
-        const status = await pollTransformationTillComplete(jobId)
+        const status = await pollTransformationStatusUntilComplete(jobId)
 
         // Set the result state variables for our store and the UI
         await finalizeTransformationJob(status)
     } catch (error: any) {
-        await modernizationJobErrorHandler(error)
+        await transformationJobErrorHandler(error)
     } finally {
-        await postTransformJob(userInputState)
-        await cleanupTransformJob(intervalId)
+        await postTransformationJob(userInputState)
+        await cleanupTransformationJob(intervalId)
     }
 }
 
-export async function preTransformUploadCode(userInputState: UserInputState) {
+export async function preTransformationUploadCode(userInputState: UserInputState) {
     await vscode.commands.executeCommand('aws.amazonq.refresh')
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
@@ -173,7 +158,7 @@ export async function preTransformUploadCode(userInputState: UserInputState) {
     return uploadId
 }
 
-export async function transformStartJob(uploadId: string) {
+export async function startTransformationJob(uploadId: string) {
     let jobId = ''
     try {
         jobId = await startJob(uploadId)
@@ -197,7 +182,7 @@ export async function transformStartJob(uploadId: string) {
     return jobId
 }
 
-export async function pollTransformationStatusTillPlanReady(jobId: string) {
+export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     try {
         await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForGettingPlan)
     } catch (error) {
@@ -223,7 +208,7 @@ export async function pollTransformationStatusTillPlanReady(jobId: string) {
     throwIfCancelled()
 }
 
-export async function pollTransformationTillComplete(jobId: string) {
+export async function pollTransformationStatusUntilComplete(jobId: string) {
     let status = ''
     try {
         status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
@@ -260,7 +245,7 @@ export async function finalizeTransformationJob(status: string) {
     sessionPlanProgress['returnCode'] = StepProgress.Succeeded
 }
 
-export async function validateTransformJob() {
+export async function validateTransformationJob() {
     let openProjects: vscode.QuickPickItem[] = []
     try {
         openProjects = await getOpenProjects()
@@ -268,7 +253,11 @@ export async function validateTransformJob() {
         getLogger().error('Failed to get open projects: ', err)
         throw err
     }
-    const userInputState = await collectInputs(openProjects)
+    const userInputState = await collectInput(openProjects)
+
+    if (!userInputState.project) {
+        throw new ToolkitError('No project selected', { code: 'NoProjectSelected' })
+    }
 
     try {
         await validateProjectSelection(userInputState.project)
@@ -333,7 +322,7 @@ export async function setTransformationToRunningState(userInputState: UserInputS
     await vscode.commands.executeCommand('aws.amazonq.refresh')
 }
 
-export async function postTransformJob(userInputState: UserInputState) {
+export async function postTransformationJob(userInputState: UserInputState) {
     await vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
     const durationInMs = calculateTotalLatency(codeTransformTelemetryState.getStartTime())
     const resultStatusMessage = codeTransformTelemetryState.getResultStatus()
@@ -368,7 +357,7 @@ export async function postTransformJob(userInputState: UserInputState) {
     }
 }
 
-export async function modernizationJobErrorHandler(error: any) {
+export async function transformationJobErrorHandler(error: any) {
     if (transformByQState.isCancelled()) {
         codeTransformTelemetryState.setResultStatus('JobCancelled')
         try {
@@ -403,7 +392,7 @@ export async function modernizationJobErrorHandler(error: any) {
     getLogger().error('Amazon Q Code Transform', error)
 }
 
-export async function cleanupTransformJob(intervalId: NodeJS.Timeout | undefined) {
+export async function cleanupTransformationJob(intervalId: NodeJS.Timeout | undefined) {
     clearInterval(intervalId)
     transformByQState.setJobDefaults()
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)

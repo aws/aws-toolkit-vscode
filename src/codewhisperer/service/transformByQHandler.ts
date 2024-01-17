@@ -18,7 +18,7 @@ import { spawnSync } from 'child_process'
 import AdmZip from 'adm-zip'
 import fetch from '../../common/request'
 import globals from '../../shared/extensionGlobals'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { CodeTransformMavenBuildCommand, telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
@@ -310,12 +310,24 @@ function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string
     return files
 }
 
-function getProjectDependencies(modulePath: string): string[] {
+function getProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, modulePath: string): string[] {
     // Make temp directory
     const folderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
     const folderPath = path.join(os.tmpdir(), folderName)
 
-    const baseCommand = 'mvn'
+    let baseCommand = buildCommand as string
+    if (baseCommand === 'mvnw') {
+        baseCommand = './mvnw'
+        if (os.platform() === 'win32') {
+            baseCommand = './mvnw.cmd'
+        }
+        const executableName = baseCommand.substring(2) // remove the './' part
+        const executablePath = path.join(modulePath, executableName)
+        if (!fs.existsSync(executablePath)) {
+            throw new ToolkitError('Maven Wrapper not found', { code: 'MavenWrapperNotFound' })
+        }
+    }
+
     const args = [
         'dependency:copy-dependencies',
         '-DoutputDirectory=' + folderPath,
@@ -326,8 +338,7 @@ function getProjectDependencies(modulePath: string): string[] {
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
-        getLogger().error('CodeTransform: Error in running Maven command = ')
+        getLogger().error(`CodeTransform: Error in running Maven command ${baseCommand} = `)
         // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
         if (spawnResult.error) {
             getLogger().error(spawnResult.error)
@@ -336,7 +347,7 @@ function getProjectDependencies(modulePath: string): string[] {
         }
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformMavenBuildCommand: baseCommand,
+            codeTransformMavenBuildCommand: buildCommand,
             result: MetadataResult.Fail,
             reason: spawnResult.error ? spawnResult.error.message : spawnResult.stdout,
         })
@@ -357,13 +368,28 @@ export async function zipCode(modulePath: string) {
     let dependencyFolderInfo: string[] = []
     let mavenFailed = false
     try {
-        dependencyFolderInfo = getProjectDependencies(modulePath)
+        dependencyFolderInfo = getProjectDependencies('mvn', modulePath)
     } catch (err) {
         mavenFailed = true
     }
 
-    const dependencyFolderPath = !mavenFailed ? dependencyFolderInfo[0] : ''
-    const dependencyFolderName = !mavenFailed ? dependencyFolderInfo[1] : ''
+    let mavenWrapperFailed = false
+    if (mavenFailed) {
+        try {
+            dependencyFolderInfo = getProjectDependencies('mvnw', modulePath)
+        } catch (err) {
+            mavenWrapperFailed = true
+        }
+    }
+
+    const copyDependenciesFailed = mavenFailed && mavenWrapperFailed
+
+    if (copyDependenciesFailed) {
+        void vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
+    }
+
+    const dependencyFolderPath = !copyDependenciesFailed ? dependencyFolderInfo[0] : ''
+    const dependencyFolderName = !copyDependenciesFailed ? dependencyFolderInfo[1] : ''
 
     throwIfCancelled()
 
@@ -379,11 +405,11 @@ export async function zipCode(modulePath: string) {
     throwIfCancelled()
 
     let dependencyFiles: string[] = []
-    if (!mavenFailed && fs.existsSync(dependencyFolderPath)) {
+    if (!copyDependenciesFailed && fs.existsSync(dependencyFolderPath)) {
         dependencyFiles = getFilesRecursively(dependencyFolderPath, true)
     }
 
-    if (!mavenFailed && dependencyFiles.length > 0) {
+    if (!copyDependenciesFailed && dependencyFiles.length > 0) {
         for (const file of dependencyFiles) {
             const relativePath = path.relative(dependencyFolderPath, file)
             const paddedPath = path.join(`dependencies/${dependencyFolderName}`, relativePath)
@@ -403,18 +429,18 @@ export async function zipCode(modulePath: string) {
 
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
     fs.writeFileSync(tempFilePath, zip.toBuffer())
-    if (!mavenFailed) {
+    if (!copyDependenciesFailed) {
         fs.rmSync(dependencyFolderPath, { recursive: true, force: true })
     }
 
     // for now, use the pass/fail status of the maven command to determine this metric status
-    const mavenStatus = mavenFailed ? MetadataResult.Fail : MetadataResult.Pass
+    const mavenStatus = copyDependenciesFailed ? MetadataResult.Fail : MetadataResult.Pass
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
         codeTransformTotalByteSize: (await fs.promises.stat(tempFilePath)).size,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
         result: mavenStatus,
-        reason: mavenFailed ? 'MavenCommandFailed' : undefined,
+        reason: copyDependenciesFailed ? 'MavenCommandsFailed' : undefined,
     })
     return tempFilePath
 }

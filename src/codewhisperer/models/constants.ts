@@ -289,7 +289,7 @@ export const selectTargetVersionPrompt = 'Select the target version'
 
 export const selectModulePrompt = 'Select the module you want to transform'
 
-export const transformByQWindowTitle = 'Transform'
+export const transformByQWindowTitle = 'Amazon Q CodeTransformation'
 
 export const stopTransformByQMessage = 'Stop Transformation?'
 
