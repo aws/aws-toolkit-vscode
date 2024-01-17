@@ -66,11 +66,11 @@ export class Messenger {
     }
 
     getCommands() {
-        return this.getStore().quickActionCommands ?? []
+        return [...(this.getStore().quickActionCommands ?? [])]
     }
 
     getChatItems() {
-        return this.getStore().chatItems ?? []
+        return [...(this.getStore().chatItems ?? [])]
     }
 
     async waitForChatFinishesLoading() {

@@ -10,7 +10,7 @@ import { FollowUpTypes } from '../../amazonqFeatureDev/types'
 import sinon from 'sinon'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { verifyTextOrder } from './framework/text'
-import { examples } from '../../amazonqFeatureDev/text'
+import { examples } from '../../amazonqFeatureDev/userFacingText'
 import * as authUtil from '../../codewhisperer/util/authUtil'
 
 describe('Amazon Q Feature Dev', function () {

@@ -3,29 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { JSDOM } from 'jsdom'
-/**
- * JSDOM is used to help hoist MynahUI to running in a node environment vs in the browser (which is what it's made for)
- */
-const dom = new JSDOM(undefined, {
-    pretendToBeVisual: true,
-    includeNodeLocations: true,
-})
-global.window = dom.window as unknown as Window & typeof globalThis
-global.document = dom.window.document
-global.self = dom.window as unknown as Window & typeof globalThis
-global.Element = dom.window.Element
-global.HTMLElement = dom.window.HTMLElement
+import { injectJSDOM } from './jsdomInjector'
 
-// jsdom doesn't have support for innerText: https://github.com/jsdom/jsdom/issues/1245 which mynah ui uses
-Object.defineProperty(global.Element.prototype, 'innerText', {
-    get() {
-        return this.textContent
-    },
-})
-
-// jsdom doesn't have support for structuredClone. See https://github.com/jsdom/jsdom/issues/3363
-global.structuredClone = val => JSON.parse(JSON.stringify(val))
+// This needs to be ran before all other imports so that mynah ui gets loaded inside of jsdom
+injectJSDOM()
 
 import * as vscode from 'vscode'
 import { createMynahUI } from '../../../amazonq/webview/ui/main'
