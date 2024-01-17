@@ -22,6 +22,7 @@ describe('onInlineAcceptance', function () {
     describe('onInlineAcceptance', function () {
         beforeEach(async function () {
             await resetCodeWhispererGlobalVariables()
+            session.reset()
         })
 
         afterEach(function () {
