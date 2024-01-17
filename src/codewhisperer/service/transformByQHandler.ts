@@ -366,19 +366,19 @@ export async function zipCode(modulePath: string) {
     throwIfCancelled()
 
     let dependencyFolderInfo: string[] = []
-    let mavenFailed = false
+    let mavenWrapperFailed = false
     try {
-        dependencyFolderInfo = getProjectDependencies('mvn', modulePath)
+        dependencyFolderInfo = getProjectDependencies('mvnw', modulePath)
     } catch (err) {
-        mavenFailed = true
+        mavenWrapperFailed = true
     }
 
-    let mavenWrapperFailed = false
-    if (mavenFailed) {
+    let mavenFailed = false
+    if (mavenWrapperFailed) {
         try {
-            dependencyFolderInfo = getProjectDependencies('mvnw', modulePath)
+            dependencyFolderInfo = getProjectDependencies('mvn', modulePath)
         } catch (err) {
-            mavenWrapperFailed = true
+            mavenFailed = true
         }
     }
 
