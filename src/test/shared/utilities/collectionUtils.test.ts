@@ -703,5 +703,14 @@ describe('CollectionUtils', async function () {
 
             assert.deepStrictEqual(sut.elements(), [])
         })
+
+        it('should remove the specified object from the cache', function () {
+            sut.add('foo')
+            sut.add('bar')
+            sut.add('baz')
+            sut.remove('bar')
+
+            assert.deepStrictEqual(sut.elements(), ['baz', 'foo'])
+        })
     })
 })
