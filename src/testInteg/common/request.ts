@@ -4,12 +4,12 @@
  */
 
 import { endpointsFileUrl } from '../../shared/constants'
-import fetch from '../../common/request'
+import request from '../../common/request'
 import assert from 'assert'
 
 describe('fetch()', function () {
     it('makes a fetch request', async function () {
-        const response = await fetch('GET', endpointsFileUrl).response
+        const response = await request.fetch('GET', endpointsFileUrl).response
         assert.strictEqual(response.ok, true)
         assert.strictEqual(response.status, 200)
     })

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import fetch from '../common/request'
+import request from '../common/request'
 import { ApplicationComposer } from './composerWebview'
 import { getLogger } from '../shared/logger'
 
@@ -34,7 +34,7 @@ export class ApplicationComposerManager {
 
     private async fetchWebviewHtml() {
         const source = isLocalDev ? localhost : cdn
-        const response = await fetch('GET', `${source}/index.html`).response
+        const response = await request.fetch('GET', `${source}/index.html`).response
         this.webviewHtml = await response.text()
         for (const visualization of this.managedVisualizations.values()) {
             await visualization.refreshPanel(this.extensionContext)

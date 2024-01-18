@@ -6,7 +6,6 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import * as got from 'got'
 import * as semver from 'semver'
 import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import * as startSecurityScan from '../../../codewhisperer/commands/startSecurityScan'
@@ -21,7 +20,6 @@ import { HttpResponse } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { cancel } from '../../../shared/localizedText'
-import { sleep } from '../../../shared/utilities/timeoutUtils'
 import {
     codeScanLogsOutputChannelId,
     showScannedFilesMessage,
@@ -29,6 +27,7 @@ import {
 } from '../../../codewhisperer/models/constants'
 import * as model from '../../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.gen'
+import { getFetchStubWithResponse } from '../../common/request.test'
 
 const mockCreateCodeScanResponse = {
     $response: {
@@ -177,7 +176,7 @@ describe('startSecurityScan', function () {
     })
 
     it('Should render security scan result', async function () {
-        sinon.stub(got, 'default').resolves({ statusCode: 200 })
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
 
@@ -194,11 +193,7 @@ describe('startSecurityScan', function () {
     })
 
     it('Should stop security scan', async function () {
-        sinon.stub(got, 'default').callsFake(() => {
-            return sleep(1000).then(() => {
-                return { statusCode: 200 }
-            }) as any
-        })
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
         const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
         const testWindow = getTestWindow()
@@ -223,11 +218,7 @@ describe('startSecurityScan', function () {
     })
 
     it('Should not stop security scan when not confirmed', async function () {
-        sinon.stub(got, 'default').callsFake(() => {
-            return sleep(1000).then(() => {
-                return { statusCode: 200 }
-            }) as any
-        })
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
         const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
         const testWindow = getTestWindow()
@@ -256,7 +247,7 @@ describe('startSecurityScan', function () {
             this.skip()
         }
         const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
-        sinon.stub(got, 'default').resolves({ statusCode: 200 })
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const testWindow = getTestWindow()
         testWindow.onDidShowMessage(message => {
             if (message.message.includes('Security scan completed')) {
