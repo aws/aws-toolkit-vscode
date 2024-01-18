@@ -9,9 +9,6 @@ env:
         # VSCODE_TEST_VERSION
         # GITHUB_READONLY_TOKEN
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
-        # Set a fixed timezone for tests. Intentionally _not_ UTC.
-        TZ: 'US/Pacific'
-        NO_COVERAGE: 'true'
         # Suppress noisy apt-get/dpkg warnings like "debconf: unable to initialize frontend: Dialog").
         DEBIAN_FRONTEND: 'noninteractive'
 
