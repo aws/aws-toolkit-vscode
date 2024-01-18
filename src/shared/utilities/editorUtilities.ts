@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as _path from 'path'
 import { Settings } from '../settings'
+import { MRUList } from './collectionUtils'
 
 const defaultTabSize = 4
 
@@ -55,3 +56,30 @@ export async function getOpenFilesInWindow(
         return filesOpenedInEditor
     }
 }
+
+/**
+ * Unlike the support of accessing open files(tabs) in the workspace which are sorted by visual order (from left to right).
+ * VSCode doesn't expose its API to access most recently used/viewed files (functionality of pressing ctrl + tab https://github.com/microsoft/vscode/blob/main/src/vs/workbench/browser/parts/editor/editorQuickAccess.ts#L193)
+ * Thus having this cache object as the workaround before VSCode exposes the API.
+ *
+ * The subscription of users action events (onDidClose, onDidChangeTextEditorSelection) is done in [extension.ts]
+ */
+class MRUDocumentCache extends MRUList<vscode.TextDocument> {
+    readonly onDidChangeTextEditorSelection: vscode.Disposable = vscode.window.onDidChangeTextEditorSelection(
+        async e => {
+            const editor = e.textEditor
+            // Note: Do not store editors in the MRU cache because editors will have different object reference even if the document is the same
+            if (editor) {
+                this.add(editor.document)
+            }
+        }
+    )
+
+    readonly onDidCloseTextDocument: vscode.Disposable = vscode.workspace.onDidCloseTextDocument(e => {
+        this.remove(e)
+    })
+
+    static readonly mruDocumentCacheSize = 20
+}
+
+export const MRUDocuments = new MRUDocumentCache(MRUDocumentCache.mruDocumentCacheSize)

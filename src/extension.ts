@@ -78,6 +78,7 @@ import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
 import { showQuickStartWebview } from './shared/extensionStartup'
+import { MRUDocuments } from './shared/utilities/editorUtilities'
 
 let localize: nls.LocalizeFunc
 
@@ -188,7 +189,11 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         registerCommands(context)
-        context.subscriptions.push(submitFeedback.register(context))
+        context.subscriptions.push(
+            submitFeedback.register(context),
+            MRUDocuments.onDidChangeTextEditorSelection,
+            MRUDocuments.onDidCloseTextDocument
+        )
 
         // do not enable codecatalyst for sagemaker
         // TODO: remove setContext if SageMaker adds the context to their IDE
