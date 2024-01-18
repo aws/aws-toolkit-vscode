@@ -4403,6 +4403,11 @@
         "xml2js": "^0.6.1",
         "yaml-cfn": "^0.3.2"
     },
+    "overrides": {
+        "webfont": {
+            "xml2js": "0.5.0"
+        }
+    },
     "prettier": {
         "printWidth": 120,
         "trailingComma": "es5",
