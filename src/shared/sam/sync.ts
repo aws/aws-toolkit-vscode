@@ -45,7 +45,7 @@ import { samSyncUrl, samInitDocUrl, samUpgradeUrl, credentialHelpUrl } from '../
 import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showMessageWithUrl, showOnce } from '../utilities/messages'
-import { IamConnection, StatefulConnection } from '../../auth/connection'
+import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { promptAndUseConnection } from '../../auth/utils'
 
