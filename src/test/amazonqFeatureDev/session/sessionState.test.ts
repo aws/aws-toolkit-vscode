@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import sinon from 'sinon'
-import * as got from 'got'
 import { RefinementState, PrepareRefinementState } from '../../../amazonqFeatureDev/session/sessionState'
 import { SessionStateConfig, SessionStateAction } from '../../../amazonqFeatureDev/types'
 import { Messenger } from '../../../amazonqFeatureDev/controllers/chat/messenger/messenger'
@@ -16,6 +15,7 @@ import { FeatureDevClient } from '../../../amazonqFeatureDev/client/featureDev'
 import { PrepareRepoFailedError } from '../../../amazonqFeatureDev/errors'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 import { assertTelemetry } from '../../testUtil'
+import { getFetchStubWithResponse } from '../../common/request.test'
 
 const mockSessionStateAction = (msg?: string): SessionStateAction => {
     return {
@@ -75,7 +75,7 @@ describe('sessionState', () => {
             sinon.stub(vscode.workspace, 'findFiles').resolves([])
             mockCreateUploadUrl = sinon.stub().resolves({ uploadId: '', uploadUrl: '' })
             mockGeneratePlan = sinon.stub().resolves(testApproach)
-            sinon.stub(got, 'default').resolves({ statusCode: 200 })
+            getFetchStubWithResponse({ status: 200 })
 
             const testAction = mockSessionStateAction()
             await new PrepareRefinementState(testConfig, testApproach, tabId).interact(testAction)
