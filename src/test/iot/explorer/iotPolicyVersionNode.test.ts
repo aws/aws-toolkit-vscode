@@ -14,7 +14,7 @@ import { formatLocalized } from '../../../shared/utilities/textUtilities'
 describe('IotPolicyVersionNode', function () {
     const policyName = 'policy'
     const expectedPolicy: IotPolicy = { name: policyName, arn: 'arn' }
-    const createDate = new Date(2021, 1, 1)
+    const createDate = new Date(Date.UTC(2021, 1, 1)) // Feb 1 UTC = Jan 31 PDT
     const createDateFormatted = formatLocalized(createDate)
     const policyVersion: Iot.PolicyVersion = { versionId: 'V1', isDefaultVersion: true, createDate }
     const nonDefaultVersion: Iot.PolicyVersion = { versionId: 'V2', isDefaultVersion: false, createDate }
