@@ -35,8 +35,8 @@ The second log event
 
         const { text, streamIdMap } = generateTextFromLogEvents(events, { timestamps: true })
 
-        const expectedText = `1970-01-20T09:24:11.113+00:00\tThe first log event
-1970-01-20T09:24:11.114+00:00\tThe second log event
+        const expectedText = `1970-01-20T09:24:11.113-08:00\tThe first log event
+1970-01-20T09:24:11.114-08:00\tThe second log event
 `
         const expectedStreamIdMap = new Map([
             [0, 'stream1'],
@@ -58,8 +58,8 @@ The second log event
 
         const { text, streamIdMap } = generateTextFromLogEvents(events, { timestamps: true })
 
-        const expectedText = `1970-01-20T09:24:11.113+00:00\tThe first log event
-1970-01-20T09:24:11.114+00:00\tThe second log event
+        const expectedText = `1970-01-20T09:24:11.113-08:00\tThe first log event
+1970-01-20T09:24:11.114-08:00\tThe second log event
 ${timestampSpaceEquivalent}\twith another line
 ${timestampSpaceEquivalent}\tand another
 `

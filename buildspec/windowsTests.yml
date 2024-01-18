@@ -2,6 +2,8 @@ version: 0.2
 env:
     variables:
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
+        # Set a fixed timezone for tests. Intentionally _not_ UTC.
+        TZ: 'US/Pacific'
 phases:
     install:
         runtime-versions:
