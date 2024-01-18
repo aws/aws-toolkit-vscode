@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "codelens in cloudformation templates to open application composer"
+	"description": "ApplicationComposer: create CodeLens in cloudformation templates to open Application Composer"
 }
