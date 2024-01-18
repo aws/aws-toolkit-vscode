@@ -538,6 +538,13 @@ export class MRUList<T> {
         this.internalList.splice(0, this.internalList.length)
     }
 
+    remove(element: T) {
+        const index = this.internalList.indexOf(element)
+        if (index !== -1) {
+            this.internalList.splice(index, 1)
+        }
+    }
+
     private trimToSize() {
         while (this.internalList.length > this.maxSize) {
             this.internalList.splice(this.internalList.length - 1, 1)
