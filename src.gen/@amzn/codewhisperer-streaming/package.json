@@ -38,7 +38,7 @@
         "@smithy/invalid-dependency": "^2.0.10",
         "@smithy/middleware-content-length": "^2.0.12",
         "@smithy/middleware-retry": "^2.0.13",
-        "@smithy/middleware-serde": "^2.0.10",
+        "@smithy/middleware-serde": "^2.1.0",
         "@smithy/middleware-stack": "^2.0.4",
         "@smithy/node-config-provider": "^2.0.13",
         "@smithy/node-http-handler": "^2.1.6",
