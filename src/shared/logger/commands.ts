@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { Logger } from '.'
 import { telemetry } from '../telemetry/telemetry'
 import { Commands } from '../vscode/commands2'
+import { getLogger } from './logger'
 
 function revealLines(editor: vscode.TextEditor, start: number, end: number): void {
     const startPos = editor.document.lineAt(start).range.start
@@ -45,7 +46,9 @@ export class Logging {
         // HACK: editor.document.getText() may return "stale" content, then
         // subsequent calls to openLogId() fail to highlight the specific log.
         // Invoke "revert" on the current file to force vscode to read from disk.
-        await vscode.commands.executeCommand('workbench.action.files.revert')
+        await vscode.commands.executeCommand('workbench.action.files.revert').then(undefined, (e: Error) => {
+            getLogger().warn('command failed: "workbench.action.files.revert"')
+        })
 
         // Retrieve where the message starts by counting number of newlines
         const text = editor.document.getText()
