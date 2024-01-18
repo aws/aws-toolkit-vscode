@@ -29,7 +29,7 @@
         "@aws-sdk/types": "3.489.0",
         "@aws-sdk/util-user-agent-browser": "3.489.0",
         "@aws-sdk/util-user-agent-node": "3.489.0",
-        "@smithy/config-resolver": "^2.0.11",
+        "@smithy/config-resolver": "^2.1.0",
         "@smithy/eventstream-serde-browser": "^2.0.10",
         "@smithy/eventstream-serde-config-resolver": "^2.0.10",
         "@smithy/eventstream-serde-node": "^2.0.10",
