@@ -8,7 +8,6 @@ import fs from 'fs-extra'
 import {
     DiffModel,
     AddedChangeNode,
-    RemovedChangeNode,
     ModifiedChangeNode,
 } from '../../../codewhisperer/service/transformationResultsViewProvider'
 import path from 'path'
@@ -26,7 +25,6 @@ describe('DiffModel', function () {
         const testDiffModel = new DiffModel()
 
         const workspacePath = 'workspace'
-        const tmpPath = 'tmp'
 
         sinon.replace(fs, 'existsSync', path => {
             const pathStr = path.toString()
@@ -37,7 +35,7 @@ describe('DiffModel', function () {
             return true
         })
 
-        testDiffModel.parseDiff(getTestFilePath('resources/addedFile.diff'), tmpPath, workspacePath)
+        testDiffModel.parseDiff(getTestFilePath('resources/addedFile.diff'), workspacePath)
 
         assert.strictEqual(testDiffModel.changes.length, 1)
         const change = testDiffModel.changes[0]
@@ -45,38 +43,14 @@ describe('DiffModel', function () {
         assert.strictEqual(change instanceof AddedChangeNode, true)
     })
 
-    it('WHEN parsing a diff patch where a file was removed THEN returns an array representing the removed file', async function () {
-        const testDiffModel = new DiffModel()
-
-        const workspacePath = 'workspace'
-        const tmpPath = 'tmp'
-
-        sinon.replace(fs, 'existsSync', path => {
-            const pathStr = path.toString()
-            if (pathStr.includes(workspacePath)) {
-                return true
-            }
-
-            return false
-        })
-
-        testDiffModel.parseDiff(getTestFilePath('resources/removedFile.diff'), tmpPath, workspacePath)
-
-        assert.strictEqual(testDiffModel.changes.length, 1)
-        const change = testDiffModel.changes[0]
-
-        assert.strictEqual(change instanceof RemovedChangeNode, true)
-    })
-
     it('WHEN parsing a diff patch where a file was modified THEN returns an array representing the modified file', async function () {
         const testDiffModel = new DiffModel()
 
         const workspacePath = 'workspace'
-        const tmpPath = 'tmp'
 
         sinon.replace(fs, 'existsSync', path => true)
 
-        testDiffModel.parseDiff(getTestFilePath('resources/modifiedFile.diff'), tmpPath, workspacePath)
+        testDiffModel.parseDiff(getTestFilePath('resources/modifiedFile.diff'), workspacePath)
 
         assert.strictEqual(testDiffModel.changes.length, 1)
         const change = testDiffModel.changes[0]
