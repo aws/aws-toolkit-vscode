@@ -21,6 +21,8 @@ jobs:
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
+            # Set a fixed timezone for tests. Intentionally _not_ UTC.
+            TZ: 'US/Pacific'
         steps:
             - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
@@ -64,6 +66,8 @@ jobs:
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
+            # Set a fixed timezone for tests. Intentionally _not_ UTC.
+            TZ: 'US/Pacific'
         steps:
             - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}

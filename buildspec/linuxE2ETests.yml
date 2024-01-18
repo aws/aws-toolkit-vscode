@@ -5,6 +5,8 @@ run-as: codebuild-user
 
 env:
     variables:
+        # Set a fixed timezone for tests. Intentionally _not_ UTC.
+        TZ: 'US/Pacific'
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
         NO_COVERAGE: 'true'
         # Suppress noisy apt-get/dpkg warnings like "debconf: unable to initialize frontend: Dialog").
