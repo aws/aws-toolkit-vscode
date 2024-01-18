@@ -11,6 +11,10 @@ import { runTests } from '@vscode/test-electron'
 import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
 import { TestOptions } from '@vscode/test-electron/out/runTest'
 
+// Set a fixed timezone. Intentionally _not_ UTC, to increase variation in tests.
+process.env.TZ = 'US/Pacific'
+// process.env.TZ = 'Europe/London'
+
 const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
 
 const stable = 'stable'

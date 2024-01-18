@@ -37,10 +37,6 @@ let openExternalStub: sinon.SinonStub<Parameters<(typeof vscode)['env']['openExt
 // let executeCommandSpy: sinon.SinonSpy | undefined
 
 export async function mochaGlobalSetup(this: Mocha.Runner) {
-    // Set a fixed timezone. Intentionally _not_ UTC, to increase variation in tests.
-    process.env.TZ = 'US/Pacific'
-    // process.env.TZ = 'Europe/London'
-
     // Clean up and set up test logs
     try {
         await remove(testLogOutput)
