@@ -536,7 +536,11 @@ export type SamSyncResult = {
     isSuccess: boolean
 }
 
-async function promptReauth(connection?: StatefulConnection) {
+async function getAuthOrPrompt() {
+    const connection = Auth.instance.activeConnection
+    if (connection?.type === 'iam' && connection.state === 'valid') {
+        return connection
+    }
     let errorMessage = localize(
         'aws.sam.sync.authModal.message',
         'Syncing requires authentication with IAM credentials.'
@@ -549,11 +553,10 @@ async function promptReauth(connection?: StatefulConnection) {
             ) + errorMessage
     }
     const acceptMessage = localize('aws.sam.sync.authModal.accept', 'Authenticate with IAM credentials')
-    const docMessage = localize('aws.sam.sync.authModal.docLink', 'Open documentation')
     const modalResponse = await showMessageWithUrl(
         errorMessage,
         credentialHelpUrl,
-        docMessage,
+        localizedText.viewDocs,
         'info',
         [acceptMessage],
         true
@@ -562,6 +565,7 @@ async function promptReauth(connection?: StatefulConnection) {
         return
     }
     await promptAndUseConnection(Auth.instance, 'iam-only')
+    return Auth.instance.activeConnection
 }
 
 export function registerSync() {
@@ -572,15 +576,11 @@ export function registerSync() {
     ): Promise<SamSyncResult> {
         telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly' })
 
-        let connection = Auth.instance.activeConnection
+        const connection = await getAuthOrPrompt()
         if (connection?.type !== 'iam' || connection?.state !== 'valid') {
-            await promptReauth(connection)
-            connection = Auth.instance.activeConnection
-            if (connection?.type !== 'iam' || connection?.state !== 'valid') {
-                throw new ToolkitError('Syncing SAM applications requires IAM credentials', {
-                    code: 'NoIAMCredentials',
-                })
-            }
+            throw new ToolkitError('Syncing SAM applications requires IAM credentials', {
+                code: 'NoIAMCredentials',
+            })
         }
 
         // Constructor of `vscode.Uri` is marked private but that shouldn't matter when checking the instance type
