@@ -4320,7 +4320,7 @@
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
         "file-loader": "^6.2.0",
-        "glob": "^7.1.7",
+        "glob": "^10.3.10",
         "husky": "^7.0.2",
         "json-schema-to-typescript": "^13.1.1",
         "marked": "^11.1.1",
