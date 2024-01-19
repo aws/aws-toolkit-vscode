@@ -365,6 +365,7 @@ export class ProposedTransformationExplorer {
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
                 )
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
+                await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', true)
 
                 // This metric is only emitted when placed before showInformationMessage
                 telemetry.codeTransform_vcsDiffViewerVisible.emit({
