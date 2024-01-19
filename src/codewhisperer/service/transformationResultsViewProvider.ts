@@ -6,7 +6,7 @@
 import AdmZip from 'adm-zip'
 import os from 'os'
 import fs from 'fs-extra'
-import parseDiff from 'parse-diff'
+import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
 
@@ -102,31 +102,6 @@ export class AddedChangeNode extends ProposedChangeNode {
     }
 }
 
-export class RemovedChangeNode extends ProposedChangeNode {
-    readonly pathToOldContents: string
-    override resourcePath: string
-
-    constructor(pathToOldContents: string) {
-        super()
-        this.pathToOldContents = pathToOldContents
-        this.resourcePath = pathToOldContents
-    }
-
-    override generateCommand(): vscode.Command {
-        return {
-            command: 'vscode.open',
-            arguments: [vscode.Uri.file(this.pathToOldContents)],
-            title: 'Removed Change',
-        }
-    }
-    override generateDescription(): string {
-        return 'R'
-    }
-    override saveFile(): void {
-        fs.removeSync(this.pathToOldContents)
-    }
-}
-
 enum ReviewState {
     ToReview,
     Reviewed_Accepted,
@@ -137,19 +112,74 @@ export class DiffModel {
     changes: ProposedChangeNode[] = []
 
     /**
-     *
-     * @param pathToDiff Path to the diff.patch file expected to be located in the archive returned by ExportResultsArchive
-     * @param pathToTmpSrcDir Path to the directory containing changed source files
-     * @param pathToWorkspace Path to the current open workspace directory
-     * @returns
+     * This function creates a copy of the changed files of the user's project so that the diff.patch can be applied to them
+     * @param pathToWorkspace Path to the project that was transformed
+     * @param changedFiles List of files that were changed
+     * @returns Path to the folder containing the copied files
      */
-    public parseDiff(pathToDiff: string, pathToTmpSrcDir: string, pathToWorkspace: string): ProposedChangeNode[] {
-        const diffContents = fs.readFileSync(pathToDiff, 'utf8')
-        const changedFiles = parseDiff(diffContents)
+    public copyProject(pathToWorkspace: string, changedFiles: ParsedDiff[]) {
+        const pathToTmpSrcDir = path.join(os.tmpdir(), `project-copy-${Date.now()}`)
+        fs.mkdirSync(pathToTmpSrcDir)
+        changedFiles.forEach(file => {
+            const pathToTmpFile = path.join(pathToTmpSrcDir, file.oldFileName!.substring(2))
+            // use mkdirsSync to create parent directories in pathToTmpFile too
+            fs.mkdirsSync(path.dirname(pathToTmpFile))
+            const pathToOldFile = path.join(pathToWorkspace, file.oldFileName!.substring(2))
+            // pathToOldFile will not exist for new files such as summary.md
+            if (fs.existsSync(pathToOldFile)) {
+                fs.copyFileSync(pathToOldFile, pathToTmpFile)
+            }
+        })
+        return pathToTmpSrcDir
+    }
 
+    /**
+     * @param pathToDiff Path to the diff.patch file expected to be located in the archive returned by ExportResultsArchive
+     * @param pathToWorkspace Path to the project that was transformed
+     * @returns List of nodes containing the paths of files that were modified, added, or removed
+     */
+    public parseDiff(pathToDiff: string, pathToWorkspace: string): ProposedChangeNode[] {
+        const diffContents = fs.readFileSync(pathToDiff, 'utf8')
+        const changedFiles = parsePatch(diffContents)
+        // path to the directory containing copy of the changed files in the transformed project
+        const pathToTmpSrcDir = this.copyProject(pathToWorkspace, changedFiles)
+        transformByQState.setProjectCopyFilePath(pathToTmpSrcDir)
+
+        applyPatches(changedFiles, {
+            loadFile: function (fileObj, callback) {
+                // load original contents of file
+                const filePath = path.join(pathToWorkspace, fileObj.oldFileName!.substring(2))
+                if (!fs.existsSync(filePath)) {
+                    // must be a new file (ex. summary.md), so pass empty string as original contents and do not pass error
+                    callback(undefined, '')
+                } else {
+                    // must be a modified file (most common), so pass original contents
+                    const fileContents = fs.readFileSync(filePath, 'utf-8')
+                    callback(undefined, fileContents)
+                }
+            },
+            // by now, 'content' contains the changes from the patch
+            patched: function (fileObj, content, callback) {
+                const filePath = path.join(pathToTmpSrcDir, fileObj.newFileName!.substring(2))
+                // write changed contents to the copy of the original file (or create a new file)
+                fs.writeFileSync(filePath, content)
+                callback(undefined)
+            },
+            complete: function (err) {
+                if (err) {
+                    getLogger().error(`CodeTransform: ${err} when applying patch`)
+                } else {
+                    getLogger().info('CodeTransform: Patch applied successfully')
+                }
+            },
+        })
         this.changes = changedFiles.flatMap(file => {
-            const originalPath = path.join(pathToWorkspace, file.from !== undefined ? file.from : '')
-            const tmpChangedPath = path.join(pathToTmpSrcDir, file.to !== undefined ? file.to : '')
+            /* ex. file.oldFileName = 'a/src/java/com/project/component/MyFile.java'
+             * ex. file.newFileName = 'b/src/java/com/project/component/MyFile.java'
+             * use substring(2) to ignore the 'a/' and 'b/'
+             */
+            const originalPath = path.join(pathToWorkspace, file.oldFileName!.substring(2))
+            const tmpChangedPath = path.join(pathToTmpSrcDir, file.newFileName!.substring(2))
 
             const originalFileExists = fs.existsSync(originalPath)
             const changedFileExists = fs.existsSync(tmpChangedPath)
@@ -158,8 +188,6 @@ export class DiffModel {
                 return new ModifiedChangeNode(originalPath, tmpChangedPath)
             } else if (!originalFileExists && changedFileExists) {
                 return new AddedChangeNode(originalPath, tmpChangedPath)
-            } else if (originalFileExists && !changedFileExists) {
-                return new RemovedChangeNode(originalPath)
             }
             return []
         })
@@ -322,7 +350,6 @@ export class ProposedTransformationExplorer {
                 zip.extractAllTo(pathContainingArchive)
                 diffModel.parseDiff(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
-                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSourceDir),
                     transformByQState.getProjectPath()
                 )
                 await vscode.commands.executeCommand(
@@ -373,8 +400,9 @@ export class ProposedTransformationExplorer {
             await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
             await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedMessage)
-            // delete result archive after changes accepted
+            // delete result archive and copied source code after changes accepted
             fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
+            fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
             telemetry.codeTransform_vcsViewerSubmitted.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
