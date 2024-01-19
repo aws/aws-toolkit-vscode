@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import glob from 'glob'
+import { glob } from 'glob'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -238,15 +238,7 @@ async function findSourceFileByName(
 
 // TODO: Replace this by vscode.workspace.findFiles
 function globPromise(pattern: string): Promise<string[]> {
-    return new Promise<string[]>((resolve, reject) => {
-        glob(pattern, (err, files) => {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(files)
-            }
-        })
-    })
+    return glob(pattern)
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void | never {

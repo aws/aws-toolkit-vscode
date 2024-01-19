@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import glob from 'glob'
+import { glob } from 'glob'
 import Mocha from 'mocha'
 void (async () => {
     try {
@@ -11,7 +11,7 @@ void (async () => {
 
         const mocha = new Mocha()
 
-        const testFiles = glob.sync('dist/src/testLint/**/*.test.js')
+        const testFiles = await glob('dist/src/testLint/**/*.test.js')
         testFiles.forEach(file => {
             mocha.addFile(file)
         })
