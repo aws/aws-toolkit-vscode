@@ -38,6 +38,10 @@ import { ToolkitError } from '../../shared/errors'
 import { TransformByQUploadArchiveFailed } from '../../amazonqGumby/models/model'
 import { CancelActionPositions, toJDKMetricValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 
+import { spawnSync } from 'child_process'
+import * as cheerio from 'cheerio'
+import { MetadataResult } from '../../shared/telemetry/telemetryClient'
+
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
 
@@ -94,6 +98,92 @@ async function pickProject(
     })
     state.project = pick
     transformByQState.setProjectName(he.encode(state.project.label)) // encode to avoid HTML injection risk
+}
+
+async function makeGETRequests(url: string): Promise<boolean> {
+    const options = {
+        method: 'GET',
+    }
+    const res = await fetch(url, options)
+    const data = await res.json()
+
+    if (data.response.numFound === 0) {
+        telemetry.codeTransform_projectContains1pDependencies.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformJobId: transformByQState.getJobId(),
+            has1pdependency: true,
+            result: MetadataResult.Pass,
+        })
+        return true
+    }
+    return false
+}
+
+function generateAndParseDependencyReport(state: UserInputState): string[] {
+    const pathToDependencyAggregateReport =
+        state.project.description + '/target/site/dependency-updates-aggregate-report.html'
+    const baseCommand = 'mvn'
+    const args = ['versions:dependency-updates-aggregate-report', '-DonlyProjectDependencies=true']
+    const spawnResult = spawnSync(baseCommand, args, { cwd: state.project.description, shell: true, encoding: 'utf-8' })
+    if (spawnResult.error || spawnResult.status !== 0) {
+        getLogger().debug('Error executing maven dependency aggregate report command ', spawnResult.error)
+    }
+
+    let urls: string[] = []
+    try {
+        const dependencyReport = fs.readFileSync(pathToDependencyAggregateReport, { encoding: 'utf-8' })
+        const successImgSrc = 'images/icon_success_sml.gif'
+
+        // Parse dependency aggregate report to generate a list of dependencies
+        // on the latest version (1p + 3p on the latest version)
+        const $ = cheerio.load(dependencyReport)
+
+        $('td img[src="' + successImgSrc + '"]').each((index, img) => {
+            let followingElements = $(img).closest('td').nextAll().slice(0, 3)
+
+            for (let i = 0; i < followingElements.length; i += 3) {
+                if (!$(followingElements[i]).text().startsWith('#')) {
+                    // extract dependency name and version
+                    const groupId = $(followingElements[i]).text()
+                    const artifactId = $(followingElements[i + 1]).text()
+                    const version = $(followingElements[i + 2]).text()
+
+                    urls.push(
+                        `https://search.maven.org/solrsearch/select?q=g:${groupId}%20AND%20a:${artifactId}%20AND%20v:${version}%20AND%20p:jar&rows=20&wt=json`
+                    )
+                }
+            }
+        })
+    } catch (e) {
+        getLogger().debug('Error while parsing dependency report for telemetry: ', e)
+    }
+    return urls
+}
+
+async function generate1pDependencyMetrics(state: UserInputState) {
+    try {
+        const urls = generateAndParseDependencyReport(state)
+
+        let found = false
+        for (const url of urls) {
+            try {
+                found = await makeGETRequests(url)
+                if (found) break
+            } catch (error) {
+                getLogger().debug('Error while making GET requests to maven central for 1p dependencies: ', error)
+            }
+        }
+        if (!found) {
+            telemetry.codeTransform_projectContains1pDependencies.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformJobId: transformByQState.getJobId(),
+                has1pdependency: false,
+                result: MetadataResult.Pass,
+            })
+        }
+    } catch (e) {
+        getLogger().debug('Error while parsing dependencies for telemetry: ', e)
+    }
 }
 
 export async function startTransformByQ() {
@@ -305,6 +395,7 @@ export async function startTransformByQ() {
     vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
     await vscode.commands.executeCommand('aws.amazonq.refresh')
     vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
+    await generate1pDependencyMetrics(state) // detect and generate 1p dependency metrics after transformation has ended
 }
 
 export function processHistory(
