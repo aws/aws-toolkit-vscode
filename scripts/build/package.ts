@@ -40,10 +40,11 @@ function parseArgs() {
         /** Skips `npm run clean` when building the VSIX. This prevents file watching from breaking. */
         skipClean: false,
         feature: '',
+        zip: false,
     }
 
     const givenArgs = process.argv.slice(2)
-    const validOptions = ['--debug', '--no-clean', '--feature']
+    const validOptions = ['--debug', '--no-clean', '--feature', '--zip']
     const expectValue = ['--feature']
 
     for (let i = 0; i < givenArgs.length; i++) {
@@ -142,9 +143,14 @@ function main() {
             }
         }
 
-        child_process.execSync(`vsce package`, { stdio: 'inherit' })
         const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
+        const vsixName = `${packageJson.name}-${packageJson.version}.vsix` // Eg: aws-toolkit-vscode-2.6.0-4e9ba53.vsix
+        child_process.execSync(`vsce package -o ${vsixName}`, { stdio: 'inherit' })
         console.log(`VSIX Version: ${packageJson.version}`)
+
+        if (args.zip === true) {
+            zipFile(vsixName)
+        }
     } catch (e) {
         console.log(e)
         throw Error('package.ts: failed')
@@ -157,6 +163,18 @@ function main() {
             fs.unlinkSync(`${webpackConfigJsFile}.bk`)
         }
     }
+}
+
+function zipFile(fileName: string) {
+    try {
+        child_process.execSync(`which zip`, { stdio: 'ignore' })
+    } catch (err) {
+        // no windows support yet
+        console.log('`zip` not found on system')
+    }
+    const zippedFile = `${fileName}.zip`
+    child_process.execSync(`zip ${zippedFile} ${fileName}`, { stdio: 'ignore' })
+    console.log(`Zipped File: ${fileName}.zip`)
 }
 
 main()
