@@ -165,11 +165,13 @@ export class SystemUtilities {
         return vscode.workspace.fs.createDirectory(uri).then(undefined, errorHandler)
     }
 
-    private static readonly modeMap = {
-        '*': 0,
-        r: fs.constants.R_OK,
-        w: fs.constants.W_OK,
-        x: fs.constants.X_OK,
+    private static get modeMap() {
+        return {
+            '*': 0,
+            r: fs.constants.R_OK,
+            w: fs.constants.W_OK,
+            x: fs.constants.X_OK,
+        } as const
     }
 
     /**
