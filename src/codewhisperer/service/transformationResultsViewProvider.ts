@@ -190,8 +190,12 @@ export class DiffModel {
                 fs.writeFileSync(filePath, content)
                 callback(undefined)
             },
-            complete: function () {
-                getLogger().info('CodeTransform: Patch applied successfully')
+            complete: function (err) {
+                if (err) {
+                    getLogger().error(`CodeTransform: ${err} when applying patch`)
+                } else {
+                    getLogger().info('CodeTransform: Patch applied successfully')
+                }
             },
         })
         this.changes = changedFiles.flatMap(file => {

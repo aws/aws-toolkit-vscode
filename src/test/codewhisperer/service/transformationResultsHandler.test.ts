@@ -5,6 +5,7 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import fs from 'fs-extra'
+import os from 'os'
 import {
     DiffModel,
     AddedChangeNode,
@@ -46,9 +47,14 @@ describe('DiffModel', function () {
     it('WHEN parsing a diff patch where a file was modified THEN returns an array representing the modified file', async function () {
         const testDiffModel = new DiffModel()
 
-        const workspacePath = 'workspace'
+        const workspacePath = os.tmpdir()
 
         sinon.replace(fs, 'existsSync', path => true)
+
+        fs.writeFileSync(
+            path.join(workspacePath, 'README.md'),
+            'This guide walks you through using Gradle to build a simple Java project.'
+        )
 
         testDiffModel.parseDiff(getTestFilePath('resources/modifiedFile.diff'), workspacePath)
 
@@ -56,5 +62,7 @@ describe('DiffModel', function () {
         const change = testDiffModel.changes[0]
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
+
+        fs.rmSync(path.join(workspacePath, 'README.md'))
     })
 })
