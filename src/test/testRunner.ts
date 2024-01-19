@@ -9,6 +9,12 @@ import Mocha from 'mocha'
 import glob from 'glob'
 import * as fs from 'fs-extra'
 
+// Set explicit timezone to ensure that tests run locally do not use the user's actual timezone, otherwise
+// the test can pass on one persons machine but not anothers.
+// Intentionally _not_ UTC, to increase variation in tests.
+// process.env.TZ = 'Europe/London'
+process.env.TZ = 'US/Pacific'
+
 /**
  * @param initTests List of relative paths to test files containing root hooks: https://mochajs.org/#available-root-hooks
  */
