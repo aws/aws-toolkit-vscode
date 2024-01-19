@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as got from 'got'
 import assert from 'assert'
 import { qTestingFramework } from './framework/framework'
 import { FollowUpTypes } from '../../amazonqFeatureDev/types'
@@ -12,6 +11,7 @@ import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { verifyTextOrder } from './framework/text'
 import { examples } from '../../amazonqFeatureDev/userFacingText'
 import * as authUtil from '../../codewhisperer/util/authUtil'
+import request from '../../common/request'
 
 describe('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
@@ -35,7 +35,11 @@ describe('Amazon Q Feature Dev', function () {
             $response: sinon.mock() as any,
         })
         sinon.stub(FeatureDevClient.prototype, 'generatePlan').resolves(samplePlanResponse)
-        sinon.stub(got, 'default').resolves({ statusCode: 200 })
+        sinon.stub(request, 'fetch').resolves({
+            response: {
+                status: 200,
+            },
+        })
         framework = new qTestingFramework('featuredev', true, true)
     })
 
