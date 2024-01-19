@@ -140,6 +140,9 @@ export class DiffModel {
      */
     public parseDiff(pathToDiff: string, pathToWorkspace: string): ProposedChangeNode[] {
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
+        if (!diffContents) {
+            throw new ToolkitError('diff.patch file is empty', { code: 'EmptyDiffPatch' })
+        }
         const changedFiles = parsePatch(diffContents)
         // path to the directory containing copy of the changed files in the transformed project
         const pathToTmpSrcDir = this.copyProject(pathToWorkspace, changedFiles)
@@ -361,6 +364,19 @@ export class ProposedTransformationExplorer {
                 transformByQState.setSummaryFilePath(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
                 )
+                transformByQState.setResultArchiveFilePath(pathContainingArchive)
+                await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', true)
+
+                // This metric is only emitted when placed before showInformationMessage
+                telemetry.codeTransform_vcsDiffViewerVisible.emit({
+                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformJobId: transformByQState.getJobId(),
+                    result: MetadataResult.Pass,
+                })
+
+                // Do not await this so that the summary reveals without user needing to close this notification
+                void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
+                await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
                 deserializeErrorMessage =
                     (e as Error).message ??
@@ -378,19 +394,6 @@ export class ProposedTransformationExplorer {
                     reason: deserializeErrorMessage ? 'DeserializationFailed' : undefined,
                 })
             }
-
-            transformByQState.setResultArchiveFilePath(pathContainingArchive)
-
-            // This metric is only emitted when placed before showInformationMessage
-            telemetry.codeTransform_vcsDiffViewerVisible.emit({
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-                result: MetadataResult.Pass,
-            })
-
-            // Do not await this so that the summary reveals without user needing to close this notification
-            void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
-            await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {

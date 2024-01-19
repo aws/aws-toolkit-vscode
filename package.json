@@ -2415,7 +2415,7 @@
             {
                 "command": "aws.amazonq.transformationHub.summary.reveal",
                 "title": "%AWS.command.q.transform.showChangeSummary%",
-                "enablement": "gumby.reviewState == InReview"
+                "enablement": "gumby.isSummaryAvailable"
             },
             {
                 "command": "aws.amazonq.transformationHub.reviewChanges.reveal",
@@ -3805,7 +3805,6 @@
             {
                 "command": "aws.amazonq.showTransformationPlanInHub",
                 "title": "Show Transformation Plan",
-                "icon": "$(book)",
                 "enablement": "gumby.isPlanAvailable"
             }
         ],
@@ -4382,7 +4381,6 @@
         "markdown-it": "^13.0.2",
         "mime-types": "^2.1.32",
         "node-fetch": "^2.7.0",
-        "parse-diff": "0.11.1",
         "portfinder": "^1.0.32",
         "sanitize-html": "^2.3.3",
         "semver": "^7.5.4",
