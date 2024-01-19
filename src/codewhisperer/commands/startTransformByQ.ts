@@ -317,6 +317,7 @@ export async function setTransformationToRunningState(userInputState: UserInputS
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
     await vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
     await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
+    await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', false)
     await resetReviewInProgress()
 
     await vscode.commands.executeCommand('aws.amazonq.refresh')
