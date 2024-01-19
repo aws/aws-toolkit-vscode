@@ -98,31 +98,25 @@ export async function getUserAgent(
 export function validateMetricEvent(event: MetricDatum, fatal: boolean) {
     const failedStr: Result = 'Failed'
     const telemetryRunDocsStr =
-        'Consider using `.run()` instead of `.emit()`, which will set these properties automatically. ' +
+        ' Consider using `.run()` instead of `.emit()`, which will set these properties automatically. ' +
         'See https://github.com/aws/aws-toolkit-vscode/blob/master/docs/telemetry.md#guidelines'
 
     if (!isValidationExemptMetric(event.MetricName) && event.Metadata) {
         const metadata = mapMetadata([])(event.Metadata)
+        let msg = 'telemetry: invalid Metric: '
 
-        try {
-            if (metadata.result === undefined) {
-                throw new Error(
-                    `Metric \`${event.MetricName}\` was emitted without the \`result\` property. ` +
-                        `This property is always required. ${telemetryRunDocsStr}`
-                )
-            }
-
-            if (metadata.result === failedStr && metadata.reason === undefined) {
-                throw new Error(
-                    `Metric \`${event.MetricName}\` was emitted without the \`reason\` property. ` +
-                        `This property is always required when \`result\` = 'Failed'. ${telemetryRunDocsStr}`
-                )
-            }
-        } catch (err: any) {
-            if (fatal) {
-                throw err
-            }
-            getLogger().warn(`Metric Event did not pass validation: ${(err as Error).message}`)
+        if (metadata.result === undefined) {
+            msg += `"${event.MetricName}" emitted without the \`result\` property, which is always required.`
+        } else if (metadata.result === failedStr && metadata.reason === undefined) {
+            msg += `"${event.MetricName}" emitted with result=Failed but without the \`reason\` property.`
+        } else {
+            return // Validation passed.
         }
+
+        msg += telemetryRunDocsStr
+        if (fatal) {
+            throw new Error(msg)
+        }
+        getLogger().warn(msg)
     }
 }
