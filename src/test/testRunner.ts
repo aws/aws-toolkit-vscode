@@ -6,7 +6,7 @@
 import '@cspotcode/source-map-support/register'
 import * as path from 'path'
 import Mocha from 'mocha'
-import glob from 'glob'
+import { glob } from 'glob'
 import * as fs from 'fs-extra'
 
 // Set explicit timezone to ensure that tests run locally do not use the user's actual timezone, otherwise
@@ -113,17 +113,7 @@ export async function runTests(testFolder: string, initTests: string[] = [], tes
             console.log('No test coverage found')
         }
     }
-    const files =
-        testFiles ??
-        (await new Promise<string[]>((resolve, reject) => {
-            glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: dist }, (err, files) => {
-                if (err) {
-                    reject(err)
-                } else {
-                    resolve(files)
-                }
-            })
-        }))
+    const files = testFiles ?? (await glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: dist }))
 
     await runMocha(files)
     await writeCoverage()
