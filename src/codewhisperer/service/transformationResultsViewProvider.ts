@@ -102,31 +102,6 @@ export class AddedChangeNode extends ProposedChangeNode {
     }
 }
 
-export class RemovedChangeNode extends ProposedChangeNode {
-    readonly pathToOldContents: string
-    override resourcePath: string
-
-    constructor(pathToOldContents: string) {
-        super()
-        this.pathToOldContents = pathToOldContents
-        this.resourcePath = pathToOldContents
-    }
-
-    override generateCommand(): vscode.Command {
-        return {
-            command: 'vscode.open',
-            arguments: [vscode.Uri.file(this.pathToOldContents)],
-            title: 'Removed Change',
-        }
-    }
-    override generateDescription(): string {
-        return 'R'
-    }
-    override saveFile(): void {
-        fs.removeSync(this.pathToOldContents)
-    }
-}
-
 enum ReviewState {
     ToReview,
     Reviewed_Accepted,
