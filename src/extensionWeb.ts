@@ -15,6 +15,9 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { registerCommands, initializeManifestPaths } from './extensionShared'
 import { RegionProvider, defaultRegion } from './shared/regions/regionProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
+import { initialize as initializeCredentials } from './auth/activation'
+import { LoginManager } from './auth/deprecated/loginManager'
+import { CredentialsStore } from './auth/credentials/store'
 
 export async function activate(context: vscode.ExtensionContext) {
     setInBrowser(true) // THIS MUST ALWAYS BE FIRST
@@ -35,6 +38,9 @@ export async function activate(context: vscode.ExtensionContext) {
         initializeManifestPaths(context)
 
         await activateTelemetry(context, globals.awsContext, Settings.instance)
+
+        await initializeCredentials(context, globals.awsContext, globals.loginManager)
+
         registerCommands(context)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
@@ -51,6 +57,8 @@ export async function activate(context: vscode.ExtensionContext) {
 function setupGlobals() {
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
+
+    globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 
     setupGlobalsTempStubs()
 }
