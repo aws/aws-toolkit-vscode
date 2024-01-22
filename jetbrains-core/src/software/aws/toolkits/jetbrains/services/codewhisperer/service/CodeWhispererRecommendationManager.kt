@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.service
 
 import com.intellij.openapi.components.service
+import org.jetbrains.annotations.VisibleForTesting
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
 import software.amazon.awssdk.services.codewhispererruntime.model.Span
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
@@ -134,16 +135,21 @@ class CodeWhispererRecommendationManager {
         val caret = requestContext.editor.caretModel.primaryCaret
         val rightContext = document.charsSequence.subSequence(caret.offset, document.charsSequence.length).toString()
         val recommendationContent = recommendation.content()
+        return findRightContextOverlap(rightContext, recommendationContent)
+    }
+
+    @VisibleForTesting
+    fun findRightContextOverlap(rightContext: String, recommendationContent: String): String {
         val rightContextFirstLine = rightContext.substringBefore("\n")
         val overlap =
             if (rightContextFirstLine.isEmpty()) {
                 val tempOverlap = overlap(recommendationContent, rightContext)
-                if (tempOverlap.isEmpty()) overlap(recommendationContent.trimEnd(), rightContext.trimStart()) else tempOverlap
+                if (tempOverlap.isEmpty()) overlap(recommendationContent.trimEnd(), trimExtraPrefixNewLine(rightContext)) else tempOverlap
             } else {
                 // this is necessary to prevent display issue if first line of right context is not empty
                 var tempOverlap = overlap(recommendationContent, rightContext)
                 if (tempOverlap.isEmpty()) {
-                    tempOverlap = overlap(recommendationContent.trimEnd(), rightContext.trimStart())
+                    tempOverlap = overlap(recommendationContent.trimEnd(), trimExtraPrefixNewLine(rightContext))
                 }
                 if (recommendationContent.substring(0, recommendationContent.length - tempOverlap.length).none { it == '\n' }) {
                     tempOverlap
@@ -166,5 +172,33 @@ class CodeWhispererRecommendationManager {
 
     companion object {
         fun getInstance(): CodeWhispererRecommendationManager = service()
+
+        /**
+         * a function to trim extra prefixing new line character (only leave 1 new line character)
+         * example:
+         *  content = "\n\n\nfoo\n\nbar\nbaz"
+         *  return = "\nfoo\n\nbar\nbaz"
+         *
+         * example:
+         *  content = "\n\n\tfoobar\nbaz"
+         *  return = "\n\tfoobar\nbaz"
+         */
+        fun trimExtraPrefixNewLine(content: String): String {
+            if (content.isEmpty()) {
+                return ""
+            }
+
+            val firstChar = content.first()
+            if (firstChar != '\n') {
+                return content
+            }
+
+            var index = 1
+            while (index < content.length && content[index] == '\n') {
+                index++
+            }
+
+            return firstChar + content.substring(index)
+        }
     }
 }

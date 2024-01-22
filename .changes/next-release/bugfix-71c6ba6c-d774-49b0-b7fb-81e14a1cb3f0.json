@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix issue where CodeWhisperer suggestions are sometimes trimmed"
+}
