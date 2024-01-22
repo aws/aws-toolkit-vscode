@@ -207,7 +207,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
                         throw codeScanResponse.failureReason
                     }
                 }
-                LOG.info { "Security scan completed." }
+                LOG.info { "Security scan completed for jobID: $codeScanJobId." }
             }
             getProjectSize = async {
                 codeScanSessionConfig.getTotalProjectSizeInBytes()
