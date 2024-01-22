@@ -33,7 +33,7 @@ dependencies {
     testImplementation(libs.aws.sqs)
     testImplementation(libs.commons.io)
     // match version declared by intellijRemoteRobot
-    testImplementation("com.squareup.okhttp3:okhttp:4.10.0")
+    testImplementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     testRuntimeOnly(libs.junit5.jupiterEngine)
 }
