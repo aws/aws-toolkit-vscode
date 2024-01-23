@@ -231,4 +231,20 @@ describe('SystemUtilities', function () {
             // Or potentially spawn new process with different uid...?
         })
     }
+
+    it('toUri', function () {
+        // A string path with custom uri scheme
+        assert.deepStrictEqual(
+            SystemUtilities.toUri('myScheme:/User/nikolas/file.txt'),
+            vscode.Uri.from({ scheme: 'myScheme', path: '/User/nikolas/file.txt' })
+        )
+        // A string path with no scheme
+        assert.deepStrictEqual(
+            SystemUtilities.toUri('/User/nikolas/file.txt'),
+            vscode.Uri.file('/User/nikolas/file.txt')
+        )
+        // A uri object
+        const myUri = vscode.Uri.from({ scheme: 'myOtherScheme', path: '/User/john/otherFile.txt' })
+        assert.deepStrictEqual(SystemUtilities.toUri(myUri), myUri)
+    })
 })
