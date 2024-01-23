@@ -342,6 +342,17 @@ Example:
 }
 ```
 
+Overrides specifically for CodeWhisperer/Amazon Q can be set using the `aws.dev.codewhispererService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeWhisperer/Amazon Q: `region` and `endpoint`. If this setting is present, then all keys need to be explicitly provided.
+
+Example:
+
+```json
+"aws.dev.codewhispererService": {
+    "region": "us-west-2",
+    "endpoint": "https://codewhisperer-gamma.example.com"
+}
+```
+
 ### Environment variables
 
 Environment variables can be used to modify the behaviour of VSCode. The following are environment variables that can be used to configure the extension:
