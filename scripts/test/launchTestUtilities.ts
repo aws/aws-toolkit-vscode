@@ -28,7 +28,7 @@ type SuiteName = 'integration' | 'e2e' | 'unit'
  * If you want to run the tests manually you should use the `Run & Debug` menu in VS Code instead
  * to be able to use to breakpoints.
  */
-export async function runToolkitTests(suite: SuiteName, relativeTestEntryPoint: string) {
+export async function runToolkitTests(suite: SuiteName, relativeTestEntryPoint: string, env?: Record<string, string>) {
     try {
         console.log(`Running ${suite} test suite...`)
 
@@ -36,6 +36,7 @@ export async function runToolkitTests(suite: SuiteName, relativeTestEntryPoint: 
             vsCodeExecutablePath: await setupVSCodeTestInstance(suite),
             relativeTestEntryPoint,
             suite,
+            env,
         })
         console.log(`runTests() args:\n${JSON.stringify(args, undefined, 2)}`)
         const result = await runTests(args)
@@ -56,6 +57,7 @@ async function getVSCodeCliArgs(params: {
     vsCodeExecutablePath: string
     relativeTestEntryPoint: string
     suite: SuiteName
+    env?: Record<string, string>
 }): Promise<TestOptions> {
     const projectRootDir = process.cwd()
 
@@ -89,6 +91,7 @@ async function getVSCodeCliArgs(params: {
         extensionTestsEnv: {
             ['DEVELOPMENT_PATH']: projectRootDir,
             ['AWS_TOOLKIT_AUTOMATION']: params.suite,
+            ...params.env,
         },
     }
 }
