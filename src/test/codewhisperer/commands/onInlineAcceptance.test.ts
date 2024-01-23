@@ -55,7 +55,6 @@ describe('onInlineAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            await RecommendationHandler.instance.clearInlineCompletionStates()
             await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
                 group: CodeWhispererConstants.UserGroup.Classifier,
                 version: extensionVersion,

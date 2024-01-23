@@ -24,6 +24,7 @@ import { Service } from 'aws-sdk'
 import userApiConfig = require('./../../codewhisperer/client/user-service-2.json')
 import CodeWhispererUserClient = require('../../codewhisperer/client/codewhispereruserclient')
 import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
+import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 
 export async function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
@@ -32,6 +33,7 @@ export async function resetCodeWhispererGlobalVariables() {
     globals.telemetry.logger.clear()
     session.reset()
     await CodeSuggestionsState.instance.setSuggestionsEnabled(false)
+    await RecommendationHandler.instance.clearInlineCompletionStates()
 }
 
 export function createMockDocument(

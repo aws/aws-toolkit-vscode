@@ -78,7 +78,6 @@ describe('onAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            RecommendationHandler.instance.clearRecommendations()
             await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
                 group: CodeWhispererConstants.UserGroup.Control,
                 version: extensionVersion,
