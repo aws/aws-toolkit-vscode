@@ -47,6 +47,34 @@
             ],
             "idempotent":true
         },
+
+        "CreateTaskAssistConversation": {
+            "name": "CreateTaskAssistConversation",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "CreateTaskAssistConversationRequest"
+            },
+            "output": {
+                "shape": "CreateTaskAssistConversationResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ]
+        },
         "GenerateCompletions":{
             "name":"GenerateCompletions",
             "http":{
@@ -308,6 +336,25 @@
                 "acceptedCharacterCount": { "shape": "Integer" },
                 "acceptedSnippetHasReference": { "shape": "Boolean" }
             }
+        },
+        "CreateTaskAssistConversationRequest": {
+            "type": "structure",
+            "members": {}
+        },
+        "CreateTaskAssistConversationResponse": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": {
+                    "shape": "TaskAssistConversationId"
+                }
+            }
+        },
+        "TaskAssistConversationId": {
+            "type": "string",
+            "documentation": "<p>ID which represents a multi-turn conversation</p>",
+            "max": 128,
+            "min": 1
         },
         "ChatMessage":{
             "type":"structure",

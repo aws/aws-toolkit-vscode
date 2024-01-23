@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller
 
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.InboundAppMessagesHandler
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessageType
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.IncomingFeatureDevMessage
@@ -13,6 +14,8 @@ import java.util.UUID
 class FeatureDevController(
     private val context: AmazonQAppInitContext
 ) : InboundAppMessagesHandler {
+
+    private val clientAdaptor = FeatureDevClient.getInstance(context.project)
 
     override suspend fun processPromptChatMessage(message: IncomingFeatureDevMessage.ChatPrompt) {
         handleChat(
@@ -33,6 +36,8 @@ class FeatureDevController(
             messageType = FeatureDevMessageType.Answer,
             message = "ACK " + message + " Feature isn't ready yet",
         )
+
+        clientAdaptor.createTaskAssistConversation()
 
         context.messagesFromAppToUi.publish(reply)
     }
