@@ -351,7 +351,7 @@ function getProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, mo
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformMavenBuildCommand: buildCommand,
             result: MetadataResult.Fail,
-            reason: spawnResult.error ? spawnResult.error.message : spawnResult.stdout,
+            reason: 'CannotRunMavenShellCommand',
         })
         throw new ToolkitError('Maven Dependency Error', { code: 'CannotRunMavenShellCommand' })
     }

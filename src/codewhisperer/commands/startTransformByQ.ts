@@ -87,6 +87,11 @@ async function collectInput(validProjects: vscode.QuickPickItem[]) {
 }
 
 export async function startTransformByQ() {
+    telemetry.codeTransform_jobIsStartedFromUserPopupClick.emit({
+        codeTransformSessionId: `${codeTransformTelemetryState.getSessionId()}-updated`,
+        result: MetadataResult.Pass,
+    })
+
     let intervalId = undefined
 
     // Validate inputs. If failed, Error will be thrown and execution stops
@@ -278,11 +283,6 @@ export async function validateTransformationJob() {
             result: MetadataResult.Pass,
         })
         throw new ToolkitError('Transform cancelled', { code: 'DidNotConfirmDisclaimer', cancelled: true })
-    } else {
-        telemetry.codeTransform_jobIsStartedFromUserPopupClick.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            result: MetadataResult.Pass,
-        })
     }
 
     return userInputState
