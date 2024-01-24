@@ -7,6 +7,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.reconnectCodeWhisperer
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.UiTelemetry
 import java.awt.event.MouseEvent
 
 class CodeWhispererReconnectNode(nodeProject: Project) : CodeWhispererActionNode(
@@ -16,6 +17,7 @@ class CodeWhispererReconnectNode(nodeProject: Project) : CodeWhispererActionNode
     AllIcons.Actions.Execute
 ) {
     override fun onDoubleClick(event: MouseEvent) {
+        UiTelemetry.click(project, "ReconnectNode")
         reconnectCodeWhisperer(project)
     }
 }

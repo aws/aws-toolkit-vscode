@@ -12,6 +12,7 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererCon
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsForCodeWhisperer
+import software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.openMeetQPage
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupActivity
 import software.aws.toolkits.resources.message
@@ -45,6 +46,9 @@ class GetStartedNode(nodeProject: Project) : CodeWhispererActionNode(
                 // Start from scratch if no active connection
                 if (requestCredentialsForCodeWhisperer(project)) {
                     project.refreshCwQTree()
+                    if (!openMeetQPage(project)) {
+                        return@runInEdt
+                    }
                 }
             }
         }

@@ -6,16 +6,13 @@ package software.aws.toolkits.jetbrains.services.amazonq.explorerActions
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.DumbAwareAction
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsForQ
-import software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.QGettingStartedVirtualFile
-import software.aws.toolkits.jetbrains.settings.MeetQSettings
+import software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.openMeetQPage
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.UiTelemetry
 
@@ -35,21 +32,8 @@ abstract class SignInToQActionBase(actionName: String) : DumbAwareAction(actionN
             runInEdt {
                 if (requestCredentialsForQ(project)) {
                     project.refreshCwQTree()
-                    val meetQSettings = MeetQSettings.getInstance()
-                    if (!meetQSettings.shouldDisplayPage) {
+                    if (!openMeetQPage(project)) {
                         return@runInEdt
-                    } else {
-                        FileEditorManager.getInstance(
-                            project
-                        ).openTextEditor(
-                            OpenFileDescriptor(
-                                project,
-                                QGettingStartedVirtualFile()
-                            ),
-                            true
-                        )
-                        meetQSettings.shouldDisplayPage = false
-                        UiTelemetry.click(project, "toolkit_openedWelcomeToAmazonQPage")
                     }
                 }
             }
