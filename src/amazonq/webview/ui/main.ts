@@ -4,7 +4,6 @@
  */
 import { Connector } from './connector'
 import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui'
-import './styles/dark.scss'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
@@ -369,4 +368,9 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
         isFeatureDevEnabled,
         isGumbyEnabled,
     })
+
+    return {
+        mynahUI,
+        messageReceiver: connector.handleMessageReceive,
+    }
 }
