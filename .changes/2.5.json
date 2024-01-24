@@ -1,0 +1,8 @@
+{
+  "date" : "2024-01-24",
+  "version" : "2.5",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix issue where CodeWhisperer suggestions are sometimes trimmed"
+  } ]
+}
