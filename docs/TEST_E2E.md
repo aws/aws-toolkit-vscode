@@ -1,4 +1,4 @@
-### E2E Testing
+### Test E2E
 
 This document describes the testing architecture specifically for more complicated E2E tests running the toolkits.
 
