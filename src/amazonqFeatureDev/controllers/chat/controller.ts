@@ -23,9 +23,9 @@ import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
-import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { examples } from '../../userFacingText'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -212,6 +212,7 @@ export class FeatureDevController {
         this.messenger.sendAsyncEventProgress(tabID, true, undefined)
 
         this.messenger.sendUpdatePlaceholder(tabID, 'Generating implementation plan ...')
+
         const interactions = await session.send(message)
         this.messenger.sendUpdatePlaceholder(tabID, 'Add more detail to iterate on the implementation plan')
 
@@ -326,13 +327,6 @@ export class FeatureDevController {
     }
 
     private initialExamples(message: any) {
-        const examples = `
-You can use /dev to:
-- Plan a code change
-- Coming soon: Generate code suggestions
-
-To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
-`
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
