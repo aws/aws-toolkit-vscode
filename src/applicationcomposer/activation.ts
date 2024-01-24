@@ -27,7 +27,8 @@ export class OpenApplicationComposerCodeLensProvider implements vscode.CodeLensP
 
         const lines = document.getText().split('\n')
         for (let i = 0; i < lines.length; i++) {
-            if (lines[i].trim() === 'Resources:') {
+            const line = lines[i].trim()
+            if (line.startsWith('Resources:' || line.startsWith('Transform:'))) {
                 const resourcesLoc = new vscode.Range(i, 0, i, 0)
                 const codeLens = openTemplateInComposerCommand.build().asCodeLens(resourcesLoc, {
                     title: 'view in Application Composer',
