@@ -26,12 +26,29 @@
         },
         {
             "name": "Extension (browser)",
-            "type": "pwa-extensionHost",
+            "type": "extensionHost",
             "debugWebWorkerHost": true,
             "request": "launch",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}", "--extensionDevelopmentKind=web"],
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "buildBrowserDebug"
+        },
+        {
+            /** Attaches the VS Code to the Chrome debugger when it is running a vscode browser instance **/
+            "name": "Extension Debug Chrome",
+            "type": "chrome",
+            "request": "attach",
+            "port": 9222,
+            /**
+            To get an understanding why we need the following, comment out the following and see how
+            the extension loads slower in the browser. This is due to source maps for irrelevant code
+            being attempted to be resolved and slowing execution. In the chrome/browser developer tools you should
+            see many files being automatically opened.
+
+            What this is doing is ignoring certain modules that match the following paths.
+            I was inspired by this: https://github.com/microsoft/vscode-test-web/blob/897bca4907a87a6bc564efc242ce6794e5da3232/.vscode/launch.json#L28
+            **/
+            "resolveSourceMapLocations": ["!**/node_modules/**", "!**/vs/**", "!**/static/**/extensions/**"],
         },
         {
             "name": "Extension (webpack)",

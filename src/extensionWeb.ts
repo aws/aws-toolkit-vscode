@@ -18,6 +18,7 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { initialize as initializeCredentials } from './auth/activation'
 import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsStore } from './auth/credentials/store'
+import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
 
 export async function activate(context: vscode.ExtensionContext) {
     setInBrowser(true) // THIS MUST ALWAYS BE FIRST
@@ -40,6 +41,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateTelemetry(context, globals.awsContext, Settings.instance)
 
         await initializeCredentials(context, globals.awsContext, globals.loginManager)
+        await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 
         registerCommands(context)
     } catch (error) {

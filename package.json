@@ -4243,7 +4243,7 @@
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
         "buildBrowserDebug": "npm run clean && npm run buildScripts && webpack --config webpack.browser.config.js",
-        "runInBrowser": "npm run buildBrowserDebug && npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --extensionDevelopmentPath=.",
+        "runInBrowser": "npm run buildBrowserDebug && npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes && npm run buildCustomLintPlugin",
