@@ -117,11 +117,12 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
 
     if (spawnResult.error || spawnResult.status !== 0) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        const errorLog = `${spawnResult.error}\n${spawnResult.stderr}\n${spawnResult.stdout}`
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
-            reason: 'CannotDetermineJavaVersion',
+            reason: errorLog,
         })
         throw new ToolkitError('Unable to determine Java version', {
             code: 'CannotDetermineJavaVersion',
@@ -340,18 +341,13 @@ function getProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, mo
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        getLogger().error(`CodeTransform: Error in running Maven command ${baseCommand} = `)
-        // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
-        if (spawnResult.error) {
-            getLogger().error(spawnResult.error)
-        } else {
-            getLogger().error(spawnResult.stdout)
-        }
+        const errorLog = `${spawnResult.error}\n${spawnResult.stderr}\n${spawnResult.stdout}`
+        getLogger().error(`CodeTransform: Error in running Maven command ${baseCommand} = ${errorLog}`)
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformMavenBuildCommand: buildCommand,
             result: MetadataResult.Fail,
-            reason: 'CannotRunMavenShellCommand',
+            reason: errorLog,
         })
         throw new ToolkitError('Maven Dependency Error', { code: 'CannotRunMavenShellCommand' })
     }

@@ -21,7 +21,7 @@ export async function processTransformByQ() {
     if (transformByQState.isNotStarted()) {
         await sleep(1000) // sleep so that chat can respond first, then show input prompt
         telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: `${codeTransformTelemetryState.getSessionId()}-updated`,
             result: MetadataResult.Pass,
         })
         return startTransformByQWithProgress()
