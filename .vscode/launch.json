@@ -31,7 +31,7 @@
             "request": "launch",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}", "--extensionDevelopmentKind=web"],
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "buildBrowserDebug"
+            "preLaunchTask": "browserWatch"
         },
         {
             /** Attaches the VS Code to the Chrome debugger when it is running a vscode browser instance **/
@@ -108,7 +108,7 @@
                 "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
-            "preLaunchTask": "buildBrowserDebug"
+            "preLaunchTask": "browserWatch"
         },
         {
             "name": "Integration Tests",

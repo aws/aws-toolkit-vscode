@@ -37,9 +37,9 @@
             }
         },
         {
-            "label": "buildBrowserDebug",
+            "label": "browserWatch",
             "type": "npm",
-            "script": "buildBrowserDebug",
+            "script": "browserWatch",
             "detail": "Builds the webpacked browser bundle for debugging"
         },
         {
