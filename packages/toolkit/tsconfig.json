@@ -1,0 +1,15 @@
+{
+    "extends": "../../tsconfig.packages.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "rootDir": "src/",
+        "outDir": "dist/",
+    },
+    "exclude": ["node_modules", "src/testFixtures", "dist"],
+    "include": ["./**/*", "./**/*.json", "./../../types/*"],
+    "references": [
+        {
+            "path": "../../src.gen/@amzn/codewhisperer-streaming"
+        }
+    ]
+}

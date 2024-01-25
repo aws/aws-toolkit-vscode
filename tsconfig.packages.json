@@ -1,5 +1,9 @@
 {
     "compilerOptions": {
+        "paths": {
+            "*": ["types/*"],
+            "@sinonjs/fake-timers": ["node_modules/@types/sinonjs__fake-timers"]
+        },
         "module": "commonjs",
         "target": "es2021",
         "outDir": "dist",
@@ -21,10 +25,5 @@
         "noEmitOnError": true,
         "skipLibCheck": true
     },
-    "files": [],
-    "references": [
-        {
-            "path": "./packages/toolkit"
-        }
-    ]
+    "exclude": ["node_modules", "src.gen"]
 }
