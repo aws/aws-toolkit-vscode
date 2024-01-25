@@ -29,7 +29,7 @@ To run unit tests:
 The following steps will result in a Chrome window running with VS Code
 and the Browser version of the AWS Toolkit extension installed.
 
-1. In the terminal run: `npm run runInBrowser`
+1. In the terminal run: `npm run browserRun`
 
 #### (OPTIONAL) Enabling CORS
 
@@ -39,7 +39,7 @@ such as telemetry or auth do not support CORS (at the moment of writing) for the
 In the case you want to enable CORS in the browser to test CORS compatibility
 do the following:
 
-- In `package.json` find the `runInBrowser` script
+- In `package.json` find the `browserRun` script
 - Temporarily remove `--browserOption=--disable-web-security`
 
 Now when you run the extension in the browser it will do CORS checks.
