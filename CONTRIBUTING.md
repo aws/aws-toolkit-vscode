@@ -342,6 +342,57 @@ Example:
 }
 ```
 
+### Environment variables
+
+Environment variables can be used to modify the behaviour of VSCode. The following are environment variables that can be used to configure the extension:
+
+#### General AWS
+
+-   `AWS_ACCESS_KEY_ID`: The AWS access key associated with an IAM account. If defined, this environment variable overrides the value for the profile setting aws_access_key_id. For more information see [environment variables to configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+-   `AWS_SECRET_ACCESS_KEY`: The secret key associated with the access key. This is essentially the "password" for the access key. If defined, this environment variable overrides the value for the profile setting aws_secret_access_key. For more information see [environment variables to configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+-   `AWS_REGION`: The AWS Region to send the request to. If defined, this environment variable overrides the values in the environment variable AWS_DEFAULT_REGION and the profile setting region. For more information see [environment variables to configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+-   `AWS_SDK_LOAD_CONFIG`: Controls how the AWS SDK for javascript loads it's configuration when initialized. If the AWS_SDK_LOAD_CONFIG environment variable has been set to a truthy value, the SDK for JavaScript automatically searches for a config file when it loads. For more information see [the shared config file documentation](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html#setting-region-config-file)
+-   `AWS_SHARED_CREDENTIALS_FILE`: The location of the file that the AWS CLI uses to store access keys. The default path is `~/.aws/credentials`
+-   `AWS_CONFIG_FILE`: The location of the file that the AWS CLI uses to store configuration profiles. The default path is `~/.aws/config`
+
+#### General OS
+
+-   `HOME`: The home directory location for the current user in Linux and other Unix-like operating systems.
+-   `SSH_AUTH_SOCK`: The location of a UNIX domain socket used by ssh-agent and SSH clients for agent-based authentication
+-   `USERPROFILE`: The absolute path to the profile folder for the current user in Windows
+-   `HOMEPATH`: The path to the home directory for the current user in Windows, without including the drive letter
+-   `PROGRAMFILES/PROGRAMFILES(X86)`: The default installation directory for Windows
+-   `WINDIR`: The location of the Windows installation directory
+-   `PATH`: The set of directories where executable programs live
+
+#### Codecatalyst
+
+-   `__DEV_ENVIRONMENT_ID`: The ID of the running development environment. Automatically set when running the toolkit in Codecatalyst
+-   `__DEV_ENVIRONMENT_PROJECT_NAME`: The project name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
+-   `__DEV_ENVIRONMENT_SPACE_NAME`: The space name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
+-   `__DEV_ENVIRONMENT_ORGANIZATION_NAME`: The organization name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
+
+#### Lambda
+
+-   `AUTH_UTIL_LAMBDA_ARN`: The Amazon Resource Name (ARN) of the lambda function
+
+#### ECS
+
+-   `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`: The relative HTTP URL endpoint for the SDK to use when making a request for credentials. The value is appended to the default Amazon ECS hostname of 169.254.170.2. For more information see [container credential provider](https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html)
+-   `AWS_CONTAINER_CREDENTIALS_FULL_URI`: The full HTTP URL endpoint for the SDK to use when making a request for credentials. This includes both the scheme and the host. For more information see [container credential provider](https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html)
+
+#### Step functions
+
+-   `SSMDOCUMENT_LANGUAGESERVER_PORT`: The port the ssm document language server should start debugging on
+
+#### CI/Testing
+
+-   `GITHUB_ACTION`: The name of the current GitHub Action workflow step that is running
+-   `CODEBUILD_BUILD_ID`: The unique ID of the current CodeBuild build that is executing
+-   `AWS_TOOLKIT_AUTOMATION`: If tests are currently being ran
+-   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
+-   `AWS_TOOLKIT_TEST_NO_COLOR`: If the tests should include colour in their output
+
 ### SAM/CFN ("goformation") JSON schema
 
 See [docs/cfn-schema-support.md](./docs/cfn-schema-support.md) for how to fix
