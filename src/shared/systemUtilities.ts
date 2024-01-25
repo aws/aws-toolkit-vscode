@@ -15,6 +15,8 @@ import { GitExtension } from './extensions/git'
 import { isCloud9 } from './extensionUtilities'
 import { Settings } from './settings'
 import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isNoPermissionsError } from './errors'
+import { isInBrowser } from '../common/browserUtils'
+import globals from './extensionGlobals'
 
 export function createPermissionsErrorHandler(
     uri: vscode.Uri,
@@ -49,6 +51,14 @@ export class SystemUtilities {
     private static bashPath: string
 
     public static getHomeDirectory(): string {
+        if (isInBrowser()) {
+            // When in browser we cannot access the users desktop file system.
+            // Instead, VS Code provided uris will use the browsers storage.
+            // IMPORTANT: we must preserve the scheme of this URI or else VS Code
+            // will incorrectly interpret the path.
+            return globals.context.globalStorageUri.toString()
+        }
+
         const env = process.env as EnvironmentVariables
 
         if (env.HOME !== undefined) {
