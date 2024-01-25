@@ -117,12 +117,13 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
 
     if (spawnResult.error || spawnResult.status !== 0) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
-        const errorLog = `${spawnResult.error}\n${spawnResult.stderr}\n${spawnResult.stdout}`
+        const errorLog = `${JSON.stringify(spawnResult.error)}\n${spawnResult.stderr}\n${spawnResult.stdout}`
+        const redactedErrorLog = redactPii(errorLog)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
             result: MetadataResult.Fail,
-            reason: errorLog,
+            reason: redactedErrorLog,
         })
         throw new ToolkitError('Unable to determine Java version', {
             code: 'CannotDetermineJavaVersion',
@@ -337,17 +338,20 @@ function getProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, mo
         '-Dmdep.useRepositoryLayout=true',
         '-Dmdep.copyPom=true',
         '-Dmdep.addParentPoms=true',
+        '-X',
+        '-e',
     ]
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        const errorLog = `${spawnResult.error}\n${spawnResult.stderr}\n${spawnResult.stdout}`
+        const errorLog = `${JSON.stringify(spawnResult.error)}\n${spawnResult.stderr}\n${spawnResult.stdout}`
+        const redactedErrorLog = redactPii(errorLog)
         getLogger().error(`CodeTransform: Error in running Maven command ${baseCommand} = ${errorLog}`)
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformMavenBuildCommand: buildCommand,
             result: MetadataResult.Fail,
-            reason: errorLog,
+            reason: redactedErrorLog,
         })
         throw new ToolkitError('Maven Dependency Error', { code: 'CannotRunMavenShellCommand' })
     }
@@ -642,4 +646,12 @@ export async function checkBuildSystem(projectPath: string) {
         return BuildSystem.Gradle
     }
     return BuildSystem.Unknown
+}
+
+/*
+ * This function redacts file paths (Windows and Unix) which may contain PII.
+ * It will eventually be extended to handle other types of PII, if needed.
+ */
+function redactPii(errorLog: string) {
+    return errorLog.replace(/[^\s]+[\\/][^\s]*/g, ' <redacted> ')
 }
