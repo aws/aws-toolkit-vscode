@@ -2,6 +2,7 @@
     "name": "root",
     "workspaces": [
         "packages/*",
+        "plugins/*",
         "src.gen/@amzn/codewhisperer-streaming"
     ],
     "version": "0.0.1",
@@ -17,8 +18,9 @@
         "endOfLine": "lf"
     },
     "scripts": {
+        "prepare": "ts-node ./scripts/prepare.ts",
         "postinstall": "npm run buildCustomLintPlugin",
-        "buildCustomLintPlugin": "cd ./plugins/eslint-plugin-aws-toolkits && npm run build",
+        "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
         "newChange": "ts-node ./scripts/newChange.ts",
         "createRelease": "ts-node ./scripts/createRelease.ts",
         "format": "prettier --check src-* plugins",

@@ -24,22 +24,24 @@ const unlink = util.promisify(fs.unlink)
 // to be run before `npm install`.
 async function rdelete(p: string) {
     const stats = await stat(p)
-    if (stats.isFile()) {
+    if (!stats.isFile() && !stats.isDirectory()) {
+        throw new Error(`Could not delete '${p}' because it is neither a file nor directory`)
+    }
+
+    try {
         await unlink(p)
-    } else if (stats.isDirectory()) {
+    } catch {
+        // Unlink should only fail if it is a non-empty directory that is NOT a symbolic link.
+        // stats.isSymoblicLink() does not seem to detect symbolic links to folders?
         const promises = (await readdir(p)).map(child => rdelete(path.join(p, child)))
 
         await Promise.all(promises)
         await rmdir(p)
-    } else {
-        throw new Error(`Could not delete '${p}' because it is neither a file nor directory`)
     }
 }
 
-async function tryDeleteRelative(p: string) {
+async function tryDelete(target: string) {
     try {
-        const target = path.resolve(process.cwd(), p)
-
         if (!exists(target)) {
             console.log(
                 `Could not access '${target}', probably because it does not exist. Skipping clean for this path.`
@@ -49,7 +51,7 @@ async function tryDeleteRelative(p: string) {
 
         await rdelete(target)
     } catch (e) {
-        console.error(`Could not clean '${p}': ${String(e)}`)
+        console.error(`Could not clean '${target}': ${String(e)}`)
     }
 }
 
@@ -62,28 +64,67 @@ function exists(p: string): boolean {
     }
 }
 
-async function getGenerated(): Promise<string[]> {
-    if (!exists(path.join(process.cwd(), 'dist'))) {
-        return []
+function getPathsToDelete(subfolders: string[]): string[] {
+    const paths: string[] = []
+
+    for (const subfolder of subfolders) {
+        const fullPath = path.join(process.cwd(), subfolder)
+        paths.push(...rFileFind(fullPath, 'tsconfig.tsbuildinfo'))
+        paths.push(...rDirectoryFind(fullPath, 'dist'))
+        paths.push(...rDirectoryFind(fullPath, 'bin'))
     }
 
-    const p = path.join(process.cwd(), 'dist', 'generated.buildinfo')
-
-    try {
-        const data = JSON.parse(await readFile(p, 'utf-8'))
-
-        if (!Array.isArray(data) || !data.every(d => typeof d === 'string')) {
-            throw new Error('File manifest was not an array of strings')
-        }
-
-        return data
-    } catch (e) {
-        console.log(`Failed to read "generated.buildinfo": ${String(e)}`)
-        return []
-    }
+    return paths
 }
 
-void (async () => {
-    const args = process.argv.slice(2).concat(await getGenerated())
-    await Promise.all(args.map(tryDeleteRelative))
+function rFileFind(parentPath: string, fileName: string): string[] {
+    if (!fs.existsSync(parentPath) || !fs.lstatSync(parentPath).isDirectory()) {
+        return []
+    }
+
+    const files: string[] = []
+
+    const childFiles = fs.readdirSync(parentPath)
+    for (const childFile of childFiles) {
+        const filePath = path.join(parentPath, childFile)
+        const fileStat = fs.lstatSync(filePath)
+
+        if (fileStat.isDirectory()) {
+            files.push(...rFileFind(filePath, fileName))
+        } else if (childFile === fileName) {
+            files.push(filePath)
+        }
+    }
+
+    return files
+}
+
+function rDirectoryFind(parentPath: string, directoryName: string): string[] {
+    if (!fs.existsSync(parentPath) || !fs.lstatSync(parentPath).isDirectory()) {
+        return []
+    }
+
+    const directories: string[] = []
+
+    const childFiles = fs.readdirSync(parentPath)
+    for (const childFile of childFiles) {
+        const fullPath = path.join(parentPath, childFile)
+        const fileStat = fs.lstatSync(fullPath)
+
+        if (fileStat.isDirectory()) {
+            if (childFile === directoryName) {
+                directories.push(fullPath)
+            } else {
+                directories.push(...rDirectoryFind(fullPath, directoryName))
+            }
+        }
+    }
+    return directories
+}
+
+;(async () => {
+    const subfolders = ['packages']
+    const pathsToDelete = getPathsToDelete(subfolders)
+
+    await Promise.all(pathsToDelete.map(tryDelete))
 })()
