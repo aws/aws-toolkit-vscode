@@ -1,3 +1,7 @@
+# _2.4_ (2024-01-10)
+- **(Bug Fix)** Fix Code Transform Plan UI component alignment
+- **(Bug Fix)** Fix Code Transform uploaded artifact file paths when submitting from Windows machine
+
 # _2.3_ (2024-01-05)
 - **(Feature)** Emit additional CodeTransform telemetry
 - **(Feature)** Amazon Q Transform: Use the IDE Maven runner as a fallback
