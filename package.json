@@ -994,6 +994,22 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.emrserverless.copyId",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.emrserverless.startApplication",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.emrserverless.stopApplication",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.emrserverless.getDashboard",
+                    "when": "false"
+                },
+                {
                     "command": "aws.iot.createThing",
                     "when": "false"
                 },
@@ -1592,6 +1608,26 @@
                     "group": "inline@1"
                 },
                 {
+                    "command": "aws.emrserverless.startApplication",
+                    "when": "view == aws.explorer && viewItem == awsEmrServerlessStoppedApplicationNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.emrserverless.stopApplication",
+                    "when": "view == aws.explorer && viewItem == awsEmrServerlessStartedApplicationNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.emrserverless.getDashboard",
+                    "when": "view == aws.explorer && viewItem == awsEmrServerlessJobNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.emrserverless.copyId",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEmrServerless((Stopped|Started)?Application|Job)Node)$/",
+                    "group": "2@0"
+                },
+                {
                     "command": "aws.iot.createThing",
                     "when": "view == aws.explorer && viewItem == awsIotThingsNode",
                     "group": "inline@1"
@@ -1883,7 +1919,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|(awsEc2(Running|Pending|Stopped)Node))/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|(awsEc2(Running|Pending|Stopped)Node))|awsEmrServerless((Started|Stopped)?Application|Job)Node/",
                     "group": "2@2"
                 },
                 {
@@ -2575,6 +2611,46 @@
                 "title": "%AWS.command.ecr.deleteRepository%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.emrserverless.startApplication",
+                "title": "%AWS.command.emrserverless.startApplication%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.emrserverless.stopApplication",
+                "title": "%AWS.command.emrserverless.stopApplication%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.emrserverless.getDashboard",
+                "title": "%AWS.command.emrserverless.openDashboardUI%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.emrserverless.copyId",
+                "title": "%AWS.command.emrserverless.copyId%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
