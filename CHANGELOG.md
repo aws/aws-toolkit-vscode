@@ -1,3 +1,7 @@
+## 2.7.0 2024-01-25
+
+- **Bug Fix** Add invalid auth handling to Application Composer's Sync button
+
 ## 2.6.0 2024-01-18
 
 - **Bug Fix** CodeWhisperer suggestions may be trimmed under certain criteria
