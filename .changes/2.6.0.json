@@ -1,0 +1,34 @@
+{
+	"date": "2024-01-18",
+	"version": "2.6.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer suggestions may be trimmed under certain criteria"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q CodeTransform: open summary.md automatically when job finishes"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer not handling extra closing symbols (parenthesis, brackets, quotes) when user typeahead exists"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Cloud9: error when expanding S3 folder"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM local debugging: Toolkit showed SamLaunchRequestError for `AWS::Lambda::Function` template resource"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q CodeTransform: use Maven wrapper (if present) to copy dependencies if Maven not installed"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM lambda debugging: SAM output and other logs are now presented with VSCode's log highlighting"
+		}
+	]
+}

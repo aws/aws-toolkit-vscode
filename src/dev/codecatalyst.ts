@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import glob from 'glob'
+import { glob } from 'glob'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as manifest from '../../package.json'
-import { promisify } from 'util'
 import { getLogger } from '../shared/logger'
 import { selectCodeCatalystResource } from '../codecatalyst/wizards/selectResource'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
@@ -170,7 +169,7 @@ async function promptVsix(
         yield [seps.shift()!, packageNew, localInstall]
 
         for (const f of folders) {
-            const paths = await promisify(glob)('*.vsix', { cwd: f.fsPath })
+            const paths = await glob('*.vsix', { cwd: f.fsPath })
             const uris = paths.map(v => vscode.Uri.file(path.join(f.fsPath, v)))
 
             if (uris.length > 0 && seps.length > 0) {

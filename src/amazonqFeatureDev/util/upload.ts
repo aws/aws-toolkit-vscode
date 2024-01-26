@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import got from 'got'
-
+import request, { RequestError } from '../../common/request'
 import { getLogger } from '../../shared/logger/logger'
 import { featureName } from '../constants'
 
@@ -17,8 +16,7 @@ import { UploadCodeError } from '../errors'
  */
 export async function uploadCode(url: string, buffer: Buffer, checksumSha256: string, kmsKeyArn?: string) {
     try {
-        await got(url, {
-            method: 'PUT',
+        await request.fetch('PUT', url, {
             body: buffer,
             headers: {
                 'Content-Type': 'application/zip',
@@ -29,9 +27,11 @@ export async function uploadCode(url: string, buffer: Buffer, checksumSha256: st
                     'x-amz-server-side-encryption': 'aws:kms',
                 }),
             },
-        })
+        }).response
     } catch (e: any) {
         getLogger().error(`${featureName}: failed to upload code to s3: ${(e as Error).message}`)
-        throw new UploadCodeError(e instanceof got.HTTPError ? `${e.response.statusCode}` : 'Unknown')
+        throw new UploadCodeError(
+            e instanceof RequestError ? `${e.response.status}: ${e.response.statusText}` : 'Unknown'
+        )
     }
 }

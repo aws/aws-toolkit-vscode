@@ -210,7 +210,11 @@ describe('LogDataRegistry', async function () {
         it('matches CloudWatch insights timestamps', function () {
             const time = 1624201162222 // 2021-06-20 14:59:22.222 GMT+0
             const timestamp = formatDateTimestamp(true, new Date(time))
-            assert.strictEqual(timestamp, '2021-06-20T14:59:22.222+00:00')
+            assert.strictEqual(
+                timestamp,
+                '2021-06-20T14:59:22.222-07:00',
+                '`process.env.TZ` assignment may have been modified'
+            )
         })
     })
 })

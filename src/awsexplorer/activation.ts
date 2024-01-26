@@ -60,7 +60,7 @@ export async function activate(args: {
             })
         }
         if (element.element.serviceId) {
-            telemetry.aws_expandExplorerNode.emit({ serviceType: element.element.serviceId })
+            telemetry.aws_expandExplorerNode.emit({ serviceType: element.element.serviceId, result: 'Succeeded' })
         }
     })
     globals.context.subscriptions.push(view)

@@ -16,7 +16,6 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import { spawnSync } from 'child_process'
 import AdmZip from 'adm-zip'
-import fetch from '../../common/request'
 import globals from '../../shared/extensionGlobals'
 import { CodeTransformMavenBuildCommand, telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
@@ -24,6 +23,7 @@ import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTr
 import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { TransformByQJavaProjectNotFound } from '../../amazonqGumby/models/model'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
+import request from '../../common/request'
 
 /* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
@@ -178,8 +178,10 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
     throwIfCancelled()
     try {
         const apiStartTime = Date.now()
-        const response = await fetch('PUT', resp.uploadUrl, { body: fs.readFileSync(fileName), headers: headersObj })
-            .response
+        const response = await request.fetch('PUT', resp.uploadUrl, {
+            body: fs.readFileSync(fileName),
+            headers: headersObj,
+        }).response
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),

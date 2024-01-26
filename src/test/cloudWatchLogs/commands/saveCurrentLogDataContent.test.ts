@@ -36,8 +36,8 @@ async function testFilterLogEvents(
 describe('saveCurrentLogDataContent', async function () {
     let filename: string
     let tempDir: string
-    const expectedText = `1970-01-20T09:24:11.113+00:00\tThe first log event
-1970-01-20T09:24:11.114+00:00\tThe second log event
+    const expectedText = `1970-01-20T09:24:11.113-08:00\tThe first log event
+1970-01-20T09:24:11.114-08:00\tThe second log event
 `
 
     beforeEach(async function () {

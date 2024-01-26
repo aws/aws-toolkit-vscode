@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQHandler'
-import fetch from '../../common/request'
+import request from '../../common/request'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import * as os from 'os'
@@ -54,7 +54,7 @@ describe('transformByQ', async function () {
         }
         await assert.rejects(
             () =>
-                fetch('PUT', response.uploadUrl, { body: fs.readFileSync(zippedCodePath), headers: headersObj })
+                request.fetch('PUT', response.uploadUrl, { body: fs.readFileSync(zippedCodePath), headers: headersObj })
                     .response
         )
     })

@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
+import { promises as fsPromises } from 'fs'
+import fs from 'fs'
 import * as vscode from 'vscode'
 import * as os from 'os'
 import * as path from 'path'
@@ -28,7 +29,7 @@ export function createPermissionsErrorHandler(
         }
 
         const userInfo = os.userInfo({ encoding: 'utf-8' })
-        const stats = await fs.stat(uri.fsPath).catch(async err2 => {
+        const stats = await fsPromises.stat(uri.fsPath).catch(async err2 => {
             if (!isNoPermissionsError(err2) && !(isFileNotFoundError(err2) && perms[1] === 'w')) {
                 throw err
             }
@@ -70,7 +71,7 @@ export class SystemUtilities {
         const errorHandler = createPermissionsErrorHandler(uri, 'r**')
 
         if (isCloud9()) {
-            return decoder.decode(await fs.readFile(uri.fsPath).catch(errorHandler))
+            return decoder.decode(await fsPromises.readFile(uri.fsPath).catch(errorHandler))
         }
 
         return decoder.decode(await vscode.workspace.fs.readFile(uri).then(undefined, errorHandler))
@@ -86,7 +87,7 @@ export class SystemUtilities {
         const content = typeof data === 'string' ? new TextEncoder().encode(data) : data
 
         if (isCloud9()) {
-            return fs.writeFile(uri.fsPath, content, opt).catch(errorHandler)
+            return fsPromises.writeFile(uri.fsPath, content, opt).catch(errorHandler)
         }
 
         return vscode.workspace.fs.writeFile(uri, content).then(undefined, errorHandler)
@@ -98,11 +99,11 @@ export class SystemUtilities {
         const errorHandler = createPermissionsErrorHandler(dirUri, '*wx')
 
         if (isCloud9()) {
-            const stat = await fs.stat(uri.fsPath)
+            const stat = await fsPromises.stat(uri.fsPath)
             if (stat.isDirectory()) {
-                return fs.remove(uri.fsPath).catch(errorHandler)
+                return fsPromises.rmdir(uri.fsPath).catch(errorHandler)
             } else {
-                return fs.unlink(uri.fsPath).catch(errorHandler)
+                return fsPromises.unlink(uri.fsPath).catch(errorHandler)
             }
         }
 
@@ -120,7 +121,7 @@ export class SystemUtilities {
                 } else if (uri.scheme !== 'file' || !isFileNotFoundError(err) || process.platform === 'win32') {
                     throw err
                 } else {
-                    const stats = await fs.stat(dirUri.fsPath).catch(() => {
+                    const stats = await fsPromises.stat(dirUri.fsPath).catch(() => {
                         throw err
                     })
                     if ((stats.mode & fs.constants.S_IXUSR) === 0) {
@@ -138,7 +139,10 @@ export class SystemUtilities {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
 
         if (isCloud9()) {
-            return new Promise<boolean>(resolve => fs.access(uri.fsPath, fs.constants.F_OK, err => resolve(!err)))
+            return fsPromises.access(uri.fsPath, fs.constants.F_OK).then(
+                () => true,
+                () => false
+            )
         }
 
         return vscode.workspace.fs.stat(uri).then(
@@ -152,7 +156,10 @@ export class SystemUtilities {
         const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
 
         if (isCloud9()) {
-            return fs.ensureDir(uri.fsPath).catch(errorHandler)
+            return fsPromises
+                .mkdir(uri.fsPath, { recursive: true })
+                .then(() => {})
+                .catch(errorHandler)
         }
 
         return vscode.workspace.fs.createDirectory(uri).then(undefined, errorHandler)
@@ -170,13 +177,13 @@ export class SystemUtilities {
      *
      * This throws {@link PermissionsError} when permissions are insufficient.
      */
-    public static async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet) {
+    public static async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet): Promise<void> {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
         const errorHandler = createPermissionsErrorHandler(uri, perms)
         const flags = Array.from(perms) as (keyof typeof this.modeMap)[]
         const mode = flags.reduce((m, f) => m | this.modeMap[f], fs.constants.F_OK)
 
-        return fs.access(uri.fsPath, mode).catch(errorHandler)
+        return fsPromises.access(uri.fsPath, mode).catch(errorHandler)
     }
 
     // TODO: implement this by checking the file mode
@@ -242,7 +249,7 @@ export class SystemUtilities {
             'code', // $PATH
         ]
         for (const vsc of vscs) {
-            if (!vsc || (vsc !== 'code' && !fs.existsSync(vsc))) {
+            if (!vsc || (vsc !== 'code' && !(await this.fileExists(vsc)))) {
                 continue
             }
             if (await SystemUtilities.tryRun(vsc, ['--version'])) {
@@ -296,7 +303,7 @@ export class SystemUtilities {
             'C:/Program Files/Git/usr/bin/ssh.exe',
         ]
         for (const p of paths) {
-            if (!p || ('ssh' !== p && !fs.existsSync(p))) {
+            if (!p || ('ssh' !== p && !(await this.fileExists(p)))) {
                 continue
             }
             if (await SystemUtilities.tryRun(p, ['-G', 'x'], 'noresult' /* "ssh -G" prints quasi-sensitive info. */)) {
@@ -318,7 +325,7 @@ export class SystemUtilities {
 
         const paths = [git.gitPath, 'git']
         for (const p of paths) {
-            if (!p || ('git' !== p && !fs.existsSync(p))) {
+            if (!p || ('git' !== p && !(await this.fileExists(p)))) {
                 continue
             }
             if (await SystemUtilities.tryRun(p, ['--version'])) {
@@ -338,7 +345,7 @@ export class SystemUtilities {
 
         const paths = ['bash', 'C:/Program Files/Git/usr/bin/bash.exe', 'C:/Program Files (x86)/Git/usr/bin/bash.exe']
         for (const p of paths) {
-            if (!p || ('bash' !== p && !fs.existsSync(p))) {
+            if (!p || ('bash' !== p && !(await this.fileExists(p)))) {
                 continue
             }
             if (await SystemUtilities.tryRun(p, ['--version'])) {

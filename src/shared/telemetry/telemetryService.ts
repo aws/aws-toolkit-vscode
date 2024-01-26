@@ -101,7 +101,7 @@ export class DefaultTelemetryService {
         if (this.telemetryEnabled && !isAutomation()) {
             const currTime = new globals.clock.Date()
             // This is noisy when running tests in vscode.
-            telemetry.session_end.emit({ value: currTime.getTime() - this.startTime.getTime() })
+            telemetry.session_end.emit({ value: currTime.getTime() - this.startTime.getTime(), result: 'Succeeded' })
 
             try {
                 await fsCommon.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))

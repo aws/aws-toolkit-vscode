@@ -248,12 +248,6 @@ export enum BuildSystem {
     Unknown = 'Unknown',
 }
 
-export enum DropdownStep {
-    STEP_1 = 1,
-    STEP_2 = 2,
-    STEP_3 = 3,
-}
-
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
     dependenciesRoot: string | undefined = 'dependencies/'
@@ -276,6 +270,7 @@ export class TransformByQState {
     private summaryFilePath: string = ''
 
     private resultArchiveFilePath: string = ''
+    private projectCopyFilePath: string = ''
 
     private polledJobStatus: string = ''
 
@@ -347,6 +342,10 @@ export class TransformByQState {
 
     public getResultArchiveFilePath() {
         return this.resultArchiveFilePath
+    }
+
+    public getProjectCopyFilePath() {
+        return this.projectCopyFilePath
     }
 
     public getJobFailureReason() {
@@ -423,6 +422,10 @@ export class TransformByQState {
 
     public setResultArchiveFilePath(filePath: string) {
         this.resultArchiveFilePath = filePath
+    }
+
+    public setProjectCopyFilePath(filePath: string) {
+        this.projectCopyFilePath = filePath
     }
 
     public setJobFailureReason(reason: string) {
