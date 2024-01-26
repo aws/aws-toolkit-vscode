@@ -25,7 +25,6 @@ import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { examples } from '../../userFacingText'
 import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
 
 export interface ChatControllerEventEmitters {
