@@ -7,6 +7,7 @@ import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
 plugins {
     id("base")
     id("toolkit-changelog")
+    id("toolkit-git-secrets")
     id("toolkit-jacoco-report")
     id("org.jetbrains.gradle.plugin.idea-ext")
 }
