@@ -1,62 +1,72 @@
 # Browser
 
-This extension can run in the web browser (eg: [vscode.dev](https://vscode.dev)), but with limited functionality.
+This extension can run in the web browser (eg: [vscode.dev](https://vscode.dev)), but with limited functionality compared to
+the desktop version.
 
 ## Running the Browser implementation
 
 You can run the browser implementation of the extension in the following ways.
 
-### Running in VSCode
+### General Notes
 
-The following steps will result in a VSCode Extension window running
-with the AWS Toolkit extension installed.
-The difference from the regular
-process is that in the background it is running as a browser environment
-so certain things like Node.js modules will not be available.
+-   To see logs, using the Command Palette search: `Toggle Developer Tools`. Then go to the `Console` tab. In browser mode VS Code seems to duplicate log messages, idk how to fix this.
+-   The difference between browser mode and Node.js/desktop is that browser mode is in an actual browser environment so certain things like Node.js modules will **not** be available.
 
-1. In the terminal run: `npm run buildBrowser`
-
-## Running in a Browser window
+## Running in an actual Browser
 
 The following steps will result in a Chrome window running with VS Code
-and the Browser version of the AWS Toolkit extension installed.
+and the Browser version of the AWS Toolkit extension installed:
 
-1. In the terminal run: `npm run runInBrowser`
+1. (Recommended) To have the Chrome window save your VS Code state after closing it, you need to modify the node module which executes the playwright method that opens it. In `node_modules/@vscode/test-web/out/index.js#openBrowser()` make the following change:
 
-##### (OPTIONAL) Disabling CORS
+    Before:
 
-In the case you want to disable CORS in the browser for something like
-contacting the telemetry api endpoint, do the following.
+    ```typescript
+    const browser = await browserType.launch({ headless, args, devtools: options.devTools })
+    const context = await browser.newContext({ viewport: null })
+    ```
 
-The script that starts the browser does not provide a way to disable security,
-so we need to modify the code slightly to ensure the browser starts with CORS disabled.
+    After:
 
-1. Go to `./node_modules/@vscode/test-web/out/index.js`
-2. Go to the function `openBrowser()`
-3. Add the line `args.push('--disable-web-security')`
+    ```typescript
+    const tempContextDir = path.join(process.cwd(), '.vscode-test-web/aws-toolkit-user-dir')
+    const browser = await browserType.launchPersistentContext(tempContextDir, {
+        headless,
+        args,
+        devtools: options.devTools,
+        viewport: null,
+    })
+    const context = browser
+    ```
 
-Now when you run the extension in the browser it will not do CORS checks.
+2. In the `Run & Debug` menu select the `Extension (Chrome)` option
 
-#### Debugging in Browser window
+> Note: To stop the debug session, you need to click the read `Disconnect` button multiple times
 
-Debugging in the Browser is more difficult than the Node.js/Desktop
-version.
+> Note: Setting breakpoints in VS Code works
 
--   Breakpoints do not work, we cannot step through the code.
+#### (OPTIONAL) Enabling CORS
 
-The best we can do (as far as I know) is to read logs.
+By default, we disable CORS in browser mode since certain endpoints
+such as telemetry or auth do not support CORS (at the moment of writing) for the VSCode origin.
 
-To get to the VS Code logs go to:
+In the case you want to enable CORS in the browser to test CORS compatibility
+do the following:
 
-1. The `Output` tab
-2. In the top right drop-down select: `Extension Host (Worker)`
+-   In `package.json` find the `browserRun` script
+-   Temporarily remove `--browserOption=--disable-web-security`
 
-> The VS Code logs will show errors if we try to use modules that do not exist in the Browser.
+Now when you run the extension in the browser it will do CORS checks.
 
-To get to the AWS Toolkit logs:
+## Testing in VSCode Browser Mode
 
-1. Open Command Palette: `cmd/ctrl` + `shift` + `p`
-2. Type: `AWS: View Toolkit Logs`
+The following steps will result in a VSCode Extension window running
+with the AWS Toolkit extension installed. While it looks the same as a typical
+VS Code window, in the background it is running in a Browser context.
+
+-   In the `Run & Debug` menu run: `Extension Tests (browser)`
+
+> NOTE: Tests do not spin up an actual Browser window, but if we find a good reason to switch it will require some additional work. The current way does not require dowloading a separate browser like Chromium.
 
 ## Finding incompatible transitive dependencies
 

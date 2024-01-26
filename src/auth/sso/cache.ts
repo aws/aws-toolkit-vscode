@@ -30,8 +30,8 @@ export interface SsoCache {
     readonly registration: KeyedCache<ClientRegistration, RegistrationKey>
 }
 
-const defaultCacheDir = path.join(SystemUtilities.getHomeDirectory(), '.aws', 'sso', 'cache')
-export const getCacheDir = () => DevSettings.instance.get('ssoCacheDirectory', defaultCacheDir)
+const defaultCacheDir = () => path.join(SystemUtilities.getHomeDirectory(), '.aws', 'sso', 'cache')
+export const getCacheDir = () => DevSettings.instance.get('ssoCacheDirectory', defaultCacheDir())
 
 export function getCache(directory = getCacheDir()): SsoCache {
     return {
