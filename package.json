@@ -4315,7 +4315,7 @@
         "diff": "^5.1.0",
         "esbuild-loader": "2.20.0",
         "eslint": "^8.26.0",
-        "eslint-config-prettier": "8.8",
+        "eslint-config-prettier": "9.1",
         "eslint-plugin-aws-toolkits": "file:plugins/eslint-plugin-aws-toolkits",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
