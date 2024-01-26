@@ -6,8 +6,13 @@
 import { SinonStub, stub } from 'sinon'
 import assert from 'assert'
 import crossFetch from 'cross-fetch'
-import fetch, { RequestCancelledError, RequestError } from '../../common/request'
+import request, { RequestCancelledError, RequestError } from '../../common/request'
 import globals from '../../shared/extensionGlobals'
+
+// Returns a stubbed fetch for other tests.
+export function getFetchStubWithResponse(response: Partial<Response>) {
+    return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
+}
 
 describe('fetch()', function () {
     /** We built a wrapper around an actual fetch implementation, this is a fake stub of it for testing. */
@@ -25,7 +30,7 @@ describe('fetch()', function () {
     })
 
     it('passes the expected arguments to the wrapped fetch implementation', async function () {
-        const response = await fetch('GET', 'http://test.com', { mode: 'cors' }, wrappedFetch).response
+        const response = await request.fetch('GET', 'http://test.com', { mode: 'cors' }, wrappedFetch).response
 
         assert.strictEqual(wrappedFetch.callCount, 1)
         assert.deepStrictEqual(wrappedFetch.getCall(0).args, [
@@ -44,10 +49,10 @@ describe('fetch()', function () {
             status: testStatusCode,
         } as Response)
 
-        const request = fetch('GET', 'http://test.com', {}, wrappedFetch)
+        const req = request.fetch('GET', 'http://test.com', {}, wrappedFetch)
 
         await assert.rejects(async () => {
-            await request.response
+            await req.response
         }, RequestError)
     })
 
@@ -64,16 +69,16 @@ describe('fetch()', function () {
         // - Once all microTasks are completed/exhausted, only then will the event loop
         //   pickup a single macrotask. This process then repeats.
 
-        const request = fetch('GET', 'https://aws.amazon.com/', {})
+        const req = request.fetch('GET', 'https://aws.amazon.com/', {})
 
         // cancel() call is part of the macrotask queue.
         globals.clock.setTimeout(() => {
-            request.cancel()
+            req.cancel()
         }, 0)
 
         // The response and the wrapped fetch request pushed to the microtask queue.
         await assert.rejects(
-            () => request.response,
+            () => req.response,
             e => {
                 return e instanceof RequestCancelledError
             }

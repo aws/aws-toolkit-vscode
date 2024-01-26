@@ -24,7 +24,7 @@ import { PrepareRepoFailedError } from '../../../amazonqFeatureDev/errors'
 import crypto from 'crypto'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 import { assertTelemetry } from '../../testUtil'
-import * as got from 'got'
+import { getFetchStubWithResponse } from '../../common/request.test'
 
 const mockSessionStateAction = (msg?: string): SessionStateAction => {
     return {
@@ -90,7 +90,7 @@ describe('sessionState', () => {
             sinon.stub(vscode.workspace, 'findFiles').resolves([])
             mockCreateUploadUrl = sinon.stub().resolves({ uploadId: '', uploadUrl: '' })
             mockGeneratePlan = sinon.stub().resolves(testApproach)
-            sinon.stub(got, 'default').resolves({ statusCode: 200 })
+            getFetchStubWithResponse({ status: 200 })
 
             const testAction = mockSessionStateAction()
             await new PrepareRefinementState(testConfig, testApproach, tabId).interact(testAction)

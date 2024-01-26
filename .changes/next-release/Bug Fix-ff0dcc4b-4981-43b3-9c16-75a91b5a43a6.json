@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM local debugging: Toolkit showed SamLaunchRequestError for `AWS::Lambda::Function` template resource"
-}

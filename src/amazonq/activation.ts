@@ -18,7 +18,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../auth/ui/vue/show'
 
 export async function activate(context: ExtensionContext) {
-    const appInitContext = new DefaultAmazonQAppInitContext()
+    const appInitContext = DefaultAmazonQAppInitContext.instance
 
     registerApps(appInitContext)
 

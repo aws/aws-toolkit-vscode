@@ -23,9 +23,10 @@ import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
-import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { examples } from '../../userFacingText'
+import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -244,7 +245,8 @@ export class FeatureDevController {
         // Ensure that the loading icon stays showing
         this.messenger.sendAsyncEventProgress(tabID, true, 'Ok, let me create a plan. This may take a few minutes.')
 
-        this.messenger.sendUpdatePlaceholder(tabID, 'Generating approach ...')
+        this.messenger.sendUpdatePlaceholder(tabID, 'Generating implementation plan ...')
+
         const interactions = await session.send(message)
         this.messenger.sendUpdatePlaceholder(tabID, 'Add more detail to iterate on the approach')
 

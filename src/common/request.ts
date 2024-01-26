@@ -5,25 +5,28 @@
 
 import crossFetch from 'cross-fetch'
 
-/**
- * Make a fetch request.
- *
- * @example
- * const request = fetch('GET', 'https://example.com')
- * setTimeout(() => request.cancel(), 10_000)
- * const response = await request.response
- * const text = await response.text()
- *
- * @param wrappedFetch - The actual fetch implementation
- */
-export default function fetch(
-    method: RequestMethod,
-    url: string,
-    params?: RequestParamsArg,
-    wrappedFetch = crossFetch
-): FetchRequest {
-    return new FetchRequest(url, { ...params, method }, wrappedFetch)
+const request = {
+    /**
+     * Make a fetch request.
+     *
+     * @example
+     * const request = fetch('GET', 'https://example.com')
+     * setTimeout(() => request.cancel(), 10_000)
+     * const response = await request.response
+     * const text = await response.text()
+     *
+     * @param wrappedFetch - The actual fetch implementation
+     */
+    fetch: function (
+        method: RequestMethod,
+        url: string,
+        params?: RequestParamsArg,
+        wrappedFetch = crossFetch
+    ): FetchRequest {
+        return new FetchRequest(url, { ...params, method }, wrappedFetch)
+    },
 }
+export default request
 
 type RequestMethod = 'GET' | 'POST' | 'PUT'
 /** All possible params of a fetch request (eg: headers) */

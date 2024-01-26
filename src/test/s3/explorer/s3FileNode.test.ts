@@ -15,8 +15,8 @@ describe('S3FileNode', function () {
     const name = 'file.jpg'
     const key = 'path/to/file.jpg'
     const sizeBytes = 1024
-    const lastModified = new Date(2020, 5, 4, 3, 2, 1)
-    const now = new Date(2020, 6, 4)
+    const lastModified = new Date(Date.UTC(2020, 5, 4, 3, 2, 1))
+    const now = new Date(Date.UTC(2020, 6, 4))
     const lastModifiedReadable = formatLocalized(lastModified)
 
     it('creates an S3 File Node', async function () {
