@@ -198,7 +198,7 @@ class TelemetryServiceTest {
 
         telemetryService.record(
             MetricEventMetadata(
-                awsAccount = "222222222222",
+                awsAccount = "123456789012",
                 awsRegion = "bar-region"
             )
         ) {
@@ -207,7 +207,7 @@ class TelemetryServiceTest {
         telemetryService.dispose()
 
         verify(batcher).enqueue(eventCaptor.capture())
-        assertMetricEventsContains(eventCaptor.allValues, "Foo", "222222222222", "bar-region")
+        assertMetricEventsContains(eventCaptor.allValues, "Foo", "123456789012", "bar-region")
     }
 
     @Test

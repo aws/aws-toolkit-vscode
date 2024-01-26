@@ -10,6 +10,7 @@ buildscript {
 
 plugins {
     `kotlin-dsl`
+    `java-gradle-plugin`
 }
 
 
@@ -25,11 +26,13 @@ dependencies {
     implementation(libs.gradlePlugin.kotlin)
     implementation(libs.gradlePlugin.testLogger)
     implementation(libs.gradlePlugin.testRetry)
+    implementation(libs.gradlePlugin.undercouch.download)
     implementation(libs.jgit)
 
     testImplementation(libs.assertj)
     testImplementation(libs.junit4)
     testImplementation(libs.bundles.mockito)
+    testImplementation(gradleTestKit())
 
     testRuntimeOnly(libs.junit5.jupiterVintage)
 }

@@ -27,6 +27,7 @@ testRetry = "1.5.2"
 slf4j = "1.7.36"
 sshd = "2.11.0"
 wiremock = "2.35.0"
+undercouch-download = "5.2.1"
 zjsonpatch = "0.4.11"
 
 [libraries]
@@ -70,6 +71,7 @@ gradlePlugin-intellij = { module = "org.jetbrains.intellij:org.jetbrains.intelli
 gradlePlugin-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 gradlePlugin-testLogger = { module = "com.adarshr:gradle-test-logger-plugin", version.ref = "testLogger" }
 gradlePlugin-testRetry = { module = "org.gradle:test-retry-gradle-plugin", version.ref = "testRetry" }
+gradlePlugin-undercouch-download = { module = "de.undercouch:gradle-download-task", version.ref = "undercouch-download" }
 intellijRemoteFixtures = { module = "com.intellij.remoterobot:remote-fixtures", version.ref = "intellijRemoteRobot" }
 intellijRemoteRobot = { module = "com.intellij.remoterobot:remote-robot", version.ref = "intellijRemoteRobot" }
 jackson-datetime = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }

@@ -7,7 +7,7 @@ import software.aws.toolkits.gradle.resources.ValidateMessages
 plugins {
     id("toolkit-kotlin-conventions")
     id("toolkit-testing")
-    id("de.undercouch.download") version "5.2.1"
+    id("de.undercouch.download")
 }
 
 sourceSets {
