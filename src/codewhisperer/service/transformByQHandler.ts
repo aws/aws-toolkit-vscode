@@ -119,6 +119,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         const errorLog = `${JSON.stringify(spawnResult.error)}\n${spawnResult.stderr}\n${spawnResult.stdout}`
         const redactedErrorLog = redactPii(errorLog)
+        getLogger().error(`CodeTransform: Error in running javap command = ${redactedErrorLog}`)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
@@ -346,7 +347,7 @@ function getProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, mo
     if (spawnResult.error || spawnResult.status !== 0) {
         const errorLog = `${JSON.stringify(spawnResult.error)}\n${spawnResult.stderr}\n${spawnResult.stdout}`
         const redactedErrorLog = redactPii(errorLog)
-        getLogger().error(`CodeTransform: Error in running Maven command ${baseCommand} = ${errorLog}`)
+        getLogger().error(`CodeTransform: Error in running Maven command ${baseCommand} = ${redactedErrorLog}`)
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformMavenBuildCommand: buildCommand,
