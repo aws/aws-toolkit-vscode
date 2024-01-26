@@ -1,12 +1,11 @@
 out
 resources/endpoints.json
 CHANGELOG.md
-src/shared/telemetry/service-2.json
 .changes
-src/testFixtures/**
 *.d.ts
 *.gen.ts
-dist/**
+dist/
 types/*.d.ts
 src.gen/**
-plugins/*/dist/**
+packages/toolkit/src/shared/telemetry/service-2.json
+packages/toolkit/src/testFixtures/**

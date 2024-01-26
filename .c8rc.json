@@ -2,19 +2,19 @@
     "report-dir": "./coverage",
     "reporter": ["lcov"],
     "all": true,
-    "include": ["src/**", "dist/src/**"],
+    "include": ["packages/*/src/**", "packages/*/dist/src/**"],
     "exclude": [
-        "dist/src/ssmDocument/ssm/ssmServer.js",
-        "dist/src/test/**",
-        "dist/src/testE2E/**",
-        "dist/src/testLint/**",
-        "dist/src/testInteg/**",
-        "dist/src/testFixtures/**",
-        "src/ssmDocument/ssm/ssmServer.js",
-        "src/test/**",
-        "src/testE2E/**",
-        "src/testLint/**",
-        "src/testInteg/**",
-        "src/testFixtures/**"
+        "packages/toolkit/dist/src/ssmDocument/ssm/ssmServer.js",
+        "packages/toolkit/dist/src/test/**",
+        "packages/toolkit/dist/src/testE2E/**",
+        "packages/toolkit/dist/src/testLint/**",
+        "packages/toolkit/dist/src/testInteg/**",
+        "packages/toolkit/dist/src/testFixtures/**",
+        "packages/toolkit/src/ssmDocument/ssm/ssmServer.js",
+        "packages/toolkit/src/test/**",
+        "packages/toolkit/src/testE2E/**",
+        "packages/toolkit/src/testLint/**",
+        "packages/toolkit/src/testInteg/**",
+        "packages/toolkit/src/testFixtures/**"
     ]
 }
