@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from "assert"
-import { SystemUtilities } from "../../shared/systemUtilities"
-import globals from "../../shared/extensionGlobals"
+import assert from 'assert'
+import { SystemUtilities } from '../../shared/systemUtilities'
+import globals from '../../shared/extensionGlobals'
 
 describe('SystemUtilities', function () {
     it('getHomeDirectory() when in Browser', function () {
