@@ -231,4 +231,38 @@ describe('SystemUtilities', function () {
             // Or potentially spawn new process with different uid...?
         })
     }
+
+    describe('toUri', function () {
+        it('uses existing scheme in final URI when input is string path', function () {
+            if (os.platform() === 'win32') {
+                this.skip()
+            }
+
+            assert.deepStrictEqual(
+                SystemUtilities.toUri('myScheme:/User/nikolas/file.txt'),
+                vscode.Uri.from({ scheme: 'myScheme', path: '/User/nikolas/file.txt' })
+            )
+        })
+
+        it('does not use existing scheme in final URI when input is string path AND is Windows', function () {
+            if (os.platform() !== 'win32') {
+                this.skip()
+            }
+
+            const myUri = 'c:\\hello\\there'
+            assert.deepStrictEqual(SystemUtilities.toUri(myUri), vscode.Uri.file(myUri))
+        })
+
+        it('string input, creates a file uri if no scheme', function () {
+            assert.deepStrictEqual(
+                SystemUtilities.toUri('/User/nikolas/file.txt'),
+                vscode.Uri.file('/User/nikolas/file.txt')
+            )
+        })
+
+        it('uri input, returns the given path if it is already a uri', function () {
+            const myUri = vscode.Uri.from({ scheme: 'myOtherScheme', path: '/User/john/otherFile.txt' })
+            assert.deepStrictEqual(SystemUtilities.toUri(myUri), myUri)
+        })
+    })
 })
