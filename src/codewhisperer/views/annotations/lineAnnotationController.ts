@@ -6,8 +6,8 @@
 import * as vscode from 'vscode'
 import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
 import { InlineDecorator } from './annotationUtils'
-import { InlineCompletionService } from '../../service/inlineCompletionService'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
+import { RecommendationService } from '../../service/recommendationService'
 
 const annotationDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     after: {
@@ -128,7 +128,7 @@ export class LineAnnotationController implements vscode.Disposable {
     }
 
     private setCWInlineService(enabled: boolean) {
-        const disposable = InlineCompletionService.instance.suggestionActionEvent(e => {
+        const disposable = RecommendationService.instance.suggestionActionEvent(e => {
             console.log(`receiving onSuggestionActionEvent -- refreshing editor decoration`)
             this.refresh(e.editor)
         })

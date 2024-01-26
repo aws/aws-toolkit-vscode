@@ -9,6 +9,7 @@ import { InlineCompletionService } from '../../service/inlineCompletionService'
 import { LineSelection } from './lineTracker'
 import { CodeWhispererSource } from '../../commands/types'
 import { placeholder } from '../../../shared/vscode/commands2'
+import { RecommendationService } from '../../service/recommendationService'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -53,7 +54,7 @@ export class InlineDecorator {
         )
         inlineDecorationOptions.range = range
 
-        const isCWRunning = InlineCompletionService.instance.isPaginationRunning()
+        const isCWRunning = RecommendationService.instance.isRunning
 
         if (isCWRunning) {
             return [

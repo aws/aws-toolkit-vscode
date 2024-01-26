@@ -14,12 +14,22 @@ import { InlineCompletionService } from '../service/inlineCompletionService'
 import { ClassifierTrigger } from './classifierTrigger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 
+export interface SuggestionActionEvent {
+    readonly editor: vscode.TextEditor | undefined
+    readonly isRunning: boolean
+}
+
 export class RecommendationService {
     static #instance: RecommendationService
 
     private _isRunning: boolean = false
     get isRunning() {
         return this._isRunning
+    }
+
+    private _onSuggestionActionEvent = new vscode.EventEmitter<SuggestionActionEvent>()
+    get suggestionActionEvent(): vscode.Event<SuggestionActionEvent> {
+        return this._onSuggestionActionEvent.event
     }
 
     public static get instance() {
@@ -34,14 +44,14 @@ export class RecommendationService {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         event?: vscode.TextDocumentChangeEvent
     ) {
+        if (this._isRunning) {
+            return
+        }
+
         if (isCloud9('any')) {
             // C9 manual trigger key alt/option + C is ALWAYS enabled because the VSC version C9 is on doesn't support setContextKey which is used for CODEWHISPERER_ENABLED
             // therefore we need a connection check if there is ANY connection(regardless of the connection's state) connected to CodeWhisperer on C9
             if (triggerType === 'OnDemand' && !AuthUtil.instance.isConnected()) {
-                return
-            }
-
-            if (this.isRunning) {
                 return
             }
 
@@ -50,6 +60,11 @@ export class RecommendationService {
             this._isRunning = true
 
             try {
+                this._onSuggestionActionEvent.fire({
+                    editor: editor,
+                    isRunning: true,
+                })
+
                 let response: GetRecommendationsResponse = {
                     result: 'Failed',
                     errorMessage: undefined,
@@ -84,19 +99,39 @@ export class RecommendationService {
                 }
             } finally {
                 this._isRunning = false
+                this._onSuggestionActionEvent.fire({
+                    editor: editor,
+                    isRunning: false,
+                })
             }
         } else if (isInlineCompletionEnabled()) {
             if (triggerType === 'OnDemand') {
                 ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
             }
-            await InlineCompletionService.instance.getPaginatedRecommendation(
-                client,
-                editor,
-                triggerType,
-                config,
-                autoTriggerType,
-                event
-            )
+
+            this._isRunning = true
+
+            try {
+                this._onSuggestionActionEvent.fire({
+                    editor: editor,
+                    isRunning: true,
+                })
+
+                await InlineCompletionService.instance.getPaginatedRecommendation(
+                    client,
+                    editor,
+                    triggerType,
+                    config,
+                    autoTriggerType,
+                    event
+                )
+            } finally {
+                this._isRunning = false
+                this._onSuggestionActionEvent.fire({
+                    editor: editor,
+                    isRunning: false,
+                })
+            }
         }
     }
 }
