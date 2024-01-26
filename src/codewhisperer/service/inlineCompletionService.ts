@@ -20,14 +20,25 @@ import { session } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
 import { Commands } from '../../shared/vscode/commands2'
 import { listCodeWhispererCommandsId } from '../commands/statusBarCommands'
+import { Container } from './serviceContainer'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
+
+export interface SuggestionActionEvent {
+    readonly editor: vscode.TextEditor | undefined
+    readonly isRunning: boolean
+}
 
 export class InlineCompletionService {
     private maxPage = 100
     private statusBar: CodeWhispererStatusBar
     private _showRecommendationTimer?: NodeJS.Timer
     private _isPaginationRunning = false
+
+    private _onSuggestionActionEvent = new vscode.EventEmitter<SuggestionActionEvent>()
+    get suggestionActionEvent(): vscode.Event<SuggestionActionEvent> {
+        return this._onSuggestionActionEvent.event
+    }
 
     constructor(statusBar: CodeWhispererStatusBar = CodeWhispererStatusBar.instance) {
         this.statusBar = statusBar
@@ -120,6 +131,12 @@ export class InlineCompletionService {
         }
         try {
             let page = 0
+            console.log('start getting recommendation - firing isRunning = true')
+            this._onSuggestionActionEvent.fire({
+                editor: editor,
+                isRunning: true,
+            })
+
             while (page < this.maxPage) {
                 response = await RecommendationHandler.instance.getRecommendations(
                     client,
@@ -144,8 +161,14 @@ export class InlineCompletionService {
             TelemetryHelper.instance.setNumberOfRequestsInSession(page + 1)
         } catch (error) {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)
+        } finally {
+            console.log('Finish getting recommendation - firing isRunning = false')
+            await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+            this._onSuggestionActionEvent.fire({
+                editor: editor,
+                isRunning: false,
+            })
         }
-        await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
         if (triggerType === 'OnDemand' && session.recommendations.length === 0) {
             void showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
         }

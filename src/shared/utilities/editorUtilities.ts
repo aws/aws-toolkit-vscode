@@ -17,6 +17,11 @@ export function getInlineSuggestEnabled(): boolean {
     return Settings.instance.getSection('editor').get('inlineSuggest.enabled', true)
 }
 
+export function isTextEditor(editor: vscode.TextEditor): boolean {
+    const scheme = editor.document.uri.scheme
+    return scheme !== 'debug' && scheme !== 'output' && scheme !== 'vscode-terminal'
+}
+
 /**
  * Unlike vscode.window.visibleTextEditors, which will only return the "visible" files in the IDE, this function will return all files opened in the IDE.
  * Note: vscode.workspace.textDocuments has similar behavior as vscode.window.visibleTextEditors does, thus not apply to this use case

@@ -17,6 +17,11 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 export class RecommendationService {
     static #instance: RecommendationService
 
+    private _isRunning: boolean = false
+    get isRunning() {
+        return this._isRunning
+    }
+
     public static get instance() {
         return (this.#instance ??= new RecommendationService())
     }
@@ -36,13 +41,13 @@ export class RecommendationService {
                 return
             }
 
-            if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
+            if (this.isRunning) {
                 return
             }
 
             RecommendationHandler.instance.checkAndResetCancellationTokens()
             vsCodeState.isIntelliSenseActive = false
-            RecommendationHandler.instance.isGenerateRecommendationInProgress = true
+            this._isRunning = true
 
             try {
                 let response: GetRecommendationsResponse = {
@@ -78,7 +83,7 @@ export class RecommendationService {
                     })
                 }
             } finally {
-                RecommendationHandler.instance.isGenerateRecommendationInProgress = false
+                this._isRunning = false
             }
         } else if (isInlineCompletionEnabled()) {
             if (triggerType === 'OnDemand') {

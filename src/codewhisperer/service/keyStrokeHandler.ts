@@ -79,7 +79,7 @@ export class KeyStrokeHandler {
     }
 
     public shouldTriggerIdleTime(): boolean {
-        if (isCloud9() && RecommendationHandler.instance.isGenerateRecommendationInProgress) {
+        if (isCloud9() && RecommendationService.instance.isRunning) {
             return false
         }
         if (isInlineCompletionEnabled() && InlineCompletionService.instance.isPaginationRunning()) {
