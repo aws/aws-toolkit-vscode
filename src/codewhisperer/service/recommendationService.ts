@@ -101,8 +101,6 @@ export class RecommendationService {
                     autoTriggerType,
                     event
                 )
-            } catch (e) {
-                throw e
             } finally {
                 this._isRunning = false
             }
