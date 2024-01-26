@@ -1,6 +1,7 @@
 # Browser
 
-This extension can run in the web browser (eg: [vscode.dev](https://vscode.dev)), but with limited functionality.
+This extension can run in the web browser (eg: [vscode.dev](https://vscode.dev)), but with limited functionality compared to
+the desktop version.
 
 ## Running the Browser implementation
 
@@ -8,28 +9,41 @@ You can run the browser implementation of the extension in the following ways.
 
 ### General Notes
 
-- To see logs, using the Command Palette search: `Toggle Developer Tools`. Then go to the `Console` tab. In browser mode VS Code seems to duplicate log messages, idk how to fix this.
-- The difference between browser mode and Node.js/desktop is that browser mode is in an actual browser environment so certain things like Node.js modules will **not** be available.
-
-### Running in VSCode Browser Mode
-
-The following steps will result in a VSCode Extension window running
-with the AWS Toolkit extension installed. You can also debug.
-
-- In the `Run & Debug` menu run: `Extension (browser)`
-
-#### Testing
-
-To run unit tests:
-
-- In the `Run & Debug` menu run: `Extension Tests (browser)`
+-   To see logs, using the Command Palette search: `Toggle Developer Tools`. Then go to the `Console` tab. In browser mode VS Code seems to duplicate log messages, idk how to fix this.
+-   The difference between browser mode and Node.js/desktop is that browser mode is in an actual browser environment so certain things like Node.js modules will **not** be available.
 
 ## Running in an actual Browser
 
 The following steps will result in a Chrome window running with VS Code
-and the Browser version of the AWS Toolkit extension installed.
+and the Browser version of the AWS Toolkit extension installed:
 
-1. In the terminal run: `npm run browserRun`
+1. (Recommended) To have the Chrome window save your VS Code state after closing it, you need to modify the node module which executes the playwright method that opens it. In `node_modules/@vscode/test-web/out/index.js#openBrowser()` make the following change:
+
+    Before:
+
+    ```typescript
+    const browser = await browserType.launch({ headless, args, devtools: options.devTools })
+    const context = await browser.newContext({ viewport: null })
+    ```
+
+    After:
+
+    ```typescript
+    const tempContextDir = path.join(process.cwd(), '.vscode-test-web/aws-toolkit-user-dir')
+    const browser = await browserType.launchPersistentContext(tempContextDir, {
+        headless,
+        args,
+        devtools: options.devTools,
+        viewport: null,
+    })
+    const context = browser
+    ```
+
+2. In the `Run & Debug` menu select the `Extension (Chrome)` option
+
+> Note: To stop the debug session, you need to click the read `Disconnect` button multiple times
+
+> Note: Setting breakpoints in VS Code works
 
 #### (OPTIONAL) Enabling CORS
 
@@ -39,18 +53,20 @@ such as telemetry or auth do not support CORS (at the moment of writing) for the
 In the case you want to enable CORS in the browser to test CORS compatibility
 do the following:
 
-- In `package.json` find the `browserRun` script
-- Temporarily remove `--browserOption=--disable-web-security`
+-   In `package.json` find the `browserRun` script
+-   Temporarily remove `--browserOption=--disable-web-security`
 
 Now when you run the extension in the browser it will do CORS checks.
 
-#### Debug in the Browser
+## Testing in VSCode Browser Mode
 
-Debugging in the browser does not use VS Code's debugger, but instead uses the browser's debugger:
+The following steps will result in a VSCode Extension window running
+with the AWS Toolkit extension installed. While it looks the same as a typical
+VS Code window, in the background it is running in a Browser context.
 
-- Command Palette: `Toggle Developer Tools`
-- `Sources` > `WorkerExtensionHost` > `aws-toolkit-vscode` > `src`
-- Find your file and add your breakpoints
+-   In the `Run & Debug` menu run: `Extension Tests (browser)`
+
+> NOTE: Tests do not spin up an actual Browser window, but if we find a good reason to switch it will require some additional work. The current way does not require dowloading a separate browser like Chromium.
 
 ## Finding incompatible transitive dependencies
 
