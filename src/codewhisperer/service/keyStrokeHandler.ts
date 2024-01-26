@@ -13,7 +13,6 @@ import { RecommendationHandler } from './recommendationHandler'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
-import { InlineCompletionService } from './inlineCompletionService'
 import { ClassifierTrigger } from './classifierTrigger'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { RecommendationService } from './recommendationService'
@@ -79,10 +78,10 @@ export class KeyStrokeHandler {
     }
 
     public shouldTriggerIdleTime(): boolean {
-        if (isCloud9() && RecommendationHandler.instance.isGenerateRecommendationInProgress) {
+        if (isCloud9() && RecommendationService.instance.isRunning) {
             return false
         }
-        if (isInlineCompletionEnabled() && InlineCompletionService.instance.isPaginationRunning()) {
+        if (isInlineCompletionEnabled() && RecommendationService.instance.isRunning) {
             return false
         }
         return true

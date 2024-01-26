@@ -72,7 +72,6 @@ export class RecommendationHandler {
     public requestId: string
     private nextToken: string
     private cancellationToken: vscode.CancellationTokenSource
-    public isGenerateRecommendationInProgress: boolean
     private _onDidReceiveRecommendation: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onDidReceiveRecommendation: vscode.Event<void> = this._onDidReceiveRecommendation.event
     private inlineCompletionProvider?: CWInlineCompletionItemProvider
@@ -88,7 +87,6 @@ export class RecommendationHandler {
         this.nextToken = ''
         this.lastInvocationTime = performance.now() - CodeWhispererConstants.invocationTimeIntervalThreshold * 1000
         this.cancellationToken = new vscode.CancellationTokenSource()
-        this.isGenerateRecommendationInProgress = false
         this.prev = new vscode.Disposable(() => {})
         this.next = new vscode.Disposable(() => {})
         this.reject = new vscode.Disposable(() => {})
