@@ -6,7 +6,7 @@
 import assert from 'assert'
 import bytes from 'bytes'
 import vscode from 'vscode'
-import * as GitTypes from '../../../../types/git'
+import * as GitTypes from '../../../../../../types/git'
 import { GitExtension, Repository } from '../../../shared/extensions/git'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { realpath } from 'fs-extra'

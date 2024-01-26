@@ -10,7 +10,7 @@ import packageJson from '../../package.json'
 
 const fontId = 'aws-toolkit-icons'
 const projectDir = process.cwd() // root/packages/toolkit
-const rootDir = path.join(process.cwd(), '../..') // root/
+const rootDir = path.join(projectDir, '../..') // root/
 const iconsDir = path.join(rootDir, 'resources', 'icons')
 const fontsDir = path.join(rootDir, 'resources', 'fonts')
 const stylesheetsDir = path.join(rootDir, 'resources', 'css')
@@ -18,7 +18,7 @@ const iconSources = [
     // Paths relative to packages/toolkit
     `../../resources/icons/**/*.svg`,
     `../../node_modules/@vscode/codicons/src/icons/**/*.svg`,
-    '../../!**/{cloud9,dark,light}/**',
+    '!../../**/{cloud9,dark,light}/**',
 ]
 
 interface PackageIcon {
@@ -96,7 +96,7 @@ async function generateCloud9Icons(targets: { name: string; path: string }[], de
 
 async function generate(mappings: Record<string, number | undefined> = {}) {
     const dest = path.join(fontsDir, `${fontId}.woff`)
-    const relativeDest = path.relative(rootDir, dest)
+    const relativeDest = path.relative(projectDir, dest)
     const icons: { name: string; path: string; data?: PackageIcon }[] = []
     const generated = new GeneratedFilesManifest()
 
