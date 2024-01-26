@@ -41,7 +41,6 @@ import {
     calculateTotalLatency,
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
-import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -88,20 +87,6 @@ async function collectInput(validProjects: vscode.QuickPickItem[]) {
 }
 
 export async function startTransformByQ() {
-    const client = new DefaultCloudWatchLogsClient('regionCodeHere')
-
-    const request = {
-        logGroupName: 'logGroupNameHere',
-        logStreamName: 'logStreamNameHere',
-        logEvents: [{ timestamp: Date.now(), message: 'testing from gumby' }],
-    }
-
-    const response = await client.putLogEvents(request)
-
-    console.log('CW Logs response = ' + response)
-
-    return -1
-
     let intervalId = undefined
 
     // Validate inputs. If failed, Error will be thrown and execution stops
