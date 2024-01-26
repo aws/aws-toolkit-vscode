@@ -15,6 +15,7 @@ import { GitExtension } from './extensions/git'
 import { isCloud9 } from './extensionUtilities'
 import { Settings } from './settings'
 import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isNoPermissionsError } from './errors'
+import { isInBrowser } from '../common/browserUtils'
 
 export function createPermissionsErrorHandler(
     uri: vscode.Uri,
@@ -170,7 +171,7 @@ export class SystemUtilities {
         if (typeof path === 'string') {
             const parsed = vscode.Uri.parse(path)
             // If string path already has a scheme we want to preserve it
-            if (parsed.scheme) {
+            if (parsed.scheme && isInBrowser()) {
                 return parsed
             }
             // path has no scheme to it will be indicated as a file
