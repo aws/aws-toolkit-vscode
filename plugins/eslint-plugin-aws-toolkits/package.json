@@ -5,7 +5,8 @@
     "main": "dist/index.js",
     "scripts": {
         "build": "tsc",
-        "test": "npm run build && mocha dist/test --recursive"
+        "test": "npm run build && mocha dist/test --recursive",
+        "clean": "ts-node ../../scripts/clean.ts dist"
     },
     "devDependencies": {
         "eslint": "^8.26.0",

@@ -21,14 +21,14 @@
         "prepare": "ts-node ./scripts/prepare.ts",
         "postinstall": "npm run buildCustomLintPlugin",
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
+        "compile": "npm run compile -w packages/",
         "newChange": "ts-node ./scripts/newChange.ts",
         "format": "prettier --check packages plugins",
         "formatfix": "prettier --write packages plugins",
         "lint": "npm run lint -w packages/ && npm run format",
-        "lintfix": "eslint -c .eslintrc.js --fix --ext .ts . && npm run formatfix",
-        "clean": "npm run clean -w packages/ && ts-node ./scripts/clean.ts node_modules",
-        "reset": "npm run clean && npm install",
-        "compile": "npm run compile -w packages/"
+        "lintfix": "eslint -c .eslintrc.js --fix --ext .ts packages plugins && npm run formatfix",
+        "clean": "npm run clean -w packages/ -w plugins/ && ts-node ./scripts/clean.ts node_modules packages/toolkit/node_modules",
+        "reset": "npm run clean && npm install"
     },
     "devDependencies": {
         "typescript": "^5.0.4",

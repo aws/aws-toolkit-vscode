@@ -4238,6 +4238,7 @@
     "scripts": {
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles",
+        "clean": "ts-node ../../scripts/clean.ts dist",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
         "buildBrowserDebug": "npm run clean && npm run buildScripts && webpack --config webpack.browser.config.js",
