@@ -9,14 +9,16 @@ import * as fs from 'fs-extra'
 import packageJson from '../../package.json'
 
 const fontId = 'aws-toolkit-icons'
-const projectDir = process.cwd()
-const iconsDir = path.join(projectDir, 'resources', 'icons')
-const fontsDir = path.join(projectDir, 'resources', 'fonts')
-const stylesheetsDir = path.join(projectDir, 'resources', 'css')
+const projectDir = process.cwd() // root/packages/toolkit
+const rootDir = path.join(process.cwd(), '../..') // root/
+const iconsDir = path.join(rootDir, 'resources', 'icons')
+const fontsDir = path.join(rootDir, 'resources', 'fonts')
+const stylesheetsDir = path.join(rootDir, 'resources', 'css')
 const iconSources = [
-    `resources/icons/**/*.svg`,
-    `node_modules/@vscode/codicons/src/icons/**/*.svg`,
-    '!**/{cloud9,dark,light}/**',
+    // Paths relative to packages/toolkit
+    `../../resources/icons/**/*.svg`,
+    `../../node_modules/@vscode/codicons/src/icons/**/*.svg`,
+    '../../!**/{cloud9,dark,light}/**',
 ]
 
 interface PackageIcon {
@@ -94,7 +96,7 @@ async function generateCloud9Icons(targets: { name: string; path: string }[], de
 
 async function generate(mappings: Record<string, number | undefined> = {}) {
     const dest = path.join(fontsDir, `${fontId}.woff`)
-    const relativeDest = path.relative(projectDir, dest)
+    const relativeDest = path.relative(rootDir, dest)
     const icons: { name: string; path: string; data?: PackageIcon }[] = []
     const generated = new GeneratedFilesManifest()
 
@@ -157,7 +159,7 @@ async function generate(mappings: Record<string, number | undefined> = {}) {
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. 
  * SPDX-License-Identifier: Apache-2.0 
  * 
- * This style sheet was generated using "${path.relative(projectDir, __filename)}". 
+ * This style sheet was generated using "${path.relative(rootDir, __filename)}". 
  */ 
 
 ${result.template}
@@ -199,7 +201,7 @@ class GeneratedFilesManifest {
 }
 
 async function loadCodiconMappings(): Promise<Record<string, number | undefined>> {
-    const codicons = path.join(projectDir, 'node_modules', '@vscode', 'codicons', 'src')
+    const codicons = path.join(rootDir, 'node_modules', '@vscode', 'codicons', 'src')
     const data = JSON.parse(await fs.readFile(path.join(codicons, 'template', 'mapping.json'), 'utf-8'))
     const mappings: Record<string, number | undefined> = {}
     for (const [k, v] of Object.entries(data)) {

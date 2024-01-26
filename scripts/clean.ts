@@ -125,6 +125,8 @@ function rDirectoryFind(parentPath: string, directoryName: string): string[] {
 ;(async () => {
     const subfolders = ['packages']
     const pathsToDelete = getPathsToDelete(subfolders)
+    // const args = process.argv.slice(2).concat(await getGenerated())
+    // await Promise.all(args.map(tryDeleteRelative))
 
     await Promise.all(pathsToDelete.map(tryDelete))
 })()
