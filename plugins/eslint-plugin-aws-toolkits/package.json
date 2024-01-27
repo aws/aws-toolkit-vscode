@@ -9,9 +9,7 @@
         "clean": "ts-node ../../scripts/clean.ts dist"
     },
     "devDependencies": {
-        "eslint": "^8.26.0",
-        "mocha": "^10.1.0",
-        "typescript": "^5.0.4"
+        "mocha": "^10.1.0"
     },
     "engines": {
         "npm": "^10.1.0"

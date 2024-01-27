@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { RemoteSource, RemoteSourceProvider } from '../../../../../types/git'
+import { RemoteSource, RemoteSourceProvider } from '../../../types/git'
 import { CodeCatalystAuthenticationProvider } from '../auth'
 import { createRepoLabel } from '../wizards/selectResource'
 import { CodeCatalystCommands } from '../commands'

@@ -4249,11 +4249,7 @@
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
         "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts",
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
-        "lint": "ts-node ./scripts/lint/testLint.ts && npm run format",
-        "lintfix": "eslint -c .eslintrc.js --fix --ext .ts . && npm run formatfix",
-        "buildCustomLintPlugin": "cd ./plugins/eslint-plugin-aws-toolkits && npm run build",
-        "format": "prettier --check src plugins",
-        "formatfix": "prettier --write src plugins",
+        "lint": "ts-node ./scripts/lint/testLint.ts",
         "package": "ts-node ./scripts/build/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "generateClients": "npm run build -w @amzn/codewhisperer-streaming && ts-node ./scripts/build/generateServiceClient.ts ",
@@ -4284,6 +4280,7 @@
         "@types/markdown-it": "^13.0.2",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^10.0.0",
+        "@types/node": "^14.18.63",
         "@types/node-fetch": "^2.6.8",
         "@types/prismjs": "^1.26.0",
         "@types/readline-sync": "^1.4.3",
@@ -4323,7 +4320,9 @@
         "webfont": "^11.2.26",
         "webpack": "^5.83.0",
         "webpack-cli": "^4.9.1",
-        "webpack-dev-server": "^4.15.1"
+        "webpack-dev-server": "^4.15.1",
+        "typescript": "^5.0.4",
+        "ts-node": "^10.9.1"
     },
     "dependencies": {
         "@amzn/codewhisperer-streaming": "file:./src.gen/@amzn/codewhisperer-streaming",

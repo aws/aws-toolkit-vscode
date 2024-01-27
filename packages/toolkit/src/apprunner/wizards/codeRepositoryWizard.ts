@@ -6,7 +6,7 @@
 import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
 import { createCommonButtons, createRefreshButton, QuickInputToggleButton } from '../../shared/ui/buttons'
-import { Remote } from '../../../../../types/git.d'
+import { Remote } from '../../../types/git.d'
 import { GitExtension } from '../../shared/extensions/git'
 import * as vscode from 'vscode'
 import { WizardForm } from '../../shared/wizards/wizardForm'

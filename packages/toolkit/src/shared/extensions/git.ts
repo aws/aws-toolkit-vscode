@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as GitTypes from '../../../../../types/git.d'
+import * as GitTypes from '../../../types/git.d'
 import { SemVer, parse as semverParse } from 'semver'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
