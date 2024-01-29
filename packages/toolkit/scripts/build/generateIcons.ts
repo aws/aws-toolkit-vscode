@@ -11,14 +11,14 @@ import packageJson from '../../package.json'
 const fontId = 'aws-toolkit-icons'
 const projectDir = process.cwd() // root/packages/toolkit
 const rootDir = path.join(projectDir, '../..') // root/
-const iconsDir = path.join(rootDir, 'resources', 'icons')
-const fontsDir = path.join(rootDir, 'resources', 'fonts')
-const stylesheetsDir = path.join(rootDir, 'resources', 'css')
+const iconsDir = path.join(projectDir, 'resources', 'icons')
+const fontsDir = path.join(projectDir, 'resources', 'fonts')
+const stylesheetsDir = path.join(projectDir, 'resources', 'css')
 const iconSources = [
     // Paths relative to packages/toolkit
-    `../../resources/icons/**/*.svg`,
+    `resources/icons/**/*.svg`,
     `../../node_modules/@vscode/codicons/src/icons/**/*.svg`,
-    '!../../**/{cloud9,dark,light}/**',
+    '!**/{cloud9,dark,light}/**',
 ]
 
 interface PackageIcon {
