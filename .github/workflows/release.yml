@@ -52,7 +52,7 @@ jobs:
             - name: vsix
               run: |
                   npm run createRelease  # Generate CHANGELOG.md
-                  npm run generateNonCodeFiles
+                  npm run generateNonCodeFiles -w packages/toolkit
                   cp ./README.quickstart.vscode.md ./README.md
                   npm run package -- --feature "$FEAT_NAME"
             - uses: actions/upload-artifact@v4
