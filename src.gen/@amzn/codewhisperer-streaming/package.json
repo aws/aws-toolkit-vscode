@@ -18,7 +18,7 @@
     "sideEffects": false,
     "dependencies": {
         "tslib": "^2.5.0",
-        "@aws-crypto/sha256-browser": "3.0.0",
+        "@aws-crypto/sha256-browser": "5.2.0",
         "@aws-crypto/sha256-js": "3.0.0",
         "@aws-sdk/middleware-host-header": "3.489.0",
         "@aws-sdk/middleware-logger": "3.489.0",
