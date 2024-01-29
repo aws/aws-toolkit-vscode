@@ -30,7 +30,6 @@ import {
     showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
-import { activate as activateLogger } from './shared/logger/activation'
 import { getEndpointsFromFetcher, RegionProvider } from './shared/regions/regionProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
@@ -78,10 +77,13 @@ import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
 import { showQuickStartWebview } from './shared/extensionStartup'
+import { testActivate } from './extensionShared'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
+    await testActivate(context)
+
     initializeNetworkAgent()
     await initializeComputeRegion()
     const activationStartedOn = Date.now()
@@ -91,15 +93,9 @@ export async function activate(context: vscode.ExtensionContext) {
     globals.machineId = await getMachineId()
     initializeManifestPaths(context)
 
-    const toolkitOutputChannel = vscode.window.createOutputChannel(
-        localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company),
-        { log: true }
-    )
-    await activateLogger(context, toolkitOutputChannel)
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
-    globals.outputChannel = toolkitOutputChannel
 
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
@@ -174,7 +170,7 @@ export async function activate(context: vscode.ExtensionContext) {
             awsContext: globals.awsContext,
             samCliContext: getSamCliContext,
             regionProvider: regionProvider,
-            outputChannel: toolkitOutputChannel,
+            outputChannel: globals.outputChannel,
             invokeOutputChannel: remoteInvokeOutputChannel,
             telemetryService: globals.telemetry,
             uriHandler: globals.uriHandler,
@@ -204,7 +200,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateAwsExplorer({
             context: extContext,
             regionProvider,
-            toolkitOutputChannel,
+            toolkitOutputChannel: globals.outputChannel,
             remoteInvokeOutputChannel,
         })
 
@@ -219,7 +215,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateLambda(extContext)
 
-        await activateSsmDocument(context, globals.awsContext, regionProvider, toolkitOutputChannel)
+        await activateSsmDocument(context, globals.awsContext, regionProvider, globals.outputChannel)
 
         await activateSam(extContext)
 
@@ -247,7 +243,7 @@ export async function activate(context: vscode.ExtensionContext) {
             await activateApplicationComposer(context)
         }
 
-        await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+        await activateStepFunctions(context, awsContext, globals.outputChannel)
 
         await activateRedshift(extContext)
 
