@@ -9,8 +9,6 @@ import * as nls from 'vscode-nls'
 import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
-import { initialize as initializeCredentials } from './auth/activation'
-import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
 import { CredentialsProviderManager } from './auth/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './auth/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
@@ -126,7 +124,6 @@ export async function activate(context: vscode.ExtensionContext) {
             .filter(x => x)
             .forEach(line => getLogger().info(line))
 
-        await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
         globals.regionProvider = regionProvider
         globals.awsContextCommands = new AwsContextCommands(regionProvider, Auth.instance)
         globals.schemaService = new SchemaService()
@@ -137,8 +134,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const settings = Settings.instance
         const experiments = Experiments.instance
-
-        await initializeCredentials(context, globals.awsContext, globals.loginManager)
 
         experiments.onDidChange(({ key }) => {
             telemetry.aws_experimentActivation.run(span => {

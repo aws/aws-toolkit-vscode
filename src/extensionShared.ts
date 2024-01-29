@@ -25,7 +25,7 @@ import { DefaultAwsContext } from './shared/awsContext'
 import { Settings } from './shared/settings'
 import { RegionProvider, defaultRegion } from './shared/regions/regionProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
-import { initialize as initializeCredentials } from './auth/activation'
+import { initialize as initializeAuth } from './auth/activation'
 import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsStore } from './auth/credentials/store'
 import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
@@ -54,7 +54,12 @@ export async function testActivate(context: vscode.ExtensionContext) {
     initialize(context)
     initializeManifestPaths(context)
 
+    // telemetry
     await activateTelemetry(context, globals.awsContext, Settings.instance)
+
+    // auth
+    await initializeAuth(context, globals.awsContext, globals.loginManager)
+    await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 }
 
 /**
@@ -65,9 +70,6 @@ export async function testActivate(context: vscode.ExtensionContext) {
 export async function browserActivate(context: vscode.ExtensionContext) {
     try {
         await testActivate(context)
-
-        await initializeCredentials(context, globals.awsContext, globals.loginManager)
-        await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 
         registerCommands(context)
     } catch (error) {
