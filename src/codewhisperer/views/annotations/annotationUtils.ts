@@ -28,11 +28,11 @@ export class InlineDecorator {
     })
 
     readonly cwlineGutterDecoration = vscode.window.createTextEditorDecorationType({
-        gutterIconPath: this.iconPathToUri(getIcon(gutterWhite)),
+        gutterIconPath: iconPathToUri(getIcon(gutterWhite)),
     })
 
     readonly cwlineGutterDecorationColored = vscode.window.createTextEditorDecorationType({
-        gutterIconPath: this.iconPathToUri(getIcon(gutterColored)),
+        gutterIconPath: iconPathToUri(getIcon(gutterColored)),
     })
 
     onLineChangeDecorations(
@@ -150,29 +150,29 @@ export class InlineDecorator {
             hoverMessage: md,
         }
     }
+}
 
-    // TODO: better way to achive this?
-    private iconPathToUri(iconPath: any): vscode.Uri | undefined {
-        let result: vscode.Uri | undefined = undefined
-        if (iconPath.dark) {
-            if (iconPath.dark.Uri) {
-                result = iconPath.dark.Uri
-                return result
-            }
-        }
-
-        if (iconPath.light) {
-            if (iconPath.light.Uri) {
-                result = iconPath.light.Uri
-                return result
-            }
-        }
-
-        if (iconPath.source) {
-            result = iconPath.source
+// TODO: better way to do this?
+function iconPathToUri(iconPath: any): vscode.Uri | undefined {
+    let result: vscode.Uri | undefined = undefined
+    if (iconPath.dark) {
+        if (iconPath.dark.Uri) {
+            result = iconPath.dark.Uri
             return result
         }
+    }
 
+    if (iconPath.light) {
+        if (iconPath.light.Uri) {
+            result = iconPath.light.Uri
+            return result
+        }
+    }
+
+    if (iconPath.source) {
+        result = iconPath.source
         return result
     }
+
+    return result
 }
