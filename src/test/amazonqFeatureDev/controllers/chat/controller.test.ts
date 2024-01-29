@@ -105,7 +105,7 @@ describe('Controller', () => {
             const newFileLocation = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'foo', 'fi', 'mynewfile.js')
             await toFile('', newFileLocation)
             sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(controllerSetup.workspaceFolder)
-            session.config.sourceRoot = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'foo', 'fi')
+            session.config.sourceRoots = [path.join(controllerSetup.workspaceFolder.uri.fsPath, 'foo', 'fi')]
             const executedDiff = await openDiff(path.join('foo', 'fi', 'mynewfile.js'))
             assert.strictEqual(
                 executedDiff.calledWith(
@@ -134,6 +134,8 @@ describe('Controller', () => {
             await waitUntil(() => {
                 return Promise.resolve(promptStub.callCount > 0)
             }, {})
+
+            return controllerSetup.sessionStorage.getSession(tabID)
         }
 
         it('fails if selected folder is not under a workspace folder', async () => {
@@ -159,12 +161,13 @@ describe('Controller', () => {
         })
 
         it('accepts valid source folders under a workspace root', async () => {
+            const controllerSetup = await createController()
             sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
             sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(controllerSetup.workspaceFolder)
             const expectedSourceRoot = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'src')
-            await modifyDefaultSourceFolder(expectedSourceRoot)
-            assert.strictEqual(session.config.sourceRoot, expectedSourceRoot)
-            assert.strictEqual(session.config.workspaceRoot, controllerSetup.workspaceFolder.uri.fsPath)
+            const modifiedSession = await modifyDefaultSourceFolder(expectedSourceRoot)
+            assert.strictEqual(modifiedSession.config.sourceRoots.length, 1)
+            assert.strictEqual(modifiedSession.config.sourceRoots[0], expectedSourceRoot)
         })
     })
 
@@ -174,8 +177,8 @@ describe('Controller', () => {
                 {
                     conversationId: conversationID,
                     proxyClient: new FeatureDevClient(),
-                    sourceRoot: '',
-                    workspaceRoot: '',
+                    sourceRoots: [''],
+                    workspaceFolders: [controllerSetup.workspaceFolder],
                 },
                 '',
                 tabID

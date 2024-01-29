@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { FollowUpTypes, SessionStatePhase } from '../../../types'
+import { DeletedFileInfo, FollowUpTypes, NewFileInfo, SessionStatePhase } from '../../../types'
 import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommonsConnector'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
@@ -115,13 +115,21 @@ export class Messenger {
     }
 
     public sendCodeResult(
-        filePaths: string[],
-        deletedFiles: string[],
+        filePaths: NewFileInfo[],
+        deletedFiles: DeletedFileInfo[],
         references: CodeReference[],
         tabID: string,
         uploadId: string
     ) {
-        this.dispatcher.sendCodeResult(new CodeResultMessage(filePaths, deletedFiles, references, tabID, uploadId))
+        this.dispatcher.sendCodeResult(
+            new CodeResultMessage(
+                filePaths.map(f => f.zipFilePath),
+                deletedFiles.map(f => f.zipFilePath),
+                references,
+                tabID,
+                uploadId
+            )
+        )
     }
 
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {

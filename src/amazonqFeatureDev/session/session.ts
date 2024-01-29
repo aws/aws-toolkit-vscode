@@ -3,14 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as path from 'path'
 
-import { collectFiles } from '../util/files'
 import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
-import { featureDevScheme } from '../constants'
 import { referenceLogText } from '../constants'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
@@ -99,8 +96,8 @@ export class Session {
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
         return {
-            sourceRoot: this.config.sourceRoot,
-            workspaceRoot: this.config.workspaceRoot,
+            sourceRoots: this.config.sourceRoots,
+            workspaceFolders: this.config.workspaceFolders,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
         }
@@ -140,10 +137,7 @@ export class Session {
     }
 
     private async nextInteraction(msg: string) {
-        const files = await collectFiles(this.config.sourceRoot)
-
         const resp = await this.state.interact({
-            files,
             task: this.task,
             msg,
             fs: this.config.fs,
@@ -170,11 +164,10 @@ export class Session {
     }
 
     public async acceptChanges() {
-        const uploadId = this.uploadId
         for (const filePath of this.state.filePaths ?? []) {
-            const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
+            const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
 
-            const uri = vscode.Uri.from({ scheme: featureDevScheme, path: path.join(uploadId, filePath) })
+            const uri = filePath.virtualMemoryUri
             const content = await this.config.fs.readFile(uri)
             const decodedContent = new TextDecoder().decode(content)
 
@@ -183,7 +176,7 @@ export class Session {
         }
 
         for (const filePath of this.state.deletedFiles ?? []) {
-            const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
+            const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
             await fs.delete(absolutePath)
         }
 

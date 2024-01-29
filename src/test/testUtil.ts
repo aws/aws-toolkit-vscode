@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import fs from 'fs'
+import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
@@ -58,12 +58,17 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
  * `WorkspaceFolder` object.
  *
  * @param name  Optional name, defaults to "test-workspace-folder".
+ * @param subDir Optional subdirectory created in the workspace folder and returned in the result.
  */
-export async function createTestWorkspaceFolder(name?: string): Promise<vscode.WorkspaceFolder> {
+export async function createTestWorkspaceFolder(name?: string, subDir?: string): Promise<vscode.WorkspaceFolder> {
     const tempFolder = await makeTemporaryToolkitFolder()
     testTempDirs.push(tempFolder)
+    const finalWsFolder = subDir === undefined ? tempFolder : path.join(tempFolder, subDir)
+    if (subDir !== undefined && subDir.length > 0) {
+        await fs.promises.mkdir(finalWsFolder, { recursive: true })
+    }
     return {
-        uri: vscode.Uri.file(tempFolder),
+        uri: vscode.Uri.file(finalWsFolder),
         name: name ?? 'test-workspace-folder',
         index: 0,
     }
@@ -86,9 +91,26 @@ export async function createTestFile(fileName: string): Promise<vscode.Uri> {
  */
 export async function createTestWorkspace(
     n: number,
-    opts: { fileNamePrefix?: string; fileContent?: string }
+    opts: {
+        /**
+         * optional filename prefix for all created files
+         */
+        fileNamePrefix?: string
+        /**
+         * optional file content
+         */
+        fileContent?: string
+        /**
+         * name of the workspace folder
+         */
+        workspaceName?: string
+        /**
+         * the subDir where the workspace folder will point to within the temp folder
+         */
+        subDir?: string
+    }
 ): Promise<vscode.WorkspaceFolder> {
-    const workspace = await createTestWorkspaceFolder()
+    const workspace = await createTestWorkspaceFolder(opts.workspaceName, opts.subDir)
 
     if (n <= 0) {
         throw new Error('test file numbers cannot be less or equal to zero')

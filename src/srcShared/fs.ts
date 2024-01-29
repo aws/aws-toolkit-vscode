@@ -111,7 +111,7 @@ export class FileSystemCommon {
     }
 
     /**
-     * The stat of the file, undefined if the file does not exist, otherwise an error is thrown.
+     * The stat of the file,  throws if the file does not exist or on any other error.
      */
     async stat(uri: vscode.Uri | string): Promise<vscode.FileStat> {
         const path = FileSystemCommon.getUri(uri)

@@ -25,6 +25,7 @@ import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { getPathsFromZipFilePath, getWorkspaceFoldersByPrefixes } from '../../util/files'
 import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
 
 export interface ChatControllerEventEmitters {
@@ -40,7 +41,13 @@ export interface ChatControllerEventEmitters {
     readonly insertCodeAtPositionClicked: EventEmitter<any>
 }
 
-type OpenDiffMessage = { tabID: string; messageId: string; filePath: string; deleted: boolean }
+type OpenDiffMessage = {
+    tabID: string
+    messageId: string
+    // currently the zip file path
+    filePath: string
+    deleted: boolean
+}
 export class FeatureDevController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
@@ -511,7 +518,6 @@ export class FeatureDevController {
         const session = await this.sessionStorage.getSession(message.tabID)
 
         const uri = await createSingleFileDialog({
-            defaultUri: vscode.Uri.file(session.config.workspaceRoot),
             canSelectFolders: true,
             canSelectFiles: false,
         }).prompt()
@@ -537,9 +543,9 @@ export class FeatureDevController {
         }
 
         if (uri && uri instanceof vscode.Uri) {
-            session.config.sourceRoot = uri.fsPath
+            session.config.sourceRoots = [uri.fsPath]
             this.messenger.sendAnswer({
-                message: `Changed source root to: ${session.config.sourceRoot}`,
+                message: `Changed source root to: ${uri.fsPath}`,
                 type: 'answer',
                 tabID: message.tabID,
             })
@@ -563,38 +569,43 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         })
     }
 
-    private getOriginalFileUri({ filePath, tabID }: OpenDiffMessage, session: Session) {
-        const originalPath = path.join(session.config.workspaceRoot, filePath)
+    private getOriginalFileUri(fullPath: string, tabID: string) {
+        const originalPath = fullPath
         return existsSync(originalPath)
             ? vscode.Uri.file(originalPath)
             : vscode.Uri.from({ scheme: featureDevScheme, path: 'empty', query: `tabID=${tabID}` })
     }
 
-    private getFileDiffUris(message: OpenDiffMessage, session: Session) {
-        const left = this.getOriginalFileUri(message, session)
+    private getFileDiffUris(zipFilePath: string, fullFilePath: string, tabId: string, session: Session) {
+        const left = this.getOriginalFileUri(fullFilePath, tabId)
         const right = vscode.Uri.from({
             scheme: featureDevScheme,
-            path: path.join(session.uploadId, message.filePath!),
-            query: `tabID=${message.tabID}`,
+            path: path.join(session.uploadId, zipFilePath),
+            query: `tabID=${tabId}`,
         })
 
         return { left, right }
     }
 
     private async openDiff(message: OpenDiffMessage) {
-        const session = await this.sessionStorage.getSession(message.tabID)
+        const tabId: string = message.tabID
+        const zipFilePath: string = message.filePath
+        const session = await this.sessionStorage.getSession(tabId)
         telemetry.amazonq_isReviewedChanges.emit({
             amazonqConversationId: session.conversationId,
             enabled: true,
             result: 'Succeeded',
         })
 
+        const workspacePrefixMapping = getWorkspaceFoldersByPrefixes(session.config.workspaceFolders)
+        const pathInfos = getPathsFromZipFilePath(zipFilePath, workspacePrefixMapping, session.config.workspaceFolders)
+
         if (message.deleted) {
-            const fileUri = this.getOriginalFileUri(message, session)
-            const basename = path.basename(message.filePath)
+            const fileUri = this.getOriginalFileUri(pathInfos.absolutePath, tabId)
+            const basename = path.basename(pathInfos.relativePath)
             await vscode.commands.executeCommand('vscode.open', fileUri, {}, `${basename} (Deleted)`)
         } else {
-            const { left, right } = this.getFileDiffUris(message, session)
+            const { left, right } = this.getFileDiffUris(zipFilePath, pathInfos.absolutePath, tabId, session)
             await vscode.commands.executeCommand('vscode.diff', left, right)
         }
     }

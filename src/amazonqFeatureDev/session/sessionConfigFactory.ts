@@ -7,15 +7,15 @@ import * as vscode from 'vscode'
 import { featureDevScheme } from '../constants'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
-import { SelectedFolderNotInWorkspaceFolderError, WorkspaceFolderNotFoundError } from '../errors'
+import { WorkspaceFolderNotFoundError } from '../errors'
+import { CurrentWsFolders } from '../types'
 import { getSourceCodePath } from '../util/files'
 
 export interface SessionConfig {
-    // The root workspace folder of where the source code lives
-    readonly workspaceRoot: string
-    // The path on disk to where the source code lives
-    sourceRoot: string
+    // The paths on disk to where the source code lives
+    sourceRoots: string[]
     readonly fs: VirtualFileSystem
+    readonly workspaceFolders: CurrentWsFolders
 }
 
 /**
@@ -24,12 +24,12 @@ export interface SessionConfig {
  */
 export async function createSessionConfig(): Promise<SessionConfig> {
     const workspaceFolders = vscode.workspace.workspaceFolders
-    if (workspaceFolders === undefined || workspaceFolders.length === 0) {
+    const firstFolder = workspaceFolders?.[0]
+    if (workspaceFolders === undefined || workspaceFolders.length === 0 || firstFolder === undefined) {
         throw new WorkspaceFolderNotFoundError()
     }
 
-    let workspaceRoot = workspaceFolders[0].uri.fsPath
-    let sourceRoot = await getSourceCodePath(workspaceRoot, 'src')
+    const sourceRoots = await Promise.all(workspaceFolders.map(f => getSourceCodePath(f.uri.fsPath, 'src')))
 
     const fs = new VirtualFileSystem()
 
@@ -39,22 +39,5 @@ export async function createSessionConfig(): Promise<SessionConfig> {
         new VirtualMemoryFile(new Uint8Array())
     )
 
-    return Promise.resolve({
-        set sourceRoot(newSourceRoot: string) {
-            sourceRoot = newSourceRoot
-
-            const possibleWorkspaceRoot = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(sourceRoot))
-            if (!possibleWorkspaceRoot) {
-                throw new SelectedFolderNotInWorkspaceFolderError()
-            }
-            workspaceRoot = possibleWorkspaceRoot.uri.fsPath
-        },
-        get sourceRoot(): string {
-            return sourceRoot
-        },
-        get workspaceRoot(): string {
-            return workspaceRoot
-        },
-        fs,
-    })
+    return Promise.resolve({ sourceRoots, fs, workspaceFolders: [firstFolder, ...workspaceFolders.slice(1)] })
 }

@@ -257,7 +257,7 @@ export class FeatureDevClient {
 
             const {
                 code_generation_result: {
-                    new_file_contents: newFiles = [],
+                    new_file_contents: newFiles = {},
                     deleted_files: deletedFiles = [],
                     references = [],
                 },
@@ -272,9 +272,9 @@ export class FeatureDevClient {
                 }
             }
 
-            const newFileContents: { filePath: string; fileContent: string }[] = []
+            const newFileContents: { zipFilePath: string; fileContent: string }[] = []
             for (const [filePath, fileContent] of Object.entries(newFiles)) {
-                newFileContents.push({ filePath, fileContent })
+                newFileContents.push({ zipFilePath: filePath, fileContent })
             }
 
             return { newFileContents, deletedFiles, references }

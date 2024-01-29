@@ -29,6 +29,7 @@ import {
     join,
     toStream,
     joinAll,
+    isPresent,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
@@ -662,6 +663,15 @@ describe('CollectionUtils', async function () {
                 const iterable = joinAll(toAsyncIterable(iterables))
                 assert.deepStrictEqual(await iterateAll(iterable), expected)
             })
+        })
+    })
+
+    describe('isPresent', function () {
+        it('returns true for non undefined values', function () {
+            assert.strictEqual(isPresent<string>(`value`), true)
+        })
+        it('returns false for undefined', function () {
+            assert.strictEqual(isPresent<string>(undefined), false)
         })
     })
 })

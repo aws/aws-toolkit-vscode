@@ -31,8 +31,6 @@ export class ErrorMessage extends UiMessage {
 }
 
 export class CodeResultMessage extends UiMessage {
-    readonly filePaths!: string[]
-    readonly deletedFiles!: string[]
     readonly message!: string
     readonly references!: {
         information: string
@@ -45,15 +43,13 @@ export class CodeResultMessage extends UiMessage {
     override type = 'codeResultMessage'
 
     constructor(
-        filePaths: string[],
-        deletedFiles: string[],
+        readonly filePaths: string[],
+        readonly deletedFiles: string[],
         references: CodeReference[],
         tabID: string,
         conversationID: string
     ) {
         super(tabID)
-        this.filePaths = filePaths
-        this.deletedFiles = deletedFiles
         this.references = references
             .filter(ref => ref.licenseName && ref.repository && ref.url)
             .map(ref => {

@@ -14,24 +14,25 @@ import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
-import { FileSystemCommon } from '../../srcShared/fs'
 import { featureDevScheme } from '../constants'
 import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
 import {
+    CurrentWsFolders,
+    DeletedFileInfo,
     FollowUpTypes,
-    NewFileContents,
+    NewFileInfo,
+    NewFileZipContents,
     SessionState,
     SessionStateAction,
     SessionStateConfig,
     SessionStateInteraction,
     SessionStatePhase,
 } from '../types'
-import { collectFiles, prepareRepoData } from '../util/files'
+import { collectFiles, getWorkspaceFoldersByPrefixes, prepareRepoData } from '../util/files'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { uploadCode } from '../util/upload'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
-
-const fs = FileSystemCommon.instance
+import { isPresent } from '../../shared/utilities/collectionUtils'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -57,7 +58,8 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
         const uploadId = await telemetry.amazonq_createUpload.run(async span => {
             span.record({ amazonqConversationId: this.config.conversationId })
             const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-                this.config.sourceRoot,
+                this.config.sourceRoots,
+                this.config.workspaceFolders,
                 action.telemetry,
                 span
             )
@@ -71,7 +73,6 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
             await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
             return uploadId
         })
-
         const nextState = new RefinementState({ ...this.config, uploadId }, this.approach, this.tabID, 0)
         return nextState.interact(action)
     }
@@ -144,22 +145,60 @@ export class RefinementState implements SessionState {
     }
 }
 
-async function createFilePaths(
+function registerNewFiles(
     fs: VirtualFileSystem,
-    newFileContents: NewFileContents,
-    uploadId: string
-): Promise<string[]> {
-    const filePaths: string[] = []
-    for (const { filePath, fileContent } of newFileContents) {
+    newFileContents: NewFileZipContents[],
+    uploadId: string,
+    workspaceFolders: CurrentWsFolders
+): NewFileInfo[] {
+    const result: NewFileInfo[] = []
+    const workspaceFolderPrefixes = getWorkspaceFoldersByPrefixes(workspaceFolders)
+    for (const { zipFilePath, fileContent } of newFileContents) {
         const encoder = new TextEncoder()
         const contents = encoder.encode(fileContent)
-        const generationFilePath = path.join(uploadId, filePath)
+        const generationFilePath = path.join(uploadId, zipFilePath)
         const uri = vscode.Uri.from({ scheme: featureDevScheme, path: generationFilePath })
         fs.registerProvider(uri, new VirtualMemoryFile(contents))
-        filePaths.push(filePath)
+        const prefix =
+            workspaceFolderPrefixes === undefined ? '' : zipFilePath.substring(0, zipFilePath.indexOf(path.sep))
+        const folder = workspaceFolderPrefixes === undefined ? workspaceFolders[0] : workspaceFolderPrefixes[prefix]
+        if (folder === undefined) {
+            getLogger().error(`No workspace folder found for file: ${zipFilePath} and prefix: ${prefix}`)
+            continue
+        }
+        result.push({
+            zipFilePath,
+            fileContent,
+            virtualMemoryUri: uri,
+            workspaceFolder: folder,
+            relativePath: zipFilePath.substring(workspaceFolderPrefixes === undefined ? 0 : prefix.length + 1),
+        })
     }
 
-    return filePaths
+    return result
+}
+
+function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWsFolders): DeletedFileInfo[] {
+    const workspaceFolderPrefixes = getWorkspaceFoldersByPrefixes(workspaceFolders)
+    return deletedFiles
+        .map(deletedFilePath => {
+            const prefix =
+                workspaceFolderPrefixes === undefined
+                    ? ''
+                    : deletedFilePath.substring(0, deletedFilePath.indexOf(path.sep))
+            const folder = workspaceFolderPrefixes === undefined ? workspaceFolders[0] : workspaceFolderPrefixes[prefix]
+            if (folder === undefined) {
+                getLogger().error(`No workspace folder found for file: ${deletedFilePath} and prefix: ${prefix}`)
+                return undefined
+            }
+            const prefixLength = workspaceFolderPrefixes === undefined ? 0 : prefix.length + 1
+            return {
+                zipFilePath: deletedFilePath,
+                workspaceFolder: folder,
+                relativePath: deletedFilePath.substring(prefixLength),
+            }
+        })
+        .filter(isPresent)
 }
 
 abstract class CodeGenBase {
@@ -180,14 +219,15 @@ abstract class CodeGenBase {
         fs,
         codeGenerationId,
         telemetry: telemetry,
+        workspaceFolders,
     }: {
         fs: VirtualFileSystem
         codeGenerationId: string
         telemetry: TelemetryHelper
+        workspaceFolders: CurrentWsFolders
     }): Promise<{
-        newFiles: any
-        newFilePaths: string[]
-        deletedFiles: string[]
+        newFiles: NewFileInfo[]
+        deletedFiles: DeletedFileInfo[]
         references: CodeReference[]
     }> {
         for (
@@ -202,12 +242,11 @@ abstract class CodeGenBase {
                 case 'Complete': {
                     const { newFileContents, deletedFiles, references } =
                         await this.config.proxyClient.exportResultArchive(this.conversationId)
-                    const newFilePaths = await createFilePaths(fs, newFileContents, this.uploadId)
-                    telemetry.setNumberOfFilesGenerated(newFilePaths.length)
+                    const newFileInfo = registerNewFiles(fs, newFileContents, this.uploadId, workspaceFolders)
+                    telemetry.setNumberOfFilesGenerated(newFileInfo.length)
                     return {
-                        newFiles: newFileContents,
-                        newFilePaths,
-                        deletedFiles,
+                        newFiles: newFileInfo,
+                        deletedFiles: getDeletedFileInfos(deletedFiles, workspaceFolders),
                         references,
                     }
                 }
@@ -234,7 +273,6 @@ abstract class CodeGenBase {
         }
         return {
             newFiles: [],
-            newFilePaths: [],
             deletedFiles: [],
             references: [],
         }
@@ -245,8 +283,8 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     constructor(
         config: SessionStateConfig,
         public approach: string,
-        public filePaths: string[],
-        public deletedFiles: string[],
+        public filePaths: NewFileInfo[],
+        public deletedFiles: DeletedFileInfo[],
         public references: CodeReference[],
         tabID: string,
         private currentIteration: number
@@ -277,8 +315,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     fs: action.fs,
                     codeGenerationId,
                     telemetry: action.telemetry,
+                    workspaceFolders: this.config.workspaceFolders,
                 })
-                this.filePaths = codeGeneration.newFilePaths
+                this.filePaths = codeGeneration.newFiles
                 this.deletedFiles = codeGeneration.deletedFiles
                 this.references = codeGeneration.references
                 action.telemetry.setAmazonqNumberOfReferences(this.references.length)
@@ -307,8 +346,8 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
 export class MockCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
-    public filePaths: string[]
-    public deletedFiles: string[]
+    public filePaths: NewFileInfo[]
+    public deletedFiles: DeletedFileInfo[]
     public readonly conversationId: string
     public readonly uploadId: string
 
@@ -316,27 +355,31 @@ export class MockCodeGenState implements SessionState {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.filePaths = []
         this.deletedFiles = []
-        this.conversationId = config.conversationId
+        this.conversationId = this.config.conversationId
         this.uploadId = randomUUID()
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        let newFileContents: NewFileContents = []
-
         // in a `mockcodegen` state, we should read from the `mock-data` folder and output
         // every file retrieved in the same shape the LLM would
-        const mockedFilesDir = path.join(this.config.workspaceRoot, './mock-data')
         try {
-            const mockDirectoryExists = await fs.stat(mockedFilesDir)
-            if (mockDirectoryExists) {
-                const files = await collectFiles(mockedFilesDir, false)
-                newFileContents = files.map(f => ({
-                    filePath: f.filePath.replace('mock-data/', ''),
-                    fileContent: f.fileContent,
-                }))
-                this.filePaths = await createFilePaths(action.fs, newFileContents, this.uploadId)
-                this.deletedFiles = ['src/this-file-should-be-deleted.ts']
-            }
+            const files = await collectFiles(
+                this.config.workspaceFolders.map(f => path.join(f.uri.fsPath, './mock-data')),
+                this.config.workspaceFolders,
+                false
+            )
+            const newFileContents = files.map(f => ({
+                zipFilePath: f.zipFilePath,
+                fileContent: f.fileContent,
+            }))
+            this.filePaths = registerNewFiles(action.fs, newFileContents, this.uploadId, this.config.workspaceFolders)
+            this.deletedFiles = [
+                {
+                    zipFilePath: 'src/this-file-should-be-deleted.ts',
+                    workspaceFolder: this.config.workspaceFolders[0],
+                    relativePath: 'src/this-file-should-be-deleted.ts',
+                },
+            ]
             action.messenger.sendCodeResult(
                 this.filePaths,
                 this.deletedFiles,
@@ -390,8 +433,8 @@ export class PrepareCodeGenState implements SessionState {
     constructor(
         private config: SessionStateConfig,
         public approach: string,
-        public filePaths: string[],
-        public deletedFiles: string[],
+        public filePaths: NewFileInfo[],
+        public deletedFiles: DeletedFileInfo[],
         public references: CodeReference[],
         public tabID: string,
         private currentIteration: number
@@ -401,15 +444,16 @@ export class PrepareCodeGenState implements SessionState {
         this.conversationId = config.conversationId
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const uploadId = await telemetry.amazonq_createUpload.run(async span => {
-            action.messenger.sendAnswer({
-                message: 'Uploading code ...',
-                type: 'answer-part',
-                tabID: this.tabID,
-            })
+        action.messenger.sendAnswer({
+            message: 'Uploading code ...',
+            type: 'answer-part',
+            tabID: this.tabID,
+        })
 
+        const uploadId = await telemetry.amazonq_createUpload.run(async span => {
             const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-                this.config.sourceRoot,
+                this.config.sourceRoots,
+                this.config.workspaceFolders,
                 action.telemetry,
                 span
             )
@@ -423,7 +467,6 @@ export class PrepareCodeGenState implements SessionState {
             await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
             return uploadId
         })
-
         this.uploadId = uploadId
         const nextState = new CodeGenState(
             { ...this.config, uploadId },

@@ -23,14 +23,13 @@ import { ToolkitError } from '../../../shared/errors'
 import { PrepareRepoFailedError } from '../../../amazonqFeatureDev/errors'
 import crypto from 'crypto'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
-import { assertTelemetry } from '../../testUtil'
+import { assertTelemetry, createTestWorkspaceFolder } from '../../testUtil'
 import { getFetchStubWithResponse } from '../../common/request.test'
 
 const mockSessionStateAction = (msg?: string): SessionStateAction => {
     return {
         task: 'test-task',
         msg: msg ?? 'test-msg',
-        files: [],
         fs: new VirtualFileSystem(),
         messenger: new Messenger(
             new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>()))
@@ -46,12 +45,14 @@ let mockCreateUploadUrl: sinon.SinonStub
 const mockSessionStateConfig = ({
     conversationId,
     uploadId,
+    workspaceFolder,
 }: {
     conversationId: string
     uploadId: string
+    workspaceFolder: vscode.WorkspaceFolder
 }): SessionStateConfig => ({
-    sourceRoot: 'fake-source',
-    workspaceRoot: 'fake-root',
+    sourceRoots: ['fake-source'],
+    workspaceFolders: [workspaceFolder],
     conversationId,
     proxyClient: {
         createConversation: () => sinon.stub(),
@@ -69,7 +70,15 @@ describe('sessionState', () => {
     const conversationId = 'conversation-id'
     const uploadId = 'upload-id'
     const tabId = 'tab-id'
-    const testConfig = mockSessionStateConfig({ conversationId, uploadId })
+    let testConfig: SessionStateConfig
+
+    beforeEach(async () => {
+        testConfig = mockSessionStateConfig({
+            conversationId,
+            uploadId,
+            workspaceFolder: await createTestWorkspaceFolder('fake-root'),
+        })
+    })
 
     afterEach(() => {
         sinon.restore()
