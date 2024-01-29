@@ -49,9 +49,12 @@ export async function testActivate(context: vscode.ExtensionContext) {
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
     setupGlobalsTempStubs()
 
+    // some "initialize" functions
     await initializeComputeRegion()
     initialize(context)
     initializeManifestPaths(context)
+
+    await activateTelemetry(context, globals.awsContext, Settings.instance)
 }
 
 /**
@@ -62,8 +65,6 @@ export async function testActivate(context: vscode.ExtensionContext) {
 export async function browserActivate(context: vscode.ExtensionContext) {
     try {
         await testActivate(context)
-
-        await activateTelemetry(context, globals.awsContext, Settings.instance)
 
         await initializeCredentials(context, globals.awsContext, globals.loginManager)
         await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)

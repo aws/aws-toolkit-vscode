@@ -32,7 +32,6 @@ import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetche
 import { activate as activateEcr } from './ecr/activation'
 import { activate as activateEc2 } from './ec2/activation'
 import { activate as activateSam } from './shared/sam/activation'
-import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
 import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
@@ -139,7 +138,6 @@ export async function activate(context: vscode.ExtensionContext) {
         const settings = Settings.instance
         const experiments = Experiments.instance
 
-        await activateTelemetry(context, globals.awsContext, settings)
         await initializeCredentials(context, globals.awsContext, globals.loginManager)
 
         experiments.onDidChange(({ key }) => {
