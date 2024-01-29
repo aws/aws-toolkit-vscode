@@ -29,7 +29,7 @@
         "createRelease": "npm run createRelease -w packages/",
         "format": "prettier --check packages plugins",
         "formatfix": "prettier --write packages plugins",
-        "lint": "npm run lint -w packages/ && npm run format",
+        "lint": "ts-node ./scripts/lint/testLint.ts && npm run format",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts packages plugins && npm run formatfix",
         "clean": "npm run clean -w packages/ -w plugins/ && ts-node ./scripts/clean.ts node_modules packages/toolkit/node_modules",
         "reset": "npm run clean && npm install"

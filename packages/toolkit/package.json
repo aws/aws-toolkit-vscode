@@ -4249,7 +4249,6 @@
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
         "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts",
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
-        "lint": "ts-node ./scripts/lint/testLint.ts",
         "package": "ts-node ./scripts/build/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "generateClients": "npm run build -w @amzn/codewhisperer-streaming && ts-node ./scripts/build/generateServiceClient.ts ",
