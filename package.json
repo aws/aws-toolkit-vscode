@@ -4286,7 +4286,7 @@
         "@types/lodash": "^4.14.180",
         "@types/markdown-it": "^13.0.2",
         "@types/mime-types": "^2.1.1",
-        "@types/mocha": "^10.0.0",
+        "@types/mocha": "^10.0.6",
         "@types/node": "^14.18.63",
         "@types/node-fetch": "^2.6.8",
         "@types/prismjs": "^1.26.0",
