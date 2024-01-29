@@ -62,8 +62,6 @@ import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
 import { listCodeWhispererCommands } from './commands/statusBarCommands'
 import { updateUserProxyUrl } from './client/agent'
-import { LineTracker } from './views/annotations/lineTracker'
-import { LineAnnotationController } from './views/annotations/lineAnnotationController'
 import { Container } from './service/serviceContainer'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance

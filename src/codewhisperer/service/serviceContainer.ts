@@ -3,11 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import { InlineDecorator } from './annotationUtils'
+import { InlineDecorator } from '../views/annotations/annotationUtils'
 import { LineAnnotationController } from '../views/annotations/lineAnnotationController'
 import { LineTracker } from '../views/annotations/lineTracker'
-import { InlineCompletionService } from './inlineCompletionService'
 
 export class Container {
     static #instance: Container | undefined
@@ -27,9 +25,11 @@ export class Container {
 
     readonly _lineTracker: LineTracker
     readonly _lineAnnotationController: LineAnnotationController
+    readonly _decorator: InlineDecorator
 
     constructor() {
         this._lineTracker = new LineTracker()
-        this._lineAnnotationController = new LineAnnotationController(this._lineTracker)
+        this._decorator = new InlineDecorator()
+        this._lineAnnotationController = new LineAnnotationController(this._lineTracker, this._decorator)
     }
 }

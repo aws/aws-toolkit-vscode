@@ -5,9 +5,10 @@
 
 import * as vscode from 'vscode'
 import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
-import { InlineDecorator } from './annotationUtils'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
-import { RecommendationService } from '../../service/recommendationService'
+import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
+import { Container } from '../../service/serviceContainer'
+import { InlineDecorator } from './annotationUtils'
 
 const annotationDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     after: {
@@ -21,9 +22,8 @@ export class LineAnnotationController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
     private _editor: vscode.TextEditor | undefined
     private _suspended = false
-    private _cwInlineHintDecorator = new InlineDecorator()
 
-    constructor(private readonly lineTracker: LineTracker) {
+    constructor(private readonly lineTracker: LineTracker, private readonly _cwInlineHintDecorator: InlineDecorator) {
         console.log(`initializing lineAnnaotationController`)
         this._disposable = vscode.Disposable.from()
         this.setLineTracker(true)
@@ -53,6 +53,10 @@ export class LineAnnotationController implements vscode.Disposable {
         this.clear(e.editor)
     }
 
+    private onSuggestionActionEvent(e: SuggestionActionEvent) {
+        this.refresh(e.editor, 'codewhisperer')
+    }
+
     clear(editor: vscode.TextEditor | undefined) {
         // this._cancellation?.cancel();
         if (this._editor !== editor && this._editor != null) {
@@ -68,9 +72,8 @@ export class LineAnnotationController implements vscode.Disposable {
         // editor.setDecorations(, [])
     }
 
-    private async refresh(editor: vscode.TextEditor | undefined) {
+    private async refresh(editor: vscode.TextEditor | undefined, reason: 'line' | 'codewhisperer' = 'line') {
         if (editor == null && this._editor == null) {
-            console.log('11111111111111111111')
             return
         }
 
@@ -98,18 +101,22 @@ export class LineAnnotationController implements vscode.Disposable {
             return
         }
 
-        const timeout = 100
-
         // if (cancellation.isCancellationRequested) return
-        await this.updateDecorations(editor, selections, timeout)
+        await this.updateDecorations(editor, selections, reason)
     }
 
-    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], timeout?: number) {
+    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], reason: 'line' | 'codewhisperer') {
         console.log(`updateDecorations`)
 
-        this._cwInlineHintDecorator.buildDecoration(editor, lines).forEach(e => {
-            editor.setDecorations(e.decorationType, e.decorationOptions)
-        })
+        if (reason === 'line') {
+            this._cwInlineHintDecorator.onLineChangeDecorations(editor, lines).forEach(e => {
+                editor.setDecorations(e.decorationType, e.decorationOptions)
+            })
+        } else {
+            this._cwInlineHintDecorator.onSuggestionActionDecorations(editor, lines).forEach(e => {
+                editor.setDecorations(e.decorationType, e.decorationOptions)
+            })
+        }
     }
 
     private setLineTracker(enabled: boolean) {
@@ -130,7 +137,8 @@ export class LineAnnotationController implements vscode.Disposable {
     private setCWInlineService(enabled: boolean) {
         const disposable = RecommendationService.instance.suggestionActionEvent(e => {
             console.log(`receiving onSuggestionActionEvent -- refreshing editor decoration`)
-            this.refresh(e.editor)
+            // can't use refresh because refresh, by design, should only be triggered when there is line selection change
+            this.refresh(e.editor, 'codewhisperer')
         })
 
         return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak

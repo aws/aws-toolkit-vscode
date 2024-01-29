@@ -5,13 +5,15 @@
 
 import * as vscode from 'vscode'
 import { getIcon } from '../../../shared/icons'
-import { InlineCompletionService } from '../../service/inlineCompletionService'
 import { LineSelection } from './lineTracker'
 import { CodeWhispererSource } from '../../commands/types'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { RecommendationService } from '../../service/recommendationService'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
+
+const gutterColored = 'aws-codewhisperer-editor-gutter'
+const gutterWhite = 'aws-codewhisperer-editor-gutter-white'
 
 export class InlineDecorator {
     // TODO: persist this value and read from the cache
@@ -26,14 +28,14 @@ export class InlineDecorator {
     })
 
     readonly cwlineGutterDecoration = vscode.window.createTextEditorDecorationType({
-        gutterIconPath: this.iconPathToUri(getIcon('aws-codewhisperer-editor-gutter-white')),
+        gutterIconPath: this.iconPathToUri(getIcon(gutterWhite)),
     })
 
     readonly cwlineGutterDecorationColored = vscode.window.createTextEditorDecorationType({
-        gutterIconPath: this.iconPathToUri(getIcon('aws-codewhisperer-editor-gutter')),
+        gutterIconPath: this.iconPathToUri(getIcon(gutterColored)),
     })
 
-    buildDecoration(
+    onLineChangeDecorations(
         editor: vscode.TextEditor,
         lines: LineSelection[]
     ): {
@@ -69,6 +71,43 @@ export class InlineDecorator {
                 { decorationType: this.cwlineGutterDecorationColored, decorationOptions: [] },
             ]
         }
+    }
+
+    onSuggestionActionDecorations(
+        editor: vscode.TextEditor,
+        lines: LineSelection[]
+    ): {
+        decorationType: vscode.TextEditorDecorationType
+        decorationOptions: vscode.DecorationOptions[] | vscode.Range[]
+    }[] {
+        console.log(`onSuggestionActionDecorations!`)
+        if (lines.length === 0) {
+            return [
+                { decorationType: this.cwLineHintDecoration, decorationOptions: [] },
+                { decorationType: this.cwlineGutterDecoration, decorationOptions: [] },
+                { decorationType: this.cwlineGutterDecorationColored, decorationOptions: [] },
+            ]
+        }
+
+        const range = editor.document.validateRange(
+            new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
+        )
+
+        const isCWRunning = RecommendationService.instance.isRunning
+
+        if (isCWRunning) {
+            return [
+                { decorationType: this.cwLineHintDecoration, decorationOptions: [] },
+                { decorationType: this.cwlineGutterDecoration, decorationOptions: [] },
+                { decorationType: this.cwlineGutterDecorationColored, decorationOptions: [range] },
+            ]
+        }
+
+        return [
+            { decorationType: this.cwLineHintDecoration, decorationOptions: [] },
+            { decorationType: this.cwlineGutterDecoration, decorationOptions: [range] },
+            { decorationType: this.cwlineGutterDecorationColored, decorationOptions: [] },
+        ]
     }
 
     private getInlineDecoration(scrollable: boolean = true): Partial<vscode.DecorationOptions> {

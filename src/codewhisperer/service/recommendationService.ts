@@ -44,6 +44,8 @@ export class RecommendationService {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         event?: vscode.TextDocumentChangeEvent
     ) {
+        // Container.instance._lineAnnotationController.clear(editor)
+
         if (this._isRunning) {
             return
         }
