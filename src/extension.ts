@@ -21,7 +21,6 @@ import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     getIdeProperties,
     getToolkitEnvironmentDetails,
-    initializeComputeRegion,
     isCloud9,
     isSageMaker,
     showWelcomeMessage,
@@ -57,7 +56,7 @@ import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsP
 import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
-import globals, { initialize } from './shared/extensionGlobals'
+import globals from './shared/extensionGlobals'
 import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler as registerCommandErrorHandler } from './shared/vscode/commands2'
@@ -68,7 +67,7 @@ import { isUserCancelledError, resolveErrorMessageToDisplay, ToolkitError } from
 import { Logging } from './shared/logger/commands'
 import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
 import { registerWebviewErrorHandler } from './webviews/server'
-import { registerCommands, initializeManifestPaths } from './extensionShared'
+import { registerCommands } from './extensionShared'
 import { ChildProcess } from './shared/utilities/childProcess'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
@@ -82,13 +81,10 @@ export async function activate(context: vscode.ExtensionContext) {
     await testActivate(context)
 
     initializeNetworkAgent()
-    await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
 
-    initialize(context)
     globals.machineId = await getMachineId()
-    initializeManifestPaths(context)
 
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)

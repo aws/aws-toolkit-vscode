@@ -48,6 +48,10 @@ export async function testActivate(context: vscode.ExtensionContext) {
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
     setupGlobalsTempStubs()
+
+    await initializeComputeRegion()
+    initialize(context)
+    initializeManifestPaths(context)
 }
 
 /**
@@ -58,10 +62,6 @@ export async function testActivate(context: vscode.ExtensionContext) {
 export async function browserActivate(context: vscode.ExtensionContext) {
     try {
         await testActivate(context)
-
-        await initializeComputeRegion()
-        initialize(context)
-        initializeManifestPaths(context)
 
         await activateTelemetry(context, globals.awsContext, Settings.instance)
 
