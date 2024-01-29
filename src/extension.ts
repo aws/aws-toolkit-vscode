@@ -44,7 +44,6 @@ import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './redshift/activation'
-import { CredentialsStore } from './auth/credentials/store'
 import { activate as activateCWChat } from './amazonq/activation'
 import { activate as activateQGumby } from './amazonqGumby/activation'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
@@ -64,20 +63,16 @@ import { isUserCancelledError, resolveErrorMessageToDisplay, ToolkitError } from
 import { Logging } from './shared/logger/commands'
 import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
 import { registerWebviewErrorHandler } from './webviews/server'
-import { registerCommands } from './extensionShared'
 import { ChildProcess } from './shared/utilities/childProcess'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
 import { showQuickStartWebview } from './shared/extensionStartup'
-import { testActivate } from './extensionShared'
+import { activateShared } from './extensionShared'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
-    await testActivate(context)
-
-    initializeNetworkAgent()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
 
@@ -110,12 +105,11 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     try {
+        // IMPORTANT: If you are doing setup that should also work in browser, it should be done in the function below
+        await activateShared(context, () => RegionProvider.fromEndpointsProvider(makeEndpointsProvider()))
+
+        initializeNetworkAgent()
         initializeCredentialsProviderManager()
-
-        const endpointsProvider = makeEndpointsProvider()
-
-        const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
-        const credentialsStore = new CredentialsStore()
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
@@ -124,8 +118,7 @@ export async function activate(context: vscode.ExtensionContext) {
             .filter(x => x)
             .forEach(line => getLogger().info(line))
 
-        globals.regionProvider = regionProvider
-        globals.awsContextCommands = new AwsContextCommands(regionProvider, Auth.instance)
+        globals.awsContextCommands = new AwsContextCommands(globals.regionProvider, Auth.instance)
         globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
         // Create this now, but don't call vscode.window.registerUriHandler() until after all
@@ -150,12 +143,12 @@ export async function activate(context: vscode.ExtensionContext) {
             extensionContext: context,
             awsContext: globals.awsContext,
             samCliContext: getSamCliContext,
-            regionProvider: regionProvider,
+            regionProvider: globals.regionProvider,
             outputChannel: globals.outputChannel,
             invokeOutputChannel: remoteInvokeOutputChannel,
             telemetryService: globals.telemetry,
             uriHandler: globals.uriHandler,
-            credentialsStore,
+            credentialsStore: globals.loginManager.store,
         }
 
         try {
@@ -164,7 +157,6 @@ export async function activate(context: vscode.ExtensionContext) {
             getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }
 
-        registerCommands(context)
         context.subscriptions.push(submitFeedback.register(context))
 
         // do not enable codecatalyst for sagemaker
@@ -180,7 +172,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateAwsExplorer({
             context: extContext,
-            regionProvider,
+            regionProvider: globals.regionProvider,
             toolkitOutputChannel: globals.outputChannel,
             remoteInvokeOutputChannel,
         })
@@ -196,7 +188,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateLambda(extContext)
 
-        await activateSsmDocument(context, globals.awsContext, regionProvider, globals.outputChannel)
+        await activateSsmDocument(context, globals.awsContext, globals.regionProvider, globals.outputChannel)
 
         await activateSam(extContext)
 
