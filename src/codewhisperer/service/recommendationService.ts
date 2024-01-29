@@ -17,6 +17,11 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 export class RecommendationService {
     static #instance: RecommendationService
 
+    private _isRunning: boolean = false
+    get isRunning() {
+        return this._isRunning
+    }
+
     public static get instance() {
         return (this.#instance ??= new RecommendationService())
     }
@@ -29,6 +34,10 @@ export class RecommendationService {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         event?: vscode.TextDocumentChangeEvent
     ) {
+        if (this._isRunning) {
+            return
+        }
+
         if (isCloud9('any')) {
             // C9 manual trigger key alt/option + C is ALWAYS enabled because the VSC version C9 is on doesn't support setContextKey which is used for CODEWHISPERER_ENABLED
             // therefore we need a connection check if there is ANY connection(regardless of the connection's state) connected to CodeWhisperer on C9
@@ -36,13 +45,9 @@ export class RecommendationService {
                 return
             }
 
-            if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
-                return
-            }
-
             RecommendationHandler.instance.checkAndResetCancellationTokens()
             vsCodeState.isIntelliSenseActive = false
-            RecommendationHandler.instance.isGenerateRecommendationInProgress = true
+            this._isRunning = true
 
             try {
                 let response: GetRecommendationsResponse = {
@@ -78,20 +83,27 @@ export class RecommendationService {
                     })
                 }
             } finally {
-                RecommendationHandler.instance.isGenerateRecommendationInProgress = false
+                this._isRunning = false
             }
         } else if (isInlineCompletionEnabled()) {
             if (triggerType === 'OnDemand') {
                 ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
             }
-            await InlineCompletionService.instance.getPaginatedRecommendation(
-                client,
-                editor,
-                triggerType,
-                config,
-                autoTriggerType,
-                event
-            )
+
+            this._isRunning = true
+
+            try {
+                await InlineCompletionService.instance.getPaginatedRecommendation(
+                    client,
+                    editor,
+                    triggerType,
+                    config,
+                    autoTriggerType,
+                    event
+                )
+            } finally {
+                this._isRunning = false
+            }
         }
     }
 }

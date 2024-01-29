@@ -27,7 +27,6 @@ export class InlineCompletionService {
     private maxPage = 100
     private statusBar: CodeWhispererStatusBar
     private _showRecommendationTimer?: NodeJS.Timer
-    private _isPaginationRunning = false
 
     constructor(statusBar: CodeWhispererStatusBar = CodeWhispererStatusBar.instance) {
         this.statusBar = statusBar
@@ -86,11 +85,7 @@ export class InlineCompletionService {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         event?: vscode.TextDocumentChangeEvent
     ) {
-        if (
-            vsCodeState.isCodeWhispererEditing ||
-            this._isPaginationRunning ||
-            RecommendationHandler.instance.isSuggestionVisible()
-        ) {
+        if (vsCodeState.isCodeWhispererEditing || RecommendationHandler.instance.isSuggestionVisible()) {
             return
         }
 
@@ -164,10 +159,8 @@ export class InlineCompletionService {
     }
 
     private async setState(state: keyof typeof states) {
-        this._isPaginationRunning = false
         switch (state) {
             case 'loading': {
-                this._isPaginationRunning = true
                 await this.statusBar.setState('loading')
                 break
             }
@@ -184,10 +177,6 @@ export class InlineCompletionService {
                 break
             }
         }
-    }
-
-    isPaginationRunning(): boolean {
-        return this._isPaginationRunning
     }
 }
 
