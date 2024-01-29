@@ -110,45 +110,70 @@ export class InlineDecorator {
         ]
     }
 
-    private getInlineDecoration(scrollable: boolean = true): Partial<vscode.DecorationOptions> {
-        const source: CodeWhispererSource = 'vscodeComponent'
-        const md = new vscode.MarkdownString(
-            `[Learn more CodeWhisperer examples](command:aws.codeWhisperer.gettingStarted?${encodeURI(
-                JSON.stringify([placeholder, source])
-            )})`
-        )
+    private getInlineDecoration(scrollable: boolean = true): Partial<vscode.DecorationOptions> | undefined {
+        const options = this.textOptions()
+        if (!options) {
+            return undefined
+        }
 
-        md.isTrusted = true
+        const renderOptions: {
+            renderOptions: vscode.ThemableDecorationRenderOptions
+            hoverMessage: vscode.DecorationOptions['hoverMessage']
+        } = {
+            renderOptions: options,
+            hoverMessage: this.onHover(),
+        }
 
-        let contentText: string = ''
         if (this._currentStep === undefined) {
-            contentText = 'CodeWhisperer suggests code as you type, press [TAB] to accept'
-
             this._currentStep = '1'
         } else if (this._currentStep === '1') {
-            contentText = '[Option] + [C] triggers CodeWhisperer manually'
-
             this._currentStep = '2'
         } else if (this._currentStep === '2') {
-            contentText = `First CodeWhisperer suggestion accepted!`
-
             this._currentStep = '3'
         } else {
-            contentText = 'Congrat! You finish CodeWhisperer tutorial' //TODO: remove it
+            return undefined
         }
 
-        return {
-            renderOptions: {
-                after: {
-                    contentText: contentText,
-                    fontWeight: 'normal',
-                    fontStyle: 'normal',
-                    textDecoration: `none;${scrollable ? '' : ' position: absolute;'}`,
-                    color: '#8E8E8E',
-                },
-            },
-            hoverMessage: md,
+        return renderOptions
+    }
+
+    private textOptions(scrollable: boolean = true): vscode.ThemableDecorationRenderOptions | undefined {
+        const textOptions = {
+            contentText: '',
+            fontWeight: 'normal',
+            fontStyle: 'normal',
+            textDecoration: `none;${scrollable ? '' : ' position: absolute;'}`,
+            color: '#8E8E8E',
         }
+
+        if (!this._currentStep) {
+            textOptions.contentText = 'CodeWhisperer suggests code as you type, press [TAB] to accept'
+        } else if (this._currentStep === '1') {
+            textOptions.contentText = '[Option] + [C] triggers CodeWhisperer manually'
+        } else if (this._currentStep === '2') {
+            textOptions.contentText = `First CodeWhisperer suggestion accepted!`
+        } else {
+            return undefined
+        }
+
+        return { after: textOptions }
+    }
+
+    private onHover(): vscode.MarkdownString | undefined {
+        if (this._currentStep === '2') {
+            const source: CodeWhispererSource = 'vscodeComponent'
+            const md = new vscode.MarkdownString(
+                `[Learn more CodeWhisperer examples](command:aws.codeWhisperer.gettingStarted?${encodeURI(
+                    JSON.stringify([placeholder, source])
+                )})`
+            )
+            // to enable link to a declared command, need to set isTrusted = true
+            md.isTrusted = true
+
+            return md
+        }
+
+        return undefined
     }
 }
 

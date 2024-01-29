@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
-import { Container } from '../../service/serviceContainer'
 import { InlineDecorator } from './annotationUtils'
 
 const annotationDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
