@@ -11,15 +11,12 @@ import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
 import { initialize as initializeCredentials } from './auth/activation'
 import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
-import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsProviderManager } from './auth/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './auth/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
-import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import { endpointsFileUrl } from './shared/constants'
-import { DefaultAwsContext } from './shared/awsContext'
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     getIdeProperties,
@@ -124,11 +121,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const endpointsProvider = makeEndpointsProvider()
 
-        const awsContext = new DefaultAwsContext()
-        globals.awsContext = awsContext
         const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
-        const loginManager = new LoginManager(globals.awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
@@ -137,11 +131,9 @@ export async function activate(context: vscode.ExtensionContext) {
             .filter(x => x)
             .forEach(line => getLogger().info(line))
 
-        await initializeAwsCredentialsStatusBarItem(awsContext, context)
+        await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
         globals.regionProvider = regionProvider
-        globals.loginManager = loginManager
         globals.awsContextCommands = new AwsContextCommands(regionProvider, Auth.instance)
-        globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
         // Create this now, but don't call vscode.window.registerUriHandler() until after all
@@ -151,8 +143,8 @@ export async function activate(context: vscode.ExtensionContext) {
         const settings = Settings.instance
         const experiments = Experiments.instance
 
-        await activateTelemetry(context, awsContext, settings)
-        await initializeCredentials(context, awsContext, loginManager)
+        await activateTelemetry(context, globals.awsContext, settings)
+        await initializeCredentials(context, globals.awsContext, globals.loginManager)
 
         experiments.onDidChange(({ key }) => {
             telemetry.aws_experimentActivation.run(span => {
@@ -243,7 +235,7 @@ export async function activate(context: vscode.ExtensionContext) {
             await activateApplicationComposer(context)
         }
 
-        await activateStepFunctions(context, awsContext, globals.outputChannel)
+        await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
 
         await activateRedshift(extContext)
 

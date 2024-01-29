@@ -42,6 +42,12 @@ export async function testActivate(context: vscode.ExtensionContext) {
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
     await activateLogger(context, toolkitOutputChannel)
     globals.outputChannel = toolkitOutputChannel
+
+    //setup globals
+    globals.awsContext = new DefaultAwsContext()
+    globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
+    globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
+    setupGlobalsTempStubs()
 }
 
 /**
@@ -52,8 +58,6 @@ export async function testActivate(context: vscode.ExtensionContext) {
 export async function browserActivate(context: vscode.ExtensionContext) {
     try {
         await testActivate(context)
-
-        setupGlobals()
 
         await initializeComputeRegion()
         initialize(context)
@@ -74,16 +78,6 @@ export async function browserActivate(context: vscode.ExtensionContext) {
         getLogger().error(`Failed to activate extension`, error)
         throw error
     }
-}
-
-/** Set up values for the `globals` object */
-function setupGlobals() {
-    globals.awsContext = new DefaultAwsContext()
-    globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
-
-    globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
-
-    setupGlobalsTempStubs()
 }
 
 /**
