@@ -15,6 +15,8 @@ import { mapMetadata } from './telemetryLogger'
 import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
+import { isCloud9, isSageMaker, isCn } from '../../shared/extensionUtilities'
+import { isInDevEnv } from '../../codecatalyst/utils'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -88,6 +90,33 @@ export async function getUserAgent(
     }
 
     return pairs.join(' ')
+}
+
+// Although this is similair to getEnvType() in authUtil files, added new.
+// auth util can be upadate to get ComputeEnv
+
+export function getComputeEnvType() {
+    // Compute ENV could be one of the following
+    // "cloud9"|"cloud9-codecatalyst"|"cloud9-ec2"|"codecatalyst"|"ec2"|"local"|"sagemaker"|"ssh"|"test"|"web"|"wsl"|"other"|string;
+
+    if (isCloud9('classic')) return 'cloud9'
+
+    if (isCloud9('codecatalyst')) return 'cloud9-codecatalyst'
+
+    if (isInDevEnv()) return 'codecatalyst' // should it be codecatalyst devEnv?
+
+    if (isCn()) return 'amazon-cloud9' // name better
+
+    if (isSageMaker()) return 'sagemaker'
+
+    if (env.remoteName == 'ssh-remote' && !isInDevEnv()) return 'ec2'
+
+    if (isAutomation()) return 'test'
+
+    if (!env.remoteName)
+        // use isDevenvVscode instead?
+        return 'local'
+    else return 'other'
 }
 
 /**
