@@ -2,6 +2,10 @@
 *
 */**
 
+# Ignore from the root package.json otherwise those dirs will be collected as well.
+../../*
+../../*/**
+
 # Allowlist
 !dist/*
 !dist/libs

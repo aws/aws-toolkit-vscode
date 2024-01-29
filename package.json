@@ -1,6 +1,7 @@
 {
     "name": "root",
     "workspaces": [
+        "packages/toolkit/src/browser",
         "packages/*",
         "plugins/*",
         "src.gen/@amzn/codewhisperer-streaming"
@@ -25,6 +26,7 @@
         "test": "npm run test -w packages/",
         "testE2E": "npm run testE2E -w packages/",
         "testInteg": "npm run testInteg -w packages/",
+        "package": "npm run package -w packages/",
         "newChange": "ts-node ./scripts/newChange.ts",
         "createRelease": "npm run createRelease -w packages/",
         "format": "prettier --check packages plugins",

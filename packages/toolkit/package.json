@@ -54,7 +54,7 @@
         "onFileSystem:s3-readonly",
         "onCommand:aws.codeWhisperer.accept"
     ],
-    "main": "./dist/src/main",
+    "main": "./dist/src/main.js",
     "browser": "./dist/src/extensionWeb",
     "contributes": {
         "configuration": {
@@ -4238,7 +4238,7 @@
     "scripts": {
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles",
-        "clean": "ts-node ../../scripts/clean.ts dist",
+        "clean": "ts-node ../../scripts/clean.ts dist LICENSE NOTICE quickStart* README* CHANGELOG.md",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
         "buildBrowserDebug": "npm run clean && npm run buildScripts && webpack --config webpack.browser.config.js",
@@ -4324,7 +4324,7 @@
         "ts-node": "^10.9.1"
     },
     "dependencies": {
-        "@amzn/codewhisperer-streaming": "file:./src.gen/@amzn/codewhisperer-streaming",
+        "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
         "@aws-sdk/client-cognito-identity": "3.490.0",
         "@aws-sdk/client-lambda": "3.385.0",
         "@aws-sdk/client-sso": "^3.342.0",
