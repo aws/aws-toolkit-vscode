@@ -35,6 +35,10 @@ export class InlineDecorator {
         gutterIconPath: iconPathToUri(getIcon(gutterColored)),
     })
 
+    get allDecorations() {
+        return [this.cwLineHintDecoration, this.cwlineGutterDecoration, this.cwlineGutterDecorationColored]
+    }
+
     onLineChangeDecorations(
         editor: vscode.TextEditor,
         lines: LineSelection[]
@@ -50,27 +54,34 @@ export class InlineDecorator {
             ]
         }
 
-        const inlineDecorationOptions = this.getInlineDecoration() as vscode.DecorationOptions
+        const result: {
+            decorationType: vscode.TextEditorDecorationType
+            decorationOptions: vscode.DecorationOptions[] | vscode.Range[]
+        }[] = []
+
         const range = editor.document.validateRange(
             new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
         )
-        inlineDecorationOptions.range = range
 
+        const inlineDecorationOptions = this.getInlineDecoration() as vscode.DecorationOptions | undefined
         const isCWRunning = RecommendationService.instance.isRunning
 
-        if (isCWRunning) {
-            return [
-                { decorationType: this.cwLineHintDecoration, decorationOptions: [inlineDecorationOptions] },
-                { decorationType: this.cwlineGutterDecoration, decorationOptions: [] },
-                { decorationType: this.cwlineGutterDecorationColored, decorationOptions: [range] },
-            ]
+        if (!inlineDecorationOptions) {
+            result.push({ decorationType: this.cwLineHintDecoration, decorationOptions: [] })
         } else {
-            return [
-                { decorationType: this.cwLineHintDecoration, decorationOptions: [inlineDecorationOptions] },
-                { decorationType: this.cwlineGutterDecoration, decorationOptions: [range] },
-                { decorationType: this.cwlineGutterDecorationColored, decorationOptions: [] },
-            ]
+            inlineDecorationOptions.range = range
+            result.push({ decorationType: this.cwLineHintDecoration, decorationOptions: [inlineDecorationOptions] })
         }
+
+        if (isCWRunning) {
+            result.push({ decorationType: this.cwlineGutterDecoration, decorationOptions: [] })
+            result.push({ decorationType: this.cwlineGutterDecorationColored, decorationOptions: [range] })
+        } else {
+            result.push({ decorationType: this.cwlineGutterDecoration, decorationOptions: [range] })
+            result.push({ decorationType: this.cwlineGutterDecorationColored, decorationOptions: [] })
+        }
+
+        return result
     }
 
     onSuggestionActionDecorations(

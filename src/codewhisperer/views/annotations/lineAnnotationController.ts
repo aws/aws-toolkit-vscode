@@ -9,14 +9,6 @@ import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { InlineDecorator } from './annotationUtils'
 
-const annotationDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    after: {
-        margin: '0 0 0 3em',
-        textDecoration: 'none',
-    },
-    rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
-})
-
 export class LineAnnotationController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
     private _editor: vscode.TextEditor | undefined
@@ -64,11 +56,14 @@ export class LineAnnotationController implements vscode.Disposable {
         this.clearAnnotations(editor)
     }
 
+    // TODO: does this really get called?
     private clearAnnotations(editor: vscode.TextEditor | undefined) {
+        console.log(`clearing annotations`)
         if (editor === undefined || (editor as any)._disposed === true) return
 
-        editor.setDecorations(annotationDecoration, [])
-        // editor.setDecorations(, [])
+        this._cwInlineHintDecorator.allDecorations.forEach(d => {
+            editor.setDecorations(d, [])
+        })
     }
 
     private async refresh(editor: vscode.TextEditor | undefined, reason: 'line' | 'codewhisperer' = 'line') {
