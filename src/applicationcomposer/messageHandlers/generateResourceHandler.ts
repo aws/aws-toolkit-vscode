@@ -12,7 +12,7 @@ import {
     MessageType,
 } from '../types'
 import { ChatSession } from '../../codewhispererChat/clients/chat/v0/chat'
-import { AuthUtil, getChatAuthState } from '../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
 
@@ -80,8 +80,7 @@ async function generateResource(prompt: string) {
         // TODO-STARLING - Revisit to see if timeout still needed prior to launch
         const data = await timeout(chatSession.chat(request), TIMEOUT)
         const initialResponseTime = globals.clock.Date.now() - startTime
-        getLogger().debug(`CW Chat initial response time: ${initialResponseTime} ms`)
-        getLogger().debug(`CW Chat initial response: ${JSON.stringify(data, undefined, 2)}`)
+        getLogger().debug(`CW Chat initial response: ${JSON.stringify(data, undefined, 2)}, ${initialResponseTime} ms`)
         if (data['$metadata']) {
             metadata = data['$metadata']
         }
@@ -133,21 +132,17 @@ async function generateResource(prompt: string) {
 
         const elapsedTime = globals.clock.Date.now() - startTime
 
-        // TODO-STARLING: Reduce/remove below
-        getLogger().debug(`===== CW Chat prompt start ====`)
-        getLogger().debug(prompt)
-        getLogger().debug(`===== CW Chat prompt end ======`)
-        getLogger().debug(`===== CW Chat metadata start ======`)
-        getLogger().debug(`CW Chat conversationId = ${conversationId}`)
-        getLogger().debug(`CW Chat metadata = \n${JSON.stringify(metadata, undefined, 2)}`)
-        getLogger().debug(`CW Chat supplementaryWebLinks = \n${JSON.stringify(supplementaryWebLinks, undefined, 2)}`)
-        getLogger().debug(`CW Chat references = \n${JSON.stringify(references, undefined, 2)}`)
-        getLogger().debug(`===== CW Chat metadata end ======`)
-        getLogger().debug(`===== CW Chat raw response start ======`)
-        getLogger().debug(`${response}`)
-        getLogger().debug(`===== CW Chat raw response end ======`)
-        getLogger().debug(`CW Chat initial response time = ${initialResponseTime} ms`)
-        getLogger().debug(`CW Chat elapsed time = ${elapsedTime} ms`)
+        getLogger().debug(
+            `CW Chat Debug message:
+             prompt = "${prompt}",
+             conversationId = ${conversationId},
+             metadata = \n${JSON.stringify(metadata, undefined, 2)},
+             supplementaryWebLinks = \n${JSON.stringify(supplementaryWebLinks, undefined, 2)},
+             references = \n${JSON.stringify(references, undefined, 2)},
+             response = "${response}",
+             initialResponse = ${initialResponseTime} ms,
+             elapsed time = ${elapsedTime} ms`
+        )
 
         return {
             chatResponse: response,
@@ -161,7 +156,6 @@ async function generateResource(prompt: string) {
         }
     } catch (error: any) {
         getLogger().debug(`CW Chat error: ${error.name} - ${error.message}`)
-        await debugConnection()
         if (error.$metadata) {
             const { requestId, cfId, extendedRequestId } = error.$metadata
             getLogger().debug(JSON.stringify({ requestId, cfId, extendedRequestId }, undefined, 2))
@@ -178,21 +172,4 @@ function timeout<T>(promise: Promise<T>, ms: number, timeoutError = new Error('P
         }, ms)
     })
     return Promise.race<T>([promise, _timeout])
-}
-
-// TODO-STARLING
-// Temporary function to assist with debug as Starling is coded
-// This will likely be removed prior to launch
-async function debugConnection() {
-    const isConnected = AuthUtil.instance.isConnected()
-    const isValid = AuthUtil.instance.isConnectionValid()
-    const isExpired = AuthUtil.instance.isConnectionExpired()
-    const authState = await getChatAuthState(AuthUtil.instance)
-    const isConnectedToCodeWhisperer =
-        authState.codewhispererChat === 'connected' || authState.codewhispererChat === 'expired'
-
-    getLogger().debug(`DEBUG: debugConnection - isConnected = ${isConnected}`)
-    getLogger().debug(`DEBUG: debugConnection - isValid = ${isValid}`)
-    getLogger().debug(`DEBUG: debugConnection - isExpired = ${isExpired}`)
-    getLogger().debug(`DEBUG: debugConnection - isConnectedToCodeWhisperer = ${isConnectedToCodeWhisperer}`)
 }
