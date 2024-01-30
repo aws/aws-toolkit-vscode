@@ -65,6 +65,7 @@ export class CodeWhispererCodeCoverageTracker {
         }
         // generate accepted recommendation token and stored in collection
         this.addAcceptedTokens(filename, { range: range, text: text, accepted: text.length })
+        this.addTotalTokens(filename, text.length)
     }
 
     public incrementServiceInvocationCount() {
@@ -85,6 +86,8 @@ export class CodeWhispererCodeCoverageTracker {
         }
     }
 
+    // TODO: Improve the range tracking of the accepted recommendation
+    // TODO: use the editor of the filename, not the current editor
     public updateAcceptedTokensCount(editor: vscode.TextEditor) {
         const filename = editor.document.fileName
         if (filename in this._acceptedTokens) {
@@ -112,17 +115,25 @@ export class CodeWhispererCodeCoverageTracker {
         if (vscode.window.activeTextEditor) {
             this.updateAcceptedTokensCount(vscode.window.activeTextEditor)
         }
+        // the accepted characters without counting user modification
         let acceptedTokens = 0
+        // the accepted characters after calculating user modificaiton
+        let unmodifiedAcceptedTokens = 0
         for (const filename in this._acceptedTokens) {
             this._acceptedTokens[filename].forEach(v => {
                 if (filename in this._totalTokens && this._totalTokens[filename] >= v.accepted) {
-                    acceptedTokens += v.accepted
+                    unmodifiedAcceptedTokens += v.accepted
+                    acceptedTokens += v.text.length
                 }
             })
         }
         const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))
         const selectedCustomization = getSelectedCustomization()
+        if (this._serviceInvocationCount <= 0) {
+            getLogger().info(`Skip emiting code contribution metric`)
+            return
+        }
         telemetry.codewhisperer_codePercentage.emit({
             codewhispererTotalTokens: totalTokens,
             codewhispererLanguage: this._language,
@@ -142,6 +153,7 @@ export class CodeWhispererCodeCoverageTracker {
                             languageName: runtimeLanguageContext.toRuntimeLanguage(this._language),
                         },
                         acceptedCharacterCount: acceptedTokens,
+                        unmodifiedAcceptedCharacterCount: unmodifiedAcceptedTokens,
                         totalCharacterCount: totalTokens,
                         timestamp: new Date(Date.now()),
                     },
@@ -228,13 +240,13 @@ export class CodeWhispererCodeCoverageTracker {
 
     public countTotalTokens(e: vscode.TextDocumentChangeEvent) {
         // ignore no contentChanges. ignore contentChanges from other plugins (formatters)
-        // only include contentChanges from user action.
+        // only include contentChanges from user keystroke input(one character input).
         // Also ignore deletion events due to a known issue of tracking deleted CodeWhiperer tokens.
         if (
             !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
             vsCodeState.isCodeWhispererEditing ||
             e.contentChanges.length !== 1 ||
-            e.contentChanges[0].text.length === 0
+            e.contentChanges[0].text.length !== 1
         ) {
             return
         }
