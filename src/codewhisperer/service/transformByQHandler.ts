@@ -118,7 +118,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         let errorLog = ''
         errorLog += spawnResult.error ? `${JSON.stringify(spawnResult.error)}` : ''
-        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}` ?? ''
+        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         getLogger().error(`CodeTransform: Error in running javap command = ${errorLog}`)
         let errorReason = ''
         if (spawnResult.stdout) {
@@ -133,7 +133,7 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
         if (spawnResult.error) {
             // oddly, the 'code' field is not visible until I stringify the object, but then I have to parse it to access 'code'
             // 'code' is a high-level symbol representing the error (ex. 'ENOENT', 'ENOBUFS', etc.)
-            const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? ''
+            const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
@@ -356,14 +356,14 @@ function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand
     if (spawnResult.status !== 0) {
         let errorLog = ''
         errorLog += spawnResult.error ? `${JSON.stringify(spawnResult.error)}` : ''
-        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}` ?? ''
+        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} clean install failed: \n ${errorLog}`)
         getLogger().error(`CodeTransform: Error in running Maven install command ${baseCommand} = ${errorLog}`)
         let errorReason = ''
         if (spawnResult.stdout) {
-            errorReason = 'InstallExecutionError'
+            errorReason = 'MavenInstallExecutionError'
             /*
-             * adding this check here because these mvn commands generate a lot of output.
+             * adding this check here because these mvn commands sometimes generate a lot of output.
              * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
              * which are not being used here (for now), but still keeping this just in case.
              */
@@ -371,10 +371,10 @@ function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand
                 errorReason += '-BufferOverflow'
             }
         } else {
-            errorReason = 'InstallSpawnError'
+            errorReason = 'MavenInstallSpawnError'
         }
         if (spawnResult.error) {
-            const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? ''
+            const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
         telemetry.codeTransform_mvnBuildFailed.emit({
@@ -420,22 +420,22 @@ function copyProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, m
     if (spawnResult.status !== 0) {
         let errorLog = ''
         errorLog += spawnResult.error ? `${JSON.stringify(spawnResult.error)}` : ''
-        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}` ?? ''
+        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies failed: \n ${errorLog}`)
         getLogger().error(
             `CodeTransform: Error in running Maven copy-dependencies command ${baseCommand} = ${errorLog}`
         )
         let errorReason = ''
         if (spawnResult.stdout) {
-            errorReason = 'CopyDependenciesExecutionError'
+            errorReason = 'MavenCopyDependenciesExecutionError'
             if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
                 errorReason += '-BufferOverflow'
             }
         } else {
-            errorReason = 'CopyDependenciesSpawnError'
+            errorReason = 'MavenCopyDependenciesSpawnError'
         }
         if (spawnResult.error) {
-            const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? ''
+            const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
         telemetry.codeTransform_mvnBuildFailed.emit({
