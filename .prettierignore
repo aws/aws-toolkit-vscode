@@ -5,7 +5,6 @@ CHANGELOG.md
 *.gen.ts
 dist
 src.gen/**
-resources/endpoints.json
 packages/toolkit/resources/endpoints.json
 packages/toolkit/types/*.d.ts
 packages/toolkit/src/shared/telemetry/service-2.json
