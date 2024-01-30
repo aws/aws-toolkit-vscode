@@ -116,9 +116,7 @@ export async function onInlineAcceptance(
             completionType: acceptanceEntry.completionType,
             language: languageContext.language,
         })
-        // use the effective range of accepted recommendation
-        // to avoid counting typeahead in accepted tokens
-        const insertedCoderange = new vscode.Range(acceptanceEntry.effectiveRange.start, end)
+        const insertedCoderange = new vscode.Range(start, end)
         CodeWhispererCodeCoverageTracker.getTracker(languageContext.language, globalStorage)?.countAcceptedTokens(
             insertedCoderange,
             acceptanceEntry.editor.document.getText(insertedCoderange),
