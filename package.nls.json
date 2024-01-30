@@ -70,7 +70,7 @@
     "AWS.configuration.description.awssam.debug.snippets.api.description": "A new configuration for invoking an AWS Lambda in a CloudFormation template, simulating API Gateway",
     "AWS.configuration.description.awssam.debug.snippets.api.label.cn": "Amazon SAM: API Gateway lambda invoke",
     "AWS.configuration.description.awssam.debug.snippets.api.description.cn": "A new configuration for invoking an Amazon Lambda in a CloudFormation template, simulating API Gateway",
-    "AWS.configuration.description.codewhisperer": "When checked, CodeWhisperer will include suggestions with code references",
+    "AWS.configuration.description.codewhisperer": "When checked, CodeWhisperer will include suggestions with code references. If you authenticate through IAM Identity Center, this setting is controlled by your CodeWhisperer Professional administrator. [Learn More](https://docs.aws.amazon.com/codewhisperer/latest/userguide/code-reference.html#opt-out-code-reference)",
     "AWS.configuration.description.codewhisperer.shareCodeWhispererContentWithAWS": "When checked, your content processed by CodeWhisperer may be used for service improvement (except for content processed by the Enterprise CodeWhisperer service tier). Unchecking this box will cause AWS to delete any of your content used for that purpose. The information used to provide the CodeWhisperer service to you will not be affected. See the [Service Terms](https://aws.amazon.com/service-terms) for more detail.",
     "AWS.configuration.description.codewhisperer.importRecommendation": "CodeWhisperer will add import statements with code suggestions when necessary",
     "AWS.command.apig.copyUrl": "Copy URL",
