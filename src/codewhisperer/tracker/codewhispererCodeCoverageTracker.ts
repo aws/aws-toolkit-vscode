@@ -59,15 +59,6 @@ export class CodeWhispererCodeCoverageTracker {
         return TelemetryHelper.instance.isTelemetryEnabled() && AuthUtil.instance.isConnected()
     }
 
-    public countAcceptedTokens(range: vscode.Range, text: string, filename: string) {
-        if (!this.isActive()) {
-            return
-        }
-        // generate accepted recommendation token and stored in collection
-        this.addAcceptedTokens(filename, { range: range, text: text, accepted: text.length })
-        this.addTotalTokens(filename, text.length)
-    }
-
     public incrementServiceInvocationCount() {
         this._serviceInvocationCount += 1
     }
@@ -236,6 +227,15 @@ export class CodeWhispererCodeCoverageTracker {
         if (this._totalTokens[filename] < 0) {
             this._totalTokens[filename] = 0
         }
+    }
+
+    public countAcceptedTokens(range: vscode.Range, text: string, filename: string) {
+        if (!this.isActive()) {
+            return
+        }
+        // generate accepted recommendation token and stored in collection
+        this.addAcceptedTokens(filename, { range: range, text: text, accepted: text.length })
+        this.addTotalTokens(filename, text.length)
     }
 
     public countTotalTokens(e: vscode.TextDocumentChangeEvent) {
