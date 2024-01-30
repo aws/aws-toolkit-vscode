@@ -122,7 +122,7 @@ export class CodeWhispererCodeCoverageTracker {
         const percentage = Math.round(parseInt(percentCount))
         const selectedCustomization = getSelectedCustomization()
         if (this._serviceInvocationCount <= 0) {
-            getLogger().info(`Skip emiting code contribution metric`)
+            getLogger().debug(`Skip emiting code contribution metric`)
             return
         }
         telemetry.codewhisperer_codePercentage.emit({
