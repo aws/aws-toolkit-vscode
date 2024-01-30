@@ -30,7 +30,7 @@ export enum StartActionPositions {
 
 export const logCodeTransformInitiatedMetric = (source: string): void => {
     const commonMetrics = {
-        codeTransformSessionId: `${codeTransformTelemetryState.getSessionId()}-updated`,
+        codeTransformSessionId: `${codeTransformTelemetryState.getSessionId()}`,
     }
 
     if (source === CodeWhispererConstants.transformTreeNode) {
@@ -38,12 +38,14 @@ export const logCodeTransformInitiatedMetric = (source: string): void => {
             codeTransformStartSrcComponents: StartActionPositions.DevToolsSidePanel,
             ...commonMetrics,
             result: MetadataResult.Pass,
+            reason: 'Updated',
         })
     } else if (source === StartActionPositions.BottomHubPanel) {
         telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
             codeTransformStartSrcComponents: StartActionPositions.BottomHubPanel,
             ...commonMetrics,
             result: MetadataResult.Pass,
+            reason: 'Updated',
         })
     }
 }

@@ -361,7 +361,7 @@ function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand
         getLogger().error(`CodeTransform: Error in running Maven install command ${baseCommand} = ${errorLog}`)
         let errorReason = ''
         if (spawnResult.stdout) {
-            errorReason = 'MavenInstallExecutionError'
+            errorReason = 'Maven Install: ExecutionError'
             /*
              * adding this check here because these mvn commands sometimes generate a lot of output.
              * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
@@ -371,7 +371,7 @@ function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand
                 errorReason += '-BufferOverflow'
             }
         } else {
-            errorReason = 'MavenInstallSpawnError'
+            errorReason = 'Maven Install: SpawnError'
         }
         if (spawnResult.error) {
             const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? 'UNKNOWN'
@@ -427,12 +427,12 @@ function copyProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, m
         )
         let errorReason = ''
         if (spawnResult.stdout) {
-            errorReason = 'MavenCopyDependenciesExecutionError'
+            errorReason = 'Maven Copy: CopyDependenciesExecutionError'
             if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
                 errorReason += '-BufferOverflow'
             }
         } else {
-            errorReason = 'MavenCopyDependenciesSpawnError'
+            errorReason = 'Maven Copy: CopyDependenciesSpawnError'
         }
         if (spawnResult.error) {
             const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? 'UNKNOWN'
