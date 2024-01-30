@@ -252,7 +252,7 @@
                 },
                 "aws.codeWhisperer.includeSuggestionsWithCodeReferences": {
                     "type": "boolean",
-                    "description": "%AWS.configuration.description.codewhisperer%",
+                    "markdownDescription": "%AWS.configuration.description.codewhisperer%",
                     "default": true
                 },
                 "aws.codeWhisperer.importRecommendation": {
