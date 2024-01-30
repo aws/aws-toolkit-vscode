@@ -90,6 +90,10 @@ export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => 
     let timer: NodeJS.Timeout | undefined
     let promise: Promise<T> | undefined
 
+    function isPending(): boolean {
+        return timer !== undefined
+    }
+
     return () => {
         timer?.refresh()
 

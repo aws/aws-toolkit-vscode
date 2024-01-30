@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
+import { debounce } from '../../../shared/utilities/functionUtils'
 
 export interface LineSelection {
     anchor: number
@@ -15,7 +16,7 @@ export interface LinesChangeEvent {
     readonly editor: vscode.TextEditor | undefined
     readonly selections: LineSelection[] | undefined
 
-    readonly reason: 'editor' | 'selection'
+    readonly reason: 'editor' | 'selection' | 'content'
 }
 
 export class LineTracker {
@@ -65,32 +66,18 @@ export class LineTracker {
         this.notifyLinesChanged(this._editor === e.textEditor ? 'selection' : 'editor')
     }
 
-    private notifyLinesChanged(reason: 'editor' | 'selection') {
-        const e: LinesChangeEvent = { editor: this._editor, selections: this.selections, reason: reason }
-        if (e.selections == null) {
-            if (e.editor !== vscode.window.activeTextEditor) return
-
-            // this._fireLinesChangedDebounced?.cancel();
-
-            console.log(`lineTracker: firing linesChanged event`)
-
-            void this.fireLinesChanged(e)
-
-            return
+    private async onContentChanged(e: vscode.TextDocumentChangeEvent) {
+        if (e.document === vscode.window.activeTextEditor?.document && e.contentChanges.length > 0) {
+            console.log(e)
+            // await this.notifyLinesChangedDebounced()
+            this.notifyLinesChanged('content')
         }
+    }
 
-        // if (this._fireLinesChangedDebounced == null) {
-        // 	this._fireLinesChangedDebounced = debounce((e: LinesChangeEvent) => {
-        // 		if (e.editor !== window.activeTextEditor) return;
+    private notifyLinesChangedDebounced = debounce(() => this.notifyLinesChanged('content'), 250)
 
-        // 		// Make sure we are still on the same lines
-        // 		if (!isIncluded(e.selections, toLineSelections(e.editor?.selections))) {
-        // 			return;
-        // 		}
-
-        // 		void this.fireLinesChanged(e);
-        // 	}, 250);
-        // }
+    private notifyLinesChanged(reason: 'editor' | 'selection' | 'content') {
+        const e: LinesChangeEvent = { editor: this._editor, selections: this.selections, reason: reason }
 
         void this.fireLinesChanged(e)
     }
@@ -115,12 +102,10 @@ export class LineTracker {
         }
 
         if (first) {
-            // this.resume({ force: true, silent: true });
-
             this._disposable = vscode.Disposable.from(
-                // { dispose: () => this.suspend({ force: true, silent: true }) },
                 vscode.window.onDidChangeActiveTextEditor(this.onActiveTextEditorChanged, this),
                 vscode.window.onDidChangeTextEditorSelection(this.onTextEditorSelectionChanged, this),
+                vscode.workspace.onDidChangeTextDocument(this.onContentChanged, this),
                 disposable
             )
 

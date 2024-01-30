@@ -39,89 +39,10 @@ export class InlineDecorator {
         return [this.cwLineHintDecoration, this.cwlineGutterDecoration, this.cwlineGutterDecorationColored]
     }
 
-    onLineChangeDecorations(
-        editor: vscode.TextEditor,
-        lines: LineSelection[]
-    ): {
-        decorationType: vscode.TextEditorDecorationType
-        decorationOptions: vscode.DecorationOptions[] | vscode.Range[]
-    }[] {
-        if (lines.length === 0) {
-            return [
-                { decorationType: this.cwLineHintDecoration, decorationOptions: [] },
-                { decorationType: this.cwlineGutterDecoration, decorationOptions: [] },
-                { decorationType: this.cwlineGutterDecorationColored, decorationOptions: [] },
-            ]
-        }
-
-        const result: {
-            decorationType: vscode.TextEditorDecorationType
-            decorationOptions: vscode.DecorationOptions[] | vscode.Range[]
-        }[] = []
-
-        const range = editor.document.validateRange(
-            new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
-        )
-
-        const inlineDecorationOptions = this.getInlineDecoration() as vscode.DecorationOptions | undefined
-        const isCWRunning = RecommendationService.instance.isRunning
-
-        if (!inlineDecorationOptions) {
-            result.push({ decorationType: this.cwLineHintDecoration, decorationOptions: [] })
-        } else {
-            inlineDecorationOptions.range = range
-            result.push({ decorationType: this.cwLineHintDecoration, decorationOptions: [inlineDecorationOptions] })
-        }
-
-        if (isCWRunning) {
-            result.push({ decorationType: this.cwlineGutterDecoration, decorationOptions: [] })
-            result.push({ decorationType: this.cwlineGutterDecorationColored, decorationOptions: [range] })
-        } else {
-            result.push({ decorationType: this.cwlineGutterDecoration, decorationOptions: [range] })
-            result.push({ decorationType: this.cwlineGutterDecorationColored, decorationOptions: [] })
-        }
-
-        return result
-    }
-
-    onSuggestionActionDecorations(
-        editor: vscode.TextEditor,
-        lines: LineSelection[]
-    ): {
-        decorationType: vscode.TextEditorDecorationType
-        decorationOptions: vscode.DecorationOptions[] | vscode.Range[]
-    }[] {
-        console.log(`onSuggestionActionDecorations!`)
-        if (lines.length === 0) {
-            return [
-                { decorationType: this.cwLineHintDecoration, decorationOptions: [] },
-                { decorationType: this.cwlineGutterDecoration, decorationOptions: [] },
-                { decorationType: this.cwlineGutterDecorationColored, decorationOptions: [] },
-            ]
-        }
-
-        const range = editor.document.validateRange(
-            new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
-        )
-
-        const isCWRunning = RecommendationService.instance.isRunning
-
-        if (isCWRunning) {
-            return [
-                { decorationType: this.cwLineHintDecoration, decorationOptions: [] },
-                { decorationType: this.cwlineGutterDecoration, decorationOptions: [] },
-                { decorationType: this.cwlineGutterDecorationColored, decorationOptions: [range] },
-            ]
-        }
-
-        return [
-            { decorationType: this.cwLineHintDecoration, decorationOptions: [] },
-            { decorationType: this.cwlineGutterDecoration, decorationOptions: [range] },
-            { decorationType: this.cwlineGutterDecorationColored, decorationOptions: [] },
-        ]
-    }
-
-    private getInlineDecoration(scrollable: boolean = true): Partial<vscode.DecorationOptions> | undefined {
+    getInlineDecoration(
+        roll: boolean = true,
+        scrollable: boolean = true
+    ): Partial<vscode.DecorationOptions> | undefined {
         const options = this.textOptions()
         if (!options) {
             return undefined
@@ -136,13 +57,20 @@ export class InlineDecorator {
         }
 
         if (this._currentStep === undefined) {
-            this._currentStep = '1'
+            if (roll) {
+                this._currentStep = '1'
+            }
         } else if (this._currentStep === '1') {
-            this._currentStep = '2'
+            if (roll) {
+                this._currentStep = '2'
+            }
         } else if (this._currentStep === '2') {
-            this._currentStep = '3'
+            if (roll) {
+                this._currentStep = '3'
+            }
         } else {
-            return undefined
+            // TODO: uncomment
+            // return undefined
         }
 
         return renderOptions
@@ -159,12 +87,17 @@ export class InlineDecorator {
 
         if (!this._currentStep) {
             textOptions.contentText = 'CodeWhisperer suggests code as you type, press [TAB] to accept'
+            console.log('CodeWhisperer suggests code as you type, press [TAB] to accept')
         } else if (this._currentStep === '1') {
             textOptions.contentText = '[Option] + [C] triggers CodeWhisperer manually'
+            console.log('[Option] + [C] triggers CodeWhisperer manually')
         } else if (this._currentStep === '2') {
             textOptions.contentText = `First CodeWhisperer suggestion accepted!`
         } else {
-            return undefined
+            //TODO: uncomment
+            // return undefined
+
+            textOptions.contentText = 'Congrat, you just finish CodeWhisperer tutorial!'
         }
 
         return { after: textOptions }

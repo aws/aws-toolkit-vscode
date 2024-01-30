@@ -8,6 +8,9 @@ import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { InlineDecorator } from './annotationUtils'
+import { debounce } from '../../../shared/utilities/functionUtils'
+
+const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
 export class LineAnnotationController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
@@ -18,7 +21,6 @@ export class LineAnnotationController implements vscode.Disposable {
         console.log(`initializing lineAnnaotationController`)
         this._disposable = vscode.Disposable.from()
         this.setLineTracker(true)
-        this.setCWInlineService(true)
         this.onReady()
     }
 
@@ -34,39 +36,28 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private onActiveLinesChanged(e: LinesChangeEvent) {
         console.log(`lineAnnotationController: onActiveLinesChanged`)
-
+        if (e.reason === 'content') {
+            this.clear(e.editor)
+            return
+        }
         if (e.selections !== undefined) {
-            void this.refresh(e.editor)
-
+            this.refresh(e.editor)
             return
         }
 
         this.clear(e.editor)
     }
 
-    private onSuggestionActionEvent(e: SuggestionActionEvent) {
-        this.refresh(e.editor, 'codewhisperer')
-    }
-
     clear(editor: vscode.TextEditor | undefined) {
-        // this._cancellation?.cancel();
-        if (this._editor !== editor && this._editor != null) {
-            this.clearAnnotations(this._editor)
+        if (editor) {
+            editor.setDecorations(this._cwInlineHintDecorator.cwLineHintDecoration, [])
         }
-        this.clearAnnotations(editor)
     }
 
-    // TODO: does this really get called?
-    private clearAnnotations(editor: vscode.TextEditor | undefined) {
-        console.log(`clearing annotations`)
-        if (editor === undefined || (editor as any)._disposed === true) return
-
-        this._cwInlineHintDecorator.allDecorations.forEach(d => {
-            editor.setDecorations(d, [])
-        })
-    }
-
-    private async refresh(editor: vscode.TextEditor | undefined, reason: 'line' | 'codewhisperer' = 'line') {
+    private async refresh(
+        editor: vscode.TextEditor | undefined,
+        reason: 'selection' | 'codewhisperer' | 'content' = 'selection'
+    ) {
         if (editor == null && this._editor == null) {
             return
         }
@@ -91,7 +82,6 @@ export class LineAnnotationController implements vscode.Disposable {
 
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
         if (editor.document == null || !this.lineTracker.includes(selections)) {
-            console.log('3333333333333333333')
             return
         }
 
@@ -99,18 +89,25 @@ export class LineAnnotationController implements vscode.Disposable {
         await this.updateDecorations(editor, selections, reason)
     }
 
-    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], reason: 'line' | 'codewhisperer') {
+    async updateDecorations(
+        editor: vscode.TextEditor,
+        lines: LineSelection[],
+        reason: 'selection' | 'codewhisperer' | 'content'
+    ) {
         console.log(`updateDecorations`)
 
-        if (reason === 'line') {
-            this._cwInlineHintDecorator.onLineChangeDecorations(editor, lines).forEach(e => {
-                editor.setDecorations(e.decorationType, e.decorationOptions)
-            })
-        } else {
-            this._cwInlineHintDecorator.onSuggestionActionDecorations(editor, lines).forEach(e => {
-                editor.setDecorations(e.decorationType, e.decorationOptions)
-            })
+        const range = editor.document.validateRange(
+            new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
+        )
+
+        const options = this._cwInlineHintDecorator.getInlineDecoration() as vscode.DecorationOptions | undefined
+        if (!options) {
+            return
         }
+
+        options.range = range
+
+        editor.setDecorations(this._cwInlineHintDecorator.cwLineHintDecoration, [options])
     }
 
     private setLineTracker(enabled: boolean) {
@@ -126,15 +123,5 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         this.lineTracker.unsubscribe(this)
-    }
-
-    private setCWInlineService(enabled: boolean) {
-        const disposable = RecommendationService.instance.suggestionActionEvent(e => {
-            console.log(`receiving onSuggestionActionEvent -- refreshing editor decoration`)
-            // can't use refresh because refresh, by design, should only be triggered when there is line selection change
-            this.refresh(e.editor, 'codewhisperer')
-        })
-
-        return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
     }
 }
