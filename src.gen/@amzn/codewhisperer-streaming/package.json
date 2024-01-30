@@ -35,7 +35,7 @@
         "@smithy/eventstream-serde-node": "^2.0.10",
         "@smithy/fetch-http-handler": "^2.2.1",
         "@smithy/hash-node": "^2.0.10",
-        "@smithy/invalid-dependency": "^2.0.10",
+        "@smithy/invalid-dependency": "^2.1.1",
         "@smithy/middleware-content-length": "^2.0.12",
         "@smithy/middleware-retry": "^2.0.13",
         "@smithy/middleware-serde": "^2.0.10",
