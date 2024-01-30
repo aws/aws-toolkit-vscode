@@ -43,6 +43,9 @@ packages/toolkit/LICENSE
 packages/toolkit/NOTICE
 
 # Icons
+packages/toolkit/resources/icons/cloud9/generated/**
+packages/toolkit/resources/fonts/aws-toolkit-icons.woff
+packages/toolkit/resources/css/icons.css
 
 # local configuration
 .local.env

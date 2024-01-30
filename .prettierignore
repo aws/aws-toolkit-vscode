@@ -1,11 +1,12 @@
 out
-resources/endpoints.json
 CHANGELOG.md
 .changes
 *.d.ts
 *.gen.ts
-dist/
-types/*.d.ts
+dist
 src.gen/**
+resources/endpoints.json
+packages/toolkit/resources/endpoints.json
+packages/toolkit/types/*.d.ts
 packages/toolkit/src/shared/telemetry/service-2.json
 packages/toolkit/src/testFixtures/**
