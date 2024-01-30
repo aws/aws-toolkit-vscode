@@ -5,10 +5,12 @@ package software.aws.toolkits.jetbrains.services.codemodernizer.ideMaven
 
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.runners.ProgramRunner
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
 import org.jetbrains.idea.maven.execution.MavenRunConfigurationType
 import org.jetbrains.idea.maven.execution.MavenRunnerParameters
 import org.jetbrains.idea.maven.execution.MavenRunnerSettings
@@ -25,8 +27,22 @@ class TransformMavenRunner(val project: Project) {
                 return@Callback
             }
             handler.addProcessListener(object : ProcessAdapter() {
+                var output: String = ""
+
+                override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                    when (outputType) {
+                        ProcessOutputTypes.STDOUT -> {
+                            output += event.text
+                        }
+                        ProcessOutputTypes.STDERR -> {
+                            output += event.text
+                        }
+                    }
+                }
+
                 override fun processTerminated(event: ProcessEvent) {
                     onComplete.exitCode(event.exitCode)
+                    onComplete.setOutput(output)
                 }
             })
         }
