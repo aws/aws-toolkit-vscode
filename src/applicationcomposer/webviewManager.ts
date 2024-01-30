@@ -110,9 +110,7 @@ export class ApplicationComposerManager {
                 'There was an error rendering Application Composer, check logs for details.'
             )
         )
-
-        this.logger.debug(`${this.name}: Unable to setup webview panel.`)
-        this.logger.error(`${this.name}: unexpected exception: %s`, err)
+        this.logger.error(`${this.name}: Unable to show App Composer webview: ${err}`)
     }
 
     protected handleNewVisualization(key: string, visualization: ApplicationComposer): void {
