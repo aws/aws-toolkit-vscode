@@ -333,8 +333,8 @@ export async function postTransformationJob(userInputState: UserInputState) {
     let mavenVersionInfoMessage = versionInfoWrapper[0]
     let javaVersionInfoMessage = versionInfoWrapper[1]
     const versionInfo = await getVersionData('mvn', transformByQState.getProjectPath())
-    mavenVersionInfoMessage += ` -- ${versionInfo[0]}`
-    javaVersionInfoMessage += ` -- ${versionInfo[1]}`
+    mavenVersionInfoMessage += ` (mvnw) -- ${versionInfo[0]} (mvn)`
+    javaVersionInfoMessage += ` (mvnw) -- ${versionInfo[1]} (mvn)`
 
     // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
     telemetry.codeTransform_totalRunTime.emit({
