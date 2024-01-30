@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codemodernizer.ideMaven
 
 class TransformRunnable : Runnable {
     private var isComplete: Int? = null
+    private var output: String? = null
 
     fun exitCode(i: Int) {
         isComplete = i
@@ -15,4 +16,9 @@ class TransformRunnable : Runnable {
     }
 
     fun isComplete(): Int? = isComplete
+    fun getOutput(): String? = output
+
+    fun setOutput(s: String) {
+        output = s
+    }
 }
