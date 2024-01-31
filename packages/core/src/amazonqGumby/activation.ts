@@ -6,9 +6,8 @@
 import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
 import { TransformationHubViewProvider } from '../codewhisperer/service/transformationHubViewProvider'
-import { showTransformByQ, showTransformationHub } from './commands'
 import { ExtContext } from '../shared/extensions'
-import { startTransformByQWithProgress, confirmStopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
+import { stopTransformByQ, startTransformByQWithProgress } from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformationResultsViewProvider'
@@ -22,10 +21,6 @@ export async function activate(context: ExtContext) {
     new ProposedTransformationExplorer(context.extensionContext)
 
     context.extensionContext.subscriptions.push(
-        showTransformByQ.register(context),
-
-        showTransformationHub.register(),
-
         vscode.window.registerWebviewViewProvider('aws.amazonq.transformationHub', transformationHubViewProvider),
 
         Commands.register('aws.amazonq.startTransformationInHub', async () => {
@@ -35,7 +30,7 @@ export async function activate(context: ExtContext) {
 
         Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
             if (transformByQState.isRunning()) {
-                void confirmStopTransformByQ(transformByQState.getJobId(), cancelSrc)
+                void stopTransformByQ(transformByQState.getJobId(), cancelSrc)
             } else {
                 void vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
             }

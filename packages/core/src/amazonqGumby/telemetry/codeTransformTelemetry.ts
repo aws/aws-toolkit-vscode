@@ -21,11 +21,13 @@ export enum CancelActionPositions {
     LoadingPanel = 'loadingPanelStopButton',
     DevToolsSidePanel = 'devToolsStopButton',
     BottomHubPanel = 'bottomPanelSideNavButton',
+    Chat = 'qChatPanel',
 }
 
 export enum StartActionPositions {
     DevToolsSidePanel = 'devToolsStartButton',
     BottomHubPanel = 'bottomPanelSideNavButton',
+    Chat = 'qChatPanel',
 }
 
 export const logCodeTransformInitiatedMetric = (source: string): void => {

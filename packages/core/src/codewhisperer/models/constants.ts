@@ -345,25 +345,6 @@ export const planIntroductionMessage =
     'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'
 
 export const planDisclaimerMessage = '**Proposed transformation changes** \n\n\n'
-
-export const enterJavaHomeMessage = 'Enter the path to JDK'
-
-export const windowsJavaHomeHelpMessage =
-    'In a terminal, try running "cd C:\\Program Files\\Java" and then "dir" to see a list of installed JDKs. Then "cd" into JDK JAVA_VERSION_HERE (if present) and run "cd" once more to get the path we need. It should look something like "C:\\Program Files\\Java\\jdk-11.0.1"'
-
-export const nonWindowsJava8HomeHelpMessage =
-    'Try running "/usr/libexec/java_home -v 1.8" in a terminal to find this. It should look something like "/Library/Java/JavaVirtualMachines/jdk-8.jdk/Contents/Home"'
-
-export const nonWindowsJava11HomeHelpMessage =
-    'Try running "/usr/libexec/java_home -v 11" in a terminal to find this. It should look something like "/Library/Java/JavaVirtualMachines/jdk-11.jdk/Contents/Home"'
-
-export const projectSizeTooLargeMessage =
-    'Your project size exceeds the Amazon Q Code Transformation upload limit of 1GB. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
-
-export const JDK8VersionNumber = '52'
-
-export const JDK11VersionNumber = '55'
-
 export const numMillisecondsPerSecond = 1000
 
 export const uploadZipSizeLimitInBytes = 1000000000 // 1GB

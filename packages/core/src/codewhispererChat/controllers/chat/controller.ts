@@ -224,7 +224,8 @@ export class ChatController {
                     recordTelemetryChatRunCommand('help')
                     return
                 } else if (quickActionCommand === 'transform') {
-                    void this.generateStaticTextResponse('transform', triggerID)
+                    console.log('quickActionCommand: transform')
+                    //todo[gumby]: does this need to change? what sends this??
                     return processTransformByQ().then(() => {
                         return recordTelemetryChatRunCommand('transform')
                     })

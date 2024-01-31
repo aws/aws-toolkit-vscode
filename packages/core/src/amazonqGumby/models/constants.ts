@@ -6,3 +6,9 @@
 export enum CodeTransformConstants {
     HubStartButton = 'HubStartButton',
 }
+
+// For uniquely identifiying which chat messages should be routed to Gumby
+export const gumbyChat = 'gumbyChat'
+
+// This sets the tab name
+export const featureName = 'Amazon Q Transform'

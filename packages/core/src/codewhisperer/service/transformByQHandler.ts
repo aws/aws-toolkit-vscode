@@ -23,6 +23,18 @@ import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTr
 import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
+import {
+    JDK11VersionNumber,
+    JDK8VersionNumber,
+    projectSizeTooLargeMessage,
+} from '../../amazonqGumby/chat/controller/messenger/stringConstants'
+import { NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError, NoOpenProjectsError } from '../../amazonqGumby/errors'
+
+export interface TransformationCandidateProject {
+    name: string
+    path: string
+    JDKVersion?: JDKVersion
+}
 
 interface FolderInfo {
     path: string
@@ -65,26 +77,28 @@ export function throwIfCancelled() {
     }
 }
 
-export async function getOpenProjects() {
+export async function getOpenProjects(): Promise<TransformationCandidateProject[]> {
     const folders = vscode.workspace.workspaceFolders
+
     if (folders === undefined) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
-        throw new ToolkitError('No Java projects found since no projects are open', { code: 'NoOpenProjects' })
+        throw new NoOpenProjectsError()
     }
-    const openProjects: vscode.QuickPickItem[] = []
+
+    const openProjects: TransformationCandidateProject[] = []
     for (const folder of folders) {
         openProjects.push({
-            label: folder.name,
-            description: folder.uri.fsPath,
+            name: folder.name,
+            path: folder.uri.fsPath,
         })
     }
+
     return openProjects
 }
 
-async function getJavaProjects(projects: vscode.QuickPickItem[]) {
+async function getJavaProjects(projects: TransformationCandidateProject[]) {
     const javaProjects = []
     for (const project of projects) {
-        const projectPath = project.description
+        const projectPath = project.path
         const javaFiles = await vscode.workspace.findFiles(
             new vscode.RelativePattern(projectPath!, '**/*.java'),
             '**/node_modules/**',
@@ -97,23 +111,25 @@ async function getJavaProjects(projects: vscode.QuickPickItem[]) {
     return javaProjects
 }
 
-async function getMavenJavaProjects(javaProjects: vscode.QuickPickItem[]) {
+async function getMavenJavaProjects(javaProjects: TransformationCandidateProject[]) {
     const mavenJavaProjects = []
+
     for (const project of javaProjects) {
-        const projectPath = project.description
+        const projectPath = project.path
         const buildSystem = await checkBuildSystem(projectPath!)
         if (buildSystem === BuildSystem.Maven) {
             mavenJavaProjects.push(project)
         }
     }
+
     return mavenJavaProjects
 }
 
-async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[]) {
-    const projectsValidToTransform = new Map<vscode.QuickPickItem, JDKVersion | undefined>()
+async function getProjectsValidToTransform(mavenJavaProjects: TransformationCandidateProject[]) {
+    const projectsValidToTransform: TransformationCandidateProject[] = []
     for (const project of mavenJavaProjects) {
         let detectedJavaVersion = undefined
-        const projectPath = project.description
+        const projectPath = project.path
         const compiledJavaFiles = await vscode.workspace.findFiles(
             new vscode.RelativePattern(projectPath!, '**/*.class'),
             '**/node_modules/**',
@@ -153,9 +169,9 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
             } else {
                 const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
                 const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
-                if (javaVersion === CodeWhispererConstants.JDK8VersionNumber) {
+                if (javaVersion === JDK8VersionNumber) {
                     detectedJavaVersion = JDKVersion.JDK8
-                } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
+                } else if (javaVersion === JDK11VersionNumber) {
                     detectedJavaVersion = JDKVersion.JDK11
                 } else {
                     detectedJavaVersion = JDKVersion.UNSUPPORTED
@@ -168,8 +184,10 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                 }
             }
         }
+
         // detectedJavaVersion will be undefined if there are no .class files or if javap errors out, otherwise it will be JDK8, JDK11, or UNSUPPORTED
-        projectsValidToTransform.set(project, detectedJavaVersion)
+        project.JDKVersion = detectedJavaVersion
+        projectsValidToTransform.push(project)
     }
     return projectsValidToTransform
 }
@@ -180,8 +198,9 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
  * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
  * and we allow the user to specify the Java version.
  */
-export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
+export async function validateOpenProjects(projects: TransformationCandidateProject[]) {
     const javaProjects = await getJavaProjects(projects)
+
     if (javaProjects.length === 0) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
@@ -190,8 +209,9 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
             result: MetadataResult.Fail,
             reason: 'CouldNotFindJavaProject',
         })
-        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject' })
+        throw new NoJavaProjectsFoundError()
     }
+
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
@@ -201,7 +221,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
             result: MetadataResult.Fail,
             reason: 'NoPomFileFound',
         })
-        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
+        throw new NoMavenJavaProjectsFoundError()
     }
 
     /*
@@ -402,21 +422,29 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
     if (transformByQState.getJavaHome() !== undefined) {
         environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
     }
+
+    const argString = args.join(' ')
+    console.log(`installProjectDependencies: running maven ${argString}`)
+
     const spawnResult = spawnSync(baseCommand, args, {
         cwd: modulePath,
         shell: true,
         encoding: 'utf-8',
         env: environment,
     })
+
     if (spawnResult.status !== 0) {
         let errorLog = ''
+        const errorCode = getMavenErrorCode(args)
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
-        transformByQState.appendToErrorLog(`${baseCommand} clean install failed: \n ${errorLog}`)
-        getLogger().error(`CodeTransformation: Error in running Maven install command ${baseCommand} = ${errorLog}`)
+        transformByQState.appendToErrorLog(`${baseCommand} ${argString} failed: \n ${errorLog}`)
+        getLogger().error(
+            `CodeTransformation: Error in running Maven ${argString} command ${baseCommand} = ${errorLog}`
+        )
         let errorReason = ''
         if (spawnResult.stdout) {
-            errorReason = 'Maven Install: InstallExecutionError'
+            errorReason = `Maven ${argString}: ${errorCode}ExecutionError`
             /*
              * adding this check here because these mvn commands sometimes generate a lot of output.
              * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
@@ -426,7 +454,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
                 errorReason += '-BufferOverflow'
             }
         } else {
-            errorReason = 'Maven Install: InstallSpawnError'
+            errorReason = `Maven ${argString}: ${errorCode}SpawnError`
         }
         if (spawnResult.error) {
             const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
@@ -445,9 +473,19 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
             result: MetadataResult.Fail,
             reason: errorReason,
         })
-        throw new ToolkitError('Maven install error', { code: 'MavenInstallError' })
+        throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
     } else {
-        transformByQState.appendToErrorLog(`${baseCommand} clean install succeeded`)
+        transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
+    }
+}
+
+function getMavenErrorCode(args: string[]) {
+    if (args.includes('install')) {
+        return 'Install'
+    } else if (args.includes('clean')) {
+        return 'Clean'
+    } else {
+        return ''
     }
 }
 
@@ -619,7 +657,7 @@ export async function zipCode() {
     })
 
     if (zipSize > CodeWhispererConstants.uploadZipSizeLimitInBytes) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.projectSizeTooLargeMessage)
+        void vscode.window.showErrorMessage(projectSizeTooLargeMessage)
         throw new Error('Project size exceeds 1GB limit')
     }
 

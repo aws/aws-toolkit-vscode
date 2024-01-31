@@ -7,6 +7,7 @@ import { ChatItem, FeedbackPayload, Engagement, ChatItemAction } from '@aws/myna
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
 import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
+import { Connector as GumbyChatConnector } from './apps/gumbyChatConnector'
 import { ExtensionMessage } from './commands'
 import { TabType, TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
@@ -52,6 +53,7 @@ export class Connector {
     private readonly onMessageReceived
     private readonly cwChatConnector
     private readonly featureDevChatConnector
+    private readonly gumbyChatConnector
     private readonly tabsStorage
     private readonly amazonqCommonsConnector: AmazonQCommonsConnector
 
@@ -62,6 +64,7 @@ export class Connector {
         this.onMessageReceived = props.onMessageReceived
         this.cwChatConnector = new CWChatConnector(props as ConnectorProps)
         this.featureDevChatConnector = new FeatureDevChatConnector(props)
+        this.gumbyChatConnector = new GumbyChatConnector(props)
         this.amazonqCommonsConnector = new AmazonQCommonsConnector({
             sendMessageToExtension: this.sendMessageToExtension,
             onWelcomeFollowUpClicked: props.onWelcomeFollowUpClicked,
@@ -130,8 +133,8 @@ export class Connector {
 
     transform = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
-            default:
-                this.cwChatConnector.transform(tabID)
+            case 'gumby':
+                this.gumbyChatConnector.transform(tabID)
                 break
         }
     }
@@ -152,6 +155,8 @@ export class Connector {
             await this.cwChatConnector.handleMessageReceive(messageData)
         } else if (messageData.sender === 'featureDevChat') {
             await this.featureDevChatConnector.handleMessageReceive(messageData)
+        } else if (messageData.sender === 'gumbyChat') {
+            await this.gumbyChatConnector.handleMessageReceive(messageData)
         }
     }
 
@@ -170,6 +175,10 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onTabAdd(tabID, tab.openInteractionType)
                 break
+            case 'gumby':
+                console.log('ui connector onUpdateTabType')
+                this.gumbyChatConnector.onTabAdd(tabID)
+                break
         }
     }
 
@@ -183,6 +192,7 @@ export class Connector {
 
     onTabChange = (tabId: string): void => {
         const prevTabID = this.tabsStorage.setSelectedTab(tabId)
+        console.log(`onTabChange: to ${tabId} from ${prevTabID}`)
         this.cwChatConnector.onTabChange(tabId, prevTabID)
     }
 
@@ -229,6 +239,9 @@ export class Connector {
                 break
             case 'featuredev':
                 this.featureDevChatConnector.onTabRemove(tabID)
+                break
+            case 'gumby':
+                this.gumbyChatConnector.onTabRemove(tabID)
                 break
         }
     }
@@ -345,6 +358,22 @@ export class Connector {
                 break
             case 'featuredev':
                 this.featureDevChatConnector.onChatItemVoted(tabId, messageId, vote)
+                break
+        }
+    }
+
+    onCustomFormAction = (
+        tabId: string,
+        messageId: string | undefined,
+        action: any,
+        eventId: string | undefined = undefined
+    ): void | undefined => {
+        console.log(
+            `onCustomFormAction: tabID is ${tabId}, messageID is ${messageId}, action is ${action}, eventID is ${eventId}`
+        )
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'gumby':
+                this.gumbyChatConnector.onCustomFormAction(tabId, action)
                 break
         }
     }
