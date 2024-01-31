@@ -24,6 +24,8 @@ interface CodeWhispererToken {
     accepted: number
 }
 
+const autoClosingKeystrokeInputs = ['[]', '{}', '()']
+
 /**
  * This singleton class is mainly used for calculating the code written by codeWhisperer
  */
@@ -238,21 +240,44 @@ export class CodeWhispererCodeCoverageTracker {
         this.addTotalTokens(filename, text.length)
     }
 
+    public isSpecialKeystrokeInput(e: vscode.TextDocumentChangeEvent) {
+        if (e.document.languageId === 'java' && e.contentChanges.length === 2) {
+            const text1 = e.contentChanges[0].text
+            const text2 = e.contentChanges[1].text
+            if (text2.startsWith('\n') && text2.trim().length === 0) {
+                return true
+            }
+            if (autoClosingKeystrokeInputs.includes(text1)) {
+                return true
+            }
+        } else if (e.contentChanges.length === 1) {
+            const text = e.contentChanges[0].text
+            if (text.startsWith('\n') && text.trim().length === 0) {
+                return true
+            }
+            if (autoClosingKeystrokeInputs.includes(text)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    public isOneCharacterKeystrokeInput(e: vscode.TextDocumentChangeEvent) {
+        return e.contentChanges.length === 1 && e.contentChanges[0].text.length === 1
+    }
+
     public countTotalTokens(e: vscode.TextDocumentChangeEvent) {
         // ignore no contentChanges. ignore contentChanges from other plugins (formatters)
         // only include contentChanges from user keystroke input(one character input).
         // Also ignore deletion events due to a known issue of tracking deleted CodeWhiperer tokens.
-        if (
-            !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
-            vsCodeState.isCodeWhispererEditing ||
-            e.contentChanges.length !== 1 ||
-            e.contentChanges[0].text.length !== 1
-        ) {
+        if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId) || vsCodeState.isCodeWhispererEditing) {
             return
         }
-        const content = e.contentChanges[0]
-        this.tryStartTimer()
-        this.addTotalTokens(e.document.fileName, content.text.length)
+        if (this.isOneCharacterKeystrokeInput(e) || this.isSpecialKeystrokeInput(e)) {
+            const content = e.contentChanges[0]
+            this.tryStartTimer()
+            this.addTotalTokens(e.document.fileName, content.text.length)
+        }
     }
 
     public static readonly instances = new Map<CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()
