@@ -4,16 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon } from '../../../shared/icons'
-import { LineSelection } from './lineTracker'
 import { CodeWhispererSource } from '../../commands/types'
 import { placeholder } from '../../../shared/vscode/commands2'
-import { RecommendationService } from '../../service/recommendationService'
-
-const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
-
-const gutterColored = 'aws-codewhisperer-editor-gutter'
-const gutterWhite = 'aws-codewhisperer-editor-gutter-white'
 
 export class InlineDecorator {
     // TODO: persist this value and read from the cache
@@ -25,14 +17,6 @@ export class InlineDecorator {
             textDecoration: 'none',
         },
         rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
-    })
-
-    readonly cwlineGutterDecoration = vscode.window.createTextEditorDecorationType({
-        gutterIconPath: iconPathToUri(getIcon(gutterWhite)),
-    })
-
-    readonly cwlineGutterDecorationColored = vscode.window.createTextEditorDecorationType({
-        gutterIconPath: iconPathToUri(getIcon(gutterColored)),
     })
 
     private _inlineText: string | undefined = undefined
@@ -122,29 +106,4 @@ export class InlineDecorator {
 
         return undefined
     }
-}
-
-// TODO: better way to do this?
-function iconPathToUri(iconPath: any): vscode.Uri | undefined {
-    let result: vscode.Uri | undefined = undefined
-    if (iconPath.dark) {
-        if (iconPath.dark.Uri) {
-            result = iconPath.dark.Uri
-            return result
-        }
-    }
-
-    if (iconPath.light) {
-        if (iconPath.light.Uri) {
-            result = iconPath.light.Uri
-            return result
-        }
-    }
-
-    if (iconPath.source) {
-        result = iconPath.source
-        return result
-    }
-
-    return result
 }

@@ -7,16 +7,25 @@ import * as vscode from 'vscode'
 import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
-import { InlineDecorator } from './annotationUtils'
+import { getIcon } from '../../../shared/icons'
 
-const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
+const gutterColored = 'aws-codewhisperer-editor-gutter'
+const gutterWhite = 'aws-codewhisperer-editor-gutter-white'
 
 export class EditorGutterController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
     private _editor: vscode.TextEditor | undefined
     private _suspended = false
 
-    constructor(private readonly lineTracker: LineTracker, private readonly _cwInlineHintDecorator: InlineDecorator) {
+    readonly cwlineGutterDecoration = vscode.window.createTextEditorDecorationType({
+        gutterIconPath: iconPathToUri(getIcon(gutterWhite)),
+    })
+
+    readonly cwlineGutterDecorationColored = vscode.window.createTextEditorDecorationType({
+        gutterIconPath: iconPathToUri(getIcon(gutterColored)),
+    })
+
+    constructor(private readonly lineTracker: LineTracker) {
         this._disposable = vscode.Disposable.from(this.setCWInlineService(true))
         this.setLineTracker(true)
         this.onReady()
@@ -56,8 +65,8 @@ export class EditorGutterController implements vscode.Disposable {
         console.log(`clearing annotations`)
         if (editor === undefined || (editor as any)._disposed === true) return
 
-        editor.setDecorations(this._cwInlineHintDecorator.cwlineGutterDecoration, [])
-        editor.setDecorations(this._cwInlineHintDecorator.cwlineGutterDecorationColored, [])
+        editor.setDecorations(this.cwlineGutterDecoration, [])
+        editor.setDecorations(this.cwlineGutterDecorationColored, [])
     }
 
     private async refresh(
@@ -95,15 +104,15 @@ export class EditorGutterController implements vscode.Disposable {
         reason: 'selection' | 'codewhisperer' | 'content' | 'editor'
     ) {
         const range = editor.document.validateRange(
-            new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
+            new vscode.Range(lines[0].active, lines[0].active, lines[0].active, lines[0].active)
         )
         const isCWRunning = RecommendationService.instance.isRunning
         if (isCWRunning) {
-            editor.setDecorations(this._cwInlineHintDecorator.cwlineGutterDecoration, [])
-            editor.setDecorations(this._cwInlineHintDecorator.cwlineGutterDecorationColored, [range])
+            editor.setDecorations(this.cwlineGutterDecoration, [])
+            editor.setDecorations(this.cwlineGutterDecorationColored, [range])
         } else {
-            editor.setDecorations(this._cwInlineHintDecorator.cwlineGutterDecoration, [range])
-            editor.setDecorations(this._cwInlineHintDecorator.cwlineGutterDecorationColored, [])
+            editor.setDecorations(this.cwlineGutterDecoration, [range])
+            editor.setDecorations(this.cwlineGutterDecorationColored, [])
         }
     }
 
@@ -131,4 +140,29 @@ export class EditorGutterController implements vscode.Disposable {
 
         return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
     }
+}
+
+// TODO: better way to do this?
+function iconPathToUri(iconPath: any): vscode.Uri | undefined {
+    let result: vscode.Uri | undefined = undefined
+    if (iconPath.dark) {
+        if (iconPath.dark.Uri) {
+            result = iconPath.dark.Uri
+            return result
+        }
+    }
+
+    if (iconPath.light) {
+        if (iconPath.light.Uri) {
+            result = iconPath.light.Uri
+            return result
+        }
+    }
+
+    if (iconPath.source) {
+        result = iconPath.source
+        return result
+    }
+
+    return result
 }
