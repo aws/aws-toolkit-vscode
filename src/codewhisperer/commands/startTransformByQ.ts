@@ -22,6 +22,7 @@ import {
     convertDateToTimestamp,
     getOpenProjects,
     validateProjectSelection,
+    getVersionData,
 } from '../service/transformByQHandler'
 import { QuickPickItem } from 'vscode'
 import path from 'path'
@@ -328,11 +329,20 @@ export async function postTransformationJob(userInputState: UserInputState) {
     const durationInMs = calculateTotalLatency(codeTransformTelemetryState.getStartTime())
     const resultStatusMessage = codeTransformTelemetryState.getResultStatus()
 
+    const versionInfoWrapper = await getVersionData('mvnw', transformByQState.getProjectPath())
+    let mavenVersionInfoMessage = versionInfoWrapper[0]
+    let javaVersionInfoMessage = versionInfoWrapper[1]
+    const versionInfo = await getVersionData('mvn', transformByQState.getProjectPath())
+    mavenVersionInfoMessage += ` (mvnw) -- ${versionInfo[0]} (mvn)`
+    javaVersionInfoMessage += ` (mvnw) -- ${versionInfo[1]} (mvn)`
+
     // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
     telemetry.codeTransform_totalRunTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
         codeTransformResultStatusMessage: resultStatusMessage,
         codeTransformRunTimeLatency: durationInMs,
+        codeTransformLocalMavenVersion: mavenVersionInfoMessage,
+        codeTransformLocalJavaVersion: javaVersionInfoMessage,
         result: resultStatusMessage === 'JobCompletedSuccessfully' ? MetadataResult.Pass : MetadataResult.Fail,
         reason: resultStatusMessage,
     })

@@ -343,7 +343,7 @@ export class ProposedTransformationExplorer {
 
             const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
 
-            let deserializeErrorMessage
+            let deserializeErrorMessage = undefined
             const deserializeArchiveStartTime = Date.now()
             let pathContainingArchive = ''
             try {
