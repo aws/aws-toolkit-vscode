@@ -252,7 +252,8 @@ class CodeWhispererJSImportAdderTest : CodeWhispererImportAdderTestBase(
     }
 
     override fun assertSameImport(import1: PsiElement, import2: PsiElement) {
-        import1 as ES6ImportDeclaration; import2 as ES6ImportDeclaration
+        import1 as ES6ImportDeclaration
+        import2 as ES6ImportDeclaration
         assertThat(import1.importedBindings.map { it.text }).containsExactlyInAnyOrder(
             *import2.importedBindings.map { it.text }.toTypedArray()
         )

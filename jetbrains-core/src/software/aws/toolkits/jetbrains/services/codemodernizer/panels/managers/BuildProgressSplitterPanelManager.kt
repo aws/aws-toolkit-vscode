@@ -185,7 +185,9 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
                 currentState.removeAll { it.id == ProgressStepId.PLAN_STEP }
                 if (transformationPlanStepsMayAdded.isNullOrEmpty()) {
                     currentState
-                } else currentState + transformationPlanStepsMayAdded
+                } else {
+                    currentState + transformationPlanStepsMayAdded
+                }
             } else {
                 currentState
             }

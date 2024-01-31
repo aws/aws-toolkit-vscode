@@ -4,7 +4,7 @@ assertJ = "3.20.2" # Upgrading leads to SAM errors: https://youtrack.jetbrains.c
 # match with <root>/settings.gradle.kts
 awsSdk = "2.20.111"
 commonmark = "0.17.1"
-detekt = "1.23.0"
+detekt = "1.23.5"
 intellijGradle = "1.13.2"
 intellijRemoteRobot = "0.11.21"
 jackson = "2.15.1"

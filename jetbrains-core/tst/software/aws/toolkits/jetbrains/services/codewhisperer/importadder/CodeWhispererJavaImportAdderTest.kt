@@ -132,7 +132,8 @@ class CodeWhispererJavaImportAdderTest : CodeWhispererImportAdderTestBase(
         }
 
     override fun assertSameImport(import1: PsiElement, import2: PsiElement) {
-        import1 as PsiImportStatementBase; import2 as PsiImportStatementBase
+        import1 as PsiImportStatementBase
+        import2 as PsiImportStatementBase
         assertThat(import1.text).isEqualTo(import1.text)
     }
 }

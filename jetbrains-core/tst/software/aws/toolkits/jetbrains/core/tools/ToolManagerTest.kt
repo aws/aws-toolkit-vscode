@@ -440,7 +440,11 @@ class ToolManagerTest {
         }
 
         val type = createManagedToolMock(toolId) {
-            on { determineLatestVersion() } doAnswer Answer<Version> { latch.countDown(); postCheckLatch.await(); version }
+            on { determineLatestVersion() } doAnswer Answer<Version> {
+                latch.countDown()
+                postCheckLatch.await()
+                version
+            }
             on { toTool(eq(installPath)) } doReturn Tool(this.mock, toolBinary)
         }
 
