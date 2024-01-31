@@ -8,6 +8,7 @@
     ],
     "version": "0.0.1",
     "private": true,
+    "license": "Apache-2.0",
     "prettier": {
         "printWidth": 120,
         "trailingComma": "es5",
@@ -33,8 +34,8 @@
         "formatfix": "prettier --write packages plugins",
         "lint": "ts-node ./scripts/lint/testLint.ts && npm run format",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts packages plugins && npm run formatfix",
-        "clean": "npm run clean -w packages/ -w plugins/ && ts-node ./scripts/clean.ts node_modules packages/toolkit/node_modules",
-        "reset": "npm run clean && npm install"
+        "clean": "npm run clean -w packages/ -w plugins/",
+        "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules packages/toolkit/node_modules && npm install"
     },
     "devDependencies": {
         "eslint": "^8.26.0",

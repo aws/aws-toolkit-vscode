@@ -11,7 +11,7 @@ void (async () => {
 
         const mocha = new Mocha()
 
-        const testFiles = await glob('packages/toolkit/dist/src/testLint/**/*.test.js')
+        const testFiles = await glob('dist/src/testLint/**/*.test.js')
         testFiles.forEach(file => {
             mocha.addFile(file)
         })

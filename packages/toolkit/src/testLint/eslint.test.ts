@@ -11,7 +11,16 @@ describe('eslint', function () {
 
     it('passes eslint', function () {
         const result = runCmd(
-            ['./node_modules/.bin/eslint', '-c', '.eslintrc.js', '--ext', '.ts', 'packages', 'plugins'],
+            [
+                '../../node_modules/.bin/eslint',
+                '-c',
+                '../../.eslintrc.js',
+                '--ignore-path',
+                '../../.eslintignore',
+                '--ext',
+                '.ts',
+                '.',
+            ],
             {
                 throws: false,
             }
