@@ -25,7 +25,10 @@ class UiUtilsTest {
         component.addQuickSelect(checkbox, runnable)
 
         val click = MouseEvent(component, MouseEvent.BUTTON1, 0, 0, 100, 100, 1, false)
-        component.mouseListeners.forEach { it.mousePressed(click); it.mouseReleased(click) }
+        component.mouseListeners.forEach {
+            it.mousePressed(click)
+            it.mouseReleased(click)
+        }
         assertThat(checkbox.isSelected).isTrue()
         verify(runnable).run()
     }

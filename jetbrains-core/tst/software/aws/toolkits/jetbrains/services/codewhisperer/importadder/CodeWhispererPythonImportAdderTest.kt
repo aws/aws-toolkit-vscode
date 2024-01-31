@@ -308,12 +308,14 @@ class CodeWhispererPythonImportAdderTest : CodeWhispererImportAdderTestBase(
     }
 
     override fun assertSameImport(import1: PsiElement, import2: PsiElement) {
-        import1 as PyImportStatementBase; import2 as PyImportStatementBase
+        import1 as PyImportStatementBase
+        import2 as PyImportStatementBase
         assertThat(import1::class.java).isEqualTo(import2::class.java)
         if (import1 is PyImportStatement) {
             import2 as PyImportStatement
         } else {
-            import1 as PyFromImportStatement; import2 as PyFromImportStatement
+            import1 as PyFromImportStatement
+            import2 as PyFromImportStatement
             assertThat(import1.importSourceQName.toString()).isEqualTo(import2.importSourceQName.toString())
         }
         assertThat(import1.fullyQualifiedObjectNames.toString()).isEqualTo(import2.fullyQualifiedObjectNames.toString())

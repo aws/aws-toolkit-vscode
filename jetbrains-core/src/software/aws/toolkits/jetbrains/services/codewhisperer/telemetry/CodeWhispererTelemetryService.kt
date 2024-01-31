@@ -446,7 +446,9 @@ class CodeWhispererTelemetryService {
 
         return if (isEmpty) {
             CodewhispererPreviousSuggestionState.Empty
-        } else CodewhispererPreviousSuggestionState.Discard
+        } else {
+            CodewhispererPreviousSuggestionState.Discard
+        }
     }
 
     fun sendPerceivedLatencyEvent(

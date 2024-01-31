@@ -115,7 +115,13 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
             |${issue.suggestedFixes[0].code}
             |```
             |
-            |${if (isFixDescriptionAvailable) "|### ${message("codewhisperer.codescan.suggested_fix_description")}\n${issue.suggestedFixes[0].description}" else ""}
+            |${if (isFixDescriptionAvailable) {
+                "|### ${message(
+                    "codewhisperer.codescan.suggested_fix_description"
+                )}\n${issue.suggestedFixes[0].description}"
+            } else {
+                ""
+            }}
             """.trimMargin()
         } else {
             ""
