@@ -2,11 +2,13 @@
 *
 */**
 
-# Ignore from the root package.json otherwise those dirs will be collected as well.
+# Ignore outside dirs up to the root package.json, otherwise those will be collected as well
+# (until vsce officially supports workspaces: https://github.com/microsoft/vscode-vsce/issues/580)
 ../../*
 ../../*/**
 
 # Allowlist
+# ---------
 !dist/*
 !dist/libs
 !dist/*/!(testFixtures|test)/**/!(*.*.map)
@@ -15,10 +17,12 @@
 !syntaxes/**
 !templates/**
 !types/**
-!LICENSE
-!NOTICE
 !package.json
 !package.nls.json
+
+# Automatically copied from root project directory
 !quickStart**
 !README.**
 !CHANGELOG.md
+!LICENSE
+!NOTICE
