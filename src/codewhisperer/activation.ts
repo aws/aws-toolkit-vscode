@@ -99,7 +99,8 @@ export async function activate(context: ExtContext): Promise<void> {
     ReferenceInlineProvider.instance
     ImportAdderProvider.instance
 
-    Container.create()
+    const container = Container.create()
+    // container.ready()
 
     context.extensionContext.subscriptions.push(
         signoutCodeWhisperer.register(auth),

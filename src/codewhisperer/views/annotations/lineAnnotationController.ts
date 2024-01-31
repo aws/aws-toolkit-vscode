@@ -6,11 +6,23 @@
 import * as vscode from 'vscode'
 import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
-import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { InlineDecorator } from './annotationUtils'
 import { debounce } from '../../../shared/utilities/functionUtils'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { Container } from '../../service/serviceContainer'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
+
+function once<T>(event: vscode.Event<T>): vscode.Event<T> {
+    return (listener: (e: T) => unknown, thisArgs?: unknown) => {
+        const result = event(e => {
+            result.dispose()
+            return listener.call(thisArgs, e)
+        })
+
+        return result
+    }
+}
 
 export class LineAnnotationController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
@@ -18,10 +30,9 @@ export class LineAnnotationController implements vscode.Disposable {
     private _suspended = false
 
     constructor(private readonly lineTracker: LineTracker, private readonly _cwInlineHintDecorator: InlineDecorator) {
-        console.log(`initializing lineAnnaotationController`)
-        this._disposable = vscode.Disposable.from()
+        this._disposable = vscode.Disposable.from(once(this.lineTracker.onReady)(this.onReady, this))
         this.setLineTracker(true)
-        this.onReady()
+        // this.onReady()
     }
 
     dispose() {
@@ -29,23 +40,31 @@ export class LineAnnotationController implements vscode.Disposable {
         this._disposable.dispose()
     }
 
+    private _isReady: boolean = false
+
     private onReady(): void {
-        console.log(`onReady`)
-        this.refresh(vscode.window.activeTextEditor)
+        console.log('onReady')
+        this._isReady = true
+        this.refresh(vscode.window.activeTextEditor, 'editor')
     }
 
-    private onActiveLinesChanged(e: LinesChangeEvent) {
-        console.log(`lineAnnotationController: onActiveLinesChanged`)
-        if (e.reason === 'content') {
+    private async onActiveLinesChanged(e: LinesChangeEvent) {
+        if (!this._isReady) {
             this.clear(e.editor)
-            return
-        }
-        if (e.selections !== undefined) {
-            this.refresh(e.editor)
             return
         }
 
         this.clear(e.editor)
+
+        if (e.reason === 'content') {
+            await this.refreshDebounced()
+            return
+        }
+
+        if (e.selections !== undefined) {
+            await this.refresh(e.editor, e.reason)
+            return
+        }
     }
 
     clear(editor: vscode.TextEditor | undefined) {
@@ -54,18 +73,21 @@ export class LineAnnotationController implements vscode.Disposable {
         }
     }
 
-    private async refresh(
-        editor: vscode.TextEditor | undefined,
-        reason: 'selection' | 'codewhisperer' | 'content' = 'selection'
-    ) {
+    private refreshDebounced = debounce(() => {
+        this.refresh(vscode.window.activeTextEditor, 'content')
+    }, 250)
+
+    private async refresh(editor: vscode.TextEditor | undefined, reason: 'selection' | 'content' | 'editor') {
         if (editor == null && this._editor == null) {
             return
         }
 
         const selections = this.lineTracker.selections
         if (editor == null || selections == null || !isTextEditor(editor)) {
+            if (!selections) {
+                console.log('selection is undefined')
+            }
             this.clear(this._editor)
-            console.log('222222222222222222222')
             return
         }
 
@@ -92,21 +114,22 @@ export class LineAnnotationController implements vscode.Disposable {
     async updateDecorations(
         editor: vscode.TextEditor,
         lines: LineSelection[],
-        reason: 'selection' | 'codewhisperer' | 'content'
+        reason: 'selection' | 'codewhisperer' | 'content' | 'editor'
     ) {
-        console.log(`updateDecorations`)
-
         const range = editor.document.validateRange(
             new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
         )
 
-        const options = this._cwInlineHintDecorator.getInlineDecoration() as vscode.DecorationOptions | undefined
+        console.log(`updateDecorations:   ${reason}`)
+        const options = this._cwInlineHintDecorator.getInlineDecoration(reason === 'content') as
+            | vscode.DecorationOptions
+            | undefined
         if (!options) {
             return
         }
 
         options.range = range
-
+        console.log(range)
         editor.setDecorations(this._cwInlineHintDecorator.cwLineHintDecoration, [options])
     }
 

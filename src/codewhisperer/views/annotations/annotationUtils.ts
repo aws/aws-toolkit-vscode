@@ -35,16 +35,17 @@ export class InlineDecorator {
         gutterIconPath: iconPathToUri(getIcon(gutterColored)),
     })
 
-    get allDecorations() {
-        return [this.cwLineHintDecoration, this.cwlineGutterDecoration, this.cwlineGutterDecorationColored]
-    }
+    private _inlineText: string | undefined = undefined
 
     getInlineDecoration(
-        roll: boolean = true,
+        isSameLine: boolean = true,
         scrollable: boolean = true
     ): Partial<vscode.DecorationOptions> | undefined {
-        const options = this.textOptions()
+        console.log(`getInlineDecoration: ${isSameLine}`)
+        const options = this.textOptions(isSameLine)
+        console.log(options)
         if (!options) {
+            console.log(`option is undefinedxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`)
             return undefined
         }
 
@@ -56,27 +57,13 @@ export class InlineDecorator {
             hoverMessage: this.onHover(),
         }
 
-        if (this._currentStep === undefined) {
-            if (roll) {
-                this._currentStep = '1'
-            }
-        } else if (this._currentStep === '1') {
-            if (roll) {
-                this._currentStep = '2'
-            }
-        } else if (this._currentStep === '2') {
-            if (roll) {
-                this._currentStep = '3'
-            }
-        } else {
-            // TODO: uncomment
-            // return undefined
-        }
-
         return renderOptions
     }
 
-    private textOptions(scrollable: boolean = true): vscode.ThemableDecorationRenderOptions | undefined {
+    private textOptions(
+        isSameLine: boolean,
+        scrollable: boolean = true
+    ): vscode.ThemableDecorationRenderOptions | undefined {
         const textOptions = {
             contentText: '',
             fontWeight: 'normal',
@@ -85,20 +72,36 @@ export class InlineDecorator {
             color: '#8E8E8E',
         }
 
+        if (isSameLine && this._inlineText) {
+            console.log(`isSameline, will use previous text`)
+            textOptions.contentText = this._inlineText
+            return { after: textOptions }
+        }
+
         if (!this._currentStep) {
             textOptions.contentText = 'CodeWhisperer suggests code as you type, press [TAB] to accept'
+
+            console.log('set to 1')
+            this._currentStep = '1'
+
             console.log('CodeWhisperer suggests code as you type, press [TAB] to accept')
         } else if (this._currentStep === '1') {
             textOptions.contentText = '[Option] + [C] triggers CodeWhisperer manually'
             console.log('[Option] + [C] triggers CodeWhisperer manually')
+
+            this._currentStep = '2'
         } else if (this._currentStep === '2') {
             textOptions.contentText = `First CodeWhisperer suggestion accepted!`
+
+            this._currentStep = '3'
         } else {
             //TODO: uncomment
             // return undefined
 
             textOptions.contentText = 'Congrat, you just finish CodeWhisperer tutorial!'
         }
+
+        this._inlineText = textOptions.contentText
 
         return { after: textOptions }
     }

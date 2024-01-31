@@ -78,6 +78,7 @@ import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
 import { showQuickStartWebview } from './shared/extensionStartup'
+import { Container } from './codewhisperer/service/serviceContainer'
 
 let localize: nls.LocalizeFunc
 
@@ -261,6 +262,8 @@ export async function activate(context: vscode.ExtensionContext) {
                     }),
             })
         )
+
+        Container.instance.ready()
 
         showWelcomeMessage(context)
 

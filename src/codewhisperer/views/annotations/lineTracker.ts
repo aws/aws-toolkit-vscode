@@ -36,8 +36,21 @@ export class LineTracker {
         return this._selections
     }
 
-    constructor() {
-        console.log(`initializing lineTracker`)
+    private _onReady: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
+    get onReady(): vscode.Event<void> {
+        return this._onReady.event
+    }
+
+    private _ready: boolean = false
+
+    constructor() {}
+
+    ready() {
+        if (this._ready) throw new Error('Container is already ready')
+        console.log('container is ready')
+
+        this._ready = true
+        queueMicrotask(() => this._onReady.fire())
     }
 
     private onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
@@ -48,12 +61,13 @@ export class LineTracker {
 
         if (this._suspended) {
         } else {
+            console.log('onActiveTextEditorChanged')
             this.notifyLinesChanged('editor')
         }
     }
 
     private onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
-        console.log(`lineTracker: onTextEditorSelectionChanged`)
+        console.log('onEditorSelectionChanged')
         // If this isn't for our cached editor and its not a real editor -- kick out
         if (this._editor !== e.textEditor && !isTextEditor(e.textEditor)) return
 
@@ -68,7 +82,6 @@ export class LineTracker {
 
     private async onContentChanged(e: vscode.TextDocumentChangeEvent) {
         if (e.document === vscode.window.activeTextEditor?.document && e.contentChanges.length > 0) {
-            console.log(e)
             // await this.notifyLinesChangedDebounced()
             this.notifyLinesChanged('content')
         }
