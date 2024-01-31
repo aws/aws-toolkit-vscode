@@ -7,7 +7,9 @@ import com.intellij.openapi.project.Project
 
 class Session(val tabID: String, val project: Project) {
     private var state: SessionState?
+    private var context: FeatureDevSessionContext?
     init {
         state = ConversationNotStartedState("", tabID)
+        context = FeatureDevSessionContext(project)
     }
 }
