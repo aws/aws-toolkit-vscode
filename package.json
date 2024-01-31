@@ -24,6 +24,7 @@
         "postinstall": "npm run buildCustomLintPlugin",
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
         "compile": "npm run compile -w packages/",
+        "testCompile": "npm run testCompile -w packages/",
         "test": "npm run test -w packages/",
         "testE2E": "npm run testE2E -w packages/",
         "testInteg": "npm run testInteg -w packages/",
