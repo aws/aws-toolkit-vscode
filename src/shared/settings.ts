@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import * as codecatalyst from './clients/codecatalystClient'
+import * as codewhisperer from '../codewhisperer/client/codewhisperer'
 import { getLogger } from './logger'
 import { cast, FromDescriptor, Record, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
 import { assertHasProps, ClassToInterfaceType, keys } from './utilities/tsUtils'
@@ -662,10 +663,17 @@ const devSettings = {
     renderDebugDetails: Boolean,
     endpoints: Record(String, String),
     codecatalystService: Record(String, String),
+    codewhispererService: Record(String, String),
     ssoCacheDirectory: String,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
+
+type ServiceClients = keyof ServiceTypeMap
+interface ServiceTypeMap {
+    codecatalystService: codecatalyst.CodeCatalystConfig
+    codewhispererService: codewhisperer.CodeWhispererConfig
+}
 
 /**
  * Developer settings are intended to be used by developers of this codebase for anything
@@ -721,14 +729,14 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         return Object.keys(this.activeSettings).length > 0
     }
 
-    public getCodeCatalystConfig(
-        defaultConfig: codecatalyst.CodeCatalystConfig
-    ): Readonly<codecatalyst.CodeCatalystConfig> {
-        const devSetting = 'codecatalystService'
-        const devConfig = this.get(devSetting, {})
+    public getServiceConfig<T extends ServiceClients>(
+        devSetting: T,
+        defaultConfig: ServiceTypeMap[T]
+    ): Readonly<ServiceTypeMap[T]> {
+        const devConfig = this.get<ServiceClients>(devSetting, {})
 
         if (Object.keys(devConfig).length === 0) {
-            this.logCodeCatalystConfigOnce('default')
+            this.logConfigOnce(devSetting, 'default')
             return defaultConfig
         }
 
@@ -739,8 +747,8 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
             throw ToolkitError.chain(err, `Dev setting '${devSetting}' has missing or invalid properties.`)
         }
 
-        this.logCodeCatalystConfigOnce(JSON.stringify(devConfig, undefined, 4))
-        return devConfig as unknown as codecatalyst.CodeCatalystConfig
+        this.logConfigOnce(devSetting, JSON.stringify(devConfig, undefined, 4))
+        return devConfig as unknown as ServiceTypeMap[T]
     }
 
     public override get<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {
@@ -770,8 +778,8 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         }
     }
 
-    private logCodeCatalystConfigOnce = onceChanged(val => {
-        getLogger().info(`using CodeCatalyst service configuration: ${val}`)
+    private logConfigOnce = onceChanged((serviceName, val) => {
+        getLogger().info(`using ${serviceName} service configuration: ${val}`)
     })
 
     static #instance: DevSettings

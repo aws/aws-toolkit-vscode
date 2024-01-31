@@ -47,7 +47,7 @@ export const defaultServiceConfig: CodeCatalystConfig = {
 }
 
 export function getCodeCatalystConfig(): CodeCatalystConfig {
-    return DevSettings.instance.getCodeCatalystConfig(defaultServiceConfig)
+    return DevSettings.instance.getServiceConfig('codecatalystService', defaultServiceConfig)
 }
 
 export interface DevEnvironment extends CodeCatalyst.DevEnvironmentSummary {
