@@ -31,12 +31,20 @@ import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
 import { DevSettings } from '../settings'
 import { RetryDelayOptions } from 'aws-sdk/lib/config-base'
+import { getServiceEnvVarConfig } from '../vscode/env'
 
 export interface CodeCatalystConfig {
     readonly region: string
     readonly endpoint: string
     readonly hostname: string
     readonly gitHostname: string
+}
+
+const configToEnvMap: { [K in keyof CodeCatalystConfig]: string } = {
+    region: '__CODECATALYST_REGION',
+    endpoint: '__CODECATALYST_ENDPOINT',
+    hostname: '__CODECATALYST_HOSTNAME',
+    gitHostname: '__CODECATALYST_GIT_HOSTNAME',
 }
 
 export const defaultServiceConfig: CodeCatalystConfig = {
@@ -47,7 +55,12 @@ export const defaultServiceConfig: CodeCatalystConfig = {
 }
 
 export function getCodeCatalystConfig(): CodeCatalystConfig {
-    return DevSettings.instance.getServiceConfig('codecatalystService', defaultServiceConfig)
+    return {
+        ...DevSettings.instance.getServiceConfig('codecatalystService', defaultServiceConfig),
+
+        // Environment variable overrides
+        ...getServiceEnvVarConfig('codecatalyst', configToEnvMap),
+    }
 }
 
 export interface DevEnvironment extends CodeCatalyst.DevEnvironmentSummary {
