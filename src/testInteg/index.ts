@@ -6,5 +6,5 @@
 import { runTests } from '../test/testRunner'
 
 export function run(): Promise<void> {
-    return runTests('src/testInteg', ['src/testInteg/globalSetup.test.ts'])
+    return runTests(process.env.TEST_DIR ?? 'src/testInteg', ['src/testInteg/globalSetup.test.ts'])
 }
