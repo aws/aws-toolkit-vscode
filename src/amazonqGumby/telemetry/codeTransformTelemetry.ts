@@ -30,7 +30,7 @@ export enum StartActionPositions {
 
 export const logCodeTransformInitiatedMetric = (source: string): void => {
     const commonMetrics = {
-        codeTransformSessionId: `${codeTransformTelemetryState.getSessionId()}`,
+        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
     }
 
     if (source === CodeWhispererConstants.transformTreeNode) {
