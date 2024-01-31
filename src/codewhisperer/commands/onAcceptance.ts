@@ -66,10 +66,10 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
             completionType: acceptanceEntry.completionType,
             language: languageContext.language,
         })
-        const codeRangeAfterFormat = new vscode.Range(start, acceptanceEntry.editor.selection.active)
+        const insertedCoderange = new vscode.Range(start, end)
         CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.countAcceptedTokens(
-            codeRangeAfterFormat,
-            acceptanceEntry.editor.document.getText(codeRangeAfterFormat),
+            insertedCoderange,
+            acceptanceEntry.editor.document.getText(insertedCoderange),
             acceptanceEntry.editor.document.fileName
         )
         if (acceptanceEntry.references !== undefined) {
