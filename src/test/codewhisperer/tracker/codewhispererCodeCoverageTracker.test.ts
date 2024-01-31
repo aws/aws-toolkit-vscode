@@ -343,33 +343,39 @@ describe('codewhispererCodecoverageTracker', function () {
             if (!tracker) {
                 assert.fail()
             }
-            const doc = createMockDocument('import math', 'test.py', 'python')
+            const doc = createMockDocument('def h():', 'test.py', 'python')
             tracker.countTotalTokens({
                 reason: undefined,
                 document: doc,
                 contentChanges: [
                     {
-                        range: new vscode.Range(0, 0, 0, 1),
+                        range: new vscode.Range(0, 0, 0, 8),
                         rangeOffset: 0,
                         rangeLength: 0,
-                        text: '\n\t\t',
+                        text: '\n    ',
                     },
                 ],
             })
-            assert.strictEqual(tracker?.totalTokens[doc.fileName], 3)
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 5)
         })
 
         it('Should add tokens when hitting enter with indentation in Java', function () {
             if (!tracker) {
                 assert.fail()
             }
-            const doc = createMockDocument('import math', 'test.java', 'java')
+            const doc = createMockDocument('class A() {', 'test.java', 'java')
             tracker.countTotalTokens({
                 reason: undefined,
                 document: doc,
                 contentChanges: [
                     {
-                        range: new vscode.Range(0, 0, 0, 1),
+                        range: new vscode.Range(0, 0, 0, 11),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '',
+                    },
+                    {
+                        range: new vscode.Range(0, 0, 0, 11),
                         rangeOffset: 0,
                         rangeLength: 0,
                         text: '\n\t\t',
@@ -383,13 +389,13 @@ describe('codewhispererCodecoverageTracker', function () {
             if (!tracker) {
                 assert.fail()
             }
-            const doc = createMockDocument('import math', 'test.py', 'python')
+            const doc = createMockDocument('a=', 'test.py', 'python')
             tracker.countTotalTokens({
                 reason: undefined,
                 document: doc,
                 contentChanges: [
                     {
-                        range: new vscode.Range(0, 0, 0, 2),
+                        range: new vscode.Range(0, 0, 0, 3),
                         rangeOffset: 0,
                         rangeLength: 0,
                         text: '[]',
@@ -403,16 +409,22 @@ describe('codewhispererCodecoverageTracker', function () {
             if (!tracker) {
                 assert.fail()
             }
-            const doc = createMockDocument('import math', 'test.py', 'python')
+            const doc = createMockDocument('class A ', 'test.java', 'java')
             tracker.countTotalTokens({
                 reason: undefined,
                 document: doc,
                 contentChanges: [
                     {
-                        range: new vscode.Range(0, 0, 0, 2),
+                        range: new vscode.Range(0, 0, 0, 8),
                         rangeOffset: 0,
                         rangeLength: 0,
-                        text: '[]',
+                        text: '{}',
+                    },
+                    {
+                        range: new vscode.Range(0, 0, 0, 8),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '',
                     },
                 ],
             })
