@@ -21,7 +21,7 @@ export async function processTransformByQ() {
     if (transformByQState.isNotStarted()) {
         await sleep(1000) // sleep so that chat can respond first, then show input prompt
         telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
-            codeTransformSessionId: `${codeTransformTelemetryState.getSessionId()}`,
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             result: MetadataResult.Pass,
             reason: 'Updated', // TO-DO: remove this once we're confident all users using updated toolkit version
         })
