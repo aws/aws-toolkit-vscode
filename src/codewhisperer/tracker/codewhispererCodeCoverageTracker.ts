@@ -240,7 +240,7 @@ export class CodeWhispererCodeCoverageTracker {
         this.addTotalTokens(filename, text.length)
     }
 
-    public isSpecialKeystrokeInput(e: vscode.TextDocumentChangeEvent) {
+    public isFromUserKeystrokeWithIDEChanges(e: vscode.TextDocumentChangeEvent) {
         if (e.document.languageId === 'java' && e.contentChanges.length === 2) {
             const text1 = e.contentChanges[0].text
             const text2 = e.contentChanges[1].text
@@ -262,7 +262,7 @@ export class CodeWhispererCodeCoverageTracker {
         return false
     }
 
-    public isOneCharacterKeystrokeInput(e: vscode.TextDocumentChangeEvent) {
+    public isFromUserKeystroke(e: vscode.TextDocumentChangeEvent) {
         return e.contentChanges.length === 1 && e.contentChanges[0].text.length === 1
     }
 
@@ -273,7 +273,11 @@ export class CodeWhispererCodeCoverageTracker {
         if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId) || vsCodeState.isCodeWhispererEditing) {
             return
         }
-        if (this.isOneCharacterKeystrokeInput(e) || this.isSpecialKeystrokeInput(e)) {
+        // a user keystroke input can be
+        // 1. content change with 1 character insertion
+        // 2. newline character with indentation
+        // 3. 2 character insertion of closing brackets
+        if (this.isFromUserKeystroke(e) || this.isFromUserKeystrokeWithIDEChanges(e)) {
             const content = e.contentChanges[0]
             this.tryStartTimer()
             this.addTotalTokens(e.document.fileName, content.text.length)

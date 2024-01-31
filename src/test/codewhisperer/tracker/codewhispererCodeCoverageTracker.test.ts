@@ -338,6 +338,86 @@ describe('codewhispererCodecoverageTracker', function () {
             })
             assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
         })
+
+        it('Should add tokens when hitting enter with indentation', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            const doc = createMockDocument('import math', 'test.py', 'python')
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 1),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '\n\t\t',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 3)
+        })
+
+        it('Should add tokens when hitting enter with indentation in Java', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            const doc = createMockDocument('import math', 'test.java', 'java')
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 1),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '\n\t\t',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 3)
+        })
+
+        it('Should add tokens when inserting closing brackets', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            const doc = createMockDocument('import math', 'test.py', 'python')
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 2),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '[]',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 2)
+        })
+
+        it('Should add tokens when inserting closing brackets in Java', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            const doc = createMockDocument('import math', 'test.py', 'python')
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 2),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '[]',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 2)
+        })
     })
 
     describe('flush', function () {
