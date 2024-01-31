@@ -16,6 +16,7 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
+import { update } from 'lodash'
 
 export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
@@ -94,6 +95,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                         type: ChatItemType.ANSWER,
                         body: 'Authentication successful. Connected to Amazon Q.',
                     })
+                    //todo(gumby): IF gumby tab -- don't update
                     mynahUI.updateStore(tabID, {
                         promptInputDisabledState: false,
                     })
@@ -105,8 +107,19 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             return messageController.sendMessageToTab(message, 'cwc')
         },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
+            console.log(`onCWCContextCommandMessage: ${command}`)
             if (command === 'aws.amazonq.sendToPrompt') {
                 return messageController.sendSelectedCodeToTab(message)
+            } else if (command === 'aws.awsq.transform') {
+                const tabID = tabsStorage.getSelectedTab()?.id
+                console.log(`attempting to start transformation from side node - tabID: ${tabID}`)
+                //todo[gumby]: this needs to be its own command, and eventID needs to be set for the tab to be changed
+                quickActionHandler.handle({ command: '/transform' }, tabID!, '')
+                //return messageController.sendMessageToTab(message, 'gumby')
+            } else if (command === 'aws.awsq.clearchat') {
+                const tabID = tabsStorage.getSelectedTab()?.id
+                console.log(`attempting to start transformation from side node - tabID: ${tabID}`)
+                quickActionHandler.handle({ command: '/clear' }, tabID!)
             } else {
                 return messageController.sendMessageToTab(message, 'cwc')
             }
@@ -126,14 +139,16 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                     promptInputDisabledState: true,
                 })
                 if (message) {
+                    console.log('gonna update last answer...')
                     mynahUI.updateLastChatAnswer(tabID, {
                         body: message,
                     })
+                } else {
+                    mynahUI.addChatItem(tabID, {
+                        type: ChatItemType.ANSWER_STREAM,
+                        body: '',
+                    })
                 }
-                mynahUI.addChatItem(tabID, {
-                    type: ChatItemType.ANSWER_STREAM,
-                    body: '',
-                })
                 tabsStorage.updateTabStatus(tabID, 'busy')
                 return
             }
@@ -162,7 +177,13 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 return
             }
 
-            if (item.body !== undefined || item.relatedContent !== undefined || item.followUp !== undefined) {
+            if (
+                item.body !== undefined ||
+                item.relatedContent !== undefined ||
+                item.followUp !== undefined ||
+                item.formItems !== undefined ||
+                item.buttons !== undefined
+            ) {
                 mynahUI.addChatItem(tabID, item)
             }
 
@@ -287,7 +308,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         },
         onTabRemove: connector.onTabRemove,
         onTabChange: connector.onTabChange,
-        onChatPrompt: (tabID: string, prompt: ChatPrompt) => {
+        onChatPrompt: (tabID: string, prompt: ChatPrompt, eventId: string | undefined) => {
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
             }
@@ -299,13 +320,19 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             }
 
             if (prompt.command !== undefined && prompt.command.trim() !== '') {
-                quickActionHandler.handle(prompt, tabID)
+                quickActionHandler.handle(prompt, tabID, eventId)
                 return
             }
 
             textMessageHandler.handle(prompt, tabID)
         },
         onVote: connector.onChatItemVoted,
+        onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
+            connector.onCustomFormAction(tabId, messageId, action, undefined)
+        },
+        onCustomFormAction: (tabId, action, eventId) => {
+            connector.onCustomFormAction(tabId, undefined, action, eventId)
+        },
         onSendFeedback: (tabId, feedbackPayload) => {
             connector.sendFeedback(tabId, feedbackPayload)
             mynahUI.notify({

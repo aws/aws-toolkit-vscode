@@ -23,6 +23,7 @@ export enum CancelActionPositions {
     LoadingPanel = 'loadingPanelStopButton',
     DevToolsSidePanel = 'devToolsStopButton',
     BottomHubPanel = 'bottomPanelSideNavButton',
+    Chat = 'qChatPanel',
 }
 
 export enum StartActionPositions {
