@@ -38,14 +38,14 @@ export const logCodeTransformInitiatedMetric = (source: string): void => {
             codeTransformStartSrcComponents: StartActionPositions.DevToolsSidePanel,
             ...commonMetrics,
             result: MetadataResult.Pass,
-            reason: 'Updated',
+            reason: 'Updated', // TO-DO: remove this once we're confident all users using updated toolkit version
         })
     } else if (source === StartActionPositions.BottomHubPanel) {
         telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
             codeTransformStartSrcComponents: StartActionPositions.BottomHubPanel,
             ...commonMetrics,
             result: MetadataResult.Pass,
-            reason: 'Updated',
+            reason: 'Updated', // TO-DO: remove this once we're confident all users using updated toolkit version
         })
     }
 }

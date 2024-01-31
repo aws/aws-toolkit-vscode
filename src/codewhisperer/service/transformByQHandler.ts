@@ -14,7 +14,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { spawnSync } from 'child_process'
+import { spawnSync } from 'child_process' // TO-DO: consider using ChildProcess once we finalize all spawnSync calls
 import AdmZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
 import { CodeTransformMavenBuildCommand, telemetry } from '../../shared/telemetry/telemetry'
@@ -131,16 +131,15 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
             errorReason = 'JavapSpawnError'
         }
         if (spawnResult.error) {
-            // oddly, the 'code' field is not visible until I stringify the object, but then I have to parse it to access 'code'
-            // 'code' is a high-level symbol representing the error (ex. 'ENOENT', 'ENOBUFS', etc.)
-            const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? 'UNKNOWN'
+            const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
+            codeTransformRuntimeError: errorReason,
             result: MetadataResult.Fail,
-            reason: errorReason,
+            reason: 'CannotDetermineJavaVersion',
         })
         throw new ToolkitError('Unable to determine Java version', {
             code: 'CannotDetermineJavaVersion',
@@ -361,7 +360,7 @@ function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand
         getLogger().error(`CodeTransform: Error in running Maven install command ${baseCommand} = ${errorLog}`)
         let errorReason = ''
         if (spawnResult.stdout) {
-            errorReason = 'Maven Install: ExecutionError'
+            errorReason = 'Maven Install: InstallExecutionError'
             /*
              * adding this check here because these mvn commands sometimes generate a lot of output.
              * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
@@ -371,10 +370,10 @@ function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand
                 errorReason += '-BufferOverflow'
             }
         } else {
-            errorReason = 'Maven Install: SpawnError'
+            errorReason = 'Maven Install: InstallSpawnError'
         }
         if (spawnResult.error) {
-            const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? 'UNKNOWN'
+            const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
         telemetry.codeTransform_mvnBuildFailed.emit({
@@ -435,7 +434,7 @@ function copyProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, m
             errorReason = 'Maven Copy: CopyDependenciesSpawnError'
         }
         if (spawnResult.error) {
-            const errorCode = JSON.parse(JSON.stringify(spawnResult.error)).code ?? 'UNKNOWN'
+            const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
         telemetry.codeTransform_mvnBuildFailed.emit({

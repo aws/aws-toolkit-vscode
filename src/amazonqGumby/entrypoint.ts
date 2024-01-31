@@ -23,7 +23,7 @@ export async function processTransformByQ() {
         telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
             codeTransformSessionId: `${codeTransformTelemetryState.getSessionId()}`,
             result: MetadataResult.Pass,
-            reason: 'Updated',
+            reason: 'Updated', // TO-DO: remove this once we're confident all users using updated toolkit version
         })
         return startTransformByQWithProgress()
     } else {
