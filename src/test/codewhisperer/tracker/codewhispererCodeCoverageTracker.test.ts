@@ -356,7 +356,7 @@ describe('codewhispererCodecoverageTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker?.totalTokens[doc.fileName], 5)
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
         })
 
         it('Should add tokens when hitting enter with indentation in Java', function () {
@@ -382,7 +382,7 @@ describe('codewhispererCodecoverageTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker?.totalTokens[doc.fileName], 3)
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
         })
 
         it('Should add tokens when inserting closing brackets', function () {

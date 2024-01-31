@@ -240,26 +240,29 @@ export class CodeWhispererCodeCoverageTracker {
         this.addTotalTokens(filename, text.length)
     }
 
-    public isFromUserKeystrokeWithIDEChanges(e: vscode.TextDocumentChangeEvent) {
+    // For below 2 edge cases
+    // 1. newline character with indentation
+    // 2. 2 character insertion of closing brackets
+    public getCharacterCountFromComplexEvent(e: vscode.TextDocumentChangeEvent) {
         if (e.document.languageId === 'java' && e.contentChanges.length === 2) {
             const text1 = e.contentChanges[0].text
             const text2 = e.contentChanges[1].text
             if (text2.startsWith('\n') && text2.trim().length === 0) {
-                return true
+                return 1
             }
             if (autoClosingKeystrokeInputs.includes(text1)) {
-                return true
+                return 2
             }
         } else if (e.contentChanges.length === 1) {
             const text = e.contentChanges[0].text
             if (text.startsWith('\n') && text.trim().length === 0) {
-                return true
+                return 1
             }
             if (autoClosingKeystrokeInputs.includes(text)) {
-                return true
+                return 2
             }
         }
-        return false
+        return 0
     }
 
     public isFromUserKeystroke(e: vscode.TextDocumentChangeEvent) {
@@ -277,10 +280,12 @@ export class CodeWhispererCodeCoverageTracker {
         // 1. content change with 1 character insertion
         // 2. newline character with indentation
         // 3. 2 character insertion of closing brackets
-        if (this.isFromUserKeystroke(e) || this.isFromUserKeystrokeWithIDEChanges(e)) {
-            const content = e.contentChanges[0]
+        if (this.isFromUserKeystroke(e)) {
             this.tryStartTimer()
-            this.addTotalTokens(e.document.fileName, content.text.length)
+            this.addTotalTokens(e.document.fileName, 1)
+        } else if (this.getCharacterCountFromComplexEvent(e) !== 0) {
+            this.tryStartTimer()
+            this.addTotalTokens(e.document.fileName, this.getCharacterCountFromComplexEvent(e))
         }
     }
 
