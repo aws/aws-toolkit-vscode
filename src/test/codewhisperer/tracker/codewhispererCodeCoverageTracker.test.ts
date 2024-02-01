@@ -359,6 +359,26 @@ describe('codewhispererCodecoverageTracker', function () {
             assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
         })
 
+        it('Should add tokens when hitting enter with indentation in Windows', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            const doc = createMockDocument('def h():', 'test.py', 'python')
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 8),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '\r\n    ',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
+        })
+
         it('Should add tokens when hitting enter with indentation in Java', function () {
             if (!tracker) {
                 assert.fail()

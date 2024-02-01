@@ -244,33 +244,26 @@ export class CodeWhispererCodeCoverageTracker {
     // 1. newline character with indentation
     // 2. 2 character insertion of closing brackets
     public getCharacterCountFromComplexEvent(e: vscode.TextDocumentChangeEvent) {
-        if (e.contentChanges.length === 2) {
-            const text1 = e.contentChanges[0].text
-            const text2 = e.contentChanges[1].text
-            if (text1.length === 0) {
-                if (text2.startsWith('\n') && text2.trim().length === 0) {
-                    return 1
-                }
-                if (autoClosingKeystrokeInputs.includes(text2)) {
-                    return 2
-                }
+        function countChanges(cond: boolean, text: string): number {
+            if (!cond) {
+                return 0
             }
-            if (text2.length === 0) {
-                if (text1.startsWith('\n') && text1.trim().length === 0) {
-                    return 1
-                }
-                if (autoClosingKeystrokeInputs.includes(text1)) {
-                    return 2
-                }
-            }
-        } else if (e.contentChanges.length === 1) {
-            const text = e.contentChanges[0].text
-            if (text.startsWith('\n') && text.trim().length === 0) {
+            if ((text.startsWith('\n') || text.startsWith('\r\n')) && text.trim().length === 0) {
                 return 1
             }
             if (autoClosingKeystrokeInputs.includes(text)) {
                 return 2
             }
+            return 0
+        }
+        if (e.contentChanges.length === 2) {
+            const text1 = e.contentChanges[0].text
+            const text2 = e.contentChanges[1].text
+            const text2Count = countChanges(text1.length === 0, text2)
+            const text1Count = countChanges(text2.length === 0, text1)
+            return text2Count > 0 ? text2Count : text1Count
+        } else if (e.contentChanges.length === 1) {
+            return countChanges(true, e.contentChanges[0].text)
         }
         return 0
     }
