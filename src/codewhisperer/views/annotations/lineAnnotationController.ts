@@ -221,7 +221,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
             this._currentStep = '2'
         } else if (this._currentStep === '2') {
-            textOptions.contentText = `First CodeWhisperer suggestion accepted!`
+            textOptions.contentText = `Try more examples with CodeWhisperer in the IDE`
 
             this._currentStep = '3'
         } else {
