@@ -189,6 +189,21 @@ To run a single test in VSCode, do any one of:
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
 
+#### Run all tests in a specific folder
+
+To run tests against a specific folder in VSCode, do any one of:
+
+-   Add the TEST_DIR environment variable to one of the testing launch configs and run it
+-   Run in your terminal
+    -   Unix/macOS/POSIX shell:
+        ```
+        TEST_DIR=src/test/foo npm run test
+        ```
+    -   Powershell:
+        ```
+        $Env:TEST_DIR = "src/test/foo"; npm run test
+        ```
+
 ### Browser Support
 
 Running the extension in the browser (eg: [vscode.dev](https://vscode.dev/)).
@@ -403,6 +418,7 @@ Environment variables can be used to modify the behaviour of VSCode. The followi
 -   `AWS_TOOLKIT_AUTOMATION`: If tests are currently being ran
 -   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
 -   `AWS_TOOLKIT_TEST_NO_COLOR`: If the tests should include colour in their output
+-   `TEST_DIR` - The directory where the test runner should find the tests
 
 ### SAM/CFN ("goformation") JSON schema
 
