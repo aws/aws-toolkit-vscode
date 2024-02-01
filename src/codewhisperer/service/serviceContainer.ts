@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { InlineDecorator } from '../views/annotations/annotationUtils'
 import { EditorGutterController } from '../views/annotations/editorGutterController'
 import { LineAnnotationController } from '../views/annotations/lineAnnotationController'
 import { LineTracker } from '../views/annotations/lineTracker'
@@ -30,12 +29,10 @@ export class Container {
     readonly _lineTracker: LineTracker
     readonly _lineAnnotationController: LineAnnotationController
     readonly _editorGutterController: EditorGutterController
-    readonly _decorator: InlineDecorator
 
     constructor() {
         this._lineTracker = new LineTracker()
-        this._decorator = new InlineDecorator()
-        this._lineAnnotationController = new LineAnnotationController(this._lineTracker, this._decorator)
+        this._lineAnnotationController = new LineAnnotationController(this._lineTracker)
         this._editorGutterController = new EditorGutterController(this._lineTracker)
     }
 

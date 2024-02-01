@@ -6,9 +6,10 @@
 import * as vscode from 'vscode'
 import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
-import { InlineDecorator } from './annotationUtils'
 import { debounce2 } from '../../../shared/utilities/functionUtils'
 import { AuthUtil } from '../../util/authUtil'
+import { CodeWhispererSource } from '../../commands/types'
+import { placeholder } from '../../../shared/vscode/commands2'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -30,7 +31,19 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _selections: LineSelection[] | undefined
 
-    constructor(private readonly lineTracker: LineTracker, private readonly _cwInlineHintDecorator: InlineDecorator) {
+    private _currentStep: '1' | '2' | '3' | undefined = undefined
+
+    readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
+        after: {
+            margin: '0 0 0 3em',
+            textDecoration: 'none',
+        },
+        rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
+    })
+
+    private _inlineText: string | undefined = undefined
+
+    constructor(private readonly lineTracker: LineTracker) {
         this._disposable = vscode.Disposable.from(once(this.lineTracker.onReady)(this.onReady, this))
         this.setLineTracker(true)
     }
@@ -68,9 +81,9 @@ export class LineAnnotationController implements vscode.Disposable {
     }
 
     clear(editor: vscode.TextEditor | undefined) {
-        this._editor?.setDecorations(this._cwInlineHintDecorator.cwLineHintDecoration, [])
+        this._editor?.setDecorations(this.cwLineHintDecoration, [])
         if (editor) {
-            editor.setDecorations(this._cwInlineHintDecorator.cwLineHintDecoration, [])
+            editor.setDecorations(this.cwLineHintDecoration, [])
         }
     }
 
@@ -128,9 +141,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
         const isSameline = this._selections ? isSameLine(this._selections[0], lines[0]) : false
         console.log(`isSameLine: ${isSameLine}`)
-        const options = this._cwInlineHintDecorator.getInlineDecoration(isSameline) as
-            | vscode.DecorationOptions
-            | undefined
+        const options = this.getInlineDecoration(isSameline) as vscode.DecorationOptions | undefined
         if (!options) {
             return
         }
@@ -138,7 +149,7 @@ export class LineAnnotationController implements vscode.Disposable {
         options.range = range
         console.log(range)
         this._selections = lines
-        editor.setDecorations(this._cwInlineHintDecorator.cwLineHintDecoration, [options])
+        editor.setDecorations(this.cwLineHintDecoration, [options])
     }
 
     private setLineTracker(enabled: boolean) {
@@ -154,6 +165,92 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         this.lineTracker.unsubscribe(this)
+    }
+
+    getInlineDecoration(
+        isSameLine: boolean,
+        scrollable: boolean = true
+    ): Partial<vscode.DecorationOptions> | undefined {
+        console.log(`getInlineDecoration: ${isSameLine}`)
+        const options = this.textOptions(isSameLine)
+        console.log(options)
+        if (!options) {
+            console.log(`option is undefinedxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`)
+            return undefined
+        }
+
+        const renderOptions: {
+            renderOptions: vscode.ThemableDecorationRenderOptions
+            hoverMessage: vscode.DecorationOptions['hoverMessage']
+        } = {
+            renderOptions: options,
+            hoverMessage: this.onHover(),
+        }
+
+        return renderOptions
+    }
+
+    private textOptions(
+        isSameLine: boolean,
+        scrollable: boolean = true
+    ): vscode.ThemableDecorationRenderOptions | undefined {
+        const textOptions = {
+            contentText: '',
+            fontWeight: 'normal',
+            fontStyle: 'normal',
+            textDecoration: `none;${scrollable ? '' : ' position: absolute;'}`,
+            color: '#8E8E8E',
+        }
+
+        if (isSameLine && this._inlineText) {
+            console.log(`isSameline, will use previous text`)
+            textOptions.contentText = this._inlineText
+            return { after: textOptions }
+        }
+
+        if (!this._currentStep) {
+            textOptions.contentText = 'CodeWhisperer suggests code as you type, press [TAB] to accept'
+
+            console.log('set to 1')
+            this._currentStep = '1'
+
+            console.log('CodeWhisperer suggests code as you type, press [TAB] to accept')
+        } else if (this._currentStep === '1') {
+            textOptions.contentText = '[Option] + [C] triggers CodeWhisperer manually'
+            console.log('[Option] + [C] triggers CodeWhisperer manually')
+
+            this._currentStep = '2'
+        } else if (this._currentStep === '2') {
+            textOptions.contentText = `First CodeWhisperer suggestion accepted!`
+
+            this._currentStep = '3'
+        } else {
+            //TODO: uncomment
+            // return undefined
+
+            textOptions.contentText = 'Congrat, you just finish CodeWhisperer tutorial!'
+        }
+
+        this._inlineText = textOptions.contentText
+
+        return { after: textOptions }
+    }
+
+    private onHover(): vscode.MarkdownString | undefined {
+        if (this._currentStep === '2') {
+            const source: CodeWhispererSource = 'vscodeComponent'
+            const md = new vscode.MarkdownString(
+                `[Learn more CodeWhisperer examples](command:aws.codeWhisperer.gettingStarted?${encodeURI(
+                    JSON.stringify([placeholder, source])
+                )})`
+            )
+            // to enable link to a declared command, need to set isTrusted = true
+            md.isTrusted = true
+
+            return md
+        }
+
+        return undefined
     }
 }
 
