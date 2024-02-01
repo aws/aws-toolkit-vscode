@@ -206,6 +206,14 @@ describe('codewhispererCodecoverageTracker', function () {
                 accepted: 1,
             })
         })
+        it('Should increase TotalTokens', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            tracker.countAcceptedTokens(new vscode.Range(0, 0, 0, 1), 'a', 'test.py')
+            tracker.countAcceptedTokens(new vscode.Range(0, 0, 0, 1), 'b', 'test.py')
+            assert.deepStrictEqual(tracker.totalTokens['test.py'], 2)
+        })
     })
 
     describe('countTotalTokens', function () {
@@ -224,7 +232,7 @@ describe('codewhispererCodecoverageTracker', function () {
             CodeWhispererCodeCoverageTracker.instances.clear()
         })
 
-        it('Should skip when user copy large files', function () {
+        it('Should skip when content change size is not 1', function () {
             if (!tracker) {
                 assert.fail()
             }
@@ -266,7 +274,7 @@ describe('codewhispererCodecoverageTracker', function () {
             assert.ok(!startedSpy.called)
         })
 
-        it('Should reduce tokens when delete', function () {
+        it('Should not reduce tokens when delete', function () {
             if (!tracker) {
                 assert.fail()
             }
@@ -276,14 +284,26 @@ describe('codewhispererCodecoverageTracker', function () {
                 document: doc,
                 contentChanges: [
                     {
-                        range: new vscode.Range(0, 0, 0, 3),
+                        range: new vscode.Range(0, 0, 0, 1),
                         rangeOffset: 0,
                         rangeLength: 0,
-                        text: 'aaa',
+                        text: 'a',
                     },
                 ],
             })
-            assert.strictEqual(tracker?.totalTokens[doc.fileName], 3)
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 1),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: 'b',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 2)
             tracker.countTotalTokens({
                 reason: undefined,
                 document: doc,
@@ -296,7 +316,7 @@ describe('codewhispererCodecoverageTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker?.totalTokens[doc.fileName], 3)
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 2)
         })
 
         it('Should add tokens when type', function () {
@@ -317,6 +337,118 @@ describe('codewhispererCodecoverageTracker', function () {
                 ],
             })
             assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
+        })
+
+        it('Should add tokens when hitting enter with indentation', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            const doc = createMockDocument('def h():', 'test.py', 'python')
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 8),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '\n    ',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
+        })
+
+        it('Should add tokens when hitting enter with indentation in Windows', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            const doc = createMockDocument('def h():', 'test.py', 'python')
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 8),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '\r\n    ',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
+        })
+
+        it('Should add tokens when hitting enter with indentation in Java', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            const doc = createMockDocument('class A() {', 'test.java', 'java')
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 11),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '',
+                    },
+                    {
+                        range: new vscode.Range(0, 0, 0, 11),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '\n\t\t',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
+        })
+
+        it('Should add tokens when inserting closing brackets', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            const doc = createMockDocument('a=', 'test.py', 'python')
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 3),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '[]',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 2)
+        })
+
+        it('Should add tokens when inserting closing brackets in Java', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            const doc = createMockDocument('class A ', 'test.java', 'java')
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 8),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '{}',
+                    },
+                    {
+                        range: new vscode.Range(0, 0, 0, 8),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: '',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 2)
         })
     })
 
@@ -381,21 +513,21 @@ describe('codewhispererCodecoverageTracker', function () {
             const tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
 
             const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
+            tracker?.incrementServiceInvocationCount()
             tracker?.addAcceptedTokens(`test.py`, { range: new vscode.Range(0, 0, 0, 7), text: `print()`, accepted: 7 })
             tracker?.addTotalTokens(`test.py`, 100)
             tracker?.emitCodeWhispererCodeContribution()
-
             assertTelemetry({
                 codewhispererTotalTokens: 100,
                 codewhispererLanguage: language,
                 codewhispererAcceptedTokens: 7,
                 codewhispererPercentage: 7,
-                successCount: 0,
+                successCount: 1,
                 codewhispererUserGroup: 'Control',
             })
         })
 
-        it('should emit correct code coverage telemetry in java file', async function () {
+        it('should emit correct code coverage telemetry when success count = 0', async function () {
             await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
                 group: CodeWhispererConstants.UserGroup.Control,
                 version: extensionVersion,
@@ -409,6 +541,8 @@ describe('codewhispererCodecoverageTracker', function () {
                 text: `public static main`,
                 accepted: 18,
             })
+            tracker?.incrementServiceInvocationCount()
+            tracker?.incrementServiceInvocationCount()
             tracker?.addTotalTokens(`test.java`, 30)
             tracker?.emitCodeWhispererCodeContribution()
             assertTelemetry({
@@ -416,7 +550,7 @@ describe('codewhispererCodecoverageTracker', function () {
                 codewhispererLanguage: 'java',
                 codewhispererAcceptedTokens: 18,
                 codewhispererPercentage: 60,
-                successCount: 0,
+                successCount: 2,
                 codewhispererUserGroup: 'Control',
             })
         })
