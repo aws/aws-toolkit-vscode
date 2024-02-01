@@ -4,7 +4,7 @@
  */
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { MetadataService } from 'aws-sdk'
+import { AWSError, MetadataService } from 'aws-sdk'
 
 export interface IamInfo {
     Code: string
@@ -33,17 +33,35 @@ export class DefaultEc2MetadataClient {
 
     public invoke<T>(path: string): Promise<T> {
         return new Promise((resolve, reject) => {
-            this.metadata.request(path, (err, response) => {
-                if (err) {
-                    reject(err)
+            // fetchMetadataToken is private for some reason, but has the exact token functionality
+            // that we want out of the metadata service.
+            // https://github.com/aws/aws-sdk-js/blob/3333f8b49283f5bbff823ab8a8469acedb7fe3d5/lib/metadata_service.js#L116-L136
+            ;(this.metadata as any).fetchMetadataToken((tokenErr: AWSError, token: string) => {
+                if (tokenErr) {
+                    reject(tokenErr)
                     return
                 }
-                try {
-                    const jsonResponse: T = JSON.parse(response)
-                    resolve(jsonResponse)
-                } catch (e) {
-                    reject(`Ec2MetadataClient: invalid response from "${path}": ${response}\nerror: ${e}`)
-                }
+
+                this.metadata.request(
+                    path,
+                    {
+                        // By attaching the token we force the use of IMDSv2.
+                        // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-metadata-v2-how-it-works.html
+                        headers: { 'x-aws-ec2-metadata-token': token },
+                    },
+                    (err, response) => {
+                        if (err) {
+                            reject(err)
+                            return
+                        }
+                        try {
+                            const jsonResponse: T = JSON.parse(response)
+                            resolve(jsonResponse)
+                        } catch (e) {
+                            reject(`Ec2MetadataClient: invalid response from "${path}": ${response}\nerror: ${e}`)
+                        }
+                    }
+                )
             })
         })
     }
