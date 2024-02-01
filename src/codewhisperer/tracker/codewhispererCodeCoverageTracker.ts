@@ -244,14 +244,24 @@ export class CodeWhispererCodeCoverageTracker {
     // 1. newline character with indentation
     // 2. 2 character insertion of closing brackets
     public getCharacterCountFromComplexEvent(e: vscode.TextDocumentChangeEvent) {
-        if (e.document.languageId === 'java' && e.contentChanges.length === 2) {
+        if (e.contentChanges.length === 2) {
             const text1 = e.contentChanges[0].text
             const text2 = e.contentChanges[1].text
-            if (text2.startsWith('\n') && text2.trim().length === 0) {
-                return 1
+            if (text1.length === 0) {
+                if (text2.startsWith('\n') && text2.trim().length === 0) {
+                    return 1
+                }
+                if (autoClosingKeystrokeInputs.includes(text2)) {
+                    return 2
+                }
             }
-            if (autoClosingKeystrokeInputs.includes(text1)) {
-                return 2
+            if (text2.length === 0) {
+                if (text1.startsWith('\n') && text1.trim().length === 0) {
+                    return 1
+                }
+                if (autoClosingKeystrokeInputs.includes(text1)) {
+                    return 2
+                }
             }
         } else if (e.contentChanges.length === 1) {
             const text = e.contentChanges[0].text
