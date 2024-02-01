@@ -189,6 +189,21 @@ To run a single test in VSCode, do any one of:
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
 
+#### Run all tests in a specific folder
+
+To run tests against a specific folder in VSCode, do any one of:
+
+-   Add the TEST_DIR environment variable to one of the testing launch configs and run it
+-   Run in your terminal
+    -   Unix/macOS/POSIX shell:
+        ```
+        TEST_DIR=src/test/foo npm run test
+        ```
+    -   Powershell:
+        ```
+        $Env:TEST_DIR = "src/test/foo"; npm run test
+        ```
+
 ### Browser Support
 
 Running the extension in the browser (eg: [vscode.dev](https://vscode.dev/)).
@@ -329,7 +344,7 @@ Example:
 }
 ```
 
-Overrides specifically for CodeCatalyst can be set using the `aws.dev.codecatalystService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeCatalyst: `region`, `endpoint`, `hostname`, and `gitHostname`. If this setting is present, then all keys need to be explicitly provided.
+<a name="codecatalyst-settings">Overrides specifically for CodeCatalyst can be set using the `aws.dev.codecatalystService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeCatalyst: `region`, `endpoint`, `hostname`, and `gitHostname`. If this setting is present, then all keys need to be explicitly provided.</a>
 
 Example:
 
@@ -339,6 +354,17 @@ Example:
     "endpoint": "https://codecatalyst-gamma.example.com",
     "hostname": "integ.stage.example.com",
     "gitHostname": "git.gamma.source.example.com",
+}
+```
+
+Overrides specifically for CodeWhisperer/Amazon Q can be set using the `aws.dev.codewhispererService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeWhisperer/Amazon Q: `region` and `endpoint`. If this setting is present, then all keys need to be explicitly provided.
+
+Example:
+
+```json
+"aws.dev.codewhispererService": {
+    "region": "us-west-2",
+    "endpoint": "https://codewhisperer-gamma.example.com"
 }
 ```
 
@@ -372,6 +398,14 @@ Environment variables can be used to modify the behaviour of VSCode. The followi
 -   `__DEV_ENVIRONMENT_SPACE_NAME`: The space name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
 -   `__DEV_ENVIRONMENT_ORGANIZATION_NAME`: The organization name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
 
+The following are environment variable versions of the user `settings.json` overrides mentioned [here](#codecatalyst-settings). These will always override the toolkit defaults and those defined in `settings.json`.
+Unlike the user setting overrides, not all of these environment variables have to be set to make use of them.
+
+-   `__CODECATALYST_REGION`: for aws.dev.codecatalystService.region
+-   `__CODECATALYST_ENDPOINT`: for aws.dev.codecatalystService.endpoint
+-   `__CODECATALYST_HOSTNAME`: for aws.dev.codecatalystService.hostname
+-   `__CODECATALYST_GIT_HOSTNAME`: for aws.dev.codecatalystService.gitHostname
+
 #### Lambda
 
 -   `AUTH_UTIL_LAMBDA_ARN`: The Amazon Resource Name (ARN) of the lambda function
@@ -392,6 +426,7 @@ Environment variables can be used to modify the behaviour of VSCode. The followi
 -   `AWS_TOOLKIT_AUTOMATION`: If tests are currently being ran
 -   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
 -   `AWS_TOOLKIT_TEST_NO_COLOR`: If the tests should include colour in their output
+-   `TEST_DIR` - The directory where the test runner should find the tests
 
 ### SAM/CFN ("goformation") JSON schema
 

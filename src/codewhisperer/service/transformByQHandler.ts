@@ -14,7 +14,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { spawnSync } from 'child_process'
+import { spawnSync } from 'child_process' // TO-DO: consider using ChildProcess once we finalize all spawnSync calls
 import AdmZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
 import { CodeTransformMavenBuildCommand, telemetry } from '../../shared/telemetry/telemetry'
@@ -114,18 +114,35 @@ export async function validateProjectSelection(project: vscode.QuickPickItem) {
     const baseCommand = 'javap'
     const args = ['-v', classFilePath]
     const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
-
-    if (spawnResult.error || spawnResult.status !== 0) {
+    if (spawnResult.status !== 0) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        let errorLog = ''
+        errorLog += spawnResult.error ? `${JSON.stringify(spawnResult.error)}` : ''
+        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
+        getLogger().error(`CodeTransform: Error in running javap command = ${errorLog}`)
+        let errorReason = ''
+        if (spawnResult.stdout) {
+            errorReason = 'JavapExecutionError'
+            // should never happen -- stdout from javap has always been much, much smaller than the default buffer limit of 1MB
+            if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
+                errorReason += '-BufferOverflow'
+            }
+        } else {
+            errorReason = 'JavapSpawnError'
+        }
+        if (spawnResult.error) {
+            const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
+            errorReason += `-${errorCode}`
+        }
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NoJavaProject',
+            codeTransformRuntimeError: errorReason,
             result: MetadataResult.Fail,
             reason: 'CannotDetermineJavaVersion',
         })
         throw new ToolkitError('Unable to determine Java version', {
             code: 'CannotDetermineJavaVersion',
-            cause: spawnResult.error,
         })
     }
     const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
@@ -225,13 +242,13 @@ export async function stopJob(jobId: string) {
                 })
             }
         } catch (e: any) {
-            const errorMessage = 'Error stopping job'
+            const errorMessage = (e as Error).message ?? 'Error stopping job'
             getLogger().error('CodeTransform: StopTransformation error = ', errorMessage)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'StopTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: jobId,
-                codeTransformApiErrorMessage: (e as Error).message ?? errorMessage,
+                codeTransformApiErrorMessage: errorMessage,
                 codeTransformRequestId: e.requestId ?? '',
                 result: MetadataResult.Fail,
                 reason: 'StopTransformationFailed',
@@ -278,6 +295,7 @@ export async function uploadPayload(payloadFileName: string) {
         await uploadArtifactToS3(payloadFileName, response)
     } catch (e: any) {
         const errorMessage = (e as Error).message ?? 'Error in uploadArtifactToS3 call'
+        getLogger().error('CodeTransform: UploadArtifactToS3 error: = ', errorMessage)
         throw new ToolkitError(errorMessage, { cause: e as Error })
     }
     return response.uploadId
@@ -312,7 +330,65 @@ function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string
     return files
 }
 
-function getProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, modulePath: string): string[] {
+/* TO-DO: consider combining installProjectDepedencies() and copyProjectDependencies() into 1 function runMavenCommand()
+ * do this once we fully confirm that we definitely want to run "mvn install"
+ * also, consider either notifying user how to set JAVA_HOME if mvn install fails, or doing it for them?
+ */
+function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, modulePath: string) {
+    let baseCommand = buildCommand as string
+    if (baseCommand === 'mvnw') {
+        baseCommand = './mvnw'
+        if (os.platform() === 'win32') {
+            baseCommand = './mvnw.cmd'
+        }
+        const executableName = baseCommand.slice(2) // remove the './' part
+        const executablePath = path.join(modulePath, executableName)
+        if (!fs.existsSync(executablePath)) {
+            throw new ToolkitError('Maven Wrapper not found', { code: 'MavenWrapperNotFound' })
+        }
+    }
+
+    transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
+
+    const args = ['clean', 'install']
+    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
+    if (spawnResult.status !== 0) {
+        let errorLog = ''
+        errorLog += spawnResult.error ? `${JSON.stringify(spawnResult.error)}` : ''
+        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
+        transformByQState.appendToErrorLog(`${baseCommand} clean install failed: \n ${errorLog}`)
+        getLogger().error(`CodeTransform: Error in running Maven install command ${baseCommand} = ${errorLog}`)
+        let errorReason = ''
+        if (spawnResult.stdout) {
+            errorReason = 'Maven Install: InstallExecutionError'
+            /*
+             * adding this check here because these mvn commands sometimes generate a lot of output.
+             * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
+             * which are not being used here (for now), but still keeping this just in case.
+             */
+            if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
+                errorReason += '-BufferOverflow'
+            }
+        } else {
+            errorReason = 'Maven Install: InstallSpawnError'
+        }
+        if (spawnResult.error) {
+            const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
+            errorReason += `-${errorCode}`
+        }
+        telemetry.codeTransform_mvnBuildFailed.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformMavenBuildCommand: buildCommand,
+            result: MetadataResult.Fail,
+            reason: errorReason,
+        })
+        throw new ToolkitError('Maven install error', { code: 'MavenInstallError' })
+    } else {
+        transformByQState.appendToErrorLog(`${baseCommand} clean install succeeded`)
+    }
+}
+
+function copyProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, modulePath: string): string[] {
     // Make temp directory
     const folderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
     const folderPath = path.join(os.tmpdir(), folderName)
@@ -323,12 +399,14 @@ function getProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, mo
         if (os.platform() === 'win32') {
             baseCommand = './mvnw.cmd'
         }
-        const executableName = baseCommand.substring(2) // remove the './' part
+        const executableName = baseCommand.slice(2) // remove the './' part
         const executablePath = path.join(modulePath, executableName)
         if (!fs.existsSync(executablePath)) {
             throw new ToolkitError('Maven Wrapper not found', { code: 'MavenWrapperNotFound' })
         }
     }
+
+    transformByQState.appendToErrorLog(`Running command ${baseCommand} copy-dependencies`)
 
     const args = [
         'dependency:copy-dependencies',
@@ -338,22 +416,36 @@ function getProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, mo
         '-Dmdep.addParentPoms=true',
     ]
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
-
-    if (spawnResult.error || spawnResult.status !== 0) {
-        getLogger().error(`CodeTransform: Error in running Maven command ${baseCommand} = `)
-        // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
-        if (spawnResult.error) {
-            getLogger().error(spawnResult.error)
+    if (spawnResult.status !== 0) {
+        let errorLog = ''
+        errorLog += spawnResult.error ? `${JSON.stringify(spawnResult.error)}` : ''
+        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
+        transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies failed: \n ${errorLog}`)
+        getLogger().error(
+            `CodeTransform: Error in running Maven copy-dependencies command ${baseCommand} = ${errorLog}`
+        )
+        let errorReason = ''
+        if (spawnResult.stdout) {
+            errorReason = 'Maven Copy: CopyDependenciesExecutionError'
+            if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
+                errorReason += '-BufferOverflow'
+            }
         } else {
-            getLogger().error(spawnResult.stdout)
+            errorReason = 'Maven Copy: CopyDependenciesSpawnError'
+        }
+        if (spawnResult.error) {
+            const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
+            errorReason += `-${errorCode}`
         }
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformMavenBuildCommand: buildCommand,
             result: MetadataResult.Fail,
-            reason: spawnResult.error ? spawnResult.error.message : spawnResult.stdout,
+            reason: errorReason,
         })
-        throw new ToolkitError('Maven Dependency Error', { code: 'CannotRunMavenShellCommand' })
+        throw new ToolkitError('Maven copy dependencies error', { code: 'MavenCopyDependenciesError' })
+    } else {
+        transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies succeeded`)
     }
 
     return [folderPath, folderName]
@@ -365,26 +457,48 @@ export async function zipCode(modulePath: string) {
     const sourceFolder = modulePath
     const sourceFiles = getFilesRecursively(sourceFolder, false)
 
-    throwIfCancelled()
-
-    let dependencyFolderInfo: string[] = []
-    let mavenWrapperFailed = false
+    let mavenWrapperInstallFailed = false
     try {
-        dependencyFolderInfo = getProjectDependencies('mvnw', modulePath)
+        installProjectDependencies('mvnw', modulePath)
     } catch (err) {
-        mavenWrapperFailed = true
+        mavenWrapperInstallFailed = true
     }
 
-    let mavenFailed = false
-    if (mavenWrapperFailed) {
+    let mavenInstallFailed = false
+    if (mavenWrapperInstallFailed) {
         try {
-            dependencyFolderInfo = getProjectDependencies('mvn', modulePath)
+            installProjectDependencies('mvn', modulePath)
         } catch (err) {
-            mavenFailed = true
+            mavenInstallFailed = true
         }
     }
 
-    const copyDependenciesFailed = mavenFailed && mavenWrapperFailed
+    const installFailed = mavenInstallFailed && mavenWrapperInstallFailed
+
+    if (installFailed) {
+        void vscode.window.showErrorMessage(CodeWhispererConstants.installErrorMessage)
+    }
+
+    throwIfCancelled()
+
+    let dependencyFolderInfo: string[] = []
+    let mavenWrapperCopyDepsFailed = false
+    try {
+        dependencyFolderInfo = copyProjectDependencies('mvnw', modulePath)
+    } catch (err) {
+        mavenWrapperCopyDepsFailed = true
+    }
+
+    let mavenCopyDepsFailed = false
+    if (mavenWrapperCopyDepsFailed) {
+        try {
+            dependencyFolderInfo = copyProjectDependencies('mvn', modulePath)
+        } catch (err) {
+            mavenCopyDepsFailed = true
+        }
+    }
+
+    const copyDependenciesFailed = mavenCopyDepsFailed && mavenWrapperCopyDepsFailed
 
     if (copyDependenciesFailed) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
@@ -429,11 +543,17 @@ export async function zipCode(modulePath: string) {
 
     throwIfCancelled()
 
+    // add text file with logs from mvn clean install and mvn copy-dependencies
+    const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
+    fs.writeFileSync(logFilePath, transformByQState.getErrorLog())
+    zip.addLocalFile(logFilePath)
+
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
     fs.writeFileSync(tempFilePath, zip.toBuffer())
     if (!copyDependenciesFailed) {
         fs.rmSync(dependencyFolderPath, { recursive: true, force: true })
     }
+    fs.rmSync(logFilePath)
 
     // for now, use the pass/fail status of the maven command to determine this metric status
     const mavenStatus = copyDependenciesFailed ? MetadataResult.Fail : MetadataResult.Pass
@@ -646,4 +766,43 @@ export async function checkBuildSystem(projectPath: string) {
         return BuildSystem.Gradle
     }
     return BuildSystem.Unknown
+}
+
+export async function getVersionData(buildCommand: CodeTransformMavenBuildCommand, modulePath: string) {
+    let baseCommand = buildCommand as string
+    if (baseCommand === 'mvnw') {
+        baseCommand = './mvnw'
+        if (os.platform() === 'win32') {
+            baseCommand = './mvnw.cmd'
+        }
+        const executableName = baseCommand.slice(2) // remove the './' part
+        const executablePath = path.join(modulePath, executableName)
+        if (!fs.existsSync(executablePath)) {
+            return [undefined, undefined]
+        }
+    }
+
+    const args = ['-v']
+    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
+
+    let localMavenVersion: string | undefined = ''
+    let localJavaVersion: string | undefined = ''
+
+    try {
+        const localMavenVersionIndex = spawnResult.stdout.indexOf('Apache Maven')
+        const localMavenVersionString = spawnResult.stdout.slice(localMavenVersionIndex + 13)
+        localMavenVersion = localMavenVersionString.slice(0, localMavenVersionString.indexOf(' '))
+    } catch (e: any) {
+        localMavenVersion = undefined // if this happens here or below, user most likely has JAVA_HOME incorrectly defined
+    }
+
+    try {
+        const localJavaVersionIndex = spawnResult.stdout.indexOf('Java version: ')
+        const localJavaVersionString = spawnResult.stdout.slice(localJavaVersionIndex + 14)
+        localJavaVersion = localJavaVersionString.slice(0, localJavaVersionString.indexOf(',')) // will match value of JAVA_HOME
+    } catch (e: any) {
+        localJavaVersion = undefined
+    }
+
+    return [localMavenVersion, localJavaVersion]
 }

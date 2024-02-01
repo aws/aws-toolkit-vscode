@@ -17,17 +17,18 @@ import { featureName } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import { ApiError, ContentLengthError, UnknownApiError } from '../errors'
 import { ToolkitError, isAwsError, isCodeWhispererStreamingServiceException } from '../../shared/errors'
-import { endpoint, region } from '../../codewhisperer/models/constants'
+import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
+    const cwsprConfig = getCodewhispererConfig()
     return (await globals.sdkClientBuilder.createAwsService(
         Service,
         {
             apiConfig: apiConfig,
-            region,
-            endpoint,
+            region: cwsprConfig.region,
+            endpoint: cwsprConfig.endpoint,
             token: new Token({ token: bearerToken }),
             // SETTING TO 0 FOR BETA. RE-ENABLE FOR RE-INVENT
             maxRetries: 0,
@@ -43,9 +44,10 @@ export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClie
 // Create a client for featureDev streaming based off of aws sdk v3
 async function createFeatureDevStreamingClient(): Promise<CodeWhispererStreaming> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
+    const cwsprConfig = getCodewhispererConfig()
     const streamingClient = new CodeWhispererStreaming({
-        endpoint,
-        region,
+        region: cwsprConfig.region,
+        endpoint: cwsprConfig.endpoint,
         token: { token: bearerToken },
         // SETTING max attempts to 0 FOR BETA. RE-ENABLE FOR RE-INVENT
         // Implement exponential back off starting with a base of 500ms (500 + attempt^10)

@@ -280,6 +280,8 @@ export class TransformByQState {
 
     private jobFailureErrorMessage: string = ''
 
+    private errorLog: string = ''
+
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
     }
@@ -358,6 +360,14 @@ export class TransformByQState {
 
     public getJobFailureErrorMessage() {
         return this.jobFailureErrorMessage
+    }
+
+    public getErrorLog() {
+        return this.errorLog
+    }
+
+    public appendToErrorLog(message: string) {
+        this.errorLog += `${message}\n\n`
     }
 
     public setToNotStarted() {
