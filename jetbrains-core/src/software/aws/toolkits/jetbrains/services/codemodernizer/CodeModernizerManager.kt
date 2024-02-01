@@ -534,7 +534,9 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         CodetransformTelemetry.totalRunTime(
             codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformResultStatusMessage = result.toString(),
-            codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now())
+            codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
+            codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
+            codeTransformLocalMavenVersion = getMavenVersions(project),
         )
         when (result) {
             is CodeModernizerJobCompletedResult.UnableToCreateJob -> notifyJobFailure(
@@ -607,7 +609,9 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                     CodetransformTelemetry.totalRunTime(
                         codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
                         codeTransformResultStatusMessage = "JobCancelled",
-                        codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now())
+                        codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
+                        codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
+                        codeTransformLocalMavenVersion = getMavenVersions(project),
                     )
                 }
             } catch (e: Exception) {
@@ -616,7 +620,9 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 CodetransformTelemetry.totalRunTime(
                     codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformResultStatusMessage = "JobCancelled",
-                    codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now())
+                    codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
+                    codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
+                    codeTransformLocalMavenVersion = getMavenVersions(project),
                 )
             }
         }

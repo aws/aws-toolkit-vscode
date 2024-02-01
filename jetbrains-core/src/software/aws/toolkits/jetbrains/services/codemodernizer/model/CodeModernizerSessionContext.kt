@@ -228,11 +228,7 @@ data class CodeModernizerSessionContext(
 
         // 1. Try to execute Maven Wrapper Command
         var shouldTryMvnCommand = true
-        val mvnw = if (SystemInfo.isWindows) {
-            "./mvnw.cmd"
-        } else {
-            "./mvnw"
-        }
+        val mvnw = if (SystemInfo.isWindows) "./mvnw.cmd" else "./mvnw"
         try {
             LOG.info { "Executing $mvnw install" }
             val installOutput = runInstallCommand(mvnw)
@@ -371,7 +367,7 @@ data class CodeModernizerSessionContext(
                         buildlogBuilder.appendLine("Command Run: IntelliJ bundled Maven clean install")
                         transformMvnRunner.run(installParams, mvnsettings, cleanInstalled)
                     } catch (t: Throwable) {
-                        val error = "Unexpected error when executing bundled Maven clean install"
+                        val error = "Maven Install: Unexpected error when executing bundled Maven clean install"
                         cleanInstalled.exitCode(Integer.MIN_VALUE) // to stop looking for the exitCode
                         LOG.error(t) { error }
                         buildlogBuilder.appendLine("IntelliJ bundled Maven install failed: ${t.message}")
@@ -396,7 +392,7 @@ data class CodeModernizerSessionContext(
                     buildlogBuilder.appendLine(successMsg)
                 } else if (cleanInstalled.isComplete() != Integer.MIN_VALUE) {
                     // TODO: improve bundled maven error logging
-                    val error = "IntelliJ bundled Maven install failed: exitCode ${cleanInstalled.isComplete()}"
+                    val error = "Maven Install: bundled Maven failed: exitCode ${cleanInstalled.isComplete()}"
                     LOG.error { error }
                     buildlogBuilder.appendLine(error)
                     CodetransformTelemetry.mvnBuildFailed(
@@ -412,7 +408,7 @@ data class CodeModernizerSessionContext(
                         buildlogBuilder.appendLine("Command Run: IntelliJ bundled Maven dependency:copy-dependencies")
                         transformMvnRunner.run(copyParams, mvnsettings, createdDependencies)
                     } catch (t: Throwable) {
-                        val error = "Unexpected error when executing bundled Maven dependency:copy-dependencies"
+                        val error = "Maven Copy: Unexpected error when executing bundled Maven copy-dependencies"
                         createdDependencies.exitCode(Integer.MIN_VALUE) // to stop looking for the exitCode
                         LOG.error(t) { error }
                         buildlogBuilder.appendLine("IntelliJ bundled Maven copy-dependencies failed: ${t.message}")
@@ -436,7 +432,7 @@ data class CodeModernizerSessionContext(
                     LOG.info { successMsg }
                     buildlogBuilder.appendLine(successMsg)
                 } else if (createdDependencies.isComplete() != Integer.MIN_VALUE) {
-                    val error = "IntelliJ bundled Maven copy-dependencies failed: exitCode ${createdDependencies.isComplete()}"
+                    val error = "Maven Copy: bundled Maven failed: exitCode ${createdDependencies.isComplete()}"
                     LOG.error { error }
                     buildlogBuilder.appendLine(error)
                     CodetransformTelemetry.mvnBuildFailed(
