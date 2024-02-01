@@ -22,7 +22,7 @@ export class InlineDecorator {
     private _inlineText: string | undefined = undefined
 
     getInlineDecoration(
-        isSameLine: boolean = true,
+        isSameLine: boolean,
         scrollable: boolean = true
     ): Partial<vscode.DecorationOptions> | undefined {
         console.log(`getInlineDecoration: ${isSameLine}`)

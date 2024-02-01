@@ -90,10 +90,6 @@ export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => 
     let timer: NodeJS.Timeout | undefined
     let promise: Promise<T> | undefined
 
-    function isPending(): boolean {
-        return timer !== undefined
-    }
-
     return () => {
         timer?.refresh()
 
@@ -102,6 +98,29 @@ export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => 
                 timer = promise = undefined
                 try {
                     resolve(await cb())
+                } catch (err) {
+                    reject(err)
+                }
+            }, delay)
+        }))
+    }
+}
+
+export function debounce2<T, U extends any[]>(
+    cb: (...args: U) => T | Promise<T>,
+    delay: number = 0
+): (...args: U) => Promise<T> {
+    let timer: NodeJS.Timeout | undefined
+    let promise: Promise<T> | undefined
+
+    return (...arg) => {
+        timer?.refresh()
+
+        return (promise ??= new Promise<T>((resolve, reject) => {
+            timer = globals.clock.setTimeout(async () => {
+                timer = promise = undefined
+                try {
+                    resolve(await cb(...arg))
                 } catch (err) {
                     reject(err)
                 }
