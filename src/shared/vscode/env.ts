@@ -6,6 +6,8 @@
 import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
+import { getLogger } from '../logger'
+import { onceChanged } from '../utilities/functionUtils'
 
 /**
  * Returns true if the current build is running on CI (build server).
@@ -88,4 +90,40 @@ export function getCodeCatalystProjectName(): string | undefined {
 export function getCodeCatalystSpaceName(): string | undefined {
     // TODO: remove legacy __DEV_ENVIRONMENT_ORGANIZATION_NAME
     return process.env['__DEV_ENVIRONMENT_SPACE_NAME'] || process.env['__DEV_ENVIRONMENT_ORGANIZATION_NAME']
+}
+
+type ConfigToEnvMap = { [key: string]: string }
+type ServiceConfig = Partial<{ [K in keyof ConfigToEnvMap]: any }>
+const logConfigsOnce: { [key: string]: ReturnType<typeof onceChanged> } = {}
+
+/**
+ * Accepts a service name and a {config key -> expected env var name} map.
+ * For each config key, check if the associated env var exists and return
+ * a config map with the found values. Changes are logged once for each
+ * service/found env var combos.
+ */
+export function getServiceEnvVarConfig(service: string, configToEnvMap: ConfigToEnvMap): ServiceConfig {
+    const config: ServiceConfig = {}
+    const overriden: string[] = []
+
+    // Find env vars for each field in the config
+    for (const [field, envKey] of Object.entries(configToEnvMap)) {
+        if (envKey in process.env) {
+            config[field] = process.env[envKey]
+            overriden.push(envKey)
+        }
+    }
+
+    // Log env var overrides, keeping track of which service we are logging for.
+    // This allows us to log only once when env vars for a service change.
+    if (overriden.length > 0) {
+        if (!(service in logConfigsOnce)) {
+            logConfigsOnce[service] = onceChanged(vars => {
+                getLogger().info(`using env vars for ${service} config: ${vars}`)
+            })
+        }
+        logConfigsOnce[service](overriden)
+    }
+
+    return config
 }

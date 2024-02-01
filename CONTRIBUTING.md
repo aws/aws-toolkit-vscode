@@ -344,7 +344,7 @@ Example:
 }
 ```
 
-Overrides specifically for CodeCatalyst can be set using the `aws.dev.codecatalystService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeCatalyst: `region`, `endpoint`, `hostname`, and `gitHostname`. If this setting is present, then all keys need to be explicitly provided.
+<a name="codecatalyst-settings">Overrides specifically for CodeCatalyst can be set using the `aws.dev.codecatalystService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeCatalyst: `region`, `endpoint`, `hostname`, and `gitHostname`. If this setting is present, then all keys need to be explicitly provided.</a>
 
 Example:
 
@@ -397,6 +397,14 @@ Environment variables can be used to modify the behaviour of VSCode. The followi
 -   `__DEV_ENVIRONMENT_PROJECT_NAME`: The project name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
 -   `__DEV_ENVIRONMENT_SPACE_NAME`: The space name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
 -   `__DEV_ENVIRONMENT_ORGANIZATION_NAME`: The organization name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
+
+The following are environment variable versions of the user `settings.json` overrides mentioned [here](#codecatalyst-settings). These will always override the toolkit defaults and those defined in `settings.json`.
+Unlike the user setting overrides, not all of these environment variables have to be set to make use of them.
+
+-   `__CODECATALYST_REGION`: for aws.dev.codecatalystService.region
+-   `__CODECATALYST_ENDPOINT`: for aws.dev.codecatalystService.endpoint
+-   `__CODECATALYST_HOSTNAME`: for aws.dev.codecatalystService.hostname
+-   `__CODECATALYST_GIT_HOSTNAME`: for aws.dev.codecatalystService.gitHostname
 
 #### Lambda
 
