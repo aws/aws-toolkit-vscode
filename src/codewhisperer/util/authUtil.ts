@@ -30,6 +30,7 @@ import { getLogger } from '../../shared/logger'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { GlobalState } from '../../shared/globalState'
+import { refreshAnnotation } from '../service/serviceContainer'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -108,6 +109,7 @@ export class AuthUtil {
 
     public constructor(public readonly auth = Auth.instance) {
         this.auth.onDidChangeConnectionState(async e => {
+            console.log('1111111111111111111111111111111111111111111111111111111')
             if (e.state !== 'authenticating') {
                 await this.refreshCodeWhisperer()
             }
@@ -116,6 +118,7 @@ export class AuthUtil {
         })
 
         this.secondaryAuth.onDidChangeActiveConnection(async () => {
+            console.log('2222222222222222222222222222222222222222222222')
             if (this.isValidEnterpriseSsoInUse()) {
                 void vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
             }
@@ -127,6 +130,7 @@ export class AuthUtil {
                 Commands.tryExecute('aws.amazonq.refreshRootNode'),
                 Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
                 Commands.tryExecute('aws.codeWhisperer.updateReferenceLog'),
+                refreshAnnotation.execute(),
             ])
 
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
@@ -337,6 +341,7 @@ export class AuthUtil {
             Commands.tryExecute('aws.amazonq.refresh'),
             Commands.tryExecute('aws.amazonq.refreshRootNode'),
             Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
+            refreshAnnotation,
         ])
     }
 

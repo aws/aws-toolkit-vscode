@@ -8,6 +8,7 @@ import { InlineDecorator } from '../views/annotations/annotationUtils'
 import { EditorGutterController } from '../views/annotations/editorGutterController'
 import { LineAnnotationController } from '../views/annotations/lineAnnotationController'
 import { LineTracker } from '../views/annotations/lineTracker'
+import { Commands } from '../../shared/vscode/commands2'
 
 export class Container {
     static #instance: Container | undefined
@@ -35,10 +36,18 @@ export class Container {
         this._lineTracker = new LineTracker()
         this._decorator = new InlineDecorator()
         this._lineAnnotationController = new LineAnnotationController(this._lineTracker, this._decorator)
-        this._editorGutterController = new EditorGutterController(this._lineTracker, this._decorator)
+        this._editorGutterController = new EditorGutterController(this._lineTracker)
     }
 
     ready() {
         this._lineTracker.ready()
     }
 }
+
+export const refreshAnnotation = Commands.register(
+    { id: 'aws.codeWhisperer.refreshAnnotation', logging: false },
+    () => {
+        Container.instance._editorGutterController.refresh(vscode.window.activeTextEditor, 'editor')
+        Container.instance._lineAnnotationController.refresh(vscode.window.activeTextEditor, 'editor')
+    }
+)

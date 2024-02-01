@@ -8,12 +8,13 @@ import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { InlineDecorator } from './annotationUtils'
 import { debounce } from '../../../shared/utilities/functionUtils'
-import { waitUntil } from '../../../shared/utilities/timeoutUtils'
-import { Container } from '../../service/serviceContainer'
+import { AuthUtil } from '../../util/authUtil'
+import { getSecondaryAuth } from '../../../auth/secondaryAuth'
+import { Auth } from '../../../auth/auth'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
-function once<T>(event: vscode.Event<T>): vscode.Event<T> {
+export function once<T>(event: vscode.Event<T>): vscode.Event<T> {
     return (listener: (e: T) => unknown, thisArgs?: unknown) => {
         const result = event(e => {
             result.dispose()
@@ -29,10 +30,13 @@ export class LineAnnotationController implements vscode.Disposable {
     private _editor: vscode.TextEditor | undefined
     private _suspended = false
 
-    constructor(private readonly lineTracker: LineTracker, private readonly _cwInlineHintDecorator: InlineDecorator) {
+    constructor(
+        private readonly lineTracker: LineTracker,
+        private readonly _cwInlineHintDecorator: InlineDecorator,
+        private readonly auth = Auth.instance
+    ) {
         this._disposable = vscode.Disposable.from(once(this.lineTracker.onReady)(this.onReady, this))
         this.setLineTracker(true)
-        // this.onReady()
     }
 
     dispose() {
@@ -50,7 +54,6 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
         if (!this._isReady) {
-            this.clear(e.editor)
             return
         }
 
@@ -77,7 +80,16 @@ export class LineAnnotationController implements vscode.Disposable {
         this.refresh(vscode.window.activeTextEditor, 'content')
     }, 250)
 
-    private async refresh(editor: vscode.TextEditor | undefined, reason: 'selection' | 'content' | 'editor') {
+    async refresh(editor: vscode.TextEditor | undefined, reason: 'selection' | 'content' | 'editor') {
+        if (
+            !AuthUtil.instance.isConnected() ||
+            !AuthUtil.instance.isConnectionValid() ||
+            AuthUtil.instance.isConnectionExpired()
+        ) {
+            this.clear(this._editor)
+            return
+        }
+
         if (editor == null && this._editor == null) {
             return
         }

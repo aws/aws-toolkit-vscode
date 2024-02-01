@@ -8,6 +8,8 @@ import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { getIcon } from '../../../shared/icons'
+import { AuthUtil } from '../../util/authUtil'
+import { once } from './lineAnnotationController'
 
 const gutterColored = 'aws-codewhisperer-editor-gutter'
 const gutterWhite = 'aws-codewhisperer-editor-gutter-white'
@@ -26,9 +28,11 @@ export class EditorGutterController implements vscode.Disposable {
     })
 
     constructor(private readonly lineTracker: LineTracker) {
-        this._disposable = vscode.Disposable.from(this.setCWInlineService(true))
+        this._disposable = vscode.Disposable.from(
+            this.setCWInlineService(true),
+            once(this.lineTracker.onReady)(this.onReady, this)
+        )
         this.setLineTracker(true)
-        this.onReady()
     }
 
     dispose() {
@@ -36,11 +40,18 @@ export class EditorGutterController implements vscode.Disposable {
         this._disposable.dispose()
     }
 
+    private _isReady: boolean = false
+
     private onReady(): void {
+        this._isReady = true
         this.refresh(vscode.window.activeTextEditor)
     }
 
     private onActiveLinesChanged(e: LinesChangeEvent) {
+        if (!this._isReady) {
+            return
+        }
+
         if (e.selections !== undefined) {
             void this.refresh(e.editor, e.reason)
             return
@@ -50,6 +61,10 @@ export class EditorGutterController implements vscode.Disposable {
     }
 
     private onSuggestionActionEvent(e: SuggestionActionEvent) {
+        if (!this._isReady) {
+            return
+        }
+
         this.refresh(e.editor, 'codewhisperer')
     }
 
@@ -69,10 +84,19 @@ export class EditorGutterController implements vscode.Disposable {
         editor.setDecorations(this.cwlineGutterDecorationColored, [])
     }
 
-    private async refresh(
+    async refresh(
         editor: vscode.TextEditor | undefined,
         reason: 'selection' | 'codewhisperer' | 'content' | 'editor' = 'selection'
     ) {
+        if (
+            !AuthUtil.instance.isConnected() ||
+            !AuthUtil.instance.isConnectionValid() ||
+            AuthUtil.instance.isConnectionExpired()
+        ) {
+            this.clear(this._editor)
+            return
+        }
+
         if (editor == null && this._editor == null) {
             return
         }
