@@ -24,6 +24,8 @@ interface CodeWhispererToken {
     accepted: number
 }
 
+const autoClosingKeystrokeInputs = ['[]', '{}', '()', '""', "''"]
+
 /**
  * This singleton class is mainly used for calculating the code written by codeWhisperer
  */
@@ -238,21 +240,56 @@ export class CodeWhispererCodeCoverageTracker {
         this.addTotalTokens(filename, text.length)
     }
 
+    // For below 2 edge cases
+    // 1. newline character with indentation
+    // 2. 2 character insertion of closing brackets
+    public getCharacterCountFromComplexEvent(e: vscode.TextDocumentChangeEvent) {
+        function countChanges(cond: boolean, text: string): number {
+            if (!cond) {
+                return 0
+            }
+            if ((text.startsWith('\n') || text.startsWith('\r\n')) && text.trim().length === 0) {
+                return 1
+            }
+            if (autoClosingKeystrokeInputs.includes(text)) {
+                return 2
+            }
+            return 0
+        }
+        if (e.contentChanges.length === 2) {
+            const text1 = e.contentChanges[0].text
+            const text2 = e.contentChanges[1].text
+            const text2Count = countChanges(text1.length === 0, text2)
+            const text1Count = countChanges(text2.length === 0, text1)
+            return text2Count > 0 ? text2Count : text1Count
+        } else if (e.contentChanges.length === 1) {
+            return countChanges(true, e.contentChanges[0].text)
+        }
+        return 0
+    }
+
+    public isFromUserKeystroke(e: vscode.TextDocumentChangeEvent) {
+        return e.contentChanges.length === 1 && e.contentChanges[0].text.length === 1
+    }
+
     public countTotalTokens(e: vscode.TextDocumentChangeEvent) {
         // ignore no contentChanges. ignore contentChanges from other plugins (formatters)
         // only include contentChanges from user keystroke input(one character input).
         // Also ignore deletion events due to a known issue of tracking deleted CodeWhiperer tokens.
-        if (
-            !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
-            vsCodeState.isCodeWhispererEditing ||
-            e.contentChanges.length !== 1 ||
-            e.contentChanges[0].text.length !== 1
-        ) {
+        if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId) || vsCodeState.isCodeWhispererEditing) {
             return
         }
-        const content = e.contentChanges[0]
-        this.tryStartTimer()
-        this.addTotalTokens(e.document.fileName, content.text.length)
+        // a user keystroke input can be
+        // 1. content change with 1 character insertion
+        // 2. newline character with indentation
+        // 3. 2 character insertion of closing brackets
+        if (this.isFromUserKeystroke(e)) {
+            this.tryStartTimer()
+            this.addTotalTokens(e.document.fileName, 1)
+        } else if (this.getCharacterCountFromComplexEvent(e) !== 0) {
+            this.tryStartTimer()
+            this.addTotalTokens(e.document.fileName, this.getCharacterCountFromComplexEvent(e))
+        }
     }
 
     public static readonly instances = new Map<CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()
