@@ -1,3 +1,7 @@
+## 2.8.0 2024-02-01
+
+- **Bug Fix** CodeWhisperer: Improve CodePercentage telemetry reporting
+
 ## 2.7.0 2024-01-25
 
 - **Bug Fix** Add invalid auth handling to Application Composer's Sync button
