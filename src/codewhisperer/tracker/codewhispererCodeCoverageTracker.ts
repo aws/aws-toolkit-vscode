@@ -24,7 +24,7 @@ interface CodeWhispererToken {
     accepted: number
 }
 
-const autoClosingKeystrokeInputs = ['[]', '{}', '()', `\"\"`, `\'\'`]
+const autoClosingKeystrokeInputs = ['[]', '{}', '()', '""', "''"]
 
 /**
  * This singleton class is mainly used for calculating the code written by codeWhisperer
