@@ -21,15 +21,14 @@ describe('getServiceEnvVarConfig', function () {
 
     it('gets service config', async function () {
         const service = 'codecatalyst'
-        const configToEnvMap = {
-            region: '__CODECATALYST_REGION',
-            endpoint: '__CODECATALYST_ENDPOINT',
-        }
+        const serviceConfigs = ['region', 'endpoint', 'gitHostname']
         addEnvVar('__CODECATALYST_ENDPOINT', 'test.endpoint')
+        addEnvVar('__CODECATALYST_GIT_HOSTNAME', 'test.gitHostname')
 
         const expectedConfig = {
             endpoint: 'test.endpoint',
+            gitHostname: 'test.gitHostname',
         }
-        assert.deepStrictEqual(getServiceEnvVarConfig(service, configToEnvMap), expectedConfig)
+        assert.deepStrictEqual(getServiceEnvVarConfig(service, serviceConfigs), expectedConfig)
     })
 })
