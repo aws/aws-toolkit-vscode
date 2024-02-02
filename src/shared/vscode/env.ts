@@ -92,24 +92,50 @@ export function getCodeCatalystSpaceName(): string | undefined {
     return process.env['__DEV_ENVIRONMENT_SPACE_NAME'] || process.env['__DEV_ENVIRONMENT_ORGANIZATION_NAME']
 }
 
-type ConfigToEnvMap = { [key: string]: string }
-type ServiceConfig = Partial<{ [K in keyof ConfigToEnvMap]: any }>
+type ServiceConfig<T extends string[]> = Partial<{
+    [K in T[number]]: string
+}>
 const logConfigsOnce: { [key: string]: ReturnType<typeof onceChanged> } = {}
 
 /**
- * Accepts a service name and a {config key -> expected env var name} map.
+ * Generate a map of environment variable names to environment variables.
+ *
+ * It does this by converting camel case entries in envVarNames to uppercase joined by underscores
+ * If there is no camel case in an entry in envVarNames then it just converts the envVar to uppercase
+ *
+ * E.g. if service is codecatalyst:
+ *  gitHostname -> __CODECATALYST_GIT_HOSTNAME
+ *  region -> __CODECATALYST_REGION
+ */
+export function getEnvVars<T extends string[]>(service: string, envVarNames: T): ServiceConfig<T> {
+    const envVars: ServiceConfig<T> = {}
+    for (const name of envVarNames) {
+        // convert camel case to uppercase joined by underscores
+        // e.g. gitHostname -> GIT_HOSTNAME
+        const envVarName = name
+            .split(/(?=[A-Z])/)
+            .map(s => s.toUpperCase())
+            .join('_')
+        envVars[name as T[number]] = `__${service.toUpperCase()}_${envVarName}`
+    }
+    return envVars
+}
+
+/**
+ * Accepts a service name and an array of configs.
  * For each config key, check if the associated env var exists and return
  * a config map with the found values. Changes are logged once for each
  * service/found env var combos.
  */
-export function getServiceEnvVarConfig(service: string, configToEnvMap: ConfigToEnvMap): ServiceConfig {
-    const config: ServiceConfig = {}
+export function getServiceEnvVarConfig<T extends string[]>(service: string, configs: T): ServiceConfig<T> {
+    const config: ServiceConfig<T> = {}
     const overriden: string[] = []
 
     // Find env vars for each field in the config
-    for (const [field, envKey] of Object.entries(configToEnvMap)) {
+    const envVars = getEnvVars<T>(service, configs)
+    for (const [field, envKey] of Object.entries(envVars) as [string, string][]) {
         if (envKey in process.env) {
-            config[field] = process.env[envKey]
+            config[field as T[number]] = process.env[envKey]
             overriden.push(envKey)
         }
     }

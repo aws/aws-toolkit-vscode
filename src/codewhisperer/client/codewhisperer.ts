@@ -29,7 +29,7 @@ import { keepAliveHeader } from './agent'
 import { getOptOutPreference } from '../util/commonUtil'
 import * as os from 'os'
 import { getClientId } from '../../shared/telemetry/util'
-import { extensionVersion } from '../../shared/vscode/env'
+import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
 
 export interface CodeWhispererConfig {
@@ -43,7 +43,12 @@ export const defaultServiceConfig: CodeWhispererConfig = {
 }
 
 export function getCodewhispererConfig(): CodeWhispererConfig {
-    return DevSettings.instance.getServiceConfig('codewhispererService', defaultServiceConfig)
+    return {
+        ...DevSettings.instance.getServiceConfig('codewhispererService', defaultServiceConfig),
+
+        // Environment variable overrides
+        ...getServiceEnvVarConfig('codewhisperer', Object.keys(defaultServiceConfig)),
+    }
 }
 
 export type ProgrammingLanguage = Readonly<

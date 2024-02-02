@@ -40,13 +40,6 @@ export interface CodeCatalystConfig {
     readonly gitHostname: string
 }
 
-const configToEnvMap: { [K in keyof CodeCatalystConfig]: string } = {
-    region: '__CODECATALYST_REGION',
-    endpoint: '__CODECATALYST_ENDPOINT',
-    hostname: '__CODECATALYST_HOSTNAME',
-    gitHostname: '__CODECATALYST_GIT_HOSTNAME',
-}
-
 export const defaultServiceConfig: CodeCatalystConfig = {
     region: 'us-east-1',
     endpoint: 'https://codecatalyst.global.api.aws',
@@ -59,7 +52,7 @@ export function getCodeCatalystConfig(): CodeCatalystConfig {
         ...DevSettings.instance.getServiceConfig('codecatalystService', defaultServiceConfig),
 
         // Environment variable overrides
-        ...getServiceEnvVarConfig('codecatalyst', configToEnvMap),
+        ...getServiceEnvVarConfig('codecatalyst', Object.keys(defaultServiceConfig)),
     }
 }
 
