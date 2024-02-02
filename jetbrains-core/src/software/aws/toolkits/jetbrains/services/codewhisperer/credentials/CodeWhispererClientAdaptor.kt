@@ -100,7 +100,8 @@ interface CodeWhispererClientAdaptor : Disposable {
         language: CodeWhispererProgrammingLanguage,
         customizationArn: String?,
         acceptedTokenCount: Int,
-        totalTokenCount: Int
+        totalTokenCount: Int,
+        unmodifiedAcceptedTokenCount: Int?
     ): SendTelemetryEventResponse
 
     fun sendUserModificationTelemetry(
@@ -297,7 +298,8 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
         language: CodeWhispererProgrammingLanguage,
         customizationArn: String?,
         acceptedTokenCount: Int,
-        totalTokenCount: Int
+        totalTokenCount: Int,
+        unmodifiedAcceptedTokenCount: Int?
     ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
         requestBuilder.telemetryEvent { telemetryEventBuilder ->
             telemetryEventBuilder.codeCoverageEvent {
@@ -306,6 +308,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                 it.acceptedCharacterCount(acceptedTokenCount)
                 it.totalCharacterCount(totalTokenCount)
                 it.timestamp(Instant.now())
+                it.unmodifiedAcceptedCharacterCount(unmodifiedAcceptedTokenCount)
             }
         }
         requestBuilder.optOutPreference(getTelemetryOptOutPreference())

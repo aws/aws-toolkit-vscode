@@ -162,6 +162,7 @@ object CodeWhispererTestUtil {
     const val cppFileName = "test.cpp"
     const val jsFileName = "test.js"
     const val pythonTestLeftContext = "def addTwoNumbers"
+    const val keystrokeInput = "a"
     const val cppTestLeftContext = "int addTwoNumbers"
     const val javaTestContext = "public class Test {\n    public static void main\n}"
     const val yaml_langauge = "yaml"

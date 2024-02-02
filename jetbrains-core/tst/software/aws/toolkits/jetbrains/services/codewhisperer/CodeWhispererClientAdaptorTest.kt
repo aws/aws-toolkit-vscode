@@ -387,7 +387,7 @@ class CodeWhispererClientAdaptorTest {
     @Test
     fun `sendTelemetryEvent for codePercentage respects telemetry optin status`() {
         sendTelemetryEventOptOutCheckHelper {
-            sut.sendCodePercentageTelemetry(aProgrammingLanguage(), aString(), 0, 1)
+            sut.sendCodePercentageTelemetry(aProgrammingLanguage(), aString(), 0, 1, 0)
         }
     }
 

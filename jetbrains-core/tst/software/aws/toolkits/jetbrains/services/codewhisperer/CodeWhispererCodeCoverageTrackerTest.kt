@@ -37,6 +37,7 @@ import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.keystrokeInput
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
@@ -78,8 +79,9 @@ internal abstract class CodeWhispererCodeCoverageTrackerTestBase(myProjectRule: 
         timeWindowInSec: Long,
         language: CodeWhispererProgrammingLanguage,
         rangeMarkers: MutableList<RangeMarker> = mutableListOf(),
-        codeCoverageTokens: MutableMap<Document, CodeCoverageTokens> = mutableMapOf()
-    ) : CodeWhispererCodeCoverageTracker(project, timeWindowInSec, language, rangeMarkers, codeCoverageTokens, AtomicInteger(0))
+        codeCoverageTokens: MutableMap<Document, CodeCoverageTokens> = mutableMapOf(),
+        invocationCount: Int = 0,
+    ) : CodeWhispererCodeCoverageTracker(project, timeWindowInSec, language, rangeMarkers, codeCoverageTokens, AtomicInteger(invocationCount))
 
     protected class TestTelemetryService(
         publisher: TelemetryPublisher = NoOpPublisher(),
@@ -233,14 +235,31 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
         fixture.configureByText(pythonFileName, "")
         runInEdtAndWait {
             WriteCommandAction.runWriteCommandAction(project) {
+                fixture.editor.appendString(keystrokeInput)
+            }
+        }
+        val captor = argumentCaptor<DocumentEvent>()
+        verify(sut, Times(1)).documentChanged(captor.capture())
+        assertThat(captor.firstValue.newFragment.toString()).isEqualTo(keystrokeInput)
+        assertThat(sut.totalTokensSize).isEqualTo(keystrokeInput.length)
+    }
+
+    @Test
+    fun `test tracker is not listening to multi char input and will not increment totalTokens - add new code`() {
+        sut = spy(TestCodePercentageTracker(project, TOTAL_SECONDS_IN_MINUTE, CodeWhispererPython.INSTANCE))
+        CodeWhispererCodeCoverageTracker.getInstancesMap()[CodeWhispererPython.INSTANCE] = sut
+        sut.activateTrackerIfNotActive()
+
+        fixture.configureByText(pythonFileName, "")
+        runInEdtAndWait {
+            WriteCommandAction.runWriteCommandAction(project) {
                 fixture.editor.appendString(pythonTestLeftContext)
             }
         }
         val captor = argumentCaptor<DocumentEvent>()
         verify(sut, Times(1)).documentChanged(captor.capture())
         assertThat(captor.firstValue.newFragment.toString()).isEqualTo(pythonTestLeftContext)
-        val oldSize = sut.totalTokensSize
-        assertThat(sut.totalTokensSize).isEqualTo(pythonTestLeftContext.length)
+        assertThat(sut.totalTokensSize).isEqualTo(0)
 
         val anotherCode = "(x, y):"
         runInEdtAndWait {
@@ -248,7 +267,7 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
                 fixture.editor.appendString(anotherCode)
             }
         }
-        assertThat(sut.totalTokensSize).isEqualTo(oldSize + anotherCode.length)
+        assertThat(sut.totalTokensSize).isEqualTo(0)
     }
 
     @Test
@@ -275,7 +294,7 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
     }
 
     @Test
-    fun `test tracker documentChanged - will not increment tokens on blank string of length greater than 1`() {
+    fun `test tracker documentChanged - will increment tokens on user input blank string`() {
         sut = TestCodePercentageTracker(
             project,
             TOTAL_SECONDS_IN_MINUTE,
@@ -292,7 +311,7 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
             }
         }
 
-        assertThat(sut.totalTokensSize).isEqualTo(pythonTestLeftContext.length)
+        assertThat(sut.totalTokensSize).isEqualTo(pythonTestLeftContext.length + 1)
     }
 
     @Test
@@ -394,20 +413,19 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
             on { getUserData(any<Key<String>>()) } doReturn "foo"
             on { document } doReturn fixture.editor.document
         }
-
         sut = spy(
             TestCodePercentageTracker(
                 project,
                 TOTAL_SECONDS_IN_MINUTE,
                 CodeWhispererPython.INSTANCE,
                 mutableListOf(rangeMarkerMock1),
-                mutableMapOf(fixture.editor.document to CodeCoverageTokens(totalTokens = 100, acceptedTokens = 0))
+                mutableMapOf(fixture.editor.document to CodeCoverageTokens(totalTokens = 100, acceptedTokens = 0)),
+                1
             )
         ) {
             onGeneric { extractRangeMarkerString(any()) } doReturn "fou"
-            onGeneric { getAcceptedTokensDelta(any(), any()) } doReturn 99
+            onGeneric { getAcceptedTokensDelta(any(), any()) } doReturn 1
         }
-
         sut.emitCodeWhispererCodeContribution()
 
         val metricCaptor = argumentCaptor<MetricEvent>()
@@ -416,8 +434,8 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
             metricCaptor.allValues,
             CODE_PERCENTAGE,
             1,
-            CWSPR_PERCENTAGE to "99",
-            CWSPR_ACCEPTED_TOKENS to "99",
+            CWSPR_PERCENTAGE to "1",
+            CWSPR_ACCEPTED_TOKENS to "1",
             CWSPR_TOTAL_TOKENS to "100",
             "codewhispererUserGroup" to userGroup.name,
         )
@@ -508,7 +526,8 @@ internal class CodeWhispererCodeCoverageTrackerTestJava : CodeWhispererCodeCover
             class Answer {
                 private int knapsack(int[] w, int[] v, int c) {
                 int[][] dp = new int[w.length + 1][c + 1];
-                    for (int i = 0; i < w.length; i++) {for (int j = 0; j <= c; j++) {
+                    for (int i = 0; i < w.length; i++) {
+                    for (int j = 0; j <= c; j++) {
                                    if (j < w[i]) {
                                 dp[i + 1][j] = dp[i][j];
                         } 
