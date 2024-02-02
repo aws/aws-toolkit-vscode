@@ -11,6 +11,9 @@ import { AuthUtil } from '../../util/authUtil'
 import { CodeWhispererSource } from '../../commands/types'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { RecommendationService } from '../../service/recommendationService'
+import { set } from '../../util/commonUtil'
+import { inlinehintKey } from '../../models/constants'
+import globals from '../../../shared/extensionGlobals'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -31,7 +34,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _selections: LineSelection[] | undefined
 
-    private _currentStep: '1' | '2' | '3' | undefined = undefined
+    private _currentStep: '1' | '2' | '3' | undefined
 
     readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
@@ -44,6 +47,7 @@ export class LineAnnotationController implements vscode.Disposable {
     private _inlineText: string | undefined = undefined
 
     constructor(private readonly lineTracker: LineTracker) {
+        this._currentStep = globals.context.globalState.get<'1' | '2' | '3' | undefined>(inlinehintKey)
         this._disposable = vscode.Disposable.from(
             once(this.lineTracker.onReady)(this.onReady, this),
             this.setCWInlineService(true)
@@ -146,6 +150,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
         options.range = range
         this._selections = lines
+        await set(inlinehintKey, this._currentStep, globals.context.globalState)
         editor.setDecorations(this.cwLineHintDecoration, [options])
     }
 

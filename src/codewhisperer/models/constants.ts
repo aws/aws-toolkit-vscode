@@ -150,6 +150,8 @@ export const persistedCustomizationsKey = 'CODEWHISPERER_PERSISTED_CUSTOMIZATION
 
 export const selectedCustomizationKey = 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
 
+export const inlinehintKey = 'CODEWHISPERER_HINT_DISPLAYED'
+
 export const learnMoreUriGeneral = 'https://aws.amazon.com/codewhisperer/'
 
 export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
