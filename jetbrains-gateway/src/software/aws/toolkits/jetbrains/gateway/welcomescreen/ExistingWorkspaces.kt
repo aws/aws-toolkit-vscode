@@ -17,7 +17,10 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.gateway.CawsLoadingPanel
+import software.aws.toolkits.jetbrains.gateway.SsoSettings
 import software.aws.toolkits.jetbrains.gateway.welcomescreen.WorkspaceDataRetriever.Companion.createWorkspaceDataRetriever
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
 import software.aws.toolkits.jetbrains.services.caws.CawsResources
@@ -54,13 +57,21 @@ class ExistingWorkspaces(
                 }
         }
 
+        val ssoSettings: SsoSettings? = ToolkitAuthManager.getInstance().getConnection(connectionSettings.providerId)?.let {
+            if (it is AwsBearerTokenConnection) {
+                SsoSettings(it.startUrl, it.region)
+            } else {
+                null
+            }
+        }
+
         return try {
             val client = AwsClientManager.getInstance().getClient<CodeCatalystClient>(connectionSettings)
             val workspaces = createWorkspaceDataRetriever(client, space)
             Disposer.register(disposable, workspaces)
 
             if (workspaces.workspaces().isNotEmpty() || workspaces.codeRepos().isNotEmpty()) {
-                WorkspaceListPanel(workspaces, client, setContentCallback, { startLoading() }, lifetime)
+                WorkspaceListPanel(workspaces, client, ssoSettings, setContentCallback, { startLoading() }, lifetime)
             } else {
                 infoPanel()
                     .addLine(message("caws.information_panel"))

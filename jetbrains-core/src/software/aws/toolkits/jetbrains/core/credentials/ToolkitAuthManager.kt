@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
@@ -24,6 +23,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
+import software.aws.toolkits.jetbrains.core.gettingstarted.deleteSsoConnectionCW
 import software.aws.toolkits.jetbrains.utils.computeOnEdt
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
@@ -42,12 +42,9 @@ interface AwsCredentialConnection : ToolkitConnection {
 interface AwsBearerTokenConnection : ToolkitConnection {
     val startUrl: String
     val region: String
+    val scopes: List<String>
 
     override fun getConnectionSettings(): TokenConnectionSettings
-}
-
-interface BearerSsoConnection : AwsBearerTokenConnection {
-    val scopes: List<String>
 }
 
 sealed interface AuthProfile
@@ -71,7 +68,8 @@ data class UserConfigSsoSessionProfile(
 data class DetectedDiskSsoSessionProfile(
     var profileName: String = "",
     var startUrl: String = "",
-    var ssoRegion: String = ""
+    var ssoRegion: String = "",
+    var scopes: List<String> = emptyList()
 ) : AuthProfile
 
 /**
@@ -92,10 +90,10 @@ interface ToolkitAuthManager {
 
     /**
      * Creates a connection that is not visible to the rest of the toolkit unless authentication succeeds
-     * @return [BearerSsoConnection] on success
+     * @return [AwsBearerTokenConnection] on success
      */
-    fun tryCreateTransientSsoConnection(profile: AuthProfile, callback: (BearerSsoConnection) -> Unit): BearerSsoConnection
-    fun getOrCreateSsoConnection(profile: UserConfigSsoSessionProfile): BearerSsoConnection
+    fun tryCreateTransientSsoConnection(profile: AuthProfile, callback: (AwsBearerTokenConnection) -> Unit): AwsBearerTokenConnection
+    fun getOrCreateSsoConnection(profile: UserConfigSsoSessionProfile): AwsBearerTokenConnection
 
     fun deleteConnection(connection: ToolkitConnection)
     fun deleteConnection(connectionId: String)
@@ -134,7 +132,7 @@ fun loginSso(project: Project?, startUrl: String, region: String, requestedScope
         val logger = getLogger<ToolkitAuthManager>()
         // requested Builder ID, but one already exists
         // TBD: do we do this for regular SSO too?
-        if (connection.isSono() && connection is BearerSsoConnection && requestedScopes.all { it in connection.scopes }) {
+        if (connection.isSono() && connection is AwsBearerTokenConnection && requestedScopes.all { it in connection.scopes }) {
             val signOut = computeOnEdt {
                 MessageDialogBuilder.yesNo(
                     message("toolkit.login.aws_builder_id.already_connected.title"),
@@ -150,13 +148,13 @@ fun loginSso(project: Project?, startUrl: String, region: String, requestedScope
                     "Forcing reauth on ${connection.id} since user requested Builder ID while already connected to Builder ID"
                 }
 
-                logoutFromSsoConnection(project, connection as AwsBearerTokenConnection)
+                logoutFromSsoConnection(project, connection)
                 return@let null
             }
         }
 
         // There is an existing connection we can use
-        if (connection is BearerSsoConnection && !requestedScopes.all { it in connection.scopes }) {
+        if (connection is AwsBearerTokenConnection && !requestedScopes.all { it in connection.scopes }) {
             allScopes.addAll(connection.scopes)
 
             logger.info {
@@ -165,7 +163,7 @@ fun loginSso(project: Project?, startUrl: String, region: String, requestedScope
                     are not a complete subset of current scopes (${connection.scopes})
                 """.trimIndent()
             }
-            logoutFromSsoConnection(project, connection as AwsBearerTokenConnection)
+            logoutFromSsoConnection(project, connection)
             // can't reuse since requested scopes are not in current connection. forcing reauth
             return@let null
         }
@@ -204,11 +202,14 @@ internal fun reauthConnection(project: Project?, connection: ToolkitConnection):
     return provider
 }
 
+@Suppress("UnusedParameter")
 fun logoutFromSsoConnection(project: Project?, connection: AwsBearerTokenConnection, callback: () -> Unit = {}) {
     try {
-        ApplicationManager.getApplication().messageBus.syncPublisher(BearerTokenProviderListener.TOPIC).invalidate(connection.id)
         ToolkitAuthManager.getInstance().deleteConnection(connection.id)
-        project?.let { ToolkitConnectionManager.getInstance(it).switchConnection(null) }
+        if (connection is ProfileSsoManagedBearerSsoConnection) {
+            // TODO: Connection handling in GettingStartedAuthUtils needs to be refactored
+            deleteSsoConnectionCW(connection)
+        }
     } finally {
         callback()
     }
@@ -238,19 +239,12 @@ fun AwsBearerTokenConnection.lazyIsUnauthedBearerConnection(): Boolean {
 
 fun reauthConnectionIfNeeded(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
     val tokenProvider = (connection.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider
-
-    return reauthProviderIfNeeded(project, tokenProvider, connection.isSono())
+    return reauthProviderIfNeeded(project, tokenProvider)
 }
 
-fun reauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider, isBuilderId: Boolean): BearerTokenProvider {
-    maybeReauthProviderIfNeeded(project, tokenProvider, isBuilderId) {
-        val title = if (isBuilderId) {
-            message("credentials.sono.login.pending")
-        } else {
-            message("credentials.sso.login.pending")
-        }
-
-        runUnderProgressIfNeeded(project, title, true) {
+fun reauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider): BearerTokenProvider {
+    maybeReauthProviderIfNeeded(project, tokenProvider) {
+        runUnderProgressIfNeeded(project, message("credentials.pending.title"), true) {
             tokenProvider.reauthenticate()
         }
     }
@@ -262,7 +256,6 @@ fun reauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider
 fun maybeReauthProviderIfNeeded(
     project: Project?,
     tokenProvider: BearerTokenProvider,
-    isBuilderId: Boolean,
     onReauthRequired: (SsoOidcException?) -> Any
 ): Boolean {
     val state = tokenProvider.state()
@@ -275,13 +268,7 @@ fun maybeReauthProviderIfNeeded(
 
         BearerTokenAuthState.NEEDS_REFRESH -> {
             try {
-                val title = if (isBuilderId) {
-                    message("credentials.sono.login.refreshing")
-                } else {
-                    message("credentials.sso.login.refreshing")
-                }
-
-                return runUnderProgressIfNeeded(project, title, true) {
+                return runUnderProgressIfNeeded(project, message("credentials.refreshing"), true) {
                     tokenProvider.resolveToken()
                     BearerTokenProviderListener.notifyCredUpdate(tokenProvider.id)
                     return@runUnderProgressIfNeeded false

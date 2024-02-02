@@ -19,7 +19,7 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.core.ClientConnectionSettings
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.sono.CodeCatalystCredentialManager
 import software.aws.toolkits.jetbrains.services.caws.CawsCodeRepository
 import software.aws.toolkits.jetbrains.services.caws.CawsResources
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -29,7 +29,7 @@ import java.awt.datatransfer.StringSelection
 class CopyCawsRepositoryUrl : DumbAwareAction(AllIcons.Actions.Copy) {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(CommonDataKeys.PROJECT)
-        val cawsConnectionSettings = SonoCredentialManager.getInstance(project).getConnectionSettings() ?: return
+        val cawsConnectionSettings = CodeCatalystCredentialManager.getInstance(project).getConnectionSettings() ?: return
 
         JBPopupFactory.getInstance().createActionGroupPopup(
             message("caws.copy.url.select_repository"),

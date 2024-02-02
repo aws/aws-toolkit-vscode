@@ -9,7 +9,7 @@ import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.util.AuthData
 import git4idea.remote.GitHttpAuthDataProvider
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.sono.CodeCatalystCredentialManager
 import software.aws.toolkits.jetbrains.services.caws.pat.generateAndStorePat
 import software.aws.toolkits.jetbrains.services.caws.pat.getPat
 import software.aws.toolkits.jetbrains.utils.computeOnEdt
@@ -39,7 +39,7 @@ class CawsHttpAuthProvider : GitHttpAuthDataProvider {
         }
 
         if (yesNo) {
-            generateAndStorePat(SonoCredentialManager.getInstance(project).getSettingsAndPromptAuth().awsClient(), authData.login)
+            generateAndStorePat(CodeCatalystCredentialManager.getInstance(project).getSettingsAndPromptAuth().awsClient(), authData.login)
         }
     }
 

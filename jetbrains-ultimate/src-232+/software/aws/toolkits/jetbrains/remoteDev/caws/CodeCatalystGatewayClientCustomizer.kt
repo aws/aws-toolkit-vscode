@@ -10,12 +10,12 @@ import com.jetbrains.rdserver.unattendedHost.customization.GatewayExitCustomizat
 import com.jetbrains.rdserver.unattendedHost.customization.controlCenter.GatewayControlCenterProvider
 import com.jetbrains.rdserver.unattendedHost.customization.controlCenter.GatewayHostnameDisplayKind
 import icons.AwsIcons
-import software.aws.toolkits.jetbrains.services.caws.CawsConstants
+import software.aws.toolkits.jetbrains.utils.isCodeCatalystDevEnv
 import software.aws.toolkits.resources.message
 
 class CodeCatalystGatewayClientCustomizer : GatewayClientCustomizationProvider {
     init {
-        if (System.getenv(CawsConstants.CAWS_ENV_ID_VAR) == null) {
+        if (!isCodeCatalystDevEnv()) {
             throw ExtensionNotApplicableException.create()
         }
     }

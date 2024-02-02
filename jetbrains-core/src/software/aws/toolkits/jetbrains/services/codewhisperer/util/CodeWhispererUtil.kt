@@ -208,7 +208,7 @@ object CodeWhispererUtil {
     fun promptReAuth(project: Project, isPluginStarting: Boolean = false): Boolean {
         if (!isCodeWhispererExpired(project)) return false
         val tokenProvider = tokenProvider(project) ?: return false
-        return maybeReauthProviderIfNeeded(project, tokenProvider, isBuilderId = tokenConnection(project).isSono()) {
+        return maybeReauthProviderIfNeeded(project, tokenProvider) {
             runInEdt {
                 project.refreshCwQTree()
                 if (!CodeWhispererService.hasReAuthPromptBeenShown()) {

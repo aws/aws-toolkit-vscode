@@ -54,6 +54,9 @@ import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
 import software.aws.toolkits.jetbrains.core.utils.buildMap
 import software.aws.toolkits.jetbrains.gateway.connection.IdeBackendActions
@@ -189,6 +192,11 @@ fun cawsWizard(lifetime: Lifetime, settings: CawsSettings = CawsSettings()) = Mu
                     return@startWithModalProgressAsync
                 }
 
+                val currentConnection = ToolkitConnectionManager.getInstance(
+                    null
+                ).activeConnectionForFeature(CodeCatalystConnection.getInstance()) as AwsBearerTokenConnection?
+                    ?: error("Connection cannot be null")
+
                 val parameters = mapOf(
                     CawsConnectionParameters.CAWS_SPACE to env.identifier.project.space,
                     CawsConnectionParameters.CAWS_PROJECT to env.identifier.project.project,
@@ -196,6 +204,8 @@ fun cawsWizard(lifetime: Lifetime, settings: CawsSettings = CawsSettings()) = Mu
                     CawsConnectionParameters.DEV_SETTING_USE_BUNDLED_TOOLKIT to context.useBundledToolkit.toString(),
                     CawsConnectionParameters.DEV_SETTING_S3_STAGING to context.s3StagingBucket,
                     CawsConnectionParameters.DEV_SETTING_TOOLKIT_PATH to context.toolkitLocation,
+                    CawsConnectionParameters.SSO_START_URL to currentConnection.startUrl,
+                    CawsConnectionParameters.SSO_REGION to currentConnection.region
                 ) + buildMap {
                     when (context.cloneType) {
                         CawsWizardCloneType.CAWS -> {

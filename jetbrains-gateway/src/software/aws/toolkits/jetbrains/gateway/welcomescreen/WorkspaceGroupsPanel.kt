@@ -26,6 +26,7 @@ import com.jetbrains.rd.util.lifetime.Lifetime
 import software.amazon.awssdk.services.codecatalyst.CodeCatalystClient
 import software.aws.toolkits.jetbrains.gateway.CawsSettings
 import software.aws.toolkits.jetbrains.gateway.SourceRepository
+import software.aws.toolkits.jetbrains.gateway.SsoSettings
 import software.aws.toolkits.jetbrains.gateway.Workspace
 import software.aws.toolkits.jetbrains.gateway.cawsWizard
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
@@ -42,6 +43,7 @@ import javax.swing.JPanel
 class WorkspaceGroupsPanel(
     private val workspaces: WorkspaceList,
     private val cawsClient: CodeCatalystClient,
+    private val ssoSettings: SsoSettings?,
     private val setContentCallback: (Component) -> Unit,
     private val lifetime: Lifetime
 ) : NonOpaquePanel(GridBagLayout()) {
@@ -193,7 +195,7 @@ class WorkspaceGroupsPanel(
             // Change the defaults
             gbc.defaultWeightX = 0.0
 
-            add(WorkspaceDetails(ws, workspaces, cawsClient, disposable), gbc.nextLine().fillCellHorizontally().coverLine().insetTop(10))
+            add(WorkspaceDetails(ws, workspaces, cawsClient, ssoSettings, disposable), gbc.nextLine().fillCellHorizontally().coverLine().insetTop(10))
         }
     }
 

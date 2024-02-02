@@ -51,7 +51,7 @@ import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.InteractiveCredential
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
@@ -1016,7 +1016,7 @@ class ProfileCredentialProviderFactoryTest {
         val connectionSettingsMock = mock<TokenConnectionSettings> {
             whenever(it.tokenProvider).thenReturn(mockBearerProvider)
         }
-        val connectionMock = mock<BearerSsoConnection> {
+        val connectionMock = mock<AwsBearerTokenConnection> {
             whenever(it.getConnectionSettings()).thenReturn(connectionSettingsMock)
         }
         val authManager = mock<ToolkitAuthManager> {
@@ -1090,7 +1090,7 @@ class ProfileCredentialProviderFactoryTest {
         val connectionSettingsMock = mock<TokenConnectionSettings> {
             whenever(it.tokenProvider).thenReturn(mockBearerProvider)
         }
-        val connectionMock = mock<BearerSsoConnection> {
+        val connectionMock = mock<AwsBearerTokenConnection> {
             whenever(it.getConnectionSettings()).thenReturn(connectionSettingsMock)
         }
         val authManager = mock<ToolkitAuthManager> {

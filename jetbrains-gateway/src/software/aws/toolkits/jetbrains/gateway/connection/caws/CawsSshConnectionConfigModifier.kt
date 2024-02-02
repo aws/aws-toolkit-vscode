@@ -8,7 +8,7 @@ import com.intellij.ssh.config.SshConnectionConfig
 import com.intellij.ssh.config.SshConnectionConfigService
 import com.intellij.ssh.config.SshProxyConfig
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.sono.CodeCatalystCredentialManager
 import software.aws.toolkits.jetbrains.gateway.connection.AbstractSsmCommandExecutor
 
 class CawsSshConnectionConfigModifier : SshConnectionConfigService.Modifier {
@@ -19,7 +19,7 @@ class CawsSshConnectionConfigModifier : SshConnectionConfigService.Modifier {
 
         val (space, project, envId) = initialHost.substringAfter(HOST_PREFIX).split('/')
         val executor = CawsCommandExecutor(
-            SonoCredentialManager.getInstance(null).getSettingsAndPromptAuth().awsClient(),
+            CodeCatalystCredentialManager.getInstance(null).getSettingsAndPromptAuth().awsClient(),
             ssmTarget = envId,
             spaceName = space,
             projectName = project

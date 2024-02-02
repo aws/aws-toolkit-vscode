@@ -42,6 +42,7 @@ import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.coroutines.applicationCoroutineScope
 import software.aws.toolkits.jetbrains.core.utils.buildMap
 import software.aws.toolkits.jetbrains.gateway.CawsConnectionParameters
+import software.aws.toolkits.jetbrains.gateway.SsoSettings
 import software.aws.toolkits.jetbrains.gateway.Workspace
 import software.aws.toolkits.jetbrains.gateway.connection.ThinClientTrackerService
 import software.aws.toolkits.jetbrains.gateway.connection.caws.CawsCommandExecutor
@@ -54,7 +55,13 @@ import java.awt.Graphics
 import java.awt.GridBagLayout
 import java.awt.Rectangle
 
-class WorkspaceDetails(ws: Workspace, workspaces: WorkspaceList, cawsClient: CodeCatalystClient, disposable: Disposable) : NonOpaquePanel() {
+class WorkspaceDetails(
+    ws: Workspace,
+    workspaces: WorkspaceList,
+    cawsClient: CodeCatalystClient,
+    ssoSettings: SsoSettings?,
+    disposable: Disposable
+) : NonOpaquePanel() {
     init {
         layout = GridBagLayout()
 
@@ -87,7 +94,7 @@ class WorkspaceDetails(ws: Workspace, workspaces: WorkspaceList, cawsClient: Cod
 
         val wsBranchText = ws.branch?.let { message("caws.branch_title", ws.branch) } ?: ws.identifier.id
         if (ws.isCompatible) {
-            add(ActionLinkColoredSearchComponent(wsBranchText) { connectToWs(ws, it) }, gbc.next().anchor(GridBag.WEST))
+            add(ActionLinkColoredSearchComponent(wsBranchText) { connectToWs(ws, ssoSettings, it) }, gbc.next().anchor(GridBag.WEST))
         } else {
             add(JBLabel("$wsBranchText ${message("caws.workspace.incompatible")}"), gbc.next().anchor(GridBag.WEST))
         }
@@ -137,7 +144,7 @@ class WorkspaceDetails(ws: Workspace, workspaces: WorkspaceList, cawsClient: Cod
         }
 }
 
-private fun connectToWs(ws: Workspace, e: AnActionEvent) {
+private fun connectToWs(ws: Workspace, ssoSettings: SsoSettings?, e: AnActionEvent) {
     val connectionParameters = mutableMapOf(
         CawsConnectionParameters.CAWS_SPACE to ws.identifier.project.space,
         CawsConnectionParameters.CAWS_PROJECT to ws.identifier.project.project,
@@ -145,6 +152,10 @@ private fun connectToWs(ws: Workspace, e: AnActionEvent) {
     ) + buildMap {
         if (ws.repo != null) {
             put(CawsConnectionParameters.CAWS_GIT_REPO_NAME, ws.repo)
+        }
+        if (ssoSettings != null) {
+            put(CawsConnectionParameters.SSO_START_URL, ssoSettings.startUrl)
+            put(CawsConnectionParameters.SSO_REGION, ssoSettings.region)
         }
     }
 

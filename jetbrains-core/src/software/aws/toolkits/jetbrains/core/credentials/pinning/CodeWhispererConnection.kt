@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.credentials.pinning
 
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
-import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 
@@ -14,11 +13,7 @@ class CodeWhispererConnection : FeatureWithPinnedConnection {
 
     override fun supportsConnectionType(connection: ToolkitConnection): Boolean {
         if (connection is AwsBearerTokenConnection) {
-            if (connection is BearerSsoConnection) {
-                return CODEWHISPERER_SCOPES.all { it in connection.scopes }
-            }
-
-            return true
+            return CODEWHISPERER_SCOPES.all { it in connection.scopes }
         }
 
         return false

@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add support for IAM Identity Center connections for CodeCatalyst"
+}

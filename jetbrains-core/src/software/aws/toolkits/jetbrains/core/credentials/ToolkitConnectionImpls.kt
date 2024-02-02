@@ -56,7 +56,7 @@ sealed class ManagedBearerSsoConnection(
     cache: DiskCache = diskCache,
     override val id: String,
     override val label: String
-) : BearerSsoConnection, Disposable {
+) : AwsBearerTokenConnection, Disposable {
 
     private val provider =
         tokenConnection(
@@ -81,6 +81,7 @@ class DetectedDiskSsoSessionConnection(
     val sessionProfileName: String,
     override val startUrl: String,
     override val region: String,
+    override val scopes: List<String>,
     displayNameOverride: String? = null
 ) : AwsBearerTokenConnection, Disposable {
     override val id = ToolkitBearerTokenProvider.diskSessionIdentifier(sessionProfileName)

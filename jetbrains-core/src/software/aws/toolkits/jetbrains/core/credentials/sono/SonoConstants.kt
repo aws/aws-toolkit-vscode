@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.sono
 
-import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 
 const val SONO_REGION = "us-east-1"
@@ -32,5 +32,5 @@ val CODECATALYST_SCOPES = listOf(
 fun ToolkitConnection?.isSono() = if (this == null) {
     false
 } else {
-    this is ManagedBearerSsoConnection && this.startUrl == SONO_URL
+    this is AwsBearerTokenConnection && this.startUrl == SONO_URL
 }
