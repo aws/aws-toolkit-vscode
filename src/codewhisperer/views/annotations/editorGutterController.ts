@@ -76,7 +76,6 @@ export class EditorGutterController implements vscode.Disposable {
 
     // TODO: does this really get called?
     private clearAnnotations(editor: vscode.TextEditor | undefined) {
-        console.log(`clearing annotations`)
         if (editor === undefined || (editor as any)._disposed === true) return
 
         editor.setDecorations(this.cwlineGutterDecoration, [])
@@ -156,7 +155,6 @@ export class EditorGutterController implements vscode.Disposable {
 
     private setCWInlineService(enabled: boolean) {
         const disposable = RecommendationService.instance.suggestionActionEvent(e => {
-            console.log(`receiving onSuggestionActionEvent -- refreshing editor decoration`)
             // can't use refresh because refresh, by design, should only be triggered when there is line selection change
             this.refresh(e.editor, 'codewhisperer')
         })

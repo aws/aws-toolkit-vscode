@@ -13,7 +13,6 @@ export class Container {
     static #instance: Container | undefined
 
     static create(): Container {
-        console.log('creating codewhisperer container')
         if (Container.#instance) {
             throw new Error('Container already exists')
         }

@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
-import { debounce } from '../../../shared/utilities/functionUtils'
 
 export interface LineSelection {
     anchor: number
@@ -47,7 +46,6 @@ export class LineTracker {
 
     ready() {
         if (this._ready) throw new Error('Container is already ready')
-        console.log('container is ready')
 
         this._ready = true
         queueMicrotask(() => this._onReady.fire())
@@ -61,13 +59,11 @@ export class LineTracker {
 
         if (this._suspended) {
         } else {
-            console.log('onActiveTextEditorChanged')
             this.notifyLinesChanged('editor')
         }
     }
 
     private onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
-        console.log('onEditorSelectionChanged')
         // If this isn't for our cached editor and its not a real editor -- kick out
         if (this._editor !== e.textEditor && !isTextEditor(e.textEditor)) return
 
@@ -86,8 +82,6 @@ export class LineTracker {
             this.notifyLinesChanged('content')
         }
     }
-
-    private notifyLinesChangedDebounced = debounce(() => this.notifyLinesChanged('content'), 250)
 
     private notifyLinesChanged(reason: 'editor' | 'selection' | 'content') {
         const e: LinesChangeEvent = { editor: this._editor, selections: this.selections, reason: reason }

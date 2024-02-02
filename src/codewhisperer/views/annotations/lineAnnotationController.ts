@@ -59,7 +59,6 @@ export class LineAnnotationController implements vscode.Disposable {
     private _isReady: boolean = false
 
     private onReady(): void {
-        console.log('onReady')
         this._isReady = true
         this.refresh(vscode.window.activeTextEditor, 'editor')
     }
@@ -110,9 +109,6 @@ export class LineAnnotationController implements vscode.Disposable {
 
         const selections = this.lineTracker.selections
         if (editor == null || selections == null || !isTextEditor(editor)) {
-            if (!selections) {
-                console.log('selection is undefined')
-            }
             this.clear(this._editor)
             return
         }
@@ -143,14 +139,12 @@ export class LineAnnotationController implements vscode.Disposable {
             return
         }
 
-        console.log(`isSameLine: ${isSameLine}`)
         const options = this.getInlineDecoration(editor, lines) as vscode.DecorationOptions | undefined
         if (!options) {
             return
         }
 
         options.range = range
-        console.log(range)
         this._selections = lines
         editor.setDecorations(this.cwLineHintDecoration, [options])
     }
@@ -172,7 +166,6 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private setCWInlineService(enabled: boolean) {
         const disposable = RecommendationService.instance.suggestionActionEvent(e => {
-            console.log(`receiving onSuggestionActionEvent -- refreshing editor decoration`)
             // can't use refresh because refresh, by design, should only be triggered when there is line selection change
             this.refreshDebounced(e.editor, 'codewhisperer')
         })
@@ -188,9 +181,8 @@ export class LineAnnotationController implements vscode.Disposable {
         const isEndOfLine = isCursorAtEndOfLine(editor)
 
         const options = this.textOptions(sameLine, isEndOfLine)
-        console.log(options)
+
         if (!options) {
-            console.log(`option is undefinedxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`)
             return undefined
         }
 
@@ -215,7 +207,6 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         if (isSameLine && this._inlineText) {
-            console.log(`isSameline, will use previous text`)
             textOptions.contentText = this._inlineText
             return { after: textOptions }
         }
@@ -223,13 +214,9 @@ export class LineAnnotationController implements vscode.Disposable {
         if (!this._currentStep && isEndOfLine) {
             textOptions.contentText = 'CodeWhisperer suggests code as you type, press [TAB] to accept'
 
-            console.log('set to 1')
             this._currentStep = '1'
-
-            console.log('CodeWhisperer suggests code as you type, press [TAB] to accept')
         } else if (this._currentStep === '1') {
             textOptions.contentText = '[Option] + [C] triggers CodeWhisperer manually'
-            console.log('[Option] + [C] triggers CodeWhisperer manually')
 
             this._currentStep = '2'
         } else if (this._currentStep === '2') {

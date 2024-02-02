@@ -109,7 +109,6 @@ export class AuthUtil {
 
     public constructor(public readonly auth = Auth.instance) {
         this.auth.onDidChangeConnectionState(async e => {
-            console.log('1111111111111111111111111111111111111111111111111111111')
             if (e.state !== 'authenticating') {
                 await this.refreshCodeWhisperer()
             }
@@ -118,7 +117,6 @@ export class AuthUtil {
         })
 
         this.secondaryAuth.onDidChangeActiveConnection(async () => {
-            console.log('2222222222222222222222222222222222222222222222')
             if (this.isValidEnterpriseSsoInUse()) {
                 void vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
             }
