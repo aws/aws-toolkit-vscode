@@ -143,9 +143,8 @@ export class LineAnnotationController implements vscode.Disposable {
             return
         }
 
-        const isSameline = this._selections ? isSameLine(this._selections[0], lines[0]) : false
         console.log(`isSameLine: ${isSameLine}`)
-        const options = this.getInlineDecoration(isSameline) as vscode.DecorationOptions | undefined
+        const options = this.getInlineDecoration(editor, lines) as vscode.DecorationOptions | undefined
         if (!options) {
             return
         }
@@ -181,8 +180,14 @@ export class LineAnnotationController implements vscode.Disposable {
         return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
     }
 
-    getInlineDecoration(isSameLine: boolean): Partial<vscode.DecorationOptions> | undefined {
-        const options = this.textOptions(isSameLine)
+    getInlineDecoration(
+        editor: vscode.TextEditor,
+        lines: LineSelection[]
+    ): Partial<vscode.DecorationOptions> | undefined {
+        const sameLine = this._selections ? isSameLine(this._selections[0], lines[0]) : false
+        const isEndOfLine = isCursorAtEndOfLine(editor)
+
+        const options = this.textOptions(sameLine, isEndOfLine)
         console.log(options)
         if (!options) {
             console.log(`option is undefinedxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`)
@@ -200,7 +205,7 @@ export class LineAnnotationController implements vscode.Disposable {
         return renderOptions
     }
 
-    private textOptions(isSameLine: boolean): vscode.ThemableDecorationRenderOptions | undefined {
+    private textOptions(isSameLine: boolean, isEndOfLine: boolean): vscode.ThemableDecorationRenderOptions | undefined {
         const textOptions = {
             contentText: '',
             fontWeight: 'normal',
@@ -215,7 +220,7 @@ export class LineAnnotationController implements vscode.Disposable {
             return { after: textOptions }
         }
 
-        if (!this._currentStep) {
+        if (!this._currentStep && isEndOfLine) {
             textOptions.contentText = 'CodeWhisperer suggests code as you type, press [TAB] to accept'
 
             console.log('set to 1')
@@ -266,18 +271,8 @@ function isSameLine(s1: LineSelection, s2: LineSelection) {
     return s1.active === s2.active && s2.anchor === s2.anchor
 }
 
-function isCursorAtEndOfLine(editor: vscode.TextEditor | undefined) {
-    if (editor) {
-        // Get the position of the cursor
-        const cursorPosition = editor.selection.active
-
-        // Get the end position of the line where the cursor is
-        const endOfLine = editor.document.lineAt(cursorPosition.line).range.end
-
-        // Compare the cursor position with the end of the line
-        const isAtEndOfLine = cursorPosition.isEqual(endOfLine)
-
-        // Log the result (you can replace this with your logic)
-        console.log('Is cursor at the end of the line?', isAtEndOfLine)
-    }
+function isCursorAtEndOfLine(editor: vscode.TextEditor): boolean {
+    const cursorPosition = editor.selection.active
+    const endOfLine = editor.document.lineAt(cursorPosition.line).range.end
+    return cursorPosition.isEqual(endOfLine)
 }
