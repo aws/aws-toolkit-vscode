@@ -47,7 +47,6 @@
             ],
             "idempotent":true
         },
-
         "CreateTaskAssistConversation": {
             "name": "CreateTaskAssistConversation",
             "http": {
@@ -1554,6 +1553,13 @@
             "type":"string",
             "enum":["LANGUAGE_UPGRADE"]
         },
+        "TaskAssistPlanningUploadContext": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" }
+            }
+        },
         "UUID":{
             "type":"string",
             "max":36,
@@ -1561,7 +1567,9 @@
         },
         "UploadContext":{
             "type":"structure",
-            "members":{},
+            "members":{
+                "taskAssistPlanningUploadContext": {"shape": "TaskAssistPlanningUploadContext"}
+            },
             "union":true
         },
         "UploadId":{
@@ -1572,7 +1580,8 @@
         "UploadIntent":{
             "type":"string",
             "enum":[
-                "TRANSFORMATION"
+                "TRANSFORMATION",
+                "TASK_ASSIST_PLANNING"
             ]
         },
         "UserContext":{

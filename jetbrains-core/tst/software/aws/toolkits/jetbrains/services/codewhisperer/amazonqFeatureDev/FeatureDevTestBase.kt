@@ -21,6 +21,7 @@ import org.mockito.kotlin.whenever
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.http.SdkHttpResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssistConversationResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.utils.test.aString
@@ -57,6 +58,14 @@ open class FeatureDevTestBase(
         .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
         .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build())
         .build() as CreateTaskAssistConversationResponse
+
+    internal val exampleCreateUploadUrlResponse = CreateUploadUrlResponse.builder()
+        .uploadUrl("https://smth.com")
+        .uploadId("1234")
+        .kmsKeyArn("0000000000000000000000000000000000:key/1234abcd")
+        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
+        .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build())
+        .build() as CreateUploadUrlResponse
 
     @Before
     open fun setup() {
