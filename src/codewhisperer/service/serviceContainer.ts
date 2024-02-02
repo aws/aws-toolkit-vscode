@@ -30,8 +30,8 @@ export class Container {
 
     constructor(private readonly auth: AuthUtil) {
         this._lineTracker = new LineTracker()
-        this._lineAnnotationController = new LineAnnotationController(this._lineTracker, auth)
-        this._editorGutterController = new EditorGutterController(this._lineTracker, auth)
+        this._lineAnnotationController = new LineAnnotationController(this._lineTracker, this.auth)
+        this._editorGutterController = new EditorGutterController(this._lineTracker, this.auth)
     }
 
     ready() {

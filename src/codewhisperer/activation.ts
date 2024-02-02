@@ -63,7 +63,6 @@ import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActi
 import { listCodeWhispererCommands } from './commands/statusBarCommands'
 import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
-import { refreshAnnotation } from './views/annotations/annotationUtils'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -100,7 +99,7 @@ export async function activate(context: ExtContext): Promise<void> {
     ReferenceInlineProvider.instance
     ImportAdderProvider.instance
 
-    Container.create()
+    Container.create(auth)
 
     context.extensionContext.subscriptions.push(
         signoutCodeWhisperer.register(auth),
@@ -200,7 +199,6 @@ export async function activate(context: ExtContext): Promise<void> {
         updateReferenceLog.register(),
         // refresh codewhisperer status bar
         refreshStatusBar.register(),
-        refreshAnnotation,
         // apply suggested fix
         applySecurityFix.register(),
         // quick pick with codewhisperer options

@@ -53,11 +53,11 @@ export class LineAnnotationController implements vscode.Disposable {
             this.setCWInlineService(true),
             this.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
-                    this.refreshDebounced(vscode.window.activeTextEditor, 'editor')
+                    this.refreshDebounced(vscode.window.activeTextEditor)
                 }
             }),
             this.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
-                this.refreshDebounced(vscode.window.activeTextEditor, 'editor')
+                this.refreshDebounced(vscode.window.activeTextEditor)
             })
         )
         this.setLineTracker(true)
@@ -72,7 +72,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private onReady(): void {
         this._isReady = true
-        this.refresh(vscode.window.activeTextEditor, 'editor')
+        this.refresh(vscode.window.activeTextEditor)
     }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
@@ -83,13 +83,12 @@ export class LineAnnotationController implements vscode.Disposable {
         this.clear(e.editor)
 
         if (e.reason === 'content') {
-            await this.refreshDebounced(e.editor, e.reason)
+            await this.refreshDebounced(e.editor)
             return
         }
 
         if (e.selections !== undefined) {
-            // await this.refresh(e.editor, e.reason)
-            await this.refreshDebounced(e.editor, e.reason)
+            await this.refreshDebounced(e.editor)
             return
         }
     }
@@ -101,11 +100,11 @@ export class LineAnnotationController implements vscode.Disposable {
         }
     }
 
-    readonly refreshDebounced = debounce2((editor, reason) => {
-        this.refresh(editor, reason)
+    readonly refreshDebounced = debounce2(editor => {
+        this.refresh(editor)
     }, 250)
 
-    async refresh(editor: vscode.TextEditor | undefined, reason: 'selection' | 'content' | 'editor' | 'codewhisperer') {
+    async refresh(editor: vscode.TextEditor | undefined) {
         if (!this.auth.isConnectionValid()) {
             this.clear(this._editor)
             return
@@ -176,7 +175,7 @@ export class LineAnnotationController implements vscode.Disposable {
     private setCWInlineService(enabled: boolean) {
         const disposable = RecommendationService.instance.suggestionActionEvent(e => {
             // can't use refresh because refresh, by design, should only be triggered when there is line selection change
-            this.refreshDebounced(e.editor, 'codewhisperer')
+            this.refreshDebounced(e.editor)
         })
 
         return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
