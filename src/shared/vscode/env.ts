@@ -108,7 +108,7 @@ const logConfigsOnce: { [key: string]: ReturnType<typeof onceChanged> } = {}
  *  region -> __CODECATALYST_REGION
  */
 export function getEnvVars<T extends string[]>(service: string, envVarNames: T): ServiceConfig<T> {
-    const envVars = {} as ServiceConfig<T>
+    const envVars: ServiceConfig<T> = {}
     for (const name of envVarNames) {
         // convert camel case to uppercase joined by underscores
         // e.g. gitHostname -> GIT_HOSTNAME
@@ -128,7 +128,7 @@ export function getEnvVars<T extends string[]>(service: string, envVarNames: T):
  * service/found env var combos.
  */
 export function getServiceEnvVarConfig<T extends string[]>(service: string, configs: T): ServiceConfig<T> {
-    const config = {} as ServiceConfig<T>
+    const config: ServiceConfig<T> = {}
     const overriden: string[] = []
 
     // Find env vars for each field in the config
