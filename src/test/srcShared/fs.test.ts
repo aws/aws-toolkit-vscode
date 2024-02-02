@@ -6,11 +6,13 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, promises as fsPromises, readFileSync, rmSync, writeFileSync } from 'fs'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { fsCommon } from '../../srcShared/fs'
 import * as os from 'os'
 import { isMinimumVersion } from '../../shared/vscode/env'
+import Sinon from 'sinon'
+import * as extensionUtilities from '../../shared/extensionUtilities'
 
 function isWin() {
     return os.platform() === 'win32'
@@ -18,6 +20,7 @@ function isWin() {
 
 describe('FileSystem', function () {
     let fakeContext: vscode.ExtensionContext
+    let sandbox: Sinon.SinonSandbox
 
     before(async function () {
         fakeContext = await FakeExtensionContext.create()
@@ -25,10 +28,12 @@ describe('FileSystem', function () {
 
     beforeEach(async function () {
         await makeTestRoot()
+        sandbox = Sinon.createSandbox()
     })
 
     afterEach(async function () {
         await deleteTestRoot()
+        sandbox.restore()
     })
 
     describe('readFileAsString()', function () {
@@ -153,10 +158,23 @@ describe('FileSystem', function () {
         const paths = ['a', 'a/b', 'a/b/c', 'a/b/c/d/']
 
         paths.forEach(async function (p) {
-            it(`creates path: '${p}'`, async function () {
+            it(`creates folder: '${p}'`, async function () {
                 const dirPath = createTestPath(p)
                 await fsCommon.mkdir(dirPath)
                 assert.ok(existsSync(dirPath))
+            })
+        })
+
+        paths.forEach(async function (p) {
+            it(`creates folder but uses the "fs" module if in C9: '${p}'`, async function () {
+                sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
+                const mkdirSpy = sandbox.spy(fsPromises, 'mkdir')
+                const dirPath = createTestPath(p)
+
+                await fsCommon.mkdir(dirPath)
+
+                assert.ok(existsSync(dirPath))
+                assert.ok(mkdirSpy.calledOnce)
             })
         })
     })
@@ -192,6 +210,32 @@ describe('FileSystem', function () {
         function sorted(i: [string, vscode.FileType][]) {
             return i.sort((a, b) => a[0].localeCompare(b[0]))
         }
+
+        it('uses the "fs" readdir implementation if in C9', async function () {
+            sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
+            const readdirSpy = sandbox.spy(fsPromises, 'readdir')
+
+            await makeFile('a.txt')
+            await makeFile('b.txt')
+            await makeFile('c.txt')
+            mkdirSync(createTestPath('dirA'))
+            mkdirSync(createTestPath('dirB'))
+            mkdirSync(createTestPath('dirC'))
+
+            const files = await fsCommon.readdir(testRootPath())
+            assert.deepStrictEqual(
+                sorted(files),
+                sorted([
+                    ['a.txt', vscode.FileType.File],
+                    ['b.txt', vscode.FileType.File],
+                    ['c.txt', vscode.FileType.File],
+                    ['dirA', vscode.FileType.Directory],
+                    ['dirB', vscode.FileType.Directory],
+                    ['dirC', vscode.FileType.Directory],
+                ])
+            )
+            assert.ok(readdirSpy.calledOnce)
+        })
     })
 
     describe('delete()', function () {
@@ -208,6 +252,20 @@ describe('FileSystem', function () {
             await fsCommon.delete(dirPath)
 
             assert.ok(!existsSync(dirPath))
+        })
+
+        it('uses the "fs" rm method if in C9', async function () {
+            sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
+            const rmdirSpy = sandbox.spy(fsPromises, 'rm')
+            // Folder with subfolders
+            const dirPath = await makeFolder('a/b/deleteMe')
+
+            mkdirSync(dirPath, { recursive: true })
+
+            await fsCommon.delete(dirPath)
+
+            assert.ok(!existsSync(dirPath))
+            assert.ok(rmdirSpy.calledOnce)
         })
     })
 
