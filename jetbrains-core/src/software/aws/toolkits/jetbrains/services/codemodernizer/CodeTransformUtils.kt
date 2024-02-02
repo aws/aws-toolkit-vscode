@@ -46,7 +46,6 @@ import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerCon
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
-import software.aws.toolkits.telemetry.CodeTransformApiNames
 import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.io.FileOutputStream
 import java.lang.Thread.sleep
@@ -187,48 +186,12 @@ suspend fun JobId.pollTransformationStatusAndPlan(
                     didSleepOnce = true
                 }
                 if (isDisposed.get()) throw AlreadyDisposedException("The invoker is disposed.")
-                val apiStartTime = Instant.now()
-                try {
-                    transformationResponse = clientAdaptor.getCodeModernizationJob(this.id)
-                    CodetransformTelemetry.logApiLatency(
-                        codeTransformApiNames = CodeTransformApiNames.GetTransformation,
-                        codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformRunTimeLatency = calculateTotalLatency(apiStartTime, Instant.now()),
-                        codeTransformJobId = this.id,
-                        codeTransformRequestId = transformationResponse?.responseMetadata()?.requestId()
-                    )
-                } catch (e: Exception) {
-                    CodetransformTelemetry.logApiError(
-                        codeTransformApiErrorMessage = e.message.toString(),
-                        codeTransformApiNames = CodeTransformApiNames.GetTransformation,
-                        codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformJobId = this.id,
-                    )
-                    throw e // pass along error to callee
-                }
+                transformationResponse = clientAdaptor.getCodeModernizationJob(this.id)
                 val newStatus = transformationResponse?.transformationJob()?.status() ?: throw RuntimeException("Unable to get job status")
                 var newPlan: TransformationPlan? = null
                 if (newStatus in STATES_WHERE_PLAN_EXIST) {
                     sleep(sleepDurationMillis)
-                    val transformationPlanApiStartTime = Instant.now()
-                    try {
-                        newPlan = clientAdaptor.getCodeModernizationPlan(this).transformationPlan()
-                    } catch (e: Exception) {
-                        CodetransformTelemetry.logApiError(
-                            codeTransformApiErrorMessage = e.message.toString(),
-                            codeTransformApiNames = CodeTransformApiNames.GetTransformationPlan,
-                            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                            codeTransformJobId = this.id
-                        )
-                        throw e // pass along error to callee
-                    } finally {
-                        CodetransformTelemetry.logApiLatency(
-                            codeTransformApiNames = CodeTransformApiNames.GetTransformationPlan,
-                            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                            codeTransformRunTimeLatency = calculateTotalLatency(transformationPlanApiStartTime, Instant.now()),
-                            codeTransformJobId = this.id
-                        )
-                    }
+                    newPlan = clientAdaptor.getCodeModernizationPlan(this).transformationPlan()
                 }
                 if (newStatus != state) {
                     CodetransformTelemetry.jobStatusChanged(

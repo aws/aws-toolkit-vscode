@@ -14,7 +14,9 @@ import software.amazon.awssdk.services.codewhispererruntime.model.Transformation
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationLanguage
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationPlan
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
+import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
@@ -66,7 +68,7 @@ class CodeModernizerSession(
      *  Based on [CodeWhispererCodeScanSession]
      */
     fun createModernizationJob(): CodeModernizerStartJobResult {
-        LOG.warn { "In Create Modernization Job" }
+        LOG.info { "Starting Modernization Job" }
         val payload: File?
 
         try {
@@ -93,7 +95,8 @@ class CodeModernizerSession(
                 codeTransformRunTimeLatency = calculateTotalLatency(startTime, Instant.now())
             )
         } catch (e: Exception) {
-            val errorMessage = "Failed to upload archive"
+            val errorMessage = "Failed to create zip"
+            LOG.error(e) { errorMessage }
             CodetransformTelemetry.logGeneralError(
                 codeTransformApiErrorMessage = errorMessage,
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
@@ -124,6 +127,7 @@ class CodeModernizerSession(
             return CodeModernizerStartJobResult.Disposed
         } catch (e: Exception) {
             val errorMessage = "Failed to start job"
+            LOG.error(e) { errorMessage }
             state.putJobHistory(sessionContext, TransformationStatus.FAILED)
             state.currentJobStatus = TransformationStatus.FAILED
             CodetransformTelemetry.logGeneralError(
@@ -157,7 +161,7 @@ class CodeModernizerSession(
             isDisposed,
             sessionContext.project,
         ) { old, new, plan ->
-            LOG.warn { "in awaitModernizationPlan, state changed for job $jobId: $old -> $new" }
+            LOG.info { "Waiting for Transformation Plan for Modernization Job [$jobId]. State changed: $old -> $new" }
             state.currentJobStatus = new
             sessionContext.project.refreshCwQTree()
             val instant = Instant.now()
@@ -196,55 +200,16 @@ class CodeModernizerSession(
         if (targetLanguage == TransformationLanguage.UNKNOWN_TO_SDK_VERSION) {
             throw RuntimeException("Target language is not supported")
         }
-        LOG.warn { "Starting job with uploadId $uploadId for $sourceLanguage -> $targetLanguage" }
-        val apiStartTime = Instant.now()
-        try {
-            val startTransformResult = clientAdaptor.startCodeModernization(uploadId, sourceLanguage, targetLanguage)
-            LOG.warn { "Started job with uploadId $uploadId" }
-            CodetransformTelemetry.logApiLatency(
-                codeTransformApiNames = CodeTransformApiNames.StartTransformation,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformRunTimeLatency = calculateTotalLatency(apiStartTime, Instant.now()),
-                codeTransformUploadId = startTransformResult.transformationJobId(),
-                codeTransformRequestId = startTransformResult.responseMetadata().requestId()
-            )
-            return startTransformResult
-        } catch (e: Exception) {
-            CodetransformTelemetry.logApiError(
-                codeTransformApiNames = CodeTransformApiNames.StartTransformation,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformApiErrorMessage = e.message.toString(),
-            )
-            throw e // pass along error to callee
-        }
+        LOG.info { "Starting job with uploadId [$uploadId] for $sourceLanguage -> $targetLanguage" }
+        return clientAdaptor.startCodeModernization(uploadId, sourceLanguage, targetLanguage)
     }
 
     /**
      * Will perform a single call, checking if a modernization job is finished.
      */
     fun getJobDetails(jobId: JobId): TransformationJob {
-        LOG.warn { "In isJobFinished " }
-        val apiStartTime = Instant.now()
-        val transformationResponse = try {
-            clientAdaptor.getCodeModernizationJob(jobId.id)
-        } catch (e: Exception) {
-            CodetransformTelemetry.logApiError(
-                codeTransformApiErrorMessage = e.message.toString(),
-                codeTransformApiNames = CodeTransformApiNames.GetTransformation,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId = jobId.id,
-            )
-            throw e // pass along error to callee
-        }
-
-        CodetransformTelemetry.logApiLatency(
-            codeTransformApiNames = CodeTransformApiNames.GetTransformation,
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformRunTimeLatency = calculateTotalLatency(apiStartTime, Instant.now()),
-            codeTransformJobId = jobId.id,
-            codeTransformRequestId = transformationResponse.responseMetadata().requestId(),
-        )
-        return transformationResponse.transformationJob()
+        LOG.info { "Getting job details." }
+        return clientAdaptor.getCodeModernizationJob(jobId.id).transformationJob()
     }
 
     /**
@@ -286,30 +251,13 @@ class CodeModernizerSession(
      */
     fun uploadPayload(payload: File): String {
         val sha256checksum: String = Base64.getEncoder().encodeToString(DigestUtils.sha256(FileInputStream(payload)))
-        LOG.warn { "About to create an upload url" }
         if (isDisposed.get()) {
             throw AlreadyDisposedException("Disposed when about to create upload URL")
         }
         val clientAdaptor = GumbyClient.getInstance(sessionContext.project)
-        val createUploadStartTime = Instant.now()
-        val createUploadUrlResponse = try {
-            clientAdaptor.createGumbyUploadUrl(sha256checksum)
-        } catch (e: Exception) {
-            CodetransformTelemetry.logApiError(
-                codeTransformApiErrorMessage = e.message.toString(),
-                codeTransformApiNames = CodeTransformApiNames.CreateUploadUrl,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            )
-            throw e // pass along error to callee
-        }
-        CodetransformTelemetry.logApiLatency(
-            codeTransformApiNames = CodeTransformApiNames.CreateUploadUrl,
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformRunTimeLatency = calculateTotalLatency(createUploadStartTime, Instant.now()),
-            codeTransformUploadId = createUploadUrlResponse.uploadId()
-        )
+        val createUploadUrlResponse = clientAdaptor.createGumbyUploadUrl(sha256checksum)
 
-        LOG.warn {
+        LOG.info {
             "Uploading zip with checksum $sha256checksum using uploadId: ${
                 createUploadUrlResponse.uploadId()
             } and size ${(payload.length() / 1000).toInt()}kB"
@@ -321,8 +269,10 @@ class CodeModernizerSession(
         try {
             uploadArtifactToS3(createUploadUrlResponse.uploadUrl(), payload, sha256checksum, createUploadUrlResponse.kmsKeyArn().orEmpty())
         } catch (e: Exception) {
+            val errorMessage = "Unexpected error when uploading artifact to S3"
+            LOG.error(e) { errorMessage }
             CodetransformTelemetry.logApiError(
-                codeTransformApiErrorMessage = e.message.toString(),
+                codeTransformApiErrorMessage = errorMessage,
                 codeTransformApiNames = CodeTransformApiNames.UploadZip,
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
             )
@@ -346,28 +296,11 @@ class CodeModernizerSession(
     ): CodeModernizerJobCompletedResult {
         try {
             state.currentJobId = jobId
-            val apiStartTime = Instant.now()
-            try {
-                // add delay to avoid the throttling error
-                delay(1000)
-                val modernizationResult = clientAdaptor.getCodeModernizationJob(jobId.id)
-                state.currentJobCreationTime = modernizationResult.transformationJob().creationTime()
-                CodetransformTelemetry.logApiLatency(
-                    codeTransformApiNames = CodeTransformApiNames.GetTransformation,
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformRunTimeLatency = calculateTotalLatency(apiStartTime, Instant.now()),
-                    codeTransformJobId = jobId.id,
-                    codeTransformRequestId = modernizationResult.responseMetadata().requestId()
-                )
-            } catch (e: Exception) {
-                CodetransformTelemetry.logApiError(
-                    codeTransformApiNames = CodeTransformApiNames.GetTransformation,
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId = jobId.id,
-                    codeTransformApiErrorMessage = e.message.toString()
-                )
-                throw e // pass along the error to the parent callee
-            }
+
+            // add delay to avoid the throttling error
+            delay(1000)
+            val modernizationResult = clientAdaptor.getCodeModernizationJob(jobId.id)
+            state.currentJobCreationTime = modernizationResult.transformationJob().creationTime()
 
             val modernizationPlan = when (val result = awaitModernizationPlan(jobId, jobTransitionHandler)) {
                 is AwaitModernizationPlanResult.Success -> result.plan
@@ -415,7 +348,7 @@ class CodeModernizerSession(
                 state.updateJobHistory(sessionContext, new, instant)
                 setCurrentJobStopTime(new, instant)
                 jobTransitionHandler(new, plan)
-                LOG.warn { "in awaitJobCompletion, state changed for job $jobId: $old -> $new" }
+                LOG.info { "Waiting for Modernization Job [$jobId] to complete. State changed for job: $old -> $new" }
             }
             return when {
                 isPartialSuccess -> CodeModernizerJobCompletedResult.JobPartiallySucceeded(jobId, sessionContext.targetJavaVersion)
@@ -435,7 +368,7 @@ class CodeModernizerSession(
                 }
 
                 else -> {
-                    LOG.warn(e) { e.message.toString() }
+                    LOG.error(e) { e.message.toString() }
                     CodeModernizerJobCompletedResult.RetryableFailure(
                         jobId,
                         message("codemodernizer.notification.info.modernize_failed.connection_failed", e.localizedMessage),
@@ -448,27 +381,9 @@ class CodeModernizerSession(
     fun stopTransformation(transformationId: String?): Boolean {
         shouldStop.set(true) // allows the zipping and upload to cancel
         return if (transformationId != null) {
-            // Means job exists in backend and we have to call the stop api
-            try {
-                val apiStartTime = Instant.now()
-                val result = clientAdaptor.stopTransformation(transformationId)
-                CodetransformTelemetry.logApiLatency(
-                    codeTransformApiNames = CodeTransformApiNames.StopTransformation,
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformRunTimeLatency = calculateTotalLatency(apiStartTime, Instant.now()),
-                    codeTransformJobId = transformationId,
-                    codeTransformRequestId = result.responseMetadata().requestId()
-                )
-                return true
-            } catch (e: Exception) {
-                CodetransformTelemetry.logApiError(
-                    codeTransformApiNames = CodeTransformApiNames.StopTransformation,
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformApiErrorMessage = e.message.toString(),
-                    codeTransformJobId = transformationId,
-                )
-                throw e // pass along error to callee
-            }
+            // Means job exists in backend, and we have to call the stop api
+            clientAdaptor.stopTransformation(transformationId)
+            return true
         } else {
             true // We did not yet call the start API so no need to call the stop job api
         }
