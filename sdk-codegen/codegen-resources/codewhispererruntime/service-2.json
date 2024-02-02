@@ -373,7 +373,8 @@
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
                 "acceptedCharacterCount":{"shape":"PrimitiveInteger"},
                 "totalCharacterCount":{"shape":"PrimitiveInteger"},
-                "timestamp":{"shape":"Timestamp"}
+                "timestamp":{"shape":"Timestamp"},
+                "unmodifiedAcceptedCharacterCount": {"shape":"PrimitiveInteger"}
             }
         },
         "CodeGenerationId":{
