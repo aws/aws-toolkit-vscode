@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import * as actualFs from 'fs'
+import { promises as fsPromises } from 'fs'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { ToolkitError } from '../shared/errors'
 import _path from 'path'
 
 const fs = vscode.workspace.fs
@@ -44,9 +43,8 @@ export class FileSystemCommon {
         // Certain URIs are not supported with vscode.workspace.fs in C9
         // so revert to using `fs` which works.
         if (isCloud9()) {
-            return actualFs.mkdir(uriPath.fsPath, { recursive: true }, err => {
-                throw new ToolkitError(`Failed mkdir() in Cloud9: ${uriPath.fsPath}: ${err}`)
-            })
+            await fsPromises.mkdir(uriPath.fsPath, { recursive: true })
+            return
         }
 
         return fs.createDirectory(uriPath)
@@ -120,11 +118,27 @@ export class FileSystemCommon {
 
     async delete(uri: vscode.Uri | string): Promise<void> {
         const path = FileSystemCommon.getUri(uri)
+
+        // vscode.workspace.fs.delete is not supported in C9
+        if (isCloud9()) {
+            await fsPromises.rm(path.fsPath, { recursive: true })
+            return
+        }
+
         return fs.delete(path, { recursive: true })
     }
 
     async readdir(uri: vscode.Uri | string): Promise<[string, vscode.FileType][]> {
         const path = FileSystemCommon.getUri(uri)
+
+        // readdir is not a supported vscode API in Cloud9
+        if (isCloud9()) {
+            return (await fsPromises.readdir(path.fsPath, { withFileTypes: true })).map(e => [
+                e.name,
+                e.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File,
+            ])
+        }
+
         return await fs.readDirectory(path)
     }
 
