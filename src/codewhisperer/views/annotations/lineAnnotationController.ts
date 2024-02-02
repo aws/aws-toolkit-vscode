@@ -10,6 +10,7 @@ import { debounce2 } from '../../../shared/utilities/functionUtils'
 import { AuthUtil } from '../../util/authUtil'
 import { CodeWhispererSource } from '../../commands/types'
 import { placeholder } from '../../../shared/vscode/commands2'
+import { RecommendationService } from '../../service/recommendationService'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -27,7 +28,6 @@ export function once<T>(event: vscode.Event<T>): vscode.Event<T> {
 export class LineAnnotationController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
     private _editor: vscode.TextEditor | undefined
-    private _suspended = false
 
     private _selections: LineSelection[] | undefined
 
@@ -44,7 +44,10 @@ export class LineAnnotationController implements vscode.Disposable {
     private _inlineText: string | undefined = undefined
 
     constructor(private readonly lineTracker: LineTracker) {
-        this._disposable = vscode.Disposable.from(once(this.lineTracker.onReady)(this.onReady, this))
+        this._disposable = vscode.Disposable.from(
+            once(this.lineTracker.onReady)(this.onReady, this),
+            this.setCWInlineService(true)
+        )
         this.setLineTracker(true)
     }
 
@@ -69,13 +72,13 @@ export class LineAnnotationController implements vscode.Disposable {
         this.clear(e.editor)
 
         if (e.reason === 'content') {
-            await this.refreshDebounced2(e.editor, e.reason)
+            await this.refreshDebounced(e.editor, e.reason)
             return
         }
 
         if (e.selections !== undefined) {
             // await this.refresh(e.editor, e.reason)
-            await this.refreshDebounced2(e.editor, e.reason)
+            await this.refreshDebounced(e.editor, e.reason)
             return
         }
     }
@@ -87,11 +90,11 @@ export class LineAnnotationController implements vscode.Disposable {
         }
     }
 
-    readonly refreshDebounced2 = debounce2((editor, reason) => {
+    readonly refreshDebounced = debounce2((editor, reason) => {
         this.refresh(editor, reason)
     }, 250)
 
-    async refresh(editor: vscode.TextEditor | undefined, reason: 'selection' | 'content' | 'editor') {
+    async refresh(editor: vscode.TextEditor | undefined, reason: 'selection' | 'content' | 'editor' | 'codewhisperer') {
         if (
             !AuthUtil.instance.isConnected() ||
             !AuthUtil.instance.isConnectionValid() ||
@@ -120,11 +123,6 @@ export class LineAnnotationController implements vscode.Disposable {
             this._editor = editor
         }
 
-        if (this._suspended) {
-            this.clear(editor)
-            return
-        }
-
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
         if (editor.document == null || !this.lineTracker.includes(selections)) {
             return
@@ -138,6 +136,12 @@ export class LineAnnotationController implements vscode.Disposable {
         const range = editor.document.validateRange(
             new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
         )
+
+        const isCWRunning = RecommendationService.instance.isRunning
+        if (isCWRunning) {
+            editor.setDecorations(this.cwLineHintDecoration, [])
+            return
+        }
 
         const isSameline = this._selections ? isSameLine(this._selections[0], lines[0]) : false
         console.log(`isSameLine: ${isSameLine}`)
@@ -167,11 +171,17 @@ export class LineAnnotationController implements vscode.Disposable {
         this.lineTracker.unsubscribe(this)
     }
 
-    getInlineDecoration(
-        isSameLine: boolean,
-        scrollable: boolean = true
-    ): Partial<vscode.DecorationOptions> | undefined {
-        console.log(`getInlineDecoration: ${isSameLine}`)
+    private setCWInlineService(enabled: boolean) {
+        const disposable = RecommendationService.instance.suggestionActionEvent(e => {
+            console.log(`receiving onSuggestionActionEvent -- refreshing editor decoration`)
+            // can't use refresh because refresh, by design, should only be triggered when there is line selection change
+            this.refreshDebounced(e.editor, 'codewhisperer')
+        })
+
+        return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
+    }
+
+    getInlineDecoration(isSameLine: boolean): Partial<vscode.DecorationOptions> | undefined {
         const options = this.textOptions(isSameLine)
         console.log(options)
         if (!options) {
@@ -184,21 +194,18 @@ export class LineAnnotationController implements vscode.Disposable {
             hoverMessage: vscode.DecorationOptions['hoverMessage']
         } = {
             renderOptions: options,
-            hoverMessage: this.onHover(),
+            hoverMessage: this.onHover(options.after?.contentText),
         }
 
         return renderOptions
     }
 
-    private textOptions(
-        isSameLine: boolean,
-        scrollable: boolean = true
-    ): vscode.ThemableDecorationRenderOptions | undefined {
+    private textOptions(isSameLine: boolean): vscode.ThemableDecorationRenderOptions | undefined {
         const textOptions = {
             contentText: '',
             fontWeight: 'normal',
             fontStyle: 'normal',
-            textDecoration: `none;${scrollable ? '' : ' position: absolute;'}`,
+            textDecoration: 'none',
             color: '#8E8E8E',
         }
 
@@ -226,9 +233,10 @@ export class LineAnnotationController implements vscode.Disposable {
             this._currentStep = '3'
         } else {
             //TODO: uncomment
-            // return undefined
+            return undefined
 
-            textOptions.contentText = 'Congrat, you just finish CodeWhisperer tutorial!'
+            // for testing purpose
+            // textOptions.contentText = 'Congrat, you just finish CodeWhisperer tutorial!'
         }
 
         this._inlineText = textOptions.contentText
@@ -236,8 +244,8 @@ export class LineAnnotationController implements vscode.Disposable {
         return { after: textOptions }
     }
 
-    private onHover(): vscode.MarkdownString | undefined {
-        if (this._currentStep === '2') {
+    private onHover(str: string | undefined): vscode.MarkdownString | undefined {
+        if (str === 'Try more examples with CodeWhisperer in the IDE') {
             const source: CodeWhispererSource = 'vscodeComponent'
             const md = new vscode.MarkdownString(
                 `[Learn more CodeWhisperer examples](command:aws.codeWhisperer.gettingStarted?${encodeURI(
@@ -256,4 +264,20 @@ export class LineAnnotationController implements vscode.Disposable {
 
 function isSameLine(s1: LineSelection, s2: LineSelection) {
     return s1.active === s2.active && s2.anchor === s2.anchor
+}
+
+function isCursorAtEndOfLine(editor: vscode.TextEditor | undefined) {
+    if (editor) {
+        // Get the position of the cursor
+        const cursorPosition = editor.selection.active
+
+        // Get the end position of the line where the cursor is
+        const endOfLine = editor.document.lineAt(cursorPosition.line).range.end
+
+        // Compare the cursor position with the end of the line
+        const isAtEndOfLine = cursorPosition.isEqual(endOfLine)
+
+        // Log the result (you can replace this with your logic)
+        console.log('Is cursor at the end of the line?', isAtEndOfLine)
+    }
 }

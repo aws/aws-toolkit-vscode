@@ -17,7 +17,6 @@ const gutterWhite = 'aws-codewhisperer-editor-gutter-white'
 export class EditorGutterController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
     private _editor: vscode.TextEditor | undefined
-    private _suspended = false
 
     readonly cwlineGutterDecoration = vscode.window.createTextEditorDecorationType({
         gutterIconPath: iconPathToUri(getIcon(gutterWhite)),
