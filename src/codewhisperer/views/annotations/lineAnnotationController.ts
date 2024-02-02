@@ -47,7 +47,7 @@ export class LineAnnotationController implements vscode.Disposable {
     private _inlineText: string | undefined = undefined
 
     constructor(private readonly lineTracker: LineTracker) {
-        this._currentStep = globals.context.globalState.get<'1' | '2' | '3' | undefined>(inlinehintKey)
+        // this._currentStep = globals.context.globalState.get<'1' | '2' | '3' | undefined>(inlinehintKey)
         this._disposable = vscode.Disposable.from(
             once(this.lineTracker.onReady)(this.onReady, this),
             this.setCWInlineService(true)
@@ -98,11 +98,7 @@ export class LineAnnotationController implements vscode.Disposable {
     }, 250)
 
     async refresh(editor: vscode.TextEditor | undefined, reason: 'selection' | 'content' | 'editor' | 'codewhisperer') {
-        if (
-            !AuthUtil.instance.isConnected() ||
-            !AuthUtil.instance.isConnectionValid() ||
-            AuthUtil.instance.isConnectionExpired()
-        ) {
+        if (!AuthUtil.instance.isConnectionValid()) {
             this.clear(this._editor)
             return
         }

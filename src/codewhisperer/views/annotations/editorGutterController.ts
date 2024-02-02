@@ -83,11 +83,7 @@ export class EditorGutterController implements vscode.Disposable {
     }
 
     async refresh(editor: vscode.TextEditor | undefined) {
-        if (
-            !AuthUtil.instance.isConnected() ||
-            !AuthUtil.instance.isConnectionValid() ||
-            AuthUtil.instance.isConnectionExpired()
-        ) {
+        if (!AuthUtil.instance.isConnectionValid()) {
             this.clear(this._editor)
             return
         }
