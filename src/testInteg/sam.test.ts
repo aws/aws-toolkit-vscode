@@ -110,7 +110,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'coreclr',
         language: 'csharp',
         dependencyManager: 'cli-package',
-        vscodeMinimum: '1.50.0',
+        vscodeMinimum: '1.80.0',
     },
     {
         runtime: 'java8.al2',
@@ -253,7 +253,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'coreclr',
         language: 'csharp',
         dependencyManager: 'cli-package',
-        vscodeMinimum: '1.50.0',
+        vscodeMinimum: '1.80.0',
     },
 ]
 
