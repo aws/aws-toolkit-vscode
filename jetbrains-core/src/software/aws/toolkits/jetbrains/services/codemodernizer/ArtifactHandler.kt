@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
@@ -26,7 +26,6 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.summary.CodeModer
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodeTransformApiNames
 import software.aws.toolkits.telemetry.CodeTransformPatchViewerCancelSrcComponents
 import software.aws.toolkits.telemetry.CodeTransformVCSViewerSrcComponents
 import software.aws.toolkits.telemetry.CodetransformTelemetry
@@ -61,6 +60,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
 
     suspend fun downloadArtifact(job: JobId): DownloadArtifactResult {
         isCurrentlyDownloading.set(true)
+        val downloadStartTime = Instant.now()
         try {
             // 1. Attempt reusing previously downloaded artifact for job
             val previousArtifact = downloadedArtifacts.getOrDefault(job, null)
@@ -78,26 +78,11 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
 
             // 2. Download the data
             notifyDownloadStart()
-            LOG.warn { "About to download the export result archive" }
-            var apiStartTime: Instant = Instant.now()
-            lateinit var apiEndTime: Instant
-            val downloadResultsResponse: MutableList<ByteArray>
-            try {
-                downloadResultsResponse = clientAdaptor.downloadExportResultArchive(job)
-            } catch (e: Exception) {
-                CodetransformTelemetry.logApiError(
-                    codeTransformApiNames = CodeTransformApiNames.ExportResultArchive,
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformApiErrorMessage = e.message.toString(),
-                    codeTransformJobId = job.id,
-                )
-                throw e // pass along error to callee
-            } finally {
-                apiEndTime = Instant.now()
-            }
+            LOG.info { "About to download the export result archive" }
+            val downloadResultsResponse = clientAdaptor.downloadExportResultArchive(job)
 
             // 3. Convert to zip
-            LOG.warn { "Downloaded the export result archive, about to transform to zip" }
+            LOG.info { "Downloaded the export result archive, about to transform to zip" }
             val path = Files.createTempFile(null, ".zip")
             var totalDownloadBytes = 0
             Files.newOutputStream(path).use {
@@ -106,33 +91,23 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
                     totalDownloadBytes += bytes.size
                 }
             }
-            CodetransformTelemetry.logApiLatency(
-                codeTransformApiNames = CodeTransformApiNames.ExportResultArchive,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformRunTimeLatency = calculateTotalLatency(apiStartTime, apiEndTime),
-                codeTransformJobId = job.id,
-                codeTransformTotalByteSize = totalDownloadBytes
-            )
-            LOG.warn { "Successfully converted the download to a zip at ${path.toAbsolutePath()}." }
+            LOG.info { "Successfully converted the download to a zip at ${path.toAbsolutePath()}." }
             val zipPath = path.toAbsolutePath().toString()
 
             // 4. Deserialize zip to CodeModernizerArtifact
-            var telemetryErrorMessage = ""
+            var telemetryErrorMessage: String? = null
             return try {
-                apiStartTime = Instant.now()
                 val output = DownloadArtifactResult(CodeModernizerArtifact.create(zipPath), zipPath)
-                apiEndTime = Instant.now()
                 downloadedArtifacts[job] = path
                 output
             } catch (e: RuntimeException) {
                 LOG.error { e.message.toString() }
-                telemetryErrorMessage = e.message.toString()
-                apiEndTime = Instant.now()
+                telemetryErrorMessage = "Unexpected error when downloading result"
                 DownloadArtifactResult(null, zipPath)
             } finally {
                 CodetransformTelemetry.jobArtifactDownloadAndDeserializeTime(
                     codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformRunTimeLatency = calculateTotalLatency(apiStartTime, apiEndTime),
+                    codeTransformRunTimeLatency = calculateTotalLatency(downloadStartTime, Instant.now()),
                     codeTransformJobId = job.id,
                     codeTransformTotalByteSize = totalDownloadBytes,
                     codeTransformRuntimeError = telemetryErrorMessage
@@ -185,7 +160,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
     }
 
     fun notifyUnableToApplyPatch(patchPath: String) {
-        LOG.warn { "Unable to find patch for file: $patchPath" }
+        LOG.error { "Unable to find patch for file: $patchPath" }
         notifyWarn(
             message("codemodernizer.notification.warn.view_diff_failed.title"),
             message("codemodernizer.notification.warn.view_diff_failed.content"),
@@ -195,7 +170,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
     }
 
     fun notifyUnableToShowSummary() {
-        LOG.warn { "Unable to display summary" }
+        LOG.error { "Unable to display summary" }
         notifyWarn(
             message("codemodernizer.notification.warn.view_summary_failed.title"),
             message("codemodernizer.notification.warn.view_summary_failed.content"),
