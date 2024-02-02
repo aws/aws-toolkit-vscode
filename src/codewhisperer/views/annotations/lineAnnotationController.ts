@@ -105,7 +105,7 @@ export class LineAnnotationController implements vscode.Disposable {
     }, 250)
 
     async refresh(editor: vscode.TextEditor | undefined) {
-        if (!this.auth.isConnectionValid()) {
+        if (!this.auth.isConnectionValid(false)) {
             this.clear(this._editor)
             return
         }
