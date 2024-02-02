@@ -127,7 +127,6 @@ export class AuthUtil {
                 Commands.tryExecute('aws.amazonq.refreshRootNode'),
                 Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
                 Commands.tryExecute('aws.codeWhisperer.updateReferenceLog'),
-                Commands.tryExecute('aws.codeWhisperer.refreshAnnotation'),
             ])
 
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
@@ -338,7 +337,6 @@ export class AuthUtil {
             Commands.tryExecute('aws.amazonq.refresh'),
             Commands.tryExecute('aws.amazonq.refreshRootNode'),
             Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
-            Commands.tryExecute('aws.codeWhisperer.refreshAnnotation'),
         ])
     }
 

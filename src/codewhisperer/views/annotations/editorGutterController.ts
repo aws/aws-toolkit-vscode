@@ -26,10 +26,18 @@ export class EditorGutterController implements vscode.Disposable {
         gutterIconPath: iconPathToUri(getIcon(gutterColored)),
     })
 
-    constructor(private readonly lineTracker: LineTracker) {
+    constructor(private readonly lineTracker: LineTracker, private readonly auth: AuthUtil) {
         this._disposable = vscode.Disposable.from(
             this.setCWInlineService(true),
-            once(this.lineTracker.onReady)(this.onReady, this)
+            once(this.lineTracker.onReady)(this.onReady, this),
+            this.auth.auth.onDidChangeConnectionState(async e => {
+                if (e.state !== 'authenticating') {
+                    this.refresh(vscode.window.activeTextEditor)
+                }
+            }),
+            this.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
+                this.refresh(vscode.window.activeTextEditor)
+            })
         )
         this.setLineTracker(true)
     }
@@ -83,7 +91,7 @@ export class EditorGutterController implements vscode.Disposable {
     }
 
     async refresh(editor: vscode.TextEditor | undefined) {
-        if (!AuthUtil.instance.isConnectionValid()) {
+        if (!this.auth.isConnectionValid()) {
             this.clear(this._editor)
             return
         }
