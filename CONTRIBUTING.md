@@ -357,7 +357,7 @@ Example:
 }
 ```
 
-Overrides specifically for CodeWhisperer/Amazon Q can be set using the `aws.dev.codewhispererService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeWhisperer/Amazon Q: `region` and `endpoint`. If this setting is present, then all keys need to be explicitly provided.
+<a name="codewhisperer-settings">Overrides specifically for CodeWhisperer/Amazon Q can be set using the `aws.dev.codewhispererService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeWhisperer/Amazon Q: `region` and `endpoint`. If this setting is present, then all keys need to be explicitly provided.</a>
 
 Example:
 
@@ -405,6 +405,14 @@ Unlike the user setting overrides, not all of these environment variables have t
 -   `__CODECATALYST_ENDPOINT`: for aws.dev.codecatalystService.endpoint
 -   `__CODECATALYST_HOSTNAME`: for aws.dev.codecatalystService.hostname
 -   `__CODECATALYST_GIT_HOSTNAME`: for aws.dev.codecatalystService.gitHostname
+
+#### Codewhisperer/Amazon Q
+
+The following are environment variable versions of the user `settings.json` overrides mentioned [here](#codewhisperer-settings). These will always override the toolkit defaults and those defined in `settings.json`.
+Unlike the user setting overrides, not all of these environment variables have to be set to make use of them.
+
+-   `__CODEWHISPERER_REGION`: for aws.dev.codewhispererService.region
+-   `__CODEWHISPERER_ENDPOINT`: for aws.dev.codewhispererService.endpoint
 
 #### Lambda
 
