@@ -125,6 +125,13 @@ export class FileSystemCommon {
 
     async readdir(uri: vscode.Uri | string): Promise<[string, vscode.FileType][]> {
         const path = FileSystemCommon.getUri(uri)
+
+        // readdir is not a supported vscode API in Cloud9
+        if (isCloud9()) {
+            return actualFs
+                .readdirSync(path.path, { withFileTypes: true })
+                .map(e => [e.name, e.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File])
+        }
         return await fs.readDirectory(path)
     }
 
