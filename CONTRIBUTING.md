@@ -22,14 +22,15 @@ reported the issue. Please try to include as much information as you can. Detail
 
 ### Requirements
 
-* [Java 11](https://docs.aws.amazon.com/corretto/latest/corretto-11-ug/downloads-list.html)
+* [Java 17](https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html)
 * [Git](https://git-scm.com/)
-* Dotnet Framework (Windows)
+* .NET 6
+  * In theory, you can use a higher version, however we build with .NET 6 in CI
   * macOS steps:
     ```
-    brew install --cask dotnet-sdk
+    brew install dotnet@6
     ```
-  * It is recommended dotnet version `5.0.403` and `below`. If your dotnet versions were higher, you should refer to this [link](https://github.com/isen-ng/homebrew-dotnet-sdk-versions).
+
 ### Instructions
 
 1. Clone the github repository and run `./gradlew :intellij:buildPlugin` <br/> (This will produce a plugin zip under `intellij/build/distributions`)
@@ -156,12 +157,19 @@ If the tests run too quickly, you can tell the UI tests to wait for the debugger
 
 Looking at the existing issues is a great way to find something to contribute on. Any of the [help wanted](https://github.com/aws/aws-toolkit-jetbrains/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) issues is a great place to start.
 
+## Additional References
+
+* https://plugins.jetbrains.com/docs/intellij/kotlin.html#kotlin-standard-library
+* https://plugins.jetbrains.com/docs/intellij/welcome.html
+* https://jetbrains.design/intellij/
+* https://www.jetbrains.com/help/resharper/sdk/Rider.html
+* https://intellij-support.jetbrains.com/hc/en-us/articles/206544519-Directories-used-by-the-IDE-to-store-settings-caches-plugins-and-logs
+
 ## Code of Conduct
 
 This project has adopted the [Amazon Open Source Code of Conduct](https://aws.github.io/code-of-conduct). 
 For more information see the [Code of Conduct FAQ](https://aws.github.io/code-of-conduct-faq) or contact 
 [opensource-codeofconduct@amazon.com](mailto:opensource-codeofconduct@amazon.com) with any additional questions or comments.
-
 
 ## Licensing
 
