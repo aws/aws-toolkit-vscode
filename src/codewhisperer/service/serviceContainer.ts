@@ -43,7 +43,7 @@ export class Container {
 export const refreshAnnotation = Commands.register(
     { id: 'aws.codeWhisperer.refreshAnnotation', logging: false },
     () => {
-        Container.instance._editorGutterController.refresh(vscode.window.activeTextEditor, 'editor')
+        Container.instance._editorGutterController.refresh(vscode.window.activeTextEditor)
         Container.instance._lineAnnotationController.refreshDebounced(vscode.window.activeTextEditor, 'editor')
     }
 )

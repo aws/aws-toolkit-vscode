@@ -52,7 +52,7 @@ export class EditorGutterController implements vscode.Disposable {
         }
 
         if (e.selections !== undefined) {
-            void this.refresh(e.editor, e.reason)
+            void this.refresh(e.editor)
             return
         }
 
@@ -64,7 +64,7 @@ export class EditorGutterController implements vscode.Disposable {
             return
         }
 
-        this.refresh(e.editor, 'codewhisperer')
+        this.refresh(e.editor)
     }
 
     clear(editor: vscode.TextEditor | undefined) {
@@ -82,10 +82,7 @@ export class EditorGutterController implements vscode.Disposable {
         editor.setDecorations(this.cwlineGutterDecorationColored, [])
     }
 
-    async refresh(
-        editor: vscode.TextEditor | undefined,
-        reason: 'selection' | 'codewhisperer' | 'content' | 'editor' = 'selection'
-    ) {
+    async refresh(editor: vscode.TextEditor | undefined) {
         if (
             !AuthUtil.instance.isConnected() ||
             !AuthUtil.instance.isConnectionValid() ||
@@ -117,14 +114,10 @@ export class EditorGutterController implements vscode.Disposable {
         }
 
         // if (cancellation.isCancellationRequested) return
-        await this.updateDecorations(editor, selections, reason)
+        await this.updateDecorations(editor, selections)
     }
 
-    async updateDecorations(
-        editor: vscode.TextEditor,
-        lines: LineSelection[],
-        reason: 'selection' | 'codewhisperer' | 'content' | 'editor'
-    ) {
+    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[]) {
         const range = editor.document.validateRange(
             new vscode.Range(lines[0].active, lines[0].active, lines[0].active, lines[0].active)
         )
@@ -156,7 +149,7 @@ export class EditorGutterController implements vscode.Disposable {
     private setCWInlineService(enabled: boolean) {
         const disposable = RecommendationService.instance.suggestionActionEvent(e => {
             // can't use refresh because refresh, by design, should only be triggered when there is line selection change
-            this.refresh(e.editor, 'codewhisperer')
+            this.refresh(e.editor)
         })
 
         return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
