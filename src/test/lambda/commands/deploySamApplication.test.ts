@@ -477,7 +477,7 @@ describe('deploySamApplication', async function () {
         goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
             invokerCalledCount++
 
-            const isDeployInvoke = args.some(arg => arg === 'build')
+            const isDeployInvoke = args.includes('build')
 
             return new FakeChildProcessResult({
                 exitCode: isDeployInvoke ? -1 : 0,
@@ -508,7 +508,7 @@ describe('deploySamApplication', async function () {
         goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
             invokerCalledCount++
 
-            const isDeployInvoke = args.some(arg => arg === 'package')
+            const isDeployInvoke = args.includes('package')
 
             return new FakeChildProcessResult({
                 exitCode: isDeployInvoke ? -1 : 0,
@@ -540,7 +540,7 @@ describe('deploySamApplication', async function () {
         goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
             invokerCalledCount++
 
-            const isDeployInvoke = args.some(arg => arg === 'deploy')
+            const isDeployInvoke = args.includes('deploy')
 
             return new FakeChildProcessResult({
                 exitCode: isDeployInvoke ? -1 : 0,

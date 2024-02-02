@@ -355,7 +355,7 @@ export async function closeAllEditors(): Promise<void> {
             editors.length = 0
             editors.push(
                 ...vscode.window.visibleTextEditors.filter(
-                    editor => !ignorePatterns.find(p => p.test(editor.document.fileName))
+                    editor => !ignorePatterns.some(p => p.test(editor.document.fileName))
                 )
             )
 

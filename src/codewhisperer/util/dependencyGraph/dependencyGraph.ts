@@ -169,7 +169,7 @@ export abstract class DependencyGraph {
         if (this._truncDir === '') {
             this._truncDir = path.join(
                 this._tmpDir,
-                CodeWhispererConstants.codeScanTruncDirPrefix + '_' + new Date().getTime().toString()
+                CodeWhispererConstants.codeScanTruncDirPrefix + '_' + Date.now().toString()
             )
         }
         return this._truncDir

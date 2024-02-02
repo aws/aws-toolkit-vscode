@@ -52,7 +52,8 @@ export type FromDescriptor<T extends TypeDescriptor> = {
 // `Symbol` and `BigInt` are included here, though in-practice
 const primitives = [Number, String, Boolean, Object, Symbol, BigInt]
 function isPrimitiveConstructor(type: unknown): type is (typeof primitives)[number] {
-    return !!primitives.find(p => p === type)
+    // eslint-disable-next-line unicorn/prefer-includes
+    return !!primitives.some(p => p === type)
 }
 
 function isNamedTypeConstructor(obj: unknown): obj is NamedTypeConstructor {

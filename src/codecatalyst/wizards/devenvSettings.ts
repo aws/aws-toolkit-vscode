@@ -73,7 +73,7 @@ export function createTimeoutPrompter(): Prompter<number> {
         title: 'Timeout Length',
         placeholder: 'Timeout length in minutes',
         validateInput: resp => (Number.isNaN(Number(resp)) ? 'Timeout must be a number' : undefined),
-    }).transform(r => Number(r))
+    }).transform(Number)
 }
 
 export function createAliasPrompter(): InputBoxPrompter {

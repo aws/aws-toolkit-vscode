@@ -45,7 +45,6 @@ export function selectFrom<T, K extends keyof T>(obj: T, ...props: K[]): { [P in
 }
 
 export function isNonNullable<T>(obj: T | void): obj is NonNullable<T> {
-    // eslint-disable-next-line no-null/no-null
     return obj !== undefined && obj !== null
 }
 

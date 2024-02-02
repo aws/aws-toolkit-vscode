@@ -205,10 +205,10 @@ describe('InactivityMessages', function () {
      * This value is relative to {@link relativeMinuteMillis}.
      */
     function startCapturingMessages() {
-        const start = new Date().getTime()
+        const start = Date.now()
         const messages: { message: string; minute: number }[] = []
         testWindow.onDidShowMessage(async message => {
-            const now = new Date().getTime()
+            const now = Date.now()
             messages.push({ message: message.message, minute: Math.floor((now - start) / relativeMinuteMillis) })
         })
         actualMessages = messages
@@ -224,7 +224,7 @@ describe('InactivityMessages', function () {
     }
 
     function getLatestTimestamp() {
-        let timestamp = new Date().getTime()
+        let timestamp = Date.now()
         if (_initialOffset) {
             timestamp -= _initialOffset
             _initialOffset = undefined

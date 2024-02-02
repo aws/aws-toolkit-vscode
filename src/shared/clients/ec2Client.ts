@@ -222,7 +222,7 @@ export function getNameOfInstance(instance: EC2.Instance): string | undefined {
 }
 
 export function instanceHasName(instance: EC2.Instance): boolean {
-    return instance.Tags !== undefined && instance.Tags.filter(tag => tag.Key === 'Name').length !== 0
+    return instance.Tags !== undefined && instance.Tags.some(tag => tag.Key === 'Name')
 }
 
 function lookupTagKey(tags: EC2.Tag[], targetKey: string) {

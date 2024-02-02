@@ -58,13 +58,10 @@ export class Logging {
             return
         }
 
-        const lineStart = text
-            .slice(0, textStart)
-            .split(/\r?\n/)
-            .filter(x => x).length
+        const lineStart = text.slice(0, textStart).split(/\r?\n/).filter(Boolean).length
 
         if (lineStart > 0) {
-            const lineEnd = Math.min(editor.document.lineCount, lineStart + msg.split(/\r?\n/).filter(x => x).length)
+            const lineEnd = Math.min(editor.document.lineCount, lineStart + msg.split(/\r?\n/).filter(Boolean).length)
             revealLines(editor, lineStart, lineEnd)
         } else {
             clearSelection(editor)

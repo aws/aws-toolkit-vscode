@@ -554,7 +554,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
 
         const currentDevEnvs = toCollection(() => toStream(projects.map(name => getAllDevEnvs(name))))
             .flatten()
-            .filter(env => !!testDevEnvironments.find(other => other.id === env.id))
+            .filter(env => !!testDevEnvironments.some(other => other.id === env.id))
             .filter(env => !projectName || env.project.name === projectName)
 
         return currentDevEnvs.promise()

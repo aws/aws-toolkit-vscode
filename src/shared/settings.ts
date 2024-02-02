@@ -215,7 +215,7 @@ export class Settings {
      * The resulting configuration object should not be cached.
      */
     private getConfig(section?: string) {
-        // eslint-disable-next-line no-null/no-null
+        // eslint-disable-next-line unicorn/no-null
         return this.workspace.getConfiguration(section, this.scope ?? null)
     }
 
