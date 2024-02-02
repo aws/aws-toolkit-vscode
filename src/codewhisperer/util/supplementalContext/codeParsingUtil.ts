@@ -39,7 +39,6 @@ export function extractFunctions(fileContent: string, regex: RegExp) {
     const functionNames: string[] = []
     let match: RegExpExecArray | null
 
-    // eslint-disable-next-line no-null/no-null
     while ((match = regex.exec(fileContent)) !== null) {
         functionNames.push(match[1])
     }
@@ -50,7 +49,6 @@ export function extractClasses(fileContent: string, regex: RegExp) {
     const classNames: string[] = []
     let match: RegExpExecArray | null
 
-    // eslint-disable-next-line no-null/no-null
     while ((match = regex.exec(fileContent)) !== null) {
         classNames.push(match[1])
     }

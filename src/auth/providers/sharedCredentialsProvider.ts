@@ -273,7 +273,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             profilesTraversed.push(profileName)
 
             // Missing reference
-            if (!this.sections.find(s => s.name === profileName && s.type === 'profile')) {
+            if (!this.sections.some(s => s.name === profileName && s.type === 'profile')) {
                 return `Shared Credentials Profile ${profileName} not found. Reference chain: ${profilesTraversed.join(
                     ' -> '
                 )}`

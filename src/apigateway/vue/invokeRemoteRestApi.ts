@@ -157,7 +157,7 @@ export function listValidMethods(resource: Resource): string[] {
     // you can simultaneously declare a resource that supports ANY in conjunction with conventional methods
     const isAny = (method: string) => method.toUpperCase() === 'ANY'
     const methods = resource.resourceMethods !== undefined ? Object.keys(resource.resourceMethods) : []
-    if (methods.find(isAny)) {
+    if (methods.some(isAny)) {
         return supportedOperations
     }
 

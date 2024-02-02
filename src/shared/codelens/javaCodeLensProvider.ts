@@ -166,7 +166,7 @@ export function isValidMethodSignature(symbol: vscode.DocumentSymbol): boolean {
 function lastParamIsContext(paramArr: string[]): boolean {
     // TODO: handle different kinds of imported context objects in case user is importing a non-Lambda context
     const lambdaContextType = /[\.\b]{0,1}Context\b/
-    return lambdaContextType.test(paramArr[paramArr.length - 1].valueOf().trimLeft())
+    return lambdaContextType.test(paramArr[paramArr.length - 1].valueOf().trimStart())
 }
 
 function firstTwoParamsAreStreams(paramArr: string[]): boolean {

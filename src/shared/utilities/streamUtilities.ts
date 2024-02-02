@@ -80,7 +80,7 @@ export function bufferToStream(buffer: Uint8Array): Readable {
     return new Readable({
         read() {
             this.push(buffer)
-            // eslint-disable-next-line no-null/no-null
+            // eslint-disable-next-line unicorn/no-null
             this.push(null)
         },
     })

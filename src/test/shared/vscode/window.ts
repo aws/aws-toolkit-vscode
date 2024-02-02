@@ -219,7 +219,7 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
             itemsPromise = items
         } else {
             // Not sure what this type is
-            throw new Error('Not implemented')
+            throw new TypeError('Not implemented')
         }
 
         picker.canSelectMany = options?.canPickMany ?? false

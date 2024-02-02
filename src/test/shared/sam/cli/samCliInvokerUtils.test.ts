@@ -47,7 +47,7 @@ describe('logAndThrowIfUnexpectedExitCode', async function () {
 
 /** Prepends ESC control character to `text`. */
 function prependEscapeCode(text: string): string {
-    return String.fromCharCode(27) + text
+    return String.fromCodePoint(27) + text
 }
 
 describe('collectSamErrors()', async () => {

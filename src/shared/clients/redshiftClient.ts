@@ -227,7 +227,7 @@ export class DefaultRedshiftClient {
         }
     }
     public genUniqueId(connectionParams: ConnectionParams): string {
-        const epochDate = new Date().getTime()
+        const epochDate = Date.now()
         return `${epochDate}-${connectionParams.warehouseIdentifier}`
     }
 
