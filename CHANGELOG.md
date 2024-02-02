@@ -1,3 +1,6 @@
+# _2.5_ (2024-01-24)
+- **(Bug Fix)** Fix issue where CodeWhisperer suggestions are sometimes trimmed
+
 # _2.4_ (2024-01-10)
 - **(Bug Fix)** Fix Code Transform Plan UI component alignment
 - **(Bug Fix)** Fix Code Transform uploaded artifact file paths when submitting from Windows machine
