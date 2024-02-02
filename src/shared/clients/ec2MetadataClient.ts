@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { MetadataService } from 'aws-sdk'
+import { AWSError, MetadataService } from 'aws-sdk'
 
 export interface IamInfo {
     Code: string
@@ -33,17 +34,36 @@ export class DefaultEc2MetadataClient {
 
     public invoke<T>(path: string): Promise<T> {
         return new Promise((resolve, reject) => {
-            this.metadata.request(path, (err, response) => {
-                if (err) {
-                    reject(err)
-                    return
+            // fetchMetadataToken is private for some reason, but has the exact token functionality
+            // that we want out of the metadata service.
+            // https://github.com/aws/aws-sdk-js/blob/3333f8b49283f5bbff823ab8a8469acedb7fe3d5/lib/metadata_service.js#L116-L136
+            ;(this.metadata as any).fetchMetadataToken((tokenErr: AWSError, token: string) => {
+                let options
+                if (tokenErr) {
+                    getLogger().error('Ec2MetadataClient failed to fetch token: %s', tokenErr)
+
+                    // Fall back to IMDSv1 for legacy instances.
+                    options = {}
+                } else {
+                    options = {
+                        // By attaching the token we force the use of IMDSv2.
+                        // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-metadata-v2-how-it-works.html
+                        headers: { 'x-aws-ec2-metadata-token': token },
+                    }
                 }
-                try {
-                    const jsonResponse: T = JSON.parse(response)
-                    resolve(jsonResponse)
-                } catch (e) {
-                    reject(`Ec2MetadataClient: invalid response from "${path}": ${response}\nerror: ${e}`)
-                }
+
+                this.metadata.request(path, options, (err, response) => {
+                    if (err) {
+                        reject(err)
+                        return
+                    }
+                    try {
+                        const jsonResponse: T = JSON.parse(response)
+                        resolve(jsonResponse)
+                    } catch (e) {
+                        reject(`Ec2MetadataClient: invalid response from "${path}": ${response}\nerror: ${e}`)
+                    }
+                })
             })
         })
     }
