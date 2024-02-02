@@ -20,6 +20,10 @@ updates:
           vscode-lsp:
               patterns:
                   - 'vscode-lang*'
+          smithy:
+              patterns:
+                  - '@smithy*'
+                  - 'smithy*'
     - package-ecosystem: 'github-actions'
       directory: '/'
       target-branch: 'master' # Avoid updates to "staging".
