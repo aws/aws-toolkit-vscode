@@ -18,11 +18,11 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.services.caws.CawsConstants
+import software.aws.toolkits.jetbrains.utils.isCodeCatalystDevEnv
 
 class InstanceRoleCredentialProviderFactory : CredentialProviderFactory {
     init {
-        if (System.getenv(CawsConstants.CAWS_ENV_ID_VAR) != null) {
+        if (isCodeCatalystDevEnv()) {
             throw ExtensionNotApplicableException.INSTANCE
         }
     }

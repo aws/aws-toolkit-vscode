@@ -18,16 +18,18 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBFont
 import icons.AwsIcons
 import software.aws.toolkits.core.ClientConnectionSettings
-import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
+import software.aws.toolkits.jetbrains.core.credentials.sono.CodeCatalystCredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 
-open class SonoLoginOverlay(
+open class CawsLoginOverlay(
     private val project: Project?,
     private val disposable: Disposable,
-    private val drawPostLoginContent: (SonoLoginOverlay.(ClientConnectionSettings<*>) -> JComponent)
+    private val drawPostLoginContent: (CawsLoginOverlay.(ClientConnectionSettings<*>) -> JComponent)
 ) :
     NonOpaquePanel(VerticalFlowLayout(VerticalFlowLayout.TOP, 0, 0, true, true)) {
 
@@ -53,12 +55,10 @@ open class SonoLoginOverlay(
             row {
                 button(message("caws.login")) {
                     ApplicationManager.getApplication().executeOnPooledThread {
-                        SonoCredentialManager.loginSono(project)
+                        CodeCatalystCredentialManager.getInstance(project).promptAuth()
                     }
-                }.apply {
-                    applyToComponent {
-                        putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
-                    }
+                }.applyToComponent {
+                    putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
                 }
             }
         }.andTransparent()
@@ -68,13 +68,24 @@ open class SonoLoginOverlay(
         border = null
         add(contentWrapper)
 
-        redraw()
+        drawContent()
 
         ApplicationManager.getApplication().messageBus.connect(disposable).subscribe(
             BearerTokenProviderListener.TOPIC,
             object : BearerTokenProviderListener {
                 override fun onChange(providerId: String) {
-                    redraw()
+                    drawContent()
+                }
+                override fun invalidate(providerId: String) {
+                    drawContent()
+                }
+            }
+        )
+        ApplicationManager.getApplication().messageBus.connect(disposable).subscribe(
+            ToolkitConnectionManagerListener.TOPIC,
+            object : ToolkitConnectionManagerListener {
+                override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+                    drawContent()
                 }
             }
         )
@@ -82,21 +93,21 @@ open class SonoLoginOverlay(
 
     open fun initBorders() {}
 
-    fun redraw() {
+    fun drawContent() {
         with(contentWrapper.targetComponent) {
             if (this is Disposable) {
                 Disposer.dispose(this)
             }
         }
 
-        val connectionSettings = SonoCredentialManager.getInstance().getConnectionSettings()
-
         // specify 'any' because if we're currently in a modal dialog, we noop until the dialog is closed
         runInEdt(ModalityState.any()) {
             initBorders()
-            if (connectionSettings != null) {
+            if (CodeCatalystCredentialManager.getInstance(project).isConnected()) {
                 AppIcon.getInstance().requestAttention(null, false)
-                contentWrapper.setContent(drawPostLoginContent(connectionSettings))
+                CodeCatalystCredentialManager.getInstance(project).getConnectionSettings()?.let {
+                    contentWrapper.setContent(drawPostLoginContent(it))
+                }
             } else {
                 contentWrapper.setContent(loginSubpanel)
             }

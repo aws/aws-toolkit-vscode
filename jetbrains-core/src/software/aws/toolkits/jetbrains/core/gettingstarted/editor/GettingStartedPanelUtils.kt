@@ -19,7 +19,7 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.gettingstarted.SourceOfEntry
-import software.aws.toolkits.jetbrains.services.caws.CawsConstants
+import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 
 enum class ActiveConnectionType {
     BUILDER_ID,
@@ -139,5 +139,5 @@ fun getSourceOfEntry(
         sourceOfEntry.toString()
     }
     val source = if (isStartup) SourceOfEntry.FIRST_STARTUP.toString() else src
-    return if (System.getenv(CawsConstants.CAWS_ENV_ID_VAR) != null) "REMOTE_$source" else source
+    return if (isRunningOnRemoteBackend()) "REMOTE_$source" else source
 }

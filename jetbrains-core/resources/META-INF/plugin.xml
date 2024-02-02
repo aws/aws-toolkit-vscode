@@ -785,7 +785,7 @@
         <action class="software.aws.toolkits.jetbrains.settings.ShowSettingsAction" id="aws.settings.show" icon="AllIcons.General.Settings"/>
 
         <group id="aws.toolkit.sono.id.actions">
-            <action class="software.aws.toolkits.jetbrains.core.credentials.sono.SonoLogoutAction" id="aws.toolkit.sono.id.logout"/>
+            <action class="software.aws.toolkits.jetbrains.core.credentials.sono.SonoLogoutAction" id="aws.toolkit.caws.logout"/>
             <action class="software.aws.toolkits.jetbrains.services.caws.actions.OpenCawsProfileAction" id="aws.toolkit.caws.profile"/>
             <action class="software.aws.toolkits.jetbrains.ui.feedback.SubmitFeedbackInGateway" id="aws.toolkit.submit.caws.dev.env.feedback"/>
         </group>

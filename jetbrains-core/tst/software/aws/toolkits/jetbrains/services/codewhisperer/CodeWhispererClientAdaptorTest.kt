@@ -68,7 +68,6 @@ import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
-import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ManagedSsoProfile
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockToolkitAuthManagerRule
@@ -135,7 +134,7 @@ class CodeWhispererClientAdaptorTest {
             on { listFeatureEvaluations(any<ListFeatureEvaluationsRequest>()) } doReturn listFeatureEvaluationsResponse
         }
 
-        val mockConnection = mock<BearerSsoConnection>()
+        val mockConnection = mock<AwsBearerTokenConnection>()
         whenever(mockConnection.getConnectionSettings()) doReturn mock<TokenConnectionSettings>()
 
         connectionManager = mock {

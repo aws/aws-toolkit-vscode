@@ -11,6 +11,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.jetbrains.rd.util.lifetime.Lifetime
 import software.amazon.awssdk.services.codecatalyst.CodeCatalystClient
+import software.aws.toolkits.jetbrains.gateway.SsoSettings
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import javax.swing.JButton
@@ -20,6 +21,7 @@ import javax.swing.ScrollPaneConstants
 class WorkspaceListPanel(
     dataRetriever: WorkspaceDataRetriever,
     private val client: CodeCatalystClient,
+    private val ssoSettings: SsoSettings?,
     private val setContentCallback: (Component) -> Unit,
     private val refreshCallback: () -> Unit,
     private val lifetime: Lifetime
@@ -37,7 +39,7 @@ class WorkspaceListPanel(
 
     private fun setupWsPanels() {
         addToTop(createFilterBar())
-        val wsPanel = WorkspaceGroupsPanel(compatibleFilter, client, setContentCallback, lifetime).also { WorkspaceSpeedSearch(searchField, it) }
+        val wsPanel = WorkspaceGroupsPanel(compatibleFilter, client, ssoSettings, setContentCallback, lifetime).also { WorkspaceSpeedSearch(searchField, it) }
         addToCenter(
             ScrollPaneFactory.createScrollPane(wsPanel, true).apply {
                 horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER

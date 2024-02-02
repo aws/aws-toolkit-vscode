@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.credentials.pinning
 
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
-import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES_UNAVAILABLE_BUILDER_ID
@@ -16,14 +15,10 @@ class QConnection : FeatureWithPinnedConnection {
 
     override fun supportsConnectionType(connection: ToolkitConnection): Boolean {
         if (connection is AwsBearerTokenConnection) {
-            if (connection is BearerSsoConnection) {
-                if (connection.isSono()) {
-                    return (Q_SCOPES - Q_SCOPES_UNAVAILABLE_BUILDER_ID).all { it in connection.scopes }
-                }
-                return Q_SCOPES.all { it in connection.scopes }
+            if (connection.isSono()) {
+                return (Q_SCOPES - Q_SCOPES_UNAVAILABLE_BUILDER_ID).all { it in connection.scopes }
             }
-
-            return true
+            return Q_SCOPES.all { it in connection.scopes }
         }
 
         return false

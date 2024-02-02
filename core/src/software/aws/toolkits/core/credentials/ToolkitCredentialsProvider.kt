@@ -137,7 +137,7 @@ class ToolkitBearerTokenProvider(val delegate: ToolkitBearerTokenProviderDelegat
             message("iam_identity_center.service_name", extractOrgID(startUrl))
         }
 
-        fun diskSessionIdentifier(profileName: String) = "diskSessionProfile;$profileName"
+        fun diskSessionIdentifier(profileName: String) = "sso-session:$profileName"
         fun diskSessionDisplayName(profileName: String) = "IAM Identity Center Session ($profileName)"
     }
 }

@@ -19,6 +19,7 @@ import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.bindItem
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.toMutableProperty
 import com.intellij.ui.dsl.builder.toNullableProperty
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.components.BorderLayoutPanel
@@ -56,10 +57,12 @@ import software.aws.toolkits.telemetry.FeatureId
 import software.aws.toolkits.telemetry.Result
 import java.awt.BorderLayout
 import java.util.Locale
+import java.util.Optional
 import javax.swing.Action
 import javax.swing.BorderFactory
 import javax.swing.JComponent
 import javax.swing.JLabel
+import kotlin.reflect.KMutableProperty0
 
 data class SetupAuthenticationDialogState(
     var idcTabState: IdentityCenterTabState = IdentityCenterTabState(),
@@ -134,8 +137,13 @@ enum class SourceOfEntry {
     }
 }
 
+interface AuthenticationDialog {
+    val attempts: Int
+    val authType: CredentialSourceId
+}
+
 class SetupAuthenticationDialog(
-    private val project: Project,
+    private val project: Project?,
     private val scopes: List<String> = emptyList(),
     private val state: SetupAuthenticationDialogState = SetupAuthenticationDialogState(),
     private val tabSettings: Map<SetupAuthenticationTabs, AuthenticationTabSettings> = emptyMap(),
@@ -146,14 +154,20 @@ class SetupAuthenticationDialog(
     private val isFirstInstance: Boolean = false,
     private val connectionInitiatedFromExplorer: Boolean = false,
     private val connectionInitiatedFromQChatPanel: Boolean = false
-) : DialogWrapper(project) {
+) : DialogWrapper(project), AuthenticationDialog {
     private val rootTabPane = JBTabbedPane()
-    private val idcTab = idcTab()
-    private val builderIdTab = builderIdTab()
+    private val idcTab = IdcTabPanelBuilder(
+        startUrl = state.idcTabState::startUrl,
+        region = state.idcTabState::region,
+        profileName = Optional.of(state.idcTabState::profileName)
+    ).build()
+    private val builderIdTab = BuilderIdTabPanelBuilder().build()
     private val iamTab = iamTab()
     private val wrappers = SetupAuthenticationTabs.values().associateWith { BorderLayoutPanel() }
-    var attempts = 0
-    var authType = CredentialSourceId.IamIdentityCenter
+    override var attempts = 0
+        private set
+    override var authType = CredentialSourceId.IamIdentityCenter
+        private set
 
     init {
         title = message("gettingstarted.setup.title")
@@ -310,6 +324,9 @@ class SetupAuthenticationDialog(
                 }
 
                 val tokenProvider = connection.getConnectionSettings().tokenProvider
+
+                if (project == null) error("Not allowed")
+
                 val rolePopup = IdcRolePopup(
                     project,
                     state.idcTabState.region.id,
@@ -402,46 +419,6 @@ class SetupAuthenticationDialog(
     private fun selectedTab() = wrappers.entries.firstOrNull { (_, wrapper) -> wrapper == rootTabPane.selectedComponent }?.key
         ?: error("Could not determine selected tab")
 
-    private fun idcTab() = panel {
-        row(message("gettingstarted.setup.iam.profile")) {
-            textField()
-                .comment(message("gettingstarted.setup.idc.profile.comment"))
-                .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
-                .bindText(state.idcTabState::profileName)
-        }
-
-        row(message("gettingstarted.setup.idc.startUrl")) {
-            textField()
-                .comment(message("gettingstarted.setup.idc.startUrl.comment"))
-                .align(AlignX.FILL)
-                .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
-                .errorOnApply(message("gettingstarted.setup.idc.no_builder_id")) { it.text == SONO_URL }
-                .bindText(state.idcTabState::startUrl)
-        }
-
-        row(message("gettingstarted.setup.idc.region")) {
-            comboBox(
-                AwsRegionProvider.getInstance().allRegionsForService("sso").values,
-                SimpleListCellRenderer.create("null") { it.displayName }
-            ).bindItem(state.idcTabState::region.toNullableProperty())
-                .errorOnApply(message("gettingstarted.setup.error.not_selected")) { it.selected() == null }
-        }
-    }
-
-    private fun builderIdTab() = panel {
-        row {
-            text(message("gettingstarted.setup.builderid.notice"))
-        }
-
-        indent {
-            message("gettingstarted.setup.builderid.bullets").split("\n").forEach {
-                row {
-                    text("<icon src='AllIcons.General.InspectionsOK'/>&nbsp;$it")
-                }
-            }
-        }
-    }
-
     // https://docs.aws.amazon.com/STS/latest/APIReference/API_Credentials.html
     private val accessKeyRegex = "\\w{16,128}".toRegex()
 
@@ -505,5 +482,54 @@ class SetupAuthenticationDialog(
 
     companion object {
         private val LOG = getLogger<SetupAuthenticationDialog>()
+    }
+}
+
+class BuilderIdTabPanelBuilder {
+    fun build() = panel {
+        row {
+            text(message("gettingstarted.setup.builderid.notice"))
+        }
+
+        indent {
+            message("gettingstarted.setup.builderid.bullets").split("\n").forEach {
+                row {
+                    text("<icon src='AllIcons.General.InspectionsOK'/>&nbsp;$it")
+                }
+            }
+        }
+    }
+}
+class IdcTabPanelBuilder(
+    private val startUrl: KMutableProperty0<String>,
+    private val region: KMutableProperty0<AwsRegion>,
+    private var profileName: Optional<KMutableProperty0<String>> = Optional.empty()
+) {
+    fun build() = panel {
+        profileName.ifPresent {
+            row(message("gettingstarted.setup.iam.profile")) {
+                textField()
+                    .comment(message("gettingstarted.setup.idc.profile.comment"))
+                    .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
+                    .bindText(profileName.get())
+            }
+        }
+
+        row(message("gettingstarted.setup.idc.startUrl")) {
+            textField()
+                .comment(message("gettingstarted.setup.idc.startUrl.comment"))
+                .align(AlignX.FILL)
+                .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
+                .errorOnApply(message("gettingstarted.setup.idc.no_builder_id")) { it.text == SONO_URL }
+                .bind({ it.text.trim() }, { t, v -> t.text = v.trim() }, startUrl.toMutableProperty())
+        }
+
+        row(message("gettingstarted.setup.idc.region")) {
+            comboBox(
+                AwsRegionProvider.getInstance().allRegionsForService("sso").values,
+                SimpleListCellRenderer.create("null") { it.displayName }
+            ).bindItem(region.toNullableProperty())
+                .errorOnApply(message("gettingstarted.setup.error.not_selected")) { it.selected() == null }
+        }
     }
 }

@@ -63,7 +63,7 @@ fun Profile.requiredProperty(propertyName: String): String = this.property(prope
         )
     }
 
-fun Profile.ssoScopes() = property(SsoSessionConstants.SSO_REGISTRATION_SCOPES)
+fun Profile.ssoScopes(withDefault: Boolean = true) = property(SsoSessionConstants.SSO_REGISTRATION_SCOPES)
     .map { it.trim().split(",") }
-    .orElse(listOf(IDENTITY_CENTER_ROLE_ACCESS_SCOPE))
+    .orElse(if (withDefault) listOf(IDENTITY_CENTER_ROLE_ACCESS_SCOPE) else emptyList())
     .toSet()

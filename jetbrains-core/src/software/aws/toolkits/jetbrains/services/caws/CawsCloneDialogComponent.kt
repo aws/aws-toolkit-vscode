@@ -45,7 +45,7 @@ import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
 import software.aws.toolkits.jetbrains.services.caws.pat.generateAndStorePat
 import software.aws.toolkits.jetbrains.services.caws.pat.patExists
-import software.aws.toolkits.jetbrains.ui.connection.SonoLoginOverlay
+import software.aws.toolkits.jetbrains.ui.connection.CawsLoginOverlay
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodecatalystTelemetry
 import java.net.URI
@@ -186,7 +186,7 @@ class CawsCloneDialogComponent(
     }
 
     override fun getView(): JComponent =
-        SonoLoginOverlay(project, this) { drawPanel(it) }
+        CawsLoginOverlay(project, this) { drawPanel(it) }
             .apply {
                 border = IdeBorderFactory.createEmptyBorder(UIUtil.PANEL_REGULAR_INSETS)
             }

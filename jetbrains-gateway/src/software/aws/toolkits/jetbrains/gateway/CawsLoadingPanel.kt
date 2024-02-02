@@ -37,7 +37,7 @@ import software.aws.toolkits.jetbrains.gateway.welcomescreen.recursivelySetBackg
 import software.aws.toolkits.jetbrains.services.caws.CawsLetterBadge
 import software.aws.toolkits.jetbrains.services.caws.CawsResources
 import software.aws.toolkits.jetbrains.ui.CenteredInfoPanel
-import software.aws.toolkits.jetbrains.ui.connection.SonoLoginOverlay
+import software.aws.toolkits.jetbrains.ui.connection.CawsLoginOverlay
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
 import java.awt.Component
@@ -60,7 +60,7 @@ abstract class CawsLoadingPanel(protected val lifetime: Lifetime, private val se
     private val loadingJob = AtomicReference<ProgressIndicator>()
 
     private val sonoOverlay by lazy {
-        object : SonoLoginOverlay(null, lifetime.createNestedDisposable(), {
+        object : CawsLoginOverlay(null, lifetime.createNestedDisposable(), {
             border = null
             BorderLayoutPanel().apply {
                 addToTop(titleBar)
@@ -87,7 +87,7 @@ abstract class CawsLoadingPanel(protected val lifetime: Lifetime, private val se
 
     open fun getComponent(): JComponent = sonoOverlay
 
-    protected fun startLoading() = sonoOverlay.redraw()
+    protected fun startLoading() = sonoOverlay.drawContent()
 
     private fun doLoadContent(connectionSettings: ClientConnectionSettings<*>) {
         content.removeAll()

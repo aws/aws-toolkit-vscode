@@ -10,10 +10,9 @@ import com.jetbrains.gateway.api.GatewayConnectorView
 import com.jetbrains.gateway.api.GatewayRecentConnections
 import com.jetbrains.rd.util.lifetime.Lifetime
 import icons.AwsIcons
-import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.sono.CodeCatalystCredentialManager
 import software.aws.toolkits.jetbrains.gateway.welcomescreen.ExistingWorkspaces
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
-import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import javax.swing.Icon
@@ -40,9 +39,7 @@ class CawsConnector : GatewayConnector {
         override val component: JComponent
             get() {
                 if (!isSignedIn()) {
-                    runUnderProgressIfNeeded(null, message("credentials.sono.login.pending"), true) {
-                        SonoCredentialManager.loginSono(null)
-                    }
+                    CodeCatalystCredentialManager.getInstance().promptAuth()
                 }
 
                 return cawsWizard(lifetime)
@@ -63,9 +60,9 @@ class CawsConnector : GatewayConnector {
         override fun updateRecentView() {}
     }
 
-    private fun isSignedIn() = SonoCredentialManager
+    private fun isSignedIn() = CodeCatalystCredentialManager
         .getInstance()
-        .hasPreviouslyConnected()
+        .isConnected()
 
     companion object {
         const val CONNECTOR_ID = "aws.codecatalyst.connector"

@@ -16,6 +16,10 @@
         <gateway.customization.tab implementation="software.aws.toolkits.jetbrains.remoteDev.caws.UpdateWorkspaceSettingsTab"/>
     </extensions>
 
+    <extensions defaultExtensionNs="aws.toolkit">
+        <startupAuthFactory implementation="software.aws.toolkits.jetbrains.core.credentials.sono.SonoDiskProfileAuthFactory"/>
+    </extensions>
+
     <actions>
         <action class="software.aws.toolkits.jetbrains.remoteDev.caws.RebuildAction" id="aws.caws.rebuildAction" />
         <action class="software.aws.toolkits.jetbrains.remoteDev.caws.UpdateDevfileAction" id="aws.caws.updateDevfile" />

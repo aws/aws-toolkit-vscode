@@ -10,12 +10,12 @@ import com.intellij.openapi.startup.StartupActivity
 import git4idea.config.GitVcsApplicationSettings
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.jetbrains.services.caws.CawsConstants
+import software.aws.toolkits.jetbrains.utils.isCodeCatalystDevEnv
 
 class EnableGitCredHelper : StartupActivity, DumbAware {
     override fun runActivity(project: Project) {
         RunOnceUtil.runOnceForApp(taskId) {
-            if (System.getenv(CawsConstants.CAWS_ENV_ID_VAR) == null) {
+            if (!isCodeCatalystDevEnv()) {
                 LOG.info { "No-op since we're not in a CodeCatalyst environment" }
                 return@runOnceForApp
             }

@@ -14,11 +14,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
@@ -57,10 +55,13 @@ class DefaultToolkitAuthManagerTest {
 
     private lateinit var sut: DefaultToolkitAuthManager
 
+    private lateinit var connectionManager: ToolkitConnectionManager
+
     @Before
     fun setUp() {
         mockClientManager.create<SsoOidcClient>()
         sut = DefaultToolkitAuthManager()
+        connectionManager = DefaultToolkitConnectionManager()
     }
 
     @Test
@@ -306,8 +307,8 @@ class DefaultToolkitAuthManagerTest {
 
     @Test
     fun `loginSso forces reauth if requested scopes are not complete subset`() {
-        val connectionManager: ToolkitConnectionManager = mock()
         regionProvider.addRegion(Region.US_EAST_1)
+
         projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
         ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
 
@@ -325,14 +326,10 @@ class DefaultToolkitAuthManagerTest {
             val newScopes = listOf("existing1", "new1")
             loginSso(projectRule.project, "foo", "us-east-1", newScopes)
 
-            val captor = argumentCaptor<ManagedBearerSsoConnection>()
-
-            verify(connectionManager, times(2)).switchConnection(captor.capture())
-
-            assertThat(captor.secondValue).satisfies { connection ->
+            assertThat(connectionManager.activeConnection() as AwsBearerTokenConnection).satisfies { connection ->
                 assertThat(connection.scopes.toSet()).isEqualTo(setOf("existing1", "existing2", "existing3", "new1"))
             }
-            assertThat(sut.listConnections()).singleElement().isInstanceOfSatisfying<BearerSsoConnection> { connection ->
+            assertThat(sut.listConnections()).singleElement().isInstanceOfSatisfying<AwsBearerTokenConnection> { connection ->
                 assertThat(connection).usingRecursiveComparison().isNotEqualTo(existingConnection)
                 assertThat(connection.scopes.toSet()).isEqualTo(setOf("existing1", "existing2", "existing3", "new1"))
             }
@@ -377,30 +374,38 @@ class DefaultToolkitAuthManagerTest {
     @Test
     fun `logoutFromConnection should invalidate the token provider and the connection and invoke callback`() {
         regionProvider.addRegion(Region.US_EAST_1)
-        val connectionManager: ToolkitConnectionManager = mock()
+
         projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
-        val authManager: ToolkitAuthManager = mock()
-        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, authManager, disposableRule.disposable)
 
-        val connection = LegacyManagedBearerSsoConnection("startUrl000", "us-east-1", listOf())
+        val profile = ManagedSsoProfile("us-east-1", "startUrl000")
+        val connection = ToolkitAuthManager.getInstance().createConnection(profile) as ManagedBearerSsoConnection
+        connectionManager.switchConnection(connection)
 
-        var messageReceived = 0
+        var providerInvalidatedMessageReceived = 0
+        var connectionSwitchedMessageReceived = 0
         var callbackInvoked = 0
         ApplicationManager.getApplication().messageBus.connect().subscribe(
             BearerTokenProviderListener.TOPIC,
             object : BearerTokenProviderListener {
                 override fun invalidate(providerId: String) {
                     if (providerId == "sso;us-east-1;startUrl000") {
-                        messageReceived += 1
+                        providerInvalidatedMessageReceived += 1
                     }
+                }
+            }
+        )
+        ApplicationManager.getApplication().messageBus.connect().subscribe(
+            ToolkitConnectionManagerListener.TOPIC,
+            object : ToolkitConnectionManagerListener {
+                override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+                    connectionSwitchedMessageReceived += 1
                 }
             }
         )
 
         logoutFromSsoConnection(projectRule.project, connection) { callbackInvoked += 1 }
-        assertThat(messageReceived).isEqualTo(1)
+        assertThat(providerInvalidatedMessageReceived).isEqualTo(1)
+        assertThat(connectionSwitchedMessageReceived).isEqualTo(1)
         assertThat(callbackInvoked).isEqualTo(1)
-        verify(authManager).deleteConnection(eq("sso;us-east-1;startUrl000"))
-        verify(connectionManager).switchConnection(eq(null))
     }
 }

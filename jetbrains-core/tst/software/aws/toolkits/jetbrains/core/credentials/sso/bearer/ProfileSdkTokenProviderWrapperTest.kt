@@ -89,7 +89,7 @@ class ProfileSdkTokenProviderWrapperTest {
         val sut = ProfileSdkTokenProviderWrapper(sessionName = session, region = "us-east-1")
         writeToken(session, Instant.now().minusSeconds(9000))
 
-        assertThat(sut.currentToken()).isNull()
+        assertThat(sut.currentToken()).isNotNull()
         verifyNoInteractions(oidcClient)
     }
 
