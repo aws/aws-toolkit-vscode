@@ -199,7 +199,6 @@ export async function activate(context: ExtContext): Promise<void> {
         updateReferenceLog.register(),
         // refresh codewhisperer status bar
         refreshStatusBar.register(),
-        refreshAnnotation,
         // apply suggested fix
         applySecurityFix.register(),
         // quick pick with codewhisperer options
