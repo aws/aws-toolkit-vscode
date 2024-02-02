@@ -74,7 +74,7 @@ class ProgressReporter {
         this._totalBytes = options?.totalBytes
         if (this._totalBytes !== undefined) {
             if (!Number.isInteger(this._totalBytes)) {
-                throw new Error(`totalBytes: ${this._totalBytes} must be an integer`)
+                throw new TypeError(`totalBytes: ${this._totalBytes} must be an integer`)
             }
             if (this._totalBytes < 0) {
                 throw new Error(`totalBytes ${this._totalBytes} cannot be negative`)
@@ -137,7 +137,7 @@ class ProgressReporter {
      */
     public update(newBytes: number): void {
         if (!Number.isInteger(newBytes)) {
-            throw new Error(`newBytes: ${newBytes} must be an integer`)
+            throw new TypeError(`newBytes: ${newBytes} must be an integer`)
         } else if (newBytes < 0) {
             throw new Error(`newBytes: ${newBytes} cannot be negative`)
         } else if (this._totalBytes !== undefined && newBytes > this._totalBytes) {

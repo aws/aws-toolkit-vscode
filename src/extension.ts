@@ -138,7 +138,7 @@ export async function activate(context: vscode.ExtensionContext) {
         // Splits environment details by new line, filter removes the empty string
         toolkitEnvDetails
             .split(/\r?\n/)
-            .filter(x => x)
+            .filter(Boolean)
             .forEach(line => getLogger().info(line))
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)

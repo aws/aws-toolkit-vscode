@@ -225,7 +225,7 @@ function hasImageBasedResources(template: CloudFormation.Template) {
         : Object.keys(resources)
               .filter(key => resources[key]?.Type === 'AWS::Serverless::Function')
               .map(key => resources[key]?.Properties?.PackageType)
-              .some(it => it === 'Image')
+              .includes('Image')
 }
 
 export class SyncWizard extends Wizard<SyncParams> {

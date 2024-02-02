@@ -377,23 +377,19 @@ describe('CloudFormation Template Registry', async function () {
 
             const helloWorldResource = {
                 ...resource,
-                ...{
-                    Metadata: {
-                        DockerTag: 'nodejs16.x-v1',
-                        DockerContext: './hello-world',
-                        Dockerfile: 'Dockerfile',
-                    },
+                Metadata: {
+                    DockerTag: 'nodejs16.x-v1',
+                    DockerContext: './hello-world',
+                    Dockerfile: 'Dockerfile',
                 },
             }
 
             const helloWorldNestedResource = {
                 ...resource,
-                ...{
-                    Metadata: {
-                        DockerTag: 'nodejs16.x-v1',
-                        DockerContext: './hello-world/nested',
-                        Dockerfile: 'Dockerfile',
-                    },
+                Metadata: {
+                    DockerTag: 'nodejs16.x-v1',
+                    DockerContext: './hello-world/nested',
+                    Dockerfile: 'Dockerfile',
                 },
             }
 
@@ -453,28 +449,24 @@ describe('CloudFormation Template Registry', async function () {
 
             const helloWorldResource = {
                 ...resource,
-                ...{
-                    Metadata: {
-                        DockerTag: 'dotnetcore3.1-v1',
-                        DockerContext: './hello-world',
-                        Dockerfile: 'Dockerfile',
-                        DockerBuildArgs: {
-                            SAM_BUILD_MODE: 'run',
-                        },
+                Metadata: {
+                    DockerTag: 'dotnetcore3.1-v1',
+                    DockerContext: './hello-world',
+                    Dockerfile: 'Dockerfile',
+                    DockerBuildArgs: {
+                        SAM_BUILD_MODE: 'run',
                     },
                 },
             }
 
             const helloWorldNestedResource = {
                 ...resource,
-                ...{
-                    Metadata: {
-                        DockerTag: 'dotnetcore3.1-v1',
-                        DockerContext: './hello-world/nested',
-                        Dockerfile: 'Dockerfile',
-                        DockerBuildArgs: {
-                            SAM_BUILD_MODE: 'run',
-                        },
+                Metadata: {
+                    DockerTag: 'dotnetcore3.1-v1',
+                    DockerContext: './hello-world/nested',
+                    Dockerfile: 'Dockerfile',
+                    DockerBuildArgs: {
+                        SAM_BUILD_MODE: 'run',
                     },
                 },
             }

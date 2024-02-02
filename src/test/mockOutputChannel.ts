@@ -49,7 +49,7 @@ export class MockOutputChannel implements vscode.OutputChannel {
     }
 
     public get lines(): string[] {
-        return this.value.trimRight().split('\n')
+        return this.value.trimEnd().split('\n')
     }
 
     public get isShown(): boolean {
