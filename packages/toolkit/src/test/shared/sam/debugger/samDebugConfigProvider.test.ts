@@ -1289,7 +1289,7 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=code: java 17 gradle', async function () {
+        it('target=code: java17 gradle', async function () {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-gradle/')
             )
@@ -1391,7 +1391,7 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=template: java maven', async function () {
+        it('target=template: java17 maven', async function () {
             const handler = 'helloworld.App::handleRequest'
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-maven/')

@@ -55,7 +55,9 @@ function getJavaOptionsEnvVar(config: SamLaunchRequestArgs): string {
             // https://github.com/aws/aws-sam-cli/blob/86f88cbd7df365960f7015c5d086b0db7aedd9d5/samcli/local/docker/lambda_debug_settings.py#L53
             return `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,quiet=y,address=*:${config.debugPort} -XX:MaxHeapSize=2834432k -XX:MaxMetaspaceSize=163840k -XX:ReservedCodeCacheSize=81920k -XX:+UseSerialGC -XX:-TieredCompilation -Djava.net.preferIPv4Stack=true`
         case 'java17':
+        case 'java21':
             // https://github.com/aws/aws-sam-cli/blob/90aa5cf11e1c5cbfbe66aea2e2de10d478d48231/samcli/local/docker/lambda_debug_settings.py#L86
+            // https://github.com/aws/aws-sam-cli/blob/90aa5cf11e1c5cbfbe66aea2e2de10d478d48231/samcli/local/docker/lambda_debug_settings.py#L96
             return `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,quiet=y,address=*:${config.debugPort} -XX:MaxHeapSize=2834432k -XX:+UseSerialGC -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Djava.net.preferIPv4Stack=true`
         default:
             return `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,quiet=y,address=${config.debugPort} -XX:MaxHeapSize=2834432k -XX:MaxMetaspaceSize=163840k -XX:ReservedCodeCacheSize=81920k -XX:+UseSerialGC -XX:-TieredCompilation -Djava.net.preferIPv4Stack=true -Xshare:off`

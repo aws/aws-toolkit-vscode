@@ -52,7 +52,13 @@ export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.7',
 ])
 export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
-export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['java17', 'java11', 'java8', 'java8.al2'])
+export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'java21',
+    'java17',
+    'java11',
+    'java8',
+    'java8.al2',
+])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnet6'])
 
 /**
@@ -77,7 +83,7 @@ const defaultRuntimes = ImmutableMap<RuntimeFamily, Runtime>([
     [RuntimeFamily.Python, 'python3.12'],
     [RuntimeFamily.DotNet, 'dotnet6'],
     [RuntimeFamily.Go, 'go1.x'],
-    [RuntimeFamily.Java, 'java17'],
+    [RuntimeFamily.Java, 'java21'],
 ])
 
 export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
@@ -94,6 +100,7 @@ export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>
     'nodejs18.x',
     'nodejs16.x',
     'nodejs14.x',
+    'java21',
     'java17',
     'java11',
     'java8.al2',
