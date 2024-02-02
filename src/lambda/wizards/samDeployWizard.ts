@@ -219,7 +219,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             return Object.keys(resources)
                 .filter(key => resources[key]?.Type === 'AWS::Serverless::Function')
                 .map(key => resources[key]?.Properties?.PackageType)
-                .some(it => it === 'Image')
+                .includes('Image')
         }
     }
 

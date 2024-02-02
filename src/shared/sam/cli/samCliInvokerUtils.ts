@@ -96,7 +96,7 @@ const acceptedSequences = [yellowForeground]
 function matchAfterEscapeSeq(text: string, sequences = acceptedSequences): string {
     text = text.trim()
     const escapeInDecimal = 27
-    if (text.charCodeAt(0) !== escapeInDecimal) {
+    if (text.codePointAt(0) !== escapeInDecimal) {
         return ''
     }
 

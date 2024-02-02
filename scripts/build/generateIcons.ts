@@ -52,7 +52,7 @@ async function updatePackage(fontPath: string, icons: [id: string, icon: Package
     const iconsContribution = (contributes.icons ??= {})
 
     if (typeof iconsContribution !== 'object') {
-        throw new Error('Expected `icons` contribution to be an object')
+        throw new TypeError('Expected `icons` contribution to be an object')
     }
 
     for (const [id, icon] of Object.entries(iconsContribution)) {
@@ -130,7 +130,7 @@ async function generate(mappings: Record<string, number | undefined> = {}) {
                     throw new Error(`No unicode mapping found for icon "${obj.name}"`)
                 }
 
-                obj.unicode = [String.fromCharCode(mapping)]
+                obj.unicode = [String.fromCodePoint(mapping)]
             } else {
                 const parts = path.relative(iconsDir, filePath).split(path.sep)
                 obj.name = parts.join('-').replace('.svg', '')

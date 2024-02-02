@@ -132,7 +132,7 @@ export class S3FileViewerManager {
 
     /** Disposes all active editors and underlying files. */
     public async closeEditors(): Promise<void> {
-        await Promise.all([...Object.values(this.activeTabs).map(v => v?.dispose())])
+        await Promise.all(Object.values(this.activeTabs).map(v => v?.dispose()))
     }
 
     /** Disposes all active editors, underlying files, providers, and other resources. */
@@ -249,7 +249,7 @@ export class S3FileViewerManager {
         }
 
         if (file instanceof vscode.Uri) {
-            throw new Error('Unable to open file in edit mode without a valid editor.')
+            throw new TypeError('Unable to open file in edit mode without a valid editor.')
         }
 
         await activeTab?.dispose()

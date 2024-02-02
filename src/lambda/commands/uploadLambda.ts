@@ -498,7 +498,7 @@ export async function findApplicationJsonFile(
               // exclude:
               // - null      = NO excludes apply
               // - undefined = default excludes apply (e.g. the `files.exclude` setting but not `search.exclude`).
-              // eslint-disable-next-line no-null/no-null
+              // eslint-disable-next-line unicorn/no-null
               null,
               1
           )

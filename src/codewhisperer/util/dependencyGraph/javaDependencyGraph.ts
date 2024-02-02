@@ -252,7 +252,7 @@ export class JavaDependencyGraph extends DependencyGraph {
     }
 
     private detectClasspath(dirPath: string, dirName: string, projectName: string, extension: string): PackageNode {
-        if (!existsSync(dirPath) || dirPath.indexOf(projectName) === -1) {
+        if (!existsSync(dirPath) || dirPath.includes(projectName)) {
             return { paths: [], valid: false }
         }
 
@@ -307,9 +307,7 @@ export class JavaDependencyGraph extends DependencyGraph {
     private isValidSubClasspath(node: PackageNode) {
         let valid = false
         node.paths.forEach(path => {
-            valid =
-                valid ||
-                Array.from(this._packageStrs).filter(s => s.length >= path.length && s.endsWith(path)).length > 0
+            valid = valid || Array.from(this._packageStrs).some(s => s.length >= path.length && s.endsWith(path))
         })
         return valid
     }

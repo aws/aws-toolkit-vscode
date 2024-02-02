@@ -53,7 +53,7 @@ function createS3() {
     client.headObject.callsFake(async req => getFile(req.key))
     client.uploadFile.callsFake(async req => {
         if (req.content instanceof vscode.Uri) {
-            throw new Error('Did not expect a URI, expected a Buffer')
+            throw new TypeError('Did not expect a URI, expected a Buffer')
         }
         const newFile = {
             ...makeFile(req.key, Buffer.from(req.content)),
