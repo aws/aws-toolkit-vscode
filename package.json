@@ -4398,8 +4398,8 @@
         "vue": "^3.3.4",
         "web-tree-sitter": "^0.20.7",
         "whatwg-url": "^14.0.0",
-        "winston": "^3.7.1",
-        "winston-transport": "^4.5.0",
+        "winston": "^3.11.0",
+        "winston-transport": "^4.6.0",
         "xml2js": "^0.6.1",
         "yaml-cfn": "^0.3.2"
     },
