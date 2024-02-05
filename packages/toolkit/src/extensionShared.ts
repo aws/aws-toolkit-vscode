@@ -15,7 +15,7 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
 import { documentationUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { getIdeProperties, aboutToolkit } from './shared/extensionUtilities'
+import { getIdeProperties, aboutToolkit, isCloud9 } from './shared/extensionUtilities'
 import { telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 
@@ -38,6 +38,7 @@ import { getLogger } from './shared/logger'
 import { showMessageWithUrl } from './shared/utilities/messages'
 import { Logging } from './shared/logger/commands'
 import { registerWebviewErrorHandler } from './webviews/server'
+import { showQuickStartWebview } from './shared/extensionStartup'
 
 let localize: nls.LocalizeFunc
 
@@ -59,6 +60,19 @@ export async function activateShared(context: vscode.ExtensionContext, getRegion
     registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
         logAndShowWebviewError(error, webviewId, command)
     })
+
+    if (isCloud9()) {
+        vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
+        context.subscriptions.push(
+            Commands.register('aws.quickStart', async () => {
+                try {
+                    await showQuickStartWebview(context)
+                } finally {
+                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
+                }
+            })
+        )
+    }
 
     // Setup the logger
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
@@ -180,4 +194,33 @@ function logAndShowWebviewError(err: unknown, webviewId: string, command: string
     logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch(e => {
         getLogger().error('logAndShowError failed: %s', (e as Error).message)
     })
+}
+
+/**
+ * Wraps the `vscode.window.withProgress` functionality with functionality that also writes to the output channel.
+ *
+ * Cloud9 does not show a progress notification.
+ */
+function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscode.window)['withProgress'] {
+    const withProgress = vscode.window.withProgress.bind(vscode.window)
+
+    return (options, task) => {
+        if (options.title) {
+            channel.appendLine(options.title)
+        }
+
+        return withProgress(options, (progress, token) => {
+            const newProgress: typeof progress = {
+                ...progress,
+                report: value => {
+                    if (value.message) {
+                        channel.appendLine(value.message)
+                    }
+                    progress.report(value)
+                },
+            }
+
+            return task(newProgress, token)
+        })
+    }
 }

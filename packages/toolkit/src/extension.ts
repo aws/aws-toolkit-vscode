@@ -55,7 +55,6 @@ import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
 import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
-import { Commands } from './shared/vscode/commands2'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
@@ -63,7 +62,6 @@ import { showViewLogsMessage } from './shared/utilities/messages'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
-import { showQuickStartWebview } from './shared/extensionStartup'
 import { activateShared } from './extensionShared'
 
 let localize: nls.LocalizeFunc
@@ -75,19 +73,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
-
-    if (isCloud9()) {
-        vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
-        context.subscriptions.push(
-            Commands.register('aws.quickStart', async () => {
-                try {
-                    await showQuickStartWebview(context)
-                } finally {
-                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
-                }
-            })
-        )
-    }
 
     try {
         // IMPORTANT: If you are doing setup that should also work in browser, it should be done in the function below
@@ -291,35 +276,6 @@ function recordToolkitInitialization(activationStartedOn: number, settingsValid:
         }
     } catch (err) {
         logger?.error(err as Error)
-    }
-}
-
-/**
- * Wraps the `vscode.window.withProgress` functionality with functionality that also writes to the output channel.
- *
- * Cloud9 does not show a progress notification.
- */
-function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscode.window)['withProgress'] {
-    const withProgress = vscode.window.withProgress.bind(vscode.window)
-
-    return (options, task) => {
-        if (options.title) {
-            channel.appendLine(options.title)
-        }
-
-        return withProgress(options, (progress, token) => {
-            const newProgress: typeof progress = {
-                ...progress,
-                report: value => {
-                    if (value.message) {
-                        channel.appendLine(value.message)
-                    }
-                    progress.report(value)
-                },
-            }
-
-            return task(newProgress, token)
-        })
     }
 }
 
