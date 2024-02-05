@@ -18,13 +18,13 @@ coverage:
             codewhisperer:
                 target: 70%
                 paths:
-                    - packages/toolkitsrc/codewhisperer/*
+                    - src/codewhisperer/*
                 flags:
                     - 'codewhisperer'
             amazonqFeatureDev:
                 target: 70%
                 paths:
-                    - packages/toolkit/src/amazonqFeatureDev/*
+                    - src/amazonqFeatureDev/*
                 flags:
                     - 'amazonqFeatureDev'
         patch: no
