@@ -10,10 +10,13 @@ import { debounce2 } from '../../../shared/utilities/functionUtils'
 import { AuthUtil } from '../../util/authUtil'
 import { CodeWhispererSource } from '../../commands/types'
 import { placeholder } from '../../../shared/vscode/commands2'
-import { RecommendationService } from '../../service/recommendationService'
+import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { set } from '../../util/commonUtil'
-import { inlinehintKey } from '../../models/constants'
+import { inlinehintKey, suggestionDetailReferenceText } from '../../models/constants'
 import globals from '../../../shared/extensionGlobals'
+import { RecommendationHandler } from '../../service/recommendationHandler'
+import { CodewhispererTriggerType } from '../../../shared/telemetry/telemetry'
+import { GetRecommendationsResponse } from '../../models/model'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -27,6 +30,39 @@ export function once<T>(event: vscode.Event<T>): vscode.Event<T> {
         return result
     }
 }
+
+interface AnnotationContext {
+    selections: LineSelection[]
+    triggerType: CodewhispererTriggerType
+    response: GetRecommendationsResponse
+}
+
+interface AnnotationState {
+    id: string
+    text: string
+}
+
+const state1: AnnotationState = {
+    id: '1',
+    text: 'CodeWhisperer suggests code as you type, press [TAB] to accept',
+}
+
+const state2: AnnotationState = {
+    id: '2',
+    text: '[Option] + [C] triggers CodeWhisperer manually',
+}
+
+const state3: AnnotationState = {
+    id: '3',
+    text: 'Try CodeWhisperer on an existing file with code for best results',
+}
+
+const state4: AnnotationState = {
+    id: '4',
+    text: 'Try more examples with CodeWhisperer in the IDE',
+}
+
+// const state5: AnnotationState = {}
 
 export class LineAnnotationController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
@@ -100,11 +136,11 @@ export class LineAnnotationController implements vscode.Disposable {
         }
     }
 
-    readonly refreshDebounced = debounce2(editor => {
-        this.refresh(editor)
+    readonly refreshDebounced = debounce2((editor, e?) => {
+        this.refresh(editor, e)
     }, 250)
 
-    async refresh(editor: vscode.TextEditor | undefined) {
+    async refresh(editor: vscode.TextEditor | undefined, option?: SuggestionActionEvent) {
         if (!this.auth.isConnectionValid(false)) {
             this.clear(this._editor)
             return
@@ -132,10 +168,10 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         // if (cancellation.isCancellationRequested) return
-        await this.updateDecorations(editor, selections)
+        await this.updateDecorations(editor, selections, option)
     }
 
-    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[]) {
+    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], option?: SuggestionActionEvent) {
         const range = editor.document.validateRange(
             new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
         )
@@ -143,11 +179,14 @@ export class LineAnnotationController implements vscode.Disposable {
         const isCWRunning = RecommendationService.instance.isRunning
         if (isCWRunning) {
             editor.setDecorations(this.cwLineHintDecoration, [])
+            this._selections = lines
             return
         }
 
-        const options = this.getInlineDecoration(editor, lines) as vscode.DecorationOptions | undefined
+        const options = this.getInlineDecoration(editor, lines, option) as vscode.DecorationOptions | undefined
         if (!options) {
+            this.clear(this._editor)
+            this._selections = lines
             return
         }
 
@@ -175,7 +214,7 @@ export class LineAnnotationController implements vscode.Disposable {
     private setCWInlineService(enabled: boolean) {
         const disposable = RecommendationService.instance.suggestionActionEvent(e => {
             // can't use refresh because refresh, by design, should only be triggered when there is line selection change
-            this.refreshDebounced(e.editor)
+            this.refreshDebounced(e.editor, e)
         })
 
         return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
@@ -183,12 +222,13 @@ export class LineAnnotationController implements vscode.Disposable {
 
     getInlineDecoration(
         editor: vscode.TextEditor,
-        lines: LineSelection[]
+        lines: LineSelection[],
+        e?: SuggestionActionEvent
     ): Partial<vscode.DecorationOptions> | undefined {
         const sameLine = this._selections ? isSameLine(this._selections[0], lines[0]) : false
         const isEndOfLine = isCursorAtEndOfLine(editor)
 
-        const options = this.textOptions(sameLine, isEndOfLine)
+        const options = this.textOptions(sameLine, isEndOfLine, e)
 
         if (!options) {
             return undefined
@@ -205,7 +245,11 @@ export class LineAnnotationController implements vscode.Disposable {
         return renderOptions
     }
 
-    private textOptions(isSameLine: boolean, isEndOfLine: boolean): vscode.ThemableDecorationRenderOptions | undefined {
+    private textOptions(
+        isSameLine: boolean,
+        isEndOfLine: boolean,
+        e?: SuggestionActionEvent
+    ): vscode.ThemableDecorationRenderOptions | undefined {
         const textOptions = {
             contentText: '',
             fontWeight: 'normal',
@@ -214,11 +258,38 @@ export class LineAnnotationController implements vscode.Disposable {
             color: '#8E8E8E',
         }
 
-        if (isSameLine && this._inlineText) {
+        // [1]
+        // if user manual triggers but receives an empty suggestion
+        if (
+            this._inlineText === '[Option] + [C] triggers CodeWhisperer manually' &&
+            e?.response?.recommendationCount === 0 &&
+            e.triggerType === 'OnDemand'
+        ) {
+            textOptions.contentText = 'Try CodeWhisperer on an existing file with code for best results'
+            return { after: textOptions }
+        }
+
+        // unless users have a valid manual trigger, we won't show next hint
+        if (
+            this._inlineText === '[Option] + [C] triggers CodeWhisperer manually' &&
+            !RecommendationService.instance.manualTriggered
+        ) {
             textOptions.contentText = this._inlineText
             return { after: textOptions }
         }
 
+        // [2]
+        if (
+            isSameLine &&
+            this._inlineText &&
+            !e &&
+            this._inlineText !== '[Option] + [C] triggers CodeWhisperer manually'
+        ) {
+            textOptions.contentText = this._inlineText
+            return { after: textOptions }
+        }
+
+        // [3]
         if (!this._currentStep && isEndOfLine) {
             textOptions.contentText = 'CodeWhisperer suggests code as you type, press [TAB] to accept'
 
@@ -228,6 +299,9 @@ export class LineAnnotationController implements vscode.Disposable {
 
             this._currentStep = '2'
         } else if (this._currentStep === '2') {
+            if (RecommendationHandler.instance.isSuggestionVisible()) {
+                return undefined
+            }
             textOptions.contentText = `Try more examples with CodeWhisperer in the IDE`
 
             this._currentStep = '3'

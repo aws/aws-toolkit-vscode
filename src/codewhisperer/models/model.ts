@@ -64,6 +64,7 @@ export interface CodeWhispererSupplementalContextItem {
 export interface GetRecommendationsResponse {
     readonly result: 'Succeeded' | 'Failed'
     readonly errorMessage: string | undefined
+    readonly recommendationCount: number
 }
 
 /** Manages the state of CodeWhisperer code suggestions */

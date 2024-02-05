@@ -17,6 +17,8 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 export interface SuggestionActionEvent {
     readonly editor: vscode.TextEditor | undefined
     readonly isRunning: boolean
+    readonly triggerType: CodewhispererTriggerType
+    readonly response: GetRecommendationsResponse | undefined
 }
 
 export class RecommendationService {
@@ -25,6 +27,11 @@ export class RecommendationService {
     private _isRunning: boolean = false
     get isRunning() {
         return this._isRunning
+    }
+
+    private _manualTriggered: boolean = false
+    get manualTriggered() {
+        return this._manualTriggered
     }
 
     private _onSuggestionActionEvent = new vscode.EventEmitter<SuggestionActionEvent>()
@@ -61,16 +68,19 @@ export class RecommendationService {
             vsCodeState.isIntelliSenseActive = false
             this._isRunning = true
 
+            let response: GetRecommendationsResponse = {
+                result: 'Failed',
+                errorMessage: undefined,
+                recommendationCount: 0,
+            }
+
             try {
                 this._onSuggestionActionEvent.fire({
                     editor: editor,
                     isRunning: true,
+                    triggerType: triggerType,
+                    response: undefined,
                 })
-
-                let response: GetRecommendationsResponse = {
-                    result: 'Failed',
-                    errorMessage: undefined,
-                }
 
                 if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
                     response = await RecommendationHandler.instance.getRecommendations(
@@ -104,6 +114,8 @@ export class RecommendationService {
                 this._onSuggestionActionEvent.fire({
                     editor: editor,
                     isRunning: false,
+                    triggerType: triggerType,
+                    response: response,
                 })
             }
         } else if (isInlineCompletionEnabled()) {
@@ -113,13 +125,17 @@ export class RecommendationService {
 
             this._isRunning = true
 
+            let response: GetRecommendationsResponse | undefined = undefined
+
             try {
                 this._onSuggestionActionEvent.fire({
                     editor: editor,
                     isRunning: true,
+                    triggerType: triggerType,
+                    response: undefined,
                 })
 
-                await InlineCompletionService.instance.getPaginatedRecommendation(
+                response = await InlineCompletionService.instance.getPaginatedRecommendation(
                     client,
                     editor,
                     triggerType,
@@ -127,11 +143,18 @@ export class RecommendationService {
                     autoTriggerType,
                     event
                 )
+
+                // set a "valid" manual trigger
+                if (triggerType === 'OnDemand' && response.result === 'Succeeded' && response.recommendationCount > 0) {
+                    this._manualTriggered = true
+                }
             } finally {
                 this._isRunning = false
                 this._onSuggestionActionEvent.fire({
                     editor: editor,
                     isRunning: false,
+                    triggerType: triggerType,
+                    response: response,
                 })
             }
         }

@@ -44,6 +44,7 @@ import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
+import { Container } from './serviceContainer'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -51,6 +52,12 @@ import path from 'path'
  */
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
+
+// VSCode doesn't expose public API to know if the inline suggestion is removed or not (only acceptance case)
+const onPopupRemoved = () => {
+    RecommendationHandler.instance.reportUserDecisions(-1)
+    Container.instance._lineAnnotationController.refreshDebounced(vscode.window.activeTextEditor)
+}
 
 // below commands override VS Code inline completion commands
 const prevCommand = Commands.declare('editor.action.inlineSuggest.showPrevious', () => async () => {
@@ -61,7 +68,7 @@ const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () 
 })
 
 const rejectCommand = Commands.declare('aws.codeWhisperer.rejectCodeSuggestion', () => async () => {
-    RecommendationHandler.instance.reportUserDecisions(-1)
+    onPopupRemoved()
 })
 
 const lock = new AsyncLock({ maxPending: 1 })
@@ -165,6 +172,7 @@ export class RecommendationHandler {
             return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
+                recommendationCount: 0,
             })
         }
         let recommendations: RecommendationsList = []
@@ -226,6 +234,7 @@ export class RecommendationHandler {
                 return Promise.resolve<GetRecommendationsResponse>({
                     result: invocationResult,
                     errorMessage: errorMessage,
+                    recommendationCount: 0,
                 })
             }
         }
@@ -358,6 +367,7 @@ export class RecommendationHandler {
             return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
+                recommendationCount: session.recommendations.length,
             })
         }
 
@@ -411,6 +421,7 @@ export class RecommendationHandler {
         return Promise.resolve<GetRecommendationsResponse>({
             result: invocationResult,
             errorMessage: errorMessage,
+            recommendationCount: session.recommendations.length,
         })
     }
 
@@ -629,11 +640,11 @@ export class RecommendationHandler {
     }
 
     async onEditorChange() {
-        this.reportUserDecisions(-1)
+        onPopupRemoved()
     }
 
     async onFocusChange() {
-        this.reportUserDecisions(-1)
+        onPopupRemoved()
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
