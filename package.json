@@ -4360,7 +4360,7 @@
         "@aws/mynah-ui": "3.3.3",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
-        "@smithy/shared-ini-file-loader": "^2.2.8",
+        "@smithy/shared-ini-file-loader": "^2.3.1",
         "@vscode/debugprotocol": "^1.57.0",
         "adm-zip": "^0.5.10",
         "amazon-states-language-service": "^1.11.0",
