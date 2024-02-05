@@ -62,7 +62,7 @@ import { showViewLogsMessage } from './shared/utilities/messages'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
-import { activateShared } from './extensionShared'
+import { activateShared, deactivateShared } from './extensionShared'
 
 let localize: nls.LocalizeFunc
 
@@ -243,8 +243,8 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
+    await deactivateShared()
     await codewhispererShutdown()
-    await globals.telemetry.shutdown()
     await globals.resourceManager.dispose()
 }
 

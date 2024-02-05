@@ -106,6 +106,10 @@ export async function activateShared(context: vscode.ExtensionContext, getRegion
     registerCommands(context)
 }
 
+/** Deactivation code that is shared between nodejs and browser implementations */
+export async function deactivateShared() {
+    await globals.telemetry.shutdown()
+}
 /**
  * Registers generic commands used by both browser and node versions of the toolkit.
  */
