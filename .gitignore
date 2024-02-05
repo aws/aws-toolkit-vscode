@@ -47,3 +47,5 @@ resources/css/icons.css
 
 # Created by `npm run browserRun` when testing extension in the browser
 .vscode-test-web
+
+#ignore this comment
