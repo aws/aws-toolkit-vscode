@@ -37,7 +37,10 @@
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts packages plugins && npm run formatfix",
         "clean": "npm run clean -w packages/ -w plugins/",
         "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules packages/toolkit/node_modules && npm install",
-        "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/"
+        "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/",
+        "watch": "npm run watch -w packages/toolkit",
+        "browserRun": "npm run browserRun -w packages/toolkit",
+        "browserWatch": "npm run browserWatch -w packages/toolkit"
     },
     "devDependencies": {
         "eslint": "^8.56.0",
