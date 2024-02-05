@@ -274,7 +274,7 @@ export class CodeDownloader {
 
             return zipContents
         } else {
-            throw new Error('Response body should be Buffer type')
+            throw new TypeError('Response body should be Buffer type')
         }
     }
 }

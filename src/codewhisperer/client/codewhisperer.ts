@@ -13,7 +13,6 @@ import {
     ListFeatureEvaluationsResponse,
     SendTelemetryEventRequest,
 } from './codewhispereruserclient'
-import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
@@ -30,7 +29,27 @@ import { keepAliveHeader } from './agent'
 import { getOptOutPreference } from '../util/commonUtil'
 import * as os from 'os'
 import { getClientId } from '../../shared/telemetry/util'
-import { extensionVersion } from '../../shared/vscode/env'
+import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
+import { DevSettings } from '../../shared/settings'
+
+export interface CodeWhispererConfig {
+    readonly region: string
+    readonly endpoint: string
+}
+
+export const defaultServiceConfig: CodeWhispererConfig = {
+    region: 'us-east-1',
+    endpoint: 'https://codewhisperer.us-east-1.amazonaws.com/',
+}
+
+export function getCodewhispererConfig(): CodeWhispererConfig {
+    return {
+        ...DevSettings.instance.getServiceConfig('codewhispererService', defaultServiceConfig),
+
+        // Environment variable overrides
+        ...getServiceEnvVarConfig('codewhisperer', Object.keys(defaultServiceConfig)),
+    }
+}
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -80,14 +99,14 @@ export type Imports = CodeWhispererUserClient.Imports
 export class DefaultCodeWhispererClient {
     private async createSdkClient(): Promise<CodeWhispererClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
-
+        const cwsprConfig = getCodewhispererConfig()
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {
                 apiConfig: apiConfig,
-                region: CodeWhispererConstants.region,
+                region: cwsprConfig.region,
                 credentials: await AuthUtil.instance.getCredentials(),
-                endpoint: CodeWhispererConstants.endpoint,
+                endpoint: cwsprConfig.endpoint,
                 onRequestSetup: [
                     req => {
                         if (req.operation === 'listRecommendations') {
@@ -123,12 +142,13 @@ export class DefaultCodeWhispererClient {
         session.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
         session.setSdkApiCallStart()
+        const cwsprConfig = getCodewhispererConfig()
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {
                 apiConfig: userApiConfig,
-                region: CodeWhispererConstants.region,
-                endpoint: CodeWhispererConstants.endpoint,
+                region: cwsprConfig.region,
+                endpoint: cwsprConfig.endpoint,
                 credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
                 onRequestSetup: [
                     req => {

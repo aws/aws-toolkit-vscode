@@ -27,7 +27,7 @@ function createProfileNamePrompter(profiles: ParsedIniData) {
                 return localize('AWS.credentials.error.emptyProfileName', 'Profile name must not be empty')
             }
 
-            return Object.keys(profiles).find(k => k === name) ? 'Name is not unique' : undefined
+            return Object.keys(profiles).includes(name) ? 'Name is not unique' : undefined
         },
     })
 }

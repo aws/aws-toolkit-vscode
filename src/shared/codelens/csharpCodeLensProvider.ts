@@ -169,7 +169,7 @@ export function isValidMethodSignature(symbol: vscode.DocumentSymbol): boolean {
         // remove generics from parameter string so we can do a predictable split on comma
         const strippedStr = stripGenericsFromParams(parametersArr[0])
         const individualParams = strippedStr.split(',')
-        if (individualParams.length === 1 || individualParams[1].valueOf().trimLeft().startsWith(lambdaContextType)) {
+        if (individualParams.length === 1 || individualParams[1].valueOf().trimStart().startsWith(lambdaContextType)) {
             return true
         }
     }

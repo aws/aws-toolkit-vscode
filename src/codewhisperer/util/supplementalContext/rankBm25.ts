@@ -131,7 +131,6 @@ function findAll(str: string, re: RegExp): string[] {
     let match: RegExpExecArray | null
     const matches: string[] = []
 
-    // eslint-disable-next-line no-null/no-null
     while ((match = re.exec(str)) !== null) {
         matches.push(match[0])
     }

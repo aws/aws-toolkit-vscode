@@ -49,7 +49,7 @@ export class StateMachineController<TState> {
     }
 
     public containsStep(step: StepFunction<TState> | undefined): boolean {
-        return step !== undefined && this.steps.indexOf(step) > -1
+        return step !== undefined && this.steps.includes(step)
     }
 
     public get currentStep(): number {
