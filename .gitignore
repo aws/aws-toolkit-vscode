@@ -4,6 +4,7 @@ node_modules
 .vscode-test/
 coverage/
 *.vsix
+*.zip
 *.bk
 **/.DS_Store
 .idea
