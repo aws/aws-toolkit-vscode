@@ -55,14 +55,11 @@ import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
 import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
-import { Commands, registerErrorHandler as registerCommandErrorHandler } from './shared/vscode/commands2'
+import { Commands } from './shared/vscode/commands2'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
-import { isUserCancelledError, resolveErrorMessageToDisplay, ToolkitError } from './shared/errors'
-import { Logging } from './shared/logger/commands'
-import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
-import { registerWebviewErrorHandler } from './webviews/server'
+import { showViewLogsMessage } from './shared/utilities/messages'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
@@ -78,15 +75,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
-
-    registerCommandErrorHandler((info, error) => {
-        const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
-        void logAndShowError(error, info.id, defaultMessage)
-    })
-
-    registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
-        logAndShowWebviewError(error, webviewId, command)
-    })
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
@@ -333,58 +321,6 @@ function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscod
             return task(newProgress, token)
         })
     }
-}
-
-/**
- * Logs the error. Then determines what kind of error message should be shown, if
- * at all.
- *
- * @param error The error itself
- * @param topic The prefix of the error message
- * @param defaultMessage The message to show if once cannot be resolved from the given error
- *
- * SIDE NOTE:
- * This is only being used for errors from commands and webview, there's plenty of other places
- * (explorer, nodes, ...) where it could be used. It needs to be apart of some sort of `core`
- * module that is guaranteed to initialize prior to every other Toolkit component.
- * Logging and telemetry would fit well within this core module.
- */
-export async function logAndShowError(error: unknown, topic: string, defaultMessage: string) {
-    if (isUserCancelledError(error)) {
-        getLogger().verbose(`${topic}: user cancelled`)
-        return
-    }
-    const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
-    const logId = getLogger().error(`${topic}: %s`, error)
-    const message = resolveErrorMessageToDisplay(error, defaultMessage)
-
-    if (error instanceof ToolkitError && error.documentationUri) {
-        await showMessageWithUrl(message, error.documentationUri, 'View Documentation', 'error')
-    } else {
-        await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
-            if (resp === logsItem) {
-                await Logging.declared.viewLogsAtMessage.execute(logId)
-            }
-        })
-    }
-}
-
-/**
- * Show a webview related error to the user + button that links to the logged error
- *
- * @param err The error that was thrown in the backend
- * @param webviewId Arbitrary value that identifies which webview had the error
- * @param command The high level command/function that was run which triggered the error
- */
-export function logAndShowWebviewError(err: unknown, webviewId: string, command: string) {
-    // HACK: The following implementation is a hack, influenced by the implementation of handleError().
-    // The userFacingError message will be seen in the UI, and the detailedError message will provide the
-    // detailed information in the logs.
-    const detailedError = ToolkitError.chain(err, `Webview backend command failed: "${command}()"`)
-    const userFacingError = ToolkitError.chain(detailedError, 'Webview error')
-    logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch(e => {
-        getLogger().error('logAndShowError failed: %s', (e as Error).message)
-    })
 }
 
 async function checkSettingsHealth(settings: Settings): Promise<boolean> {
