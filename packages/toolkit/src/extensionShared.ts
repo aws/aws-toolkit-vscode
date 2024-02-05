@@ -28,6 +28,8 @@ import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsStore } from './auth/credentials/store'
 import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
 import { RegionProvider } from './shared/regions/regionProvider'
+import { ChildProcess } from './shared/utilities/childProcess'
+import { isInBrowser } from './common/browserUtils'
 
 /**
  * Activation/setup code that is shared by the regular (nodejs) extension AND browser-compatible extension.
@@ -43,6 +45,7 @@ export async function activateShared(context: vscode.ExtensionContext, getRegion
     globals.outputChannel = toolkitOutputChannel
 
     //setup globals
+    globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
@@ -96,4 +99,12 @@ export function registerCommands(extensionContext: vscode.ExtensionContext) {
             await aboutToolkit()
         })
     )
+}
+
+async function getMachineId(): Promise<string> {
+    if (isInBrowser()) {
+        return 'browser'
+    }
+    const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
+    return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }
