@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.gateway.connection
 
 import com.intellij.execution.util.ExecUtil
 import com.intellij.testFramework.ApplicationRule
-import com.intellij.util.io.readBytes
 import org.apache.sshd.common.session.Session
 import org.apache.sshd.scp.common.ScpTransferEventListener
 import org.apache.sshd.server.session.ServerSession
@@ -19,6 +18,7 @@ import software.aws.toolkits.core.utils.test.notNull
 import java.nio.file.Path
 import java.nio.file.attribute.PosixFilePermission
 import java.util.UUID
+import kotlin.io.path.readBytes
 
 class ScpCommandLineTest {
     @Rule

@@ -29,11 +29,11 @@ import com.intellij.psi.PsiJavaFile
 import com.intellij.testFramework.IdeaTestUtil
 import com.intellij.testFramework.RunAll
 import com.intellij.testFramework.runInEdtAndWait
-import com.intellij.util.io.isDirectory
 import com.intellij.xdebugger.XDebuggerUtil
 import org.jetbrains.idea.maven.model.MavenExplicitProfiles
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.idea.maven.server.MavenServerManager
+import org.jetbrains.idea.maven.utils.MavenProgressIndicator.MavenProgressTracker
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import org.junit.Assert.fail
@@ -44,6 +44,7 @@ import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.isDirectory
 
 fun HeavyJavaCodeInsightTestFixtureRule.setUpJdk(jdkName: String = "Real JDK"): String {
     val jdkHome = IdeaTestUtil.requireRealJdkHome()
@@ -212,7 +213,7 @@ private fun findGradlew(): Path {
     throw IllegalStateException("Failed to locate gradlew")
 }
 
-internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
+internal suspend fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
     val fixture = this.fixture
     val pomFile = fixture.addFileToModule(
         this.module,
@@ -249,7 +250,8 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
     Disposer.register(this.fixture.testRootDisposable) {
         RunAll.runAll(
             { runWriteActionAndWait { JavaAwareProjectJdkTableImpl.removeInternalJdkInTests() } },
-            { MavenServerManager.getInstance().shutdown(true) }
+            // unsure why we can't let connectors be closed automatically during disposer cleanup
+            { Disposer.dispose(MavenServerManager.getInstance()) }
         )
     }
 
@@ -257,10 +259,10 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
     projectsManager.initForTests()
 
     val poms = listOf(pomFile)
-    projectsManager.resetManagedFilesAndProfilesInTests(poms, MavenExplicitProfiles(emptyList()))
+    projectsManager.addManagedFilesWithProfilesAndUpdate(poms, MavenExplicitProfiles.NONE, null, null)
 
     runInEdtAndWait {
-        projectsManager.waitForReadingCompletion()
+        project.getServiceIfCreated(MavenProgressTracker::class.java)?.waitForProgressCompletion()
         projectsManager.importProjects()
     }
 

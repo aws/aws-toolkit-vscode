@@ -47,6 +47,7 @@ tasks.register<Test>("uiTestCore") {
     dependsOn(":jetbrains-core:buildPlugin")
     inputs.files(":jetbrains-core:buildPlugin")
 
+    systemProperty("ide.experimental.ui", false)
     systemProperty("org.gradle.project.ideProfileName", ideProfileName)
     systemProperty("robot-server.port", remoteRobotPort)
     systemProperty("junit.jupiter.extensions.autodetection.enabled", true)

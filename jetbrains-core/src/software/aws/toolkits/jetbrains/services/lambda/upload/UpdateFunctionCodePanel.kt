@@ -8,7 +8,6 @@ import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.IdeBorderFactory
-import com.intellij.util.io.isFile
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.aws.toolkits.jetbrains.ui.HandlerPanel
 import software.aws.toolkits.jetbrains.utils.ui.validationInfo
@@ -16,6 +15,7 @@ import software.aws.toolkits.resources.message
 import java.nio.file.Paths
 import javax.swing.JLabel
 import javax.swing.JPanel
+import kotlin.io.path.isRegularFile
 
 class UpdateFunctionCodePanel internal constructor(private val project: Project, private val packageType: PackageType) {
     lateinit var content: JPanel
@@ -65,7 +65,7 @@ class UpdateFunctionCodePanel internal constructor(private val project: Project,
             handlerPanel.validateHandler(handlerMustExist = true) ?: codeStorage.validatePanel()
         }
         PackageType.IMAGE -> {
-            if (dockerFile.text.isEmpty() || !Paths.get(dockerFile.text).isFile()) {
+            if (dockerFile.text.isEmpty() || !Paths.get(dockerFile.text).isRegularFile()) {
                 dockerFile.validationInfo(message("lambda.upload_validation.dockerfile_not_found"))
             } else {
                 codeStorage.validatePanel()

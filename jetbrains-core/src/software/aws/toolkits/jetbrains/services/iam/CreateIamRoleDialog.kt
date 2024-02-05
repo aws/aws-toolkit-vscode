@@ -27,7 +27,7 @@ class CreateIamRoleDialog(
     parent: Component? = null,
     @Language("JSON") defaultPolicyDocument: String,
     @Language("JSON") defaultAssumeRolePolicyDocument: String
-) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+) : DialogWrapper(project, parent, false, IdeModalityType.IDE) {
 
     private val view = CreateRolePanel(project)
 

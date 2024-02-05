@@ -53,7 +53,6 @@ class NodeJsLocalTypeScriptLambdaRunConfigurationIntegrationTest(private val run
         fun beforeAll() {
             assumeTrue("Needs evaulation on what issues are with >= 232", ApplicationInfo.getInstance().build.baselineVersion < 232)
 
-            tsUseServiceSetting = TypeScriptLanguageServiceUtil.USE_SERVICE
             // TS service is disabled in unit tests by default
             TypeScriptLanguageServiceUtil.setUseService(true)
         }

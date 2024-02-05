@@ -10,7 +10,6 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.util.io.HttpRequests
-import com.intellij.util.io.readText
 import com.intellij.util.net.NetUtils
 import com.jetbrains.rd.util.spinUntil
 import net.schmizz.sshj.common.Buffer
@@ -18,6 +17,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import software.aws.toolkits.core.utils.readText
 import java.util.Base64
 
 class SshCommandLineTest {

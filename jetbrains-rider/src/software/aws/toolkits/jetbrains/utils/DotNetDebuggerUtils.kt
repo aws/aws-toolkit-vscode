@@ -12,7 +12,6 @@ import com.intellij.xdebugger.XDebugSession
 import com.jetbrains.rd.framework.IProtocol
 import com.jetbrains.rd.util.lifetime.Lifetime
 import com.jetbrains.rider.RiderEnvironment
-import com.jetbrains.rider.debugger.DebuggerWorkerPlatform
 import com.jetbrains.rider.debugger.DotNetDebugProcess
 import com.jetbrains.rider.debugger.DotNetDebugRunner
 import com.jetbrains.rider.debugger.actions.utils.OptionsUtil
@@ -21,7 +20,7 @@ import com.jetbrains.rider.run.IDebuggerOutputListener
 import java.io.File
 
 object DotNetDebuggerUtils {
-    val debuggerName = DebuggerWorkerPlatform.AnyCpu.assemblyName
+    const val debuggerName = "JetBrains.Debugger.Worker.exe"
 
     val debuggerAssemblyFile: File = RiderEnvironment.getBundledFile(debuggerName)
 

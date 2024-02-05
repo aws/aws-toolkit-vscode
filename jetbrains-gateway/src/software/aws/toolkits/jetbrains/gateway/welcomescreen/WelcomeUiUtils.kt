@@ -4,8 +4,6 @@
 package software.aws.toolkits.jetbrains.gateway.welcomescreen
 
 import com.intellij.openapi.wm.impl.welcomeScreen.WelcomeScreenUIManager
-import com.intellij.ui.layout.Row
-import com.intellij.ui.layout.RowBuilder
 import com.intellij.util.ui.UIUtil
 import java.awt.Component
 import java.awt.Container
@@ -29,15 +27,4 @@ fun recursivelySetBackground(component: Component) {
 fun setDefaultBackgroundAndBorder(component: JComponent) {
     recursivelySetBackground(component)
     component.border = DEFAULT_WELCOME_BORDER
-}
-
-fun (RowBuilder).smallInset(): Row =
-    // should be roughly the same as a small inset in the new UI DSL
-    row {
-        label("")
-    }
-
-fun (RowBuilder).biggerLargeGapAfter() {
-    // should be roughly the same as a large inset in the new UI DSL
-    smallInset().largeGapAfter()
 }

@@ -28,7 +28,7 @@ class ConfirmIamPolicyDialog(
     private val functionName: String,
     private val queue: Queue,
     parent: Component? = null
-) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+) : DialogWrapper(project, parent, false, IdeModalityType.IDE) {
     private val coroutineScope = projectCoroutineScope(project)
     private val rolePolicy: String by lazy { createSqsPollerPolicy(queue.arn) }
     private val policyName: String by lazy { "AWSLambdaSQSPollerExecutionRole-$functionName-${queue.queueName}-${queue.region.id}" }

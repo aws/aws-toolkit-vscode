@@ -9,7 +9,6 @@ import com.goide.vgo.configuration.VgoProjectSettings;
 import com.goide.vgo.mod.psi.VgoFile;
 import com.goide.vgo.project.VgoDependency;
 import com.goide.vgo.project.VgoDependencyImpl;
-import com.goide.vgo.project.VgoExcludeRootsPolicy;
 import com.goide.vgo.project.VgoModule;
 import com.goide.vgo.project.VgoModulesRegistry;
 import com.intellij.openapi.application.PathManager;
@@ -109,8 +108,6 @@ public class VgoTestUtil {
     }
 
     public static void setupVgoIntegration(@NotNull CodeInsightTestFixture fixture, @NotNull List<VgoModule> modules) {
-        VgoExcludeRootsPolicy.setPointersDisposable(fixture.getTestRootDisposable());
-        // GoVendorExcludePolicy.setPointersDisposable(fixture.getTestRootDisposable());
         TestModeFlags.set(VgoIntegrationManager.DISABLE_TRACKERS, true, fixture.getTestRootDisposable());
         VgoProjectSettings.getInstance(fixture.getProject()).setIntegrationEnabled(true);
         setVgoModules(fixture, modules);

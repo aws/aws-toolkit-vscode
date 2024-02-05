@@ -15,11 +15,11 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.serviceContainer.NonInjectable
 import com.intellij.util.ExceptionUtil
 import com.intellij.util.io.delete
-import com.intellij.util.io.readText
 import com.intellij.util.io.write
 import org.jetbrains.annotations.VisibleForTesting
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.readText
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.tools.ToolManager.Companion.MANAGED_TOOL_INSTALL_ROOT
 import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread

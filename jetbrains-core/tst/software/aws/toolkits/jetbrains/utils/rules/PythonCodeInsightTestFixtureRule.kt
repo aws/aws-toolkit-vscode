@@ -11,8 +11,10 @@ import com.intellij.openapi.module.ModuleTypeManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.projectRoots.Sdk
+import com.intellij.openapi.projectRoots.SdkAdditionalData
 import com.intellij.openapi.projectRoots.impl.ProjectJdkImpl
 import com.intellij.openapi.roots.ModuleRootModificationUtil
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
@@ -26,9 +28,11 @@ import com.intellij.testFramework.fixtures.impl.ModuleFixtureImpl
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
 import com.jetbrains.python.PythonModuleTypeBase
+import com.jetbrains.python.psi.LanguageLevel
 import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.sdk.PythonSdkAdditionalData
-import com.jetbrains.python.sdk.PythonSdkType
+import com.jetbrains.python.sdk.flavors.PyFlavorAndData
+import com.jetbrains.python.sdk.flavors.PyFlavorData
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermission
@@ -78,7 +82,7 @@ class PythonCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
         }
 
         PsiTestUtil.addContentRoot(module, projectRoot)
-        val sdk = PyTestSdk("3.6.0")
+        val sdk = PyTestSdk.create("3.6.0")
         setModuleSdk(module, sdk)
 
         return newFixture
@@ -113,12 +117,21 @@ internal class PlatformPythonModuleType : PythonModuleTypeBase<EmptyModuleBuilde
     }
 }
 
-class PyTestSdk(private val version: String) : ProjectJdkImpl("PySdk $version", PythonSdkType.getInstance()) {
-    init {
-        sdkAdditionalData = PythonSdkAdditionalData(FakeCPython())
-    }
-
+class PyTestSdk private constructor(private val version: LanguageLevel) : ProjectJdkImpl("PySdk $version", PyTestSdkType(version)) {
     override fun getVersionString(): String = "FakeCPython $version"
+
+    override fun getSdkAdditionalData(): SdkAdditionalData = PythonSdkAdditionalData(PyFlavorAndData(PyFlavorData.Empty, FakeCPython(version)))
+
+    companion object {
+        fun create(version: String): PyTestSdk {
+            val level = LanguageLevel.fromPythonVersion(version) ?: error("Invalid version")
+            val sdk = PyTestSdk(level)
+
+            sdk.putUserData(Key.create("MOCK_PY_MARKER_KEY"), true)
+
+            return sdk
+        }
+    }
 }
 
 fun PythonCodeInsightTestFixtureRule.addBreakpoint() {
