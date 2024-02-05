@@ -9,7 +9,7 @@
  */
 
 import vscode from 'vscode'
-import globals from './shared/extensionGlobals'
+import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
 import { documentationUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
@@ -17,11 +17,55 @@ import { getIdeProperties, aboutToolkit } from './shared/extensionUtilities'
 import { telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 
-export function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
-    globals.manifestPaths.endpoints = extensionContext.asAbsolutePath(join('resources', 'endpoints.json'))
-    globals.manifestPaths.lambdaSampleRequests = extensionContext.asAbsolutePath(
+import { activate as activateLogger } from './shared/logger/activation'
+import { initializeComputeRegion } from './shared/extensionUtilities'
+import { activate as activateTelemetry } from './shared/telemetry/activation'
+import { DefaultAwsContext } from './shared/awsContext'
+import { Settings } from './shared/settings'
+import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
+import { initialize as initializeAuth } from './auth/activation'
+import { LoginManager } from './auth/deprecated/loginManager'
+import { CredentialsStore } from './auth/credentials/store'
+import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
+import { RegionProvider } from './shared/regions/regionProvider'
+
+/**
+ * Activation/setup code that is shared by the regular (nodejs) extension AND browser-compatible extension.
+ * Most setup code should live here, unless there is a reason not to.
+ *
+ * @param getRegionProvider - HACK telemetry requires the region provider but we cannot create it yet in this
+ * "shared" function since it breaks in browser. So for now the caller must provide it.
+ */
+export async function activateShared(context: vscode.ExtensionContext, getRegionProvider: () => RegionProvider) {
+    // Setup the logger
+    const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
+    await activateLogger(context, toolkitOutputChannel)
+    globals.outputChannel = toolkitOutputChannel
+
+    //setup globals
+    globals.awsContext = new DefaultAwsContext()
+    globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
+    globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
+
+    // some "initialize" functions
+    await initializeComputeRegion()
+    initialize(context)
+
+    // order matters here
+    globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
+    globals.manifestPaths.lambdaSampleRequests = context.asAbsolutePath(
         join('resources', 'vs-lambda-sample-request-manifest.xml')
     )
+    globals.regionProvider = getRegionProvider()
+
+    // telemetry
+    await activateTelemetry(context, globals.awsContext, Settings.instance)
+
+    // auth
+    await initializeAuth(context, globals.awsContext, globals.loginManager)
+    await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
+
+    registerCommands(context)
 }
 
 /**

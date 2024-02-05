@@ -9,35 +9,27 @@ import * as nls from 'vscode-nls'
 import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
-import { initialize as initializeCredentials } from './auth/activation'
-import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
-import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsProviderManager } from './auth/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './auth/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
-import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import { endpointsFileUrl } from './shared/constants'
-import { DefaultAwsContext } from './shared/awsContext'
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     getIdeProperties,
     getToolkitEnvironmentDetails,
-    initializeComputeRegion,
     isCloud9,
     isSageMaker,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
-import { activate as activateLogger } from './shared/logger/activation'
 import { getEndpointsFromFetcher, RegionProvider } from './shared/regions/regionProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
 import { activate as activateEcr } from './ecr/activation'
 import { activate as activateEc2 } from './ec2/activation'
 import { activate as activateSam } from './shared/sam/activation'
-import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
 import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
@@ -52,7 +44,6 @@ import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './redshift/activation'
-import { CredentialsStore } from './auth/credentials/store'
 import { activate as activateCWChat } from './amazonq/activation'
 import { activate as activateQGumby } from './amazonqGumby/activation'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
@@ -61,7 +52,7 @@ import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsP
 import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
-import globals, { initialize } from './shared/extensionGlobals'
+import globals from './shared/extensionGlobals'
 import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler as registerCommandErrorHandler } from './shared/vscode/commands2'
@@ -72,34 +63,24 @@ import { isUserCancelledError, resolveErrorMessageToDisplay, ToolkitError } from
 import { Logging } from './shared/logger/commands'
 import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
 import { registerWebviewErrorHandler } from './webviews/server'
-import { registerCommands, initializeManifestPaths } from './extensionShared'
 import { ChildProcess } from './shared/utilities/childProcess'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
 import { showQuickStartWebview } from './shared/extensionStartup'
+import { activateShared } from './extensionShared'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
-    initializeNetworkAgent()
-    await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
 
-    initialize(context)
     globals.machineId = await getMachineId()
-    initializeManifestPaths(context)
 
-    const toolkitOutputChannel = vscode.window.createOutputChannel(
-        localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company),
-        { log: true }
-    )
-    await activateLogger(context, toolkitOutputChannel)
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
-    globals.outputChannel = toolkitOutputChannel
 
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
@@ -124,15 +105,11 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     try {
+        // IMPORTANT: If you are doing setup that should also work in browser, it should be done in the function below
+        await activateShared(context, () => RegionProvider.fromEndpointsProvider(makeEndpointsProvider()))
+
+        initializeNetworkAgent()
         initializeCredentialsProviderManager()
-
-        const endpointsProvider = makeEndpointsProvider()
-
-        const awsContext = new DefaultAwsContext()
-        globals.awsContext = awsContext
-        const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
-        const credentialsStore = new CredentialsStore()
-        const loginManager = new LoginManager(globals.awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
@@ -141,11 +118,7 @@ export async function activate(context: vscode.ExtensionContext) {
             .filter(Boolean)
             .forEach(line => getLogger().info(line))
 
-        await initializeAwsCredentialsStatusBarItem(awsContext, context)
-        globals.regionProvider = regionProvider
-        globals.loginManager = loginManager
-        globals.awsContextCommands = new AwsContextCommands(regionProvider, Auth.instance)
-        globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
+        globals.awsContextCommands = new AwsContextCommands(globals.regionProvider, Auth.instance)
         globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
         // Create this now, but don't call vscode.window.registerUriHandler() until after all
@@ -154,9 +127,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const settings = Settings.instance
         const experiments = Experiments.instance
-
-        await activateTelemetry(context, awsContext, settings)
-        await initializeCredentials(context, awsContext, loginManager)
 
         experiments.onDidChange(({ key }) => {
             telemetry.aws_experimentActivation.run(span => {
@@ -173,12 +143,12 @@ export async function activate(context: vscode.ExtensionContext) {
             extensionContext: context,
             awsContext: globals.awsContext,
             samCliContext: getSamCliContext,
-            regionProvider: regionProvider,
-            outputChannel: toolkitOutputChannel,
+            regionProvider: globals.regionProvider,
+            outputChannel: globals.outputChannel,
             invokeOutputChannel: remoteInvokeOutputChannel,
             telemetryService: globals.telemetry,
             uriHandler: globals.uriHandler,
-            credentialsStore,
+            credentialsStore: globals.loginManager.store,
         }
 
         try {
@@ -187,7 +157,6 @@ export async function activate(context: vscode.ExtensionContext) {
             getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }
 
-        registerCommands(context)
         context.subscriptions.push(submitFeedback.register(context))
 
         // do not enable codecatalyst for sagemaker
@@ -203,8 +172,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateAwsExplorer({
             context: extContext,
-            regionProvider,
-            toolkitOutputChannel,
+            regionProvider: globals.regionProvider,
+            toolkitOutputChannel: globals.outputChannel,
             remoteInvokeOutputChannel,
         })
 
@@ -219,7 +188,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateLambda(extContext)
 
-        await activateSsmDocument(context, globals.awsContext, regionProvider, toolkitOutputChannel)
+        await activateSsmDocument(context, globals.awsContext, globals.regionProvider, globals.outputChannel)
 
         await activateSam(extContext)
 
@@ -247,7 +216,7 @@ export async function activate(context: vscode.ExtensionContext) {
             await activateApplicationComposer(context)
         }
 
-        await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+        await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
 
         await activateRedshift(extContext)
 
