@@ -104,22 +104,13 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.78.0',
     },
     {
-        runtime: 'java8',
-        displayName: 'java8 (Gradle ZIP)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'gradle',
-        vscodeMinimum: '1.50.0',
-    },
-    {
         runtime: 'dotnet6',
         displayName: 'dotnet6 (ZIP)',
         path: 'src/HelloWorld/Function.cs',
         debugSessionType: 'coreclr',
         language: 'csharp',
         dependencyManager: 'cli-package',
-        vscodeMinimum: '1.50.0',
+        vscodeMinimum: '1.80.0',
     },
     {
         runtime: 'java8.al2',
@@ -132,6 +123,15 @@ const scenarios: TestScenario[] = [
     },
     {
         runtime: 'java11',
+        displayName: 'java11 (Gradle ZIP)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'gradle',
+        vscodeMinimum: '1.50.0',
+    },
+    {
+        runtime: 'java17',
         displayName: 'java11 (Gradle ZIP)',
         path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
         debugSessionType: 'java',
@@ -216,16 +216,6 @@ const scenarios: TestScenario[] = [
     //     vscodeMinimum: '1.67.0',
     // },
     {
-        runtime: 'java8',
-        displayName: 'java8 (Maven Image)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        baseImage: 'amazon/java8-base',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'maven',
-        vscodeMinimum: '1.50.0',
-    },
-    {
         runtime: 'java8.al2',
         displayName: 'java8.al2 (Gradle Image)',
         path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
@@ -246,6 +236,16 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.50.0',
     },
     {
+        runtime: 'java17',
+        displayName: 'java17 (Maven Image)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        baseImage: 'amazon/java17-base',
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'maven',
+        vscodeMinimum: '1.50.0',
+    },
+    {
         runtime: 'dotnet6',
         displayName: 'dotnet6 (Image)',
         path: 'src/HelloWorld/Function.cs',
@@ -253,7 +253,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'coreclr',
         language: 'csharp',
         dependencyManager: 'cli-package',
-        vscodeMinimum: '1.50.0',
+        vscodeMinimum: '1.80.0',
     },
 ]
 

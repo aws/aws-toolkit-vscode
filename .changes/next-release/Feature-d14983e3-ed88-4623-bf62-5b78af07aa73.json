@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Enable java 17 for SAM create and local Lambda debugging"
+}
