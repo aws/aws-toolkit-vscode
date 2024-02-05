@@ -28,7 +28,12 @@ phases:
             - '>/dev/null apt-get -qq install -y ca-certificates'
             - 'apt-get install --reinstall ca-certificates'
             # Other dependencies.
-            - 'apt-get -qq install -y jq python3-venv'
+            - 'apt-get -qq install -y jq'
+            - |
+                curl --silent -LO https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip
+                unzip -q aws-sam-cli-linux-x86_64.zip -d samcli
+                sudo ./samcli/install
+                rm -rf samcli
             # login to DockerHub so we don't get throttled
             # - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
             # increase file watcher count so CodeLens tests do not fail unexpectedly (ENOSPC error)
@@ -47,15 +52,10 @@ phases:
             - export HOME=/home/codebuild-user
             - bash buildspec/shared/setup-github-token.sh
             - bash buildspec/shared/linux-pre_build.sh
-            - 'python3 --version'
-            - 'python3 -m venv venv'
-            - 'chown -R codebuild-user:codebuild-user venv/bin/activate'
-            - 'source venv/bin/activate'
-            # - '>/dev/null pip install --upgrade pip'
-            - '>/dev/null pip install --upgrade awscli aws-sam-cli'
             # Print info (version, location, …) or fail early.
-            - 'pip show aws-sam-cli'
-            - 'sam --version'
+            - |
+                python3 --version
+                sam --version
             # Install latest version of Go (known to 'goenv')
             # - eval "$(goenv init -)"
             # - 'export PATH="$GOROOT/bin:$PATH:$GOPATH/bin"'
@@ -66,7 +66,6 @@ phases:
     build:
         commands:
             - export HOME=/home/codebuild-user
-            - 'source venv/bin/activate'
             - xvfb-run npm run testInteg
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g')
