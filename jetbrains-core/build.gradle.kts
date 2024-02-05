@@ -16,8 +16,8 @@ val ideProfile = IdeVersions.ideProfile(project)
 plugins {
     id("toolkit-kotlin-conventions")
     id("toolkit-testing")
-    id("toolkit-integration-testing")
     id("toolkit-intellij-subplugin")
+    id("toolkit-integration-testing")
 }
 
 buildscript {
@@ -73,6 +73,10 @@ val gatewayArtifacts by configurations.creating {
 }
 
 val gatewayJar = tasks.create<Jar>("gatewayJar") {
+    // META-INF/plugin.xml is a duplicate?
+    // unclear why the exclude() statement didn't work
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
     dependsOn(tasks.instrumentedJar)
 
     archiveBaseName.set("aws-toolkit-jetbrains-IC-GW")
@@ -104,7 +108,7 @@ tasks.prepareSandbox {
 }
 
 tasks.testJar {
-    // classpath.index is a duplicated
+    // classpath.index is a duplicate
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
@@ -147,7 +151,16 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.kotlin.coroutinesTest)
     testImplementation(libs.kotlin.coroutinesDebug)
-    testImplementation(libs.wiremock)
+    testImplementation(libs.wiremock) {
+        // conflicts with transitive inclusion from docker plugin
+        exclude(group = "org.apache.httpcomponents.client5")
+    }
+
+    // slf4j is v1.7.36 for <233
+    // in <233, the classpass binding functionality picks up the wrong impl of StaticLoggerBinder (from the maven plugin instead of IDE platform) and causes a NoClassDefFoundError
+    // instead of trying to fix the classpath, since it's built by gradle-intellij-plugin, shove slf4j >= 2.0.9 onto the test classpath, which uses a ServiceLoader and call it done
+    testImplementation(libs.slf4j.api)
+    testRuntimeOnly(libs.slf4j.jdk14)
 }
 
 // fix implicit dependency on generated source

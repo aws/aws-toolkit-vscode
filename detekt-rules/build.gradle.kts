@@ -13,6 +13,7 @@ dependencies {
     testImplementation(libs.junit4)
     testImplementation(libs.assertj)
 
+    // only used to make test work
     testRuntimeOnly(libs.slf4j.api)
     testRuntimeOnly(libs.junit5.jupiterVintage)
 }

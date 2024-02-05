@@ -15,6 +15,7 @@ import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.aCredentialsIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
+import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.core.utils.test.notNull
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.selectedPartition
@@ -52,6 +53,10 @@ class DefaultAwsConnectionManagerTest {
     @JvmField
     @Rule
     val resourceCache = MockResourceCacheRule()
+
+    @Rule
+    @JvmField
+    val systemPropertyHelper = SystemPropertyHelper()
 
     private lateinit var manager: DefaultAwsConnectionManager
 
