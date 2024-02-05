@@ -45,7 +45,8 @@ phases:
         >$AWS_CONFIG_FILE echo "[default]
         role_arn=$ASSUME_ROLE_ARN
         credential_source=EcsContainer"
-
+      - ls -alh $AWS_CONFIG_FILE
+      - cat $AWS_CONFIG_FILE
       - chmod +x gradlew
       - DISPLAY=:22 ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME integrationTest coverageReport -x :jetbrains-rider:integrationTest --info --console plain
       - |

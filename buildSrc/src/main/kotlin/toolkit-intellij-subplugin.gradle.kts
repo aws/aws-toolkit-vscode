@@ -40,13 +40,6 @@ sourceSets {
         java.srcDirs(findFolders(project, "tst", ideProfile))
         resources.srcDirs(findFolders(project, "tst-resources", ideProfile))
     }
-
-    plugins.withType<ToolkitIntegrationTestingPlugin> {
-        maybeCreate("integrationTest").apply {
-            java.srcDirs(findFolders(project, "it", ideProfile))
-            resources.srcDirs(findFolders(project, "it-resources", ideProfile))
-        }
-    }
 }
 
 configurations {
@@ -239,12 +232,6 @@ tasks.withType<RunIdeForUiTestTask>().all {
             output = Output.TCP_CLIENT // Dump to our jacoco server instead of to a file
         }
     }
-}
-
-// weird implicit dependency issue, maybe with how the task graph works?
-// or because tests are on the ide classpath for some reason?
-tasks.named("classpathIndexCleanup") {
-    mustRunAfter(tasks.named("compileIntegrationTestKotlin"))
 }
 
 configurations.instrumentedJar.configure {
