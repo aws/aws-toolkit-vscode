@@ -27,12 +27,8 @@ phases:
             - '>/dev/null apt-get -qq update'
             - '>/dev/null apt-get -qq install -y ca-certificates'
             - 'apt-get install --reinstall ca-certificates'
-            - 'add-apt-repository -y ppa:deadsnakes/ppa'
             # Other dependencies.
-            - 'apt-get -qq install -y jq python3.7 python3.8 python3-pip'
-            # Fail early if any of these not found.
-            - 'python3.7 --version'
-            - 'python3.8 --version'
+            - 'apt-get -qq install -y jq python3-venv'
             # login to DockerHub so we don't get throttled
             # - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
             # increase file watcher count so CodeLens tests do not fail unexpectedly (ENOSPC error)
@@ -51,12 +47,14 @@ phases:
             - export HOME=/home/codebuild-user
             - bash buildspec/shared/setup-github-token.sh
             - bash buildspec/shared/linux-pre_build.sh
-            # Where non-root "pip3 install" puts things:
-            - 'export PATH="$HOME/.local/bin:$PATH"'
-            - '>/dev/null pip3 install --upgrade aws-sam-cli'
-            - '>/dev/null pip3 install --upgrade awscli'
-            # Print info about sam (version, location, …).
-            - 'pip3 show aws-sam-cli'
+            - 'python3 --version'
+            - 'python3 -m venv venv'
+            - 'chown -R codebuild-user:codebuild-user venv/bin/activate'
+            - 'source venv/bin/activate'
+            # - '>/dev/null pip install --upgrade pip'
+            - '>/dev/null pip install --upgrade awscli aws-sam-cli'
+            # Print info (version, location, …) or fail early.
+            - 'pip show aws-sam-cli'
             - 'sam --version'
             # Install latest version of Go (known to 'goenv')
             # - eval "$(goenv init -)"
@@ -68,6 +66,7 @@ phases:
     build:
         commands:
             - export HOME=/home/codebuild-user
+            - 'source venv/bin/activate'
             - xvfb-run npm run testInteg
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g')
