@@ -3,9 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.util
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.testFramework.DisposableExtension
 import com.intellij.testFramework.ProjectExtension
+import com.intellij.testFramework.junit5.TestDisposable
 import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
@@ -29,19 +30,15 @@ class CodeWhispererUtilTest {
 
     @JvmField
     @RegisterExtension
-    val disposableExtension = DisposableExtension()
-
-    @JvmField
-    @RegisterExtension
     val mockRegionProviderExtension = MockRegionProviderExtension()
 
     @Test
-    fun `reconnectCodeWhisperer respects connection settings`() {
+    fun `reconnectCodeWhisperer respects connection settings`(@TestDisposable disposable: Disposable) {
         mockkStatic(::reauthConnectionIfNeeded)
         val mockConnectionManager = mockk<ToolkitConnectionManager>(relaxed = true)
         val mockConnection = mockk<ManagedBearerSsoConnection>()
-        projectExtension.project.replaceService(ToolkitConnectionManager::class.java, mockConnectionManager, disposableExtension.disposable)
-        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, mockk(relaxed = true), disposableExtension.disposable)
+        projectExtension.project.replaceService(ToolkitConnectionManager::class.java, mockConnectionManager, disposable)
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, mockk(relaxed = true), disposable)
         val startUrl = aString()
         val region = mockRegionProviderExtension.createAwsRegion().id
         val scopes = listOf(aString(), aString())

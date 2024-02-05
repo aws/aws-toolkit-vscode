@@ -39,6 +39,7 @@ import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
 import software.aws.toolkits.jetbrains.utils.rules.NotificationListenerRule
 import java.io.File
 import java.io.FileOutputStream
+import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.nio.file.Path
@@ -166,7 +167,7 @@ class SchemaCodeDownloaderTest {
             .schemaVersion(VERSION)
             .build()
 
-        val zipByteBuffer = mock<ByteBuffer>()
+        val zipByteBuffer = ByteBuffer.wrap(BigInteger.valueOf(System.currentTimeMillis()).toByteArray())
 
         val sdkBytesResponse = mock<SdkBytes> {
             on { asByteBuffer() }.thenReturn(zipByteBuffer)

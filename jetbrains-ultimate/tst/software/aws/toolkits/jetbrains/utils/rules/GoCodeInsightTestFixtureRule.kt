@@ -9,6 +9,7 @@ import com.goide.psi.GoFile
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
@@ -26,7 +27,9 @@ class GoCodeInsightTestFixtureRule : CodeInsightTestFixtureRule(GoLightProjectDe
     override fun createTestFixture(): CodeInsightTestFixture {
         val codeInsightFixture = super.createTestFixture()
         PsiTestUtil.addContentRoot(codeInsightFixture.module, codeInsightFixture.tempDirFixture.getFile(".")!!)
-        GoModuleSettings.getInstance(codeInsightFixture.module).isGoSupportEnabled = true
+        ApplicationManager.getApplication().invokeAndWait {
+            GoModuleSettings.getInstance(codeInsightFixture.module).isGoSupportEnabled = true
+        }
         return codeInsightFixture
     }
 }

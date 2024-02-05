@@ -12,8 +12,8 @@ import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry
 import com.intellij.psi.javadoc.PsiDocToken
 import com.intellij.psi.search.PsiElementProcessor
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.psi.util.PsiUtilCore
 import com.intellij.testFramework.runInEdtAndGet
-import com.jetbrains.extensions.python.toPsi
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -110,7 +110,7 @@ class ArnPsiReferenceProviderTest {
         val elements = mutableListOf<ArnReference>()
         runReadAction {
             PsiTreeUtil.processElements(
-                file.toPsi(projectRule.project),
+                PsiUtilCore.findFileSystemItem(projectRule.project, file),
                 PsiElementProcessor { child ->
                     elements.addAll(child.references.filterIsInstance<ArnReference>())
 
@@ -143,7 +143,7 @@ class ArnPsiReferenceProviderTest {
         val elements = mutableListOf<ArnReference>()
         runReadAction {
             PsiTreeUtil.processElements(
-                file.toPsi(projectRule.project),
+                PsiUtilCore.findFileSystemItem(projectRule.project, file),
                 PsiElementProcessor { child ->
                     elements.addAll(child.references.filterIsInstance<ArnReference>())
 
@@ -173,7 +173,7 @@ class ArnPsiReferenceProviderTest {
         val elements = mutableListOf<ArnReference>()
         runReadAction {
             PsiTreeUtil.processElements(
-                file.toPsi(projectRule.project),
+                PsiUtilCore.findFileSystemItem(projectRule.project, file),
                 PsiElementProcessor { child ->
                     elements.addAll(child.references.filterIsInstance<ArnReference>())
 

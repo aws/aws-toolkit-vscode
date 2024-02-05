@@ -11,7 +11,7 @@ import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.RunsInEdt
 import com.intellij.testFramework.TemporaryDirectory
 import com.intellij.testFramework.runInEdtAndWait
-import com.intellij.util.io.writeChild
+import com.intellij.util.io.write
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.yaml.psi.YAMLSequence
 import org.junit.Before
@@ -63,7 +63,7 @@ class SyncSamApplicationValidatorTest {
 
         val dir = Files.createDirectory(tempDir.newPath()).toAbsolutePath()
         runInEdtAndWait {
-            val template = VfsUtil.findFileByIoFile(dir.writeChild("path.yaml", "").toFile(), true)
+            val template = VfsUtil.findFileByIoFile(dir.resolve("path.yaml").write("".toByteArray()).toFile(), true)
 
             if (template != null) {
                 sut = SyncServerlessApplicationDialog(

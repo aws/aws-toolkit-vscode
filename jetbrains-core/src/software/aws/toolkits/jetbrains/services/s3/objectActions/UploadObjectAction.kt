@@ -8,7 +8,6 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.project.Project
-import com.intellij.util.io.isDirectory
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.utils.getRequiredData
@@ -21,6 +20,7 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.S3Telemetry
 import java.nio.file.Path
+import kotlin.io.path.isDirectory
 
 class UploadObjectAction : S3ObjectAction(message("s3.upload.object.action"), AllIcons.Actions.Upload) {
     override fun performAction(dataContext: DataContext, nodes: List<S3TreeNode>) {

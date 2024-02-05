@@ -40,9 +40,7 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
     ApplicationRule() {
     private lateinit var description: Description
     protected val lazyFixture = ClearableLazy {
-        invokeAndWait {
-            createTestFixture()
-        }
+        createTestFixture()
     }
 
     protected open fun createTestFixture(): CodeInsightTestFixture {

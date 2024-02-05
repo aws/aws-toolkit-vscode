@@ -30,7 +30,7 @@ class ConfirmQueuePolicyDialog(
     topicArn: String,
     private val existingPolicy: String?,
     parent: Component? = null
-) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+) : DialogWrapper(project, parent, false, IdeModalityType.IDE) {
     private val coroutineScope = projectCoroutineScope(project)
     private val policyStatement = createSqsSnsSubscribePolicyStatement(queue.arn, topicArn)
 

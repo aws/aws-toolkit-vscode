@@ -10,8 +10,6 @@ import com.intellij.ssh.config.SshProxyConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.tools.MockToolManagerRule
 import software.aws.toolkits.jetbrains.core.tools.Tool
@@ -42,11 +40,7 @@ class CawsSshConnectionConfigModifierTest {
             override fun startSsm(exe: String, vararg args: String) = response
         }
         val mockPath = Path.of("ssm")
-        val mockTool = mock<Tool<SsmPlugin>> {
-            on {
-                path
-            }.doReturn(mockPath)
-        }
+        val mockTool = Tool(SsmPlugin, mockPath)
 
         toolManager.registerTool(SsmPlugin, mockTool)
 

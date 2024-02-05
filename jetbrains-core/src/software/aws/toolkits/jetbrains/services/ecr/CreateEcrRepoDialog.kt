@@ -24,7 +24,7 @@ class CreateEcrRepoDialog(
     private val project: Project,
     private val ecrClient: EcrClient,
     parent: Component? = null
-) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+) : DialogWrapper(project, parent, false, IdeModalityType.IDE) {
     var repoName: String = ""
 
     private val panel = panel {

@@ -28,7 +28,7 @@ class RuntimeGroupTest {
 
     @Test
     fun canDetermineRuntimeFromAnActionEventUsingModule() {
-        val sdk = PyTestSdk("3.9.0")
+        val sdk = PyTestSdk.create("3.9.0")
         projectRule.setModuleSdk(projectRule.module, sdk)
 
         val event: AnActionEvent = mock {
@@ -41,7 +41,7 @@ class RuntimeGroupTest {
 
     @Test
     fun canDetermineRuntimeFromAnActionEventUsingProject() {
-        val sdk = PyTestSdk("3.9.0")
+        val sdk = PyTestSdk.create("3.9.0")
 
         val project = projectRule.project
 

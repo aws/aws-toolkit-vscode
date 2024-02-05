@@ -27,7 +27,7 @@ class CreateIamServiceRoleDialog(
     private val managedPolicyName: String,
     name: String = "",
     parent: Component? = null,
-) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+) : DialogWrapper(project, parent, false, IdeModalityType.IDE) {
     private val coroutineScope = projectCoroutineScope(project)
     var name: String = name
         private set

@@ -125,7 +125,7 @@ internal class PushToEcrDialog(
     private val project: Project,
     selectedRepository: Repository,
     private val dockerRuntime: Deferred<DockerRuntimeFacade>
-) : DialogWrapper(project, null, false, IdeModalityType.PROJECT) {
+) : DialogWrapper(project, null, false, IdeModalityType.IDE) {
     private val coroutineScope = projectCoroutineScope(project)
     private val defaultTag = "latest"
     private val localImageRepoTags = CollectionComboBoxModel<LocalImage>()

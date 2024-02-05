@@ -4,13 +4,13 @@
 package software.aws.toolkits.jetbrains.utils
 
 import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.util.io.size
 import java.io.FileInputStream
 import java.io.FilterInputStream
 import java.io.FilterOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Path
+import kotlin.io.path.fileSize
 
 class ProgressMonitorInputStream(
     indicator: ProgressIndicator,
@@ -40,7 +40,10 @@ class ProgressMonitorInputStream(
     }
 
     companion object {
-        fun fromFile(indicator: ProgressIndicator, path: Path): InputStream = ProgressMonitorInputStream(indicator, FileInputStream(path.toFile()), path.size())
+        fun fromFile(
+            indicator: ProgressIndicator,
+            path: Path
+        ): InputStream = ProgressMonitorInputStream(indicator, FileInputStream(path.toFile()), path.fileSize())
     }
 }
 

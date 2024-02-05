@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services
 
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.util.io.FileUtil
-import com.intellij.util.io.isFile
 import com.intellij.xdebugger.XSourcePosition
 import com.jetbrains.python.debugger.PyLocalPositionConverter
 import com.jetbrains.python.debugger.PySourcePosition
@@ -15,6 +14,7 @@ import software.aws.toolkits.jetbrains.services.PathMapper.Companion.normalizeLo
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Objects
+import kotlin.io.path.isRegularFile
 
 /**
  * Maps a local path to a remote path. The order of the list indicates the order of priority where first possible
@@ -90,7 +90,7 @@ class PathMapper(private val mappings: List<PathMapping>) {
 
 class PathMapping(localPath: String, remoteDirectory: String) {
     private val directory = Paths.get(localPath).let {
-        if (it.isFile()) {
+        if (it.isRegularFile()) {
             it.parent.toString()
         } else {
             localPath

@@ -10,7 +10,6 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VfsUtil
-import com.intellij.util.io.isDirectory
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.utils.deleteIfExists
@@ -35,6 +34,7 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.S3Telemetry
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.isDirectory
 
 class DownloadObjectAction :
     S3ObjectAction(message("s3.download.object.action"), AllIcons.Actions.Download) {

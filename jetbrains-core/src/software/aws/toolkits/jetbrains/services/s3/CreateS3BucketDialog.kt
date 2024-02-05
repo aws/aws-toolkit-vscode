@@ -22,7 +22,7 @@ class CreateS3BucketDialog(
     private val project: Project,
     private val s3Client: S3Client,
     parent: Component? = null
-) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+) : DialogWrapper(project, parent, false, IdeModalityType.IDE) {
 
     val view = CreateBucketPanel()
 

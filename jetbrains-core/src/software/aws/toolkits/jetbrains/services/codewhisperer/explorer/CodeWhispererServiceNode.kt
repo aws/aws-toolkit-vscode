@@ -31,6 +31,7 @@ import software.aws.toolkits.resources.message
 import java.awt.event.MouseEvent
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.time.temporal.TemporalAdjusters
 
 class CodeWhispererServiceNode(
@@ -48,7 +49,7 @@ class CodeWhispererServiceNode(
         // but that shouldn't happen often enough for us to care
         val formatter = tryOrNull {
             DateTimeFormatter.ofPattern(DateTimeFormatManager.getInstance().dateFormatPattern)
-        } ?: DateTimeFormatter.ofPattern(DateTimeFormatManager.DEFAULT_DATE_FORMAT)
+        } ?: DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
         val date = LocalDate.now().with(TemporalAdjusters.firstDayOfNextMonth())
 
         FreeTierUsageLimitHitNode(nodeProject, formatter.format(date))

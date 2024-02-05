@@ -20,7 +20,11 @@ buildscript {
     println("Using rd-gen: $rdversion")
 
     dependencies {
-        classpath("com.jetbrains.rd:rd-gen:$rdversion")
+        if (rdversion.contains("pre")) {
+            classpath(fileTree("bin/$rdversion"))
+        } else {
+            classpath("com.jetbrains.rd:rd-gen:$rdversion")
+        }
     }
 }
 

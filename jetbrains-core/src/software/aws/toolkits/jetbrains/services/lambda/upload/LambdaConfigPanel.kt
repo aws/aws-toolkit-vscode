@@ -10,7 +10,6 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SortedComboBoxModel
-import com.intellij.util.io.isFile
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.awsClient
@@ -37,6 +36,7 @@ import javax.swing.JComboBox
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JRadioButton
+import kotlin.io.path.isRegularFile
 
 class LambdaConfigPanel(private val project: Project, private val isUpdate: Boolean) : JPanel(BorderLayout()) {
     lateinit var handlerPanel: HandlerPanel
@@ -158,7 +158,7 @@ class LambdaConfigPanel(private val project: Project, private val isUpdate: Bool
                 handlerPanel.validateHandler(handlerMustExist = !isUpdate)?.let { return it }
             }
             PackageType.IMAGE -> {
-                if (dockerFile.isVisible && (dockerFile.text.isEmpty() || !Paths.get(dockerFile.text).isFile())) {
+                if (dockerFile.isVisible && (dockerFile.text.isEmpty() || !Paths.get(dockerFile.text).isRegularFile())) {
                     return dockerFile.validationInfo(message("lambda.upload_validation.dockerfile_not_found"))
                 }
             }

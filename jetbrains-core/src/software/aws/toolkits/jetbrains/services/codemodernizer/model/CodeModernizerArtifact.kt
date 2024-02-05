@@ -8,7 +8,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.util.io.FileUtil.createTempDirectory
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.io.isDirectory
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
@@ -17,6 +16,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.TransformationSum
 import software.aws.toolkits.jetbrains.services.codemodernizer.unzipFile
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
+import kotlin.io.path.isDirectory
 import kotlin.io.path.walk
 
 /**
