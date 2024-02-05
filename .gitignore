@@ -51,5 +51,5 @@ packages/toolkit/resources/css/icons.css
 .local.env
 *.config.local.json
 
-# Created by `npm run runInBrowser` when testing extension in the browser
+# Created by `npm run browserRun` when testing extension in the browser
 .vscode-test-web

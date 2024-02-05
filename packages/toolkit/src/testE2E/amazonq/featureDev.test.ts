@@ -62,6 +62,8 @@ describe('Amazon Q Feature Dev', function () {
         })
 
         it('Does NOT show /dev when feature dev is NOT enabled', () => {
+            // The beforeEach registers a framework which accepts requests. If we don't dispose before building a new one we have duplicate messages
+            framework.dispose()
             framework = new qTestingFramework('featuredev', false, true)
             const q = framework.createTab()
             const command = q.findCommand('/dev')

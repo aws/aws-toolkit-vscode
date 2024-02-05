@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "EC2 Credentials: Use IMDSv2 calls if available, otherwise fall back IMDSv1."
+}

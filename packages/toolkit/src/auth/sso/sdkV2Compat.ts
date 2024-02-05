@@ -7,8 +7,15 @@ import * as AWS from 'aws-sdk'
 import { Token } from 'aws-sdk/lib/token'
 import { Connection } from '../connection'
 
-const TokenClass = (AWS as any).Token as typeof Token
-export class TokenProvider extends TokenClass {
+/**
+ * {@link AWS.Token} is defined when {@link Token} is imported.
+ * But for {@link Token} to not get tree-shaken we need to use it.
+ * So the following simply uses it and now {@link AWS.Token} will not
+ * be undefined anymore.
+ */
+Token
+
+export class TokenProvider extends AWS.Token {
     public constructor(private readonly connection: Connection & { type: 'sso' }) {
         super({ token: '', expireTime: new Date(0) })
     }

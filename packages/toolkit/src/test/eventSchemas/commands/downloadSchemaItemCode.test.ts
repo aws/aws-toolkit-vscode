@@ -67,7 +67,7 @@ describe('CodeDownloader', function () {
 
             await assert.rejects(
                 codeDownloader.download(request),
-                new Error('Response body should be Buffer type'),
+                new TypeError('Response body should be Buffer type'),
                 'Should fail for same error'
             )
         })

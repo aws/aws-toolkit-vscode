@@ -111,6 +111,7 @@ export function getSectionDataOrThrow(sections: Section[], name: SectionName, ty
 
 const sectionTypes = ['profile', 'sso-session'] as const
 function validateSection(section: BaseSection): asserts section is Section {
+    // eslint-disable-next-line unicorn/prefer-includes
     if (!sectionTypes.some(t => t === section.type)) {
         throw ParseError.fromSection(
             section,

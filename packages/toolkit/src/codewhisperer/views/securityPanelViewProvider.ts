@@ -109,7 +109,7 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
     private addLine(panelSet: SecurityPanelSet, index: number) {
         const filePath = panelSet.path
         const fileName = filePath.substring(Number(filePath.lastIndexOf('/')) + 1)
-        const handleId = 'handle'.concat(new Date().getTime().toString()).concat(index.toString())
+        const handleId = 'handle'.concat(Date.now().toString()).concat(index.toString())
         this.dynamicLog.push(
             `<section class="accordion"><input type="checkbox" name="collapse" id="${handleId}" checked="checked"><div class="handle" ><label for="${handleId}">${fileName}</label></div>`
         )
@@ -132,7 +132,7 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
     private persistLine(panelSet: SecurityPanelSet, index: number) {
         const filePath = panelSet.path
         const fileName = filePath.substring(Number(filePath.lastIndexOf('/')) + 1)
-        const handleId = 'handle'.concat(new Date().getTime().toString()).concat(index.toString())
+        const handleId = 'handle'.concat(Date.now().toString()).concat(index.toString())
         this.persistLog.push(
             `<section class="accordion"><input type="checkbox" name="collapse" id="${handleId}" checked="checked"><div class="handle" ><label for="${handleId}">${fileName}</label></div>`
         )

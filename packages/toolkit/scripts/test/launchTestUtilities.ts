@@ -91,6 +91,7 @@ async function getVSCodeCliArgs(params: {
         extensionTestsEnv: {
             ['DEVELOPMENT_PATH']: projectRootDir,
             ['AWS_TOOLKIT_AUTOMATION']: params.suite,
+            ['TEST_DIR']: process.env.TEST_DIR,
             ...params.env,
         },
     }

@@ -24,6 +24,8 @@ interface CodeWhispererToken {
     accepted: number
 }
 
+const autoClosingKeystrokeInputs = ['[]', '{}', '()', '""', "''"]
+
 /**
  * This singleton class is mainly used for calculating the code written by codeWhisperer
  */
@@ -59,14 +61,6 @@ export class CodeWhispererCodeCoverageTracker {
         return TelemetryHelper.instance.isTelemetryEnabled() && AuthUtil.instance.isConnected()
     }
 
-    public countAcceptedTokens(range: vscode.Range, text: string, filename: string) {
-        if (!this.isActive()) {
-            return
-        }
-        // generate accepted recommendation token and stored in collection
-        this.addAcceptedTokens(filename, { range: range, text: text, accepted: text.length })
-    }
-
     public incrementServiceInvocationCount() {
         this._serviceInvocationCount += 1
     }
@@ -85,6 +79,8 @@ export class CodeWhispererCodeCoverageTracker {
         }
     }
 
+    // TODO: Improve the range tracking of the accepted recommendation
+    // TODO: use the editor of the filename, not the current editor
     public updateAcceptedTokensCount(editor: vscode.TextEditor) {
         const filename = editor.document.fileName
         if (filename in this._acceptedTokens) {
@@ -112,17 +108,25 @@ export class CodeWhispererCodeCoverageTracker {
         if (vscode.window.activeTextEditor) {
             this.updateAcceptedTokensCount(vscode.window.activeTextEditor)
         }
+        // the accepted characters without counting user modification
         let acceptedTokens = 0
+        // the accepted characters after calculating user modificaiton
+        let unmodifiedAcceptedTokens = 0
         for (const filename in this._acceptedTokens) {
             this._acceptedTokens[filename].forEach(v => {
                 if (filename in this._totalTokens && this._totalTokens[filename] >= v.accepted) {
-                    acceptedTokens += v.accepted
+                    unmodifiedAcceptedTokens += v.accepted
+                    acceptedTokens += v.text.length
                 }
             })
         }
         const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))
         const selectedCustomization = getSelectedCustomization()
+        if (this._serviceInvocationCount <= 0) {
+            getLogger().debug(`Skip emiting code contribution metric`)
+            return
+        }
         telemetry.codewhisperer_codePercentage.emit({
             codewhispererTotalTokens: totalTokens,
             codewhispererLanguage: this._language,
@@ -142,6 +146,7 @@ export class CodeWhispererCodeCoverageTracker {
                             languageName: runtimeLanguageContext.toRuntimeLanguage(this._language),
                         },
                         acceptedCharacterCount: acceptedTokens,
+                        unmodifiedAcceptedCharacterCount: unmodifiedAcceptedTokens,
                         totalCharacterCount: totalTokens,
                         timestamp: new Date(Date.now()),
                     },
@@ -226,21 +231,65 @@ export class CodeWhispererCodeCoverageTracker {
         }
     }
 
-    public countTotalTokens(e: vscode.TextDocumentChangeEvent) {
-        // ignore no contentChanges. ignore contentChanges from other plugins (formatters)
-        // only include contentChanges from user action.
-        // Also ignore deletion events due to a known issue of tracking deleted CodeWhiperer tokens.
-        if (
-            !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
-            vsCodeState.isCodeWhispererEditing ||
-            e.contentChanges.length !== 1 ||
-            e.contentChanges[0].text.length === 0
-        ) {
+    public countAcceptedTokens(range: vscode.Range, text: string, filename: string) {
+        if (!this.isActive()) {
             return
         }
-        const content = e.contentChanges[0]
-        this.tryStartTimer()
-        this.addTotalTokens(e.document.fileName, content.text.length)
+        // generate accepted recommendation token and stored in collection
+        this.addAcceptedTokens(filename, { range: range, text: text, accepted: text.length })
+        this.addTotalTokens(filename, text.length)
+    }
+
+    // For below 2 edge cases
+    // 1. newline character with indentation
+    // 2. 2 character insertion of closing brackets
+    public getCharacterCountFromComplexEvent(e: vscode.TextDocumentChangeEvent) {
+        function countChanges(cond: boolean, text: string): number {
+            if (!cond) {
+                return 0
+            }
+            if ((text.startsWith('\n') || text.startsWith('\r\n')) && text.trim().length === 0) {
+                return 1
+            }
+            if (autoClosingKeystrokeInputs.includes(text)) {
+                return 2
+            }
+            return 0
+        }
+        if (e.contentChanges.length === 2) {
+            const text1 = e.contentChanges[0].text
+            const text2 = e.contentChanges[1].text
+            const text2Count = countChanges(text1.length === 0, text2)
+            const text1Count = countChanges(text2.length === 0, text1)
+            return text2Count > 0 ? text2Count : text1Count
+        } else if (e.contentChanges.length === 1) {
+            return countChanges(true, e.contentChanges[0].text)
+        }
+        return 0
+    }
+
+    public isFromUserKeystroke(e: vscode.TextDocumentChangeEvent) {
+        return e.contentChanges.length === 1 && e.contentChanges[0].text.length === 1
+    }
+
+    public countTotalTokens(e: vscode.TextDocumentChangeEvent) {
+        // ignore no contentChanges. ignore contentChanges from other plugins (formatters)
+        // only include contentChanges from user keystroke input(one character input).
+        // Also ignore deletion events due to a known issue of tracking deleted CodeWhiperer tokens.
+        if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId) || vsCodeState.isCodeWhispererEditing) {
+            return
+        }
+        // a user keystroke input can be
+        // 1. content change with 1 character insertion
+        // 2. newline character with indentation
+        // 3. 2 character insertion of closing brackets
+        if (this.isFromUserKeystroke(e)) {
+            this.tryStartTimer()
+            this.addTotalTokens(e.document.fileName, 1)
+        } else if (this.getCharacterCountFromComplexEvent(e) !== 0) {
+            this.tryStartTimer()
+            this.addTotalTokens(e.document.fileName, this.getCharacterCountFromComplexEvent(e))
+        }
     }
 
     public static readonly instances = new Map<CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()

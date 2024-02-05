@@ -121,7 +121,7 @@ export class InactivityMessage implements vscode.Disposable {
         latestTimestamp: number,
         relativeMinuteMillis: number
     ): { millisToWait: number; minutesSinceTimestamp: number } {
-        const millisSinceLastTimestamp = new Date().getTime() - latestTimestamp
+        const millisSinceLastTimestamp = Date.now() - latestTimestamp
         const millisSinceLastWholeMinute = millisSinceLastTimestamp % relativeMinuteMillis
 
         const millisToWait = millisSinceLastWholeMinute !== 0 ? relativeMinuteMillis - millisSinceLastWholeMinute : 0

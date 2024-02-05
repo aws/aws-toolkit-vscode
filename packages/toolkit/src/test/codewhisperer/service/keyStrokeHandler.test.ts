@@ -21,6 +21,7 @@ import { isInlineCompletionEnabled } from '../../../codewhisperer/util/commonUti
 import { ClassifierTrigger } from '../../../codewhisperer/service/classifierTrigger'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
+import { RecommendationService } from '../../../codewhisperer/service/recommendationService'
 
 describe('keyStrokeHandler', function () {
     const config: ConfigurationEntry = {
@@ -192,7 +193,7 @@ describe('keyStrokeHandler', function () {
     describe('shouldTriggerIdleTime', function () {
         it('should return false when inline is enabled and inline completion is in progress ', function () {
             const keyStrokeHandler = new KeyStrokeHandler()
-            sinon.stub(InlineCompletionService.instance, 'isPaginationRunning').returns(true)
+            sinon.stub(RecommendationService.instance, 'isRunning').get(() => true)
             const result = keyStrokeHandler.shouldTriggerIdleTime()
             assert.strictEqual(result, !isInlineCompletionEnabled())
         })

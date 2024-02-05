@@ -8,7 +8,8 @@
 #   - "waiting for browser": from `ssoAccessTokenProvider.test.ts`, unclear how to fix it.
 #   - "Webview is disposed": only happens on vscode "minimum" (1.68.0)
 #   - "HTTPError: Response code …": caused by github rate-limiting.
-_ignore_pat='Timed-out waiting for browser login flow\|HTTPError: Response code 403\|HTTPError: Response code 404'
+#   - "npm WARN deprecated querystring": transitive dep of aws sdk v2 (check `npm ls querystring`), so that's blocked until we migrate to v3.
+_ignore_pat='Timed-out waiting for browser login flow\|HTTPError: Response code 403\|HTTPError: Response code 404\|npm WARN deprecated querystring'
 if [ "$VSCODE_TEST_VERSION" = 'minimum' ]; then
     _ignore_pat="$_ignore_pat"'\|Webview is disposed'
 fi

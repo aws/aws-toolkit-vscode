@@ -15,6 +15,8 @@ import { GitExtension } from './extensions/git'
 import { isCloud9 } from './extensionUtilities'
 import { Settings } from './settings'
 import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isNoPermissionsError } from './errors'
+import { isInBrowser } from '../common/browserUtils'
+import globals from './extensionGlobals'
 
 export function createPermissionsErrorHandler(
     uri: vscode.Uri,
@@ -49,6 +51,14 @@ export class SystemUtilities {
     private static bashPath: string
 
     public static getHomeDirectory(): string {
+        if (isInBrowser()) {
+            // When in browser we cannot access the users desktop file system.
+            // Instead, VS Code provided uris will use the browsers storage.
+            // IMPORTANT: we must preserve the scheme of this URI or else VS Code
+            // will incorrectly interpret the path.
+            return globals.context.globalStorageUri.toString()
+        }
+
         const env = process.env as EnvironmentVariables
 
         if (env.HOME !== undefined) {
@@ -67,7 +77,7 @@ export class SystemUtilities {
     }
 
     public static async readFile(file: string | vscode.Uri, decoder: TextDecoder = new TextDecoder()): Promise<string> {
-        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const uri = this.toUri(file)
         const errorHandler = createPermissionsErrorHandler(uri, 'r**')
 
         if (isCloud9()) {
@@ -82,7 +92,7 @@ export class SystemUtilities {
         data: string | Buffer,
         opt?: fs.WriteFileOptions
     ): Promise<void> {
-        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const uri = this.toUri(file)
         const errorHandler = createPermissionsErrorHandler(uri, '*w*')
         const content = typeof data === 'string' ? new TextEncoder().encode(data) : data
 
@@ -94,7 +104,7 @@ export class SystemUtilities {
     }
 
     public static async delete(fileOrDir: string | vscode.Uri, opt?: { recursive: boolean }): Promise<void> {
-        const uri = typeof fileOrDir === 'string' ? vscode.Uri.file(fileOrDir) : fileOrDir
+        const uri = this.toUri(fileOrDir)
         const dirUri = vscode.Uri.joinPath(uri, '..')
         const errorHandler = createPermissionsErrorHandler(dirUri, '*wx')
 
@@ -136,7 +146,7 @@ export class SystemUtilities {
     }
 
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
-        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const uri = this.toUri(file)
 
         if (isCloud9()) {
             return fsPromises.access(uri.fsPath, fs.constants.F_OK).then(
@@ -152,7 +162,7 @@ export class SystemUtilities {
     }
 
     public static async createDirectory(file: string | vscode.Uri): Promise<void> {
-        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const uri = this.toUri(file)
         const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
 
         if (isCloud9()) {
@@ -165,11 +175,28 @@ export class SystemUtilities {
         return vscode.workspace.fs.createDirectory(uri).then(undefined, errorHandler)
     }
 
-    private static readonly modeMap = {
-        '*': 0,
-        r: fs.constants.R_OK,
-        w: fs.constants.W_OK,
-        x: fs.constants.X_OK,
+    /** Converts the given path to a URI if necessary */
+    public static toUri(path: string | vscode.Uri): vscode.Uri {
+        if (typeof path === 'string') {
+            const parsed = vscode.Uri.parse(path)
+            // If string path already has a scheme we want to preserve it,
+            // but if on windows the drive looks like a scheme and this causes issues
+            if (parsed.scheme && os.platform() !== 'win32') {
+                return parsed
+            }
+            // path has no scheme to it will be indicated as a file
+            return vscode.Uri.file(path)
+        }
+        return path
+    }
+
+    private static get modeMap() {
+        return {
+            '*': 0,
+            r: fs.constants.R_OK,
+            w: fs.constants.W_OK,
+            x: fs.constants.X_OK,
+        } as const
     }
 
     /**
@@ -178,7 +205,7 @@ export class SystemUtilities {
      * This throws {@link PermissionsError} when permissions are insufficient.
      */
     public static async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet): Promise<void> {
-        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const uri = this.toUri(file)
         const errorHandler = createPermissionsErrorHandler(uri, perms)
         const flags = Array.from(perms) as (keyof typeof this.modeMap)[]
         const mode = flags.reduce((m, f) => m | this.modeMap[f], fs.constants.F_OK)
