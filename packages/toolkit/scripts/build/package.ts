@@ -146,6 +146,9 @@ function main() {
         child_process.execSync(`vsce package`, { stdio: 'inherit' })
         const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
         console.log(`VSIX Version: ${packageJson.version}`)
+
+        const vsixName = `aws-toolkit-vscode-${packageJson.version}.vsix`
+        fs.moveSync(vsixName, `../../${vsixName}`)
     } catch (e) {
         console.log(e)
         throw Error('package.ts: failed')
