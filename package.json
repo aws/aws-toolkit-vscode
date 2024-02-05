@@ -30,7 +30,7 @@
         "testInteg": "npm run testInteg -w packages/",
         "package": "npm run package -w packages/",
         "newChange": "ts-node ./scripts/newChange.ts",
-        "createRelease": "npm run createRelease -w packages/",
+        "createRelease": "ts-node ./scripts/createRelease.ts",
         "format": "prettier --check plugins && npm run format -w packages/",
         "formatfix": "prettier --write plugins && npm run formatfix -w packages/",
         "lint": "npm run lint -w packages/ && npm run format",

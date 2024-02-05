@@ -116,6 +116,7 @@ function main() {
             // Create backup files so we can restore the originals later.
             fs.copyFileSync(packageJsonFile, `${packageJsonFile}.bk`)
             fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
+            fs.copyFileSync('../../CHANGELOG.md', 'CHANGELOG.md')
 
             const packageJson: typeof PackageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
             const versionSuffix = getVersionSuffix(args.feature, args.debug)
