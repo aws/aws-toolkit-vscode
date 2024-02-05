@@ -1187,9 +1187,9 @@ describe('SamDebugConfigurationProvider', async function () {
             await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
-        it('target=code: java maven', async function () {
+        it('target=code: java17 maven', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java11-plain-maven-sam-app/')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-gradle/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const handler = 'helloworld.App::handleRequest'
@@ -1203,7 +1203,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     projectRoot: 'HelloWorldFunction',
                 },
                 lambda: {
-                    runtime: 'java11',
+                    runtime: 'java17',
                 },
             }
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
@@ -1211,7 +1211,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'java11',
+                runtime: 'java17',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1261,7 +1261,7 @@ describe('SamDebugConfigurationProvider', async function () {
       Handler: ${handler}
       CodeUri: >-
         ${input.invokeTarget.projectRoot}
-      Runtime: java11
+      Runtime: java17
 `
             )
 
@@ -1289,9 +1289,9 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=code: java gradle', async function () {
+        it('target=code: java 17 gradle', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java11-plain-gradle-sam-app/')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-gradle/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const handler = 'helloworld.App::handleRequest'
@@ -1305,7 +1305,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     projectRoot: 'HelloWorldFunction',
                 },
                 lambda: {
-                    runtime: 'java11',
+                    runtime: 'java17',
                 },
             }
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
@@ -1313,7 +1313,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'java11',
+                runtime: 'java17',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1363,7 +1363,7 @@ describe('SamDebugConfigurationProvider', async function () {
       Handler: ${handler}
       CodeUri: >-
         ${input.invokeTarget.projectRoot}
-      Runtime: java11
+      Runtime: java17
 `
             )
 
@@ -1394,7 +1394,7 @@ describe('SamDebugConfigurationProvider', async function () {
         it('target=template: java maven', async function () {
             const handler = 'helloworld.App::handleRequest'
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java11-plain-maven-sam-app/')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-maven/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
@@ -1425,7 +1425,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'java11',
+                runtime: 'java17',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1449,7 +1449,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
-                architecture: undefined,
+                architecture: 'x86_64',
             }
 
             const expectedDebug = {
@@ -1489,9 +1489,9 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=template: Image java gradle', async function () {
+        it('target=template: Image java', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java11-image-gradle-sam-app')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-image')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
@@ -1551,7 +1551,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
-                architecture: undefined,
+                architecture: 'x86_64',
             }
 
             const expectedDebug = {
