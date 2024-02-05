@@ -37,7 +37,7 @@ jobs:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v3
+              uses: codecov/codecov-action@v4
               with:
                   verbose: true
                   file: ./coverage/lcov.info
@@ -47,7 +47,7 @@ jobs:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v3
+              uses: codecov/codecov-action@v4
               with:
                   verbose: true
                   file: ./coverage/lcov.info
@@ -78,7 +78,7 @@ jobs:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v3
+              uses: codecov/codecov-action@v4
               with:
                   verbose: true
                   file: ./coverage/lcov.info
