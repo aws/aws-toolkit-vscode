@@ -8,4 +8,5 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.Incom
 interface InboundAppMessagesHandler {
     suspend fun processPromptChatMessage(message: IncomingFeatureDevMessage.ChatPrompt)
     suspend fun processNewTabCreatedMessage(message: IncomingFeatureDevMessage.NewTabCreated)
+    suspend fun processTabRemovedMessage(message: IncomingFeatureDevMessage.TabRemoved)
 }

@@ -25,6 +25,7 @@ class FeatureDevApp : AmazonQApp {
         context.messageTypeRegistry.register(
             "chat-prompt" to IncomingFeatureDevMessage.ChatPrompt::class,
             "new-tab-was-created" to IncomingFeatureDevMessage.NewTabCreated::class,
+            "tab-was-removed" to IncomingFeatureDevMessage.TabRemoved::class,
         )
 
         scope.launch {
@@ -39,6 +40,7 @@ class FeatureDevApp : AmazonQApp {
         when (message) {
             is IncomingFeatureDevMessage.ChatPrompt -> inboundAppMessagesHandler.processPromptChatMessage(message)
             is IncomingFeatureDevMessage.NewTabCreated -> inboundAppMessagesHandler.processNewTabCreatedMessage(message)
+            is IncomingFeatureDevMessage.TabRemoved -> inboundAppMessagesHandler.processTabRemovedMessage(message)
         }
     }
 

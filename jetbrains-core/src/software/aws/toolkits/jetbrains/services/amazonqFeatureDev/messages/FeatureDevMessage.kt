@@ -23,6 +23,11 @@ sealed interface IncomingFeatureDevMessage : FeatureDevBaseMessage {
         val command: String,
         @JsonProperty("tabID") val tabId: String,
     ) : IncomingFeatureDevMessage
+
+    data class TabRemoved(
+        val command: String,
+        @JsonProperty("tabID") val tabId: String,
+    ) : IncomingFeatureDevMessage
 }
 
 // === UI -> App Messages ===
@@ -39,6 +44,7 @@ enum class FeatureDevMessageType(
     @field:JsonValue val json: String,
 ) {
     Answer("answer"),
+    AnswerPart("answer-part"),
 }
 
 data class FeatureDevMessage(
@@ -51,4 +57,30 @@ data class FeatureDevMessage(
 ) : UiMessage(
     tabId = tabId,
     type = "chatMessage",
+)
+
+data class AsyncEventProgressMessage(
+    @JsonProperty("tabID") override val tabId: String,
+    val message: String? = null,
+    val inProgress: Boolean
+) : UiMessage(
+    tabId = tabId,
+    type = "asyncEventProgressMessage"
+)
+
+data class UpdatePlaceholderMessage(
+    @JsonProperty("tabID") override val tabId: String,
+    val newPlaceholder: String
+) : UiMessage(
+    tabId = tabId,
+    type = "updatePlaceholderMessage"
+)
+
+data class ErrorMessage(
+    @JsonProperty("tabID") override val tabId: String,
+    val title: String,
+    val message: String,
+) : UiMessage(
+    tabId = tabId,
+    type = "errorMessage",
 )

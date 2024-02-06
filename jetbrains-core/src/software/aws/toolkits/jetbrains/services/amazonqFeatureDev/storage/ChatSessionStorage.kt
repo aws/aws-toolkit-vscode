@@ -16,4 +16,8 @@ class ChatSessionStorage {
     }
 
     fun getSession(tabId: String, project: Project): Session = sessions[tabId] ?: createSession(tabId, project)
+
+    fun deleteSession(tabId: String) {
+        sessions.remove(tabId)
+    }
 }

@@ -4,9 +4,11 @@
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
 import com.fasterxml.jackson.annotation.JsonValue
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 
 data class SessionStateAction(
-    val task: String
+    val task: String,
+    val msg: String
 )
 
 data class Interaction(
@@ -22,4 +24,11 @@ enum class SessionStatePhase(
     @field:JsonValue val json: String,
 ) {
     INIT("Init"),
+    APPROACH("Approach"),
 }
+
+data class SessionStateConfig(
+    val conversationId: String,
+    val proxyClient: FeatureDevClient,
+    val repoContext: FeatureDevSessionContext
+)
