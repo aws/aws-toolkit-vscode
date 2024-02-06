@@ -9,8 +9,8 @@ import * as path from 'path'
 // Moves all dependencies into `dist`
 // There is a single, optional flag `--webpacked` that moves localization files when present
 
-const repoRoot = process.cwd()
-const outRoot = path.join(repoRoot, 'dist')
+const projectRoot = process.cwd()
+const outRoot = path.join(projectRoot, 'dist')
 
 // The target file or directory must exist, otherwise we should fail the whole build.
 interface CopyTask {
@@ -26,6 +26,20 @@ interface CopyTask {
 }
 
 const tasks: CopyTask[] = [
+    ...[
+        'CHANGELOG.md',
+        'LICENSE',
+        'NOTICE',
+        'README.md',
+        'README.quickstart.cloud9.md',
+        'README.quickstart.vscode.md',
+        'quickStartCloud9-cn.html',
+        'quickStartCloud9.html',
+        'quickStartVscode.html',
+    ].map(f => {
+        return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
+    }),
+
     { target: path.join('src', 'templates') },
     { target: path.join('src', 'test', 'shared', 'cloudformation', 'yaml') },
     { target: path.join('src', 'test', 'codewhisperer', 'service', 'resources') },
@@ -33,15 +47,15 @@ const tasks: CopyTask[] = [
 
     // SSM
     {
-        target: path.join('node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js'),
+        target: path.join('../../node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js'),
         destination: path.join('src', 'ssmDocument', 'ssm', 'ssmServer.js'),
     },
     {
-        target: path.join('node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js.LICENSE.txt'),
+        target: path.join('../../node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js.LICENSE.txt'),
         destination: path.join('src', 'ssmDocument', 'ssm', 'ssmServer.js.LICENSE.txt'),
     },
     {
-        target: path.join('node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js.map'),
+        target: path.join('../../node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js.map'),
         destination: path.join('src', 'ssmDocument', 'ssm', 'server.js.map'),
     },
 
@@ -51,17 +65,23 @@ const tasks: CopyTask[] = [
         destination: path.join('libs', 'vscode.js'),
     },
     {
-        target: path.join('node_modules', 'vue', 'dist', 'vue.global.prod.js'),
+        target: path.join('../../node_modules', 'vue', 'dist', 'vue.global.prod.js'),
         destination: path.join('libs', 'vue.min.js'),
     },
 
     // Mynah
     {
-        target: path.join('node_modules', '@aws', 'fully-qualified-names', 'node', 'aws_fully_qualified_names_bg.wasm'),
+        target: path.join(
+            '../../node_modules',
+            '@aws',
+            'fully-qualified-names',
+            'node',
+            'aws_fully_qualified_names_bg.wasm'
+        ),
         destination: path.join('src', 'aws_fully_qualified_names_bg.wasm'),
     },
     {
-        target: path.join('node_modules', 'web-tree-sitter', 'tree-sitter.wasm'),
+        target: path.join('../../node_modules', 'web-tree-sitter', 'tree-sitter.wasm'),
         destination: path.join('src', 'tree-sitter.wasm'),
     },
 ]
@@ -79,7 +99,7 @@ const webpackedTasks: CopyTask[] = [
 ]
 
 async function copy(task: CopyTask): Promise<void> {
-    const src = path.resolve(repoRoot, task.target)
+    const src = path.resolve(projectRoot, task.target)
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {

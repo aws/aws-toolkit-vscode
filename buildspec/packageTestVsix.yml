@@ -27,7 +27,7 @@ phases:
             - export HOME=/home/codebuild-user
             # Generate CHANGELOG.md
             - npm run createRelease
-            - npm run generateNonCodeFiles
+            - npm run generateNonCodeFiles -w packages/toolkit
             - cp ./README.quickstart.vscode.md ./README.md
             - npm run package
 

@@ -7,7 +7,7 @@ import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
-const repoRoot = process.cwd()
+const repoRoot = path.join(process.cwd(), '../../') // root/packages/toolkit -> root/
 /**
  * This script uses the AWS JS SDK to generate service clients where the client definition is contained within
  * this repo. Client definitions are added at the bottom of this script.

@@ -9,7 +9,7 @@ import { marked } from 'marked'
 import * as path from 'path'
 
 // doesn't use path utils as this should be formatted for finding images with HTML markup
-const repoRoot = process.cwd()
+const repoRoot = path.join(process.cwd(), '../../') // root/packages/toolkit -> root/
 
 /**
  * replaces relative paths with an `!!EXTENSIONROOT!!` token.
