@@ -4274,7 +4274,7 @@
         "@types/circular-dependency-plugin": "^5.0.8",
         "@types/cross-spawn": "^6.0.6",
         "@types/diff": "^5.0.7",
-        "@types/fs-extra": "^9.0.11",
+        "@types/fs-extra": "^11.0.4",
         "@types/glob": "^8.1.0",
         "@types/js-yaml": "^4.0.5",
         "@types/jsdom": "^21.1.6",
