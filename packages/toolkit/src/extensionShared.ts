@@ -18,6 +18,7 @@ import { documentationUrl, githubCreateIssueUrl, githubUrl } from './shared/cons
 import { getIdeProperties, aboutToolkit, isCloud9 } from './shared/extensionUtilities'
 import { telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
+import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
 
 import { activate as activateLogger } from './shared/logger/activation'
 import { initializeComputeRegion } from './shared/extensionUtilities'
@@ -131,13 +132,15 @@ export async function activateShared(
         credentialsStore: globals.loginManager.store,
     }
 
+    await activateCodeWhisperer(extContext)
+
     return extContext
 }
 
 /** Deactivation code that is shared between nodejs and browser implementations */
 export async function deactivateShared() {
     await globals.telemetry.shutdown()
-    // await codewhispererShutdown()
+    await codewhispererShutdown()
 }
 /**
  * Registers generic commands used by both browser and node versions of the toolkit.
