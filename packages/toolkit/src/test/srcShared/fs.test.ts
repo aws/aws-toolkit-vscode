@@ -24,6 +24,7 @@ describe('FileSystem', function () {
 
     before(async function () {
         fakeContext = await FakeExtensionContext.create()
+        await deleteTestRoot() // incase a previous test run failed to clean
     })
 
     beforeEach(async function () {
@@ -161,7 +162,7 @@ describe('FileSystem', function () {
             it(`creates folder: '${p}'`, async function () {
                 const dirPath = createTestPath(p)
                 await fsCommon.mkdir(dirPath)
-                assert.ok(existsSync(dirPath))
+                assert(existsSync(dirPath))
             })
         })
 
@@ -173,8 +174,8 @@ describe('FileSystem', function () {
 
                 await fsCommon.mkdir(dirPath)
 
-                assert.ok(existsSync(dirPath))
-                assert.ok(mkdirSpy.calledOnce)
+                assert(existsSync(dirPath))
+                assert.strictEqual(mkdirSpy.callCount, 1)
             })
         })
     })
@@ -300,7 +301,7 @@ describe('FileSystem', function () {
     }
 
     function testRootPath() {
-        return path.join(fakeContext.globalStorageUri.fsPath, 'testDir')
+        return path.join(fakeContext.globalStorageUri.fsPath, 'fsTestDir')
     }
 
     async function makeTestRoot() {
@@ -308,6 +309,6 @@ describe('FileSystem', function () {
     }
 
     async function deleteTestRoot() {
-        return rmSync(testRootPath(), { recursive: true })
+        rmSync(testRootPath(), { recursive: true, force: true })
     }
 })
