@@ -31,6 +31,7 @@ Current quirks of the current monorepo status that should be resolved/evaluated 
 -   `packages/toolkit/scripts/` should be generalized and moved to the root of the project as needed.
 -   LICENSE, README.md, and other non-code artifacts that must be packaged into the .vsix are currently
     being copied into the packaging subproject directory from the root project directory as part of the `copyFiles` task.
+-   Pre-release only publishes packages/toolkit extension directly. It should be extended to other added extensions. See [`release.yml`](../.github/workflows/release.yml)
 -   [**Running the test suites in VSCode has changed**](../CONTRIBUTING.md#test)
 
 ## Commands

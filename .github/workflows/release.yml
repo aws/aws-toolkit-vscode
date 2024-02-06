@@ -49,11 +49,11 @@ jobs:
                   echo "FEAT_NAME=" >> $GITHUB_ENV
                   echo "TAG_NAME=prerelease" >> $GITHUB_ENV
             - run: npm ci
-            - name: vsix
+            - name: vsix # TODO: For packages/toolkit release only
               run: |
                   npm run createRelease  # Generate CHANGELOG.md
-                  npm run generateNonCodeFiles -w packages/toolkit
                   cp ./README.quickstart.vscode.md ./README.md
+                  cd packages/toolkit
                   npm run package -- --feature "$FEAT_NAME"
             - uses: actions/upload-artifact@v4
               with:
