@@ -39,6 +39,9 @@ import { showMessageWithUrl } from './shared/utilities/messages'
 import { Logging } from './shared/logger/commands'
 import { registerWebviewErrorHandler } from './webviews/server'
 import { showQuickStartWebview } from './shared/extensionStartup'
+import { ExtContext } from './shared/extensions'
+import { getSamCliContext } from './shared/sam/cli/samCliContext'
+import { UriHandler } from './shared/vscode/uriHandler'
 
 let localize: nls.LocalizeFunc
 
@@ -49,7 +52,10 @@ let localize: nls.LocalizeFunc
  * @param getRegionProvider - HACK telemetry requires the region provider but we cannot create it yet in this
  * "shared" function since it breaks in browser. So for now the caller must provide it.
  */
-export async function activateShared(context: vscode.ExtensionContext, getRegionProvider: () => RegionProvider) {
+export async function activateShared(
+    context: vscode.ExtensionContext,
+    getRegionProvider: () => RegionProvider
+): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
 
     registerCommandErrorHandler((info, error) => {
@@ -73,6 +79,10 @@ export async function activateShared(context: vscode.ExtensionContext, getRegion
             })
         )
     }
+
+    globals.invokeOutputChannel = vscode.window.createOutputChannel(
+        localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
+    )
 
     // Setup the logger
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
@@ -103,12 +113,31 @@ export async function activateShared(context: vscode.ExtensionContext, getRegion
     await initializeAuth(context, globals.awsContext, globals.loginManager)
     await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 
+    // Create this now, but don't call vscode.window.registerUriHandler() until after all
+    // Toolkit services have a chance to register their path handlers. #4105
+    globals.uriHandler = new UriHandler()
+
     registerCommands(context)
+
+    const extContext: ExtContext = {
+        extensionContext: context,
+        awsContext: globals.awsContext,
+        samCliContext: getSamCliContext,
+        regionProvider: globals.regionProvider,
+        outputChannel: globals.outputChannel,
+        invokeOutputChannel: globals.invokeOutputChannel,
+        telemetryService: globals.telemetry,
+        uriHandler: globals.uriHandler,
+        credentialsStore: globals.loginManager.store,
+    }
+
+    return extContext
 }
 
 /** Deactivation code that is shared between nodejs and browser implementations */
 export async function deactivateShared() {
     await globals.telemetry.shutdown()
+    // await codewhispererShutdown()
 }
 /**
  * Registers generic commands used by both browser and node versions of the toolkit.

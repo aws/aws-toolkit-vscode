@@ -33,7 +33,6 @@ import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
 import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
-import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
@@ -46,7 +45,6 @@ import { activate as activateApplicationComposer } from './applicationcomposer/a
 import { activate as activateRedshift } from './redshift/activation'
 import { activate as activateCWChat } from './amazonq/activation'
 import { activate as activateQGumby } from './amazonqGumby/activation'
-import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
@@ -55,7 +53,6 @@ import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
 import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
-import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
 import { showViewLogsMessage } from './shared/utilities/messages'
@@ -66,17 +63,21 @@ import { activateShared, deactivateShared } from './extensionShared'
 
 let localize: nls.LocalizeFunc
 
+/**
+ * The entrypoint for the nodejs version of the toolkit
+ *
+ * **CONTIBUTORS** If you are adding code to this function prioritize adding it to
+ * {@link activateShared} if appropriate
+ */
 export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
 
-    const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
-        localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
-    )
-
     try {
         // IMPORTANT: If you are doing setup that should also work in browser, it should be done in the function below
-        await activateShared(context, () => RegionProvider.fromEndpointsProvider(makeEndpointsProvider()))
+        const extContext = await activateShared(context, () =>
+            RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
+        )
 
         initializeNetworkAgent()
         initializeCredentialsProviderManager()
@@ -91,9 +92,6 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.awsContextCommands = new AwsContextCommands(globals.regionProvider, Auth.instance)
         globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
-        // Create this now, but don't call vscode.window.registerUriHandler() until after all
-        // Toolkit services have a chance to register their path handlers. #4105
-        globals.uriHandler = new UriHandler()
 
         const settings = Settings.instance
         const experiments = Experiments.instance
@@ -108,18 +106,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await globals.schemaService.start()
         awsFiletypes.activate()
-
-        const extContext: ExtContext = {
-            extensionContext: context,
-            awsContext: globals.awsContext,
-            samCliContext: getSamCliContext,
-            regionProvider: globals.regionProvider,
-            outputChannel: globals.outputChannel,
-            invokeOutputChannel: remoteInvokeOutputChannel,
-            telemetryService: globals.telemetry,
-            uriHandler: globals.uriHandler,
-            credentialsStore: globals.loginManager.store,
-        }
 
         try {
             await activateDev(context)
@@ -144,7 +130,7 @@ export async function activate(context: vscode.ExtensionContext) {
             context: extContext,
             regionProvider: globals.regionProvider,
             toolkitOutputChannel: globals.outputChannel,
-            remoteInvokeOutputChannel,
+            remoteInvokeOutputChannel: globals.invokeOutputChannel,
         })
 
         await activateCodeWhisperer(extContext)
@@ -153,7 +139,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateApiGateway({
             extContext: extContext,
-            outputChannel: remoteInvokeOutputChannel,
+            outputChannel: globals.invokeOutputChannel,
         })
 
         await activateLambda(extContext)
