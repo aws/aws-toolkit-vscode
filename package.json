@@ -21,7 +21,7 @@
     },
     "scripts": {
         "prepare": "ts-node ./scripts/prepare.ts",
-        "postinstall": "npm run buildCustomLintPlugin",
+        "postinstall": "npm run buildCustomLintPlugin && npm run postinstall -ws --if-present",
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
         "compile": "npm run compile -w packages/",
         "testCompile": "npm run testCompile -w packages/",

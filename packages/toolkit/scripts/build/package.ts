@@ -148,7 +148,7 @@ function main() {
         console.log(`VSIX Version: ${packageJson.version}`)
 
         const vsixName = `aws-toolkit-vscode-${packageJson.version}.vsix`
-        fs.moveSync(vsixName, `../../${vsixName}`)
+        fs.moveSync(vsixName, `../../${vsixName}`, { overwrite: true })
     } catch (e) {
         console.log(e)
         throw Error('package.ts: failed')
