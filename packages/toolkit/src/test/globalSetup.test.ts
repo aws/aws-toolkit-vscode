@@ -26,7 +26,7 @@ import { getTestWindow, resetTestWindow } from './shared/vscode/window'
 import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
 import { TelemetryDebounceInfo } from '../shared/vscode/commands2'
 
-const testReportDir = join(__dirname, '../../../.test-reports')
+const testReportDir = join(__dirname, '../../../../../.test-reports') // Root project, not subproject
 const testLogOutput = join(testReportDir, 'testLog.log')
 const globalSandbox = sinon.createSandbox()
 const maxTestDuration = 30_000

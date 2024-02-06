@@ -170,8 +170,8 @@ describe('emitWebviewClosed()', function () {
 
 describe('Add Connection webview', function () {
     it('has all images used by the webview', async function () {
-        // We are in the root of the built, `dist`, but we want the root of the actual project
-        const projectRoot = Uri.joinPath(Uri.file(getProjectDir()), '..', '..')
+        // We are in the root of the built, `dist`, but we want the root of the repo
+        const projectRoot = Uri.joinPath(Uri.file(getProjectDir()), '../../../..')
         const marketplaceImagesRoot = Uri.joinPath(projectRoot, 'docs/marketplace/vscode')
 
         assert(await fsCommon.existsFile(Uri.joinPath(marketplaceImagesRoot, 'CC_dev_env.gif')))

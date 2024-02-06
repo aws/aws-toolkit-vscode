@@ -10,7 +10,7 @@
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { version } from '../../package.json'
+import { version } from '../packages/toolkit/package.json'
 
 const cwd = process.cwd()
 const changesDirectory = path.join(cwd, '.changes')

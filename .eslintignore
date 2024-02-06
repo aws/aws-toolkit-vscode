@@ -1,11 +1,19 @@
-node_modules/**
-dist/**
+node_modules/
+dist/
 src.gen/**
 **/*.json
+**/*.gen.ts
+types/*.d.ts
+
+# Duplicate entries because prettier can be ran from root or within the workspace/subpackage.
+# TODO: Avoid this.
 src/shared/telemetry/clienttelemetry.d.ts
 src/codewhisperer/client/codewhispererclient.d.ts
 src/codewhisperer/client/codewhispereruserclient.d.ts
 src/amazonqFeatureDev/client/featuredevproxyclient.d.ts
-**/*.gen.ts
 src/testFixtures/**
-types/*.d.ts
+packages/toolkit/src/shared/telemetry/clienttelemetry.d.ts
+packages/toolkit/src/codewhisperer/client/codewhispererclient.d.ts
+packages/toolkit/src/codewhisperer/client/codewhispereruserclient.d.ts
+packages/toolkit/src/amazonqFeatureDev/client/featuredevproxyclient.d.ts
+packages/toolkit/src/testFixtures/**

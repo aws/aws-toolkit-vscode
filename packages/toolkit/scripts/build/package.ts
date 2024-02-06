@@ -116,6 +116,7 @@ function main() {
             // Create backup files so we can restore the originals later.
             fs.copyFileSync(packageJsonFile, `${packageJsonFile}.bk`)
             fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
+            fs.copyFileSync('../../CHANGELOG.md', 'CHANGELOG.md')
 
             const packageJson: typeof PackageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
             const versionSuffix = getVersionSuffix(args.feature, args.debug)
@@ -145,6 +146,9 @@ function main() {
         child_process.execSync(`vsce package`, { stdio: 'inherit' })
         const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
         console.log(`VSIX Version: ${packageJson.version}`)
+
+        const vsixName = `aws-toolkit-vscode-${packageJson.version}.vsix`
+        fs.moveSync(vsixName, `../../${vsixName}`)
     } catch (e) {
         console.log(e)
         throw Error('package.ts: failed')

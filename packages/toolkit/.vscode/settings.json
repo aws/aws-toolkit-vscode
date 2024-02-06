@@ -11,6 +11,6 @@
     },
     "typescript.preferences.importModuleSpecifier": "relative",
     "javascript.preferences.importModuleSpecifier": "relative",
-    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.tsdk": "../../node_modules/typescript/lib",
     "npm.packageManager": "npm"
 }
