@@ -147,6 +147,7 @@
     "AWS.command.downloadSchemaItemCode": "Download Code Bindings",
     "AWS.command.viewLogs": "View Toolkit Logs",
     "AWS.command.cloudWatchLogs.searchLogGroup": "Search Log Group",
+    "AWS.command.cloudWatchLogs.tailLogGroup": "Tail Log Group",
     "AWS.command.sam.newTemplate": "Create new SAM Template",
     "AWS.command.cloudFormation.newTemplate": "Create new CloudFormation Template",
     "AWS.command.quickStart": "View Quick Start",

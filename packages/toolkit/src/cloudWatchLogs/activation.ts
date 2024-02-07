@@ -16,6 +16,7 @@ import { LogGroupNode } from './explorer/logGroupNode'
 import { LogDataRegistry } from './registry/logDataRegistry'
 import { Commands } from '../shared/vscode/commands2'
 import { searchLogGroup } from './commands/searchLogGroup'
+import { tailLogGroup } from './commands/tailLogGroup'
 import { changeLogSearchParams } from './changeLogSearch'
 import { CloudWatchLogsNode } from './explorer/cloudWatchLogsNode'
 import { loadAndOpenInitialLogStreamFile, LogStreamCodeLensProvider } from './document/logStreamsCodeLensProvider'
@@ -85,6 +86,15 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                     : undefined
             const source = node ? (logGroupInfo ? 'ExplorerLogGroupNode' : 'ExplorerServiceNode') : 'Command'
             await searchLogGroup(registry, source, logGroupInfo)
+        }),
+
+        Commands.register('aws.cwl.tailLogGroup', async (node: LogGroupNode | CloudWatchLogsNode) => {
+            const logGroupInfo =
+                node instanceof LogGroupNode
+                    ? { regionName: node.regionCode, groupName: node.logGroup.logGroupName!, groupArn: node.arn }
+                    : undefined
+            const source = node ? (logGroupInfo ? 'ExplorerLogGroupNode' : 'ExplorerServiceNode') : 'Command'
+            await tailLogGroup(registry, source, logGroupInfo)
         }),
 
         Commands.register('aws.cwl.changeFilterPattern', async () => changeLogSearchParams(registry, 'filterPattern')),

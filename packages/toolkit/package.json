@@ -1897,6 +1897,16 @@
                     "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
                 },
                 {
+                    "command": "aws.cwl.tailLogGroup",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
+                    "command": "aws.cwl.tailLogGroup",
+                    "group": "inline@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
                     "command": "aws.apig.copyUrl",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "2@0"
@@ -3356,6 +3366,18 @@
                 }
             },
             {
+                "command": "aws.cwl.tailLogGroup",
+                "title": "%AWS.command.cloudWatchLogs.tailLogGroup%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(gear)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.saveCurrentLogDataContent",
                 "title": "%AWS.command.saveCurrentLogDataContent%",
                 "category": "%AWS.title%",
@@ -4328,6 +4350,7 @@
     },
     "dependencies": {
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
+        "@aws-sdk/client-cloudwatch-logs": "3.509.0",
         "@aws-sdk/client-cognito-identity": "3.490.0",
         "@aws-sdk/client-lambda": "3.385.0",
         "@aws-sdk/client-sso": "^3.342.0",
