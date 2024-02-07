@@ -6,7 +6,8 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev
 import com.intellij.openapi.application.ApplicationManager
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
-import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQApp
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.amazonq.messages.AmazonQMessage
@@ -43,18 +44,16 @@ class FeatureDevApp : AmazonQApp {
         }
 
         ApplicationManager.getApplication().messageBus.connect(this).subscribe(
-            BearerTokenProviderListener.TOPIC,
-            object : BearerTokenProviderListener {
-                override fun onChange(providerId: String) {
-                    if (isFeatureDevAvailable(context.project)) {
-                        scope.launch {
-                            context.messagesFromAppToUi.publish(
-                                AuthenticationUpdateMessage(
-                                    featureDevEnabled = true,
-                                    authenticatingTabIDs = chatSessionStorage.getAuthenticatingSessions().map { it.tabID }
-                                )
+            ToolkitConnectionManagerListener.TOPIC,
+            object : ToolkitConnectionManagerListener {
+                override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+                    scope.launch {
+                        context.messagesFromAppToUi.publish(
+                            AuthenticationUpdateMessage(
+                                featureDevEnabled = isFeatureDevAvailable(context.project),
+                                authenticatingTabIDs = chatSessionStorage.getAuthenticatingSessions().map { it.tabID }
                             )
-                        }
+                        )
                     }
                 }
             }
