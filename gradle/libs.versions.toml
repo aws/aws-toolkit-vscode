@@ -29,7 +29,7 @@ slf4j = "2.0.9"
 sshd = "2.11.0"
 wiremock = "3.3.1"
 undercouch-download = "5.2.1"
-zjsonpatch = "0.4.11"
+zjsonpatch = "0.4.16"
 
 [libraries]
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
