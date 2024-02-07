@@ -13,6 +13,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.InboundAppMessagesHandler
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.AsyncEventProgressMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.AuthNeededException
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.ChatInputEnabledMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.ErrorMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessageType
@@ -44,6 +45,12 @@ class FeatureDevController(
 
     override suspend fun processTabRemovedMessage(message: IncomingFeatureDevMessage.TabRemoved) {
         chatSessionStorage.deleteSession(message.tabId)
+    }
+
+    override suspend fun processAuthFollowUpClick(message: IncomingFeatureDevMessage.AuthFollowUpWasClicked) {
+        authController.handleAuth(context.project, message.authType)
+        sendAuthenticationInProgressMessage(message.tabId) // show user that authentication is in progress
+        sendChatInputEnabledMessage(message.tabId, enabled = false) // disable the input field while authentication is in progress
     }
 
     private suspend fun handleChat(
@@ -152,6 +159,24 @@ class FeatureDevController(
         messagePublisher.publish(updatePlaceholderMessage)
     }
 
+    private suspend fun sendAuthenticationInProgressMessage(tabId: String) {
+        val authenticationFollowReply = FeatureDevMessage(
+            tabId = tabId,
+            triggerId = UUID.randomUUID().toString(),
+            messageId = UUID.randomUUID().toString(),
+            messageType = FeatureDevMessageType.Answer,
+            message = message("amazonqFeatureDev.follow_instructions_for_authentication")
+        )
+        messagePublisher.publish(authenticationFollowReply)
+    }
+
+    private suspend fun sendChatInputEnabledMessage(tabId: String, enabled: Boolean) {
+        val chatInputEnabledMessage = ChatInputEnabledMessage(
+            tabId,
+            enabled,
+        )
+        messagePublisher.publish(chatInputEnabledMessage)
+    }
     companion object {
         private val logger = getLogger<FeatureDevController>()
     }

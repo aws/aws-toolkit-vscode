@@ -9,4 +9,5 @@ interface InboundAppMessagesHandler {
     suspend fun processPromptChatMessage(message: IncomingFeatureDevMessage.ChatPrompt)
     suspend fun processNewTabCreatedMessage(message: IncomingFeatureDevMessage.NewTabCreated)
     suspend fun processTabRemovedMessage(message: IncomingFeatureDevMessage.TabRemoved)
+    suspend fun processAuthFollowUpClick(message: IncomingFeatureDevMessage.AuthFollowUpWasClicked)
 }

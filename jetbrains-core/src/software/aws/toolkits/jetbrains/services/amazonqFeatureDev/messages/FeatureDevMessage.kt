@@ -26,6 +26,11 @@ sealed interface IncomingFeatureDevMessage : FeatureDevBaseMessage {
         @JsonProperty("tabID") val tabId: String,
     ) : IncomingFeatureDevMessage
 
+    data class AuthFollowUpWasClicked(
+        @JsonProperty("tabID") val tabId: String,
+        val authType: AuthFollowUpType,
+    ) : IncomingFeatureDevMessage
+
     data class TabRemoved(
         val command: String,
         @JsonProperty("tabID") val tabId: String,
@@ -78,6 +83,13 @@ data class UpdatePlaceholderMessage(
     type = "updatePlaceholderMessage"
 )
 
+data class ChatInputEnabledMessage(
+    @JsonProperty("tabID") override val tabId: String,
+    val enabled: Boolean
+) : UiMessage(
+    tabId = tabId,
+    type = "chatInputEnabledMessage"
+)
 data class ErrorMessage(
     @JsonProperty("tabID") override val tabId: String,
     val title: String,

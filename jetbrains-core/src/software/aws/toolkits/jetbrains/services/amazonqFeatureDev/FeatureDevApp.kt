@@ -32,6 +32,7 @@ class FeatureDevApp : AmazonQApp {
             "chat-prompt" to IncomingFeatureDevMessage.ChatPrompt::class,
             "new-tab-was-created" to IncomingFeatureDevMessage.NewTabCreated::class,
             "tab-was-removed" to IncomingFeatureDevMessage.TabRemoved::class,
+            "auth-follow-up-was-clicked" to IncomingFeatureDevMessage.AuthFollowUpWasClicked::class,
         )
 
         scope.launch {
@@ -65,6 +66,7 @@ class FeatureDevApp : AmazonQApp {
             is IncomingFeatureDevMessage.ChatPrompt -> inboundAppMessagesHandler.processPromptChatMessage(message)
             is IncomingFeatureDevMessage.NewTabCreated -> inboundAppMessagesHandler.processNewTabCreatedMessage(message)
             is IncomingFeatureDevMessage.TabRemoved -> inboundAppMessagesHandler.processTabRemovedMessage(message)
+            is IncomingFeatureDevMessage.AuthFollowUpWasClicked -> inboundAppMessagesHandler.processAuthFollowUpClick(message)
         }
     }
 
