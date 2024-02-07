@@ -114,7 +114,7 @@ function generateSupplementalContextFromFocalFile(
     strategy: UtgStrategy,
     cancellationToken: vscode.CancellationToken
 ): CodeWhispererSupplementalContextItem[] {
-    const fileContent = fs.readFileSync(vscode.Uri.file(filePath!).fsPath, 'utf-8')
+    const fileContent = fs.readFileSync(vscode.Uri.parse(filePath!).fsPath, 'utf-8')
 
     // DO NOT send code chunk with empty content
     if (fileContent.trim().length === 0) {
