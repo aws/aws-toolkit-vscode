@@ -18,10 +18,15 @@ class Session(val tabID: String, val project: Project) {
     private var _latestMessage: String = ""
     private var task: String = ""
     private val proxyClient: FeatureDevClient
+
+    // Used to keep track of whether the current session/tab is currently authenticating/needs authenticating
+    var isAuthenticating: Boolean
+
     init {
         _state = ConversationNotStartedState("", tabID)
         context = FeatureDevSessionContext(project)
         proxyClient = FeatureDevClient.getInstance(project)
+        isAuthenticating = false
     }
 
     /**

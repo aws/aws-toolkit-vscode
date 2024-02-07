@@ -35,6 +35,8 @@ import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.EDT
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
+import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthController
+import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthNeededState
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonq.onboarding.OnboardingPageInteraction
 import software.aws.toolkits.jetbrains.services.amazonq.onboarding.OnboardingPageInteractionType
@@ -42,8 +44,6 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerMan
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererUserModificationTracker
 import software.aws.toolkits.jetbrains.services.cwc.InboundAppMessagesHandler
-import software.aws.toolkits.jetbrains.services.cwc.auth.AuthController
-import software.aws.toolkits.jetbrains.services.cwc.auth.AuthNeededState
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.exceptions.ChatApiException
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.ChatRequestData
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.FollowUpType
@@ -253,6 +253,7 @@ class ChatController private constructor(
 
     override suspend fun processAuthFollowUpClick(message: IncomingCwcMessage.AuthFollowUpWasClicked) {
         authController.handleAuth(context.project, message.authType)
+        TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Auth, message.authType.name)
     }
 
     override suspend fun processOnboardingPageInteraction(message: OnboardingPageInteraction) {
@@ -347,7 +348,7 @@ class ChatController private constructor(
         userIntent: UserIntent?,
         triggerType: TriggerType,
     ) {
-        val credentialState = authController.getAuthNeededState(context.project)
+        val credentialState = authController.getAuthNeededStates(context.project).chat
         if (credentialState != null) {
             sendAuthNeededException(
                 tabId = tabId,

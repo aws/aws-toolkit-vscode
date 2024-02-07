@@ -6,10 +6,13 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
+import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthController
+import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthNeededState
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.InboundAppMessagesHandler
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.AsyncEventProgressMessage
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.AuthNeededException
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.ErrorMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessageType
@@ -21,17 +24,12 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSe
 import software.aws.toolkits.resources.message
 import java.util.UUID
 
-class FeatureDevController private constructor(
+class FeatureDevController(
     private val context: AmazonQAppInitContext,
     private val chatSessionStorage: ChatSessionStorage
 ) : InboundAppMessagesHandler {
-    constructor(
-        context: AmazonQAppInitContext,
-    ) : this(
-        context = context,
-        chatSessionStorage = ChatSessionStorage(),
-    )
 
+    private val authController = AuthController()
     private val messagePublisher: MessagePublisher = context.messagesFromAppToUi
 
     override suspend fun processPromptChatMessage(message: IncomingFeatureDevMessage.ChatPrompt) {
@@ -56,6 +54,17 @@ class FeatureDevController private constructor(
         try {
             logger.debug { "$FEATURE_NAME: Processing message: $message" }
             session = getSessionInfo(tabId)
+
+            val credentialState = authController.getAuthNeededStates(context.project).amazonQ
+            if (credentialState != null) {
+                sendAuthNeededException(
+                    tabId = tabId,
+                    triggerId = UUID.randomUUID().toString(),
+                    credentialState = credentialState,
+                )
+                session.isAuthenticating = true
+                return
+            }
 
             when (session.sessionState.phase) {
                 SessionStatePhase.INIT, SessionStatePhase.APPROACH -> {
@@ -106,6 +115,16 @@ class FeatureDevController private constructor(
     }
 
     private fun getSessionInfo(tabId: String) = chatSessionStorage.getSession(tabId, context.project)
+
+    private suspend fun sendAuthNeededException(tabId: String, triggerId: String, credentialState: AuthNeededState) {
+        val message = AuthNeededException(
+            tabId = tabId,
+            triggerId = triggerId,
+            authType = credentialState.authType,
+            message = credentialState.message,
+        )
+        context.messagesFromAppToUi.publish(message)
+    }
 
     private suspend fun sendErrorMessage(tabId: String, message: String) {
         val errorMessage = ErrorMessage(

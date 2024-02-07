@@ -20,4 +20,7 @@ class ChatSessionStorage {
     fun deleteSession(tabId: String) {
         sessions.remove(tabId)
     }
+
+    // Find all sessions that are currently waiting to be authenticated
+    fun getAuthenticatingSessions(): List<Session> = this.sessions.values.filter { it.isAuthenticating }
 }

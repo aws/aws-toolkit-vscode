@@ -5,8 +5,10 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
+import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthFollowUpType
 import software.aws.toolkits.jetbrains.services.amazonq.messages.AmazonQMessage
 import java.time.Instant
+import java.util.UUID
 
 sealed interface FeatureDevBaseMessage : AmazonQMessage
 
@@ -83,4 +85,25 @@ data class ErrorMessage(
 ) : UiMessage(
     tabId = tabId,
     type = "errorMessage",
+)
+
+data class AuthenticationUpdateMessage(
+    val authenticatingTabIDs: List<String>,
+    val featureDevEnabled: Boolean,
+    val message: String? = null,
+    val messageId: String = UUID.randomUUID().toString(),
+
+) : UiMessage(
+    null,
+    type = "authenticationUpdateMessage",
+)
+
+data class AuthNeededException(
+    @JsonProperty("tabID") override val tabId: String,
+    @JsonProperty("triggerID") val triggerId: String,
+    val authType: AuthFollowUpType,
+    val message: String,
+) : UiMessage(
+    tabId = tabId,
+    type = "authNeededException",
 )
