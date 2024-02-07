@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BuildSystem, transformByQState, TransformByQStoppedError, ZipManifest } from '../models/model'
+import { BuildSystem, JDKVersion, transformByQState, TransformByQStoppedError, ZipManifest } from '../models/model'
 import * as codeWhisperer from '../client/codewhisperer'
 import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger'
@@ -21,7 +21,6 @@ import { CodeTransformMavenBuildCommand, telemetry } from '../../shared/telemetr
 import { ToolkitError } from '../../shared/errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
-import { TransformByQJavaProjectNotFound } from '../../amazonqGumby/models/model'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
 
@@ -78,89 +77,123 @@ export async function getOpenProjects() {
 }
 
 /*
- * This function searches for a .class file in the selected project. Then it runs javap on the found .class file to get the JDK version
- * for the project, and sets the version in the state variable. Only JDK8 and JDK11 are supported. It also ensure a pom.xml file is found,
- * since only the Maven build system is supported for now.
+ * This function filters all open projects by first searching for a .java file and then searching for a pom.xml file in all projects.
+ * It also tries to detect the Java version of each project by running "javap" on a .class file of each project.
+ * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
+ * and we allow the user to specify the Java version.
  */
-export async function validateProjectSelection(project: vscode.QuickPickItem) {
-    const projectPath = project.description
-    const buildSystem = await checkBuildSystem(projectPath!)
-    if (buildSystem !== BuildSystem.Maven) {
+export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
+    let javaProjects = []
+    for (const project of projects) {
+        const projectPath = project.description
+        const javaFiles = await vscode.workspace.findFiles(
+            new vscode.RelativePattern(projectPath!, '**/*.java'),
+            '**/node_modules/**',
+            1
+        )
+        if (javaFiles.length > 0) {
+            javaProjects.push(project)
+        }
+    }
+    if (javaProjects.length === 0) {
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'NoJavaProject',
+            result: MetadataResult.Fail,
+            reason: 'CouldNotFindJavaProject',
+        })
+        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject' })
+    }
+    let mavenJavaProjects = []
+    let containsGradle = false
+    for (const project of javaProjects) {
+        const projectPath = project.description
+        const buildSystem = await checkBuildSystem(projectPath!)
+        if (buildSystem === BuildSystem.Maven) {
+            mavenJavaProjects.push(project)
+        } else if (buildSystem === BuildSystem.Gradle) {
+            containsGradle = true
+        }
+    }
+    if (mavenJavaProjects.length === 0) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformPreValidationError: 'NonMavenProject',
             result: MetadataResult.Fail,
-            reason: buildSystem === BuildSystem.Gradle ? buildSystem : 'NoPomFileFound',
+            reason: containsGradle ? 'NoPomFileFoundButGradleFileFound' : 'NoPomFileFound',
         })
         throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }
-    const compiledJavaFiles = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(projectPath!, '**/*.class'),
-        '**/node_modules/**',
-        1
-    )
-    if (compiledJavaFiles.length < 1) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NoJavaProject',
-            result: MetadataResult.Fail,
-            reason: 'NoJavaProjectsAvailable',
-        })
-        throw new TransformByQJavaProjectNotFound()
-    }
-    const classFilePath = `${compiledJavaFiles[0].fsPath}`
-    const baseCommand = 'javap'
-    const args = ['-v', classFilePath]
-    const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
-    if (spawnResult.status !== 0) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
-        let errorLog = ''
-        errorLog += spawnResult.error ? `${JSON.stringify(spawnResult.error)}` : ''
-        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
-        getLogger().error(`CodeTransform: Error in running javap command = ${errorLog}`)
-        let errorReason = ''
-        if (spawnResult.stdout) {
-            errorReason = 'JavapExecutionError'
-            // should never happen -- stdout from javap has always been much, much smaller than the default buffer limit of 1MB
-            if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
-                errorReason += '-BufferOverflow'
+
+    /*
+     * these projects we know must contain a pom.xml and a .java file
+     * here we try to get the Java version of each project so that we
+     * can pre-select a default version in the QuickPick for them
+     */
+    let projectsValidToTransform = new Map<vscode.QuickPickItem, JDKVersion | undefined>()
+    for (const project of mavenJavaProjects) {
+        let detectedJavaVersion = undefined
+        const projectPath = project.description
+        const compiledJavaFiles = await vscode.workspace.findFiles(
+            new vscode.RelativePattern(projectPath!, '**/*.class'),
+            '**/node_modules/**',
+            1
+        )
+        if (compiledJavaFiles.length > 0) {
+            const classFilePath = `${compiledJavaFiles[0].fsPath}`
+            const baseCommand = 'javap'
+            const args = ['-v', classFilePath]
+            const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
+            if (spawnResult.status !== 0) {
+                let errorLog = ''
+                errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
+                errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
+                getLogger().error(`CodeTransform: Error in running javap command = ${errorLog}`)
+                let errorReason = ''
+                if (spawnResult.stdout) {
+                    errorReason = 'JavapExecutionError'
+                    // should never happen -- stdout from javap has always been much, much smaller than the default buffer limit of 1MB
+                    if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
+                        errorReason += '-BufferOverflow'
+                    }
+                } else {
+                    errorReason = 'JavapSpawnError'
+                }
+                if (spawnResult.error) {
+                    const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
+                    errorReason += `-${errorCode}`
+                }
+                telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformPreValidationError: 'NoJavaProject',
+                    codeTransformRuntimeError: errorReason,
+                    result: MetadataResult.Fail,
+                    reason: 'CannotDetermineJavaVersion',
+                })
+            } else {
+                const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
+                const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
+                if (javaVersion === CodeWhispererConstants.JDK8VersionNumber) {
+                    detectedJavaVersion = JDKVersion.JDK8
+                } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
+                    detectedJavaVersion = JDKVersion.JDK11
+                } else {
+                    detectedJavaVersion = JDKVersion.UNSUPPORTED
+                    telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                        codeTransformPreValidationError: 'UnsupportedJavaVersion',
+                        result: MetadataResult.Fail,
+                        reason: javapOutputToTelemetryValue(javaVersion),
+                    })
+                }
             }
-        } else {
-            errorReason = 'JavapSpawnError'
         }
-        if (spawnResult.error) {
-            const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
-            errorReason += `-${errorCode}`
-        }
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NoJavaProject',
-            codeTransformRuntimeError: errorReason,
-            result: MetadataResult.Fail,
-            reason: 'CannotDetermineJavaVersion',
-        })
-        throw new ToolkitError('Unable to determine Java version', {
-            code: 'CannotDetermineJavaVersion',
-        })
+        // detectedJavaVersion will be undefined if there are no .class files or if javap errors out, otherwise it will be JDK8, JDK11, or UNSUPPORTED
+        projectsValidToTransform.set(project, detectedJavaVersion)
     }
-    const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
-    const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
-    if (javaVersion === CodeWhispererConstants.JDK8VersionNumber) {
-        transformByQState.setSourceJDKVersionToJDK8()
-    } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
-        transformByQState.setSourceJDKVersionToJDK11()
-    } else {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'UnsupportedJavaVersion',
-            result: MetadataResult.Fail,
-            reason: javapOutputToTelemetryValue(javaVersion),
-        })
-        throw new ToolkitError('Project selected is not Java 8 or Java 11', { code: 'UnsupportedJavaVersion' })
-    }
+    return projectsValidToTransform
 }
 
 export function getSha256(fileName: string) {
@@ -354,7 +387,7 @@ function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
     if (spawnResult.status !== 0) {
         let errorLog = ''
-        errorLog += spawnResult.error ? `${JSON.stringify(spawnResult.error)}` : ''
+        errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} clean install failed: \n ${errorLog}`)
         getLogger().error(`CodeTransform: Error in running Maven install command ${baseCommand} = ${errorLog}`)
@@ -418,7 +451,7 @@ function copyProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, m
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
     if (spawnResult.status !== 0) {
         let errorLog = ''
-        errorLog += spawnResult.error ? `${JSON.stringify(spawnResult.error)}` : ''
+        errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies failed: \n ${errorLog}`)
         getLogger().error(
@@ -634,7 +667,7 @@ export async function getTransformationPlan(jobId: string) {
         let plan = `![Transform by Q](${logoBase64}) \n # Code Transformation Plan by Amazon Q \n\n`
         plan += CodeWhispererConstants.planIntroductionMessage.replace(
             'JAVA_VERSION_HERE',
-            transformByQState.getSourceJDKVersion()
+            transformByQState.getSourceJDKVersion()!
         )
         plan += `\n\nExpected total transformation steps: ${response.transformationPlan.transformationSteps.length}\n\n`
         plan += CodeWhispererConstants.planDisclaimerMessage

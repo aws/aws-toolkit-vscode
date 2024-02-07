@@ -276,11 +276,7 @@ export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVA
 
 // Transform by Q
 
-export const selectTargetLanguagePrompt = 'Select the target language'
-
-export const selectTargetVersionPrompt = 'Select the target version'
-
-export const selectModulePrompt = 'Select the module you want to transform'
+export const selectProjectPrompt = 'Select the project you want to transform'
 
 export const transformByQWindowTitle = 'Amazon Q CodeTransformation'
 
@@ -297,7 +293,7 @@ export const transformByQCompletedMessage = 'Transformation completed'
 export const transformByQPartiallyCompletedMessage = 'Transformation partially completed'
 
 export const noPomXmlFoundMessage =
-    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml in the root directory to identify build configurations. Be sure to also build your project.'
+    'None of your open Java projects are supported by Q Code Transformation. We were unable to find a pom.xml in any of your Java projects. We only support Java projects built on Maven at the moment.'
 
 export const noActiveIdCMessage = 'Transform by Q requires an active IAM Identity Center connection'
 
@@ -317,7 +313,7 @@ export const viewProposedChangesMessage =
 export const changesAppliedMessage = 'Changes applied'
 
 export const noSupportedJavaProjectsFoundMessage =
-    'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11. Be sure to also build your project.'
+    'None of your open projects are supported by Q Code Transformation. We were unable to find a Java project. We only support Java projects built on Maven at the moment.'
 
 export const dependencyDisclaimer =
     'Please confirm you are ready to proceed with the transformation. Amazon Q will upload the application code and its dependency binaries from your machine to start the upgrade. If you have not yet compiled the application on your local machine, please do so once before starting the upgrade. Install Maven to ensure all module dependencies are picked for Transformation.'
