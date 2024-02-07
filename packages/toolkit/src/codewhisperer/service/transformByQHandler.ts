@@ -76,13 +76,7 @@ export async function getOpenProjects() {
     return openProjects
 }
 
-/*
- * This function filters all open projects by first searching for a .java file and then searching for a pom.xml file in all projects.
- * It also tries to detect the Java version of each project by running "javap" on a .class file of each project.
- * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
- * and we allow the user to specify the Java version.
- */
-export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
+async function getJavaProjects(projects: vscode.QuickPickItem[]) {
     const javaProjects = []
     for (const project of projects) {
         const projectPath = project.description
@@ -95,43 +89,22 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
             javaProjects.push(project)
         }
     }
-    if (javaProjects.length === 0) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NoJavaProject',
-            result: MetadataResult.Fail,
-            reason: 'CouldNotFindJavaProject',
-        })
-        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject' })
-    }
+    return javaProjects
+}
+
+async function getMavenJavaProjects(javaProjects: vscode.QuickPickItem[]) {
     const mavenJavaProjects = []
-    let containsGradle = false
     for (const project of javaProjects) {
         const projectPath = project.description
         const buildSystem = await checkBuildSystem(projectPath!)
         if (buildSystem === BuildSystem.Maven) {
             mavenJavaProjects.push(project)
-        } else if (buildSystem === BuildSystem.Gradle) {
-            containsGradle = true
         }
     }
-    if (mavenJavaProjects.length === 0) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NonMavenProject',
-            result: MetadataResult.Fail,
-            reason: containsGradle ? 'NoPomFileFoundButGradleFileFound' : 'NoPomFileFound',
-        })
-        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
-    }
+    return mavenJavaProjects
+}
 
-    /*
-     * these projects we know must contain a pom.xml and a .java file
-     * here we try to get the Java version of each project so that we
-     * can pre-select a default version in the QuickPick for them
-     */
+async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[]) {
     const projectsValidToTransform = new Map<vscode.QuickPickItem, JDKVersion | undefined>()
     for (const project of mavenJavaProjects) {
         let detectedJavaVersion = undefined
@@ -193,6 +166,45 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
         // detectedJavaVersion will be undefined if there are no .class files or if javap errors out, otherwise it will be JDK8, JDK11, or UNSUPPORTED
         projectsValidToTransform.set(project, detectedJavaVersion)
     }
+    return projectsValidToTransform
+}
+
+/*
+ * This function filters all open projects by first searching for a .java file and then searching for a pom.xml file in all projects.
+ * It also tries to detect the Java version of each project by running "javap" on a .class file of each project.
+ * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
+ * and we allow the user to specify the Java version.
+ */
+export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
+    const javaProjects = await getJavaProjects(projects)
+    if (javaProjects.length === 0) {
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'NoJavaProject',
+            result: MetadataResult.Fail,
+            reason: 'CouldNotFindJavaProject',
+        })
+        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject' })
+    }
+    const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
+    if (mavenJavaProjects.length === 0) {
+        void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'NonMavenProject',
+            result: MetadataResult.Fail,
+            reason: 'NoPomFileFound',
+        })
+        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
+    }
+
+    /*
+     * these projects we know must contain a pom.xml and a .java file
+     * here we try to get the Java version of each project so that we
+     * can pre-select a default version in the QuickPick for them
+     */
+    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects)
     return projectsValidToTransform
 }
 
@@ -383,7 +395,7 @@ function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand
 
     transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
-    const args = ['clean', 'install']
+    const args = ['clean', 'install', '-q']
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
     if (spawnResult.status !== 0) {
         let errorLog = ''
@@ -447,6 +459,7 @@ function copyProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, m
         '-Dmdep.useRepositoryLayout=true',
         '-Dmdep.copyPom=true',
         '-Dmdep.addParentPoms=true',
+        '-q',
     ]
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
     if (spawnResult.status !== 0) {
@@ -793,10 +806,6 @@ export async function checkBuildSystem(projectPath: string) {
     const mavenBuildFilePath = path.join(projectPath, 'pom.xml')
     if (fs.existsSync(mavenBuildFilePath)) {
         return BuildSystem.Maven
-    }
-    const gradleBuildFilePath = path.join(projectPath, 'build.gradle')
-    if (fs.existsSync(gradleBuildFilePath)) {
-        return BuildSystem.Gradle
     }
     return BuildSystem.Unknown
 }
