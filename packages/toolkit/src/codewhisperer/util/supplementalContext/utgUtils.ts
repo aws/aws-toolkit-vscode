@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { glob } from 'glob'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -190,9 +189,6 @@ async function findSourceFileByName(
     languageConfig: utgLanguageConfig,
     cancellationToken: vscode.CancellationToken
 ): Promise<string | undefined> {
-    const uri = editor.document.uri
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
-    const projectPath = workspaceFolder ? workspaceFolder.uri.fsPath : path.dirname(uri.fsPath)
     const testFileName = path.basename(editor.document.fileName)
 
     let basenameSuffix = testFileName
@@ -222,23 +218,14 @@ async function findSourceFileByName(
 
     throwIfCancelled(cancellationToken)
 
-    // TODO: vscode.workspace.findFiles is preferred but doesn't seems to be working for now.
-    // TODO: Enable this later.
-    //const sourceFiles =
-    //    await vscode.workspace.findFiles(`${projectPath}/**/${basenameSuffix}${languageConfig.extension}`);
-    const sourceFiles = await globPromise(`${projectPath}/**/${basenameSuffix}${languageConfig.extension}`)
+    const sourceFiles = await vscode.workspace.findFiles(`**/${basenameSuffix}${languageConfig.extension}`)
 
     throwIfCancelled(cancellationToken)
 
     if (sourceFiles.length > 0) {
-        return sourceFiles[0]
+        return sourceFiles[0].toString()
     }
     return undefined
-}
-
-// TODO: Replace this by vscode.workspace.findFiles
-function globPromise(pattern: string): Promise<string[]> {
-    return glob(pattern)
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void | never {
