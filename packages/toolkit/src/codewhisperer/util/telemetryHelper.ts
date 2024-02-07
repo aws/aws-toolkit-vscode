@@ -40,9 +40,6 @@ export class TelemetryHelper {
     private sessionDecisions: CodewhispererUserTriggerDecision[] = []
     private triggerChar?: string = undefined
     private prevTriggerDecision?: CodewhispererPreviousSuggestionState
-    private isRequestCancelled = false
-    private lastRequestId = ''
-    private numberOfRequests = 0
     private typeAheadLength = 0
     private timeSinceLastModification = 0
     private lastTriggerDecisionTime = 0
@@ -195,18 +192,12 @@ export class TelemetryHelper {
         }
 
         // after we have all request level user decisions, aggregate them at session level and send
-        if (
-            this.isRequestCancelled ||
-            (this.lastRequestId && this.lastRequestId === requestIdList[requestIdList.length - 1]) ||
-            (this.sessionDecisions.length && this.sessionDecisions.length === this.numberOfRequests)
-        ) {
-            this.sendUserTriggerDecisionTelemetry(
-                sessionId,
-                acceptedRecommendationContent,
-                referenceCount,
-                supplementalContextMetadata
-            )
-        }
+        this.sendUserTriggerDecisionTelemetry(
+            sessionId,
+            acceptedRecommendationContent,
+            referenceCount,
+            supplementalContextMetadata
+        )
     }
 
     public aggregateUserDecisionByRequest(
@@ -371,20 +362,8 @@ export class TelemetryHelper {
         this.classifierThreshold = classifierThreshold
     }
 
-    public setIsRequestCancelled(isRequestCancelled: boolean) {
-        this.isRequestCancelled = isRequestCancelled
-    }
-
     public setTriggerCharForUserTriggerDecision(triggerChar: string) {
         this.triggerChar = triggerChar
-    }
-
-    public setLastRequestId(requestId: string) {
-        this.lastRequestId = requestId
-    }
-
-    public setNumberOfRequestsInSession(numberOfRequests: number) {
-        this.numberOfRequests = numberOfRequests
     }
 
     public setTypeAheadLength(typeAheadLength: number) {
@@ -407,10 +386,7 @@ export class TelemetryHelper {
 
     private resetUserTriggerDecisionTelemetry() {
         this.sessionDecisions = []
-        this.isRequestCancelled = false
         this.triggerChar = ''
-        this.lastRequestId = ''
-        this.numberOfRequests = 0
         this.typeAheadLength = 0
         this.timeSinceLastModification = 0
         this.timeToFirstRecommendation = 0
