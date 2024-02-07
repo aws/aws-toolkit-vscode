@@ -83,7 +83,7 @@ export async function getOpenProjects() {
  * and we allow the user to specify the Java version.
  */
 export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
-    let javaProjects = []
+    const javaProjects = []
     for (const project of projects) {
         const projectPath = project.description
         const javaFiles = await vscode.workspace.findFiles(
@@ -105,7 +105,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
         })
         throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject' })
     }
-    let mavenJavaProjects = []
+    const mavenJavaProjects = []
     let containsGradle = false
     for (const project of javaProjects) {
         const projectPath = project.description
@@ -132,7 +132,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
      * here we try to get the Java version of each project so that we
      * can pre-select a default version in the QuickPick for them
      */
-    let projectsValidToTransform = new Map<vscode.QuickPickItem, JDKVersion | undefined>()
+    const projectsValidToTransform = new Map<vscode.QuickPickItem, JDKVersion | undefined>()
     for (const project of mavenJavaProjects) {
         let detectedJavaVersion = undefined
         const projectPath = project.description
