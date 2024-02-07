@@ -1,3 +1,6 @@
+# _2.6_ (2024-02-02)
+- **(Feature)** Add support for IAM Identity Center connections for CodeCatalyst
+
 # _2.5_ (2024-01-24)
 - **(Bug Fix)** Fix issue where CodeWhisperer suggestions are sometimes trimmed
 
