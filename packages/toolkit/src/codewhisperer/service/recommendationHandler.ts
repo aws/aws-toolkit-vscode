@@ -258,7 +258,6 @@ export class RecommendationHandler {
                 TelemetryHelper.instance.setTimeToFirstRecommendation(performance.now())
             }
             if (nextToken === '') {
-                TelemetryHelper.instance.setLastRequestId(requestId)
                 TelemetryHelper.instance.setAllPaginationEndTime()
             }
         } catch (error) {

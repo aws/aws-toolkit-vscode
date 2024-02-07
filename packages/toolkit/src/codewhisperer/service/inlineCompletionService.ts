@@ -128,7 +128,6 @@ export class InlineCompletionService {
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
                     RecommendationHandler.instance.reportUserDecisions(-1)
                     await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
-                    TelemetryHelper.instance.setIsRequestCancelled(true)
                     return
                 }
                 if (!RecommendationHandler.instance.hasNextToken()) {
@@ -136,7 +135,6 @@ export class InlineCompletionService {
                 }
                 page++
             }
-            TelemetryHelper.instance.setNumberOfRequestsInSession(page + 1)
         } catch (error) {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)
         }
