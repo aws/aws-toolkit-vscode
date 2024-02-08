@@ -25,7 +25,7 @@ phases:
         commands:
             # pull in the build artifacts
             - cp -r ${CODEBUILD_SRC_DIR_buildPipeline}/* .
-            - VERSION=$(node -e "console.log(require('./package.json').version);")
+            - VERSION=$(node -e "console.log(require('./packages/toolkit/package.json').version);")
             - UPLOAD_TARGET=$(ls aws-toolkit-vscode*.vsix)
             - HASH_UPLOAD_TARGET=${UPLOAD_TARGET}.sha384
             - 'HASH=$(sha384sum -b $UPLOAD_TARGET | cut -d" " -f1)'
