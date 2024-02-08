@@ -1,0 +1,8 @@
+{
+  "date" : "2024-02-07",
+  "version" : "2.7",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "CodeWhisperer: Improve CodePercentage telemetry reporting"
+  } ]
+}
