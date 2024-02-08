@@ -19,7 +19,7 @@ import {
     throwIfCancelled,
     stopJob,
     pollTransformationJob,
-    validateProjectSelection,
+    validateOpenProjects,
     getOpenProjects,
     getHeadersObj,
 } from '../../../codewhisperer/service/transformByQHandler'
@@ -71,40 +71,44 @@ describe('transformByQ', function () {
         assert.strictEqual(model.transformByQState.getStatus(), 'Cancelled')
     })
 
-    it('WHEN validateProjectSelection called on non-Maven project THEN throws error', async function () {
-        const dummyQuickPickItem: vscode.QuickPickItem = {
-            label: 'SampleProject',
-            description: '/dummy/path/here',
-        }
-        await assert.rejects(
-            async () => {
-                await validateProjectSelection(dummyQuickPickItem)
-            },
+    it('WHEN validateProjectSelection called on non-Java project THEN throws error', async function () {
+        const dummyQuickPickItems: vscode.QuickPickItem[] = [
             {
-                name: 'Error',
-                message: 'No valid Maven build file found',
-            }
-        )
-    })
-
-    it('WHEN validateProjectSelection called on project with pom.xml but no class files THEN throws error', async function () {
-        const folder = await createTestWorkspaceFolder()
-        const dummyPomPath = path.join(folder.uri.fsPath, 'pom.xml')
-        await toFile('', dummyPomPath)
-        const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
-        findFilesStub.onFirstCall().resolves([])
-        const dummyQuickPickItem: vscode.QuickPickItem = {
-            label: 'SampleProject',
-            description: folder.uri.fsPath,
-        }
-
+                label: 'SampleProject',
+                description: '/dummy/path/here',
+            },
+        ]
         await assert.rejects(
             async () => {
-                await validateProjectSelection(dummyQuickPickItem)
+                await validateOpenProjects(dummyQuickPickItems)
             },
             {
                 name: 'Error',
                 message: 'No Java projects found',
+            }
+        )
+    })
+
+    it('WHEN validateProjectSelection called on Java project with no pom.xml THEN throws error', async function () {
+        const folder = await createTestWorkspaceFolder()
+        const dummyPath = path.join(folder.uri.fsPath, 'DummyFile.java')
+        await toFile('', dummyPath)
+        const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
+        findFilesStub.onFirstCall().resolves([folder.uri])
+        const dummyQuickPickItems: vscode.QuickPickItem[] = [
+            {
+                label: 'SampleProject',
+                description: folder.uri.fsPath,
+            },
+        ]
+
+        await assert.rejects(
+            async () => {
+                await validateOpenProjects(dummyQuickPickItems)
+            },
+            {
+                name: 'Error',
+                message: 'No valid Maven build file found',
             }
         )
     })

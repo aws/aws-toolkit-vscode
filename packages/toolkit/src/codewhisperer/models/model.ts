@@ -240,6 +240,7 @@ export enum JDKVersion {
     JDK8 = '8',
     JDK11 = '11',
     JDK17 = '17',
+    UNSUPPORTED = 'UNSUPPORTED',
 }
 
 export enum BuildSystem {
@@ -254,6 +255,11 @@ export class ZipManifest {
     version: string = '1.0'
 }
 
+export enum DropdownStep {
+    STEP_1 = 1,
+    STEP_2 = 2,
+}
+
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
 
@@ -262,7 +268,7 @@ export class TransformByQState {
 
     private jobId: string = ''
 
-    private sourceJDKVersion: JDKVersion = JDKVersion.JDK8
+    private sourceJDKVersion: JDKVersion | undefined = undefined
 
     private targetJDKVersion: JDKVersion = JDKVersion.JDK17
 
@@ -406,16 +412,12 @@ export class TransformByQState {
         this.jobId = id
     }
 
-    public setSourceJDKVersionToJDK8() {
-        this.sourceJDKVersion = JDKVersion.JDK8
+    public setSourceJDKVersion(version: JDKVersion | undefined) {
+        this.sourceJDKVersion = version
     }
 
-    public setSourceJDKVersionToJDK11() {
-        this.sourceJDKVersion = JDKVersion.JDK11
-    }
-
-    public setTargetJDKVersionToJDK17() {
-        this.targetJDKVersion = JDKVersion.JDK17
+    public setTargetJDKVersion(version: JDKVersion) {
+        this.targetJDKVersion = version
     }
 
     public setPlanFilePath(filePath: string) {

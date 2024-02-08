@@ -9,7 +9,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
-import { transformByQState, StepProgress, TransformByQReviewStatus } from '../models/model'
+import { transformByQState, StepProgress, TransformByQReviewStatus, JDKVersion, DropdownStep } from '../models/model'
 import {
     throwIfCancelled,
     startJob,
@@ -21,10 +21,11 @@ import {
     convertToTimeString,
     convertDateToTimestamp,
     getOpenProjects,
-    validateProjectSelection,
     getVersionData,
+    validateOpenProjects,
 } from '../service/transformByQHandler'
 import { QuickPickItem } from 'vscode'
+import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
@@ -65,26 +66,82 @@ export async function startTransformByQWithProgress() {
 }
 
 interface UserInputState {
-    title: string
-    step: number
-    totalSteps: number
-    targetLanguage: QuickPickItem
-    targetVersion: QuickPickItem
-    project: QuickPickItem
+    project: QuickPickItem | undefined
+    sourceJavaVersion: QuickPickItem | undefined
 }
 
-async function collectInput(validProjects: vscode.QuickPickItem[]) {
+async function collectInput(validProjects: Map<vscode.QuickPickItem, JDKVersion | undefined>) {
     const state = {} as Partial<UserInputState>
-    transformByQState.setTargetJDKVersionToJDK17()
-    const pick = await vscode.window.showQuickPick(validProjects, {
-        title: CodeWhispererConstants.transformByQWindowTitle,
-        placeHolder: CodeWhispererConstants.selectModulePrompt,
-    })
-    if (pick) {
-        state.project = pick
-        transformByQState.setProjectName(encodeHTML(state.project.label)) // encode to avoid HTML injection risk
+    transformByQState.setTargetJDKVersion(JDKVersion.JDK17)
+    await MultiStepInputFlowController.run(input => pickProject(input, state, validProjects))
+    if (!state.project) {
+        throw new ToolkitError('No project selected', { code: 'NoProjectSelected' })
+    }
+    const versionsArray = [JDKVersion.JDK8, JDKVersion.JDK11]
+    const validSourceVersions: vscode.QuickPickItem[] = versionsArray.map(version => ({
+        label: version,
+    }))
+    await MultiStepInputFlowController.run(input => pickSourceVersion(input, state, validSourceVersions))
+    if (!state.sourceJavaVersion) {
+        throw new ToolkitError('No version selected', { code: 'NoVersionSelected' })
     }
     return state as UserInputState
+}
+
+async function pickProject(
+    input: MultiStepInputFlowController,
+    state: Partial<UserInputState>,
+    validProjects: Map<vscode.QuickPickItem, JDKVersion | undefined>
+) {
+    const pick = await input.showQuickPick({
+        title: CodeWhispererConstants.transformByQWindowTitle,
+        step: DropdownStep.STEP_1,
+        totalSteps: DropdownStep.STEP_2,
+        placeholder: CodeWhispererConstants.selectProjectPrompt,
+        items: Array.from(validProjects.keys()),
+        shouldResume: () => Promise.resolve(false),
+    })
+    state.project = pick
+    transformByQState.setProjectName(encodeHTML(state.project.label)) // encode to avoid HTML injection risk
+    const javaVersion = validProjects.get(pick)
+    transformByQState.setSourceJDKVersion(javaVersion)
+}
+
+async function pickSourceVersion(
+    input: MultiStepInputFlowController,
+    state: Partial<UserInputState>,
+    validSourceVersions: vscode.QuickPickItem[]
+) {
+    let detectedJavaVersion = undefined
+    const sourceJDKVersion = transformByQState.getSourceJDKVersion()
+    if (sourceJDKVersion === JDKVersion.JDK8) {
+        detectedJavaVersion = validSourceVersions[0]
+    } else if (sourceJDKVersion === JDKVersion.JDK11) {
+        detectedJavaVersion = validSourceVersions[1]
+    }
+    let placeholderText = ''
+    if (sourceJDKVersion === JDKVersion.JDK8 || sourceJDKVersion === JDKVersion.JDK11) {
+        placeholderText = `We found Java ${sourceJDKVersion}. Select a different version if incorrect.`
+    } else if (sourceJDKVersion === JDKVersion.UNSUPPORTED) {
+        placeholderText = 'We found an unsupported Java version. Select your version here if incorrect.'
+    } else {
+        placeholderText = "Choose your project's Java version here." // if no .class files found or if javap fails
+    }
+    const pick = await input.showQuickPick({
+        title: CodeWhispererConstants.transformByQWindowTitle,
+        step: DropdownStep.STEP_2,
+        totalSteps: DropdownStep.STEP_2,
+        placeholder: placeholderText,
+        items: validSourceVersions,
+        activeItem: detectedJavaVersion,
+        shouldResume: () => Promise.resolve(false),
+    })
+    state.sourceJavaVersion = pick
+    if (pick === validSourceVersions[0]) {
+        transformByQState.setSourceJDKVersion(JDKVersion.JDK8)
+    } else if (pick === validSourceVersions[1]) {
+        transformByQState.setSourceJDKVersion(JDKVersion.JDK11)
+    }
 }
 
 export async function startTransformByQ() {
@@ -135,7 +192,7 @@ export async function preTransformationUploadCode(userInputState: UserInputState
     let payloadFilePath = ''
     throwIfCancelled()
     try {
-        payloadFilePath = await zipCode(userInputState.project.description!)
+        payloadFilePath = await zipCode(userInputState.project!.description!)
         transformByQState.setPayloadFilePath(payloadFilePath)
         await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
         uploadId = await uploadPayload(payloadFilePath)
@@ -254,18 +311,16 @@ export async function validateTransformationJob() {
         getLogger().error('Failed to get open projects: ', err)
         throw err
     }
-    const userInputState = await collectInput(openProjects)
 
-    if (!userInputState.project) {
-        throw new ToolkitError('No project selected', { code: 'NoProjectSelected' })
-    }
-
+    let validProjects = undefined
     try {
-        await validateProjectSelection(userInputState.project)
+        validProjects = await validateOpenProjects(openProjects)
     } catch (err) {
         getLogger().error('Selected project is not Java 8, not Java 11, or does not use Maven', err)
         throw err
     }
+
+    const userInputState = await collectInput(validProjects)
 
     const selection = await vscode.window.showWarningMessage(
         CodeWhispererConstants.dependencyDisclaimer,
@@ -291,7 +346,7 @@ export async function validateTransformationJob() {
 
 export async function setTransformationToRunningState(userInputState: UserInputState) {
     transformByQState.setToRunning()
-    transformByQState.setProjectPath(userInputState.project.description!)
+    transformByQState.setProjectPath(userInputState.project!.description!)
     sessionPlanProgress['uploadCode'] = StepProgress.Pending
     sessionPlanProgress['buildCode'] = StepProgress.Pending
     sessionPlanProgress['transformCode'] = StepProgress.Pending
@@ -302,7 +357,7 @@ export async function setTransformationToRunningState(userInputState: UserInputS
     telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
         codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
-            transformByQState.getSourceJDKVersion()
+            transformByQState.getSourceJDKVersion()!
         ) as CodeTransformJavaSourceVersionsAllowed,
         codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getTargetJDKVersion()
