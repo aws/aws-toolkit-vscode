@@ -24,11 +24,11 @@ phases:
                 git remote add originWithCreds "$REPO_URL"
                 echo "Adding SNAPSHOT to next version string"
                 # Increase minor version
-                npm version --no-git-tag-version minor
-                VERSION=$(node -e "console.log(require('./package.json').version);")
+                npm version --no-git-tag-version minor -w packages/toolkit
+                VERSION=$(node -e "console.log(require('./packages/toolkit/package.json').version);")
                 # Append -SNAPSHOT
-                npm version --no-git-tag-version "${VERSION}-SNAPSHOT"
-                git add package.json
+                npm version --no-git-tag-version "${VERSION}-SNAPSHOT" -w packages/toolkit
+                git add packages/toolkit/package.json
                 git add package-lock.json
                 git commit -m "Update version to snapshot version: ${VERSION}-SNAPSHOT"
             - |
