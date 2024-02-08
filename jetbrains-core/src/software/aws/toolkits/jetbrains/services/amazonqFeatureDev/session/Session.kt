@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.APPROACH_RETRY_LIMIT
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.AsyncEventProgressMessage
@@ -18,6 +19,7 @@ class Session(val tabID: String, val project: Project) {
     private var _latestMessage: String = ""
     private var task: String = ""
     private val proxyClient: FeatureDevClient
+    private var approachRetries: Int
 
     // Used to keep track of whether the current session/tab is currently authenticating/needs authenticating
     var isAuthenticating: Boolean
@@ -27,6 +29,7 @@ class Session(val tabID: String, val project: Project) {
         context = FeatureDevSessionContext(project)
         proxyClient = FeatureDevClient.getInstance(project)
         isAuthenticating = false
+        approachRetries = APPROACH_RETRY_LIMIT
     }
 
     /**
@@ -109,4 +112,14 @@ class Session(val tabID: String, val project: Project) {
                 return _state as SessionState
             }
         }
+
+    val latestMessage: String
+        get() = this._latestMessage
+
+    fun decreaseRetries() {
+        when (sessionState.phase) {
+            SessionStatePhase.APPROACH -> approachRetries -= 1
+            else -> {}
+        }
+    }
 }

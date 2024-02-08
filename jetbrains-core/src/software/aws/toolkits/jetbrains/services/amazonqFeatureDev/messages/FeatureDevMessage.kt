@@ -35,6 +35,13 @@ sealed interface IncomingFeatureDevMessage : FeatureDevBaseMessage {
         val command: String,
         @JsonProperty("tabID") val tabId: String,
     ) : IncomingFeatureDevMessage
+
+    data class FollowupClicked(
+        val followUp: FollowUp,
+        @JsonProperty("tabID") val tabId: String,
+        val messageId: String?,
+        val command: String,
+    ) : IncomingFeatureDevMessage
 }
 
 // === UI -> App Messages ===
@@ -52,6 +59,7 @@ enum class FeatureDevMessageType(
 ) {
     Answer("answer"),
     AnswerPart("answer-part"),
+    SystemPrompt("system-prompt"),
 }
 
 data class FeatureDevMessage(
@@ -60,6 +68,7 @@ data class FeatureDevMessage(
     val messageType: FeatureDevMessageType,
     val messageId: String,
     val message: String? = null,
+    val followUps: List<FollowUp>? = null
 
 ) : UiMessage(
     tabId = tabId,
@@ -119,3 +128,29 @@ data class AuthNeededException(
     tabId = tabId,
     type = "authNeededException",
 )
+
+data class FollowUp(
+    val type: FollowUpTypes,
+    val pillText: String,
+    val disabled: Boolean? = false,
+    val description: String? = null,
+    val status: FollowUpStatusType? = null,
+)
+
+enum class FollowUpStatusType(
+    @field:JsonValue val json: String,
+) {
+    Info("info"),
+    Success("success"),
+    Warning("warning"),
+    Error("error")
+}
+
+enum class FollowUpTypes(
+    @field:JsonValue val json: String
+) {
+    RETRY("Retry"),
+    MODIFY_DEFAULT_SOURCE_FOLDER("ModifyDefaultSourceFolder"),
+    DEV_EXAMPLES("DevExamples"),
+    NEW_PLAN("NewPlan")
+}
