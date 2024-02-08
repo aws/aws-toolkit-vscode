@@ -278,7 +278,7 @@ export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVA
 
 export const selectProjectPrompt = 'Select the project you want to transform'
 
-export const transformByQWindowTitle = 'Amazon Q CodeTransformation'
+export const transformByQWindowTitle = 'Amazon Q Code Transformation'
 
 export const stopTransformByQMessage = 'Stop Transformation?'
 
@@ -293,9 +293,9 @@ export const transformByQCompletedMessage = 'Transformation completed'
 export const transformByQPartiallyCompletedMessage = 'Transformation partially completed'
 
 export const noPomXmlFoundMessage =
-    'None of your open Java projects are supported by Q Code Transformation. We were unable to find a pom.xml in any of your Java projects. We only support Java projects built on Maven at the moment.'
+    'None of your open Java projects are supported by Amazon Q Code Transformation. We were unable to find a pom.xml in any of your Java projects. We only support Java projects built on Maven at the moment.'
 
-export const noActiveIdCMessage = 'Transform by Q requires an active IAM Identity Center connection'
+export const noActiveIdCMessage = 'Amazon Q Code Transformation requires an active IAM Identity Center connection'
 
 export const noOngoingJobMessage = 'No job is in-progress at the moment'
 
@@ -305,7 +305,7 @@ export const cancellationInProgressMessage = 'Cancellation is in-progress'
 
 export const errorStoppingJobMessage = 'Error stopping job'
 
-export const errorDownloadingDiffMessage = 'Transform by Q experienced an error when downloading the diff'
+export const errorDownloadingDiffMessage = 'Amazon Q Code Transformation experienced an error when downloading the diff'
 
 export const viewProposedChangesMessage =
     'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.'
@@ -313,10 +313,10 @@ export const viewProposedChangesMessage =
 export const changesAppliedMessage = 'Changes applied'
 
 export const noSupportedJavaProjectsFoundMessage =
-    'None of your open projects are supported by Q Code Transformation. We were unable to find a Java project. We only support Java projects built on Maven at the moment.'
+    'None of your open projects are supported by Amazon Q Code Transformation. We were unable to find a Java project. We only support Java projects built on Maven at the moment.'
 
 export const dependencyDisclaimer =
-    'Please confirm you are ready to proceed with the transformation. Amazon Q will upload the application code and its dependency binaries from your machine to start the upgrade. If you have not yet compiled the application on your local machine, please do so once before starting the upgrade. Install Maven to ensure all module dependencies are picked for Transformation.'
+    'Please confirm you are ready to proceed with the transformation. Amazon Q Code Transformation will upload the application code and its dependency binaries from your machine to start the upgrade. If you have not yet compiled the application on your local machine, please do so once before starting the upgrade. Install Maven to ensure all module dependencies are picked for Transformation.'
 
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
