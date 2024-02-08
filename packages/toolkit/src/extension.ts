@@ -33,7 +33,6 @@ import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
 import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
-import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
@@ -46,7 +45,6 @@ import { activate as activateApplicationComposer } from './applicationcomposer/a
 import { activate as activateRedshift } from './redshift/activation'
 import { activate as activateCWChat } from './amazonq/activation'
 import { activate as activateQGumby } from './amazonqGumby/activation'
-import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
@@ -55,58 +53,31 @@ import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
 import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
-import { Commands, registerErrorHandler as registerCommandErrorHandler } from './shared/vscode/commands2'
-import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
-import { isUserCancelledError, resolveErrorMessageToDisplay, ToolkitError } from './shared/errors'
-import { Logging } from './shared/logger/commands'
-import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
-import { registerWebviewErrorHandler } from './webviews/server'
-import { ChildProcess } from './shared/utilities/childProcess'
+import { showViewLogsMessage } from './shared/utilities/messages'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
-import { showQuickStartWebview } from './shared/extensionStartup'
-import { activateShared } from './extensionShared'
+import { activateShared, deactivateShared } from './extensionShared'
 
 let localize: nls.LocalizeFunc
 
+/**
+ * The entrypoint for the nodejs version of the toolkit
+ *
+ * **CONTIBUTORS** If you are adding code to this function prioritize adding it to
+ * {@link activateShared} if appropriate
+ */
 export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
 
-    globals.machineId = await getMachineId()
-
-    const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
-        localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
-    )
-
-    registerCommandErrorHandler((info, error) => {
-        const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
-        void logAndShowError(error, info.id, defaultMessage)
-    })
-
-    registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
-        logAndShowWebviewError(error, webviewId, command)
-    })
-
-    if (isCloud9()) {
-        vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
-        context.subscriptions.push(
-            Commands.register('aws.quickStart', async () => {
-                try {
-                    await showQuickStartWebview(context)
-                } finally {
-                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
-                }
-            })
-        )
-    }
-
     try {
         // IMPORTANT: If you are doing setup that should also work in browser, it should be done in the function below
-        await activateShared(context, () => RegionProvider.fromEndpointsProvider(makeEndpointsProvider()))
+        const extContext = await activateShared(context, () =>
+            RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
+        )
 
         initializeNetworkAgent()
         initializeCredentialsProviderManager()
@@ -121,9 +92,6 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.awsContextCommands = new AwsContextCommands(globals.regionProvider, Auth.instance)
         globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
-        // Create this now, but don't call vscode.window.registerUriHandler() until after all
-        // Toolkit services have a chance to register their path handlers. #4105
-        globals.uriHandler = new UriHandler()
 
         const settings = Settings.instance
         const experiments = Experiments.instance
@@ -138,18 +106,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await globals.schemaService.start()
         awsFiletypes.activate()
-
-        const extContext: ExtContext = {
-            extensionContext: context,
-            awsContext: globals.awsContext,
-            samCliContext: getSamCliContext,
-            regionProvider: globals.regionProvider,
-            outputChannel: globals.outputChannel,
-            invokeOutputChannel: remoteInvokeOutputChannel,
-            telemetryService: globals.telemetry,
-            uriHandler: globals.uriHandler,
-            credentialsStore: globals.loginManager.store,
-        }
 
         try {
             await activateDev(context)
@@ -174,7 +130,7 @@ export async function activate(context: vscode.ExtensionContext) {
             context: extContext,
             regionProvider: globals.regionProvider,
             toolkitOutputChannel: globals.outputChannel,
-            remoteInvokeOutputChannel,
+            remoteInvokeOutputChannel: globals.invokeOutputChannel,
         })
 
         await activateCodeWhisperer(extContext)
@@ -183,7 +139,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateApiGateway({
             extContext: extContext,
-            outputChannel: remoteInvokeOutputChannel,
+            outputChannel: globals.invokeOutputChannel,
         })
 
         await activateLambda(extContext)
@@ -273,8 +229,8 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
+    await deactivateShared()
     await codewhispererShutdown()
-    await globals.telemetry.shutdown()
     await globals.resourceManager.dispose()
 }
 
@@ -309,87 +265,6 @@ function recordToolkitInitialization(activationStartedOn: number, settingsValid:
     }
 }
 
-/**
- * Wraps the `vscode.window.withProgress` functionality with functionality that also writes to the output channel.
- *
- * Cloud9 does not show a progress notification.
- */
-function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscode.window)['withProgress'] {
-    const withProgress = vscode.window.withProgress.bind(vscode.window)
-
-    return (options, task) => {
-        if (options.title) {
-            channel.appendLine(options.title)
-        }
-
-        return withProgress(options, (progress, token) => {
-            const newProgress: typeof progress = {
-                ...progress,
-                report: value => {
-                    if (value.message) {
-                        channel.appendLine(value.message)
-                    }
-                    progress.report(value)
-                },
-            }
-
-            return task(newProgress, token)
-        })
-    }
-}
-
-/**
- * Logs the error. Then determines what kind of error message should be shown, if
- * at all.
- *
- * @param error The error itself
- * @param topic The prefix of the error message
- * @param defaultMessage The message to show if once cannot be resolved from the given error
- *
- * SIDE NOTE:
- * This is only being used for errors from commands and webview, there's plenty of other places
- * (explorer, nodes, ...) where it could be used. It needs to be apart of some sort of `core`
- * module that is guaranteed to initialize prior to every other Toolkit component.
- * Logging and telemetry would fit well within this core module.
- */
-export async function logAndShowError(error: unknown, topic: string, defaultMessage: string) {
-    if (isUserCancelledError(error)) {
-        getLogger().verbose(`${topic}: user cancelled`)
-        return
-    }
-    const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
-    const logId = getLogger().error(`${topic}: %s`, error)
-    const message = resolveErrorMessageToDisplay(error, defaultMessage)
-
-    if (error instanceof ToolkitError && error.documentationUri) {
-        await showMessageWithUrl(message, error.documentationUri, 'View Documentation', 'error')
-    } else {
-        await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
-            if (resp === logsItem) {
-                await Logging.declared.viewLogsAtMessage.execute(logId)
-            }
-        })
-    }
-}
-
-/**
- * Show a webview related error to the user + button that links to the logged error
- *
- * @param err The error that was thrown in the backend
- * @param webviewId Arbitrary value that identifies which webview had the error
- * @param command The high level command/function that was run which triggered the error
- */
-export function logAndShowWebviewError(err: unknown, webviewId: string, command: string) {
-    // HACK: The following implementation is a hack, influenced by the implementation of handleError().
-    // The userFacingError message will be seen in the UI, and the detailedError message will provide the
-    // detailed information in the logs.
-    const detailedError = ToolkitError.chain(err, `Webview backend command failed: "${command}()"`)
-    const userFacingError = ToolkitError.chain(detailedError, 'Webview error')
-    logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch(e => {
-        getLogger().error('logAndShowError failed: %s', (e as Error).message)
-    })
-}
-
 async function checkSettingsHealth(settings: Settings): Promise<boolean> {
     const r = await settings.isValid()
     switch (r) {
@@ -413,11 +288,6 @@ async function checkSettingsHealth(settings: Settings): Promise<boolean> {
         default:
             return true
     }
-}
-
-async function getMachineId(): Promise<string> {
-    const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
-    return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }
 
 // Unique extension entrypoint names, so that they can be obtained from the webpack bundle
