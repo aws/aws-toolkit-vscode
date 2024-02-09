@@ -8,11 +8,11 @@ const localize = nls.loadMessageBundle()
 
 import globals from '../../shared/extensionGlobals'
 import * as vscode from 'vscode'
-import { AuthorizationPendingException, SlowDownException, SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
+import { SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
 import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile, builderIdStartUrl } from './model'
 import { getCache } from './cache'
-import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
-import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
+import { hasProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
 import {
@@ -21,12 +21,12 @@ import {
     getTelemetryResult,
     isClientFault,
     isNetworkError,
-    ToolkitError,
 } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemetry'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { indent } from '../../shared/utilities/textUtilities'
+import { UriHandler } from '../../shared/vscode/uriHandler'
 
 const clientRegistrationType = 'public'
 const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
@@ -195,7 +195,8 @@ export class SsoAccessTokenProvider {
             grantType: deviceGrantType,
         }
 
-        const token = await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
+        await waitForUser()
+        const token = await this.oidc.createToken(tokenRequest)
         return this.formatToken(token, registration)
     }
 
@@ -228,57 +229,41 @@ export class SsoAccessTokenProvider {
     public static create(profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>) {
         return new this(profile)
     }
+
+    /**
+     * The URL we pass to the authorization request, so that once the user is done setup in the browser
+     * it will redirect to this URL and open back up VS Code. {@link SsoAccessTokenProvider.waitUntilAuthenticated}
+     * must be used for the browser to automatically open VS Code.
+     */
+    static get onAuthenticatedUrl() {
+        return UriHandler.buildUri('sso/authenticated')
+    }
 }
 
-const backoffDelayMs = 5000
-async function pollForTokenWithProgress<T>(
-    fn: () => Promise<T>,
-    authorization: Awaited<ReturnType<OidcClient['startDeviceAuthorization']>>,
-    interval = authorization.interval ?? backoffDelayMs
-) {
-    async function poll(token: vscode.CancellationToken) {
-        while (
-            authorization.expiresAt.getTime() - globals.clock.Date.now() > interval &&
-            !token.isCancellationRequested
-        ) {
-            try {
-                return await fn()
-            } catch (err) {
-                if (!hasStringProps(err, 'name')) {
-                    throw err
-                }
-
-                if (err instanceof SlowDownException) {
-                    interval += backoffDelayMs
-                } else if (!(err instanceof AuthorizationPendingException)) {
-                    throw err
-                }
-            }
-
-            await sleep(interval)
-        }
-
-        throw new ToolkitError('Timed-out waiting for browser login flow to complete', {
-            code: 'TimedOut',
-        })
-    }
-
+/**
+ *
+ */
+async function waitForUser<T>() {
     return vscode.window.withProgress(
         {
-            title: localize(
-                'AWS.auth.loginWithBrowser.messageDetail',
-                'Confirm code "{0}" in the login page opened in your web browser.',
-                authorization.userCode
-            ),
+            title: localize('AWS.auth.loginWithBrowser.messageDetail', 'Complete login in the browser.'),
             cancellable: true,
             location: vscode.ProgressLocation.Notification,
         },
         (_, token) =>
             Promise.race([
-                poll(token),
-                new Promise<never>((_, reject) =>
-                    token.onCancellationRequested(() => reject(new CancellationError('user')))
-                ),
+                new Promise<void>((resolve, reject) => {
+                    token.onCancellationRequested(reject)
+
+                    const disposable: vscode.Disposable = globals.uriHandler.onPath(
+                        SsoAccessTokenProvider.onAuthenticatedUrl.path,
+                        () => {
+                            // We remove this path from the uri handler
+                            disposable.dispose()
+                            resolve()
+                        }
+                    )
+                }),
             ])
     )
 }
