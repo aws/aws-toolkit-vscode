@@ -1,3 +1,9 @@
+## 2.9.0 2024-02-09
+
+- **Bug Fix** Cloud9: certain filesystem calls did not work in Cloud9
+- **Bug Fix** EC2 Credentials: Use IMDSv2 calls if available, otherwise fall back IMDSv1.
+- **Feature** Enable java 17 for SAM create and local Lambda debugging
+
 ## 2.8.0 2024-02-01
 
 - **Bug Fix** CodeWhisperer: Improve CodePercentage telemetry reporting
