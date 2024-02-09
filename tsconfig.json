@@ -1,14 +1,7 @@
 {
     "compilerOptions": {
-        "baseUrl": ".",
-        "paths": {
-            "*": ["types/*"],
-            "@sinonjs/fake-timers": ["node_modules/@types/sinonjs__fake-timers"]
-        },
-        "incremental": true,
         "module": "commonjs",
         "target": "es2021",
-        "outDir": "dist",
         "sourceMap": true,
         "moduleResolution": "node",
         "rootDir": ".",
@@ -17,10 +10,20 @@
         "noUnusedLocals": true,
         "noImplicitOverride": true,
         "lib": ["dom", "es2021"],
-        "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "jsx": "preserve",
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "composite": true,
+        "declaration": true,
+        "declarationMap": true,
+        "incremental": true,
+        "noEmitOnError": true,
+        "skipLibCheck": true
     },
-    "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist", "src.gen"]
+    "files": [],
+    "references": [
+        {
+            "path": "./packages/toolkit"
+        }
+    ]
 }

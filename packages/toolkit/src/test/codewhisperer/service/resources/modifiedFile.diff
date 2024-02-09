@@ -1,0 +1,8 @@
+diff --git a/README.md b/README.md
+index 084f378..1705101 100644
+--- a/README.md
++++ b/README.md
+@@ -1,3 +1,5 @@
+This guide walks you through using Gradle to build a simple Java project.
++This line is added.
+\ No newline at end of file
