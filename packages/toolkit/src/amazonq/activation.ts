@@ -23,12 +23,7 @@ export async function activate(context: ExtensionContext) {
 
     registerApps(appInitContext)
 
-    const provider = new CommonAuthViewProvider(
-        context,
-        appInitContext.getWebViewToAppsMessagePublishers(),
-        appInitContext.getAppsToWebViewMessageListener(),
-        appInitContext.onDidChangeAmazonQVisibility
-    )
+    const provider = new CommonAuthViewProvider(context, appInitContext.onDidChangeAmazonQVisibility)
 
     const cwcWebViewToAppsPublisher = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!
 

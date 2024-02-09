@@ -43,7 +43,6 @@ const vueConfig = {
     entry: {
         ...createVueEntries(),
         'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
-        'src/ac/webview/ui/auth-ui': './src/ac/webview/ui/index.ts',
     },
     output: {
         ...baseConfig.output,

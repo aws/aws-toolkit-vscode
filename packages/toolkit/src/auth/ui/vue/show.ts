@@ -862,6 +862,4 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
  * Forces focus to Amazon Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
  * Used on first load, and any time we want to directly populate chat.
  */
-export async function focusAmazonQPanel(): Promise<void> {
-    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-}
+export async function focusAmazonQPanel(): Promise<void> {}

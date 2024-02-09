@@ -723,7 +723,7 @@
             "amazonq": [
                 {
                     "type": "webview",
-                    "id": "aws.AmazonQChatView",
+                    "id": "aws.AmazonQChatView2",
                     "name": "%AWS.amazonq.chat%",
                     "when": "!isCloud9 && !aws.isSageMaker"
                 },

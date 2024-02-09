@@ -24,6 +24,8 @@ The design is in the sidebar. It should use webview view.
 
 */
 
+import * as vscode from 'vscode'
+import path from 'path'
 import {
     WebviewViewProvider,
     ExtensionContext,
@@ -34,30 +36,18 @@ import {
     Webview,
     EventEmitter,
 } from 'vscode'
-import { CommonAuthWebViewContentGenerator } from './commonAuthWebViewContentGenerator'
-import {
-    dispatchAppsMessagesToWebView,
-    dispatchWebViewMessagesToApps,
-} from '../../amazonq/webview/messages/messageDispatcher'
-import { MessageListener } from '../../amazonq/messages/messageListener'
-import { MessagePublisher } from '../../amazonq/messages/messagePublisher'
 import { registerAssetsHttpsFileSystem } from '../../amazonq/webview/assets/assetsHandler'
-import { TabType } from '../../amazonq/webview/ui/storages/tabsStorage'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
-    public static readonly viewType = 'aws.AmazonQChatView'
+    public static readonly viewType = 'aws.AmazonQChatView2'
 
-    webViewContentGenerator: CommonAuthWebViewContentGenerator
     webView: Webview | undefined
 
     constructor(
         private readonly extensionContext: ExtensionContext,
-        private readonly webViewToAppsMessagesPublishers: Map<TabType, MessagePublisher<any>>,
-        private readonly appsMessagesListener: MessageListener<any>,
         private readonly onDidChangeVisibility: EventEmitter<boolean>
     ) {
         registerAssetsHttpsFileSystem(extensionContext)
-        this.webViewContentGenerator = new CommonAuthWebViewContentGenerator()
     }
 
     public async resolveWebviewView(
@@ -77,13 +67,41 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             localResourceRoots: [dist, resources],
         }
 
-        dispatchWebViewMessagesToApps(webviewView.webview, this.webViewToAppsMessagesPublishers)
+        webviewView.webview.html = this._getHtmlForWebview(this.extensionContext.extensionUri, webviewView.webview)
 
-        dispatchAppsMessagesToWebView(webviewView.webview, this.appsMessagesListener)
+        webviewView.webview.onDidReceiveMessage(message => {
+            void vscode.window.showInformationMessage(`Receive ${message}`)
+        })
+    }
 
-        webviewView.webview.html = await this.webViewContentGenerator.generate(
-            this.extensionContext.extensionUri,
-            webviewView.webview
-        )
+    private _getHtmlForWebview(extensionURI: Uri, webview: vscode.Webview) {
+        const source = path.join('src', 'ac', 'webview', 'vue', 'index.js')
+        const assetsPath = Uri.joinPath(extensionURI)
+        const javascriptUri = Uri.joinPath(assetsPath, 'dist', source)
+        // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
+        const scriptUri = webview.asWebviewUri(javascriptUri)
+
+        return `
+			<!DOCTYPE html>
+			<html lang="en">
+				<head>
+					<meta charset="UTF-8">
+					<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+					<title>Base View Extension</title>
+				</head>
+				<body>
+                    <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.3.4/vue.global.js"></script>
+                    <script>var exports = {};</script>
+
+					<script>
+						const vscode = acquireVsCodeApi();
+					</script>
+
+                    <div id="vue-app"></div>
+
+					<script type="text/javascript" src="${scriptUri}" defer></script>
+				</body>
+			</html>`
     }
 }
