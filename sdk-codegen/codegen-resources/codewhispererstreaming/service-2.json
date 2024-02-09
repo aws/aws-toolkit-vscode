@@ -272,7 +272,8 @@
         "ExportIntent":{
             "type":"string",
             "enum":[
-                "TRANSFORMATION"
+                "TRANSFORMATION",
+                "TASK_ASSIST"
             ]
         },
         "ExportResultArchiveRequest":{

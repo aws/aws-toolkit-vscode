@@ -11,7 +11,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.ArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -33,6 +32,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.StopTransforma
 import software.amazon.awssdk.services.codewhispererruntime.model.StopTransformationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationLanguage
 import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClient
+import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportResultArchiveRequest
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportResultArchiveResponseHandler
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
@@ -45,6 +45,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ManagedSsoProfile
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockToolkitAuthManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.settings.AwsSettings
@@ -61,6 +62,7 @@ class CodeWhispererCodeModernizerGumbyClientTest : CodeWhispererCodeModernizerTe
 
     private lateinit var bearerClient: CodeWhispererRuntimeClient
     private lateinit var streamingBearerClient: CodeWhispererStreamingAsyncClient
+    private lateinit var amazonQStreamingClient: AmazonQStreamingClient
     private lateinit var ssoClient: SsoOidcClient
 
     private lateinit var gumbyClient: GumbyClient
@@ -84,6 +86,8 @@ class CodeWhispererCodeModernizerGumbyClientTest : CodeWhispererCodeModernizerTe
         streamingBearerClient = mockClientManagerRule.create<CodeWhispererStreamingAsyncClient>().stub {
             on { exportResultArchive(any<ExportResultArchiveRequest>(), any<ExportResultArchiveResponseHandler>()) } doReturn CompletableFuture()
         }
+
+        amazonQStreamingClient = mock<AmazonQStreamingClient>()
 
         val mockConnection = mock<AwsBearerTokenConnection>()
         whenever(mockConnection.getConnectionSettings()) doReturn mock<TokenConnectionSettings>()
@@ -162,14 +166,15 @@ class CodeWhispererCodeModernizerGumbyClientTest : CodeWhispererCodeModernizerTe
 
     @Test
     fun `check downloadExportResultArchive`() {
-        val requestCaptor = ArgumentCaptor.forClass(ExportResultArchiveRequest::class.java)
-        val handlerCaptor = ArgumentCaptor.forClass(ExportResultArchiveResponseHandler::class.java)
         projectCoroutineScope(project).launch {
-            gumbyClient.downloadExportResultArchive(jobId)
-            argumentCaptor<ExportResultArchiveRequest, ExportResultArchiveResponseHandler>().apply {
-                verify(streamingBearerClient).exportResultArchive(requestCaptor.capture(), handlerCaptor.capture())
-                verifyNoInteractions(bearerClient)
-            }
+            whenever(amazonQStreamingClient.exportResultArchive(any<String>(), any<ExportIntent>(), any(), any())) doReturn exampleExportResultArchiveResponse
+
+            val actual = gumbyClient.downloadExportResultArchive(jobId)
+
+            verifyNoInteractions(bearerClient)
+            verifyNoInteractions(streamingBearerClient)
+            assertThat(actual).isInstanceOf(ByteArray::class.java)
+            assertThat(actual).usingRecursiveComparison().isEqualTo(exampleExportResultArchiveResponse)
         }
     }
 }

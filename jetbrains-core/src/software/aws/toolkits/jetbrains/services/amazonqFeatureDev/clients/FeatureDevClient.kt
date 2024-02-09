@@ -22,14 +22,21 @@ import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStrea
 import software.amazon.awssdk.services.codewhispererstreaming.model.ChatMessage
 import software.amazon.awssdk.services.codewhispererstreaming.model.ChatTriggerType
 import software.amazon.awssdk.services.codewhispererstreaming.model.ConversationState
+import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
 import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanRequest
 import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanResponseHandler
 import software.amazon.awssdk.services.codewhispererstreaming.model.ProgrammingLanguage
 import software.amazon.awssdk.services.codewhispererstreaming.model.UserInputMessage
 import software.amazon.awssdk.services.codewhispererstreaming.model.WorkspaceState
+import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
+import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
+import software.aws.toolkits.jetbrains.services.codemodernizer.calculateTotalLatency
+import java.time.Instant
 import software.amazon.awssdk.services.codewhispererruntime.model.ChatTriggerType as SyncChatTriggerType
 
 @Service(Service.Level.PROJECT)
@@ -40,6 +47,8 @@ class FeatureDevClient(private val project: Project) {
     private fun bearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererRuntimeClient>()
 
     private fun streamingBearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererStreamingAsyncClient>()
+
+    private val amazonQStreamingClient = AmazonQStreamingClient.getInstance(project)
 
     fun createTaskAssistConversation(): CreateTaskAssistConversationResponse = bearerClient().createTaskAssistConversation(
         CreateTaskAssistConversationRequest.builder().build()
@@ -130,7 +139,20 @@ class FeatureDevClient(private val project: Project) {
                 .codeGenerationId(codeGenerationId)
         }
 
+    suspend fun exportTaskAssistResultArchive(conversationId: String): MutableList<ByteArray> = amazonQStreamingClient.exportResultArchive(
+        conversationId,
+        ExportIntent.TASK_ASSIST,
+        { e ->
+            LOG.error(e) { "TaskAssist - ExportResultArchive stream exportId=$conversationId exportIntent=${ExportIntent.TASK_ASSIST} Failed: ${e.message} " }
+        },
+        { startTime ->
+            LOG.info { "TaskAssist - ExportResultArchive latency: ${calculateTotalLatency(startTime, Instant.now())}" }
+        }
+    )
+
     companion object {
+        private val LOG = getLogger<FeatureDevClient>()
+
         fun getInstance(project: Project) = project.service<FeatureDevClient>()
     }
 }

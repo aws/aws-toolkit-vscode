@@ -191,6 +191,8 @@ open class CodeWhispererCodeModernizerTestBase(
         .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build())
         .build() as GetTransformationResponse
 
+    internal val exampleExportResultArchiveResponse = mutableListOf(byteArrayOf(100))
+
     fun GetTransformationResponse.replace(status: TransformationStatus) =
         this.copy { response ->
             response.transformationJob(this.transformationJob().copy { it.status(status) })

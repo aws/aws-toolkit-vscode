@@ -30,6 +30,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistC
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClient
+import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
 import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanRequest
 import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanResponseHandler
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
@@ -42,6 +43,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ManagedSsoProfile
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockToolkitAuthManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.codewhisperer.amazonqFeatureDev.FeatureDevTestBase
 import software.aws.toolkits.jetbrains.settings.AwsSettings
@@ -49,8 +51,8 @@ import java.util.concurrent.CompletableFuture
 
 class FeatureDevClientTest : FeatureDevTestBase() {
     val mockClientManagerRule = MockClientManagerRule()
-    val mockCredentialRule = MockCredentialManagerRule()
-    val authManagerRule = MockToolkitAuthManagerRule()
+    private val mockCredentialRule = MockCredentialManagerRule()
+    private val authManagerRule = MockToolkitAuthManagerRule()
 
     @Rule
     @JvmField
@@ -58,6 +60,7 @@ class FeatureDevClientTest : FeatureDevTestBase() {
 
     private lateinit var bearerClient: CodeWhispererRuntimeClient
     private lateinit var streamingBearerClient: CodeWhispererStreamingAsyncClient
+    private lateinit var amazonQStreamingClient: AmazonQStreamingClient
     private lateinit var ssoClient: SsoOidcClient
 
     private lateinit var featureDevClient: FeatureDevClient
@@ -80,6 +83,8 @@ class FeatureDevClientTest : FeatureDevTestBase() {
         streamingBearerClient = mockClientManagerRule.create<CodeWhispererStreamingAsyncClient>().stub {
             on { generateTaskAssistPlan(any<GenerateTaskAssistPlanRequest>(), any<GenerateTaskAssistPlanResponseHandler>()) } doReturn CompletableFuture()
         }
+
+        amazonQStreamingClient = mock<AmazonQStreamingClient>()
 
         val mockConnection = mock<AwsBearerTokenConnection>()
         whenever(mockConnection.getConnectionSettings()) doReturn mock<TokenConnectionSettings>()
@@ -137,6 +142,20 @@ class FeatureDevClientTest : FeatureDevTestBase() {
                 verify(streamingBearerClient).generateTaskAssistPlan(requestCaptor.capture(), handlerCaptor.capture())
                 verifyNoInteractions(bearerClient)
             }
+        }
+    }
+
+    @Test
+    fun `check exportTaskAssistResultArchive`() {
+        projectCoroutineScope(project).launch {
+            whenever(amazonQStreamingClient.exportResultArchive(any<String>(), any<ExportIntent>(), any(), any())) doReturn exampleExportResultArchiveResponse
+
+            val actual = featureDevClient.exportTaskAssistResultArchive("1234")
+
+            verifyNoInteractions(bearerClient)
+            verifyNoInteractions(streamingBearerClient)
+            assertThat(actual).isInstanceOf(ByteArray::class.java)
+            assertThat(actual).usingRecursiveComparison().isEqualTo(exampleExportResultArchiveResponse)
         }
     }
 
