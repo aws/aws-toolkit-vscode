@@ -58,6 +58,10 @@ export async function activateShared(
 ): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
 
+    // some "initialize" functions
+    await initializeComputeRegion()
+    initialize(context)
+
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
         void logAndShowError(error, info.id, defaultMessage)
@@ -94,10 +98,6 @@ export async function activateShared(
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
-
-    // some "initialize" functions
-    await initializeComputeRegion()
-    initialize(context)
 
     // order matters here
     globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
