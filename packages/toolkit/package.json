@@ -1374,6 +1374,11 @@
                     "group": "navigation@5"
                 },
                 {
+                    "command": "aws.cdk.refresh",
+                    "when": "view == aws.cdk",
+                    "group": "navigation@1"
+                },
+                {
                     "command": "aws.login",
                     "when": "view == aws.explorer",
                     "group": "1_account@1"
