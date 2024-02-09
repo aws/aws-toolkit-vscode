@@ -10,6 +10,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.Featur
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.AsyncEventProgressMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createConversation
+import software.aws.toolkits.telemetry.AmazonqTelemetry
 
 class Session(val tabID: String, val project: Project) {
     private var _state: SessionState?
@@ -40,6 +41,7 @@ class Session(val tabID: String, val project: Project) {
             setupConversation(msg)
             preloaderFinished = true
 
+            AmazonqTelemetry.startChat(amazonqConversationId = this.conversationId)
             val asyncEventProgressMessage = AsyncEventProgressMessage(
                 tabId = this.tabID,
                 message = null,
