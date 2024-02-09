@@ -71,6 +71,11 @@ export async function activateShared(
         logAndShowWebviewError(error, webviewId, command)
     })
 
+    // Setup the logger
+    const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
+    await activateLogger(context, toolkitOutputChannel)
+    globals.outputChannel = toolkitOutputChannel
+
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
         context.subscriptions.push(
@@ -87,11 +92,6 @@ export async function activateShared(
     globals.invokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
-
-    // Setup the logger
-    const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
-    await activateLogger(context, toolkitOutputChannel)
-    globals.outputChannel = toolkitOutputChannel
 
     //setup globals
     globals.machineId = await getMachineId()
