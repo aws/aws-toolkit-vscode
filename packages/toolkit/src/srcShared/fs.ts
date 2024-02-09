@@ -105,6 +105,13 @@ export class FileSystemCommon {
      */
     async writeFile(path: Uri | string, data: string | Uint8Array): Promise<void> {
         path = FileSystemCommon.getUri(path)
+
+        // vscode.workspace.writeFile is stubbed in C9 has limited functionality,
+        // e.g. cannot write outside of open workspace
+        if (isCloud9()) {
+            await fsPromises.writeFile(path.fsPath, FileSystemCommon.asArray(data))
+            return
+        }
         return fs.writeFile(path, FileSystemCommon.asArray(data))
     }
 
