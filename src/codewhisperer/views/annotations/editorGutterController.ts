@@ -20,10 +20,12 @@ export class EditorGutterController implements vscode.Disposable {
 
     readonly cwlineGutterDecoration = vscode.window.createTextEditorDecorationType({
         gutterIconPath: iconPathToUri(getIcon(gutterWhite)),
+        isWholeLine: true,
     })
 
     readonly cwlineGutterDecorationColored = vscode.window.createTextEditorDecorationType({
         gutterIconPath: iconPathToUri(getIcon(gutterColored)),
+        isWholeLine: true,
     })
 
     constructor(private readonly lineTracker: LineTracker, private readonly auth: AuthUtil) {

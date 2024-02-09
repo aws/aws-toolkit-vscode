@@ -44,7 +44,6 @@ import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
-import { Container } from './serviceContainer'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -56,7 +55,12 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 // VSCode doesn't expose public API to know if the inline suggestion is removed or not (only acceptance case)
 const onPopupRemoved = () => {
     RecommendationHandler.instance.reportUserDecisions(-1)
-    Container.instance._lineAnnotationController.refreshDebounced(vscode.window.activeTextEditor)
+
+    // TODO: circular dependency
+    // Container.instance._lineAnnotationController.refreshDebounced(vscode.window.activeTextEditor)
+
+    // workaround
+    Commands.tryExecute('aws.codewhisperer.refreshAnnotation')
 }
 
 // below commands override VS Code inline completion commands

@@ -99,7 +99,7 @@ export async function activate(context: ExtContext): Promise<void> {
     ReferenceInlineProvider.instance
     ImportAdderProvider.instance
 
-    Container.create(auth)
+    const container = Container.create(auth)
 
     context.extensionContext.subscriptions.push(
         signoutCodeWhisperer.register(auth),
@@ -174,6 +174,9 @@ export async function activate(context: ExtContext): Promise<void> {
             } else {
                 await vscode.commands.executeCommand('workbench.action.openSettings', `aws.codeWhisperer`)
             }
+        }),
+        Commands.register('aws.codewhisperer.refreshAnnotation', async () => {
+            container._lineAnnotationController.refreshDebounced(vscode.window.activeTextEditor)
         }),
         // show introduction
         showIntroduction.register(),
