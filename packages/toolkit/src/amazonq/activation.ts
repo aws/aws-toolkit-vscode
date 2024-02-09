@@ -4,7 +4,7 @@
  */
 
 import { ExtensionContext, window } from 'vscode'
-import { AmazonQChatViewProvider } from './webview/webView'
+//import { AmazonQChatViewProvider } from './webview/webView'
 import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
 import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
@@ -16,13 +16,14 @@ import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amaz
 import { activateBadge } from './util/viewBadgeHandler'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../auth/ui/vue/show'
+import { CommonAuthViewProvider } from '../ac/webview/commonAuthViewProvider'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
 
     registerApps(appInitContext)
 
-    const provider = new AmazonQChatViewProvider(
+    const provider = new CommonAuthViewProvider(
         context,
         appInitContext.getWebViewToAppsMessagePublishers(),
         appInitContext.getAppsToWebViewMessageListener(),
@@ -32,7 +33,7 @@ export async function activate(context: ExtensionContext) {
     const cwcWebViewToAppsPublisher = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!
 
     context.subscriptions.push(
-        window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
+        window.registerWebviewViewProvider(CommonAuthViewProvider.viewType, provider, {
             webviewOptions: {
                 retainContextWhenHidden: true,
             },
