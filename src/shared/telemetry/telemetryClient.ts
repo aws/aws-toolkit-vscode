@@ -78,6 +78,8 @@ export class DefaultTelemetryClient implements TelemetryClient {
      * @param batch batch of events
      */
     public async postMetrics(batch: MetricDatum[]): Promise<MetricDatum[] | undefined> {
+        this.logger.info('Trying to print compute')
+        this.logger.info(getComputeEnvType())
         try {
             // If our batching logic rejected all of the telemetry, don't try to post
             if (batch.length === 0) {
@@ -91,13 +93,15 @@ export class DefaultTelemetryClient implements TelemetryClient {
                         AWSProductVersion: extensionVersion,
                         ClientID: this.clientId,
                         OS: os.platform(),
-                        OSVersion: os.release(),
-                        CommputeEnv: getComputeEnvType(),
+                        OSVersion: 'myOsVersion',
+                        ComputeEnv: getComputeEnvType(),
                         ParentProduct: vscode.env.appName,
                         ParentProductVersion: vscode.version,
                         MetricData: batch,
                     })
                     .promise()
+                // this.logger.info(client)
+                this.logger.info(getComputeEnvType())
                 this.logger.info(`telemetry: sent batch (size=${batch.length})`)
             } else {
                 this.logger.info(`telemetry: (test mode) dropped batch (size=${batch.length})`)
@@ -119,13 +123,14 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     AWSProductVersion: extensionVersion,
                     OS: os.platform(),
                     OSVersion: os.release(),
-                    CommputeEnv: getComputeEnvType(),
+                    ComputeEnv: getComputeEnvType(),
                     ParentProduct: vscode.env.appName,
                     ParentProductVersion: vscode.version,
                     Comment: feedback.comment,
                     Sentiment: feedback.sentiment,
                 })
                 .promise()
+            this.logger.info(getComputeEnvType())
             this.logger.info('Successfully posted feedback')
         } catch (err) {
             this.logger.error(`Failed to post feedback: ${err}`)
