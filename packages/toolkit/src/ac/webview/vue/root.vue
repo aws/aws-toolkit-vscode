@@ -27,46 +27,29 @@
                         </linearGradient>
                     </defs>
                 </svg>
-                <!-- Text -->
-                <div class="titleDiv">
-                    <div class="titleHeader">Amazon CodeWhisperer</div>
-                    <div class="titleSubHeader">Your AI-powered productivity tool for the IDE</div>
-                </div>
             </div>
         </div>
         <!-- Body -->
         <div class="body">
             <!-- Functionality -->
-            <div class="bodySubDiv">
-                <GenerateSuggestionTab />
-            </div>
+            <div class="titleHeader">Amazon CodeWhisperer</div>
         </div>
     </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import GenerateSuggestionTab from '../../../codewhisperer/vue/genSuggestionTab.vue'
 
 export default defineComponent({
-    name: 'Getting_Startedc',
-    components: {
-        GenerateSuggestionTab,
-    },
+    name: 'auth',
+    components: {},
     data() {
         return {
             bannerVisible: true,
             active: parseInt(sessionStorage.getItem('active') || '0'),
         }
     },
-    mounted() {
-        /* 
-              We use Session Storage here because we need to store the the first time signin user and Existing first time signin state globally. According to this we need to display the banner.
-              This can be done by storing the state. We can not use local state for this. 
-              Default the value of Key: Active is 0 after the DOM is mounted it is updated to 1.
-          */
-        sessionStorage.setItem('active', '1')
-    },
+    mounted() {},
     methods: {
         //Triggered only for the first time
         closeStatusBar() {

@@ -80,7 +80,9 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
         const javascriptUri = Uri.joinPath(assetsPath, 'dist', source)
         // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
         const scriptUri = webview.asWebviewUri(javascriptUri)
-
+        const serverHostname = process.env.WEBPACK_DEVELOPER_SERVER
+        const entrypoint =
+            serverHostname !== undefined ? Uri.parse(serverHostname).with({ path: `/${source}` }) : scriptUri
         return `
 			<!DOCTYPE html>
 			<html lang="en">
@@ -91,16 +93,14 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
 					<title>Base View Extension</title>
 				</head>
 				<body>
-                    <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.3.4/vue.global.js"></script>
-                    <script>var exports = {};</script>
-
+                     
 					<script>
 						const vscode = acquireVsCodeApi();
 					</script>
 
                     <div id="vue-app"></div>
 
-					<script type="text/javascript" src="${scriptUri}" defer></script>
+					<script type="text/javascript" src="${entrypoint.toString()}" defer></script>
 				</body>
 			</html>`
     }
