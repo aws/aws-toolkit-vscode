@@ -4366,7 +4366,7 @@
         "portfinder": "^1.0.32",
         "sanitize-html": "^2.3.3",
         "semver": "^7.5.4",
-        "strip-ansi": "^5.2.0",
+        "strip-ansi": "^7.1.0",
         "tcp-port-used": "^1.0.1",
         "uuid": "^9.0.0",
         "vscode-languageclient": "^6.1.4",
