@@ -152,5 +152,6 @@ enum class FollowUpTypes(
     RETRY("Retry"),
     MODIFY_DEFAULT_SOURCE_FOLDER("ModifyDefaultSourceFolder"),
     DEV_EXAMPLES("DevExamples"),
-    NEW_PLAN("NewPlan")
+    NEW_PLAN("NewPlan"),
+    SEND_FEEDBACK("SendFeedback")
 }

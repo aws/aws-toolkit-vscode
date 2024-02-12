@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.guessProjectDir
@@ -26,6 +27,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.Incom
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Session
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
+import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
 import software.aws.toolkits.resources.message
 import java.util.UUID
 
@@ -63,6 +65,7 @@ class FeatureDevController(
             FollowUpTypes.MODIFY_DEFAULT_SOURCE_FOLDER -> modifyDefaultSourceFolder(message.tabId)
             FollowUpTypes.DEV_EXAMPLES -> initialExamples(message.tabId)
             FollowUpTypes.NEW_PLAN -> newPlan(message.tabId)
+            FollowUpTypes.SEND_FEEDBACK -> sendFeedback()
         }
     }
 
@@ -272,6 +275,12 @@ class FeatureDevController(
                 message = message("amazonqFeatureDev.follow_up.modified_source_folder", selectedFolder.path),
                 messagePublisher = messagePublisher
             )
+        }
+    }
+
+    private fun sendFeedback() {
+        runInEdt {
+            FeedbackDialog(project = context.project, productName = "Amazon Q FeatureDev").show()
         }
     }
 

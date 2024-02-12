@@ -100,6 +100,8 @@ class FeedbackDialog(
 
             if (isAmazonQ()) {
                 row(message("feedback.comment.textbox.title.amazonq")) {}
+            } else if (isAmazonQFeatureDev()) {
+                row(message("feedback.comment.textbox.title.amazonq.feature_dev")) {}
             } else {
                 row(message("feedback.comment.textbox.title", productName)) {}
             }
@@ -163,6 +165,8 @@ class FeedbackDialog(
                         message("aws.notification.title.codewhisperer")
                     } else if (isAmazonQ()) {
                         message("aws.notification.title.amazonq")
+                    } else if (isAmazonQFeatureDev()) {
+                        message("aws.notification.title.amazonq.feature_dev")
                     } else {
                         message("aws.notification.title")
                     }
@@ -207,6 +211,8 @@ class FeedbackDialog(
         super.init()
         if (isAmazonQ()) {
             title = message("feedback.title.amazonq")
+        } else if (isAmazonQFeatureDev()) {
+            title = message("feedback.title.amazonq.feature_dev")
         } else {
             title = message("feedback.title", productName)
         }
@@ -224,6 +230,7 @@ class FeedbackDialog(
     private fun isCodeWhisperer(): Boolean = (productName == "CodeWhisperer")
     private fun isAmazonQ(): Boolean = (productName == "Amazon Q")
     private fun isToolkit(): Boolean = (productName == "Toolkit")
+    private fun isAmazonQFeatureDev(): Boolean = (productName == "Amazon Q FeatureDev")
 
     @TestOnly
     fun getFeedbackDialog() = dialogPanel
