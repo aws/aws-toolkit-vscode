@@ -5,5 +5,5 @@
         "baseUrl": ".",
         "rootDir": "."
     },
-    "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist"]
+    "exclude": ["node_modules", ".vscode-test", "dist"]
 }

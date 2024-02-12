@@ -14,6 +14,7 @@ functionality of that subproject.
 
 Current quirks of the current monorepo status that should be resolved/evaluated in later versions (TODO):
 
+-   [**Running the test suites in VSCode has changed**](../CONTRIBUTING.md#test)
 -   The [root package.json](../package.json) contains common dependencies for subprojects, and workspace
     entries for each of the subprojects.
     -   This package contains shortcuts to some of the `npm` scripts found in the subproject(s).
@@ -32,7 +33,7 @@ Current quirks of the current monorepo status that should be resolved/evaluated 
 -   LICENSE, README.md, and other non-code artifacts that must be packaged into the .vsix are currently
     being copied into the packaging subproject directory from the root project directory as part of the `copyFiles` task.
 -   Pre-release only publishes packages/toolkit extension directly. It should be extended to other added extensions. See [`release.yml`](../.github/workflows/release.yml)
--   [**Running the test suites in VSCode has changed**](../CONTRIBUTING.md#test)
+-   VSCode does not support inheriting/extending `.vscode/` settings: https://github.com/microsoft/vscode/issues/15909
 
 ## Commands
 

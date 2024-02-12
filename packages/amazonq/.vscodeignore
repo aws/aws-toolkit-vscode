@@ -10,19 +10,6 @@
 # Allowlist
 # ---------
 !dist/*
-!dist/libs
-!dist/*/!(testFixtures|test)/**/!(*.*.map)
 !dist/*/!(*.*.map)
-!resources/**
-!syntaxes/**
-!templates/**
-!types/**
 !package.json
 !package.nls.json
-
-# Automatically copied from root project directory
-!quickStart**
-!README.**
-!CHANGELOG.md
-!LICENSE
-!NOTICE
