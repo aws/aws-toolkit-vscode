@@ -141,7 +141,7 @@ export async function startSecurityScan(
             getLogger().error('Failed to upload code artifacts', error)
             throw error
         } finally {
-            dependencyGraph.removeTmpFiles(truncation)
+            await dependencyGraph.removeTmpFiles(truncation)
             codeScanTelemetryEntry.artifactsUploadDuration = performance.now() - uploadStartTime
         }
 

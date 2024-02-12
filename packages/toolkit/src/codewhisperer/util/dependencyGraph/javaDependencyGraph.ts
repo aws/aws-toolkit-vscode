@@ -342,9 +342,9 @@ export class JavaDependencyGraph extends DependencyGraph {
             const buildFiles: string[] = this.generateBuildFilePaths()
             const truncDirPath = this.getTruncDirPath(uri)
             getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
-            this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
+            await this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
             getLogger().debug(`Picked build artifacts: [${buildFiles}]`)
-            this.copyFilesToTmpDir(buildFiles, truncDirPath)
+            await this.copyFilesToTmpDir(buildFiles, truncDirPath)
             const totalBuildSize = this.getFilesTotalSize(Array.from(buildFiles.values()))
             const zipFilePath = this.zipDir(truncDirPath, CodeWhispererConstants.codeScanZipExt)
             const zipFileSize = statSync(zipFilePath).size

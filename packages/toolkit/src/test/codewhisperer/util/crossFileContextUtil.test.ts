@@ -247,7 +247,7 @@ describe('crossFileContextUtil', function () {
             const filePath = path.join(tempFolder, 'file.txt')
             await toFile('line_1\nline_2\nline_3\nline_4\nline_5\nline_6\nline_7', filePath)
 
-            const chunks = crossFile.splitFileToChunks(filePath, 2)
+            const chunks = await crossFile.splitFileToChunks(filePath, 2)
 
             assert.strictEqual(chunks.length, 4)
             assert.strictEqual(chunks[0].content, 'line_1\nline_2')
@@ -260,7 +260,7 @@ describe('crossFileContextUtil', function () {
             const filePath = path.join(tempFolder, 'file.txt')
             await toFile('line_1\nline_2\nline_3\nline_4\nline_5\nline_6\nline_7', filePath)
 
-            const chunks = crossFile.splitFileToChunks(filePath, 5)
+            const chunks = await crossFile.splitFileToChunks(filePath, 5)
 
             assert.strictEqual(chunks.length, 2)
             assert.strictEqual(chunks[0].content, 'line_1\nline_2\nline_3\nline_4\nline_5')
@@ -271,7 +271,7 @@ describe('crossFileContextUtil', function () {
             const filePath = path.join(tempFolder, 'file.txt')
             await toFile(sampleFileOf60Lines, filePath)
 
-            const chunks = crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
+            const chunks = await crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
             assert.strictEqual(chunks.length, 6)
         })
     })

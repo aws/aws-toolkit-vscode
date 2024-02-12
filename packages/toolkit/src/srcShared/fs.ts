@@ -149,6 +149,17 @@ export class FileSystemCommon {
         return await fs.readDirectory(path)
     }
 
+    async copy(source: vscode.Uri | string, target: vscode.Uri | string): Promise<void> {
+        const sourcePath = FileSystemCommon.getUri(source)
+        const targetPath = FileSystemCommon.getUri(target)
+        return await fs.copy(sourcePath, targetPath)
+    }
+
+    async unlink(uri: vscode.Uri | string): Promise<void> {
+        const path = FileSystemCommon.getUri(uri)
+        return await fsPromises.unlink(path.fsPath)
+    }
+
     // -------- private methods --------
     static readonly #decoder = new TextDecoder()
     static readonly #encoder = new TextEncoder()

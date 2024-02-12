@@ -56,7 +56,7 @@ export class terraformDependencyGraph extends DependencyGraph {
             }
             await sleep(1000)
             const truncDirPath = this.getTruncDirPath(uri)
-            this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
+            await this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
             const zipFilePath = this.zipDir(truncDirPath, CodeWhispererConstants.codeScanZipExt)
             const zipFileSize = statSync(zipFilePath).size
             return {
