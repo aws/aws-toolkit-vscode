@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemAction, ChatItemType, FeedbackPayload } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { CodeReference } from './amazonqCommonsConnector'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
@@ -68,7 +68,7 @@ export class Connector {
         })
     }
 
-    followUpClicked = (tabID: string, messageId: string, followUp: ChatItemFollowUp): void => {
+    followUpClicked = (tabID: string, messageId: string, followUp: ChatItemAction): void => {
         this.sendMessageToExtension({
             command: 'follow-up-was-clicked',
             followUp,
