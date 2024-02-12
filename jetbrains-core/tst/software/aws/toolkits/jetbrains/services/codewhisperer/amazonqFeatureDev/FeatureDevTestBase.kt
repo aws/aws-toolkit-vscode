@@ -45,7 +45,6 @@ import java.time.Instant
 open class FeatureDevTestBase(
     @Rule @JvmField
     val projectRule: CodeInsightTestFixtureRule = JavaCodeInsightTestFixtureRule(),
-
 ) {
     @Rule
     @JvmField
@@ -85,6 +84,8 @@ open class FeatureDevTestBase(
         .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
         .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build())
         .build() as GetTaskAssistCodeGenerationResponse
+
+    internal val exampleExportResultArchiveResponse = mutableListOf(byteArrayOf(100))
 
     @Before
     open fun setup() {
