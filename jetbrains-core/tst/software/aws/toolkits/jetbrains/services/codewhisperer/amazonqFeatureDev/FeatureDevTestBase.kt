@@ -20,8 +20,11 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.http.SdkHttpResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.CodeGenerationStatus
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssistConversationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistCodeGenerationResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.utils.test.aString
@@ -53,8 +56,10 @@ open class FeatureDevTestBase(
     internal lateinit var clientAdaptorSpy: FeatureDevClient
     internal lateinit var toolkitConnectionManager: ToolkitConnectionManager
 
+    internal val testConversationId = "1234"
+
     internal val exampleCreateTaskAssistConversationResponse = CreateTaskAssistConversationResponse.builder()
-        .conversationId("1234")
+        .conversationId(testConversationId)
         .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
         .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build())
         .build() as CreateTaskAssistConversationResponse
@@ -66,6 +71,20 @@ open class FeatureDevTestBase(
         .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
         .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build())
         .build() as CreateUploadUrlResponse
+
+    internal val exampleStartTaskAssistConversationResponse = StartTaskAssistCodeGenerationResponse.builder()
+        .conversationId(testConversationId)
+        .codeGenerationId("1234")
+        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
+        .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build())
+        .build() as StartTaskAssistCodeGenerationResponse
+
+    internal val exampleGetTaskAssistConversationResponse = GetTaskAssistCodeGenerationResponse.builder()
+        .conversationId(testConversationId)
+        .codeGenerationStatus(CodeGenerationStatus.builder().status("InitialCodeGeneration").currentStage("InProgress").build())
+        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)))
+        .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(CodeWhispererTestUtil.testSessionId))).build())
+        .build() as GetTaskAssistCodeGenerationResponse
 
     @Before
     open fun setup() {
@@ -100,6 +119,7 @@ open class FeatureDevTestBase(
     }
 
     companion object {
+        // TODO: double check if this is needed, otherwise remove.
         fun String.toResourceFile(): File {
             val uri =
                 FeatureDevTestBase::class.java.getResource("/amazonqFeatureDev/$this")?.toURI()

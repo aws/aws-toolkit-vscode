@@ -105,6 +105,39 @@
                 {"shape":"AccessDeniedException"}
             ]
         },
+        "GetTaskAssistCodeGeneration": {
+            "name": "GetTaskAssistCodeGeneration",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetTaskAssistCodeGenerationRequest"
+            },
+            "output": {
+                "shape": "GetTaskAssistCodeGenerationResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ConflictException"
+                },
+                {
+                    "shape": "ResourceNotFoundException"
+                },
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ]
+        },
         "GetTransformation":{
             "name":"GetTransformation",
             "http":{
@@ -214,6 +247,23 @@
                 {"shape":"AccessDeniedException"}
             ],
             "idempotent":true
+        },
+        "StartTaskAssistCodeGeneration": {
+            "name":"StartTaskAssistCodeGeneration",
+            "http":{
+                "method":"POST",
+                "requestUri":"/"
+            },
+            "input":{"shape":"StartTaskAssistCodeGenerationRequest"},
+            "output":{"shape":"StartTaskAssistCodeGenerationResponse"},
+            "errors":[
+                {"shape":"ThrottlingException"},
+                {"shape":"ConflictException"},
+                {"shape":"ResourceNotFoundException"},
+                {"shape":"InternalServerException"},
+                {"shape":"ValidationException"},
+                {"shape":"AccessDeniedException"}
+            ]
         },
         "StartTransformation":{
             "name":"StartTransformation",
@@ -845,6 +895,30 @@
                 "errorMessage":{"shape":"SensitiveString"}
             }
         },
+        "GetTaskAssistCodeGenerationRequest": {
+            "type": "structure",
+            "required": ["conversationId", "codeGenerationId"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "codeGenerationId": {
+                    "shape": "CodeGenerationId"
+                }
+            }
+        },
+        "GetTaskAssistCodeGenerationResponse": {
+            "type": "structure",
+            "required": ["conversationId", "codeGenerationStatus"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "codeGenerationStatus": {
+                    "shape": "CodeGenerationStatus"
+                }
+            }
+        },
         "GetTransformationPlanRequest":{
             "type":"structure",
             "required":["transformationJobId"],
@@ -1235,6 +1309,28 @@
             "type":"string",
             "max":256,
             "min":1
+        },
+        "StartTaskAssistCodeGenerationRequest": {
+            "type":"structure",
+            "required":[
+                "conversationState",
+                "workspaceState"
+            ],
+            "members":{
+                "conversationState":{"shape":"ConversationState"},
+                "workspaceState":{"shape":"WorkspaceState"}
+            }
+        },
+        "StartTaskAssistCodeGenerationResponse": {
+            "type":"structure",
+            "required":[
+                "conversationId",
+                "codeGenerationId"
+            ],
+            "members":{
+                "conversationId":{"shape":"ConversationId"},
+                "codeGenerationId":{"shape": "CodeGenerationId"}
+            }
         },
         "StartTransformationRequest":{
             "type":"structure",

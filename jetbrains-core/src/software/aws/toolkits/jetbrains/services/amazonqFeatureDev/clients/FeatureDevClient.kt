@@ -13,6 +13,8 @@ import software.amazon.awssdk.services.codewhispererruntime.model.ContentChecksu
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssistConversationRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssistConversationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistCodeGenerationResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.TaskAssistPlanningUploadContext
 import software.amazon.awssdk.services.codewhispererruntime.model.UploadContext
 import software.amazon.awssdk.services.codewhispererruntime.model.UploadIntent
@@ -28,6 +30,7 @@ import software.amazon.awssdk.services.codewhispererstreaming.model.WorkspaceSta
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
+import software.amazon.awssdk.services.codewhispererruntime.model.ChatTriggerType as SyncChatTriggerType
 
 @Service(Service.Level.PROJECT)
 class FeatureDevClient(private val project: Project) {
@@ -102,6 +105,30 @@ class FeatureDevClient(private val project: Project) {
         result.await()
         return assistantResponse.joinToString(" ")
     }
+
+    fun startTaskAssistCodeGeneration(conversationId: String, uploadId: String, userMessage: String): StartTaskAssistCodeGenerationResponse = bearerClient()
+        .startTaskAssistCodeGeneration {
+                request ->
+            request
+                .conversationState {
+                    it
+                        .conversationId(conversationId)
+                        .chatTriggerType(SyncChatTriggerType.MANUAL)
+                        .currentMessage { cm -> cm.userInputMessage { um -> um.content(userMessage) } }
+                }
+                .workspaceState {
+                    it
+                        .programmingLanguage { pl -> pl.languageName("javascript") } // This parameter is omitted by featureDev but required in the request
+                        .uploadId(uploadId)
+                }
+        }
+
+    fun getTaskAssistCodeGeneration(conversationId: String, codeGenerationId: String): GetTaskAssistCodeGenerationResponse = bearerClient()
+        .getTaskAssistCodeGeneration {
+            it
+                .conversationId(conversationId)
+                .codeGenerationId(codeGenerationId)
+        }
 
     companion object {
         fun getInstance(project: Project) = project.service<FeatureDevClient>()

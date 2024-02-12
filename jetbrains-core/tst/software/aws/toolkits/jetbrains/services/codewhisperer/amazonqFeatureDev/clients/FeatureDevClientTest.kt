@@ -25,6 +25,10 @@ import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssi
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssistConversationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistCodeGenerationRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistCodeGenerationResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClient
 import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanRequest
 import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanResponseHandler
@@ -69,6 +73,8 @@ class FeatureDevClientTest : FeatureDevTestBase() {
         bearerClient = mockClientManagerRule.create<CodeWhispererRuntimeClient>().stub {
             on { createTaskAssistConversation(any<CreateTaskAssistConversationRequest>()) } doReturn exampleCreateTaskAssistConversationResponse
             on { createUploadUrl(any<CreateUploadUrlRequest>()) } doReturn exampleCreateUploadUrlResponse
+            on { startTaskAssistCodeGeneration(any<StartTaskAssistCodeGenerationRequest>()) } doReturn exampleStartTaskAssistConversationResponse
+            on { getTaskAssistCodeGeneration(any<GetTaskAssistCodeGenerationRequest>()) } doReturn exampleGetTaskAssistConversationResponse
         }
 
         streamingBearerClient = mockClientManagerRule.create<CodeWhispererStreamingAsyncClient>().stub {
@@ -109,7 +115,7 @@ class FeatureDevClientTest : FeatureDevTestBase() {
     fun `check createTaskAssistUploadUrl`() {
         val testContentLength: Long = 42
 
-        val actual = featureDevClient.createTaskAssistUploadUrl("test-id", "test-sha", testContentLength)
+        val actual = featureDevClient.createTaskAssistUploadUrl(testConversationId, "test-sha", testContentLength)
 
         argumentCaptor<CreateUploadUrlRequest>().apply {
             verify(bearerClient).createUploadUrl(capture())
@@ -126,11 +132,37 @@ class FeatureDevClientTest : FeatureDevTestBase() {
         val handlerCaptor = ArgumentCaptor.forClass(GenerateTaskAssistPlanResponseHandler::class.java)
 
         projectCoroutineScope(project).launch {
-            featureDevClient.generateTaskAssistPlan("test-id", "test-upload-id", "test-user-message")
+            featureDevClient.generateTaskAssistPlan(testConversationId, "test-upload-id", "test-user-message")
             argumentCaptor<GenerateTaskAssistPlanRequest, GenerateTaskAssistPlanResponseHandler>().apply {
                 verify(streamingBearerClient).generateTaskAssistPlan(requestCaptor.capture(), handlerCaptor.capture())
                 verifyNoInteractions(bearerClient)
             }
+        }
+    }
+
+    @Test
+    fun `check startTaskAssistCodeGeneration`() {
+        val actual = featureDevClient.startTaskAssistCodeGeneration(testConversationId, "test-upload-id", "test-user-message")
+
+        argumentCaptor<StartTaskAssistCodeGenerationRequest>().apply {
+            verify(bearerClient).startTaskAssistCodeGeneration(capture())
+            verifyNoInteractions(streamingBearerClient)
+            assertThat(actual).isInstanceOf(StartTaskAssistCodeGenerationResponse::class.java)
+            assertThat(actual).usingRecursiveComparison().comparingOnlyFields("conversationId", "codeGenerationId")
+                .isEqualTo(exampleStartTaskAssistConversationResponse)
+        }
+    }
+
+    @Test
+    fun `check getTaskAssistCodeGeneration`() {
+        val actual = featureDevClient.getTaskAssistCodeGeneration(testConversationId, "test-code-generation-id")
+
+        argumentCaptor<GetTaskAssistCodeGenerationRequest>().apply {
+            verify(bearerClient).getTaskAssistCodeGeneration(capture())
+            verifyNoInteractions(streamingBearerClient)
+            assertThat(actual).isInstanceOf(GetTaskAssistCodeGenerationResponse::class.java)
+            assertThat(actual).usingRecursiveComparison().comparingOnlyFields("conversationId", "codeGenerationStatus")
+                .isEqualTo(exampleGetTaskAssistConversationResponse)
         }
     }
 }
