@@ -4,9 +4,8 @@
 
 # Ignore outside dirs up to the root package.json, otherwise those will be collected as well
 # (until vsce officially supports workspaces: https://github.com/microsoft/vscode-vsce/issues/580)
-../*
-../../*
-../../*/**
+../**
+../../**
 
 # Allowlist
 # ---------
