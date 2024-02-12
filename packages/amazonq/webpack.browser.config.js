@@ -11,7 +11,6 @@ const browserConfig = {
     ...require('../webpack.browser.config'),
     entry: {
         'src/extensionWeb': './src/extensionWeb.ts',
-        'src/testBrowser/testRunner': './src/testBrowser/testRunner.ts',
     },
 }
 

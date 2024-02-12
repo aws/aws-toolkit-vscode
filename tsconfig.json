@@ -1,8 +1,9 @@
+// This tsconfig is for root TS scripts, e.g. those in scripts/
+// If you are looking for the base config for subprojects, see packages/tsconfig.packages.json
 {
     "compilerOptions": {
         "module": "commonjs",
         "target": "es2021",
-        "sourceMap": true,
         "moduleResolution": "node",
         "rootDir": ".",
         "resolveJsonModule": true,
@@ -13,17 +14,8 @@
         "forceConsistentCasingInFileNames": true,
         "jsx": "preserve",
         "esModuleInterop": true,
-        "composite": true,
-        "declaration": true,
-        "declarationMap": true,
         "incremental": true,
         "noEmitOnError": true,
         "skipLibCheck": true
-    },
-    "files": [],
-    "references": [
-        {
-            "path": "./packages/toolkit"
-        }
-    ]
+    }
 }
