@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
+import { ChatItemAction } from '@aws/mynah-ui-chat'
 import { AuthFollowUpType } from '../followUps/generator'
 import { ExtensionMessage } from '../commands'
 
@@ -32,7 +32,7 @@ export class Connector {
         this.onWelcomeFollowUpClicked = props.onWelcomeFollowUpClicked
     }
 
-    followUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
+    followUpClicked = (tabID: string, followUp: ChatItemAction): void => {
         if (followUp.type !== undefined && followUp.type === 'continue-to-chat') {
             this.onWelcomeFollowUpClicked(tabID, followUp.type)
         }

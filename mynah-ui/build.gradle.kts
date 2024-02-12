@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.node.gradle)
 }
 
-// mynah build assumes 'build/' belongs to itself, which conficts with gradle
+// mynah build assumes 'build/' belongs to itself, which conflicts with gradle
 buildDir = file("gradle_build")
 
 val buildMynahUI = tasks.register<NpmTask>("buildMynahUI") {

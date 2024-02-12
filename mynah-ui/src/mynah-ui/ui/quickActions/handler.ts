@@ -104,13 +104,6 @@ export class QuickActionHandler {
                 this.mynahUI.addChatItem(affectedTabId, {
                     type: ChatItemType.PROMPT,
                     body: realPromptText,
-                    ...(chatPrompt.attachment !== undefined
-                        ? {
-                              relatedContent: {
-                                  content: [chatPrompt.attachment],
-                              },
-                          }
-                        : {}),
                 })
 
                 this.mynahUI.addChatItem(affectedTabId, {

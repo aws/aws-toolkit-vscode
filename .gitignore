@@ -34,3 +34,5 @@ ui-tests/bin
 /jetbrains-core/ui/package-lock.json
 node_modules
 package-lock.json
+!mynah-ui/package-lock.json
+

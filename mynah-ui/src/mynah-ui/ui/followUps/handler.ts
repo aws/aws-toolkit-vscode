@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp, ChatItemType, MynahUI } from '@aws/mynah-ui-chat'
+import { ChatItemAction, ChatItemType, MynahUI } from '@aws/mynah-ui-chat'
 import { Connector } from '../connector'
 import { TabsStorage } from '../storages/tabsStorage'
 import { WelcomeFollowupType } from '../apps/amazonqCommonsConnector'
@@ -26,7 +26,7 @@ export class FollowUpInteractionHandler {
         this.tabsStorage = props.tabsStorage
     }
 
-    public onFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemFollowUp) {
+    public onFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemAction) {
         if (
             followUp.type !== undefined &&
             ['full-auth', 're-auth', 'missing_scopes', 'use-supported-auth'].includes(followUp.type)

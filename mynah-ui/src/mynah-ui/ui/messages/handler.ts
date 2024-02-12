@@ -31,13 +31,6 @@ export class TextMessageHandler {
         this.mynahUI.addChatItem(tabID, {
             type: ChatItemType.PROMPT,
             body: chatPrompt.escapedPrompt,
-            ...(chatPrompt.attachment !== undefined
-                ? {
-                      relatedContent: {
-                          content: [chatPrompt.attachment],
-                      },
-                  }
-                : {}),
         })
 
         this.mynahUI.updateStore(tabID, {

@@ -24,4 +24,5 @@ export const uiComponentsTexts = {
     noMoreTabsTooltip: 'You can only open ten conversation tabs at a time.',
     codeSuggestionWithReferenceTitle: 'Some suggestions contain code with references.',
     spinnerText: 'Generating your answer...',
+    pleaseSelect: 'Please select',
 }
