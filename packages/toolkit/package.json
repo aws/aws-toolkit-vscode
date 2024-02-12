@@ -4360,7 +4360,7 @@
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^3.2.0",
         "lodash": "^4.17.21",
-        "markdown-it": "^13.0.2",
+        "markdown-it": "^14.0.0",
         "mime-types": "^2.1.32",
         "node-fetch": "^2.7.0",
         "portfinder": "^1.0.32",
