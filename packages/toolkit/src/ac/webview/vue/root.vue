@@ -32,17 +32,19 @@
         <!-- Body -->
         <div class="body">
             <!-- Functionality -->
-            <div class="titleHeader">Amazon CodeWhisperer</div>
+            <Login :disabled="false"></Login>
         </div>
     </div>
 </template>
-
 <script lang="ts">
 import { defineComponent } from 'vue'
+import Login from './login.vue'
 
 export default defineComponent({
     name: 'auth',
-    components: {},
+    components: {
+        Login,
+    },
     data() {
         return {
             bannerVisible: true,
