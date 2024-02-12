@@ -37,5 +37,6 @@ export default defineComponent({
 }
 .selected {
     border: 2px solid blue;
+    user-select: none;
 }
 </style>
