@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
 import { TransformationHubViewProvider } from '../codewhisperer/service/transformationHubViewProvider'
-import { showTransformByQ, showTransformationHub } from '../codewhisperer/commands/basicCommands'
+import { showTransformByQ, showTransformationHub } from './commands'
 import { ExtContext } from '../shared/extensions'
 import { startTransformByQWithProgress, confirmStopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'

@@ -10,9 +10,8 @@ import { Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
-import { startTransformByQWithProgress, confirmStopTransformByQ } from './startTransformByQ'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { CodeScanIssue, codeScanState, CodeSuggestionsState, transformByQState } from '../models/model'
+import { CodeScanIssue, codeScanState, CodeSuggestionsState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -32,10 +31,6 @@ import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { showManageConnections } from '../../auth/ui/vue/show'
-import {
-    CancelActionPositions,
-    logCodeTransformInitiatedMetric,
-} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
 
 export const toggleCodeSuggestions = Commands.declare(
@@ -111,39 +106,6 @@ export const showSecurityScan = Commands.declare(
                 void vscode.window.showInformationMessage('Open a valid file to scan.')
             }
         }
-)
-
-export const showTransformByQ = Commands.declare(
-    { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
-    (context: ExtContext) => async (source: string) => {
-        if (AuthUtil.instance.isConnectionExpired()) {
-            await AuthUtil.instance.notifyReauthenticate()
-        }
-
-        if (transformByQState.isNotStarted()) {
-            logCodeTransformInitiatedMetric(source)
-            await startTransformByQWithProgress()
-        } else if (transformByQState.isCancelled()) {
-            void vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
-        } else if (transformByQState.isRunning()) {
-            await confirmStopTransformByQ(transformByQState.getJobId(), CancelActionPositions.DevToolsSidePanel)
-        }
-        // emit telemetry if clicked from tree node
-        if (source === CodeWhispererConstants.transformTreeNode) {
-            telemetry.ui_click.emit({
-                elementId: 'amazonq_transform',
-                passive: false,
-            })
-        }
-        await Commands.tryExecute('aws.codeWhisperer.refresh')
-    }
-)
-
-export const showTransformationHub = Commands.declare(
-    { id: 'aws.amazonq.showTransformationHub', compositeKey: { 0: 'source' } },
-    () => async (source: string) => {
-        await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
-    }
 )
 
 export const selectCustomizationPrompt = Commands.declare(
