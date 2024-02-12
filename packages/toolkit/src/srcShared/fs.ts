@@ -132,7 +132,15 @@ export class FileSystemCommon {
             return
         }
 
-        return fs.delete(path, { recursive: true })
+        try {
+            await fs.delete(path, { recursive: true })
+        } catch (e) {
+            // The latest vscode version will never throw this error, but the current min version can
+            if (vscode.FileSystemError.FileNotFound().code === (e as vscode.FileSystemError).code) {
+                return
+            }
+            throw e
+        }
     }
 
     async readdir(uri: vscode.Uri | string): Promise<[string, vscode.FileType][]> {
@@ -152,12 +160,7 @@ export class FileSystemCommon {
     async copy(source: vscode.Uri | string, target: vscode.Uri | string): Promise<void> {
         const sourcePath = FileSystemCommon.getUri(source)
         const targetPath = FileSystemCommon.getUri(target)
-        return await fs.copy(sourcePath, targetPath)
-    }
-
-    async unlink(uri: vscode.Uri | string): Promise<void> {
-        const path = FileSystemCommon.getUri(uri)
-        return await fsPromises.unlink(path.fsPath)
+        return await fs.copy(sourcePath, targetPath, { overwrite: true })
     }
 
     // -------- private methods --------

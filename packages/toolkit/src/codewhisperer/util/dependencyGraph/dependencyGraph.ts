@@ -152,12 +152,6 @@ export abstract class DependencyGraph {
         return dir + extension
     }
 
-    protected async removeZip(zipFilePath: string) {
-        if (await fsCommon.exists(zipFilePath)) {
-            await fsCommon.unlink(zipFilePath)
-        }
-    }
-
     protected getTruncDirPath(uri: vscode.Uri) {
         if (this._truncDir === '') {
             this._truncDir = path.join(
@@ -182,7 +176,7 @@ export abstract class DependencyGraph {
 
     public async removeTmpFiles(truncation: Truncation) {
         getLogger().verbose(`Cleaning up temporary files...`)
-        await this.removeZip(truncation.zipFilePath)
+        await fsCommon.delete(truncation.zipFilePath)
         await fsCommon.delete(truncation.rootDir)
         getLogger().verbose(`Complete cleaning up temporary files.`)
     }
