@@ -53,6 +53,29 @@ jobs:
                   file: ./coverage/lcov.info
                   flags: codewhisperer
 
+    web:
+        name: test Web
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: true
+            matrix:
+                node-version: [16.x]
+                vscode-version: [stable, insiders]
+        env:
+            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - name: Tests
+              uses: coactions/setup-xvfb@v1
+              with:
+                  run: npm run testWeb
+
     windows:
         name: test Windows
         runs-on: windows-2019

@@ -18,7 +18,7 @@ const minimum = 'minimum'
 
 const disableWorkspaceTrust = '--disable-workspace-trust'
 
-type SuiteName = 'integration' | 'e2e' | 'unit'
+type SuiteName = 'integration' | 'e2e' | 'unit' | 'web'
 
 /**
  * This is the generalized method that is used by different test suites (unit, integration, ...) in CI to
@@ -64,7 +64,7 @@ async function getVSCodeCliArgs(params: {
     let disableExtensionsArgs: string[] = []
     let disableWorkspaceTrustArg: string[] = []
 
-    if (params.suite !== 'unit') {
+    if (params.suite === 'integration' || params.suite === 'e2e') {
         disableExtensionsArgs = await getCliArgsToDisableExtensions(params.vsCodeExecutablePath, {
             except: [
                 VSCODE_EXTENSION_ID.python,
@@ -78,16 +78,21 @@ async function getVSCodeCliArgs(params: {
             ],
         })
         disableWorkspaceTrustArg = [disableWorkspaceTrust]
+    } else {
+        disableExtensionsArgs = ['--disable-extensions']
     }
 
     const workspacePath = join(projectRootDir, 'dist', 'src', 'testFixtures', 'workspaceFolder')
+    // This tells VS Code to run the extension in a web environment, which mimics vscode.dev
+    const webExtensionKind = params.suite === 'web' ? ['--extensionDevelopmentKind=web'] : []
 
     return {
         vscodeExecutablePath: params.vsCodeExecutablePath,
         extensionDevelopmentPath: projectRootDir,
+
         extensionTestsPath: resolve(projectRootDir, params.relativeTestEntryPoint),
         // For verbose VSCode logs, add "--verbose --log debug". c2165cf48e62c
-        launchArgs: [...disableExtensionsArgs, workspacePath, ...disableWorkspaceTrustArg],
+        launchArgs: [...disableExtensionsArgs, workspacePath, ...disableWorkspaceTrustArg, ...webExtensionKind],
         extensionTestsEnv: {
             ['DEVELOPMENT_PATH']: projectRootDir,
             ['AWS_TOOLKIT_AUTOMATION']: params.suite,
@@ -122,7 +127,7 @@ async function setupVSCodeTestInstance(suite: SuiteName): Promise<string> {
     console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--version']))
 
     // Only certain test suites require specific vscode extensions to be installed
-    if (suite !== 'unit') {
+    if (suite === 'e2e' || suite === 'integration') {
         await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
         await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
         await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.go)

@@ -26,6 +26,7 @@
         "compile": "npm run compile -w packages/",
         "testCompile": "npm run testCompile -w packages/",
         "test": "npm run test -w packages/",
+        "testWeb": "npm run testWeb -w packages/toolkit",
         "testE2E": "npm run testE2E -w packages/",
         "testInteg": "npm run testInteg -w packages/",
         "package": "npm run package -w packages/toolkit",
