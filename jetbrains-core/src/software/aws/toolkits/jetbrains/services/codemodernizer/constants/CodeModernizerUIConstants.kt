@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codemodernizer.constants
 
+import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.ui.JBColor
 import icons.AwsIcons
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil
@@ -54,6 +55,7 @@ class CodeModernizerUIConstants {
     }
 
     companion object {
+        val supportedSourceJDKs = listOf(JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_11)
         const val SINGLE_SPACE_STRING: String = " "
         const val EMPTY_SPACE_STRING: String = ""
         val transformationPlanPlaneConstraint = GridBagConstraints().apply {

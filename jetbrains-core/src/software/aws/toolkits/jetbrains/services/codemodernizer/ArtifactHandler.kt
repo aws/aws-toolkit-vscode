@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
+import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codemodernizer.summary.CodeModernizerSummaryEditorProvider
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -147,13 +148,15 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
             if (dialog.showAndGet()) {
                 CodetransformTelemetry.vcsViewerSubmitted(
                     codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId = jobId.id
+                    codeTransformJobId = jobId.id,
+                    codeTransformStatus = CodeModernizerSessionState.getInstance(project).currentJobStatus.toString()
                 )
             } else {
                 CodetransformTelemetry.vcsViewerCanceled(
                     codeTransformPatchViewerCancelSrcComponents = CodeTransformPatchViewerCancelSrcComponents.CancelButton,
                     codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId = jobId.id
+                    codeTransformJobId = jobId.id,
+                    codeTransformStatus = CodeModernizerSessionState.getInstance(project).currentJobStatus.toString()
                 )
             }
         }

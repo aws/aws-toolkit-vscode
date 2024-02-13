@@ -176,13 +176,15 @@ data class CodeModernizerSessionContext(
         val installCommandList = listOf(
             "clean",
             "install",
+            "-q",
         )
         val copyCommandList = listOf(
             "dependency:copy-dependencies",
             "-DoutputDirectory=$destinationDir",
             "-Dmdep.useRepositoryLayout=true",
             "-Dmdep.copyPom=true",
-            "-Dmdep.addParentPoms=true"
+            "-Dmdep.addParentPoms=true",
+            "-q",
         )
         fun runInstallCommand(mavenCommand: String): ProcessOutput {
             buildlogBuilder.appendLine("Command Run: $mavenCommand clean install")
