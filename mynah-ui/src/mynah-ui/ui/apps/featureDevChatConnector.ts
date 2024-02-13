@@ -264,4 +264,14 @@ export class Connector {
             tabType: 'featuredev',
         })
     }
+
+    onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
+        this.sendMessageToExtension({
+            command: 'response-body-link-click',
+            tabID,
+            messageId,
+            link,
+            tabType: 'featuredev',
+        })
+    }
 }

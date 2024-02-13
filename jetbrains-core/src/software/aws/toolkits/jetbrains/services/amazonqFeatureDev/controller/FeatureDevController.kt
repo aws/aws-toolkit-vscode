@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
@@ -102,6 +103,10 @@ class FeatureDevController(
                 logger.error { "$FEATURE_NAME: ChatItemVotedMessage is received for a conversation that has ${session.sessionState.phase} phase" }
             }
         }
+    }
+
+    override suspend fun processLinkClick(message: IncomingFeatureDevMessage.ClickedLink) {
+        BrowserUtil.browse(message.link)
     }
 
     private suspend fun newTabOpened(tabId: String) {

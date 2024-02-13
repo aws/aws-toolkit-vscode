@@ -12,4 +12,5 @@ interface InboundAppMessagesHandler {
     suspend fun processAuthFollowUpClick(message: IncomingFeatureDevMessage.AuthFollowUpWasClicked)
     suspend fun processFollowupClickedMessage(message: IncomingFeatureDevMessage.FollowupClicked)
     suspend fun processChatItemVotedMessage(message: IncomingFeatureDevMessage.ChatItemVotedMessage)
+    suspend fun processLinkClick(message: IncomingFeatureDevMessage.ClickedLink)
 }
