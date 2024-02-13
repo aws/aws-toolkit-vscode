@@ -4,11 +4,15 @@
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util
 
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.ValidationException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ContentLengthError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.apiError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
+import software.aws.toolkits.resources.message
 
 private val logger = getLogger<FeatureDevClient>()
 
@@ -23,8 +27,7 @@ fun createConversation(proxyClient: FeatureDevClient): String {
         return conversationId
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to start conversation: ${e.message}" }
-        throw e
-        // TODO : Specific error handling will be done separately
+        apiError(e.message, e.cause)
     }
 }
 
@@ -41,8 +44,10 @@ fun createUploadUrl(proxyClient: FeatureDevClient, conversationId: String, conte
         return uploadUrlResponse
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to generate presigned url: ${e.message}" }
-        throw e
-        // TODO : Specific error handling will be done separately
+        if (e is ValidationException && e.message?.contains("Invalid contentLength") == true) {
+            throw ContentLengthError(message("amazonqFeatureDev.content_length.error_text"), e.cause)
+        }
+        apiError(e.message, e.cause)
     }
 }
 
@@ -59,7 +64,6 @@ suspend fun generatePlan(proxyClient: FeatureDevClient, conversationId: String, 
         return generatePlanResponse
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to execute planning" }
-        throw e
-        // TODO : Specific error handling will be done separately
+        apiError(e.message, e.cause)
     }
 }

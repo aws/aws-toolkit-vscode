@@ -14,7 +14,7 @@ import software.aws.toolkits.telemetry.AmazonqTelemetry
 
 class Session(val tabID: String, val project: Project) {
     private var _state: SessionState?
-    private var context: FeatureDevSessionContext
+    var context: FeatureDevSessionContext
     private var preloaderFinished: Boolean = false
     private var _conversationId: String? = null
     private var _latestMessage: String = ""
@@ -117,6 +117,9 @@ class Session(val tabID: String, val project: Project) {
 
     val latestMessage: String
         get() = this._latestMessage
+
+    val retries: Int
+        get() = approachRetries
 
     fun decreaseRetries() {
         when (sessionState.phase) {

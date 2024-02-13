@@ -5,7 +5,9 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev
 
 import software.aws.toolkits.resources.message
 
-open class FeatureDevException(override val message: String?) : RuntimeException()
+open class FeatureDevException(override val message: String?, override val cause: Throwable? = null) : RuntimeException()
+
+class ContentLengthError(override val message: String, override val cause: Throwable?) : RuntimeException()
 
 internal fun uploadCodeError(): Nothing =
     throw FeatureDevException(message("amazonqFeatureDev.exception.uploadCode"))
@@ -15,3 +17,14 @@ internal fun userMessageNotFound(): Nothing =
 
 internal fun conversationIdNotFound(): Nothing =
     throw FeatureDevException(message("amazonqFeatureDev.exception.conversation_not_found"))
+
+internal fun apiError(message: String?, cause: Throwable?): Nothing =
+    throw FeatureDevException(message, cause)
+
+val denyListedErrors = arrayOf("Deserialization error", "Inaccessible host")
+fun createUserFacingErrorMessage(message: String?): String? {
+    if (message != null && denyListedErrors.any { message.contains(it) }) {
+        return "$FEATURE_NAME API request failed"
+    }
+    return message
+}

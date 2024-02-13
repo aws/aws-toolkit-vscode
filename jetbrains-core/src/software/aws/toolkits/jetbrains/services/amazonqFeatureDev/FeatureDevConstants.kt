@@ -7,3 +7,6 @@ const val FEATURE_NAME = "Amazon Q feature development"
 
 // Max number of times a user can attempt to retry an approach request if it fails
 const val APPROACH_RETRY_LIMIT = 3
+
+// The default retry limit used when the session could not be found
+const val DEFAULT_RETRY_LIMIT = 0

@@ -21,6 +21,7 @@ import kotlin.io.path.relativeTo
 
 class FeatureDevSessionContext(val project: Project) {
 
+    private var _projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
     val ignorePatterns = listOf(
         "/\\.idea/",
         "\\.zip$",
@@ -38,7 +39,6 @@ class FeatureDevSessionContext(val project: Project) {
     ).map { Regex(it) }
 
     fun getProjectZip(): ZipCreationResult {
-        val projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
         val zippedProject = runReadAction { zipFiles(projectRoot) }
         val checkSum256: String = Base64.getEncoder().encodeToString(DigestUtils.sha256(FileInputStream(zippedProject)))
         return ZipCreationResult(zippedProject, checkSum256, zippedProject.length())
@@ -54,4 +54,10 @@ class FeatureDevSessionContext(val project: Project) {
             }
         }
     }.toFile()
+
+    var projectRoot: VirtualFile
+        set(newRoot) {
+            _projectRoot = newRoot
+        }
+        get() = _projectRoot
 }

@@ -16,8 +16,11 @@ import software.aws.toolkits.jetbrains.core.coroutines.EDT
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthController
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ContentLengthError
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.DEFAULT_RETRY_LIMIT
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.InboundAppMessagesHandler
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.createUserFacingErrorMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.ChatInputEnabledMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessageType
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUp
@@ -47,7 +50,7 @@ class FeatureDevController(
         )
     }
     override suspend fun processNewTabCreatedMessage(message: IncomingFeatureDevMessage.NewTabCreated) {
-        getSessionInfo(message.tabId)
+        newTabOpened(message.tabId)
     }
 
     override suspend fun processTabRemovedMessage(message: IncomingFeatureDevMessage.TabRemoved) {
@@ -101,11 +104,39 @@ class FeatureDevController(
         }
     }
 
+    private suspend fun newTabOpened(tabId: String) {
+        var session: Session? = null
+        try {
+            session = getSessionInfo(tabId)
+            logger.debug { "$FEATURE_NAME: Session created with id: ${session.tabID}" }
+
+            val credentialState = authController.getAuthNeededStates(context.project).amazonQ
+            if (credentialState != null) {
+                sendAuthNeededException(
+                    tabId = tabId,
+                    triggerId = UUID.randomUUID().toString(),
+                    credentialState = credentialState,
+                    messagePublisher = messagePublisher
+                )
+                session.isAuthenticating = true
+                return
+            }
+        } catch (err: Exception) {
+            val message = createUserFacingErrorMessage(err.message)
+            sendError(
+                tabId = tabId,
+                errMessage = message ?: message("amazonqFeatureDev.exception.request_failed"),
+                retries = retriesRemaining(session),
+                phase = session?.sessionState?.phase
+            )
+        }
+    }
+
     private suspend fun handleChat(
         tabId: String,
         message: String,
     ) {
-        val session: Session
+        var session: Session? = null
         try {
             logger.debug { "$FEATURE_NAME: Processing message: $message" }
             session = getSessionInfo(tabId)
@@ -130,7 +161,36 @@ class FeatureDevController(
             }
         } catch (err: Exception) {
             logger.warn(err) { "Encountered ${err.message} for tabId: $tabId" }
-            sendErrorMessage(tabId, err.message ?: message("amazonqFeatureDev.exception.request_failed"), messagePublisher)
+            if (err is ContentLengthError) {
+                sendError(
+                    tabId = tabId,
+                    errMessage = err.message,
+                    retries = retriesRemaining(session)
+                )
+                sendAnswer(
+                    tabId = tabId,
+                    messageType = FeatureDevMessageType.SystemPrompt,
+                    followUp = listOf(
+                        FollowUp(
+                            pillText = message("amazonqFeatureDev.follow_up.modify_source_folder"),
+                            type = FollowUpTypes.MODIFY_DEFAULT_SOURCE_FOLDER,
+                            status = FollowUpStatusType.Info,
+                        )
+                    ),
+                    messagePublisher = messagePublisher
+                )
+            } else {
+                val mssg = createUserFacingErrorMessage("$FEATURE_NAME request failed: ${err.cause?.message ?: err.message}")
+                sendError(
+                    tabId = tabId,
+                    errMessage = mssg ?: message("amazonqFeatureDev.exception.request_failed"),
+                    retries = retriesRemaining(session),
+                    phase = session?.sessionState?.phase
+                )
+            }
+
+            // Lock the chat input until they explicitly click one of the follow-ups
+            sendChatInputEnabledMessage(tabId, enabled = false)
         }
     }
 
@@ -199,7 +259,7 @@ class FeatureDevController(
     }
 
     private suspend fun retryRequests(tabId: String) {
-        val session: Session
+        var session: Session? = null
         try {
             sendAsyncEventProgress(
                 tabId = tabId,
@@ -218,7 +278,13 @@ class FeatureDevController(
             )
         } catch (err: Exception) {
             logger.error(err) { "Failed to retry request: ${err.message}" }
-            sendErrorMessage(tabId, err.message ?: message("amazonqFeatureDev.exception.retry_request_failed"), messagePublisher)
+            val message = createUserFacingErrorMessage("Failed to retry request: ${err.message}")
+            sendError(
+                tabId = tabId,
+                errMessage = message ?: message("amazonqFeatureDev.exception.retry_request_failed"),
+                retries = retriesRemaining(session),
+                phase = session?.sessionState?.phase
+            )
         } finally {
             // Finish processing the event
             sendAsyncEventProgress(
@@ -300,7 +366,8 @@ class FeatureDevController(
 
             logger.info { "Selected correct folder inside workspace: ${selectedFolder.path}" }
 
-            // TO-DO : Update source folder in session-context source root
+            val session = getSessionInfo(tabId)
+            session.context.projectRoot = selectedFolder
 
             sendAnswer(
                 tabId = tabId,
@@ -335,6 +402,65 @@ class FeatureDevController(
         )
         messagePublisher.publish(chatInputEnabledMessage)
     }
+
+    private suspend fun sendError(tabId: String, errMessage: String, retries: Int, phase: SessionStatePhase? = null) {
+        if (retries == 0) {
+            sendErrorMessage(
+                tabId = tabId,
+                title = message("amazonqFeatureDev.no_retries.error_text"),
+                message = errMessage,
+                messagePublisher = messagePublisher
+            )
+
+            sendAnswer(
+                tabId = tabId,
+                messageType = FeatureDevMessageType.SystemPrompt,
+                followUp = listOf(
+                    FollowUp(
+                        pillText = message("amazonqFeatureDev.follow_up.send_feedback"),
+                        type = FollowUpTypes.SEND_FEEDBACK,
+                        status = FollowUpStatusType.Info
+                    )
+                ),
+                messagePublisher = messagePublisher
+            )
+            return
+        }
+
+        when (phase) {
+            SessionStatePhase.APPROACH -> {
+                sendErrorMessage(
+                    tabId = tabId,
+                    title = message("amazonqFeatureDev.approach_gen.error_text"),
+                    message = errMessage,
+                    messagePublisher = messagePublisher
+                )
+            }
+            else -> {
+                sendErrorMessage(
+                    tabId = tabId,
+                    title = message("amazonqFeatureDev.error_text"),
+                    message = errMessage,
+                    messagePublisher = messagePublisher
+                )
+            }
+        }
+        sendAnswer(
+            tabId = tabId,
+            messageType = FeatureDevMessageType.SystemPrompt,
+            followUp = listOf(
+                FollowUp(
+                    pillText = message("amazonqFeatureDev.follow_up.retry"),
+                    type = FollowUpTypes.RETRY,
+                    status = FollowUpStatusType.Warning
+                )
+            ),
+            messagePublisher = messagePublisher
+        )
+    }
+
+    private fun retriesRemaining(session: Session?): Int = session?.retries ?: DEFAULT_RETRY_LIMIT
+
     companion object {
         private val logger = getLogger<FeatureDevController>()
     }

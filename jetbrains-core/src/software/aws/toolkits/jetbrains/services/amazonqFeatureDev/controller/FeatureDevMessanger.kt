@@ -63,10 +63,10 @@ suspend fun sendAuthNeededException(tabId: String, triggerId: String, credential
     messagePublisher.publish(message)
 }
 
-suspend fun sendErrorMessage(tabId: String, message: String, messagePublisher: MessagePublisher) {
+suspend fun sendErrorMessage(tabId: String, message: String, title: String, messagePublisher: MessagePublisher) {
     val errorMessage = ErrorMessage(
         tabId = tabId,
-        title = message("amazonqFeatureDev.error_text"),
+        title = title,
         message = message
     )
     messagePublisher.publish(errorMessage)
