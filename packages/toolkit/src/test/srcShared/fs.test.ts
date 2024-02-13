@@ -24,12 +24,12 @@ describe('FileSystem', function () {
 
     before(async function () {
         fakeContext = await FakeExtensionContext.create()
+        sandbox = Sinon.createSandbox()
         await deleteTestRoot() // incase a previous test run failed to clean
     })
 
     beforeEach(async function () {
         await makeTestRoot()
-        sandbox = Sinon.createSandbox()
     })
 
     afterEach(async function () {
