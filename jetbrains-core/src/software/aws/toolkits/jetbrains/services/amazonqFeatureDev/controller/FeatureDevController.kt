@@ -29,6 +29,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Sessio
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
 import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AmazonqTelemetry
 import java.util.UUID
 
 class FeatureDevController(
@@ -66,6 +67,37 @@ class FeatureDevController(
             FollowUpTypes.DEV_EXAMPLES -> initialExamples(message.tabId)
             FollowUpTypes.NEW_PLAN -> newPlan(message.tabId)
             FollowUpTypes.SEND_FEEDBACK -> sendFeedback()
+        }
+    }
+
+    override suspend fun processChatItemVotedMessage(message: IncomingFeatureDevMessage.ChatItemVotedMessage) {
+        logger.debug { "$FEATURE_NAME: Processing ChatItemVotedMessage: $message" }
+
+        val session = chatSessionStorage.getSession(message.tabId, context.project)
+        when (session.sessionState.phase) {
+            SessionStatePhase.APPROACH -> {
+                when (message.vote) {
+                    "upvote" -> {
+                        AmazonqTelemetry.approachThumbsUp(amazonqConversationId = session.conversationId)
+                    }
+                    "downvote" -> {
+                        AmazonqTelemetry.approachThumbsDown(amazonqConversationId = session.conversationId)
+                    }
+                }
+            }
+            SessionStatePhase.CODEGEN -> {
+                when (message.vote) {
+                    "upvote" -> {
+                        AmazonqTelemetry.codeGenerationThumbsUp(amazonqConversationId = session.conversationId)
+                    }
+                    "downvote" -> {
+                        AmazonqTelemetry.codeGenerationThumbsDown(amazonqConversationId = session.conversationId)
+                    }
+                }
+            }
+            SessionStatePhase.INIT, null -> {
+                logger.error { "$FEATURE_NAME: ChatItemVotedMessage is received for a conversation that has ${session.sessionState.phase} phase" }
+            }
         }
     }
 
@@ -131,7 +163,8 @@ class FeatureDevController(
             tabId = tabId,
             messageType = FeatureDevMessageType.AnswerPart,
             message = interactions.content,
-            messagePublisher = messagePublisher
+            messagePublisher = messagePublisher,
+            canBeVoted = true
         )
 
         // Follow up with action items and complete the request stream

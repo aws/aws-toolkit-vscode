@@ -42,6 +42,12 @@ sealed interface IncomingFeatureDevMessage : FeatureDevBaseMessage {
         val messageId: String?,
         val command: String,
     ) : IncomingFeatureDevMessage
+
+    data class ChatItemVotedMessage(
+        @JsonProperty("tabID") val tabId: String,
+        val messageId: String,
+        val vote: String,
+    ) : IncomingFeatureDevMessage
 }
 
 // === UI -> App Messages ===
@@ -68,7 +74,8 @@ data class FeatureDevMessage(
     val messageType: FeatureDevMessageType,
     val messageId: String,
     val message: String? = null,
-    val followUps: List<FollowUp>? = null
+    val followUps: List<FollowUp>? = null,
+    val canBeVoted: Boolean,
 
 ) : UiMessage(
     tabId = tabId,

@@ -25,6 +25,7 @@ enum class SessionStatePhase(
 ) {
     INIT("Init"),
     APPROACH("Approach"),
+    CODEGEN("CodeGen"),
 }
 
 data class SessionStateConfig(

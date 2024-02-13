@@ -20,16 +20,19 @@ suspend fun sendAnswer(
     message: String? = null,
     messageType: FeatureDevMessageType,
     followUp: List<FollowUp>? = null,
+    canBeVoted: Boolean? = false,
     messagePublisher: MessagePublisher
 ) {
-    val chatMessage = FeatureDevMessage(
-        tabId = tabId,
-        triggerId = UUID.randomUUID().toString(),
-        messageId = UUID.randomUUID().toString(),
-        messageType = messageType,
-        message = message,
-        followUps = followUp,
-    )
+    val chatMessage =
+        FeatureDevMessage(
+            tabId = tabId,
+            triggerId = UUID.randomUUID().toString(),
+            messageId = UUID.randomUUID().toString(),
+            messageType = messageType,
+            message = message,
+            followUps = followUp,
+            canBeVoted = canBeVoted ?: false
+        )
     messagePublisher.publish(chatMessage)
 }
 
