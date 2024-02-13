@@ -33,21 +33,28 @@ import {
     WebviewViewResolveContext,
     CancellationToken,
     Uri,
-    Webview,
     EventEmitter,
 } from 'vscode'
 import { registerAssetsHttpsFileSystem } from '../../amazonq/webview/assets/assetsHandler'
+import { VueWebview, VueWebviewPanel } from '../../webviews/main'
+import { CommonAuthWebview } from './vue/backend'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AmazonQChatView2'
 
-    webView: Webview | undefined
+    webView: VueWebviewPanel<CommonAuthWebview> | undefined
 
     constructor(
         private readonly extensionContext: ExtensionContext,
         private readonly onDidChangeVisibility: EventEmitter<boolean>
     ) {
         registerAssetsHttpsFileSystem(extensionContext)
+
+        // Create panel bindings using our class
+        const Panel = VueWebview.compilePanel(CommonAuthWebview)
+
+        // `context` is `ExtContext` provided on activation
+        this.webView = new Panel(extensionContext)
     }
 
     public async resolveWebviewView(
@@ -69,9 +76,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
 
         webviewView.webview.html = this._getHtmlForWebview(this.extensionContext.extensionUri, webviewView.webview)
 
-        webviewView.webview.onDidReceiveMessage(message => {
-            void vscode.window.showInformationMessage(`Receive ${message}`)
-        })
+        await this.webView?.setup(webviewView.webview)
     }
 
     private _getHtmlForWebview(extensionURI: Uri, webview: vscode.Webview) {

@@ -40,7 +40,7 @@
                 <button
                     class="continue-button"
                     :disabled="selectedItem === 0"
-                    v-on:click="handleContinueClickWhenStart()"
+                    v-on:click="handleContinueClickAtStart()"
                 >
                     Continue
                 </button>
@@ -48,19 +48,31 @@
         </template>
 
         <template v-if="stage === 'SSO_FORM'">
-            <button class="black-button" @click="handleBackButtonClick">&#8592;</button>
+            <button class="back-button" @click="handleBackButtonClick">&larr;</button>
             <div class="auth-container-section">
-                <div class="title">Sign in with SSO</div>
-                <div class="title">Start URL</div>
-                <div class="title">URL for your organization, provided by an admin or help desk</div>
-                <input type="text" id="startUrl" name="startUrl" /><br /><br />
+                <div class="title">Sign in with SSO:</div>
+                <div class="p">Start URL</div>
+                <div class="hint">URL for your organization, provided by an admin or help desk</div>
+                <input
+                    class="urlInput"
+                    type="text"
+                    id="startUrl"
+                    name="startUrl"
+                    @input="handleUrlInput"
+                    v-model="startUrl"
+                />
+                <br /><br />
                 <div class="title">Region</div>
-                <div class="title">AWS Region that hosts identity directory</div>
-                <select id="regions" name="regions">
-                    <option v-for="region in getRegions" :key="region.value" :value="region.value">
-                        {{ region.label }}
+                <div class="hint">AWS Region that hosts identity directory</div>
+                <select class="regionSelect" id="regions" name="regions" v-model="selectedRegion">
+                    <option v-for="region in regions" :key="region.id" :value="region.name">
+                        {{ region.id }}
                     </option>
                 </select>
+                <br /><br />
+                <button class="continue-button" :disabled="!urlValid" v-on:click="handleContinueClickAtSSOForm()">
+                    Continue
+                </button>
             </div>
         </template>
     </div>
@@ -70,11 +82,17 @@ import { defineComponent } from 'vue'
 import SelectableItem from './selectableItem.vue'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
+import { Region } from '../../../shared/regions/endpoints'
 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
 type Stage = 'START' | 'SSO_FORM' | 'CONNECTED'
+
+function validateSsoUrlFormat(url: string) {
+    const regex = /^https?:\/\/(.+)\.awsapps\.com\/start$/
+    return regex.test(url)
+}
 
 export default defineComponent({
     name: 'Login',
@@ -93,12 +111,10 @@ export default defineComponent({
             ],
             selectedItem: 0,
             stage: 'START' as Stage,
-            regions: [] as string[],
-            isConnected: false,
-            builderIdCode: '',
-            name: '',
-            error: '' as string,
-            submitButtonText: '' as string,
+            regions: [] as Region[],
+            urlValid: false,
+            selectedRegion: '',
+            startUrl: '',
         }
     },
     async created() {
@@ -122,20 +138,26 @@ export default defineComponent({
         handleBackButtonClick() {
             this.stage = 'START'
         },
-        handleContinueClickWhenStart() {
+        handleContinueClickAtStart() {
             if (this.selectedItem === 1) {
             } else if (this.selectedItem === 2) {
                 this.stage = 'SSO_FORM'
             } else {
             }
         },
-        getRegions(): { value: string; label: string }[] {
-            return this.regions.map(i => ({ value: i, label: i }))
+        handleContinueClickAtSSOForm() {
+            console.log(`${this.startUrl} ${this.selectedRegion}`)
+        },
+        handleUrlInput() {
+            console.log(this.startUrl)
+            if (this.startUrl && validateSsoUrlFormat(this.startUrl)) {
+                this.urlValid = true
+            } else {
+                this.urlValid = false
+            }
         },
         async fetchRegions() {
-            console.log(`st regions`)
             const regions = await client.getRegions()
-            console.log(`ed regions`)
             this.regions = regions
             console.log(regions)
         },
@@ -160,8 +182,29 @@ export default defineComponent({
     color: white;
     width: 100%;
 }
+.back-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: white;
+}
+.hint {
+    color: gray;
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+.title {
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
 .continue-button:disabled {
     background-color: gray;
     color: white;
+}
+.urlInput {
+    background-color: gray;
+}
+.regionSelect {
+    background-color: gray;
 }
 </style>
