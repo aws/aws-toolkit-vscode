@@ -4,11 +4,10 @@
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.APPROACH_RETRY_LIMIT
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.AsyncEventProgressMessage
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createConversation
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 
@@ -36,18 +35,13 @@ class Session(val tabID: String, val project: Project) {
     /**
      * Preload any events that have to run before a chat message can be sent
      */
-    suspend fun preloader(msg: String, messagePublisher: MessagePublisher) {
+    suspend fun preloader(msg: String, featureDevMessagePublisher: FeatureDevMessagePublisher) {
         if (!preloaderFinished) {
             setupConversation(msg)
             preloaderFinished = true
 
             AmazonqTelemetry.startChat(amazonqConversationId = this.conversationId)
-            val asyncEventProgressMessage = AsyncEventProgressMessage(
-                tabId = this.tabID,
-                message = null,
-                inProgress = true
-            )
-            messagePublisher.publish(asyncEventProgressMessage)
+            featureDevMessagePublisher.sendAsyncEventProgress(tabId = this.tabID, inProgress = true)
         }
     }
 
