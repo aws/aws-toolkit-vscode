@@ -7,13 +7,14 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
-import { reconnect, showTransformByQ } from '../../codewhisperer/commands/basicCommands'
+import { reconnect } from '../../codewhisperer/commands/basicCommands'
 import { transformByQState } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../../auth/ui/vue/show'
+import { showTransformByQ } from '../../amazonqGumby/commands'
 
 const localize = nls.loadMessageBundle()
 
