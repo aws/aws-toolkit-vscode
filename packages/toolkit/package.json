@@ -723,7 +723,13 @@
             "amazonq": [
                 {
                     "type": "webview",
-                    "id": "aws.AmazonQChatView2",
+                    "id": "aws.AmazonCommonAuth",
+                    "name": "%AWS.amazonq.login%",
+                    "when": "!isCloud9 && !aws.isSageMaker"
+                },
+                {
+                    "type": "webview",
+                    "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
                     "when": "!isCloud9 && !aws.isSageMaker"
                 },

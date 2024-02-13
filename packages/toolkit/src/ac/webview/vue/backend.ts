@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Region } from '../../../shared/regions/endpoints'
@@ -18,7 +19,7 @@ export type AuthError = { id: string; text: string }
 export const userCancelled = 'userCancelled'
 
 export class CommonAuthWebview extends VueWebview {
-    public override id: string = 'aws.AmazonQChatView2'
+    public override id: string = 'aws.AmazonCommonAuth'
     public override source: string = 'src/ac/webview/vue/index.js'
 
     public getRegions(): Region[] {
@@ -88,11 +89,23 @@ export class CommonAuthWebview extends VueWebview {
         }
     }
 
-    async startCodeWhispererBuilderIdSetup(): Promise<AuthError | undefined> {
+    async startBuilderIdSetup(): Promise<AuthError | undefined> {
         return this.ssoSetup('startCodeWhispererBuilderIdSetup', () => awsIdSignIn())
     }
 
-    async startCodeWhispererEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
+    async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
         return this.ssoSetup('startCodeWhispererBuilderIdSetup', () => connectToEnterpriseSso(startUrl, region))
+    }
+
+    async switchToConnectedScreen() {
+        await this.showAmazonQChat()
+    }
+
+    async showAmazonQChat(): Promise<void> {
+        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+    }
+
+    async showResourceExplorer(): Promise<void> {
+        await vscode.commands.executeCommand('aws.explorer.focus')
     }
 }

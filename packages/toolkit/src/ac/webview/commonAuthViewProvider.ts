@@ -40,7 +40,7 @@ import { VueWebview, VueWebviewPanel } from '../../webviews/main'
 import { CommonAuthWebview } from './vue/backend'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
-    public static readonly viewType = 'aws.AmazonQChatView2'
+    public static readonly viewType = 'aws.AmazonCommonAuth'
 
     webView: VueWebviewPanel<CommonAuthWebview> | undefined
 
@@ -73,7 +73,6 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             enableCommandUris: true,
             localResourceRoots: [dist, resources],
         }
-
         webviewView.webview.html = this._getHtmlForWebview(this.extensionContext.extensionUri, webviewView.webview)
 
         await this.webView?.setup(webviewView.webview)

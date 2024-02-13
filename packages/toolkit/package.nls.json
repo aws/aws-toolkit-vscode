@@ -253,5 +253,6 @@
     "AWS.amazonq.submenu.title": "Manage Amazon Q (Preview)",
     "AWS.amazonq.title": "Amazon Q (Preview)",
     "AWS.amazonq.chat": "Chat",
+    "AWS.amazonq.login": "Login",
     "AWS.amazonq.learnMore": "Learn More About Amazon Q (Preview)"
 }
