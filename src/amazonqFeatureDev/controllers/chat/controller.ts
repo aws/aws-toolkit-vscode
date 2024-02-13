@@ -198,10 +198,6 @@ export class FeatureDevController {
                 return
             }
 
-            if (session.state.phase === 'Approach' && /yes|ya|y|yeah|ok/i.test(message.message)) {
-                return this.writeCodeClicked(message)
-            }
-
             switch (session.state.phase) {
                 case 'Init':
                 case 'Approach':
