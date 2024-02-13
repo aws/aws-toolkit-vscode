@@ -16,7 +16,6 @@ fun createBrowser(parent: Disposable): JBCefBrowserBase {
 
     return JBCefBrowserBuilder()
         .setClient(client)
-        // Setting OSR to false fixes multiple rendering and focus bugs with the browser
-        .setOffScreenRendering(false)
+        .setOffScreenRendering(true)
         .build()
 }
