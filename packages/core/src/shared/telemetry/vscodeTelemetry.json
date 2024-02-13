@@ -617,8 +617,8 @@
             "metadata": [{ "type": "didSave" }]
         },
         {
-            "name": "appcomposer_resourceCount",
-            "description": "Called to count resources in a template when it is opened",
+            "name": "appcomposer_initializeProjectSucceeded",
+            "description": "Called when a project successfully loads",
             "metadata": [{ "type": "resourceCounts" }, { "type": "totalResourceCount" }]
         },
         {
