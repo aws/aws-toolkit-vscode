@@ -9,7 +9,7 @@
 
 const baseConfig = require('../webpack.base.config')
 const baseVueConfig = require('../webpack.vue.config')
-const baseBrowserConfig = require('./webpack.browser.config')
+const baseBrowserConfig = require('../webpack.browser.config')
 
 const config = {
     ...baseConfig,
@@ -29,7 +29,11 @@ const vueConfigs = baseVueConfig.configs.map(c => {
     }
 })
 
-// baseBrowserConfigs is set up in another file.
-const browserConfig = { ...baseBrowserConfig }
+const browserConfig = {
+    ...baseBrowserConfig,
+    entry: {
+        'src/extensionWeb': './src/extensionWeb.ts',
+    },
+}
 
 module.exports = [config, ...vueConfigs, browserConfig]

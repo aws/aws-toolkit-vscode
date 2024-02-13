@@ -28,7 +28,7 @@
         "test": "npm run test -w packages/",
         "testE2E": "npm run testE2E -w packages/",
         "testInteg": "npm run testInteg -w packages/",
-        "package": "npm run package -w packages/",
+        "package": "npm run package -w packages/toolkit",
         "newChange": "ts-node ./scripts/newChange.ts",
         "createRelease": "ts-node ./scripts/createRelease.ts",
         "format": "prettier --check plugins && npm run format -w packages/",
