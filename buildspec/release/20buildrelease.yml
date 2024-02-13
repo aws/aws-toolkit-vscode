@@ -27,5 +27,5 @@ phases:
 artifacts:
     files:
         - aws-toolkit-vscode*
-        - package.json
+        - packages/toolkit/package.json
     discard-paths: true

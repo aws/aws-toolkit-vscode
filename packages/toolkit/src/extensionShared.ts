@@ -58,6 +58,10 @@ export async function activateShared(
 ): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
 
+    // some "initialize" functions
+    await initializeComputeRegion()
+    initialize(context)
+
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
         void logAndShowError(error, info.id, defaultMessage)
@@ -66,6 +70,11 @@ export async function activateShared(
     registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
         logAndShowWebviewError(error, webviewId, command)
     })
+
+    // Setup the logger
+    const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
+    await activateLogger(context, toolkitOutputChannel)
+    globals.outputChannel = toolkitOutputChannel
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
@@ -84,20 +93,11 @@ export async function activateShared(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
 
-    // Setup the logger
-    const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
-    await activateLogger(context, toolkitOutputChannel)
-    globals.outputChannel = toolkitOutputChannel
-
     //setup globals
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
-
-    // some "initialize" functions
-    await initializeComputeRegion()
-    initialize(context)
 
     // order matters here
     globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))

@@ -62,5 +62,9 @@
         "husky": "^9.0.7",
         "typescript": "^5.0.4",
         "ts-node": "^10.9.1"
+    },
+    "dependencies": {
+        "vscode-nls": "^5.2.0",
+        "vscode-nls-dev": "^4.0.4"
     }
 }
