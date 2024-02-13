@@ -50,6 +50,7 @@ import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicBoolean
 
 const val ZIP_SOURCES_PATH = "sources"
+const val BUILD_LOG_PATH = "build-logs.txt"
 const val UPLOAD_ZIP_MANIFEST_VERSION = 1.0F
 
 class CodeModernizerSession(
