@@ -1,6 +1,7 @@
 <template>
     <div class="item-container" :class="{ selected: isSelected }" @click="toggleSelection">
-        {{ itemText }}
+        <div class="title">{{ itemTitle }}</div>
+        <div class="p">{{ itemText }}</div>
     </div>
 </template>
 
@@ -11,6 +12,7 @@ export default defineComponent({
     components: {},
     props: {
         itemText: String,
+        itemTitle: String,
         isSelected: Boolean,
         itemId: Number,
     },
@@ -19,6 +21,7 @@ export default defineComponent({
             itemText: this.itemText,
             isSelected: this.isSelected,
             itemId: this.itemId,
+            itemTitle: this.itemTitle,
         }
     },
     async created() {},
@@ -36,7 +39,11 @@ export default defineComponent({
     padding: 5px;
 }
 .selected {
-    border: 2px solid blue;
+    border: 2px solid #29a7ff;
     user-select: none;
+}
+.title {
+    font-size: 24px;
+    font-weight: bold;
 }
 </style>

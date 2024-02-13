@@ -26,7 +26,7 @@
         </div>
         <template v-if="stage === 'START'">
             <div class="auth-container-section">
-                <div class="title">Choose a sign-in option</div>
+                <div class="title">Choose a sign-in option:</div>
                 <SelectableItem
                     v-for="item in items"
                     @toggle="toggleItemSelection"
@@ -34,13 +34,14 @@
                     :isSelected="selectedItem === item.id"
                     :itemId="item.id"
                     :itemText="item.text"
+                    :itemTitle="item.title"
                     class="selectable-item"
                 ></SelectableItem>
 
                 <button
                     class="continue-button"
                     :disabled="selectedItem === 0"
-                    v-on:click="handleContinueClickAtStart()"
+                    v-on:click="handleContinueClickAtStartStage()"
                 >
                     Continue
                 </button>
@@ -65,14 +66,27 @@
                 <div class="title">Region</div>
                 <div class="hint">AWS Region that hosts identity directory</div>
                 <select class="regionSelect" id="regions" name="regions" v-model="selectedRegion">
-                    <option v-for="region in regions" :key="region.id" :value="region.name">
-                        {{ region.id }}
+                    <option v-for="region in regions" :key="region.id" :value="region.id">
+                        {{ `${region.name} (${region.id})` }}
                     </option>
                 </select>
                 <br /><br />
-                <button class="continue-button" :disabled="!urlValid" v-on:click="handleContinueClickAtSSOForm()">
+                <button class="continue-button" :disabled="!urlValid" v-on:click="handleContinueClickAtSSOFormStage()">
                     Continue
                 </button>
+            </div>
+        </template>
+
+        <template v-if="stage === 'AUTHENTICATING'">
+            <div class="auth-container-section">
+                <div class="title">Authenticating in browser...</div>
+                <button class="continue-button" v-on:click="handleCancelButtom()">Cancel</button>
+            </div>
+        </template>
+
+        <template v-if="stage === 'CONNECTED'">
+            <div class="auth-container-section">
+                <div class="title">Connected</div>
             </div>
         </template>
     </div>
@@ -87,7 +101,7 @@ import { Region } from '../../../shared/regions/endpoints'
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
-type Stage = 'START' | 'SSO_FORM' | 'CONNECTED'
+type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING'
 
 function validateSsoUrlFormat(url: string) {
     const regex = /^https?:\/\/(.+)\.awsapps\.com\/start$/
@@ -106,14 +120,14 @@ export default defineComponent({
     data() {
         return {
             items: [
-                { id: 1, text: 'Create or sign-in using AWS Builder ID' },
-                { id: 2, text: 'Single sign-on with AWS IAM Identity Center' },
+                { id: 1, text: 'Create or sign-in using AWS Builder ID', title: 'Personal' },
+                { id: 2, text: 'Single sign-on with AWS IAM Identity Center', title: 'Workforce' },
             ],
             selectedItem: 0,
             stage: 'START' as Stage,
             regions: [] as Region[],
             urlValid: false,
-            selectedRegion: '',
+            selectedRegion: undefined,
             startUrl: '',
         }
     },
@@ -136,38 +150,51 @@ export default defineComponent({
             }
         },
         handleBackButtonClick() {
-            this.stage = 'START'
-        },
-        handleContinueClickAtStart() {
-            if (this.selectedItem === 1) {
-            } else if (this.selectedItem === 2) {
-                this.stage = 'SSO_FORM'
-            } else {
+            if (this.stage === 'SSO_FORM') {
+                this.stage = 'START'
+            } else if (this.stage === 'AUTHENTICATING') {
+                this.stage = 'START'
             }
         },
-        handleContinueClickAtSSOForm() {
-            console.log(`${this.startUrl} ${this.selectedRegion}`)
+        async handleContinueClickAtStartStage() {
+            if (this.selectedItem === 1) {
+                this.stage = 'AUTHENTICATING'
+                const error = await client.startCodeWhispererBuilderIdSetup()
+                if (error) {
+                    this.stage = 'START'
+                } else {
+                    this.stage = 'CONNECTED'
+                }
+            } else if (this.selectedItem === 2) {
+                this.stage = 'SSO_FORM'
+            }
+        },
+        async handleContinueClickAtSSOFormStage() {
+            this.stage = 'AUTHENTICATING'
+            console.log(this.selectedRegion)
+            const error = await client.startCodeWhispererEnterpriseSetup(this.startUrl, this.selectedRegion)
+            if (error) {
+                this.stage = 'START'
+            } else {
+                this.stage = 'CONNECTED'
+            }
         },
         handleUrlInput() {
-            console.log(this.startUrl)
             if (this.startUrl && validateSsoUrlFormat(this.startUrl)) {
                 this.urlValid = true
             } else {
                 this.urlValid = false
             }
         },
+        handleCancelButtom() {
+            this.stage = 'START'
+        },
         async fetchRegions() {
             const regions = await client.getRegions()
             this.regions = regions
-            console.log(regions)
         },
-        async startSignIn() {},
-
-        /** Updates the content of the form using the state data */
-        async updateForm() {},
         async emitUpdate(cause?: string) {},
         async signout() {},
-        showNodeInView() {},
     },
 })
 </script>
@@ -178,18 +205,20 @@ export default defineComponent({
     margin-top: 10px;
 }
 .continue-button {
-    background-color: blue;
+    background-color: #29a7ff;
     color: white;
     width: 100%;
+    height: 40px;
 }
 .back-button {
     background: none;
     border: none;
     cursor: pointer;
     color: white;
+    font-size: 30px;
 }
 .hint {
-    color: gray;
+    color: #948a8a;
     margin-bottom: 5px;
     margin-top: 5px;
 }
@@ -198,13 +227,17 @@ export default defineComponent({
     margin-top: 5px;
 }
 .continue-button:disabled {
-    background-color: gray;
-    color: white;
+    background-color: #252526;
+    color: #6f6f6f;
 }
 .urlInput {
-    background-color: gray;
+    background-color: #252526;
+    width: 100%;
+    color: white;
 }
 .regionSelect {
-    background-color: gray;
+    background-color: #252526;
+    width: 100%;
+    color: white;
 }
 </style>

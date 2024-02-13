@@ -88,6 +88,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
         const serverHostname = process.env.WEBPACK_DEVELOPER_SERVER
         const entrypoint =
             serverHostname !== undefined ? Uri.parse(serverHostname).with({ path: `/${source}` }) : scriptUri
+
         return `
 			<!DOCTYPE html>
 			<html lang="en">
