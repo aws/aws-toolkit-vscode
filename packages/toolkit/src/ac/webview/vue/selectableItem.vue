@@ -8,6 +8,7 @@
                 viewBox="0 0 16 16"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                transform="translate(0, 20)"
             >
                 <path
                     fill-rule="evenodd"
@@ -23,6 +24,7 @@
                 viewBox="0 0 16 16"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                transform="translate(0, 20)"
             >
                 <path
                     fill-rule="evenodd"
