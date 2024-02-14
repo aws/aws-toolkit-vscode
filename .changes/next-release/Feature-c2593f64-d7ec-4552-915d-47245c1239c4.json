@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "ApplicationComposer: create CodeLens in cloudformation templates to open Application Composer"
+	"description": "CloudFormation and SAM templates now have a CodeLens link to Application Composer"
 }

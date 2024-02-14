@@ -4,41 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import * as CloudFormation from '../shared/cloudformation/cloudformation'
 import { ApplicationComposerManager } from './webviewManager'
 import { Commands } from '../shared/vscode/commands2'
 import { ToolkitError } from '../shared/errors'
 import { AuthUtil, getChatAuthState } from '../codewhisperer/util/authUtil'
 import { telemetry } from '../shared/telemetry/telemetry'
-
-export class OpenApplicationComposerCodeLensProvider implements vscode.CodeLensProvider {
-    public async provideCodeLenses(
-        document: vscode.TextDocument,
-        token: vscode.CancellationToken
-    ): Promise<vscode.CodeLens[]> {
-        const cfnTemplate =
-            CloudFormation.isValidFilename(document.uri) && document.languageId === 'yaml'
-                ? await CloudFormation.tryLoad(document.uri)
-                : undefined
-
-        if (cfnTemplate?.template === undefined) {
-            return []
-        }
-
-        const lines = document.getText().split('\n')
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim()
-            if (line.startsWith('Resources:' || line.startsWith('Transform:'))) {
-                const resourcesLoc = new vscode.Range(i, 0, i, 0)
-                const codeLens = openTemplateInComposerCommand.build().asCodeLens(resourcesLoc, {
-                    title: 'view in Application Composer',
-                })
-                return [codeLens]
-            }
-        }
-        return []
-    }
-}
+import { ApplicationComposerCodeLensProvider } from './codeLensProvider'
 
 export const openTemplateInComposerCommand = Commands.declare(
     'aws.openInApplicationComposer',
@@ -90,11 +61,8 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 
     extensionContext.subscriptions.push(
         vscode.languages.registerCodeLensProvider(
-            {
-                language: 'yaml',
-                scheme: 'file',
-            },
-            new OpenApplicationComposerCodeLensProvider()
+            ['yaml', 'json', { scheme: 'file' }],
+            new ApplicationComposerCodeLensProvider()
         )
     )
 }
