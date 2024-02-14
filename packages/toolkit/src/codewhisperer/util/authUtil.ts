@@ -82,6 +82,10 @@ export class AuthUtil {
     private _isCustomizationFeatureEnabled: boolean = false
     private readonly mementoKey: string = 'hasAlreadySeenQWelcomeObj'
 
+    // user should only see that screen once.
+    // TODO: move to memento
+    public hasAlreadySeenMigrationAuthScreen: boolean = false
+
     public get isCustomizationFeatureEnabled(): boolean {
         return this._isCustomizationFeatureEnabled
     }
@@ -156,6 +160,12 @@ export class AuthUtil {
 
     public async setVscodeContextProps() {
         if (!isCloud9()) {
+            if (!this.hasAlreadySeenMigrationAuthScreen) {
+                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showView', false)
+            } else {
+                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showView', this.isConnected())
+            }
+
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
             await vscode.commands.executeCommand(
                 'setContext',

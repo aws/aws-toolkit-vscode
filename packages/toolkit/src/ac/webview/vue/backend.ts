@@ -14,6 +14,7 @@ import { handleWebviewError } from '../../../webviews/server'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 export type AuthError = { id: string; text: string }
 export const userCancelled = 'userCancelled'
@@ -36,6 +37,7 @@ export class CommonAuthWebview extends VueWebview {
     private async ssoSetup(methodName: string, setupFunc: () => Promise<any>): Promise<AuthError | undefined> {
         try {
             await setupFunc()
+            AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
             return
         } catch (e) {
             console.log(e)
