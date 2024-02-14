@@ -258,8 +258,7 @@ export class LineAnnotationController implements vscode.Disposable {
             color: '#8E8E8E',
         }
 
-        // [1]
-        // if user manual triggers but receives an empty suggestion
+        // [1] if user manual triggers but receives an empty suggestion
         if (
             this._inlineText === '[Option] + [C] triggers CodeWhisperer manually' &&
             e?.response?.recommendationCount === 0 &&
@@ -269,7 +268,7 @@ export class LineAnnotationController implements vscode.Disposable {
             return { after: textOptions }
         }
 
-        // unless users have a valid manual trigger, we won't show next hint
+        // [2] unless users have a valid manual trigger, we won't show next hint
         if (
             this._inlineText === '[Option] + [C] triggers CodeWhisperer manually' &&
             !RecommendationService.instance.manualTriggered
@@ -278,7 +277,7 @@ export class LineAnnotationController implements vscode.Disposable {
             return { after: textOptions }
         }
 
-        // [2]
+        // [3] when users are typing at the same line, not move forward
         if (
             isSameLine &&
             this._inlineText &&
@@ -289,7 +288,7 @@ export class LineAnnotationController implements vscode.Disposable {
             return { after: textOptions }
         }
 
-        // [3]
+        // [4] regular flow
         if (!this._currentStep && isEndOfLine) {
             textOptions.contentText = 'CodeWhisperer suggests code as you type, press [TAB] to accept'
 
