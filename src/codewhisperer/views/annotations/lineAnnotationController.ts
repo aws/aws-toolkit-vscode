@@ -70,7 +70,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _selections: LineSelection[] | undefined
 
-    private _currentStep: '1' | '2' | '3' | undefined
+    private _currentStep: '1' | '2' | '3' | '4' | undefined
 
     readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
@@ -245,6 +245,7 @@ export class LineAnnotationController implements vscode.Disposable {
         return renderOptions
     }
 
+    // TODO: fix the messy logics
     private textOptions(
         isSameLine: boolean,
         isEndOfLine: boolean,
@@ -256,6 +257,10 @@ export class LineAnnotationController implements vscode.Disposable {
             fontStyle: 'normal',
             textDecoration: 'none',
             color: '#8E8E8E',
+        }
+
+        if (this._currentStep === '4') {
+            return undefined
         }
 
         // [1] if user manual triggers but receives an empty suggestion
@@ -305,11 +310,8 @@ export class LineAnnotationController implements vscode.Disposable {
 
             this._currentStep = '3'
         } else {
-            //TODO: uncomment
+            this._currentStep = '4'
             return undefined
-
-            // for testing purpose
-            // textOptions.contentText = 'Congrat, you just finish CodeWhisperer tutorial!'
         }
 
         this._inlineText = textOptions.contentText
