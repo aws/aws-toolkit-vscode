@@ -13,7 +13,10 @@ const { ESBuildMinifyPlugin } = require('esbuild-loader')
 const fs = require('fs')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
 const CircularDependencyPlugin = require('circular-dependency-plugin')
-const packageJsonFile = path.join(__dirname, 'package.json')
+
+// Webpack must run from subproject/package dir.
+const currentDir = process.cwd()
+const packageJsonFile = path.join(currentDir, 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
 const packageId = `${packageJson.publisher}.${packageJson.name}`
 
@@ -24,12 +27,8 @@ const packageId = `${packageJson.publisher}.${packageJson.name}`
 const baseConfig = {
     name: 'main',
     target: 'node',
-    entry: {
-        'src/main': './src/main.ts',
-        'src/stepFunctions/asl/aslServer': './src/stepFunctions/asl/aslServer.ts',
-    },
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(currentDir, 'dist'),
         filename: '[name].js',
         libraryTarget: 'commonjs2',
     },
