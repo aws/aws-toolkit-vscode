@@ -18,7 +18,9 @@ export class ApplicationComposerCodeLensProvider implements vscode.CodeLensProvi
         const cfnTemplate = CloudFormation.isValidFilename(document.uri)
             ? await CloudFormation.tryLoad(document.uri)
             : undefined
-        if (!cfnTemplate?.template) return []
+        if (!cfnTemplate?.template) {
+            return []
+        }
 
         let codeLensLine = 0
         for (let i = 0; i < document.getText().length; i++) {
