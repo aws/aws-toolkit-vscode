@@ -375,26 +375,19 @@ function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string
     return files
 }
 
-/* TO-DO: consider combining installProjectDepedencies() and copyProjectDependencies() into 1 function runMavenCommand()
- * do this once we fully confirm that we definitely want to run "mvn install"
- * also, consider either notifying user how to set JAVA_HOME if mvn install fails, or doing it for them?
- */
-function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, modulePath: string) {
-    let baseCommand = buildCommand as string
-    if (baseCommand === 'mvnw') {
-        baseCommand = './mvnw'
-        if (os.platform() === 'win32') {
-            baseCommand = './mvnw.cmd'
-        }
-        const executableName = baseCommand.slice(2) // remove the './' part
-        const executablePath = path.join(modulePath, executableName)
-        if (!fs.existsSync(executablePath)) {
-            throw new ToolkitError('Maven Wrapper not found', { code: 'MavenWrapperNotFound' })
-        }
+// run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
+function installProjectDependencies() {
+    // baseCommand will be one of: 'mvnw.cmd', './mvnw', 'mvn'
+    let baseCommand = transformByQState.getMavenName()
+    // if JAVA_HOME could not be found or did not match the project JDK, baseCommand is prefixed with JAVA_HOME={user-input}
+    if (transformByQState.getJavaHome() !== undefined) {
+        baseCommand = `JAVA_HOME=${transformByQState.getJavaHome()} ${baseCommand}`
     }
+    const modulePath = transformByQState.getProjectPath()
 
     transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
+    // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
     const args = ['clean', 'install', '-q']
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
     if (spawnResult.status !== 0) {
@@ -421,9 +414,10 @@ function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand
             const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
+        // TO-DO: change CodeTransformMavenBuildCommand to only hold “mvnw.cmd” “./mvnw” and “mvn” and use that for get/setMavenName() too
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformMavenBuildCommand: buildCommand,
+            codeTransformMavenBuildCommand: baseCommand as CodeTransformMavenBuildCommand,
             result: MetadataResult.Fail,
             reason: errorReason,
         })
@@ -433,23 +427,18 @@ function installProjectDependencies(buildCommand: CodeTransformMavenBuildCommand
     }
 }
 
-function copyProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, modulePath: string): string[] {
+function copyProjectDependencies(): string[] {
     // Make temp directory
     const folderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
     const folderPath = path.join(os.tmpdir(), folderName)
 
-    let baseCommand = buildCommand as string
-    if (baseCommand === 'mvnw') {
-        baseCommand = './mvnw'
-        if (os.platform() === 'win32') {
-            baseCommand = './mvnw.cmd'
-        }
-        const executableName = baseCommand.slice(2) // remove the './' part
-        const executablePath = path.join(modulePath, executableName)
-        if (!fs.existsSync(executablePath)) {
-            throw new ToolkitError('Maven Wrapper not found', { code: 'MavenWrapperNotFound' })
-        }
+    // baseCommand will be one of: 'mvnw.cmd', './mvnw', 'mvn'
+    let baseCommand = transformByQState.getMavenName()
+    // if JAVA_HOME could not be found or did not match the project JDK, baseCommand is prefixed with JAVA_HOME={user-input}
+    if (transformByQState.getJavaHome() !== undefined) {
+        baseCommand = `JAVA_HOME=${transformByQState.getJavaHome()} ${baseCommand}`
     }
+    const modulePath = transformByQState.getProjectPath()
 
     transformByQState.appendToErrorLog(`Running command ${baseCommand} copy-dependencies`)
 
@@ -483,9 +472,10 @@ function copyProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, m
             const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
+        // TO-DO: change CodeTransformMavenBuildCommand to only hold “mvnw.cmd” “./mvnw” and “mvn” and use that for get/setMavenName() too
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformMavenBuildCommand: buildCommand,
+            codeTransformMavenBuildCommand: baseCommand as CodeTransformMavenBuildCommand,
             result: MetadataResult.Fail,
             reason: errorReason,
         })
@@ -497,61 +487,32 @@ function copyProjectDependencies(buildCommand: CodeTransformMavenBuildCommand, m
     return [folderPath, folderName]
 }
 
-export async function zipCode(modulePath: string) {
+export async function zipCode() {
+    const modulePath = transformByQState.getProjectPath()
     throwIfCancelled()
     const zipStartTime = Date.now()
     const sourceFolder = modulePath
     const sourceFiles = getFilesRecursively(sourceFolder, false)
 
-    let mavenWrapperInstallFailed = false
     try {
-        installProjectDependencies('mvnw', modulePath)
+        installProjectDependencies()
     } catch (err) {
-        mavenWrapperInstallFailed = true
-    }
-
-    let mavenInstallFailed = false
-    if (mavenWrapperInstallFailed) {
-        try {
-            installProjectDependencies('mvn', modulePath)
-        } catch (err) {
-            mavenInstallFailed = true
-        }
-    }
-
-    const installFailed = mavenInstallFailed && mavenWrapperInstallFailed
-
-    if (installFailed) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.installErrorMessage)
+        throw err
     }
 
     throwIfCancelled()
 
     let dependencyFolderInfo: string[] = []
-    let mavenWrapperCopyDepsFailed = false
     try {
-        dependencyFolderInfo = copyProjectDependencies('mvnw', modulePath)
+        dependencyFolderInfo = copyProjectDependencies()
     } catch (err) {
-        mavenWrapperCopyDepsFailed = true
-    }
-
-    let mavenCopyDepsFailed = false
-    if (mavenWrapperCopyDepsFailed) {
-        try {
-            dependencyFolderInfo = copyProjectDependencies('mvn', modulePath)
-        } catch (err) {
-            mavenCopyDepsFailed = true
-        }
-    }
-
-    const copyDependenciesFailed = mavenCopyDepsFailed && mavenWrapperCopyDepsFailed
-
-    if (copyDependenciesFailed) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
+        throw err
     }
 
-    const dependencyFolderPath = !copyDependenciesFailed ? dependencyFolderInfo[0] : ''
-    const dependencyFolderName = !copyDependenciesFailed ? dependencyFolderInfo[1] : ''
+    const dependencyFolderPath = dependencyFolderInfo[0]
+    const dependencyFolderName = dependencyFolderInfo[1]
 
     throwIfCancelled()
 
@@ -567,11 +528,11 @@ export async function zipCode(modulePath: string) {
     throwIfCancelled()
 
     let dependencyFiles: string[] = []
-    if (!copyDependenciesFailed && fs.existsSync(dependencyFolderPath)) {
+    if (fs.existsSync(dependencyFolderPath)) {
         dependencyFiles = getFilesRecursively(dependencyFolderPath, true)
     }
 
-    if (!copyDependenciesFailed && dependencyFiles.length > 0) {
+    if (dependencyFiles.length > 0) {
         for (const file of dependencyFiles) {
             const relativePath = path.relative(dependencyFolderPath, file)
             const paddedPath = path.join(`dependencies/${dependencyFolderName}`, relativePath)
@@ -596,19 +557,16 @@ export async function zipCode(modulePath: string) {
 
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
     fs.writeFileSync(tempFilePath, zip.toBuffer())
-    if (!copyDependenciesFailed) {
+    if (fs.existsSync(dependencyFolderPath)) {
         fs.rmSync(dependencyFolderPath, { recursive: true, force: true })
     }
-    fs.rmSync(logFilePath)
+    fs.rmSync(logFilePath) // will always exist here
 
-    // for now, use the pass/fail status of the maven command to determine this metric status
-    const mavenStatus = copyDependenciesFailed ? MetadataResult.Fail : MetadataResult.Pass
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
         codeTransformTotalByteSize: (await fs.promises.stat(tempFilePath)).size,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
-        result: mavenStatus,
-        reason: copyDependenciesFailed ? 'MavenCommandsFailed' : undefined,
+        result: MetadataResult.Pass,
     })
     return tempFilePath
 }
@@ -810,20 +768,9 @@ export async function checkBuildSystem(projectPath: string) {
     return BuildSystem.Unknown
 }
 
-export async function getVersionData(buildCommand: CodeTransformMavenBuildCommand, modulePath: string) {
-    let baseCommand = buildCommand as string
-    if (baseCommand === 'mvnw') {
-        baseCommand = './mvnw'
-        if (os.platform() === 'win32') {
-            baseCommand = './mvnw.cmd'
-        }
-        const executableName = baseCommand.slice(2) // remove the './' part
-        const executablePath = path.join(modulePath, executableName)
-        if (!fs.existsSync(executablePath)) {
-            return [undefined, undefined]
-        }
-    }
-
+export async function getVersionData() {
+    const baseCommand = transformByQState.getMavenName() // will be one of: 'mvnw.cmd', './mvnw', 'mvn'
+    const modulePath = transformByQState.getProjectPath()
     const args = ['-v']
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
 
@@ -832,16 +779,16 @@ export async function getVersionData(buildCommand: CodeTransformMavenBuildComman
 
     try {
         const localMavenVersionIndex = spawnResult.stdout.indexOf('Apache Maven')
-        const localMavenVersionString = spawnResult.stdout.slice(localMavenVersionIndex + 13)
-        localMavenVersion = localMavenVersionString.slice(0, localMavenVersionString.indexOf(' '))
+        const localMavenVersionString = spawnResult.stdout.slice(localMavenVersionIndex + 13).trim()
+        localMavenVersion = localMavenVersionString.slice(0, localMavenVersionString.indexOf(' ')).trim()
     } catch (e: any) {
         localMavenVersion = undefined // if this happens here or below, user most likely has JAVA_HOME incorrectly defined
     }
 
     try {
         const localJavaVersionIndex = spawnResult.stdout.indexOf('Java version: ')
-        const localJavaVersionString = spawnResult.stdout.slice(localJavaVersionIndex + 14)
-        localJavaVersion = localJavaVersionString.slice(0, localJavaVersionString.indexOf(',')) // will match value of JAVA_HOME
+        const localJavaVersionString = spawnResult.stdout.slice(localJavaVersionIndex + 14).trim()
+        localJavaVersion = localJavaVersionString.slice(0, localJavaVersionString.indexOf(',')).trim() // will match value of JAVA_HOME
     } catch (e: any) {
         localJavaVersion = undefined
     }

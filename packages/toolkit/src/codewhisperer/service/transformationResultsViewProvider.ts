@@ -409,6 +409,7 @@ export class ProposedTransformationExplorer {
             telemetry.codeTransform_vcsViewerSubmitted.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
+                codeTransformStatus: transformByQState.getStatus(),
                 result: MetadataResult.Pass,
             })
         })
@@ -426,6 +427,7 @@ export class ProposedTransformationExplorer {
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
+                codeTransformStatus: transformByQState.getStatus(),
                 result: MetadataResult.Pass,
             })
         })
