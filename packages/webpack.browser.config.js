@@ -22,10 +22,6 @@ const webConfig = {
      * The keys in the following 'entry' object are the relative paths of the final output files in 'dist'.
      * They are suffixed with '.js' implicitly.
      */
-    entry: {
-        'src/extensionWeb': './src/extensionWeb.ts',
-        'src/testBrowser/testRunner': './src/testBrowser/testRunner.ts',
-    },
     plugins: (baseConfig.plugins ?? []).concat(
         new webpack.optimize.LimitChunkCountPlugin({
             maxChunks: 1, // disable chunks by default since web extensions must be a single bundle
@@ -72,4 +68,4 @@ const webConfig = {
     },
 }
 
-module.exports = [webConfig]
+module.exports = webConfig

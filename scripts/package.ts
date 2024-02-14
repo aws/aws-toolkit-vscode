@@ -16,15 +16,9 @@
 // 3. restore the original package.json
 //
 
-import type PackageJson from '../../package.json'
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
-
-// Importing from `src` isn't great but it does make things simple
-import { betaUrl } from '../../src/dev/config'
-
-const packageJsonFile = './package.json'
-const webpackConfigJsFile = './webpack.base.config.js'
+import * as path from 'path'
 
 function parseArgs() {
     // Invoking this script with argument "foo":
@@ -80,7 +74,15 @@ function isRelease(): boolean {
  * Whether or not this a private beta build
  */
 function isBeta(): boolean {
-    return !!betaUrl
+    try {
+        // This path only exists for packages/toolkit.
+        // As noted before: "Importing from `src` isn't great but it does make things simple"
+        // TODO: Generalize betaUrl for all packages.
+        const betaUrl = require(path.resolve('./src/dev/config')).betaUrl
+        return !!betaUrl
+    } catch {
+        return false
+    }
 }
 
 /**
@@ -103,6 +105,14 @@ function getVersionSuffix(feature: string, debug: boolean): string {
 
 function main() {
     const args = parseArgs()
+    // It is expected that this will package from a packages/{subproject} folder.
+    // There is a base config in packages/
+    const packageJsonFile = './package.json'
+    const webpackConfigJsFile = '../webpack.base.config.js'
+    if (!fs.existsSync(packageJsonFile)) {
+        throw new Error(`package.json not found, cannot package this directory: ${process.cwd()}`)
+    }
+
     let release = true
 
     try {
@@ -113,12 +123,10 @@ function main() {
         }
 
         if (!release || args.debug) {
-            // Create backup files so we can restore the originals later.
+            // Create backup file so we can restore the originals later.
             fs.copyFileSync(packageJsonFile, `${packageJsonFile}.bk`)
-            fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
-            fs.copyFileSync('../../CHANGELOG.md', 'CHANGELOG.md')
 
-            const packageJson: typeof PackageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
+            const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
             const versionSuffix = getVersionSuffix(args.feature, args.debug)
             const version = packageJson.version
             if (isBeta()) {
@@ -138,26 +146,34 @@ function main() {
             fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
 
             if (args.debug) {
+                fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
                 const webpackConfigJs = fs.readFileSync(webpackConfigJsFile, { encoding: 'utf-8' })
                 fs.writeFileSync(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
             }
         }
+        // Always include CHANGELOG.md until we can have separate changelogs for packages
+        fs.copyFileSync('../../CHANGELOG.md', 'CHANGELOG.md')
 
         child_process.execSync(`vsce package`, { stdio: 'inherit' })
         const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
         console.log(`VSIX Version: ${packageJson.version}`)
 
-        const vsixName = `aws-toolkit-vscode-${packageJson.version}.vsix`
+        // Hoist .vsix to root folder, because the release infra expects it to be there.
+        // TODO: Once we can support releasing multiple artifacts,
+        // let's just keep the .vsix in its respective project folder in packages/
+        const vsixName = `${packageJson.name}-${packageJson.version}.vsix`
         fs.moveSync(vsixName, `../../${vsixName}`, { overwrite: true })
     } catch (e) {
         console.log(e)
         throw Error('package.ts: failed')
     } finally {
+        // Restore the original files.
         if (!release) {
-            // Restore the original files.
             fs.copyFileSync(`${packageJsonFile}.bk`, packageJsonFile)
-            fs.copyFileSync(`${webpackConfigJsFile}.bk`, webpackConfigJsFile)
             fs.unlinkSync(`${packageJsonFile}.bk`)
+        }
+        if (args.debug) {
+            fs.copyFileSync(`${webpackConfigJsFile}.bk`, webpackConfigJsFile)
             fs.unlinkSync(`${webpackConfigJsFile}.bk`)
         }
     }

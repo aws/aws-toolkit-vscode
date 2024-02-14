@@ -40,13 +40,16 @@
         "onStartupFinished",
         "onUri"
     ],
-    "main": "./dist/src/main.js",
+    "main": "./dist/src/extension",
+    "browser": "./dist/src/extensionWeb",
     "scripts": {
+        "vscode:prepublish": "npm run clean && npm run compile && webpack --mode production",
         "clean": "ts-node ../../scripts/clean.ts dist/",
-        "compile": "tsc -p ./",
-        "testCompile": "npm run compile",
+        "compile": "npm run clean && tsc -p ./ && webpack --mode development",
+        "testCompile": "tsc -p ./",
         "watch": "npm run clean && tsc -watch -p ./",
-        "serve": "echo 1"
+        "serve": "webpack serve --config-name vue-hmr --mode development",
+        "package": "ts-node ../../scripts/package.ts"
     },
     "dependencies": {},
     "devDependencies": {},
