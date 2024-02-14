@@ -1,7 +1,7 @@
 import vscode from 'vscode'
 import * as CloudFormation from '../shared/cloudformation/cloudformation'
-import { openTemplateInComposerCommand } from './activation'
 import * as nls from 'vscode-nls'
+import { openTemplateInComposerCommand } from './commands/openTemplateInComposer'
 
 const localize = nls.loadMessageBundle()
 
