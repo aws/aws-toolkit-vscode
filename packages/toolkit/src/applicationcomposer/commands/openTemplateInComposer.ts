@@ -1,3 +1,8 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Commands } from '../../shared/vscode/commands2'
 import { ApplicationComposerManager } from '../webviewManager'
 import vscode from 'vscode'
