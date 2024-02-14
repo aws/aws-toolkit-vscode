@@ -51,11 +51,15 @@ export class LineTracker {
         queueMicrotask(() => this._onReady.fire())
     }
 
-    private onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
+    private async onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
         if (editor === this._editor) return
 
         this._editor = editor
         this._selections = toLineSelections(editor?.selections)
+        if (this._selections && this._selections[0]) {
+            const s = this._selections.map(item => item.active + 1)
+            vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
+        }
 
         if (this._suspended) {
         } else {
@@ -63,7 +67,7 @@ export class LineTracker {
         }
     }
 
-    private onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
+    private async onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
         // If this isn't for our cached editor and its not a real editor -- kick out
         if (this._editor !== e.textEditor && !isTextEditor(e.textEditor)) return
 
@@ -72,6 +76,10 @@ export class LineTracker {
 
         this._editor = e.textEditor
         this._selections = selections
+        if (this._selections && this._selections[0]) {
+            const s = this._selections.map(item => item.active + 1)
+            vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
+        }
 
         this.notifyLinesChanged(this._editor === e.textEditor ? 'selection' : 'editor')
     }
@@ -110,8 +118,12 @@ export class LineTracker {
 
         if (first) {
             this._disposable = vscode.Disposable.from(
-                vscode.window.onDidChangeActiveTextEditor(this.onActiveTextEditorChanged, this),
-                vscode.window.onDidChangeTextEditorSelection(this.onTextEditorSelectionChanged, this),
+                vscode.window.onDidChangeActiveTextEditor(async e => {
+                    await this.onActiveTextEditorChanged(undefined)
+                }),
+                vscode.window.onDidChangeTextEditorSelection(async e => {
+                    await this.onTextEditorSelectionChanged(e)
+                }),
                 vscode.workspace.onDidChangeTextDocument(this.onContentChanged, this),
                 disposable
             )

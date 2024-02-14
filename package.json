@@ -14,7 +14,7 @@
     },
     "engines": {
         "npm": "^10.1.0",
-        "vscode": "^1.68.0"
+        "vscode": "^1.78.0"
     },
     "icon": "resources/marketplace/aws-icon-256x256.png",
     "bugs": {
@@ -1530,6 +1530,12 @@
                     "when": "editorHasSelection"
                 }
             ],
+            "editor/lineNumber/context": [
+                {
+                    "command": "aws.codewhisperer.listCommands",
+                    "when": "aws.codewhisperer.connected && editorLineNumber in codewhisperer.activeLine"
+                }
+            ],
             "view/item/context": [
                 {
                     "command": "aws.apig.invokeRemoteRestApi",
@@ -2393,6 +2399,11 @@
                 "command": "aws.codewhisperer.manageConnections",
                 "title": "%AWS.command.auth.showConnectionsPage%",
                 "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codewhisperer.listCommands",
+                "title": "list codewhisperer menu",
+                "when": "false"
             },
             {
                 "command": "aws.codewhisperer.reconnect",
@@ -4311,7 +4322,7 @@
         "@types/sinonjs__fake-timers": "^8.1.2",
         "@types/tcp-port-used": "^1.0.1",
         "@types/uuid": "^9.0.1",
-        "@types/vscode": "^1.68.0",
+        "@types/vscode": "^1.78.0",
         "@types/vscode-webview": "^1.57.1",
         "@types/webpack-env": "^1.18.1",
         "@types/whatwg-url": "^11.0.4",
