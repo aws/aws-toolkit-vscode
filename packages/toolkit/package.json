@@ -4291,7 +4291,7 @@
         "@types/node-fetch": "^2.6.8",
         "@types/prismjs": "^1.26.0",
         "@types/readline-sync": "^1.4.3",
-        "@types/sanitize-html": "2.3.1",
+        "@types/sanitize-html": "2.11.0",
         "@types/semver": "^7.5.0",
         "@types/sinon": "^10.0.5",
         "@types/sinonjs__fake-timers": "^8.1.2",
