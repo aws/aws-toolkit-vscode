@@ -37,6 +37,7 @@ class FeatureDevApp : AmazonQApp {
             "follow-up-was-clicked" to IncomingFeatureDevMessage.FollowupClicked::class,
             "chat-item-voted" to IncomingFeatureDevMessage.ChatItemVotedMessage::class,
             "response-body-link-click" to IncomingFeatureDevMessage.ClickedLink::class,
+            "insert_code_at_cursor_position" to IncomingFeatureDevMessage.InsertCodeAtCursorPosition::class,
         )
 
         scope.launch {
@@ -72,6 +73,7 @@ class FeatureDevApp : AmazonQApp {
             is IncomingFeatureDevMessage.FollowupClicked -> inboundAppMessagesHandler.processFollowupClickedMessage(message)
             is IncomingFeatureDevMessage.ChatItemVotedMessage -> inboundAppMessagesHandler.processChatItemVotedMessage(message)
             is IncomingFeatureDevMessage.ClickedLink -> inboundAppMessagesHandler.processLinkClick(message)
+            is IncomingFeatureDevMessage.InsertCodeAtCursorPosition -> inboundAppMessagesHandler.processInsertCodeAtCursorPosition(message)
         }
     }
 

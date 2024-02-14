@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthFollowUpType
 import software.aws.toolkits.jetbrains.services.amazonq.messages.AmazonQMessage
+import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import java.time.Instant
 import java.util.UUID
 
@@ -54,6 +55,13 @@ sealed interface IncomingFeatureDevMessage : FeatureDevBaseMessage {
         val command: String,
         val messageId: String?,
         val link: String,
+    ) : IncomingFeatureDevMessage
+
+    data class InsertCodeAtCursorPosition(
+        @JsonProperty("tabID") val tabId: String,
+        val code: String,
+        val insertionTargetType: String?,
+        val codeReference: List<CodeReference>?,
     ) : IncomingFeatureDevMessage
 }
 

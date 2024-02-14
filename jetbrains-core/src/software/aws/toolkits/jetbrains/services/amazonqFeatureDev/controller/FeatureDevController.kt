@@ -4,9 +4,14 @@
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller
 
 import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.Caret
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.guessProjectDir
 import kotlinx.coroutines.withContext
 import software.aws.toolkits.core.utils.debug
@@ -108,6 +113,26 @@ class FeatureDevController(
 
     override suspend fun processLinkClick(message: IncomingFeatureDevMessage.ClickedLink) {
         BrowserUtil.browse(message.link)
+    }
+
+    override suspend fun processInsertCodeAtCursorPosition(message: IncomingFeatureDevMessage.InsertCodeAtCursorPosition) {
+        logger.debug { "$FEATURE_NAME: Processing InsertCodeAtCursorPosition: $message" }
+
+        withContext(EDT) {
+            val editor: Editor = FileEditorManager.getInstance(context.project).selectedTextEditor ?: return@withContext
+
+            val caret: Caret = editor.caretModel.primaryCaret
+            val offset: Int = caret.offset
+
+            ApplicationManager.getApplication().runWriteAction {
+                WriteCommandAction.runWriteCommandAction(context.project) {
+                    if (caret.hasSelection()) {
+                        editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
+                    }
+                    editor.document.insertString(offset, message.code)
+                }
+            }
+        }
     }
 
     private suspend fun newTabOpened(tabId: String) {
