@@ -57,6 +57,25 @@ class Session(val tabID: String, val project: Project) {
         _state = PrepareRefinementState("", tabID, sessionStateConfig)
     }
 
+    /**
+     * Triggered by the Write Code follow-up button to move to the code generation phase
+     */
+    fun initCodegen(messenger: FeatureDevMessagePublisher) {
+        this._state = PrepareCodeGenerationState(
+            tabID = sessionState.tabID,
+            approach = sessionState.approach,
+            config = getSessionStateConfig(),
+            filePaths = emptyArray(),
+            deletedFiles = emptyArray(),
+            references = emptyArray(),
+            currentIteration = 0,
+            messenger = messenger,
+        )
+        this._latestMessage = ""
+
+        // TODO: add here telemetry for approach being accepted. Will be done in a follow-up
+    }
+
     suspend fun send(msg: String): Interaction {
         // When the task/"thing to do" hasn't been set yet, we want it to be the incoming message
         if (task.isEmpty() && msg.isNotEmpty()) {
@@ -70,7 +89,7 @@ class Session(val tabID: String, val project: Project) {
     private suspend fun nextInteraction(msg: String): Interaction {
         var action = SessionStateAction(
             task = task,
-            msg = msg
+            msg = msg,
         )
         val resp = sessionState.interact(action)
         if (resp.nextState != null) {
@@ -89,7 +108,7 @@ class Session(val tabID: String, val project: Project) {
     private fun getSessionStateConfig(): SessionStateConfig = SessionStateConfig(
         conversationId = this.conversationId,
         proxyClient = this.proxyClient,
-        repoContext = this.context
+        repoContext = this.context,
     )
 
     val conversationId: String

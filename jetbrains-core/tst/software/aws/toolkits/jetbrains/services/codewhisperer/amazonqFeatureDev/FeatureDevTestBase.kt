@@ -120,7 +120,6 @@ open class FeatureDevTestBase(
     }
 
     companion object {
-        // TODO: double check if this is needed, otherwise remove.
         fun String.toResourceFile(): File {
             val uri =
                 FeatureDevTestBase::class.java.getResource("/amazonqFeatureDev/$this")?.toURI()

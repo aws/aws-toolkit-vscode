@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller
+
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileChooser.FileChooser
@@ -70,6 +71,7 @@ class FeatureDevController(
             FollowUpTypes.DEV_EXAMPLES -> featureDevMessagePublisher.initialExamples(message.tabId)
             FollowUpTypes.NEW_PLAN -> newPlan(message.tabId)
             FollowUpTypes.SEND_FEEDBACK -> sendFeedback()
+            FollowUpTypes.WRITE_CODE -> writeCodeClicked(message.tabId)
         }
     }
 
@@ -135,6 +137,12 @@ class FeatureDevController(
         }
     }
 
+    private suspend fun writeCodeClicked(tabId: String) {
+        val session = getSessionInfo(tabId)
+        session.initCodegen(featureDevMessagePublisher)
+        onCodeGeneration(session, "", tabId)
+    }
+
     private suspend fun handleChat(
         tabId: String,
         message: String,
@@ -159,7 +167,7 @@ class FeatureDevController(
                 SessionStatePhase.INIT, SessionStatePhase.APPROACH -> {
                     onApproachGeneration(session, message, tabId)
                 }
-                else -> null
+                else -> null // TODO: handle SessionStatePhase.CODEGEN
             }
         } catch (err: Exception) {
             logger.warn(err) { "Encountered ${err.message} for tabId: $tabId" }
@@ -239,6 +247,27 @@ class FeatureDevController(
         )
     }
 
+    private suspend fun onCodeGeneration(session: Session, message: String, tabId: String) {
+        featureDevMessagePublisher.sendAsyncEventProgress(
+            tabId = tabId,
+            inProgress = true,
+            message = message("amazonqFeatureDev.chat_message.start_code_generation"),
+        )
+
+        featureDevMessagePublisher.sendAnswer(
+            tabId = tabId,
+            message = message("amazonqFeatureDev.chat_message.requesting_changes"),
+            messageType = FeatureDevMessageType.AnswerStream,
+        )
+
+        featureDevMessagePublisher.sendUpdatePlaceholder(
+            tabId = tabId,
+            newPlaceholder = message("amazonqFeatureDev.placeholder.generating_code"),
+        )
+
+        session.send(message)
+    }
+
     private fun getFollowUpOptions(phase: SessionStatePhase?): List<FollowUp> {
         when (phase) {
             SessionStatePhase.APPROACH -> {
@@ -246,6 +275,11 @@ class FeatureDevController(
                     FollowUp(
                         pillText = message("amazonqFeatureDev.follow_up.new_plan"),
                         type = FollowUpTypes.NEW_PLAN,
+                        status = FollowUpStatusType.Info,
+                    ),
+                    FollowUp(
+                        pillText = message("amazonqFeatureDev.follow_up.write_code"),
+                        type = FollowUpTypes.WRITE_CODE,
                         status = FollowUpStatusType.Info,
                     )
                 )

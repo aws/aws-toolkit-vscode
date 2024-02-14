@@ -8,7 +8,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.Featur
 
 data class SessionStateAction(
     val task: String,
-    val msg: String
+    val msg: String,
 )
 
 data class Interaction(
@@ -25,11 +25,22 @@ enum class SessionStatePhase(
 ) {
     INIT("Init"),
     APPROACH("Approach"),
-    CODEGEN("CodeGen"),
+    CODEGEN("Codegen"),
 }
 
 data class SessionStateConfig(
     val conversationId: String,
     val proxyClient: FeatureDevClient,
-    val repoContext: FeatureDevSessionContext
+    val repoContext: FeatureDevSessionContext,
+)
+
+data class DeletedFileZipInfo(
+    val zipFilePath: String,
+    val relativePath: String,
+)
+
+data class NewFileZipInfo(
+    val zipFilePath: String,
+    val relativePath: String,
+    val fileContent: String,
 )

@@ -72,6 +72,7 @@ enum class FeatureDevMessageType(
 ) {
     Answer("answer"),
     AnswerPart("answer-part"),
+    AnswerStream("answer-stream"),
     SystemPrompt("system-prompt"),
 }
 
@@ -167,5 +168,6 @@ enum class FollowUpTypes(
     MODIFY_DEFAULT_SOURCE_FOLDER("ModifyDefaultSourceFolder"),
     DEV_EXAMPLES("DevExamples"),
     NEW_PLAN("NewPlan"),
-    SEND_FEEDBACK("SendFeedback")
+    SEND_FEEDBACK("SendFeedback"),
+    WRITE_CODE("WriteCode"),
 }
