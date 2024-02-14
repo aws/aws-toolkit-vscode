@@ -95,7 +95,14 @@
         </template>
 
         <template v-if="stage === 'SSO_FORM'">
-            <button class="back-button" @click="handleBackButtonClick">&larr;</button>
+            <button class="back-button" @click="handleBackButtonClick">
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                        fill="#21A2FF"
+                    />
+                </svg>
+            </button>
             <div class="auth-container-section">
                 <div class="title">Sign in with SSO:</div>
                 <div class="p">Start URL</div>
@@ -283,7 +290,7 @@ export default defineComponent({
 .title {
     margin-bottom: 5px;
     margin-top: 5px;
-    font-size: 26px;
+    font-size: 23px;
 }
 .continue-button:disabled {
     background-color: #252526;
