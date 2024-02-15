@@ -7,7 +7,7 @@ import { AuthFollowUpType } from '../../../amazonq/auth/model'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { featureDevChat } from '../../constants'
 import { ChatItemType } from '../../models'
-import { ChatItemFollowUp, SourceLink } from '@aws/mynah-ui'
+import { ChatItemAction, SourceLink } from '@aws/mynah-ui'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -95,7 +95,7 @@ export class AuthNeededException extends UiMessage {
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatItemType
-    readonly followUps: ChatItemFollowUp[] | undefined
+    readonly followUps: ChatItemAction[] | undefined
     readonly relatedSuggestions: SourceLink[] | undefined
     readonly canBeVoted: boolean
 }
@@ -103,7 +103,7 @@ export interface ChatMessageProps {
 export class ChatMessage extends UiMessage {
     readonly message: string | undefined
     readonly messageType: ChatItemType
-    readonly followUps: ChatItemFollowUp[] | undefined
+    readonly followUps: ChatItemAction[] | undefined
     readonly relatedSuggestions: SourceLink[] | undefined
     readonly canBeVoted: boolean
     readonly requestID!: string
