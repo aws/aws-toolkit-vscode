@@ -73,17 +73,22 @@
         <template v-if="stage === 'START'">
             <div class="auth-container-section">
                 <div class="title">Choose a sign-in option:</div>
-                <div v-for="(loginOption, index) in loginOptions" :key="index">
-                    <SelectableItem
-                        v-if="index < 2"
-                        @toggle="toggleItemSelection"
-                        :isSelected="selectedItem === loginOption.id"
-                        :itemId="loginOption.id"
-                        :itemText="loginOption.text"
-                        :itemTitle="loginOption.title"
-                        class="selectable-item"
-                    ></SelectableItem>
-                </div>
+                <SelectableItem
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedItem === 1"
+                    :itemId="1"
+                    :itemText="'Create or sign-in using AWS Builder ID'"
+                    :itemTitle="'Personal'"
+                    class="selectable-item"
+                ></SelectableItem>
+                <SelectableItem
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedItem === 2"
+                    :itemId="2"
+                    :itemText="'Single sign-on with AWS IAM Identity Center'"
+                    :itemTitle="'Workforce'"
+                    class="selectable-item"
+                ></SelectableItem>
                 <button class="continue-button" :disabled="selectedItem === 0" v-on:click="handleContinueClick()">
                     Continue
                 </button>
@@ -92,29 +97,33 @@
         <template v-if="stage === 'EXISTING_USER_START'">
             <div class="auth-container-section">
                 <div class="title">Connect with an existing account:</div>
-                <div v-for="(loginOption, index) in loginOptions" :key="index">
-                    <SelectableItem
-                        v-if="index == 2"
-                        @toggle="toggleItemSelection"
-                        :isSelected="selectedItem === loginOption.id"
-                        :itemId="loginOption.id"
-                        :itemText="loginOption.text"
-                        :itemTitle="loginOption.title"
-                        class="selectable-item"
-                    ></SelectableItem>
-                </div>
+
+                <SelectableItem
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedItem === 3"
+                    :itemId="3"
+                    :itemText="loginOption.text"
+                    :itemTitle="loginOption.title"
+                    class="selectable-item"
+                ></SelectableItem>
                 <div class="title">Or, choose a sign-in option:</div>
-                <div v-for="(loginOption, index) in loginOptions" :key="index">
-                    <SelectableItem
-                        v-if="index < 2"
-                        @toggle="toggleItemSelection"
-                        :isSelected="selectedItem === loginOption.id"
-                        :itemId="loginOption.id"
-                        :itemText="loginOption.text"
-                        :itemTitle="loginOption.title"
-                        class="selectable-item"
-                    ></SelectableItem>
-                </div>
+
+                <SelectableItem
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedItem === 1"
+                    :itemId="1"
+                    :itemText="'Create or sign-in using AWS Builder ID'"
+                    :itemTitle="'Personal'"
+                    class="selectable-item"
+                ></SelectableItem>
+                <SelectableItem
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedItem === 2"
+                    :itemId="2"
+                    :itemText="'Single sign-on with AWS IAM Identity Center'"
+                    :itemTitle="'Workforce'"
+                    class="selectable-item"
+                ></SelectableItem>
 
                 <button class="continue-button" :disabled="selectedItem === 0" v-on:click="handleContinueClick()">
                     Continue
@@ -205,10 +214,7 @@ export default defineComponent({
     },
     data() {
         return {
-            loginOptions: [
-                { id: 1, text: 'Create or sign-in using AWS Builder ID', title: 'Personal' },
-                { id: 2, text: 'Single sign-on with AWS IAM Identity Center', title: 'Workforce' },
-            ],
+            loginOption: { id: 0, text: '', title: '' },
             selectedItem: 0,
             stage: 'START' as Stage,
             regions: [] as Region[],
@@ -224,11 +230,11 @@ export default defineComponent({
         const connection = await client.fetchConnection()
         if (connection) {
             this.stage = 'EXISTING_USER_START'
-            this.loginOptions.push({
+            this.loginOption = {
                 id: 3,
                 text: connection.id,
                 title: isBuilderId(connection.startUrl) ? 'AWS Builder ID' : 'AWS IAM Identity Center',
-            })
+            }
         }
     },
 
