@@ -1,0 +1,11 @@
+{
+  "date" : "2024-02-15",
+  "version" : "2.8",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeTransform: smart select Java version of project"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix for AmazonQ on Linux input focus problem (#4100)"
+  } ]
+}
