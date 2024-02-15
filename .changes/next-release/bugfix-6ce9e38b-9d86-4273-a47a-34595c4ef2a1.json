@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix for AmazonQ on Linux input focus problem (#4100)"
-}

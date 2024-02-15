@@ -1,3 +1,6 @@
+# _2.7_ (2024-02-07)
+- **(Bug Fix)** CodeWhisperer: Improve CodePercentage telemetry reporting
+
 # _2.6_ (2024-02-02)
 - **(Feature)** Add support for IAM Identity Center connections for CodeCatalyst
 
