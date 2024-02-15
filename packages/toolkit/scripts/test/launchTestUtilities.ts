@@ -168,13 +168,6 @@ async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Pr
 }
 
 async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
-    // HACK: `sam.test.ts` Codelens test was failing for python due to bug in newer version, so lock to last working version.
-    // Edge Case: This specific python version does not work with the "minimum" vscode version, so we do not override it as it
-    // will choose its own python extension version that works.
-    if (extensionIdentifier === VSCODE_EXTENSION_ID.python && process.env[envvarVscodeTestVersion] !== minimum) {
-        extensionIdentifier = `${VSCODE_EXTENSION_ID.python}@2023.20.0`
-    }
-
     console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
     console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--install-extension', extensionIdentifier]))
 }
