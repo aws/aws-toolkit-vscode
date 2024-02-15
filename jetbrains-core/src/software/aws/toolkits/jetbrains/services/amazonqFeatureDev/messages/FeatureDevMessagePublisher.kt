@@ -30,6 +30,30 @@ class FeatureDevMessagePublisher(private val messagePublisher: MessagePublisher)
         this.messagePublisher.publish(chatMessage)
     }
 
+    suspend fun sendAnswerPart(
+        tabId: String,
+        message: String? = null,
+        canBeVoted: Boolean? = null,
+    ) {
+        this.sendAnswer(
+            tabId = tabId,
+            message = message,
+            messageType = FeatureDevMessageType.AnswerPart,
+            canBeVoted = canBeVoted
+        )
+    }
+
+    suspend fun sendSystemPrompt(
+        tabId: String,
+        followUp: List<FollowUp>
+    ) {
+        this.sendAnswer(
+            tabId = tabId,
+            messageType = FeatureDevMessageType.SystemPrompt,
+            followUp = followUp
+        )
+    }
+
     suspend fun sendAsyncEventProgress(tabId: String, inProgress: Boolean, message: String? = null) {
         val asyncEventProgressMessage = AsyncEventProgressMessage(
             tabId = tabId,

@@ -30,9 +30,11 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.createUserFaci
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessageType
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUp
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUpIcons
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUpStatusType
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUpTypes
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.IncomingFeatureDevMessage
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.PrepareCodeGenerationState
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Session
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
@@ -77,6 +79,8 @@ class FeatureDevController(
             FollowUpTypes.NEW_PLAN -> newPlan(message.tabId)
             FollowUpTypes.SEND_FEEDBACK -> sendFeedback()
             FollowUpTypes.WRITE_CODE -> writeCodeClicked(message.tabId)
+            FollowUpTypes.ACCEPT_CODE -> acceptCode()
+            FollowUpTypes.PROVIDE_FEEDBACK_AND_REGENERATE_CODE -> provideFeedbackAndRegenerateCode()
         }
     }
 
@@ -168,6 +172,14 @@ class FeatureDevController(
         onCodeGeneration(session, "", tabId)
     }
 
+    private fun acceptCode() {
+        TODO("Not yet implemented")
+    }
+
+    private fun provideFeedbackAndRegenerateCode() {
+        TODO("Not yet implemented")
+    }
+
     private suspend fun handleChat(
         tabId: String,
         message: String,
@@ -189,10 +201,9 @@ class FeatureDevController(
             }
 
             when (session.sessionState.phase) {
-                SessionStatePhase.INIT, SessionStatePhase.APPROACH -> {
-                    onApproachGeneration(session, message, tabId)
-                }
-                else -> null // TODO: handle SessionStatePhase.CODEGEN
+                SessionStatePhase.INIT, SessionStatePhase.APPROACH -> onApproachGeneration(session, message, tabId)
+                SessionStatePhase.CODEGEN -> onCodeGeneration(session, message, tabId)
+                else -> null
             }
         } catch (err: Exception) {
             logger.warn(err) { "Encountered ${err.message} for tabId: $tabId" }
@@ -202,9 +213,8 @@ class FeatureDevController(
                     errMessage = err.message,
                     retries = retriesRemaining(session)
                 )
-                featureDevMessagePublisher.sendAnswer(
+                featureDevMessagePublisher.sendSystemPrompt(
                     tabId = tabId,
-                    messageType = FeatureDevMessageType.SystemPrompt,
                     followUp = listOf(
                         FollowUp(
                             pillText = message("amazonqFeatureDev.follow_up.modify_source_folder"),
@@ -241,35 +251,24 @@ class FeatureDevController(
         )
 
         // Ensure that the loading icon stays showing
-        featureDevMessagePublisher.sendAsyncEventProgress(
-            tabId = tabId,
-            inProgress = true,
-        )
+        featureDevMessagePublisher.sendAsyncEventProgress(tabId = tabId, inProgress = true)
 
         featureDevMessagePublisher.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.generating_approach"))
 
         val interactions = session.send(message)
         featureDevMessagePublisher.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.iterate_plan"))
 
-        featureDevMessagePublisher.sendAnswer(
+        featureDevMessagePublisher.sendAnswerPart(
             tabId = tabId,
-            messageType = FeatureDevMessageType.AnswerPart,
             message = interactions.content,
             canBeVoted = true
         )
 
         // Follow up with action items and complete the request stream
-        featureDevMessagePublisher.sendAnswer(
-            tabId = tabId,
-            messageType = FeatureDevMessageType.SystemPrompt,
-            followUp = getFollowUpOptions(session.sessionState.phase),
-        )
+        featureDevMessagePublisher.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase))
 
         // Unlock the prompt again so that users can iterate
-        featureDevMessagePublisher.sendAsyncEventProgress(
-            tabId = tabId,
-            inProgress = false,
-        )
+        featureDevMessagePublisher.sendAsyncEventProgress(tabId = tabId, inProgress = false)
     }
 
     private suspend fun onCodeGeneration(session: Session, message: String, tabId: String) {
@@ -279,18 +278,57 @@ class FeatureDevController(
             message = message("amazonqFeatureDev.chat_message.start_code_generation"),
         )
 
-        featureDevMessagePublisher.sendAnswer(
-            tabId = tabId,
-            message = message("amazonqFeatureDev.chat_message.requesting_changes"),
-            messageType = FeatureDevMessageType.AnswerStream,
-        )
+        try {
+            featureDevMessagePublisher.sendAnswer(
+                tabId = tabId,
+                message = message("amazonqFeatureDev.chat_message.requesting_changes"),
+                messageType = FeatureDevMessageType.AnswerStream,
+            )
 
-        featureDevMessagePublisher.sendUpdatePlaceholder(
-            tabId = tabId,
-            newPlaceholder = message("amazonqFeatureDev.placeholder.generating_code"),
-        )
+            featureDevMessagePublisher.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.writing_code"))
 
-        session.send(message)
+            session.send(message) // Trigger code generation
+
+            val state = session.sessionState
+            // it should be PrepareCodeGenerationState again.
+            if (state !is PrepareCodeGenerationState) {
+                TODO("Not yet implemented")
+            }
+
+            // Atm this is the only possible path as codegen is mocked to return empty.
+            if (state.filePaths.size or state.deletedFiles.size == 0) {
+                featureDevMessagePublisher.sendAnswer(
+                    tabId = tabId,
+                    messageType = FeatureDevMessageType.Answer,
+                    message = message("amazonqFeatureDev.code_generation.no_file_changes")
+                )
+                featureDevMessagePublisher.sendSystemPrompt(
+                    tabId = tabId,
+                    followUp = if (retriesRemaining(session) > 0) {
+                        listOf(
+                            FollowUp(
+                                pillText = message("amazonqFeatureDev.follow_up.retry"),
+                                type = FollowUpTypes.RETRY,
+                                status = FollowUpStatusType.Warning
+                            )
+                        )
+                    } else {
+                        emptyList()
+                    }
+                )
+                featureDevMessagePublisher.sendChatInputEnabledMessage(tabId = tabId, enabled = false) // Lock chat input until retry is clicked.
+                return
+            }
+
+            // TODO: send code result to mynah ui, i.e. diff view message.
+
+            featureDevMessagePublisher.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase))
+        } finally {
+            featureDevMessagePublisher.sendAsyncEventProgress(tabId = tabId, inProgress = false) // Finish processing the event
+            featureDevMessagePublisher.sendChatInputEnabledMessage(tabId = tabId, enabled = false) // Lock chat input until a follow-up is clicked.
+
+            // TODO: follow-up handle notification if amazonq is not visible to let the user know the code has been generated.
+        }
     }
 
     private fun getFollowUpOptions(phase: SessionStatePhase?): List<FollowUp> {
@@ -306,6 +344,22 @@ class FeatureDevController(
                         pillText = message("amazonqFeatureDev.follow_up.write_code"),
                         type = FollowUpTypes.WRITE_CODE,
                         status = FollowUpStatusType.Info,
+                    )
+                )
+            }
+            SessionStatePhase.CODEGEN -> {
+                return listOf(
+                    FollowUp(
+                        pillText = message("amazonqFeatureDev.follow_up.accept_changes"),
+                        type = FollowUpTypes.ACCEPT_CODE,
+                        icon = FollowUpIcons.Ok,
+                        status = FollowUpStatusType.Success
+                    ),
+                    FollowUp(
+                        pillText = message("amazonqFeatureDev.follow_up.provide_feedback_and_regenerate"),
+                        type = FollowUpTypes.PROVIDE_FEEDBACK_AND_REGENERATE_CODE,
+                        icon = FollowUpIcons.Refresh,
+                        status = FollowUpStatusType.Info
                     )
                 )
             }
@@ -379,9 +433,8 @@ class FeatureDevController(
             if (selectedFolder == null) {
                 logger.info { "Cancelled dialog and not selected any folder" }
 
-                featureDevMessagePublisher.sendAnswer(
+                featureDevMessagePublisher.sendSystemPrompt(
                     tabId = tabId,
-                    messageType = FeatureDevMessageType.SystemPrompt,
                     followUp = listOf(modifyFolderFollowUp),
                 )
                 return@withContext
@@ -396,9 +449,8 @@ class FeatureDevController(
                     message = message("amazonqFeatureDev.follow_up.incorrect_source_folder"),
                 )
 
-                featureDevMessagePublisher.sendAnswer(
+                featureDevMessagePublisher.sendSystemPrompt(
                     tabId = tabId,
-                    messageType = FeatureDevMessageType.SystemPrompt,
                     followUp = listOf(modifyFolderFollowUp),
                 )
                 return@withContext

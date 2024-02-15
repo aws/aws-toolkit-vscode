@@ -158,7 +158,15 @@ data class FollowUp(
     val disabled: Boolean? = false,
     val description: String? = null,
     val status: FollowUpStatusType? = null,
+    val icon: FollowUpIcons? = null,
 )
+
+enum class FollowUpIcons(
+    @field:JsonValue val json: String,
+) {
+    Ok("ok"),
+    Refresh("refresh")
+}
 
 enum class FollowUpStatusType(
     @field:JsonValue val json: String,
@@ -178,4 +186,6 @@ enum class FollowUpTypes(
     NEW_PLAN("NewPlan"),
     SEND_FEEDBACK("SendFeedback"),
     WRITE_CODE("WriteCode"),
+    ACCEPT_CODE("AcceptCode"),
+    PROVIDE_FEEDBACK_AND_REGENERATE_CODE("ProvideFeedbackAndRegenerateCode"),
 }

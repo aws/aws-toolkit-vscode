@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
 import com.fasterxml.jackson.annotation.JsonValue
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
+import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 
 data class SessionStateAction(
     val task: String,
@@ -43,4 +44,10 @@ data class NewFileZipInfo(
     val zipFilePath: String,
     val relativePath: String,
     val fileContent: String,
+)
+
+data class CodeGenerationResult(
+    var newFiles: Array<NewFileZipInfo>,
+    var deletedFiles: Array<DeletedFileZipInfo>,
+    var references: Array<CodeReference>,
 )

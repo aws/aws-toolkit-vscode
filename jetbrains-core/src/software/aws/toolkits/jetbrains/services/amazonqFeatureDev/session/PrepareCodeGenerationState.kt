@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessagePublisher
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessageType
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createUploadUrl
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.uploadArtifactToS3
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
@@ -22,11 +21,7 @@ class PrepareCodeGenerationState(
 ) : SessionState {
     override val phase = SessionStatePhase.CODEGEN
     override suspend fun interact(action: SessionStateAction): SessionStateInteraction {
-        messenger.sendAnswer(
-            tabId = this.tabID,
-            messageType = FeatureDevMessageType.AnswerPart,
-            message = message("amazonqFeatureDev.chat_message.uploading_code"),
-        )
+        messenger.sendAnswerPart(tabId = this.tabID, message = message("amazonqFeatureDev.chat_message.uploading_code"))
 
         val repoZipResult = config.repoContext.getProjectZip()
         val zipFileChecksum = repoZipResult.checksum
@@ -51,6 +46,7 @@ class PrepareCodeGenerationState(
             deletedFiles = this.deletedFiles,
             references = this.references,
             currentIteration = this.currentIteration,
+            messenger = messenger
         )
 
         return nextState.interact(action)

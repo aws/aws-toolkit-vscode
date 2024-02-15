@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util
 
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ValidationException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
@@ -64,6 +65,24 @@ suspend fun generatePlan(proxyClient: FeatureDevClient, conversationId: String, 
         return generatePlanResponse
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to execute planning" }
+        apiError(e.message, e.cause)
+    }
+}
+
+fun startTaskAssistCodeGeneration(proxyClient: FeatureDevClient, conversationId: String, uploadId: String, message: String):
+    StartTaskAssistCodeGenerationResponse {
+    try {
+        logger.debug { "Executing startTaskAssistCodeGeneration with conversationId: $conversationId , uploadId: $uploadId" }
+        val startCodeGenerationResponse = proxyClient.startTaskAssistCodeGeneration(
+            conversationId,
+            uploadId,
+            message
+        )
+
+        logger.debug { "$FEATURE_NAME: Started code generation" }
+        return startCodeGenerationResponse
+    } catch (e: Exception) {
+        logger.error(e) { "$FEATURE_NAME: Failed to execute startTaskAssistCodeGeneration" }
         apiError(e.message, e.cause)
     }
 }
