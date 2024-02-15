@@ -15,4 +15,5 @@ sealed class CodeModernizerJobCompletedResult {
     data class JobFailedInitialBuild(val jobId: JobId, val failureReason: String) : CodeModernizerJobCompletedResult()
     object ManagerDisposed : CodeModernizerJobCompletedResult()
     object JobAbortedBeforeStarting : CodeModernizerJobCompletedResult()
+    object JobAbortedMissingDependencies : CodeModernizerJobCompletedResult()
 }

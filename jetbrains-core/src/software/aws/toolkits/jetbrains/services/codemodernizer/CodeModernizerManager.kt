@@ -13,6 +13,7 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
@@ -55,6 +56,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.toolwindow.CodeMo
 import software.aws.toolkits.jetbrains.services.codemodernizer.ui.components.BuildErrorDialog
 import software.aws.toolkits.jetbrains.services.codemodernizer.ui.components.PreCodeTransformUserDialog
 import software.aws.toolkits.jetbrains.services.codemodernizer.ui.components.ValidationErrorDialog
+import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -99,7 +101,10 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             field = session
         }
     private val artifactHandler = ArtifactHandler(project, GumbyClient.getInstance(project))
-
+    private val supportedJavaMappings = mapOf(
+        JavaSdkVersion.JDK_1_8 to setOf(JavaSdkVersion.JDK_17),
+        JavaSdkVersion.JDK_11 to setOf(JavaSdkVersion.JDK_17),
+    )
     init {
         CodeModernizerSessionState.getInstance(project).setDefaults()
     }
@@ -134,7 +139,19 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 )
             )
         }
-        val validatedBuildFiles = project.getSupportedBuildModules(supportedBuildFileNames)
+        val supportedModules = project.getSupportedModules(supportedJavaMappings).toSet()
+        val validProjectJdk = project.getSupportedJavaMappings(supportedJavaMappings).isNotEmpty()
+        if (supportedModules.isEmpty() && !validProjectJdk) {
+            return ValidationResult(
+                false,
+                message("codemodernizer.notification.warn.invalid_project.description.reason.invalid_jdk_versions", supportedJavaMappings.keys.joinToString()),
+                InvalidTelemetryReason(
+                    CodeTransformPreValidationError.UnsupportedJavaVersion,
+                    project.tryGetJdk().toString()
+                )
+            )
+        }
+        val validatedBuildFiles = project.getSupportedBuildFilesWithSupportedJdk(supportedBuildFileNames, supportedJavaMappings)
         return if (validatedBuildFiles.isNotEmpty()) {
             ValidationResult(true, validatedBuildFiles = validatedBuildFiles)
         } else {
@@ -255,6 +272,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     fun getCustomerSelection(validatedBuildFiles: List<VirtualFile>): CustomerSelection? = PreCodeTransformUserDialog(
         project,
         validatedBuildFiles,
+        supportedJavaMappings,
     ).create()
 
     private fun notifyJobFailure(failureReason: String?, retryable: Boolean) {
@@ -383,6 +401,10 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             is CodeModernizerStartJobResult.Cancelled -> {
                 CodeModernizerJobCompletedResult.JobAbortedBeforeStarting
             }
+
+            is CodeModernizerStartJobResult.CancelledMissingDependencies -> {
+                CodeModernizerJobCompletedResult.JobAbortedMissingDependencies
+            }
         }
     }
 
@@ -507,6 +529,11 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         artifactHandler.displayDiffAction(jobId)
     }
 
+    private fun openTroubleshootingGuideNotificationAction() = OpenBrowserAction(
+        message("codemodernizer.notification.info.view_troubleshooting_guide"),
+        url = "https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#transform-issues"
+    )
+
     private fun displaySummaryNotificationAction(jobId: JobId) =
         NotificationAction.createSimple(message("codemodernizer.notification.info.modernize_complete.view_summary")) {
             artifactHandler.showTransformationSummary(jobId)
@@ -558,6 +585,12 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
 
             is CodeModernizerJobCompletedResult.ManagerDisposed -> LOG.warn { "Manager disposed" }
             is CodeModernizerJobCompletedResult.JobAbortedBeforeStarting -> LOG.warn { "Job was aborted" }
+            is CodeModernizerJobCompletedResult.JobAbortedMissingDependencies -> notifyStickyInfo(
+                message("codemodernizer.notification.warn.maven_failed.title"),
+                message("codemodernizer.notification.warn.maven_failed.content"),
+                project,
+                listOf(openTroubleshootingGuideNotificationAction()),
+            )
         }
     }
 

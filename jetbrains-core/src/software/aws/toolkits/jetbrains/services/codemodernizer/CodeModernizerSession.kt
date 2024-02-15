@@ -37,7 +37,6 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.plan.CodeModerniz
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanSession
-import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformApiNames
 import software.aws.toolkits.telemetry.CodetransformTelemetry
@@ -84,17 +83,12 @@ class CodeModernizerSession(
             }
             val startTime = Instant.now()
             val result = sessionContext.createZipWithModuleFiles()
-            payload = when (result) {
-                is ZipCreationResult.Missing1P -> {
-                    notifyStickyInfo(
-                        message("codemodernizer.notification.info.maven_failed.title"),
-                        message("codemodernizer.notification.info.maven_failed.content")
-                    )
-                    result.payload
-                }
 
-                is ZipCreationResult.Succeeded -> result.payload
+            if (result is ZipCreationResult.Missing1P) {
+                return CodeModernizerStartJobResult.CancelledMissingDependencies
             }
+
+            payload = result.payload
             CodetransformTelemetry.jobCreateZipEndTime(
                 codeTransformTotalByteSize = payload.length().toInt(),
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
