@@ -19,7 +19,7 @@ class RefinementState(
         if (action.msg.isEmpty()) {
             userMessageNotFound()
         }
-        val approachResponse = generatePlan(config.proxyClient, config.conversationId, uploadId, action.msg)
+        val approachResponse = generatePlan(config.proxyClient, config.conversationId, uploadId, action.msg, currentIteration)
 
         approach = approachResponse
         val nextIteration = currentIteration + 1

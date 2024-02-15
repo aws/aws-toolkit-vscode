@@ -14,6 +14,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.apiError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AmazonqTelemetry
 
 private val logger = getLogger<FeatureDevClient>()
 
@@ -25,6 +26,9 @@ fun createConversation(proxyClient: FeatureDevClient): String {
         logger.debug {
             "$FEATURE_NAME: Created conversation: {conversationId: $conversationId, requestId: ${taskAssistConversationResult.responseMetadata().requestId()}"
         }
+
+        AmazonqTelemetry.startConversationInvoke(amazonqConversationId = conversationId)
+
         return conversationId
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to start conversation: ${e.message}" }
@@ -52,13 +56,20 @@ fun createUploadUrl(proxyClient: FeatureDevClient, conversationId: String, conte
     }
 }
 
-suspend fun generatePlan(proxyClient: FeatureDevClient, conversationId: String, uploadId: String, message: String): String {
+suspend fun generatePlan(proxyClient: FeatureDevClient, conversationId: String, uploadId: String, message: String, currentIteration: Int): String {
     try {
+        val startTime = System.currentTimeMillis()
         logger.debug { "Executing generateTaskAssistPlan with conversationId $conversationId" }
         val generatePlanResponse = proxyClient.generateTaskAssistPlan(
             conversationId,
             uploadId,
             message
+        )
+        AmazonqTelemetry.approachInvoke(
+            amazonqConversationId = conversationId,
+            amazonqGenerateApproachIteration = currentIteration.toDouble(),
+            amazonqGenerateApproachLatency = (System.currentTimeMillis() - startTime).toDouble()
+
         )
 
         logger.debug { "$FEATURE_NAME: Generated plan" }

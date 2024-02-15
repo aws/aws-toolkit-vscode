@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createUploadUrl
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.uploadArtifactToS3
+import software.aws.toolkits.telemetry.AmazonqTelemetry
 
 class PrepareRefinementState(override var approach: String, override var tabID: String, var config: SessionStateConfig) : SessionState {
     override val phase = SessionStatePhase.APPROACH
@@ -23,6 +24,7 @@ class PrepareRefinementState(override var approach: String, override var tabID: 
         )
 
         uploadArtifactToS3(uploadUrlResponse.uploadUrl(), fileToUpload, zipFileChecksum, zipFileLength, uploadUrlResponse.kmsKeyArn())
+        AmazonqTelemetry.createUpload(amazonqConversationId = config.conversationId, amazonqRepositorySize = zipFileLength.toDouble())
 
         val nextState = RefinementState(approach, tabID, config, uploadUrlResponse.uploadId(), 0)
         return nextState.interact(action)
