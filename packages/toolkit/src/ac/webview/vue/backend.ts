@@ -38,7 +38,6 @@ export class CommonAuthWebview extends VueWebview {
     private async ssoSetup(methodName: string, setupFunc: () => Promise<any>): Promise<AuthError | undefined> {
         try {
             await setupFunc()
-            AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
             return
         } catch (e) {
             console.log(e)
@@ -92,20 +91,34 @@ export class CommonAuthWebview extends VueWebview {
         }
     }
 
-    async startBuilderIdSetup(): Promise<AuthError | undefined> {
-        return this.ssoSetup('startCodeWhispererBuilderIdSetup', () => awsIdSignIn())
+    async startBuilderIdSetup(app: string): Promise<AuthError | undefined> {
+        return this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
+            if (app === 'AMAZONQ') {
+                await awsIdSignIn()
+                AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
+                await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
+            } else {
+                // TODO: toolkit login
+                await awsIdSignIn()
+                AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
+                await vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS Builder ID')
+            }
+        })
     }
 
-    async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
-        return this.ssoSetup('startCodeWhispererBuilderIdSetup', () => connectToEnterpriseSso(startUrl, region))
-    }
-
-    async switchToConnectedScreen() {
-        await this.showAmazonQChat()
-    }
-
-    async showAmazonQChat(): Promise<void> {
-        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+    async startEnterpriseSetup(startUrl: string, region: string, app: string): Promise<AuthError | undefined> {
+        return this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
+            if (app === 'AMAZONQ') {
+                await connectToEnterpriseSso(startUrl, region)
+                AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
+                await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
+            } else {
+                // TODO: toolkit login
+                await connectToEnterpriseSso(startUrl, region)
+                AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
+                await vscode.window.showInformationMessage('Toolkit:Successfully connected to AWS IAM Identity Center')
+            }
+        })
     }
 
     async showResourceExplorer(): Promise<void> {

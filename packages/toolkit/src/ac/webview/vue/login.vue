@@ -174,11 +174,7 @@
             </div>
         </template>
 
-        <template v-if="stage === 'CONNECTED'">
-            <div class="auth-container-section">
-                <div class="title">Connected</div>
-            </div>
-        </template>
+        <template v-if="stage === 'CONNECTED'"> </template>
     </div>
 </template>
 <script lang="ts">
@@ -232,7 +228,7 @@ export default defineComponent({
             this.stage = 'EXISTING_USER_START'
             this.loginOption = {
                 id: 3,
-                text: connection.id,
+                text: 'Used by another AWS Extension',
                 title: isBuilderId(connection.startUrl) ? 'AWS Builder ID' : 'AWS IAM Identity Center',
             }
         }
@@ -263,7 +259,7 @@ export default defineComponent({
             if (this.stage === 'START') {
                 if (this.selectedItem === 1) {
                     this.stage = 'AUTHENTICATING'
-                    const error = await client.startBuilderIdSetup()
+                    const error = await client.startBuilderIdSetup(this.app)
                     if (error) {
                         this.stage = 'START'
                     } else {
@@ -274,7 +270,7 @@ export default defineComponent({
                 }
             } else if (this.stage === 'SSO_FORM') {
                 this.stage = 'AUTHENTICATING'
-                const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion)
+                const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
                 if (error) {
                     this.stage = 'START'
                 } else {
@@ -283,7 +279,7 @@ export default defineComponent({
             } else if (this.stage === 'EXISTING_USER_START') {
                 if (this.selectedItem === 1) {
                     this.stage = 'AUTHENTICATING'
-                    const error = await client.startBuilderIdSetup()
+                    const error = await client.startBuilderIdSetup(this.app)
                     if (error) {
                         this.stage = 'START'
                     } else {
