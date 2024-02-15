@@ -15,6 +15,7 @@ import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { SsoConnection } from '../../../auth/connection'
 
 export type AuthError = { id: string; text: string }
 export const userCancelled = 'userCancelled'
@@ -109,5 +110,12 @@ export class CommonAuthWebview extends VueWebview {
 
     async showResourceExplorer(): Promise<void> {
         await vscode.commands.executeCommand('aws.explorer.focus')
+    }
+
+    fetchConnection(): SsoConnection | undefined {
+        if (AuthUtil.instance.isConnected() && AuthUtil.instance.conn?.type === 'sso') {
+            return AuthUtil.instance.conn
+        }
+        return undefined
     }
 }

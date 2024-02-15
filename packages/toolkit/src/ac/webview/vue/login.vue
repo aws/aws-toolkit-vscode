@@ -73,22 +73,50 @@
         <template v-if="stage === 'START'">
             <div class="auth-container-section">
                 <div class="title">Choose a sign-in option:</div>
-                <SelectableItem
-                    v-for="item in items"
-                    @toggle="toggleItemSelection"
-                    :key="item.id"
-                    :isSelected="selectedItem === item.id"
-                    :itemId="item.id"
-                    :itemText="item.text"
-                    :itemTitle="item.title"
-                    class="selectable-item"
-                ></SelectableItem>
+                <div v-for="(loginOption, index) in loginOptions" :key="index">
+                    <SelectableItem
+                        v-if="index < 2"
+                        @toggle="toggleItemSelection"
+                        :isSelected="selectedItem === loginOption.id"
+                        :itemId="loginOption.id"
+                        :itemText="loginOption.text"
+                        :itemTitle="loginOption.title"
+                        class="selectable-item"
+                    ></SelectableItem>
+                </div>
+                <button class="continue-button" :disabled="selectedItem === 0" v-on:click="handleContinueClick()">
+                    Continue
+                </button>
+            </div>
+        </template>
+        <template v-if="stage === 'EXISTING_USER_START'">
+            <div class="auth-container-section">
+                <div class="title">Connect with an existing account:</div>
+                <div v-for="(loginOption, index) in loginOptions" :key="index">
+                    <SelectableItem
+                        v-if="index == 2"
+                        @toggle="toggleItemSelection"
+                        :isSelected="selectedItem === loginOption.id"
+                        :itemId="loginOption.id"
+                        :itemText="loginOption.text"
+                        :itemTitle="loginOption.title"
+                        class="selectable-item"
+                    ></SelectableItem>
+                </div>
+                <div class="title">Or, choose a sign-in option:</div>
+                <div v-for="(loginOption, index) in loginOptions" :key="index">
+                    <SelectableItem
+                        v-if="index < 2"
+                        @toggle="toggleItemSelection"
+                        :isSelected="selectedItem === loginOption.id"
+                        :itemId="loginOption.id"
+                        :itemText="loginOption.text"
+                        :itemTitle="loginOption.title"
+                        class="selectable-item"
+                    ></SelectableItem>
+                </div>
 
-                <button
-                    class="continue-button"
-                    :disabled="selectedItem === 0"
-                    v-on:click="handleContinueClickAtStartStage()"
-                >
+                <button class="continue-button" :disabled="selectedItem === 0" v-on:click="handleContinueClick()">
                     Continue
                 </button>
             </div>
@@ -124,7 +152,7 @@
                     </option>
                 </select>
                 <br /><br />
-                <button class="continue-button" :disabled="!urlValid" v-on:click="handleContinueClickAtSSOFormStage()">
+                <button class="continue-button" :disabled="!urlValid" v-on:click="handleContinueClick()">
                     Continue
                 </button>
             </div>
@@ -154,7 +182,7 @@ import { Region } from '../../../shared/regions/endpoints'
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
-type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING'
+type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'EXISTING_USER_START'
 type App = 'TOOLKIT' | 'AMAZONQ'
 
 function validateSsoUrlFormat(url: string) {
@@ -162,12 +190,8 @@ function validateSsoUrlFormat(url: string) {
     return regex.test(url)
 }
 
-function onConnectionSuccess(app: App) {
-    if (app === 'TOOLKIT') {
-        client.showResourceExplorer()
-    } else if (app === 'AMAZONQ') {
-        client.showAmazonQChat()
-    }
+function isBuilderId(url: string) {
+    return url === 'https://view.awsapps.com/start'
 }
 
 export default defineComponent({
@@ -181,7 +205,7 @@ export default defineComponent({
     },
     data() {
         return {
-            items: [
+            loginOptions: [
                 { id: 1, text: 'Create or sign-in using AWS Builder ID', title: 'Personal' },
                 { id: 2, text: 'Single sign-on with AWS IAM Identity Center', title: 'Workforce' },
             ],
@@ -196,6 +220,16 @@ export default defineComponent({
     },
     async created() {
         await this.emitUpdate('created')
+
+        const connection = await client.fetchConnection()
+        if (connection) {
+            this.stage = 'EXISTING_USER_START'
+            this.loginOptions.push({
+                id: 3,
+                text: connection.id,
+                title: isBuilderId(connection.startUrl) ? 'AWS Builder ID' : 'AWS IAM Identity Center',
+            })
+        }
     },
 
     mounted() {
@@ -219,29 +253,41 @@ export default defineComponent({
                 this.stage = 'START'
             }
         },
-        async handleContinueClickAtStartStage() {
-            if (this.selectedItem === 1) {
+        async handleContinueClick() {
+            if (this.stage === 'START') {
+                if (this.selectedItem === 1) {
+                    this.stage = 'AUTHENTICATING'
+                    const error = await client.startBuilderIdSetup()
+                    if (error) {
+                        this.stage = 'START'
+                    } else {
+                        this.stage = 'CONNECTED'
+                    }
+                } else if (this.selectedItem === 2) {
+                    this.stage = 'SSO_FORM'
+                }
+            } else if (this.stage === 'SSO_FORM') {
                 this.stage = 'AUTHENTICATING'
-                const error = await client.startBuilderIdSetup()
+                const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion)
                 if (error) {
                     this.stage = 'START'
                 } else {
                     this.stage = 'CONNECTED'
-                    onConnectionSuccess(this.app)
                 }
-            } else if (this.selectedItem === 2) {
-                this.stage = 'SSO_FORM'
-            }
-        },
-        async handleContinueClickAtSSOFormStage() {
-            this.stage = 'AUTHENTICATING'
-            console.log(this.selectedRegion)
-            const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion)
-            if (error) {
-                this.stage = 'START'
-            } else {
-                this.stage = 'CONNECTED'
-                onConnectionSuccess(this.app)
+            } else if (this.stage === 'EXISTING_USER_START') {
+                if (this.selectedItem === 1) {
+                    this.stage = 'AUTHENTICATING'
+                    const error = await client.startBuilderIdSetup()
+                    if (error) {
+                        this.stage = 'START'
+                    } else {
+                        this.stage = 'CONNECTED'
+                    }
+                } else if (this.selectedItem === 2) {
+                    this.stage = 'SSO_FORM'
+                } else if (this.selectedItem === 3) {
+                    this.stage = 'CONNECTED'
+                }
             }
         },
         handleUrlInput() {
