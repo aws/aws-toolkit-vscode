@@ -44,6 +44,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.Transformation
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerStartJobResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ZipCreationResult
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
@@ -51,6 +52,7 @@ import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtu
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import java.io.File
 import java.io.FileInputStream
+import java.nio.file.Path
 import java.util.Base64
 import java.util.zip.ZipFile
 import kotlin.io.path.Path
@@ -72,9 +74,8 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
         ThreadLeakTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "Process Proxy: Launcher")
     }
 
-    // when maven is not installed in the local machine and mvnw does not support this pom.xml
     @Test
-    fun `CodeModernizerSessionContext shows the transformation hub once ide maven finishes`() {
+    fun `CodeModernizerSessionContext shows the transformation hub once ide maven finishes successfully`() {
         val module = projectRule.module
         val fileText = "Morning"
         projectRule.fixture.addFileToModule(module, "src/tmp.txt", fileText)
@@ -83,9 +84,31 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
         val roots = ModuleRootManager.getInstance(module).contentRoots
         val root = roots[0]
         val context = spy(CodeModernizerSessionContext(project, root.children[0], JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_11))
+        val result = spy(MavenCopyCommandsResult.Success(File("")))
+        doReturn(null).`when`(result).dependencyDirectory
+        doReturn(result).`when`(context).executeMavenCopyCommands(any(), any())
         runInEdtAndWait {
             context.createZipWithModuleFiles().payload
             verify(context, times(1)).showTransformationHub()
+            verify(result, atLeastOnce()).dependencyDirectory
+        }
+    }
+
+    @Test
+    fun `CodeModernizerSessionContext does not show the transformation hub once ide maven fails`() {
+        val module = projectRule.module
+        val fileText = "Morning"
+        projectRule.fixture.addFileToModule(module, "src/tmp.txt", fileText)
+
+        // get project.projectFile because project.projectFile can not be null
+        val roots = ModuleRootManager.getInstance(module).contentRoots
+        val root = roots[0]
+        val context = spy(CodeModernizerSessionContext(project, root.children[0], JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_11))
+        val result = MavenCopyCommandsResult.Failure
+        doReturn(result).`when`(context).executeMavenCopyCommands(any(), any())
+        runInEdtAndWait {
+            context.createZipWithModuleFiles().payload
+            verify(context, times(0)).showTransformationHub()
         }
     }
 
@@ -105,7 +128,9 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
         val codeContext = mock(CodeModernizerSessionContext::class.java)
         val mockFile = mock(File::class.java)
         val mockStringBUilder = mock(StringBuilder::class.java)
-        whenever(codeContext.runMavenCommand(mockFile, mockStringBUilder)).thenReturn(mock(File::class.java))
+        val mockDependencyDirectoryFile = mock(File::class.java)
+        val mavenResult = MavenCopyCommandsResult.Success(mockDependencyDirectoryFile)
+        whenever(codeContext.executeMavenCopyCommands(mockFile, mockStringBUilder)).thenReturn(mavenResult)
         val file = runInEdtAndGet {
             context.createZipWithModuleFiles().payload
         }
@@ -144,8 +169,10 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
         val context = CodeModernizerSessionContext(project, pom, JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_11)
         val codeContext = mock(CodeModernizerSessionContext::class.java)
         val mockFile = mock(File::class.java)
-        val mockStringBUilder = mock(StringBuilder::class.java)
-        whenever(codeContext.runMavenCommand(mockFile, mockStringBUilder)).thenReturn(mock(File::class.java))
+        val mockStringBuilder = mock(StringBuilder::class.java)
+        val mockDependencyDirectoryFile = mock(File::class.java)
+        val mavenResult = MavenCopyCommandsResult.Success(mockDependencyDirectoryFile)
+        whenever(codeContext.executeMavenCopyCommands(mockFile, mockStringBuilder)).thenReturn(mavenResult)
         val file = runInEdtAndGet {
             context.createZipWithModuleFiles().payload
         }

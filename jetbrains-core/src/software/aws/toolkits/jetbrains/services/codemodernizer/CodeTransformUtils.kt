@@ -9,7 +9,6 @@ import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
@@ -45,11 +44,9 @@ import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnecti
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.BearerTokenFeatureSet
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerConnectionValidity
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
-import software.aws.toolkits.jetbrains.services.codemodernizer.constants.CodeModernizerUIConstants
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MAVEN_CONFIGURATION_FILE_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
-import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.io.File
 import java.io.FileOutputStream
@@ -130,17 +127,6 @@ fun String.toTransformationLanguage() = when (this) {
     "JDK_11" -> TransformationLanguage.JAVA_11
     "JDK_17" -> TransformationLanguage.JAVA_17
     else -> TransformationLanguage.UNKNOWN_TO_SDK_VERSION
-}
-
-fun getJdkVersionText(version: JavaSdkVersion?): String {
-    val jdkVersionText: String = if (version == null) {
-        message("codemodernizer.customerselectiondialog.unknown_jdk")
-    } else if (CodeModernizerUIConstants.supportedSourceJDKs.contains(version)) { // detected java version is supported
-        message("codemodernizer.customerselectiondialog.found_supported_jdk", version)
-    } else {
-        message("codemodernizer.customerselectiondialog.found_unsupported_jdk", version) // found the version, but unsupported
-    }
-    return jdkVersionText
 }
 
 fun calculateTotalLatency(startTime: Instant, endTime: Instant) = (endTime.toEpochMilli() - startTime.toEpochMilli()).toInt()

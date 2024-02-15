@@ -8,5 +8,6 @@ sealed class CodeModernizerStartJobResult {
     data class Started(val jobId: JobId) : CodeModernizerStartJobResult()
     data class UnableToStartJob(val exception: String) : CodeModernizerStartJobResult()
     object Cancelled : CodeModernizerStartJobResult()
+    object CancelledMissingDependencies : CodeModernizerStartJobResult()
     object Disposed : CodeModernizerStartJobResult()
 }

@@ -21,4 +21,11 @@ class TransformRunnable : Runnable {
     fun setOutput(s: String) {
         output = s
     }
+
+    fun await() {
+        while (isComplete() == null) {
+            // waiting mavenrunner building
+            Thread.sleep(50)
+        }
+    }
 }
