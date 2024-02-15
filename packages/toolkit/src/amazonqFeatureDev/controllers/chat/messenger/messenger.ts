@@ -17,7 +17,7 @@ import {
     OpenNewTabMessage,
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
-import { ChatItemFollowUp } from '@aws/mynah-ui'
+import { ChatItemAction } from '@aws/mynah-ui'
 
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
@@ -25,7 +25,7 @@ export class Messenger {
     public sendAnswer(params: {
         message?: string
         type: 'answer' | 'answer-part' | 'answer-stream' | 'system-prompt'
-        followUps?: ChatItemFollowUp[]
+        followUps?: ChatItemAction[]
         tabID: string
         canBeVoted?: boolean
     }) {
