@@ -15,7 +15,8 @@ import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { SsoConnection } from '../../../auth/connection'
+import { SsoConnection, createSsoProfile } from '../../../auth/connection'
+import { Auth } from '../../../auth/auth'
 
 export type AuthError = { id: string; text: string }
 export const userCancelled = 'userCancelled'
@@ -98,27 +99,37 @@ export class CommonAuthWebview extends VueWebview {
                 AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
                 await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
             } else {
-                // TODO: toolkit login
-                await awsIdSignIn()
-                AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
-                await vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS Builder ID')
+                // no builder id in toolkit
             }
         })
     }
 
     async startEnterpriseSetup(startUrl: string, region: string, app: string): Promise<AuthError | undefined> {
-        return this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
-            if (app === 'AMAZONQ') {
+        if (app === 'AMAZONQ') {
+            return this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
                 await connectToEnterpriseSso(startUrl, region)
                 AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
                 await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
-            } else {
-                // TODO: toolkit login
-                await connectToEnterpriseSso(startUrl, region)
-                AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
-                await vscode.window.showInformationMessage('Toolkit:Successfully connected to AWS IAM Identity Center')
-            }
-        })
+            })
+        } else {
+            return this.ssoSetup('createIdentityCenterConnection', async () => {
+                const ssoProfile = createSsoProfile(startUrl, region)
+                await Auth.instance.createConnection(ssoProfile)
+                await vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
+                await this.showResourceExplorer()
+            })
+        }
+    }
+
+    async startIamCredentialSetup(
+        profileName: string,
+        accessKey: string,
+        secretKey: string
+    ): Promise<AuthError | undefined> {
+        // See submitData() in manageCredentials.vue
+
+        await this.showResourceExplorer()
+        return
     }
 
     async showResourceExplorer(): Promise<void> {

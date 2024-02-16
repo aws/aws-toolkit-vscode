@@ -175,15 +175,15 @@
             </button>
             <div class="p">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
-            <input class="urlInput" type="text" id="startUrl" name="startUrl" v-model="startUrl" />
+            <input class="iamInput" type="text" id="profileName" name="profileName" v-model="profileName" />
 
             <br /><br />
             <div class="p">Access Key</div>
-            <input class="urlInput" type="text" id="startUrl" name="startUrl" v-model="startUrl" />
+            <input class="iamInput" type="text" id="accessKey" name="accessKey" v-model="accessKey" />
 
             <br /><br />
             <div class="p">Secret Key</div>
-            <input class="urlInput" type="text" id="startUrl" name="startUrl" v-model="startUrl" />
+            <input class="iamInput" type="text" id="secretKey" name="secretKey" v-model="secretKey" />
 
             <br /><br />
             <button class="continue-button" v-on:click="handleContinueClick()">Continue</button>
@@ -239,6 +239,9 @@ export default defineComponent({
             startUrl: '',
             app: 'TOOLKIT' as App,
             LoginOption,
+            profileName: '',
+            accessKey: '',
+            secretKey: '',
         }
     },
     async created() {
@@ -298,7 +301,13 @@ export default defineComponent({
                     this.stage = 'CONNECTED'
                 }
             } else if (this.stage === 'AWS_PROFILE') {
-                //TODO:
+                this.stage = 'AUTHENTICATING'
+                const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey)
+                if (error) {
+                    this.stage = 'START'
+                } else {
+                    this.stage = 'CONNECTED'
+                }
             }
         },
         handleUrlInput() {
@@ -316,7 +325,6 @@ export default defineComponent({
             this.regions = regions
         },
         async emitUpdate(cause?: string) {},
-        async signout() {},
     },
 })
 </script>
@@ -354,6 +362,11 @@ export default defineComponent({
     color: #6f6f6f;
 }
 .urlInput {
+    background-color: #252526;
+    width: 100%;
+    color: white;
+}
+.iamInput {
     background-color: #252526;
     width: 100%;
     color: white;
