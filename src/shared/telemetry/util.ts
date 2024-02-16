@@ -92,19 +92,26 @@ export async function getUserAgent(
     return pairs.join(' ')
 }
 
-type EnvType = 'classic' | 'codecatalyst' | ...
+type EnvType =
+    | 'cloud9'
+    | 'cloud9-codecatalyst'
+    | 'amazon-cloud9'
+    | 'cloud9-ec2'
+    | 'codecatalyst'
+    | 'local'
+    | 'ec2'
+    | 'sagemaker'
+    | 'test'
+    | 'other'
 
 export function getComputeEnvType(): EnvType {
-    // Compute ENV could be one of the following
-    // "cloud9"|"cloud9-codecatalyst"|"cloud9-ec2"|"codecatalyst"|"ec2"|"local"|"sagemaker"|"ssh"|"test"|"web"|"wsl"|"other"|string;
-
     if (isCloud9('classic')) return 'cloud9'
 
     if (isCloud9('codecatalyst')) return 'cloud9-codecatalyst'
 
-    if (isInDevEnv()) return 'codecatalyst' // should it be codecatalyst devEnv?
+    if (isInDevEnv()) return 'codecatalyst'
 
-    if (isCn()) return 'amazon-cloud9' // name better
+    if (isCn()) return 'amazon-cloud9'
 
     if (isSageMaker()) return 'sagemaker'
 
@@ -112,9 +119,7 @@ export function getComputeEnvType(): EnvType {
 
     if (isAutomation()) return 'test'
 
-    if (!env.remoteName)
-        // use isDevenvVscode instead?
-        return 'local'
+    if (!env.remoteName) return 'local'
     else return 'other'
 }
 
