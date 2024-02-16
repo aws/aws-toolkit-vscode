@@ -72,8 +72,21 @@
         </div>
         <template v-if="stage === 'START'">
             <div class="auth-container-section">
-                <div class="title">Choose a sign-in option:</div>
+                <div class="existing-logins" v-if="loginOption.id !== -1 && app === 'AMAZONQ'">
+                    <div class="title">Connect with an existing account:</div>
+                    <SelectableItem
+                        @toggle="toggleItemSelection"
+                        :isSelected="selectedItem === 3"
+                        :itemId="3"
+                        :itemText="loginOption.text"
+                        :itemTitle="loginOption.title"
+                        class="selectable-item"
+                    ></SelectableItem>
+                    <div class="title">Or, choose a sign-in option:</div>
+                </div>
+                <div class="title" v-if="loginOption.id === -1">Choose a sign-in option:</div>
                 <SelectableItem
+                    v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
                     :isSelected="selectedItem === 1"
                     :itemId="1"
@@ -89,48 +102,20 @@
                     :itemTitle="'Workforce'"
                     class="selectable-item"
                 ></SelectableItem>
+                <SelectableItem
+                    v-if="app === 'TOOLKIT'"
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedItem === 4"
+                    :itemId="4"
+                    :itemText="'Store keys locally for use with AWS CLI tools'"
+                    :itemTitle="'IAM Credential'"
+                    class="selectable-item"
+                ></SelectableItem>
                 <button class="continue-button" :disabled="selectedItem === 0" v-on:click="handleContinueClick()">
                     Continue
                 </button>
             </div>
         </template>
-        <template v-if="stage === 'EXISTING_USER_START'">
-            <div class="auth-container-section">
-                <div class="title">Connect with an existing account:</div>
-
-                <SelectableItem
-                    @toggle="toggleItemSelection"
-                    :isSelected="selectedItem === 3"
-                    :itemId="3"
-                    :itemText="loginOption.text"
-                    :itemTitle="loginOption.title"
-                    class="selectable-item"
-                ></SelectableItem>
-                <div class="title">Or, choose a sign-in option:</div>
-
-                <SelectableItem
-                    @toggle="toggleItemSelection"
-                    :isSelected="selectedItem === 1"
-                    :itemId="1"
-                    :itemText="'Create or sign-in using AWS Builder ID'"
-                    :itemTitle="'Personal'"
-                    class="selectable-item"
-                ></SelectableItem>
-                <SelectableItem
-                    @toggle="toggleItemSelection"
-                    :isSelected="selectedItem === 2"
-                    :itemId="2"
-                    :itemText="'Single sign-on with AWS IAM Identity Center'"
-                    :itemTitle="'Workforce'"
-                    class="selectable-item"
-                ></SelectableItem>
-
-                <button class="continue-button" :disabled="selectedItem === 0" v-on:click="handleContinueClick()">
-                    Continue
-                </button>
-            </div>
-        </template>
-
         <template v-if="stage === 'SSO_FORM'">
             <button class="back-button" @click="handleBackButtonClick">
                 <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -175,6 +160,22 @@
         </template>
 
         <template v-if="stage === 'CONNECTED'"> </template>
+        <template v-if="stage === 'AWS_PROFILE'">
+            <div class="p">Profile Name</div>
+            <div class="hint">The identifier for these credentials</div>
+            <input class="urlInput" type="text" id="startUrl" name="startUrl" v-model="startUrl" />
+
+            <br /><br />
+            <div class="p">Access Key</div>
+            <input class="urlInput" type="text" id="startUrl" name="startUrl" v-model="startUrl" />
+
+            <br /><br />
+            <div class="p">Secret Key</div>
+            <input class="urlInput" type="text" id="startUrl" name="startUrl" v-model="startUrl" />
+
+            <br /><br />
+            <button class="continue-button" v-on:click="handleAddProfileButton()">Add Profile</button>
+        </template>
     </div>
 </template>
 <script lang="ts">
@@ -187,7 +188,7 @@ import { Region } from '../../../shared/regions/endpoints'
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
-type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'EXISTING_USER_START'
+type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
 type App = 'TOOLKIT' | 'AMAZONQ'
 
 function validateSsoUrlFormat(url: string) {
@@ -210,14 +211,14 @@ export default defineComponent({
     },
     data() {
         return {
-            loginOption: { id: 0, text: '', title: '' },
+            loginOption: { id: -1, text: '', title: '' },
             selectedItem: 0,
             stage: 'START' as Stage,
             regions: [] as Region[],
             urlValid: false,
             selectedRegion: '',
             startUrl: '',
-            app: 'AMAZONQ' as App,
+            app: 'TOOLKIT' as App,
         }
     },
     async created() {
@@ -225,7 +226,6 @@ export default defineComponent({
 
         const connection = await client.fetchConnection()
         if (connection) {
-            this.stage = 'EXISTING_USER_START'
             this.loginOption = {
                 id: 3,
                 text: 'Used by another AWS Extension',
@@ -267,6 +267,11 @@ export default defineComponent({
                     }
                 } else if (this.selectedItem === 2) {
                     this.stage = 'SSO_FORM'
+                } else if (this.selectedItem === 3) {
+                    // TODO:
+                    this.stage = 'START'
+                } else if (this.selectedItem === 4) {
+                    this.stage = 'AWS_PROFILE'
                 }
             } else if (this.stage === 'SSO_FORM') {
                 this.stage = 'AUTHENTICATING'
@@ -274,20 +279,6 @@ export default defineComponent({
                 if (error) {
                     this.stage = 'START'
                 } else {
-                    this.stage = 'CONNECTED'
-                }
-            } else if (this.stage === 'EXISTING_USER_START') {
-                if (this.selectedItem === 1) {
-                    this.stage = 'AUTHENTICATING'
-                    const error = await client.startBuilderIdSetup(this.app)
-                    if (error) {
-                        this.stage = 'START'
-                    } else {
-                        this.stage = 'CONNECTED'
-                    }
-                } else if (this.selectedItem === 2) {
-                    this.stage = 'SSO_FORM'
-                } else if (this.selectedItem === 3) {
                     this.stage = 'CONNECTED'
                 }
             }
@@ -306,6 +297,7 @@ export default defineComponent({
             const regions = await client.getRegions()
             this.regions = regions
         },
+        handleAddProfileButton() {},
         async emitUpdate(cause?: string) {},
         async signout() {},
     },
