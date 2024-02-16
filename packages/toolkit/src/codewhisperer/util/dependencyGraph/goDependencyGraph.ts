@@ -69,7 +69,7 @@ export class GoDependencyGraph extends DependencyGraph {
             await sleep(1000)
             getLogger().verbose(`CodeWhisperer: Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
             const truncDirPath = this.getTruncDirPath(uri)
-            this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
+            await this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
             const zipFilePath = this.zipDir(truncDirPath, CodeWhispererConstants.codeScanZipExt)
             const zipFileSize = statSync(zipFilePath).size
             return {

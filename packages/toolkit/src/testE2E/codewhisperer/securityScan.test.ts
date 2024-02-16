@@ -9,7 +9,6 @@ import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as path from 'path'
 import * as testutil from '../../test/testUtil'
-import * as fs from 'fs-extra'
 import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
 import { resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
@@ -23,6 +22,7 @@ import {
     listScanResults,
 } from '../../codewhisperer/service/securityScanHandler'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { fsCommon } from '../../srcShared/fs'
 
 const filePromptWithSecurityIssues = `from flask import app
 
@@ -64,7 +64,7 @@ describe('CodeWhisperer security scan', async function () {
 
     afterEach(async function () {
         if (tempFolder !== undefined) {
-            await fs.remove(tempFolder)
+            await fsCommon.delete(tempFolder)
         }
     })
 
@@ -113,7 +113,7 @@ describe('CodeWhisperer security scan', async function () {
         try {
             artifactMap = await getPresignedUrlAndUpload(client, truncation)
         } finally {
-            dependencyGraph.removeTmpFiles(truncation)
+            await dependencyGraph.removeTmpFiles(truncation)
         }
         return {
             artifactMap: artifactMap,
