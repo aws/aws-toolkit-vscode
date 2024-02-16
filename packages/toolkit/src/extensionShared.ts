@@ -42,6 +42,9 @@ import { showQuickStartWebview } from './shared/extensionStartup'
 import { ExtContext } from './shared/extensions'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { UriHandler } from './shared/vscode/uriHandler'
+import { disableAwsSdkWarning } from './shared/awsClientBuilder'
+
+disableAwsSdkWarning()
 
 let localize: nls.LocalizeFunc
 
