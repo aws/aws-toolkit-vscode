@@ -41,6 +41,7 @@ The test suite has the following categories of tests:
 -   E2E Tests: **slow** tests
     -   Live in `src/testE2E`
     -   These tests are heavier than Integration tests.
+    -   Some E2E tests have a more complicated architecture, described in [TEST_E2E](./TEST_E2E.md)
 
 ## Test files
 

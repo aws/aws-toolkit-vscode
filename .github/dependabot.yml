@@ -7,7 +7,7 @@
 version: 2
 updates:
     - package-ecosystem: 'npm'
-      directory: '/' # Location of package manifests.
+      directory: './packages/toolkit/' # Location of package manifests.
       target-branch: 'master' # Avoid updates to "staging".
       commit-message:
           prefix: 'deps'
@@ -20,8 +20,12 @@ updates:
           vscode-lsp:
               patterns:
                   - 'vscode-lang*'
+          smithy:
+              patterns:
+                  - '@smithy*'
+                  - 'smithy*'
     - package-ecosystem: 'github-actions'
-      directory: '/'
+      directory: './packages/toolkit/'
       target-branch: 'master' # Avoid updates to "staging".
       commit-message:
           prefix: 'deps'

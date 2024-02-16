@@ -1,0 +1,9 @@
+{
+    "extends": "../.tsconfig.packages.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "baseUrl": ".",
+        "rootDir": "."
+    },
+    "exclude": ["node_modules", ".vscode-test", "dist"]
+}

@@ -6,7 +6,6 @@ run-as: codebuild-user
 env:
     variables:
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
-        NO_COVERAGE: 'true'
         # Suppress noisy apt-get/dpkg warnings like "debconf: unable to initialize frontend: Dialog").
         DEBIAN_FRONTEND: 'noninteractive'
 

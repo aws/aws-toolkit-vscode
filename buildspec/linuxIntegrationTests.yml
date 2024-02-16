@@ -9,7 +9,6 @@ env:
         # VSCODE_TEST_VERSION
         # GITHUB_READONLY_TOKEN
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
-        NO_COVERAGE: 'true'
         # Suppress noisy apt-get/dpkg warnings like "debconf: unable to initialize frontend: Dialog").
         DEBIAN_FRONTEND: 'noninteractive'
 
@@ -28,12 +27,13 @@ phases:
             - '>/dev/null apt-get -qq update'
             - '>/dev/null apt-get -qq install -y ca-certificates'
             - 'apt-get install --reinstall ca-certificates'
-            - 'add-apt-repository -y ppa:deadsnakes/ppa'
             # Other dependencies.
-            - 'apt-get -qq install -y jq python3.7 python3.8 python3-pip'
-            # Fail early if any of these not found.
-            - 'python3.7 --version'
-            - 'python3.8 --version'
+            - 'apt-get -qq install -y jq'
+            - |
+                curl --silent -LO https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip
+                unzip -q aws-sam-cli-linux-x86_64.zip -d samcli
+                sudo ./samcli/install
+                rm -rf samcli
             # login to DockerHub so we don't get throttled
             # - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
             # increase file watcher count so CodeLens tests do not fail unexpectedly (ENOSPC error)
@@ -52,13 +52,10 @@ phases:
             - export HOME=/home/codebuild-user
             - bash buildspec/shared/setup-github-token.sh
             - bash buildspec/shared/linux-pre_build.sh
-            # Where non-root "pip3 install" puts things:
-            - 'export PATH="$HOME/.local/bin:$PATH"'
-            - '>/dev/null pip3 install --upgrade aws-sam-cli'
-            - '>/dev/null pip3 install --upgrade awscli'
-            # Print info about sam (version, location, …).
-            - 'pip3 show aws-sam-cli'
-            - 'sam --version'
+            # Print info (version, location, …) or fail early.
+            - |
+                python3 --version
+                sam --version
             # Install latest version of Go (known to 'goenv')
             # - eval "$(goenv init -)"
             # - 'export PATH="$GOROOT/bin:$PATH:$GOPATH/bin"'

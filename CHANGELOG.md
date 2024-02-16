@@ -1,3 +1,27 @@
+## 2.9.0 2024-02-09
+
+- **Bug Fix** Cloud9: certain filesystem calls did not work in Cloud9
+- **Bug Fix** EC2 Credentials: Use IMDSv2 calls if available, otherwise fall back IMDSv1.
+- **Feature** Enable java 17 for SAM create and local Lambda debugging
+
+## 2.8.0 2024-02-01
+
+- **Bug Fix** CodeWhisperer: Improve CodePercentage telemetry reporting
+
+## 2.7.0 2024-01-25
+
+- **Bug Fix** Add invalid auth handling to Application Composer's Sync button
+
+## 2.6.0 2024-01-18
+
+- **Bug Fix** CodeWhisperer suggestions may be trimmed under certain criteria
+- **Bug Fix** Amazon Q CodeTransform: open summary.md automatically when job finishes
+- **Bug Fix** CodeWhisperer not handling extra closing symbols (parenthesis, brackets, quotes) when user typeahead exists
+- **Bug Fix** Cloud9: error when expanding S3 folder
+- **Bug Fix** SAM local debugging: Toolkit showed SamLaunchRequestError for `AWS::Lambda::Function` template resource
+- **Feature** Amazon Q CodeTransform: use Maven wrapper (if present) to copy dependencies if Maven not installed
+- **Feature** SAM lambda debugging: SAM output and other logs are now presented with VSCode's log highlighting
+
 ## 2.5.0 2024-01-11
 
 - **Bug Fix** CodeWhisperer: Fixes a bug where accepting a recommendation in AWS Cloud9 will trigger another suggestion

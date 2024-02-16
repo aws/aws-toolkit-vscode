@@ -8,6 +8,10 @@ codebase and sending pull requests.
 
 ## Getting Started
 
+This project is set up as a typescript monorepo. The documentation throughout this project
+is referring to the subproject in [`packages/toolkit/`](./packages/toolkit/). For more information,
+see [ARCHITECTURE.md](./docs/ARCHITECTURE.md#monorepo-structure)
+
 ### Find things to do
 
 If you're looking for ideas about where to contribute, consider
@@ -34,6 +38,9 @@ Then clone the repository and install NPM packages:
     npm install
 
 ### Run
+
+Due to the monorepo structure of the project, you can run the extension in VSCode by either opening the
+`aws-toolkit-vscode/packages/toolkit` folder directly, or adding it as a root folder in the VSCode Workspace.
 
 To run the extension from VSCode as a Node.js app:
 
@@ -153,7 +160,9 @@ See [browser.md](./docs/browser.md) for working with the browser implementation 
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
-You can run tests directly from VSCode:
+You can run tests directly from VSCode. Due to the monorepo structure of the project, you must either open
+the `aws-toolkit-vscode/packages/toolkit/` folder directly, or add it as a root folder in the VSCode Workspace.
+Then:
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
@@ -189,11 +198,26 @@ To run a single test in VSCode, do any one of:
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
 
+#### Run all tests in a specific folder
+
+To run tests against a specific folder in VSCode, do any one of:
+
+-   Add the TEST_DIR environment variable to one of the testing launch configs and run it
+-   Run in your terminal
+    -   Unix/macOS/POSIX shell:
+        ```
+        TEST_DIR=src/test/foo npm run test
+        ```
+    -   Powershell:
+        ```
+        $Env:TEST_DIR = "src/test/foo"; npm run test
+        ```
+
 ### Browser Support
 
 Running the extension in the browser (eg: [vscode.dev](https://vscode.dev/)).
 
-[See documentation here](./src/browser/README.md).
+[See documentation here](./packages/toolkit/src/browser/README.md).
 
 ### Coverage report
 
@@ -329,7 +353,7 @@ Example:
 }
 ```
 
-Overrides specifically for CodeCatalyst can be set using the `aws.dev.codecatalystService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeCatalyst: `region`, `endpoint`, `hostname`, and `gitHostname`. If this setting is present, then all keys need to be explicitly provided.
+<a name="codecatalyst-settings">Overrides specifically for CodeCatalyst can be set using the `aws.dev.codecatalystService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeCatalyst: `region`, `endpoint`, `hostname`, and `gitHostname`. If this setting is present, then all keys need to be explicitly provided.</a>
 
 Example:
 
@@ -341,6 +365,85 @@ Example:
     "gitHostname": "git.gamma.source.example.com",
 }
 ```
+
+<a name="codewhisperer-settings">Overrides specifically for CodeWhisperer/Amazon Q can be set using the `aws.dev.codewhispererService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeWhisperer/Amazon Q: `region` and `endpoint`. If this setting is present, then all keys need to be explicitly provided.</a>
+
+Example:
+
+```json
+"aws.dev.codewhispererService": {
+    "region": "us-west-2",
+    "endpoint": "https://codewhisperer-gamma.example.com"
+}
+```
+
+### Environment variables
+
+Environment variables can be used to modify the behaviour of VSCode. The following are environment variables that can be used to configure the extension:
+
+#### General AWS
+
+-   `AWS_ACCESS_KEY_ID`: The AWS access key associated with an IAM account. If defined, this environment variable overrides the value for the profile setting aws_access_key_id. For more information see [environment variables to configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+-   `AWS_SECRET_ACCESS_KEY`: The secret key associated with the access key. This is essentially the "password" for the access key. If defined, this environment variable overrides the value for the profile setting aws_secret_access_key. For more information see [environment variables to configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+-   `AWS_REGION`: The AWS Region to send the request to. If defined, this environment variable overrides the values in the environment variable AWS_DEFAULT_REGION and the profile setting region. For more information see [environment variables to configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+-   `AWS_SDK_LOAD_CONFIG`: Controls how the AWS SDK for javascript loads it's configuration when initialized. If the AWS_SDK_LOAD_CONFIG environment variable has been set to a truthy value, the SDK for JavaScript automatically searches for a config file when it loads. For more information see [the shared config file documentation](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html#setting-region-config-file)
+-   `AWS_SHARED_CREDENTIALS_FILE`: The location of the file that the AWS CLI uses to store access keys. The default path is `~/.aws/credentials`
+-   `AWS_CONFIG_FILE`: The location of the file that the AWS CLI uses to store configuration profiles. The default path is `~/.aws/config`
+
+#### General OS
+
+-   `HOME`: The home directory location for the current user in Linux and other Unix-like operating systems.
+-   `SSH_AUTH_SOCK`: The location of a UNIX domain socket used by ssh-agent and SSH clients for agent-based authentication
+-   `USERPROFILE`: The absolute path to the profile folder for the current user in Windows
+-   `HOMEPATH`: The path to the home directory for the current user in Windows, without including the drive letter
+-   `PROGRAMFILES/PROGRAMFILES(X86)`: The default installation directory for Windows
+-   `WINDIR`: The location of the Windows installation directory
+-   `PATH`: The set of directories where executable programs live
+
+#### Codecatalyst
+
+-   `__DEV_ENVIRONMENT_ID`: The ID of the running development environment. Automatically set when running the toolkit in Codecatalyst
+-   `__DEV_ENVIRONMENT_PROJECT_NAME`: The project name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
+-   `__DEV_ENVIRONMENT_SPACE_NAME`: The space name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
+-   `__DEV_ENVIRONMENT_ORGANIZATION_NAME`: The organization name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
+
+The following are environment variable versions of the user `settings.json` overrides mentioned [here](#codecatalyst-settings). These will always override the toolkit defaults and those defined in `settings.json`.
+Unlike the user setting overrides, not all of these environment variables have to be set to make use of them.
+
+-   `__CODECATALYST_REGION`: for aws.dev.codecatalystService.region
+-   `__CODECATALYST_ENDPOINT`: for aws.dev.codecatalystService.endpoint
+-   `__CODECATALYST_HOSTNAME`: for aws.dev.codecatalystService.hostname
+-   `__CODECATALYST_GIT_HOSTNAME`: for aws.dev.codecatalystService.gitHostname
+
+#### Codewhisperer/Amazon Q
+
+The following are environment variable versions of the user `settings.json` overrides mentioned [here](#codewhisperer-settings). These will always override the toolkit defaults and those defined in `settings.json`.
+Unlike the user setting overrides, not all of these environment variables have to be set to make use of them.
+
+-   `__CODEWHISPERER_REGION`: for aws.dev.codewhispererService.region
+-   `__CODEWHISPERER_ENDPOINT`: for aws.dev.codewhispererService.endpoint
+
+#### Lambda
+
+-   `AUTH_UTIL_LAMBDA_ARN`: The Amazon Resource Name (ARN) of the lambda function
+
+#### ECS
+
+-   `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`: The relative HTTP URL endpoint for the SDK to use when making a request for credentials. The value is appended to the default Amazon ECS hostname of 169.254.170.2. For more information see [container credential provider](https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html)
+-   `AWS_CONTAINER_CREDENTIALS_FULL_URI`: The full HTTP URL endpoint for the SDK to use when making a request for credentials. This includes both the scheme and the host. For more information see [container credential provider](https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html)
+
+#### Step functions
+
+-   `SSMDOCUMENT_LANGUAGESERVER_PORT`: The port the ssm document language server should start debugging on
+
+#### CI/Testing
+
+-   `GITHUB_ACTION`: The name of the current GitHub Action workflow step that is running
+-   `CODEBUILD_BUILD_ID`: The unique ID of the current CodeBuild build that is executing
+-   `AWS_TOOLKIT_AUTOMATION`: If tests are currently being ran
+-   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
+-   `AWS_TOOLKIT_TEST_NO_COLOR`: If the tests should include colour in their output
+-   `TEST_DIR` - The directory where the test runner should find the tests
 
 ### SAM/CFN ("goformation") JSON schema
 
