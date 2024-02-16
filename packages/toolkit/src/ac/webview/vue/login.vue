@@ -72,32 +72,32 @@
         </div>
         <template v-if="stage === 'START'">
             <div class="auth-container-section">
-                <div class="existing-logins" v-if="loginOption.id !== -1 && app === 'AMAZONQ'">
+                <div class="existing-logins" v-if="existingLogin.id !== -1 && app === 'AMAZONQ'">
                     <div class="title">Connect with an existing account:</div>
                     <SelectableItem
                         @toggle="toggleItemSelection"
-                        :isSelected="selectedItem === 3"
-                        :itemId="3"
-                        :itemText="loginOption.text"
-                        :itemTitle="loginOption.title"
+                        :isSelected="selectedLoginOption === LoginOption.EXISTING_LOGINS"
+                        :itemId="LoginOption.EXISTING_LOGINS"
+                        :itemText="existingLogin.text"
+                        :itemTitle="existingLogin.title"
                         class="selectable-item"
                     ></SelectableItem>
                     <div class="title">Or, choose a sign-in option:</div>
                 </div>
-                <div class="title" v-if="loginOption.id === -1">Choose a sign-in option:</div>
+                <div class="title" v-if="existingLogin.id === -1">Choose a sign-in option:</div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
-                    :isSelected="selectedItem === 1"
-                    :itemId="1"
+                    :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
+                    :itemId="LoginOption.BUILDER_ID"
                     :itemText="'Create or sign-in using AWS Builder ID'"
                     :itemTitle="'Personal'"
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem
                     @toggle="toggleItemSelection"
-                    :isSelected="selectedItem === 2"
-                    :itemId="2"
+                    :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
+                    :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Single sign-on with AWS IAM Identity Center'"
                     :itemTitle="'Workforce'"
                     class="selectable-item"
@@ -105,13 +105,17 @@
                 <SelectableItem
                     v-if="app === 'TOOLKIT'"
                     @toggle="toggleItemSelection"
-                    :isSelected="selectedItem === 4"
-                    :itemId="4"
+                    :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
+                    :itemId="LoginOption.IAM_CREDENTIAL"
                     :itemText="'Store keys locally for use with AWS CLI tools'"
                     :itemTitle="'IAM Credential'"
                     class="selectable-item"
                 ></SelectableItem>
-                <button class="continue-button" :disabled="selectedItem === 0" v-on:click="handleContinueClick()">
+                <button
+                    class="continue-button"
+                    :disabled="selectedLoginOption === 0"
+                    v-on:click="handleContinueClick()"
+                >
                     Continue
                 </button>
             </div>
@@ -161,6 +165,14 @@
 
         <template v-if="stage === 'CONNECTED'"> </template>
         <template v-if="stage === 'AWS_PROFILE'">
+            <button class="back-button" @click="handleBackButtonClick">
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                        fill="#21A2FF"
+                    />
+                </svg>
+            </button>
             <div class="p">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
             <input class="urlInput" type="text" id="startUrl" name="startUrl" v-model="startUrl" />
@@ -190,6 +202,13 @@ const client = WebviewClientFactory.create<CommonAuthWebview>()
 /** Where the user is currently in the builder id setup process */
 type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
 type App = 'TOOLKIT' | 'AMAZONQ'
+enum LoginOption {
+    NONE,
+    BUILDER_ID,
+    ENTERPRISE_SSO,
+    IAM_CREDENTIAL,
+    EXISTING_LOGINS,
+}
 
 function validateSsoUrlFormat(url: string) {
     const regex = /^https?:\/\/(.+)\.awsapps\.com\/start$/
@@ -211,14 +230,15 @@ export default defineComponent({
     },
     data() {
         return {
-            loginOption: { id: -1, text: '', title: '' },
-            selectedItem: 0,
+            existingLogin: { id: -1, text: '', title: '' },
+            selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
             regions: [] as Region[],
             urlValid: false,
             selectedRegion: '',
             startUrl: '',
             app: 'TOOLKIT' as App,
+            LoginOption,
         }
     },
     async created() {
@@ -226,8 +246,8 @@ export default defineComponent({
 
         const connection = await client.fetchConnection()
         if (connection) {
-            this.loginOption = {
-                id: 3,
+            this.existingLogin = {
+                id: LoginOption.EXISTING_LOGINS,
                 text: 'Used by another AWS Extension',
                 title: isBuilderId(connection.startUrl) ? 'AWS Builder ID' : 'AWS IAM Identity Center',
             }
@@ -240,24 +260,20 @@ export default defineComponent({
 
     methods: {
         toggleItemSelection(itemId: number) {
-            this.selectedItem = itemId
+            this.selectedLoginOption = itemId
         },
         handleDocumentClick(event: any) {
             const isClickInsideSelectableItems = event.target.closest('.selectable-item')
             if (!isClickInsideSelectableItems) {
-                this.selectedItem = 0
+                this.selectedLoginOption = 0
             }
         },
         handleBackButtonClick() {
-            if (this.stage === 'SSO_FORM') {
-                this.stage = 'START'
-            } else if (this.stage === 'AUTHENTICATING') {
-                this.stage = 'START'
-            }
+            this.stage = 'START'
         },
         async handleContinueClick() {
             if (this.stage === 'START') {
-                if (this.selectedItem === 1) {
+                if (this.selectedLoginOption === LoginOption.BUILDER_ID) {
                     this.stage = 'AUTHENTICATING'
                     const error = await client.startBuilderIdSetup(this.app)
                     if (error) {
@@ -265,12 +281,12 @@ export default defineComponent({
                     } else {
                         this.stage = 'CONNECTED'
                     }
-                } else if (this.selectedItem === 2) {
+                } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                     this.stage = 'SSO_FORM'
-                } else if (this.selectedItem === 3) {
+                } else if (this.selectedLoginOption === LoginOption.EXISTING_LOGINS) {
                     // TODO:
                     this.stage = 'START'
-                } else if (this.selectedItem === 4) {
+                } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
                     this.stage = 'AWS_PROFILE'
                 }
             } else if (this.stage === 'SSO_FORM') {
@@ -297,7 +313,9 @@ export default defineComponent({
             const regions = await client.getRegions()
             this.regions = regions
         },
-        handleAddProfileButton() {},
+        handleAddProfileButton() {
+            // TODO
+        },
         async emitUpdate(cause?: string) {},
         async signout() {},
     },
