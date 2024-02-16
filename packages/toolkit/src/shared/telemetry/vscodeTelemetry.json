@@ -271,9 +271,50 @@
             "name": "cwsprChatCommandName",
             "type": "string",
             "description": "Type of chat command name executed"
+        },
+        {
+            "name": "codeTransformSessionId",
+            "type": "string",
+            "description": "Type of chat command name executed"
+        },
+        {
+            "name": "codeTransformPreValidationError",
+            "type": "string",
+            "description": "Type of chat command name executed"
+        },
+        {
+            "name": "codeTransformLocalJavaVersion",
+            "type": "string",
+            "description": "Type of chat command name executed"
         }
     ],
     "metrics": [
+        {
+            "name": "codeTransform_projectDetails",
+            "description": "Transform initiates project validation before user interaction and we want to gather project details then.",
+            "metadata": [
+                {
+                    "type": "codeTransformSessionId",
+                    "required": true
+                },
+                {
+                    "type": "result",
+                    "required": true
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "codeTransformPreValidationError",
+                    "required": false
+                },
+                {
+                    "type": "codeTransformLocalJavaVersion",
+                    "required": false
+                }
+            ]
+        },
         {
             "name": "vscode_executeCommand",
             "description": "Emitted whenever a registered Toolkit command is executed",

@@ -175,9 +175,9 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
  * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
  * and we allow the user to specify the Java version.
  */
-export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
+export async function validateOpenProjects(projects: vscode.QuickPickItem[], projectOnLoad = false) {
     const javaProjects = await getJavaProjects(projects)
-    if (javaProjects.length === 0) {
+    if (javaProjects.length === 0 && !projectOnLoad) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -185,10 +185,10 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
             result: MetadataResult.Fail,
             reason: 'CouldNotFindJavaProject',
         })
-        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject' })
+        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject', name: 'NoJavaProject' })
     }
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
-    if (mavenJavaProjects.length === 0) {
+    if (mavenJavaProjects.length === 0 && !projectOnLoad) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -196,15 +196,16 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
             result: MetadataResult.Fail,
             reason: 'NoPomFileFound',
         })
-        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
+        throw new ToolkitError('No valid Maven build file found', { code: 'NoPomFileFound', name: 'NonMavenProject' })
     }
 
     /*
-     * these projects we know must contain a pom.xml and a .java file
+     * These projects we know must contain a pom.xml and a .java file
      * here we try to get the Java version of each project so that we
-     * can pre-select a default version in the QuickPick for them
+     * can pre-select a default version in the QuickPick for them.
      */
     const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects)
+
     return projectsValidToTransform
 }
 

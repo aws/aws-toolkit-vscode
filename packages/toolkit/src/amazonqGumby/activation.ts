@@ -16,10 +16,35 @@ import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryS
 import { telemetry } from '../shared/telemetry/telemetry'
 import { CancelActionPositions, logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
 import { CodeTransformConstants } from './models/constants'
+import { getOpenProjects, validateOpenProjects } from '../codewhisperer/service/transformByQHandler'
+import { MetadataResult } from '../shared/telemetry/telemetryClient'
 
 export async function activate(context: ExtContext) {
     const transformationHubViewProvider = new TransformationHubViewProvider()
     new ProposedTransformationExplorer(context.extensionContext)
+
+    // Register an activation event listener to determine when the IDE opens, closes or users
+    // select to open a new workspace
+    const workspaceChangeEvent = vscode.workspace.onDidChangeWorkspaceFolders(event => {
+        // A loophole to register the IDE closed. This is when no folders were added nor
+        // removed, but the event still fired. This assumes the user closed the workspace
+        if (event.added.length === 0 && event.removed.length === 0) {
+            // Only fire closed during running/active job status
+            if (transformByQState.isRunning()) {
+                telemetry.codeTransform_jobIsClosedDuringIdeRun.emit({
+                    codeTransformJobId: transformByQState.getJobId(),
+                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformStatus: transformByQState.getStatus(),
+                })
+            }
+        } else {
+            telemetry.codeTransform_jobIsResumedAfterIdeClose.emit({
+                codeTransformJobId: transformByQState.getJobId(),
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformStatus: transformByQState.getStatus(),
+            })
+        }
+    })
 
     context.extensionContext.subscriptions.push(
         showTransformByQ.register(context),
@@ -54,29 +79,25 @@ export async function activate(context: ExtContext) {
                 'markdown.showPreview',
                 vscode.Uri.file(transformByQState.getPlanFilePath())
             )
-        })
+        }),
+
+        workspaceChangeEvent
     )
 
-    // Register an activation event listener to determine when the IDE opens, closes or users
-    // select to open a new workspace
-    vscode.workspace.onDidChangeWorkspaceFolders(event => {
-        // Register when the IDE is closed
-        if (event.added.length === 0 && event.removed.length === 0) {
-            // Only fire closed during running/active job status
-            if (transformByQState.isRunning()) {
-                telemetry.codeTransform_jobIsClosedDuringIdeRun.emit({
-                    codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                    codeTransformStatus: transformByQState.getStatus(),
-                })
-            }
-        } else {
-            // Register when the workspace is changed to a new project, or IDE is opened
-            telemetry.codeTransform_jobIsResumedAfterIdeClose.emit({
-                codeTransformJobId: transformByQState.getJobId(),
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformStatus: transformByQState.getStatus(),
-            })
-        }
-    })
+    // Try to validate project silently
+    try {
+        const openProjects = await getOpenProjects()
+        const validProjects = await validateOpenProjects(openProjects)
+        telemetry.codeTransform_projectDetails.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformLocalJavaVersion: validProjects[0].JDKVersion,
+        })
+    } catch (err) {
+        telemetry.codeTransform_projectDetails.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: err.name || '',
+            result: MetadataResult.Fail,
+            reason: err.code || '',
+        })
+    }
 }

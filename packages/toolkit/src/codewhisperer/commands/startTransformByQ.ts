@@ -365,6 +365,7 @@ export async function finalizeTransformationJob(status: string) {
 }
 
 export async function validateTransformationJob() {
+    console.log('Starting validation....')
     let openProjects: vscode.QuickPickItem[] = []
     try {
         openProjects = await getOpenProjects()
