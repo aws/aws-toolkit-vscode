@@ -13,15 +13,15 @@ import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
 
 describe('searchLogGroup', async function () {
     describe('Wizard', async function () {
-        it('shows steps in correct order', function () {
-            const testWizard = createWizardTester(new SearchLogGroupWizard())
+        it('shows steps in correct order', async function () {
+            const testWizard = await createWizardTester(new SearchLogGroupWizard())
             testWizard.submenuResponse.assertShowFirst()
             testWizard.timeRange.assertShowSecond()
             testWizard.filterPattern.assertShowThird()
         })
 
         it('skips steps if parameters are given', async function () {
-            const nodeTestWizard = createWizardTester(
+            const nodeTestWizard = await createWizardTester(
                 new SearchLogGroupWizard({
                     groupName: 'group-test',
                     regionName: 'region-test',

@@ -15,9 +15,9 @@ describe('AppRunnerImageRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
     let repoTester: WizardTester<AppRunner.ImageRepository>
 
-    beforeEach(function () {
+    beforeEach(async function () {
         const wizard = new AppRunnerImageRepositoryWizard({} as any, {} as any) // the clients will never be called
-        tester = createWizardTester(wizard)
+        tester = await createWizardTester(wizard)
         repoTester = tester.ImageRepository
     })
 
@@ -52,9 +52,9 @@ describe('AppRunnerImageRepositoryWizard', function () {
 describe('ImageIdentifierForm', function () {
     let tester: WizardTester<{ repo: TaggedEcrRepository }>
 
-    beforeEach(function () {
+    beforeEach(async function () {
         const form = new ImageIdentifierForm({} as any) // ecr will never be called
-        tester = createWizardTester(form)
+        tester = await createWizardTester(form)
     })
 
     it('asks for tag if not provided', function () {

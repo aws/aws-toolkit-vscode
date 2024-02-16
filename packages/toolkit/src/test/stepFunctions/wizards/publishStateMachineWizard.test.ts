@@ -12,8 +12,8 @@ import { WizardTester, createWizardTester } from '../../shared/wizards/wizardTes
 describe('PublishStateMachineWizard', async function () {
     let tester: WizardTester<PublishStateMachineWizard>
 
-    beforeEach(function () {
-        tester = createWizardTester(new PublishStateMachineWizard())
+    beforeEach(async function () {
+        tester = await createWizardTester(new PublishStateMachineWizard())
     })
 
     it('only shows two steps until an action is selected', function () {

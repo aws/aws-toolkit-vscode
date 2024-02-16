@@ -9,8 +9,8 @@ import { SsoWizard, SsoWizardState } from '../../../auth/wizards/sso'
 describe('SSO Wizard', function () {
     let tester: WizardTester<SsoWizardState>
 
-    beforeEach(function () {
-        tester = createWizardTester(new SsoWizard())
+    beforeEach(async function () {
+        tester = await createWizardTester(new SsoWizard())
     })
 
     it('prompts for region, start URL, account ID, and role name', function () {
