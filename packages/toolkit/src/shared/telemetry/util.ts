@@ -115,7 +115,7 @@ export function getComputeEnvType(): EnvType {
 
     if (isSageMaker()) return 'sagemaker'
 
-    if (env.remoteName == 'ssh-remote' && !isInDevEnv()) return 'ec2'
+    if (env.remoteName === 'ssh-remote' && !isInDevEnv()) return 'ec2'
 
     if (isAutomation()) return 'test'
 
