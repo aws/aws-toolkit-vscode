@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
 import * as path from 'path'
+import { fsCommon } from '../../../srcShared/fs'
 import * as vscode from 'vscode'
 import {
     countSubstringMatches,
@@ -77,7 +77,7 @@ export async function fetchSupplementalContextForTest(
         // TODO (Metrics): 2. Success count for fetchSourceFileByName (find source file by name)
         getLogger().debug(`CodeWhisperer finished fetching utg context by file name`)
         return {
-            supplementalContextItems: generateSupplementalContextFromFocalFile(
+            supplementalContextItems: await generateSupplementalContextFromFocalFile(
                 crossSourceFile,
                 'ByName',
                 cancellationToken
@@ -92,7 +92,7 @@ export async function fetchSupplementalContextForTest(
         // TODO (Metrics): 3. Success count for fetchSourceFileByContent (find source file by content)
         getLogger().debug(`CodeWhisperer finished fetching utg context by file content`)
         return {
-            supplementalContextItems: generateSupplementalContextFromFocalFile(
+            supplementalContextItems: await generateSupplementalContextFromFocalFile(
                 crossSourceFile,
                 'ByContent',
                 cancellationToken
@@ -109,12 +109,12 @@ export async function fetchSupplementalContextForTest(
     }
 }
 
-function generateSupplementalContextFromFocalFile(
+async function generateSupplementalContextFromFocalFile(
     filePath: string,
     strategy: UtgStrategy,
     cancellationToken: vscode.CancellationToken
-): CodeWhispererSupplementalContextItem[] {
-    const fileContent = fs.readFileSync(vscode.Uri.parse(filePath!).fsPath, 'utf-8')
+): Promise<CodeWhispererSupplementalContextItem[]> {
+    const fileContent = await fsCommon.readFileAsString(vscode.Uri.parse(filePath!).fsPath)
 
     // DO NOT send code chunk with empty content
     if (fileContent.trim().length === 0) {
@@ -134,7 +134,7 @@ async function findSourceFileByContent(
     languageConfig: utgLanguageConfig,
     cancellationToken: vscode.CancellationToken
 ): Promise<string | undefined> {
-    const testFileContent = fs.readFileSync(editor.document.fileName, 'utf-8')
+    const testFileContent = await fsCommon.readFileAsString(editor.document.fileName)
     const testElementList = extractFunctions(testFileContent, languageConfig.functionExtractionPattern)
 
     throwIfCancelled(cancellationToken)
@@ -156,10 +156,10 @@ async function findSourceFileByContent(
     throwIfCancelled(cancellationToken)
 
     // TODO (Metrics):Add metrics for relevantFilePaths length
-    relevantFilePaths.forEach(filePath => {
+    for (const filePath of relevantFilePaths) {
         throwIfCancelled(cancellationToken)
 
-        const fileContent = fs.readFileSync(filePath, 'utf-8')
+        const fileContent = await fsCommon.readFileAsString(filePath)
         const elementList = extractFunctions(fileContent, languageConfig.functionExtractionPattern)
         elementList.push(...extractClasses(fileContent, languageConfig.classExtractionPattern))
         const matchCount = countSubstringMatches(elementList, testElementList)
@@ -167,7 +167,7 @@ async function findSourceFileByContent(
             maxMatchCount = matchCount
             sourceFilePath = filePath
         }
-    })
+    }
     return sourceFilePath
 }
 
@@ -212,7 +212,7 @@ async function findSourceFileByName(
     }
     newPath = path.join(newPath, basenameSuffix + languageConfig.extension)
     // TODO: Add metrics here, as we are not able to find the source file by name.
-    if (fs.existsSync(newPath)) {
+    if (await fsCommon.exists(newPath)) {
         return newPath
     }
 

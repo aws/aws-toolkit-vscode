@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
+import { fsCommon } from '../../../srcShared/fs'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
@@ -78,7 +78,7 @@ export async function fetchSupplementalContextForSrc(
     let chunkList: Chunk[] = []
     for (const relevantFile of relevantCrossFilePaths) {
         throwIfCancelled(cancellationToken)
-        const chunks: Chunk[] = splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
+        const chunks: Chunk[] = await splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
         const linkedChunks = linkChunks(chunks)
         chunkList.push(...linkedChunks)
         if (chunkList.length >= codeChunksCalculated) {
@@ -196,10 +196,10 @@ function linkChunks(chunks: Chunk[]) {
     return updatedChunks
 }
 
-export function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
+export async function splitFileToChunks(filePath: string, chunkSize: number): Promise<Chunk[]> {
     const chunks: Chunk[] = []
 
-    const fileContent = fs.readFileSync(filePath, 'utf-8').trimEnd()
+    const fileContent = (await fsCommon.readFileAsString(filePath)).trimEnd()
     const lines = fileContent.split('\n')
 
     for (let i = 0; i < lines.length; i += chunkSize) {
