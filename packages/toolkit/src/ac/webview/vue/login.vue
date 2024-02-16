@@ -186,7 +186,7 @@
             <input class="urlInput" type="text" id="startUrl" name="startUrl" v-model="startUrl" />
 
             <br /><br />
-            <button class="continue-button" v-on:click="handleAddProfileButton()">Add Profile</button>
+            <button class="continue-button" v-on:click="handleContinueClick()">Continue</button>
         </template>
     </div>
 </template>
@@ -297,6 +297,8 @@ export default defineComponent({
                 } else {
                     this.stage = 'CONNECTED'
                 }
+            } else if (this.stage === 'AWS_PROFILE') {
+                //TODO:
             }
         },
         handleUrlInput() {
@@ -312,9 +314,6 @@ export default defineComponent({
         async fetchRegions() {
             const regions = await client.getRegions()
             this.regions = regions
-        },
-        handleAddProfileButton() {
-            // TODO
         },
         async emitUpdate(cause?: string) {},
         async signout() {},
