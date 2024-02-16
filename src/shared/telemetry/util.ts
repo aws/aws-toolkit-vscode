@@ -92,10 +92,9 @@ export async function getUserAgent(
     return pairs.join(' ')
 }
 
-// Although this is similair to getEnvType() in authUtil files, added new.
-// auth util can be upadate to get ComputeEnv
+type EnvType = 'classic' | 'codecatalyst' | ...
 
-export function getComputeEnvType() {
+export function getComputeEnvType(): EnvType {
     // Compute ENV could be one of the following
     // "cloud9"|"cloud9-codecatalyst"|"cloud9-ec2"|"codecatalyst"|"ec2"|"local"|"sagemaker"|"ssh"|"test"|"web"|"wsl"|"other"|string;
 
