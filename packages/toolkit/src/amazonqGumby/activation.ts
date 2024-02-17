@@ -13,8 +13,12 @@ import { transformByQState } from '../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformationResultsViewProvider'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
-import { telemetry } from '../shared/telemetry/telemetry'
-import { CancelActionPositions, logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
+import { CodeTransformJavaSourceVersionsAllowed, telemetry } from '../shared/telemetry/telemetry'
+import {
+    CancelActionPositions,
+    JDKToTelemetryValue,
+    logCodeTransformInitiatedMetric,
+} from './telemetry/codeTransformTelemetry'
 import { CodeTransformConstants } from './models/constants'
 import { getOpenProjects, validateOpenProjects } from '../codewhisperer/service/transformByQHandler'
 import { MetadataResult } from '../shared/telemetry/telemetryClient'
@@ -88,16 +92,19 @@ export async function activate(context: ExtContext) {
     try {
         const openProjects = await getOpenProjects()
         const validProjects = await validateOpenProjects(openProjects)
+        const firstKey = validProjects.keys().next().value
+        const firstModuleEntry = validProjects.get(firstKey)
         telemetry.codeTransform_projectDetails.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformLocalJavaVersion: validProjects[0].JDKVersion,
+            codeTransformLocalJavaVersion:
+                (JDKToTelemetryValue(firstModuleEntry) as CodeTransformJavaSourceVersionsAllowed) || undefined,
         })
-    } catch (err) {
+    } catch (err: any) {
         telemetry.codeTransform_projectDetails.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: err.name || '',
+            codeTransformPreValidationError: err?.name || undefined,
             result: MetadataResult.Fail,
-            reason: err.code || '',
+            reason: err?.code || undefined,
         })
     }
 }
