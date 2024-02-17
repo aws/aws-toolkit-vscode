@@ -271,21 +271,6 @@
             "name": "cwsprChatCommandName",
             "type": "string",
             "description": "Type of chat command name executed"
-        },
-        {
-            "name": "codeTransformSessionId",
-            "type": "string",
-            "description": "Type of chat command name executed"
-        },
-        {
-            "name": "codeTransformPreValidationError",
-            "type": "string",
-            "description": "Type of chat command name executed"
-        },
-        {
-            "name": "codeTransformLocalJavaVersion",
-            "type": "string",
-            "description": "Type of chat command name executed"
         }
     ],
     "metrics": [
