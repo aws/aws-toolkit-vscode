@@ -105,21 +105,22 @@ type EnvType =
     | 'other'
 
 export function getComputeEnvType(): EnvType {
-    if (isCloud9('classic')) return 'cloud9'
+    if (isCloud9('classic')) { return 'cloud9' }
 
-    if (isCloud9('codecatalyst')) return 'cloud9-codecatalyst'
+    else if (isCloud9('codecatalyst')) { return 'cloud9-codecatalyst' }
 
-    if (isInDevEnv()) return 'codecatalyst'
+    else if (isInDevEnv()) { return 'codecatalyst' }
 
-    if (isCn()) return 'amazon-cloud9'
+    else if (isCn()) { return 'amazon-cloud9' }
 
-    if (isSageMaker()) return 'sagemaker'
+    else if (isSageMaker()) { return 'sagemaker' }
 
-    if (env.remoteName === 'ssh-remote' && !isInDevEnv()) return 'ec2'
+    else if (env.remoteName === 'ssh-remote' && !isInDevEnv()) { return 'ec2' }
 
-    if (isAutomation()) return 'test'
+    else if (isAutomation()) { return 'test' }
 
-    if (!env.remoteName) return 'local'
+    else if (!env.remoteName) { return 'local' }
+    
     else return 'other'
 }
 
