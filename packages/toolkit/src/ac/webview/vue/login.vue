@@ -1,3 +1,4 @@
+<!-- This Vue File is the login webview of AWS Toolkit and Amazon Q.-->
 <template>
     <div v-bind:class="[disabled ? 'disabled-form' : '']" class="auth-container" @click="handleDocumentClick">
         <div class="logoIcon">
@@ -158,7 +159,8 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div class="title">Authenticating in browser...</div>
+                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Authenticating...</div>
+                <div v-else class="title">Authenticating in browser...</div>
                 <button class="continue-button" v-on:click="handleCancelButtom()">Cancel</button>
             </div>
         </template>
@@ -298,14 +300,10 @@ export default defineComponent({
                 }
             } else if (this.stage === 'SSO_FORM') {
                 this.stage = 'AUTHENTICATING'
-                console.log(`STG VV`)
                 const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
-
-                console.log(`KK VV`)
                 if (error) {
                     this.stage = 'START'
                 } else {
-                    console.log(`STG CONNECTED`)
                     this.stage = 'CONNECTED'
                 }
             } else if (this.stage === 'AWS_PROFILE') {
@@ -354,6 +352,16 @@ export default defineComponent({
     cursor: pointer;
     color: white;
     font-size: 30px;
+}
+.logoIcon {
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: center;
+    padding-top: 25px;
+    padding-bottom: 30px;
+    padding-left: 60px;
+    height: auto;
 }
 .hint {
     color: #948a8a;

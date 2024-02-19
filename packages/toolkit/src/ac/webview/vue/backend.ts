@@ -17,6 +17,9 @@ import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { SsoConnection, createSsoProfile } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
+import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
+import { tryAddCredentials } from '../../../auth/utils'
+import { getLogger } from '../../../shared/logger'
 
 export type AuthError = { id: string; text: string }
 export const userCancelled = 'userCancelled'
@@ -121,16 +124,31 @@ export class CommonAuthWebview extends VueWebview {
             })
         }
     }
-
+    async getAuthenticatedCredentialsError(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
+        return Auth.instance.authenticateData(data)
+    }
     async startIamCredentialSetup(
         profileName: string,
         accessKey: string,
         secretKey: string
     ): Promise<AuthError | undefined> {
         // See submitData() in manageCredentials.vue
-
-        await this.showResourceExplorer()
-        return
+        if (profileName.length === 0 || accessKey.length === 0 || secretKey.length === 0) {
+            return { id: 'Failed to create profile', text: 'Invalid input' }
+        }
+        const data = { aws_access_key_id: accessKey, aws_secret_access_key: secretKey }
+        const error = await this.getAuthenticatedCredentialsError(data)
+        if (error) {
+            return { id: error.key, text: error.error }
+        }
+        try {
+            await tryAddCredentials(profileName, data, true)
+            await this.showResourceExplorer()
+            return
+        } catch (e) {
+            getLogger().error('Failed submitting credentials', e)
+            return { id: 'Failed', text: e as string }
+        }
     }
 
     async showResourceExplorer(): Promise<void> {
