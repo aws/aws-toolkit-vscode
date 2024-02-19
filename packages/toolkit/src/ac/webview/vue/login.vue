@@ -201,7 +201,6 @@ const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
 type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
-type App = 'TOOLKIT' | 'AMAZONQ'
 enum LoginOption {
     NONE,
     BUILDER_ID,
@@ -227,6 +226,11 @@ export default defineComponent({
             type: Boolean,
             default: false,
         },
+        app: {
+            type: String,
+            default: '',
+            required: true,
+        },
     },
     data() {
         return {
@@ -237,7 +241,7 @@ export default defineComponent({
             urlValid: false,
             selectedRegion: '',
             startUrl: '',
-            app: 'TOOLKIT' as App,
+            app: this.app,
             LoginOption,
             profileName: '',
             accessKey: '',
@@ -294,10 +298,14 @@ export default defineComponent({
                 }
             } else if (this.stage === 'SSO_FORM') {
                 this.stage = 'AUTHENTICATING'
+                console.log(`STG VV`)
                 const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
+
+                console.log(`KK VV`)
                 if (error) {
                     this.stage = 'START'
                 } else {
+                    console.log(`STG CONNECTED`)
                     this.stage = 'CONNECTED'
                 }
             } else if (this.stage === 'AWS_PROFILE') {

@@ -4,7 +4,7 @@
         <!-- Body -->
         <div class="body">
             <!-- Functionality -->
-            <Login :disabled="false"></Login>
+            <Login :disabled="false" :app="'TOOLKIT'"></Login>
         </div>
     </div>
 </template>

@@ -109,14 +109,15 @@ export class CommonAuthWebview extends VueWebview {
             return this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
                 await connectToEnterpriseSso(startUrl, region)
                 AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
-                await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
+                void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
             })
         } else {
             return this.ssoSetup('createIdentityCenterConnection', async () => {
                 const ssoProfile = createSsoProfile(startUrl, region)
-                await Auth.instance.createConnection(ssoProfile)
-                await vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
-                await this.showResourceExplorer()
+                const conn = await Auth.instance.createConnection(ssoProfile)
+                await Auth.instance.useConnection(conn)
+                void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
+                void this.showResourceExplorer()
             })
         }
     }
