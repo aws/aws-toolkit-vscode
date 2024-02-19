@@ -104,7 +104,7 @@ async function getMavenJavaProjects(javaProjects: vscode.QuickPickItem[]) {
     return mavenJavaProjects
 }
 
-async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[]) {
+async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[], projectOnLoad: boolean) {
     const projectsValidToTransform = new Map<vscode.QuickPickItem, JDKVersion | undefined>()
     for (const project of mavenJavaProjects) {
         let detectedJavaVersion = undefined
@@ -138,13 +138,15 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                     const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
                     errorReason += `-${errorCode}`
                 }
-                telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                    codeTransformPreValidationError: 'NoJavaProject',
-                    codeTransformRuntimeError: errorReason,
-                    result: MetadataResult.Fail,
-                    reason: 'CannotDetermineJavaVersion',
-                })
+                if (!projectOnLoad) {
+                    telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                        codeTransformPreValidationError: 'NoJavaProject',
+                        codeTransformRuntimeError: errorReason,
+                        result: MetadataResult.Fail,
+                        reason: 'CannotDetermineJavaVersion',
+                    })
+                }
             } else {
                 const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
                 const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
@@ -154,12 +156,14 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                     detectedJavaVersion = JDKVersion.JDK11
                 } else {
                     detectedJavaVersion = JDKVersion.UNSUPPORTED
-                    telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                        codeTransformPreValidationError: 'UnsupportedJavaVersion',
-                        result: MetadataResult.Fail,
-                        reason: javapOutputToTelemetryValue(javaVersion),
-                    })
+                    if (!projectOnLoad) {
+                        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                            codeTransformPreValidationError: 'UnsupportedJavaVersion',
+                            result: MetadataResult.Fail,
+                            reason: javapOutputToTelemetryValue(javaVersion),
+                        })
+                    }
                 }
             }
         }
@@ -177,25 +181,29 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
  */
 export async function validateOpenProjects(projects: vscode.QuickPickItem[], projectOnLoad = false) {
     const javaProjects = await getJavaProjects(projects)
-    if (javaProjects.length === 0 && !projectOnLoad) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NoJavaProject',
-            result: MetadataResult.Fail,
-            reason: 'CouldNotFindJavaProject',
-        })
+    if (javaProjects.length === 0) {
+        if (!projectOnLoad) {
+            void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformPreValidationError: 'NoJavaProject',
+                result: MetadataResult.Fail,
+                reason: 'CouldNotFindJavaProject',
+            })
+        }
         throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject', name: 'NoJavaProject' })
     }
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
-    if (mavenJavaProjects.length === 0 && !projectOnLoad) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NonMavenProject',
-            result: MetadataResult.Fail,
-            reason: 'NoPomFileFound',
-        })
+    if (mavenJavaProjects.length === 0) {
+        if (!projectOnLoad) {
+            void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
+            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformPreValidationError: 'NonMavenProject',
+                result: MetadataResult.Fail,
+                reason: 'NoPomFileFound',
+            })
+        }
         throw new ToolkitError('No valid Maven build file found', { code: 'NoPomFileFound', name: 'NonMavenProject' })
     }
 
@@ -204,7 +212,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], pro
      * here we try to get the Java version of each project so that we
      * can pre-select a default version in the QuickPick for them.
      */
-    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects)
+    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects, projectOnLoad)
 
     return projectsValidToTransform
 }
