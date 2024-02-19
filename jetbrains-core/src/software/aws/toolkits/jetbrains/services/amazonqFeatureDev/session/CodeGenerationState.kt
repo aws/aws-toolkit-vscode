@@ -3,7 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAnswerPart
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.startTaskAssistCodeGeneration
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.resources.message
@@ -17,7 +18,7 @@ class CodeGenerationState(
     var deletedFiles: Array<DeletedFileZipInfo>,
     var references: Array<CodeReference>,
     var currentIteration: Int,
-    val messenger: FeatureDevMessagePublisher
+    val messenger: MessagePublisher
 ) : SessionState {
     override val phase = SessionStatePhase.CODEGEN
 

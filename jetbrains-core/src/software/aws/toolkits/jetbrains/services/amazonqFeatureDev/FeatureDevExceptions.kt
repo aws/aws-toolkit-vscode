@@ -22,9 +22,5 @@ internal fun apiError(message: String?, cause: Throwable?): Nothing =
     throw FeatureDevException(message, cause)
 
 val denyListedErrors = arrayOf("Deserialization error", "Inaccessible host")
-fun createUserFacingErrorMessage(message: String?): String? {
-    if (message != null && denyListedErrors.any { message.contains(it) }) {
-        return "$FEATURE_NAME API request failed"
-    }
-    return message
-}
+fun createUserFacingErrorMessage(message: String?): String? =
+    if (message != null && denyListedErrors.any { message.contains(it) }) "$FEATURE_NAME API request failed" else message

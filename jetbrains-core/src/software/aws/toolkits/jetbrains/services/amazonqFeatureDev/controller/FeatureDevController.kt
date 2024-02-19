@@ -27,13 +27,22 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.DEFAULT_RETRY_
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.InboundAppMessagesHandler
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.createUserFacingErrorMessage
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessageType
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUp
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUpIcons
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUpStatusType
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUpTypes
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.IncomingFeatureDevMessage
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.initialExamples
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAnswer
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAnswerPart
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAsyncEventProgress
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAuthNeededException
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAuthenticationInProgressMessage
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendChatInputEnabledMessage
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendError
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendSystemPrompt
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendUpdatePlaceholder
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.PrepareCodeGenerationState
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Session
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
@@ -49,7 +58,7 @@ class FeatureDevController(
 ) : InboundAppMessagesHandler {
 
     private val authController = AuthController()
-    private val featureDevMessagePublisher = FeatureDevMessagePublisher(messagePublisher = context.messagesFromAppToUi)
+    private val messenger = context.messagesFromAppToUi
 
     override suspend fun processPromptChatMessage(message: IncomingFeatureDevMessage.ChatPrompt) {
         handleChat(
@@ -67,15 +76,15 @@ class FeatureDevController(
 
     override suspend fun processAuthFollowUpClick(message: IncomingFeatureDevMessage.AuthFollowUpWasClicked) {
         authController.handleAuth(context.project, message.authType)
-        featureDevMessagePublisher.sendAuthenticationInProgressMessage(message.tabId) // show user that authentication is in progress
-        featureDevMessagePublisher.sendChatInputEnabledMessage(message.tabId, enabled = false) // disable the input field while authentication is in progress
+        messenger.sendAuthenticationInProgressMessage(message.tabId) // show user that authentication is in progress
+        messenger.sendChatInputEnabledMessage(message.tabId, enabled = false) // disable the input field while authentication is in progress
     }
 
     override suspend fun processFollowupClickedMessage(message: IncomingFeatureDevMessage.FollowupClicked) {
         when (message.followUp.type) {
             FollowUpTypes.RETRY -> retryRequests(message.tabId)
             FollowUpTypes.MODIFY_DEFAULT_SOURCE_FOLDER -> modifyDefaultSourceFolder(message.tabId)
-            FollowUpTypes.DEV_EXAMPLES -> featureDevMessagePublisher.initialExamples(message.tabId)
+            FollowUpTypes.DEV_EXAMPLES -> messenger.initialExamples(message.tabId)
             FollowUpTypes.NEW_PLAN -> newPlan(message.tabId)
             FollowUpTypes.SEND_FEEDBACK -> sendFeedback()
             FollowUpTypes.WRITE_CODE -> writeCodeClicked(message.tabId)
@@ -147,7 +156,7 @@ class FeatureDevController(
 
             val credentialState = authController.getAuthNeededStates(context.project).amazonQ
             if (credentialState != null) {
-                featureDevMessagePublisher.sendAuthNeededException(
+                messenger.sendAuthNeededException(
                     tabId = tabId,
                     triggerId = UUID.randomUUID().toString(),
                     credentialState = credentialState,
@@ -157,7 +166,7 @@ class FeatureDevController(
             }
         } catch (err: Exception) {
             val message = createUserFacingErrorMessage(err.message)
-            featureDevMessagePublisher.sendError(
+            messenger.sendError(
                 tabId = tabId,
                 errMessage = message ?: message("amazonqFeatureDev.exception.request_failed"),
                 retries = retriesRemaining(session),
@@ -168,7 +177,7 @@ class FeatureDevController(
 
     private suspend fun writeCodeClicked(tabId: String) {
         val session = getSessionInfo(tabId)
-        session.initCodegen(featureDevMessagePublisher)
+        session.initCodegen(messenger)
         onCodeGeneration(session, "", tabId)
     }
 
@@ -191,7 +200,7 @@ class FeatureDevController(
 
             val credentialState = authController.getAuthNeededStates(context.project).amazonQ
             if (credentialState != null) {
-                featureDevMessagePublisher.sendAuthNeededException(
+                messenger.sendAuthNeededException(
                     tabId = tabId,
                     triggerId = UUID.randomUUID().toString(),
                     credentialState = credentialState,
@@ -208,12 +217,12 @@ class FeatureDevController(
         } catch (err: Exception) {
             logger.warn(err) { "Encountered ${err.message} for tabId: $tabId" }
             if (err is ContentLengthError) {
-                featureDevMessagePublisher.sendError(
+                messenger.sendError(
                     tabId = tabId,
                     errMessage = err.message,
                     retries = retriesRemaining(session)
                 )
-                featureDevMessagePublisher.sendSystemPrompt(
+                messenger.sendSystemPrompt(
                     tabId = tabId,
                     followUp = listOf(
                         FollowUp(
@@ -225,7 +234,7 @@ class FeatureDevController(
                 )
             } else {
                 val mssg = createUserFacingErrorMessage("$FEATURE_NAME request failed: ${err.cause?.message ?: err.message}")
-                featureDevMessagePublisher.sendError(
+                messenger.sendError(
                     tabId = tabId,
                     errMessage = mssg ?: message("amazonqFeatureDev.exception.request_failed"),
                     retries = retriesRemaining(session),
@@ -234,7 +243,7 @@ class FeatureDevController(
             }
 
             // Lock the chat input until they explicitly click one of the follow-ups
-            featureDevMessagePublisher.sendChatInputEnabledMessage(tabId, enabled = false)
+            messenger.sendChatInputEnabledMessage(tabId, enabled = false)
         }
     }
 
@@ -242,54 +251,55 @@ class FeatureDevController(
      * Handle a regular incoming message when a user is in the approach phase
      */
     private suspend fun onApproachGeneration(session: Session, message: String, tabId: String) {
-        session.preloader(message, featureDevMessagePublisher)
+        session.preloader(message, messenger)
 
-        featureDevMessagePublisher.sendAnswer(
+        messenger.sendAnswer(
             tabId = tabId,
             messageType = FeatureDevMessageType.Answer,
             message = message("amazonqFeatureDev.create_plan"),
         )
 
         // Ensure that the loading icon stays showing
-        featureDevMessagePublisher.sendAsyncEventProgress(tabId = tabId, inProgress = true)
+        messenger.sendAsyncEventProgress(tabId = tabId, inProgress = true)
 
-        featureDevMessagePublisher.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.generating_approach"))
+        messenger.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.generating_approach"))
 
         val interactions = session.send(message)
-        featureDevMessagePublisher.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.iterate_plan"))
+        messenger.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.iterate_plan"))
 
-        featureDevMessagePublisher.sendAnswerPart(
+        messenger.sendAnswerPart(
             tabId = tabId,
             message = interactions.content,
             canBeVoted = true
         )
 
         // Follow up with action items and complete the request stream
-        featureDevMessagePublisher.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase))
+        messenger.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase))
 
         // Unlock the prompt again so that users can iterate
-        featureDevMessagePublisher.sendAsyncEventProgress(tabId = tabId, inProgress = false)
+        messenger.sendAsyncEventProgress(tabId = tabId, inProgress = false)
     }
 
     private suspend fun onCodeGeneration(session: Session, message: String, tabId: String) {
-        featureDevMessagePublisher.sendAsyncEventProgress(
+        messenger.sendAsyncEventProgress(
             tabId = tabId,
             inProgress = true,
             message = message("amazonqFeatureDev.chat_message.start_code_generation"),
         )
 
         try {
-            featureDevMessagePublisher.sendAnswer(
+            messenger.sendAnswer(
                 tabId = tabId,
                 message = message("amazonqFeatureDev.chat_message.requesting_changes"),
                 messageType = FeatureDevMessageType.AnswerStream,
             )
 
-            featureDevMessagePublisher.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.writing_code"))
+            messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.writing_code"))
 
             session.send(message) // Trigger code generation
 
             val state = session.sessionState
+
             // it should be PrepareCodeGenerationState again.
             if (state !is PrepareCodeGenerationState) {
                 TODO("Not yet implemented")
@@ -297,12 +307,12 @@ class FeatureDevController(
 
             // Atm this is the only possible path as codegen is mocked to return empty.
             if (state.filePaths.size or state.deletedFiles.size == 0) {
-                featureDevMessagePublisher.sendAnswer(
+                messenger.sendAnswer(
                     tabId = tabId,
                     messageType = FeatureDevMessageType.Answer,
                     message = message("amazonqFeatureDev.code_generation.no_file_changes")
                 )
-                featureDevMessagePublisher.sendSystemPrompt(
+                messenger.sendSystemPrompt(
                     tabId = tabId,
                     followUp = if (retriesRemaining(session) > 0) {
                         listOf(
@@ -316,16 +326,16 @@ class FeatureDevController(
                         emptyList()
                     }
                 )
-                featureDevMessagePublisher.sendChatInputEnabledMessage(tabId = tabId, enabled = false) // Lock chat input until retry is clicked.
+                messenger.sendChatInputEnabledMessage(tabId = tabId, enabled = false) // Lock chat input until retry is clicked.
                 return
             }
 
             // TODO: send code result to mynah ui, i.e. diff view message.
 
-            featureDevMessagePublisher.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase))
+            messenger.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase))
         } finally {
-            featureDevMessagePublisher.sendAsyncEventProgress(tabId = tabId, inProgress = false) // Finish processing the event
-            featureDevMessagePublisher.sendChatInputEnabledMessage(tabId = tabId, enabled = false) // Lock chat input until a follow-up is clicked.
+            messenger.sendAsyncEventProgress(tabId = tabId, inProgress = false) // Finish processing the event
+            messenger.sendChatInputEnabledMessage(tabId = tabId, enabled = false) // Lock chat input until a follow-up is clicked.
 
             // TODO: follow-up handle notification if amazonq is not visible to let the user know the code has been generated.
         }
@@ -370,7 +380,7 @@ class FeatureDevController(
     private suspend fun retryRequests(tabId: String) {
         var session: Session? = null
         try {
-            featureDevMessagePublisher.sendAsyncEventProgress(
+            messenger.sendAsyncEventProgress(
                 tabId = tabId,
                 inProgress = true,
             )
@@ -387,7 +397,7 @@ class FeatureDevController(
         } catch (err: Exception) {
             logger.error(err) { "Failed to retry request: ${err.message}" }
             val message = createUserFacingErrorMessage("Failed to retry request: ${err.message}")
-            featureDevMessagePublisher.sendError(
+            messenger.sendError(
                 tabId = tabId,
                 errMessage = message ?: message("amazonqFeatureDev.exception.retry_request_failed"),
                 retries = retriesRemaining(session),
@@ -395,7 +405,7 @@ class FeatureDevController(
             )
         } finally {
             // Finish processing the event
-            featureDevMessagePublisher.sendAsyncEventProgress(
+            messenger.sendAsyncEventProgress(
                 tabId = tabId,
                 inProgress = false,
             )
@@ -409,13 +419,13 @@ class FeatureDevController(
         // Re-run the opening flow, where we check auth + create a session
         getSessionInfo(tabId)
 
-        featureDevMessagePublisher.sendAnswer(
+        messenger.sendAnswer(
             tabId = tabId,
             messageType = FeatureDevMessageType.Answer,
             message = message("amazonqFeatureDev.create_new_plan"),
         )
 
-        featureDevMessagePublisher.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.new_plan"))
+        messenger.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.new_plan"))
     }
 
     private suspend fun modifyDefaultSourceFolder(tabId: String) {
@@ -433,7 +443,7 @@ class FeatureDevController(
             if (selectedFolder == null) {
                 logger.info { "Cancelled dialog and not selected any folder" }
 
-                featureDevMessagePublisher.sendSystemPrompt(
+                messenger.sendSystemPrompt(
                     tabId = tabId,
                     followUp = listOf(modifyFolderFollowUp),
                 )
@@ -443,13 +453,13 @@ class FeatureDevController(
             if (selectedFolder.parent.path != uri.path) {
                 logger.info { "Selected folder not in workspace: ${selectedFolder.path}" }
 
-                featureDevMessagePublisher.sendAnswer(
+                messenger.sendAnswer(
                     tabId = tabId,
                     messageType = FeatureDevMessageType.Answer,
                     message = message("amazonqFeatureDev.follow_up.incorrect_source_folder"),
                 )
 
-                featureDevMessagePublisher.sendSystemPrompt(
+                messenger.sendSystemPrompt(
                     tabId = tabId,
                     followUp = listOf(modifyFolderFollowUp),
                 )
@@ -461,7 +471,7 @@ class FeatureDevController(
             val session = getSessionInfo(tabId)
             session.context.projectRoot = selectedFolder
 
-            featureDevMessagePublisher.sendAnswer(
+            messenger.sendAnswer(
                 tabId = tabId,
                 messageType = FeatureDevMessageType.Answer,
                 message = message("amazonqFeatureDev.follow_up.modified_source_folder", selectedFolder.path),

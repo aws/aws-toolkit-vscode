@@ -4,10 +4,11 @@
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.APPROACH_RETRY_LIMIT
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAsyncEventProgress
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createConversation
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 
@@ -35,13 +36,13 @@ class Session(val tabID: String, val project: Project) {
     /**
      * Preload any events that have to run before a chat message can be sent
      */
-    suspend fun preloader(msg: String, featureDevMessagePublisher: FeatureDevMessagePublisher) {
+    suspend fun preloader(msg: String, messenger: MessagePublisher) {
         if (!preloaderFinished) {
             setupConversation(msg)
             preloaderFinished = true
 
             AmazonqTelemetry.startChat(amazonqConversationId = this.conversationId)
-            featureDevMessagePublisher.sendAsyncEventProgress(tabId = this.tabID, inProgress = true)
+            messenger.sendAsyncEventProgress(tabId = this.tabID, inProgress = true)
         }
     }
 
@@ -60,7 +61,7 @@ class Session(val tabID: String, val project: Project) {
     /**
      * Triggered by the Write Code follow-up button to move to the code generation phase
      */
-    fun initCodegen(messenger: FeatureDevMessagePublisher) {
+    fun initCodegen(messenger: MessagePublisher) {
         this._state = PrepareCodeGenerationState(
             tabID = sessionState.tabID,
             approach = sessionState.approach,

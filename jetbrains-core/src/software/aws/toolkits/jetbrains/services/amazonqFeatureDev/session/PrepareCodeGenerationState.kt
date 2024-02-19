@@ -3,7 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAnswerPart
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createUploadUrl
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.uploadArtifactToS3
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
@@ -17,7 +18,7 @@ class PrepareCodeGenerationState(
     var deletedFiles: Array<DeletedFileZipInfo>,
     var references: Array<CodeReference>,
     private var currentIteration: Int,
-    private var messenger: FeatureDevMessagePublisher
+    private var messenger: MessagePublisher
 ) : SessionState {
     override val phase = SessionStatePhase.CODEGEN
     override suspend fun interact(action: SessionStateAction): SessionStateInteraction {
