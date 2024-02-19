@@ -120,8 +120,8 @@ export function getComputeEnvType(): EnvType {
     else if (isAutomation()) { return 'test' }
 
     else if (!env.remoteName) { return 'local' }
-    
-    else return 'other'
+
+    else { return 'other' }
 }
 
 /**
