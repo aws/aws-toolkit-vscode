@@ -293,6 +293,7 @@ export class CWCTelemetryHelper {
             cwsprChatUserIntent: telemetryUserIntent,
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection && !triggerPayload.codeSelection.isEmpty,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
     }
 
