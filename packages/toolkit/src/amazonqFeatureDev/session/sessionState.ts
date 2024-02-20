@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import sanitizeHtml from 'sanitize-html'
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
@@ -12,6 +11,7 @@ import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
 import { SessionState, SessionStateAction, SessionStateConfig, SessionStateInteraction } from '../types'
 import { prepareRepoData } from '../util/files'
 import { uploadCode } from '../util/upload'
+import { encodeHTML } from '../../shared/utilities/textUtilities'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -90,10 +90,9 @@ export class RefinementState implements SessionState {
                     action.msg
                 )
 
-                this.approach = sanitizeHtml(
+                this.approach = encodeHTML(
                     approach ??
-                        'There has been a problem generating an approach. Please open a conversation in a new tab',
-                    {}
+                        'There has been a problem generating an approach. Please open a conversation in a new tab'
                 )
                 getLogger().debug(`Approach response: %O`, this.approach)
 

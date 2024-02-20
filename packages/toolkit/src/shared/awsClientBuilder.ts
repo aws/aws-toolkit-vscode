@@ -11,6 +11,12 @@ import { DevSettings } from './settings'
 import { getUserAgent } from './telemetry/util'
 import { telemetry } from './telemetry/telemetry'
 
+/** Suppresses a very noisy warning printed by AWS SDK v2, which clutters local debugging output, CI logs, etc. */
+export function disableAwsSdkWarning() {
+    // See https://github.com/aws/aws-sdk-js/issues/4354
+    require('aws-sdk/lib/maintenance_mode_message').suppress = true
+}
+
 // These are not on the public API but are very useful for logging purposes.
 // Tests guard against the possibility that these values change unexpectedly.
 // Since the field names are not prepended with `_` to signify visibility, the
