@@ -19,6 +19,7 @@ import { getIdeProperties, aboutToolkit, isCloud9 } from './shared/extensionUtil
 import { telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
+import { activateViewsShared } from './awsexplorer/activationShared'
 
 import { activate as activateLogger } from './shared/logger/activation'
 import { initializeComputeRegion } from './shared/extensionUtilities'
@@ -134,6 +135,8 @@ export async function activateShared(
         uriHandler: globals.uriHandler,
         credentialsStore: globals.loginManager.store,
     }
+
+    await activateViewsShared(extContext.extensionContext)
 
     await activateCodeWhisperer(extContext)
 
