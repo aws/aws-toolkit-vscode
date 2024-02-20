@@ -346,7 +346,8 @@ export const nonWindowsJava8HomeHelpMessage =
 export const nonWindowsJava11HomeHelpMessage =
     'Try running "/usr/libexec/java_home -v 11" in a terminal to find this. It should look something like "/Library/Java/JavaVirtualMachines/jdk-11.jdk/Contents/Home"'
 
-export const projectSizeTooLargeMessage = 'Your project size exceeds the limit of 1GB'
+export const projectSizeTooLargeMessage =
+    'Your project size exceeds the limit of 1GB. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
 export const JDK8VersionNumber = '52'
 
