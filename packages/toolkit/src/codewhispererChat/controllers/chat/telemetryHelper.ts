@@ -50,7 +50,11 @@ export function logSendTelemetryEventFailure(error: any) {
 }
 
 export function recordTelemetryChatRunCommand(type: CwsprChatCommandType, command?: string) {
-    telemetry.amazonq_runCommand.emit({ cwsprChatCommandType: type, cwsprChatCommandName: command })
+    telemetry.amazonq_runCommand.emit({
+        cwsprChatCommandType: type,
+        cwsprChatCommandName: command,
+        credentialStartUrl: AuthUtil.instance.startUrl,
+    })
 }
 
 export class CWCTelemetryHelper {
@@ -320,6 +324,7 @@ export class CWCTelemetryHelper {
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
+            credentialStartUrl: AuthUtil.instance.startUrl,
         }
 
         telemetry.amazonq_addMessage.emit(event)
@@ -361,6 +366,7 @@ export class CWCTelemetryHelper {
             cwsprChatResponseCode: responseCode,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatConversationType: 'Chat',
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
     }
 

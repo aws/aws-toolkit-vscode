@@ -360,6 +360,7 @@ export class FeatureDevController {
             amazonqConversationId: session.conversationId,
             enabled: true,
             result: 'Succeeded',
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
 
         if (message.deleted) {

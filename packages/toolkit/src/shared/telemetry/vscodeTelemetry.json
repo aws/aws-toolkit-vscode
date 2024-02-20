@@ -861,6 +861,10 @@
                 {
                     "type": "cwsprChatCommandName",
                     "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         }
