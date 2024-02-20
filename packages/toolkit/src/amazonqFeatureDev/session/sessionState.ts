@@ -97,7 +97,7 @@ export class RefinementState implements SessionState {
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         return telemetry.amazonq_approachInvoke.run(async span => {
-            if (action.msg && action.msg.indexOf('MOCK CODE') !== -1) {
+            if (action.msg && action.msg.includes('MOCK CODE')) {
                 return new MockCodeGenState(this.config, this.approach, this.tabID).interact(action)
             }
             try {
