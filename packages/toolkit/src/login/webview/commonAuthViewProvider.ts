@@ -3,6 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * This is the webview provider of login ux.
+ * Usage:
+ * 1. Create a view in package.json
+ * {
+                    "type": "webview",
+                    "id": "aws.AmazonCommonAuth",
+                    "name": "%AWS.amazonq.login%",
+                    "when": "!isCloud9 && !aws.isSageMaker && !aws.amazonq.showView"
+                },
+
+ * 2. Assign when clause context to this view. Manage the state of when clause context.
+ * 3. Init this provider at activation
+ * const provider2 = new CommonAuthViewProvider(context, appInitContext.onDidChangeAmazonQVisibility)
+ *     context.subscriptions.push(
+        window.registerWebviewViewProvider(CommonAuthViewProvider.viewType, provider2, {
+            webviewOptions: {
+                retainContextWhenHidden: true,
+            },
+        }),
+ * 
+ */
+
 import * as vscode from 'vscode'
 import path from 'path'
 import {
@@ -53,7 +76,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             localResourceRoots: [dist, resources],
         }
         webviewView.webview.html = this._getHtmlForWebview(this.extensionContext.extensionUri, webviewView.webview)
-
+        // register the webview server
         await this.webView?.setup(webviewView.webview)
     }
 
