@@ -7,8 +7,7 @@
     "removeComments": true,
     "resolveJsonModule": true,
     "rootDir": "src",
-    "useUnknownInCatchVariables": false,
-    "composite": true
+    "useUnknownInCatchVariables": false
   },
-  "exclude": ["test/", "dist-*", "node_modules"]
+  "exclude": ["test/"]
 }
