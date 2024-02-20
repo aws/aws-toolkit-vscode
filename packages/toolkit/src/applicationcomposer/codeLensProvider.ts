@@ -33,7 +33,7 @@ export class ApplicationComposerCodeLensProvider implements vscode.CodeLensProvi
         }
         const resourcesLoc = new vscode.Range(codeLensLine, 0, codeLensLine, 0)
         const codeLens = openTemplateInComposerCommand.build().asCodeLens(resourcesLoc, {
-            title: localize('AWS.applicationComposer.codeLens.title', 'Open with Application Composer'),
+            title: localize('AWS.applicationComposer.codeLens.title', 'Visualize with Application Composer'),
             tooltip: localize(
                 'AWS.applicationComposer.codeLens.tooltip',
                 'Visually design and build modern applications quickly'
