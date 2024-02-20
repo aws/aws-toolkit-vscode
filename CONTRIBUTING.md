@@ -152,7 +152,7 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 The AWS Toolkit VSCode extension has a support (with limited functionality) for running in the browser, eg [vscode.dev](https://vscode.dev).
 
-See [browser.md](./docs/browser.md) for working with the browser implementation of the extension.
+See [web.md](./docs/web.md) for working with the browser implementation of the extension.
 
 ---
 
