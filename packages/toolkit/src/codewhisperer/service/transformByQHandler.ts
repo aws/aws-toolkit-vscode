@@ -249,7 +249,7 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformTotalByteSize: transformByQState.getTotalProjectBytes(),
+            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
             result: MetadataResult.Pass,
         })
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
@@ -557,16 +557,11 @@ export async function zipCode() {
     const zip = new AdmZip()
     const zipManifest = new ZipManifest()
 
-    let totalSourceCodeBytes = 0
-
     for (const file of sourceFiles) {
         const relativePath = path.relative(sourceFolder, file)
         const paddedPath = path.join('sources', relativePath)
         zip.addLocalFile(file, path.dirname(paddedPath))
-        totalSourceCodeBytes += (await fs.promises.stat(file)).size
     }
-
-    transformByQState.setTotalSourceCodeBytes(totalSourceCodeBytes)
 
     throwIfCancelled()
 
@@ -575,13 +570,11 @@ export async function zipCode() {
         dependencyFiles = getFilesRecursively(dependencyFolderPath, true)
     }
 
-    let totalDependenciesBytes = 0
     if (dependencyFiles.length > 0) {
         for (const file of dependencyFiles) {
             const relativePath = path.relative(dependencyFolderPath, file)
             const paddedPath = path.join(`dependencies/${dependencyFolderName}`, relativePath)
             zip.addLocalFile(file, path.dirname(paddedPath))
-            totalDependenciesBytes += (await fs.promises.stat(file)).size
         }
         zipManifest.dependenciesRoot += `${dependencyFolderName}/`
         telemetry.codeTransform_dependenciesCopied.emit({
@@ -591,21 +584,14 @@ export async function zipCode() {
     } else {
         zipManifest.dependenciesRoot = undefined
     }
-    const manifestData = Buffer.from(JSON.stringify(zipManifest))
 
-    const manifestBytes = manifestData.length
-
-    zip.addFile('manifest.json', manifestData, 'utf-8')
-
-    transformByQState.setTotalDependenciesBytes(totalDependenciesBytes)
+    zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest)), 'utf-8')
 
     throwIfCancelled()
 
     // add text file with logs from mvn clean install and mvn copy-dependencies
     const logFilePath = await writeLogs()
     zip.addLocalFile(logFilePath)
-
-    const buildLogsBytes = (await fs.promises.stat(logFilePath)).size
 
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
     fs.writeFileSync(tempFilePath, zip.toBuffer())
@@ -614,22 +600,19 @@ export async function zipCode() {
     }
     fs.rmSync(logFilePath) // will always exist here
 
-    const totalProjectBytes = totalSourceCodeBytes + totalDependenciesBytes + manifestBytes + buildLogsBytes
+    const zipSize = (await fs.promises.stat(tempFilePath)).size
 
-    transformByQState.setTotalProjectBytes(totalProjectBytes)
-
-    // Consider adding fields for source code size and dependencies size (and source lines of code?)
+    // Later, consider adding field for number of source lines of code
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-        codeTransformTotalByteSize: totalProjectBytes,
+        codeTransformTotalByteSize: zipSize,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
         result: MetadataResult.Pass,
     })
 
-    if (totalProjectBytes > CodeWhispererConstants.uploadZipSizeLimitInBytes) {
-        // Consider showing user breakdown of source code vs dependencies size, rounded and formatted
+    if (zipSize > CodeWhispererConstants.uploadZipSizeLimitInBytes) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.projectSizeTooLargeMessage)
-        throw new Error('Project size exceeds limit')
+        throw new Error('Project size exceeds 1GB limit')
     }
 
     return tempFilePath
