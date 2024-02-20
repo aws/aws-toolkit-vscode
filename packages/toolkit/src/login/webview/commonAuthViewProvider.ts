@@ -3,27 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*
-UX. This should be a node under the activity bar. 
-"viewsContainers": {
-            "activitybar": [
-                {
-                    "id": "aws-explorer",
-                    "title": "%AWS.title%",
-                    "icon": "resources/aws-logo.svg",
-                    "cloud9": {
-                        "cn": {
-                            "title": "%AWS.title.cn%",
-                            "icon": "resources/aws-cn-logo.svg"
-                        }
-                    }
-                },
-
-Cannot reuse the auth vue, because they are webview panels which are custom editor.
-The design is in the sidebar. It should use webview view.                 
-
-*/
-
 import * as vscode from 'vscode'
 import path from 'path'
 import {
