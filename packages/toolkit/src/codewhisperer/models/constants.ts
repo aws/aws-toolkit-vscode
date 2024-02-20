@@ -279,7 +279,7 @@ export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVA
 export const selectProjectPrompt = 'Select the project you want to transform'
 
 export const unsupportedJavaVersionSelectedMessage =
-    'Thank you for trying our product. We currently only support Java 8 and 11. We appreciate you taking the time to use the product, and hope to expand support to more Java versions in the future.'
+    'Thank you for trying our product. We currently only support Java 8 and 11. We appreciate you taking the time to use the product, and hope to expand support to more Java versions in the future. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
 export const transformByQWindowTitle = 'Amazon Q Code Transformation'
 
@@ -296,9 +296,10 @@ export const transformByQCompletedMessage = 'Transformation completed'
 export const transformByQPartiallyCompletedMessage = 'Transformation partially completed'
 
 export const noPomXmlFoundMessage =
-    'None of your open Java projects are supported by Amazon Q Code Transformation. We were unable to find a pom.xml in any of your Java projects. We only support Java projects built on Maven at the moment.'
+    'None of your open Java projects are supported by Amazon Q Code Transformation. We were unable to find a pom.xml in any of your Java projects. We only support Java projects built on Maven at the moment. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
-export const noActiveIdCMessage = 'Amazon Q Code Transformation requires an active IAM Identity Center connection'
+export const noActiveIdCMessage =
+    'Amazon Q Code Transformation requires an active IAM Identity Center connection. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
 export const noOngoingJobMessage = 'No job is in-progress at the moment'
 
@@ -316,7 +317,7 @@ export const viewProposedChangesMessage =
 export const changesAppliedMessage = 'Changes applied'
 
 export const noSupportedJavaProjectsFoundMessage =
-    'None of your open projects are supported by Amazon Q Code Transformation. We were unable to find a Java project. We only support Java projects built on Maven at the moment.'
+    'None of your open projects are supported by Amazon Q Code Transformation. We were unable to find a Java project. We only support Java projects built on Maven at the moment. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
 export const dependencyDisclaimer =
     'Please confirm you are ready to proceed with the transformation. Amazon Q Code Transformation will upload the application code and its dependency binaries from your machine to start the upgrade. If you have not yet compiled the application on your local machine, please do so once before starting the upgrade. Install Maven to ensure all module dependencies are picked for Transformation.'
@@ -324,23 +325,36 @@ export const dependencyDisclaimer =
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
 export const installErrorMessage =
-    'Failed to execute Maven install. It is possible that the upload does not include all dependencies. We will still attempt to complete the transformation.'
+    'Failed to execute Maven install. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
 export const dependencyErrorMessage =
-    'Failed to execute Maven copy-dependencies. It is possible that the upload does not include all dependencies. We will still attempt to complete the transformation.'
+    'Failed to execute Maven copy-dependencies. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
 export const planIntroductionMessage =
     'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'
 
 export const planDisclaimerMessage = '**Proposed transformation changes** \n\n\n'
 
-export const enterJavaHomeMessage = 'Enter the value of JAVA_HOME for Java'
+export const enterJavaHomeMessage = 'Enter the JAVA_HOME of JDK'
+
+export const windowsJavaHomeHelpMessage =
+    'In a terminal, try running "cd C:\\Program Files\\Java" and then "dir" to see a list of installed JDKs. Then "cd" into JDK JAVA_VERSION_HERE (if present) and run "cd" once more to get the JAVA_HOME. It should look something like "C:\\Program Files\\Java\\jdk-11.0.1"'
+
+export const nonWindowsJava8HomeHelpMessage =
+    'Try running "/usr/libexec/java_home -v 1.8" in a terminal to find this. It should look something like "/Library/Java/JavaVirtualMachines/jdk-8.jdk/Contents/Home"'
+
+export const nonWindowsJava11HomeHelpMessage =
+    'Try running "/usr/libexec/java_home -v 11" in a terminal to find this. It should look something like "/Library/Java/JavaVirtualMachines/jdk-11.jdk/Contents/Home"'
+
+export const projectSizeTooLargeMessage = 'Your project size exceeds the limit of 1GB'
 
 export const JDK8VersionNumber = '52'
 
 export const JDK11VersionNumber = '55'
 
 export const numMillisecondsPerSecond = 1000
+
+export const uploadZipSizeLimitInBytes = 1000000000 // 1GB
 
 export const maxBufferSize = 1024 * 1024 // this is 1MB, the default max buffer size for stdout for spawnSync
 

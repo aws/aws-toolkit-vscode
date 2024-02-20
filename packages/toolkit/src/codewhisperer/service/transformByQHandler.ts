@@ -123,7 +123,7 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                 let errorLog = ''
                 errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
                 errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
-                getLogger().error(`CodeTransform: Error in running javap command = ${errorLog}`)
+                getLogger().error(`CodeTransformation: Error in running javap command = ${errorLog}`)
                 let errorReason = ''
                 if (spawnResult.stdout) {
                     errorReason = 'JavapExecutionError'
@@ -249,13 +249,13 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
+            codeTransformTotalByteSize: transformByQState.getTotalProjectBytes(),
             result: MetadataResult.Pass,
         })
-        getLogger().info(`CodeTransform: Status from S3 Upload = ${response.status}`)
+        getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
         const errorMessage = (e as Error).message ?? 'Error in S3 UploadZip API call'
-        getLogger().error('CodeTransform: UploadZip error = ', errorMessage)
+        getLogger().error('CodeTransformation: UploadZip error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -288,7 +288,7 @@ export async function stopJob(jobId: string) {
             }
         } catch (e: any) {
             const errorMessage = (e as Error).message ?? 'Error stopping job'
-            getLogger().error('CodeTransform: StopTransformation error = ', errorMessage)
+            getLogger().error('CodeTransformation: StopTransformation error = ', errorMessage)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'StopTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -324,7 +324,7 @@ export async function uploadPayload(payloadFileName: string) {
         })
     } catch (e: any) {
         const errorMessage = (e as Error).message ?? 'Error in CreateUploadUrl API call'
-        getLogger().error('CodeTransform: CreateUploadUrl error: = ', errorMessage)
+        getLogger().error('CodeTransformation: CreateUploadUrl error: = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'CreateUploadUrl',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -340,7 +340,7 @@ export async function uploadPayload(payloadFileName: string) {
         await uploadArtifactToS3(payloadFileName, response)
     } catch (e: any) {
         const errorMessage = (e as Error).message ?? 'Error in uploadArtifactToS3 call'
-        getLogger().error('CodeTransform: UploadArtifactToS3 error: = ', errorMessage)
+        getLogger().error('CodeTransformation: UploadArtifactToS3 error: = ', errorMessage)
         throw new ToolkitError(errorMessage, { cause: e as Error })
     }
     return response.uploadId
@@ -377,25 +377,31 @@ function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 function installProjectDependencies() {
-    // baseCommand will be one of: 'mvnw.cmd', './mvnw', 'mvn'
-    let baseCommand = transformByQState.getMavenName()
-    // if JAVA_HOME could not be found or did not match the project JDK, baseCommand is prefixed with JAVA_HOME={user-input}
-    if (transformByQState.getJavaHome() !== undefined) {
-        baseCommand = `JAVA_HOME=${transformByQState.getJavaHome()} ${baseCommand}`
-    }
+    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+    const baseCommand = transformByQState.getMavenName()
     const modulePath = transformByQState.getProjectPath()
 
     transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
     // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
     const args = ['clean', 'install', '-q']
-    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
+    let environment = process.env
+    // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
+    if (transformByQState.getJavaHome() !== undefined) {
+        environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+    }
+    const spawnResult = spawnSync(baseCommand, args, {
+        cwd: modulePath,
+        shell: true,
+        encoding: 'utf-8',
+        env: environment,
+    })
     if (spawnResult.status !== 0) {
         let errorLog = ''
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} clean install failed: \n ${errorLog}`)
-        getLogger().error(`CodeTransform: Error in running Maven install command ${baseCommand} = ${errorLog}`)
+        getLogger().error(`CodeTransformation: Error in running Maven install command ${baseCommand} = ${errorLog}`)
         let errorReason = ''
         if (spawnResult.stdout) {
             errorReason = 'Maven Install: InstallExecutionError'
@@ -414,10 +420,16 @@ function installProjectDependencies() {
             const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
-        // TO-DO: change CodeTransformMavenBuildCommand to only hold “mvnw.cmd” “./mvnw” and “mvn” and use that for get/setMavenName() too
+        let mavenBuildCommand = transformByQState.getMavenName()
+        // slashes not allowed in telemetry
+        if (mavenBuildCommand === './mvnw') {
+            mavenBuildCommand = 'mvnw'
+        } else if (mavenBuildCommand === '.\\mvnw.cmd') {
+            mavenBuildCommand = 'mvnw.cmd'
+        }
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformMavenBuildCommand: baseCommand as CodeTransformMavenBuildCommand,
+            codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
             result: MetadataResult.Fail,
             reason: errorReason,
         })
@@ -432,12 +444,8 @@ function copyProjectDependencies(): string[] {
     const folderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
     const folderPath = path.join(os.tmpdir(), folderName)
 
-    // baseCommand will be one of: 'mvnw.cmd', './mvnw', 'mvn'
-    let baseCommand = transformByQState.getMavenName()
-    // if JAVA_HOME could not be found or did not match the project JDK, baseCommand is prefixed with JAVA_HOME={user-input}
-    if (transformByQState.getJavaHome() !== undefined) {
-        baseCommand = `JAVA_HOME=${transformByQState.getJavaHome()} ${baseCommand}`
-    }
+    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+    const baseCommand = transformByQState.getMavenName()
     const modulePath = transformByQState.getProjectPath()
 
     transformByQState.appendToErrorLog(`Running command ${baseCommand} copy-dependencies`)
@@ -450,14 +458,24 @@ function copyProjectDependencies(): string[] {
         '-Dmdep.addParentPoms=true',
         '-q',
     ]
-    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
+    let environment = process.env
+    // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
+    if (transformByQState.getJavaHome() !== undefined) {
+        environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+    }
+    const spawnResult = spawnSync(baseCommand, args, {
+        cwd: modulePath,
+        shell: true,
+        encoding: 'utf-8',
+        env: environment,
+    })
     if (spawnResult.status !== 0) {
         let errorLog = ''
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies failed: \n ${errorLog}`)
         getLogger().error(
-            `CodeTransform: Error in running Maven copy-dependencies command ${baseCommand} = ${errorLog}`
+            `CodeTransformation: Error in running Maven copy-dependencies command ${baseCommand} = ${errorLog}`
         )
         let errorReason = ''
         if (spawnResult.stdout) {
@@ -472,10 +490,16 @@ function copyProjectDependencies(): string[] {
             const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
-        // TO-DO: change CodeTransformMavenBuildCommand to only hold “mvnw.cmd” “./mvnw” and “mvn” and use that for get/setMavenName() too
+        let mavenBuildCommand = transformByQState.getMavenName()
+        // slashes not allowed in telemetry
+        if (mavenBuildCommand === './mvnw') {
+            mavenBuildCommand = 'mvnw'
+        } else if (mavenBuildCommand === '.\\mvnw.cmd') {
+            mavenBuildCommand = 'mvnw.cmd'
+        }
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformMavenBuildCommand: baseCommand as CodeTransformMavenBuildCommand,
+            codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
             result: MetadataResult.Fail,
             reason: errorReason,
         })
@@ -485,6 +509,12 @@ function copyProjectDependencies(): string[] {
     }
 
     return [folderPath, folderName]
+}
+
+export async function writeLogs() {
+    const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
+    fs.writeFileSync(logFilePath, transformByQState.getErrorLog())
+    return logFilePath
 }
 
 export async function zipCode() {
@@ -498,6 +528,10 @@ export async function zipCode() {
         installProjectDependencies()
     } catch (err) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.installErrorMessage)
+        // open build-logs.txt file to show user error logs
+        const logFilePath = await writeLogs()
+        const doc = await vscode.workspace.openTextDocument(logFilePath)
+        await vscode.window.showTextDocument(doc)
         throw err
     }
 
@@ -508,6 +542,10 @@ export async function zipCode() {
         dependencyFolderInfo = copyProjectDependencies()
     } catch (err) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
+        // open build-logs.txt file to show user error logs
+        const logFilePath = await writeLogs()
+        const doc = await vscode.workspace.openTextDocument(logFilePath)
+        await vscode.window.showTextDocument(doc)
         throw err
     }
 
@@ -519,11 +557,16 @@ export async function zipCode() {
     const zip = new AdmZip()
     const zipManifest = new ZipManifest()
 
+    let totalSourceCodeBytes = 0
+
     for (const file of sourceFiles) {
         const relativePath = path.relative(sourceFolder, file)
         const paddedPath = path.join('sources', relativePath)
         zip.addLocalFile(file, path.dirname(paddedPath))
+        totalSourceCodeBytes += (await fs.promises.stat(file)).size
     }
+
+    transformByQState.setTotalSourceCodeBytes(totalSourceCodeBytes)
 
     throwIfCancelled()
 
@@ -532,11 +575,13 @@ export async function zipCode() {
         dependencyFiles = getFilesRecursively(dependencyFolderPath, true)
     }
 
+    let totalDependenciesBytes = 0
     if (dependencyFiles.length > 0) {
         for (const file of dependencyFiles) {
             const relativePath = path.relative(dependencyFolderPath, file)
             const paddedPath = path.join(`dependencies/${dependencyFolderName}`, relativePath)
             zip.addLocalFile(file, path.dirname(paddedPath))
+            totalDependenciesBytes += (await fs.promises.stat(file)).size
         }
         zipManifest.dependenciesRoot += `${dependencyFolderName}/`
         telemetry.codeTransform_dependenciesCopied.emit({
@@ -546,14 +591,21 @@ export async function zipCode() {
     } else {
         zipManifest.dependenciesRoot = undefined
     }
-    zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest), 'utf-8'))
+    const manifestData = Buffer.from(JSON.stringify(zipManifest))
+
+    const manifestBytes = manifestData.length
+
+    zip.addFile('manifest.json', manifestData, 'utf-8')
+
+    transformByQState.setTotalDependenciesBytes(totalDependenciesBytes)
 
     throwIfCancelled()
 
     // add text file with logs from mvn clean install and mvn copy-dependencies
-    const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
-    fs.writeFileSync(logFilePath, transformByQState.getErrorLog())
+    const logFilePath = await writeLogs()
     zip.addLocalFile(logFilePath)
+
+    const buildLogsBytes = (await fs.promises.stat(logFilePath)).size
 
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
     fs.writeFileSync(tempFilePath, zip.toBuffer())
@@ -562,12 +614,24 @@ export async function zipCode() {
     }
     fs.rmSync(logFilePath) // will always exist here
 
+    const totalProjectBytes = totalSourceCodeBytes + totalDependenciesBytes + manifestBytes + buildLogsBytes
+
+    transformByQState.setTotalProjectBytes(totalProjectBytes)
+
+    // Consider adding fields for source code size and dependencies size (and source lines of code?)
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-        codeTransformTotalByteSize: (await fs.promises.stat(tempFilePath)).size,
+        codeTransformTotalByteSize: totalProjectBytes,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
         result: MetadataResult.Pass,
     })
+
+    if (totalProjectBytes > CodeWhispererConstants.uploadZipSizeLimitInBytes) {
+        // Consider showing user breakdown of source code vs dependencies size, rounded and formatted
+        void vscode.window.showErrorMessage(CodeWhispererConstants.projectSizeTooLargeMessage)
+        throw new Error('Project size exceeds limit')
+    }
+
     return tempFilePath
 }
 
@@ -598,7 +662,7 @@ export async function startJob(uploadId: string) {
         return response.transformationJobId
     } catch (e: any) {
         const errorMessage = (e as Error).message ?? 'Error in StartTransformation API call'
-        getLogger().error('CodeTransform: StartTransformation error = ', errorMessage)
+        getLogger().error('CodeTransformation: StartTransformation error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'StartTransformation',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -649,7 +713,7 @@ export async function getTransformationPlan(jobId: string) {
         return plan
     } catch (e: any) {
         const errorMessage = (e as Error).message ?? 'Error in GetTransformationPlan API call'
-        getLogger().error('CodeTransform: GetTransformationPlan error = ', errorMessage)
+        getLogger().error('CodeTransformation: GetTransformationPlan error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -682,7 +746,7 @@ export async function getTransformationSteps(jobId: string) {
         return response.transformationPlan.transformationSteps
     } catch (e: any) {
         const errorMessage = (e as Error).message ?? 'Error in GetTransformationPlan API call'
-        getLogger().error('CodeTransform: GetTransformationPlan error = ', errorMessage)
+        getLogger().error('CodeTransformation: GetTransformationPlan error = ', errorMessage)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -716,7 +780,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             })
             status = response.transformationJob.status!
             if (response.transformationJob.reason) {
-                transformByQState.setJobFailureReason(response.transformationJob.reason)
+                transformByQState.setJobFailureReason(
+                    `${response.transformationJob.reason} (request ID: ${response.$response.requestId})`
+                )
             }
             // Conditional check to verify when state changes during polling and log
             // these state changes during transformation
@@ -734,7 +800,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 break
             }
             if (CodeWhispererConstants.failureStates.includes(status)) {
-                throw new Error('Job failed, not going to retrieve plan')
+                throw new Error('Job failed')
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
             timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds
@@ -743,7 +809,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
         } catch (e: any) {
             const errorMessage = (e as Error).message ?? 'Error in GetTransformation API call'
-            getLogger().error('CodeTransform: GetTransformation error = ', errorMessage)
+            getLogger().error('CodeTransformation: GetTransformation error = ', errorMessage)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'GetTransformation',
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -793,5 +859,8 @@ export async function getVersionData() {
         localJavaVersion = undefined
     }
 
+    getLogger().info(
+        `CodeTransformation: Ran ${baseCommand} to get Maven version = ${localMavenVersion} and Java version = ${localJavaVersion} with project JDK = ${transformByQState.getSourceJDKVersion()}`
+    )
     return [localMavenVersion, localJavaVersion]
 }

@@ -267,6 +267,10 @@ export class TransformByQState {
     private projectName: string = ''
     private projectPath: string = ''
 
+    private totalSourceCodeBytes: number = 0
+    private totalDependenciesBytes: number = 0
+    private totalProjectBytes: number = 0 // source code + dependencies + manifest.json + build-logs.txt
+
     private jobId: string = ''
 
     private sourceJDKVersion: JDKVersion | undefined = undefined
@@ -323,6 +327,18 @@ export class TransformByQState {
 
     public getProjectPath() {
         return this.projectPath
+    }
+
+    public getTotalSourceCodeBytes() {
+        return this.totalSourceCodeBytes
+    }
+
+    public getTotalDependenciesBytes() {
+        return this.totalDependenciesBytes
+    }
+
+    public getTotalProjectBytes() {
+        return this.totalProjectBytes
     }
 
     public getJobId() {
@@ -421,6 +437,18 @@ export class TransformByQState {
         this.projectPath = path
     }
 
+    public setTotalSourceCodeBytes(bytes: number) {
+        this.totalSourceCodeBytes = bytes
+    }
+
+    public setTotalDependenciesBytes(bytes: number) {
+        this.totalDependenciesBytes = bytes
+    }
+
+    public setTotalProjectBytes(bytes: number) {
+        this.totalProjectBytes = bytes
+    }
+
     public setJobId(id: string) {
         this.jobId = id
     }
@@ -498,6 +526,7 @@ export class TransformByQState {
         this.polledJobStatus = '' // reset polled job status too
         this.jobFailureErrorMessage = ''
         this.payloadFilePath = ''
+        this.errorLog = ''
     }
 }
 
