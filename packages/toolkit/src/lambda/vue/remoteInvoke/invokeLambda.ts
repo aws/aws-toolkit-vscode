@@ -38,15 +38,15 @@ export interface RemoteInvokeData {
 }
 
 export class RemoteInvokeWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/lambda/vue/remoteInvoke/index.js'
     public readonly id = 'remoteInvoke'
-    public readonly source = 'src/lambda/vue/remoteInvoke/index.js'
 
     public constructor(
         private readonly channel: vscode.OutputChannel,
         private readonly client: LambdaClient,
         private readonly data: InitialData
     ) {
-        super()
+        super(RemoteInvokeWebview.sourcePath)
     }
 
     public init() {

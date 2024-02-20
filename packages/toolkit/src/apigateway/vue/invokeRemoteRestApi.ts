@@ -42,8 +42,9 @@ export interface InvokeRemoteRestApiInitialData {
 }
 
 export class RemoteRestInvokeWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/apigateway/vue/index.js'
     public readonly id = 'remoteInvoke'
-    public readonly source = 'src/apigateway/vue/index.js'
+
     private readonly logger = getLogger()
 
     public constructor(
@@ -51,7 +52,7 @@ export class RemoteRestInvokeWebview extends VueWebview {
         private readonly channel: vscode.OutputChannel,
         private readonly client = new DefaultApiGatewayClient(data.Region)
     ) {
-        super()
+        super(RemoteRestInvokeWebview.sourcePath)
     }
 
     public init(): typeof this.data {

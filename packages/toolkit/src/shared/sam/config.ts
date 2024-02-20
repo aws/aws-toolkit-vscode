@@ -12,7 +12,7 @@ export interface Config {
     readonly environments: Record<string, Omit<Environment, 'name'>>
 }
 
-interface Environment {
+export interface Environment {
     readonly name: string
     readonly commands: Record<string, Omit<Command, 'name'> | undefined>
 }

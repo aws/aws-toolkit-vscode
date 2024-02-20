@@ -61,14 +61,14 @@ interface LaunchConfigPickItem extends vscode.QuickPickItem {
 }
 
 export class SamInvokeWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/lambda/vue/configEditor/index.js'
     public readonly id = 'createLambda'
-    public readonly source = 'src/lambda/vue/configEditor/index.js'
 
     public constructor(
         private readonly extContext: ExtContext, // TODO(sijaden): get rid of `ExtContext`
         private readonly config?: AwsSamDebuggerConfiguration
     ) {
-        super()
+        super(SamInvokeWebview.sourcePath)
     }
 
     public getRuntimes() {

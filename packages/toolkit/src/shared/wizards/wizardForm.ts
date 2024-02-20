@@ -39,7 +39,7 @@ interface ContextOptions<TState, TProp> {
      */
     relativeOrder?: number
 }
-interface FormElement<TProp, TState> {
+export interface FormElement<TProp, TState> {
     /**
      * Binds a Prompter-provider to the specified property. The provider is called with the current Wizard
      * state whenever the property is ready for input, and should return a Prompter object.
@@ -50,7 +50,7 @@ interface FormElement<TProp, TState> {
 }
 
 // These methods are only applicable to object-like elements
-interface ParentFormElement<TProp extends Record<string, any>, TState> {
+export interface ParentFormElement<TProp extends Record<string, any>, TState> {
     applyBoundForm(
         form: WizardForm<TProp>,
         options?: Pick<ContextOptions<TState, TProp>, 'showWhen' | 'requireParent'>

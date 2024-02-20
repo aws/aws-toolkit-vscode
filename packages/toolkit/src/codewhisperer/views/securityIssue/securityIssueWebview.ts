@@ -9,13 +9,14 @@ import { CodeScanIssue } from '../../models/model'
 import { Component } from '../../../shared/telemetry/telemetry'
 
 export class SecurityIssueWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/codewhisperer/views/securityIssue/vue/index.js'
     public readonly id = 'aws.codeWhisperer.securityIssue'
-    public readonly source = 'src/codewhisperer/views/securityIssue/vue/index.js'
+
     private issue: CodeScanIssue | undefined
     private filePath: string | undefined
 
     public constructor() {
-        super()
+        super(SecurityIssueWebview.sourcePath)
     }
 
     public getIssue() {

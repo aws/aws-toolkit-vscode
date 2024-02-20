@@ -78,7 +78,7 @@ export interface Command<T extends Callback = Callback> {
  * Represents a command that has been registered with VS Code, meaning
  * it can be executed with the `executeCommand` API.
  */
-interface RegisteredCommand<T extends Callback = Callback> extends Command<T> {
+export interface RegisteredCommand<T extends Callback = Callback> extends Command<T> {
     dispose(): void
 }
 
@@ -88,7 +88,7 @@ interface RegisteredCommand<T extends Callback = Callback> extends Command<T> {
  *
  * This is a "lazy" command that is only registered when it is actually used.
  */
-interface DeclaredCommand<T extends Callback = Callback, U extends any[] = any[]> extends Command<T> {
+export interface DeclaredCommand<T extends Callback = Callback, U extends any[] = any[]> extends Command<T> {
     register(...dependencies: U): RegisteredCommand<T>
 }
 

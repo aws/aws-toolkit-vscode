@@ -19,7 +19,7 @@ export function isValidSubscriptionType(type = ''): type is SubscriptionType {
     return (subscriptionTypes as readonly string[]).includes(type)
 }
 
-interface InstanceDescription {
+export interface InstanceDescription {
     name: string
     specs: string
 }

@@ -30,8 +30,8 @@ import { isCloud9 } from '../../../shared/extensionUtilities'
 const localize = nls.loadMessageBundle()
 
 export class CodeCatalystConfigureWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/codecatalyst/vue/configure/index.js'
     public readonly id = 'configureCodeCatalyst'
-    public readonly source = 'src/codecatalyst/vue/configure/index.js'
 
     public readonly onDidChangeDevfile = new vscode.EventEmitter<GetStatusResponse>()
 
@@ -40,7 +40,7 @@ export class CodeCatalystConfigureWebview extends VueWebview {
         private readonly devenv: ConnectedDevEnv,
         private readonly commands: typeof CodeCatalystCommands.declared
     ) {
-        super()
+        super(CodeCatalystConfigureWebview.sourcePath)
     }
 
     public init() {

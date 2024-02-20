@@ -90,7 +90,7 @@ export interface ErrorInformation {
 /**
  * Anonymous class with a pre-defined error name.
  */
-interface NamedErrorConstructor {
+export interface NamedErrorConstructor {
     /**
      * See {@link ToolkitError}
      */

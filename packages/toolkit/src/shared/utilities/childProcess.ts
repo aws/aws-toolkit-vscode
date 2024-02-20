@@ -66,34 +66,37 @@ export const eof = Symbol('EOF')
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
-    private static runningProcesses: Map<number, ChildProcess> = new Map()
-    private childProcess: child_process.ChildProcess | undefined
-    private processErrors: Error[] = []
-    private processResult: ChildProcessResult | undefined
-    private log: logger.Logger
+    static #runningProcesses: Map<number, ChildProcess> = new Map()
+    #childProcess: child_process.ChildProcess | undefined
+    #processErrors: Error[] = []
+    #processResult: ChildProcessResult | undefined
+    #log: logger.Logger
 
     /** Collects stdout data if the process was started with `collect=true`. */
-    private stdoutChunks: string[] = []
+    #stdoutChunks: string[] = []
     /** Collects stderr data if the process was started with `collect=true`. */
-    private stderrChunks: string[] = []
+    #stderrChunks: string[] = []
 
-    private makeResult(code: number, signal?: NodeJS.Signals): ChildProcessResult {
+    #command: string
+    #args: string[]
+    #baseOptions: ChildProcessOptions
+
+    #makeResult(code: number, signal?: NodeJS.Signals): ChildProcessResult {
         return {
             exitCode: code,
-            stdout: this.stdoutChunks.join('').trim(),
-            stderr: this.stderrChunks.join('').trim(),
-            error: this.processErrors[0], // Only use the first since that one usually cascades.
+            stdout: this.#stdoutChunks.join('').trim(),
+            stderr: this.#stderrChunks.join('').trim(),
+            error: this.#processErrors[0], // Only use the first since that one usually cascades.
             signal,
         }
     }
 
-    public constructor(
-        private readonly command: string,
-        private readonly args: string[] = [],
-        private readonly baseOptions: ChildProcessOptions = {}
-    ) {
+    public constructor(command: string, args: string[] = [], baseOptions: ChildProcessOptions = {}) {
+        this.#command = command
+        this.#args = args
+        this.#baseOptions = baseOptions
         // TODO: allow caller to use the various loggers instead of just the single one
-        this.log = baseOptions.logging !== 'no' ? logger.getLogger() : logger.getNullLogger()
+        this.#log = baseOptions.logging !== 'no' ? logger.getLogger() : logger.getNullLogger()
     }
 
     // Inspired by 'got'
@@ -113,34 +116,34 @@ export class ChildProcess {
      * Priority is given to `run` options, overriding the previous value.
      */
     public async run(params: ChildProcessRunOptions = {}): Promise<ChildProcessResult> {
-        if (this.childProcess) {
+        if (this.#childProcess) {
             throw new Error('process already started')
         }
 
         const options = {
             collect: true,
             waitForStreams: true,
-            ...this.baseOptions,
+            ...this.#baseOptions,
             ...params,
-            spawnOptions: { ...this.baseOptions.spawnOptions, ...params.spawnOptions },
+            spawnOptions: { ...this.#baseOptions.spawnOptions, ...params.spawnOptions },
         }
 
         const { rejectOnError, rejectOnErrorCode, timeout } = options
-        const args = this.args.concat(options.extraArgs ?? [])
+        const args = this.#args.concat(options.extraArgs ?? [])
 
-        const debugDetail = this.log.logLevelEnabled('debug')
-            ? ` (running processes: ${ChildProcess.runningProcesses.size})`
+        const debugDetail = this.#log.logLevelEnabled('debug')
+            ? ` (running processes: ${ChildProcess.#runningProcesses.size})`
             : ''
-        this.log.info(`Command: ${this.toString(options.logging === 'noparams')}${debugDetail}`)
+        this.#log.info(`Command: ${this.toString(options.logging === 'noparams')}${debugDetail}`)
 
         const cleanup = () => {
-            this.childProcess?.stdout?.removeAllListeners()
-            this.childProcess?.stderr?.removeAllListeners()
+            this.#childProcess?.stdout?.removeAllListeners()
+            this.#childProcess?.stderr?.removeAllListeners()
         }
 
         return new Promise<ChildProcessResult>((resolve, reject) => {
             const errorHandler = (error: Error, force = options.useForceStop) => {
-                this.processErrors.push(error)
+                this.#processErrors.push(error)
                 if (!this.stopped) {
                     this.stop(force)
                 }
@@ -155,7 +158,7 @@ export class ChildProcess {
 
             const paramsContext: RunParameterContext = {
                 timeout,
-                logger: this.log,
+                logger: this.#log,
                 stop: this.stop.bind(this),
                 reportError: err => errorHandler(err instanceof Error ? err : new Error(err)),
             }
@@ -170,8 +173,8 @@ export class ChildProcess {
             // [1] https://github.com/moxystudio/node-cross-spawn/blob/master/index.js
             // [2] https://nodejs.org/api/child_process.html
             try {
-                this.childProcess = crossSpawn.spawn(this.command, args, options.spawnOptions)
-                this.registerLifecycleListeners(this.childProcess, errorHandler, options)
+                this.#childProcess = crossSpawn.spawn(this.#command, args, options.spawnOptions)
+                this.#registerLifecycleListeners(this.#childProcess, errorHandler, options)
             } catch (err) {
                 return reject(err)
             }
@@ -182,21 +185,21 @@ export class ChildProcess {
             //  3. Sending a message to the child process failed.
             // https://nodejs.org/api/child_process.html#child_process_class_childprocess
             // We also register error event handlers on the output/error streams in case a lower level library fails
-            this.childProcess.on('error', errorHandler)
-            this.childProcess.stdout?.on('error', errorHandler)
-            this.childProcess.stderr?.on('error', errorHandler)
+            this.#childProcess.on('error', errorHandler)
+            this.#childProcess.stdout?.on('error', errorHandler)
+            this.#childProcess.stderr?.on('error', errorHandler)
 
-            this.childProcess.stdout?.on('data', (data: { toString(): string }) => {
+            this.#childProcess.stdout?.on('data', (data: { toString(): string }) => {
                 if (options.collect) {
-                    this.stdoutChunks.push(data.toString())
+                    this.#stdoutChunks.push(data.toString())
                 }
 
                 options.onStdout?.(data.toString(), paramsContext)
             })
 
-            this.childProcess.stderr?.on('data', (data: { toString(): string }) => {
+            this.#childProcess.stderr?.on('data', (data: { toString(): string }) => {
                 if (options.collect) {
-                    this.stderrChunks.push(data.toString())
+                    this.#stderrChunks.push(data.toString())
                 }
 
                 options.onStderr?.(data.toString(), paramsContext)
@@ -204,9 +207,9 @@ export class ChildProcess {
 
             // Emitted when streams are closed.
             // This will not be fired if `waitForStreams` is false
-            this.childProcess.once('close', (code, signal) => {
-                this.processResult = this.makeResult(code ?? -1, signal ?? undefined)
-                resolve(this.processResult)
+            this.#childProcess.once('close', (code, signal) => {
+                this.#processResult = this.#makeResult(code ?? -1, signal ?? undefined)
+                resolve(this.#processResult)
             })
 
             // Emitted when process exits or terminates.
@@ -214,8 +217,8 @@ export class ChildProcess {
             // - If the process exited, `code` is the final exit code of the process, else null.
             // - If the process terminated because of a signal, `signal` is the name of the signal, else null.
             // - One of `code` or `signal` will always be non-null.
-            this.childProcess.once('exit', (code, signal) => {
-                this.processResult = this.makeResult(
+            this.#childProcess.once('exit', (code, signal) => {
+                this.#processResult = this.#makeResult(
                     typeof code === 'number' ? code : -1,
                     typeof signal === 'string' ? signal : undefined
                 )
@@ -227,7 +230,7 @@ export class ChildProcess {
                     }
                 }
                 if (options.waitForStreams === false) {
-                    resolve(this.processResult)
+                    resolve(this.#processResult)
                 }
             })
         }).finally(() => cleanup())
@@ -241,15 +244,15 @@ export class ChildProcess {
      * @returns `run()` result, or undefined if the process has not yet started or is still running.
      */
     public result(): ChildProcessResult | undefined {
-        return this.processResult
+        return this.#processResult
     }
 
     public pid(): number {
-        return this.childProcess?.pid ?? -1
+        return this.#childProcess?.pid ?? -1
     }
 
     public exitCode(): number {
-        return this.childProcess?.exitCode ?? -1
+        return this.#childProcess?.exitCode ?? -1
     }
 
     /**
@@ -262,11 +265,11 @@ export class ChildProcess {
      *
      */
     public stop(force: boolean = false, signal?: NodeJS.Signals): void {
-        const child = this.childProcess
+        const child = this.#childProcess
         if (!child || child.stdin?.destroyed) {
             return
         }
-        const command = this.command
+        const command = this.#command
         const pid = this.pid()
         if (!this.stopped) {
             child.kill(signal)
@@ -279,7 +282,7 @@ export class ChildProcess {
                         }
                     })
                     .catch(e => {
-                        this.log.warn(`stop(): SIGKILL failed: pid=${pid} command=${command}`)
+                        this.#log.warn(`stop(): SIGKILL failed: pid=${pid} command=${command}`)
                     })
             }
         } else {
@@ -287,23 +290,23 @@ export class ChildProcess {
         }
     }
 
-    private registerLifecycleListeners(
+    #registerLifecycleListeners(
         process: child_process.ChildProcess,
         errorHandler: (error: Error, forceStop?: boolean) => void,
         options?: ChildProcessOptions
     ): void {
         const pid = process.pid
-        ChildProcess.runningProcesses.set(pid, this)
+        ChildProcess.#runningProcesses.set(pid, this)
 
         const timeoutListener = options?.timeout?.token.onCancellationRequested(({ agent }) => {
             const message = agent === 'user' ? 'Cancelled: ' : 'Timed out: '
-            this.log.verbose(`${message}${this.toString(options?.logging === 'noparams')}`)
+            this.#log.verbose(`${message}${this.toString(options?.logging === 'noparams')}`)
             errorHandler(new CancellationError(agent), true)
         })
 
         const dispose = () => {
             timeoutListener?.dispose()
-            ChildProcess.runningProcesses.delete(pid)
+            ChildProcess.#runningProcesses.delete(pid)
         }
 
         process.on('exit', dispose)
@@ -316,11 +319,11 @@ export class ChildProcess {
      * This throws if the process hasn't started or if the write fails.
      */
     public async send(input: string | Buffer | typeof eof) {
-        if (this.childProcess === undefined) {
+        if (this.#childProcess === undefined) {
             throw new Error('Cannot write to non-existent process')
         }
 
-        const stdin = this.childProcess.stdin
+        const stdin = this.#childProcess.stdin
         if (!stdin) {
             throw new Error('Cannot write to non-existent stdin')
         }
@@ -343,10 +346,10 @@ export class ChildProcess {
      * - exit-code was set.
      */
     public get stopped(): boolean {
-        if (!this.childProcess) {
+        if (!this.#childProcess) {
             return false // Not started yet.
         }
-        return !!this.processResult
+        return !!this.#processResult
     }
 
     /**
@@ -356,6 +359,6 @@ export class ChildProcess {
      */
     public toString(noparams = false): string {
         const pid = this.pid() > 0 ? `PID ${this.pid()}:` : '(not started)'
-        return `${pid} [${this.command} ${noparams ? '...' : this.args.join(' ')}]`
+        return `${pid} [${this.#command} ${noparams ? '...' : this.#args.join(' ')}]`
     }
 }

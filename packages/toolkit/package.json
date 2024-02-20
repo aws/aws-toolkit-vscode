@@ -54,8 +54,7 @@
         "onFileSystem:s3-readonly",
         "onCommand:aws.codeWhisperer.accept"
     ],
-    "main": "./dist/src/main.js",
-    "browser": "./dist/src/extensionWeb",
+    "main": "./dist/src/main",
     "contributes": {
         "configuration": {
             "type": "object",
@@ -4249,7 +4248,7 @@
         "browserWatch": "npm run clean && npm run buildScripts && webpack --config-name web --watch",
         "browserCompile": "npm run clean && npm run buildScripts && webpack --config-name web",
         "browserRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
-        "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles",
+        "compile": "npm run clean && npm run buildScripts && tsc -p ./ && webpack --mode development && npm run copyFiles",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "testCompile": "npm run buildScripts && tsc -p ./",
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",

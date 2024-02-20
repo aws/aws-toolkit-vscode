@@ -154,7 +154,7 @@ export abstract class VueWebview {
     /**
      * The relative location, from the repository root, to the frontend entrypoint.
      */
-    public abstract readonly source: string
+    public readonly source: string
 
     private readonly protocol: Protocol
     private readonly onDidDisposeEmitter = new vscode.EventEmitter<void>()
@@ -163,7 +163,7 @@ export abstract class VueWebview {
     private disposed = false
     private context?: vscode.ExtensionContext
 
-    public constructor() {
+    public constructor(source: string) {
         const commands: Record<string, (...args: any[]) => unknown> = {}
         const ctor = this.constructor as new (...args: any[]) => any
 
@@ -172,6 +172,10 @@ export abstract class VueWebview {
         }
 
         this.protocol = commands
+
+        // Will be sent to the dist/vue folder by webpack
+        // TODO!!! do not remove src or approve this PR if you are reading this
+        this.source = vscode.Uri.joinPath(vscode.Uri.parse('./vue'), source.replace('src/', '')).fsPath
     }
 
     public get isDisposed() {

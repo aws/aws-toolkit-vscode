@@ -20,11 +20,11 @@ import { placeholder } from '../../shared/vscode/commands2'
 
 export type OSType = 'Mac' | 'RestOfOS'
 export class CodeWhispererWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/codewhisperer/vue/index.js'
     public readonly id = 'CodeWhispererWebview'
-    public readonly source = 'src/codewhisperer/vue/index.js'
 
     public constructor() {
-        super()
+        super(CodeWhispererWebview.sourcePath)
     }
 
     private isFileSaved: boolean = false

@@ -96,7 +96,7 @@ export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTy
         const current = this.get('defaultExtensions', [])
 
         if (!current.includes(extensionId)) {
-            this.log(`updating remote SSH "defaultExtensions" setting with "${extensionId}"`)
+            this._log(`updating remote SSH "defaultExtensions" setting with "${extensionId}"`)
 
             return this.update('defaultExtensions', [...current, extensionId])
         }
@@ -106,13 +106,13 @@ export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTy
 
     public async setRemotePlatform(hostname: string, platform: 'linux' | 'windows' | 'macOS'): Promise<boolean> {
         try {
-            const current = this.getOrThrow('remotePlatform', {})
+            const current = this._getOrThrow('remotePlatform', {})
             current[hostname] = platform
-            this.log(`updated remote SSH host "${hostname}" with platform "${platform}"`)
+            this._log(`updated remote SSH host "${hostname}" with platform "${platform}"`)
 
             return this.update('remotePlatform', current)
         } catch (error) {
-            this.log(`failed to read "remotePlatform", no updates will be made`)
+            this._log(`failed to read "remotePlatform", no updates will be made`)
 
             return false
         }

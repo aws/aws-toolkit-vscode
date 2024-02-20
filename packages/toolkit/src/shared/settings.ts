@@ -272,20 +272,24 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
     }
 
     return class AnonymousSettings implements TypedSettings<Inner> {
-        private readonly config = this.settings.getSection(section)
-        private readonly disposables: vscode.Disposable[] = []
+        readonly #settings: ClassToInterfaceType<Settings>
+        readonly #config: ResetableMemento
+        readonly #disposables: vscode.Disposable[] = []
         // TODO(sijaden): add metadata prop to `Logger` so we don't need to make one-off log functions
-        protected readonly log = makeLogger(Object.getPrototypeOf(this)?.constructor?.name, 'debug')
-        protected readonly logErr = makeLogger(Object.getPrototypeOf(this)?.constructor?.name, 'error')
+        public readonly _log = makeLogger(Object.getPrototypeOf(this)?.constructor?.name, 'debug')
+        public readonly _logErr = makeLogger(Object.getPrototypeOf(this)?.constructor?.name, 'error')
 
-        public constructor(private readonly settings: ClassToInterfaceType<Settings> = Settings.instance) {}
+        public constructor(settings: ClassToInterfaceType<Settings> = Settings.instance) {
+            this.#settings = settings
+            this.#config = this.#settings.getSection(section)
+        }
 
         public get onDidChange() {
-            return this.getChangedEmitter().event
+            return this.#getChangedEmitter().event
         }
 
         public keys(): readonly string[] {
-            return this.config.keys()
+            return this.#config.keys()
         }
 
         /**
@@ -300,12 +304,12 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
          */
         public get<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
             try {
-                return this.getOrThrow(key, defaultValue)
+                return this._getOrThrow(key, defaultValue)
             } catch (e) {
                 if (arguments.length === 1) {
                     throw ToolkitError.chain(e, `Failed to read key "${section}.${key}"`)
                 }
-                this.logErr('failed to read "%s": %s', key, (e as Error).message)
+                this._logErr('failed to read "%s": %s', key, (e as Error).message)
 
                 return defaultValue as Inner[K]
             }
@@ -313,11 +317,11 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
         public async update<K extends keyof Inner>(key: K & string, value: Inner[K]) {
             try {
-                await this.config.update(key, value)
+                await this.#config.update(key, value)
 
                 return true
             } catch (e) {
-                this.log('failed to update "%s": %s', key, (e as Error).message)
+                this._log('failed to update "%s": %s', key, (e as Error).message)
 
                 return false
             }
@@ -325,11 +329,11 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
         public async delete(key: keyof Inner & string) {
             try {
-                await this.config.update(key, undefined)
+                await this.#config.update(key, undefined)
 
                 return true
             } catch (e) {
-                this.log('failed to delete "%s": %s', key, (e as Error).message)
+                this._log('failed to delete "%s": %s', key, (e as Error).message)
 
                 return false
             }
@@ -337,28 +341,28 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
         public async reset() {
             try {
-                return await this.config.reset()
+                return await this.#config.reset()
             } catch (e) {
-                this.log('failed to reset settings: %s', (e as Error).message)
+                this._log('failed to reset settings: %s', (e as Error).message)
             }
         }
 
         public dispose() {
-            return vscode.Disposable.from(this.getChangedEmitter(), ...this.disposables).dispose()
+            return vscode.Disposable.from(this.#getChangedEmitter(), ...this.#disposables).dispose()
         }
 
-        protected isSet(key: keyof Inner & string) {
-            return this.settings.isSet(key, section)
+        public _isSet(key: keyof Inner & string) {
+            return this.#settings.isSet(key, section)
         }
 
-        protected getOrThrow<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
-            const value = this.config.get(key, defaultValue)
+        public _getOrThrow<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
+            const value = this.#config.get(key, defaultValue)
 
             return cast<Inner[K]>(value, descriptor[key])
         }
 
-        protected getOrUndefined<K extends keyof Inner>(key: K & string) {
-            const value = this.config.get(key)
+        public _getOrUndefined<K extends keyof Inner>(key: K & string) {
+            const value = this.#config.get(key)
             if (value === undefined) {
                 return value
             }
@@ -366,7 +370,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             return this.get(key, undefined)
         }
 
-        private readonly getChangedEmitter = once(() => {
+        readonly #getChangedEmitter = once(() => {
             // For a setting `aws.foo.bar`:
             //   - the "section" is `aws.foo`
             //   - the "key" is `bar`
@@ -377,13 +381,13 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             // value is a valid way to express that the key exists but no (valid) value is set.
 
             const props = keys(descriptor)
-            const store = toRecord(props, p => this.getOrUndefined(p))
+            const store = toRecord(props, p => this._getOrUndefined(p))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
-            const listener = this.settings.onDidChangeSection(section, event => {
+            const listener = this.#settings.onDidChangeSection(section, event => {
                 const isDifferent = (p: keyof T & string) => {
                     const isDifferentLazy = () => {
                         const previous = store[p]
-                        return previous !== (store[p] = this.getOrUndefined(p))
+                        return previous !== (store[p] = this._getOrUndefined(p))
                     }
 
                     return event.affectsConfiguration(p) || isDifferentLazy()
@@ -391,13 +395,13 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
                 for (const key of props.filter(isDifferent)) {
                     if (`${section}.${key}` !== testSetting) {
-                        this.log('key "%s" changed', key)
+                        this._log('key "%s" changed', key)
                     }
                     emitter.fire({ key })
                 }
             })
 
-            this.disposables.push(emitter, listener)
+            this.#disposables.push(emitter, listener)
             return emitter
         })
     }
@@ -583,9 +587,9 @@ export class PromptSettings extends Settings.define(
 ) {
     public async isPromptEnabled(promptName: PromptName): Promise<boolean> {
         try {
-            return !this.getOrThrow(promptName, false)
+            return !this._getOrThrow(promptName, false)
         } catch (e) {
-            this.log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
+            this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
             await this.reset()
 
             return true
@@ -637,9 +641,9 @@ export class Experiments extends Settings.define(
 ) {
     public async isExperimentEnabled(name: ExperimentName): Promise<boolean> {
         try {
-            return this.getOrThrow(name, false)
+            return this._getOrThrow(name, false)
         } catch (error) {
-            this.log(`experiment check for ${name} failed: %s`, error)
+            this._log(`experiment check for ${name} failed: %s`, error)
             await this.reset()
 
             return false
@@ -718,7 +722,7 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
     public isDevMode(): boolean {
         // This setting takes precedence over everything.
         // It must be removed completely from the settings to not be considered.
-        const forceDevMode: boolean | undefined = this.isSet('forceDevMode')
+        const forceDevMode: boolean | undefined = this._isSet('forceDevMode')
             ? this.get('forceDevMode', false)
             : undefined
         if (forceDevMode !== undefined) {
@@ -752,7 +756,7 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
     }
 
     public override get<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {
-        if (!this.isSet(key)) {
+        if (!this._isSet(key)) {
             this.unset(key)
 
             return defaultValue

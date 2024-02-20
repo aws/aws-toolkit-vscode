@@ -40,13 +40,17 @@ type RequestParamsArg = Omit<RequestParams, 'method' | 'signal'>
  * Use {@link FetchRequest.response} to make the actual request and get the response.
  */
 class FetchRequest {
-    private requestCanceller: AbortController | undefined
+    #requestCanceller: AbortController | undefined
 
-    constructor(
-        private readonly url: string,
-        private readonly params: RequestParams = {},
-        private readonly wrappedFetch: typeof crossFetch
-    ) {}
+    #url: string
+    #params: RequestParams
+    #wrappedFetch: typeof crossFetch
+
+    constructor(url: string, params: RequestParams = {}, wrappedFetch: typeof crossFetch) {
+        this.#url = url
+        this.#params = params
+        this.#wrappedFetch = wrappedFetch
+    }
 
     /**
      * The response of the fetch request.
@@ -58,14 +62,14 @@ class FetchRequest {
         return new Promise(async (resolve, reject) => {
             try {
                 // Setup cancellation ability
-                this.requestCanceller = new AbortController()
-                const params = this.makeRequestCancellable(this.params, this.requestCanceller)
+                this.#requestCanceller = new AbortController()
+                const params = this.#makeRequestCancellable(this.#params, this.#requestCanceller)
 
                 // Make the actual request
-                const actualResponse = await this.wrappedFetch(this.url, params)
+                const actualResponse = await this.#wrappedFetch(this.#url, params)
 
-                await this.throwIfBadResponse(this.params, actualResponse, this.url)
-                this.requestCanceller = undefined
+                await this.#throwIfBadResponse(this.#params, actualResponse, this.#url)
+                this.#requestCanceller = undefined
 
                 resolve(actualResponse)
             } catch (err) {
@@ -81,20 +85,20 @@ class FetchRequest {
      * Cancels the request if in progress.
      */
     cancel() {
-        if (this.requestCanceller === undefined) {
+        if (this.#requestCanceller === undefined) {
             return
         }
-        this.requestCanceller.abort()
-        this.requestCanceller = undefined
+        this.#requestCanceller.abort()
+        this.#requestCanceller = undefined
     }
 
     // ----- Private -----
 
-    private makeRequestCancellable(params: RequestParams, requestCanceller: AbortController): RequestParams {
+    #makeRequestCancellable(params: RequestParams, requestCanceller: AbortController): RequestParams {
         return { ...params, signal: requestCanceller.signal }
     }
 
-    private async throwIfBadResponse(request: RequestParams, response: Response, url: string) {
+    async #throwIfBadResponse(request: RequestParams, response: Response, url: string) {
         if (response.ok) {
             return
         }

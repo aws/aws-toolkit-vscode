@@ -53,18 +53,18 @@ interface EmptyResponse {
 export type SourceResponse = LinkedResponse | EmptyResponse
 
 export class CodeCatalystCreateWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/codecatalyst/vue/create/index.js'
+    public readonly id = 'createCodeCatalyst'
+
     private projectPrompter?: QuickPickPrompter<CodeCatalystProject>
     private spacePrompter?: QuickPickPrompter<CodeCatalystOrg>
-
-    public readonly id = 'createCodeCatalyst'
-    public readonly source = 'src/codecatalyst/vue/create/index.js'
 
     public constructor(
         private readonly client: CodeCatalystClient,
         private readonly commands: typeof CodeCatalystCommands.declared,
         private readonly onComplete: (devenv?: DevEnvironment) => void
     ) {
-        super()
+        super(CodeCatalystCreateWebview.sourcePath)
 
         // triggers pre-loading of Spaces
         this.spacePrompter = createOrgPrompter(client)

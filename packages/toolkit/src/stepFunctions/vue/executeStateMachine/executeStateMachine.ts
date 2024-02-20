@@ -23,12 +23,13 @@ interface StateMachine {
 }
 
 export class ExecuteStateMachineWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/stepFunctions/vue/executeStateMachine/index.js'
     public readonly id = 'remoteInvoke'
-    public readonly source = 'src/stepFunctions/vue/executeStateMachine/index.js'
+
     private readonly logger = getLogger()
 
     public constructor(private readonly channel: vscode.OutputChannel, private readonly stateMachine: StateMachine) {
-        super()
+        super(ExecuteStateMachineWebview.sourcePath)
     }
 
     public init() {

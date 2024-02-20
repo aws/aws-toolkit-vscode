@@ -19,11 +19,11 @@ export interface FeedbackMessage {
 }
 
 export class FeedbackWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/feedback/vue/index.js'
     public readonly id = 'submitFeedback'
-    public readonly source = 'src/feedback/vue/index.js'
 
     public constructor(private readonly telemetry: TelemetryService, private readonly feedbackName: string) {
-        super()
+        super(FeedbackWebview.sourcePath)
     }
     public async getFeedbackName(): Promise<string | void> {
         return this.feedbackName

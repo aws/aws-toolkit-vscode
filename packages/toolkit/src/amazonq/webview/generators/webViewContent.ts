@@ -38,7 +38,7 @@ export class WebViewContentGenerator {
     }
 
     private async generateJS(extensionURI: Uri, webView: Webview): Promise<string> {
-        const source = path.join('src', 'amazonq', 'webview', 'ui', 'amazonq-ui.js')
+        const source = path.join('vue', 'amazonq', 'webview', 'ui', 'amazonq-ui.js')
         const assetsPath = Uri.joinPath(extensionURI)
         const javascriptUri = Uri.joinPath(assetsPath, 'dist', source)
 

@@ -22,14 +22,14 @@ const currentDir = process.cwd()
  * @param {string} file
  */
 const createVueBundleName = file => {
-    return path.relative(currentDir, file).split('.').slice(0, -1).join(path.sep)
+    return path.relative(currentDir, file).replace('src/', '').split('.').slice(0, -1).join(path.sep)
 }
 
 /**
  * Generates Vue entry points if the filename is matches `targetPattern` (default: index.ts)
  * and is under a `vue` directory.
  */
-const createVueEntries = (targetPattern = 'index.ts') => {
+const createVueEntries = (dir = currentDir, targetPattern = 'index.ts') => {
     return glob
         .sync(path.resolve(currentDir, 'src', '**', 'vue', '**', targetPattern))
         .map(f => ({ name: createVueBundleName(f), path: f }))
@@ -42,7 +42,7 @@ const vueConfig = {
     name: 'vue',
     target: 'web',
     output: {
-        ...baseConfig.output,
+        path: path.resolve(currentDir, 'dist', 'vue'),
         libraryTarget: 'this',
     },
     module: {

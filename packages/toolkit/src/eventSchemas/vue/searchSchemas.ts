@@ -37,15 +37,15 @@ interface InitialData {
 }
 
 export class SearchSchemasWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/eventSchemas/vue/index.js'
     public readonly id = 'remoteInvoke'
-    public readonly source = 'src/eventSchemas/vue/index.js'
 
     public constructor(
         private readonly channel: vscode.OutputChannel,
         private readonly client: SchemaClient,
         private readonly data: InitialData
     ) {
-        super()
+        super(SearchSchemasWebview.sourcePath)
     }
 
     public init() {

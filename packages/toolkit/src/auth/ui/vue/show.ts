@@ -56,8 +56,9 @@ import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { isInBrowser } from '../../../common/browserUtils'
 
 export class AuthWebview extends VueWebview {
+    public static readonly sourcePath: string = 'src/auth/ui/vue/index.js'
     public override id: string = 'authWebview'
-    public override source: string = 'src/auth/ui/vue/index.js'
+
     public readonly onDidConnectionChangeCodeCatalyst = new vscode.EventEmitter<void>()
     public readonly onDidConnectionChangeExplorer = new vscode.EventEmitter<void>()
     public readonly onDidConnectionChangeCodeWhisperer = new vscode.EventEmitter<void>()
@@ -65,7 +66,7 @@ export class AuthWebview extends VueWebview {
     public readonly onDidSelectService = new vscode.EventEmitter<ServiceItemId>()
 
     constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider, readonly auth = Auth.instance) {
-        super()
+        super(AuthWebview.sourcePath)
     }
 
     async getProfileNameError(profileName?: SectionName, required = true): Promise<string | undefined> {

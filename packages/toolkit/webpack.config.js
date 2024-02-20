@@ -25,7 +25,7 @@ const vueConfigs = baseVueConfig.configs.map(c => {
         ...c,
         entry: {
             ...baseVueConfig.utils.createVueEntries(),
-            'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
+            'amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
         },
     }
 })
