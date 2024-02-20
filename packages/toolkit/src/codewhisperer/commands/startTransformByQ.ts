@@ -81,9 +81,25 @@ async function collectInput(validProjects: Map<vscode.QuickPickItem, JDKVersion 
     const validSourceVersions: vscode.QuickPickItem[] = versionsArray.map(version => ({
         label: version,
     }))
+    validSourceVersions.push({ label: 'Other' }) // if user selects 'Other', terminate execution
     await MultiStepInputFlowController.run(input => pickSourceVersion(input, state, validSourceVersions))
     if (!state.sourceJavaVersion) {
         throw new ToolkitError('No version selected', { code: 'NoVersionSelected' })
+    } else if (state.sourceJavaVersion.label === 'Other') {
+        telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
+                transformByQState.getSourceJDKVersion()!
+            ) as CodeTransformJavaSourceVersionsAllowed, // will be 'undefined'
+            codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
+                transformByQState.getTargetJDKVersion()
+            ) as CodeTransformJavaTargetVersionsAllowed,
+            result: MetadataResult.Fail,
+        })
+        await vscode.window.showErrorMessage(CodeWhispererConstants.unsupportedJavaVersionSelectedMessage, {
+            modal: true,
+        })
+        throw new ToolkitError('', { code: 'OtherVersionSelected' })
     }
     return state as UserInputState
 }
@@ -141,6 +157,47 @@ async function pickSourceVersion(
         transformByQState.setSourceJDKVersion(JDKVersion.JDK8)
     } else if (pick === validSourceVersions[1]) {
         transformByQState.setSourceJDKVersion(JDKVersion.JDK11)
+    } else if (pick === validSourceVersions[2]) {
+        // corresponds with the 'Other' option
+        transformByQState.setSourceJDKVersion(JDKVersion.UNSUPPORTED)
+    }
+}
+
+async function setMaven() {
+    let mavenWrapperExecutableName = os.platform() === 'win32' ? 'mvnw.cmd' : 'mvnw'
+    const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
+    if (fs.existsSync(mavenWrapperExecutablePath)) {
+        if (mavenWrapperExecutableName === 'mvnw') {
+            mavenWrapperExecutableName = './mvnw' // add the './' for non-Windows
+        }
+        transformByQState.setMavenName(mavenWrapperExecutableName)
+    } else {
+        transformByQState.setMavenName('mvn')
+    }
+}
+
+async function validateJavaHome() {
+    const versionData = await getVersionData()
+    let javaVersionUsedByMaven = versionData[1]
+    if (javaVersionUsedByMaven !== undefined) {
+        javaVersionUsedByMaven = javaVersionUsedByMaven.slice(0, 3)
+        if (javaVersionUsedByMaven === '1.8') {
+            javaVersionUsedByMaven = JDKVersion.JDK8
+        } else if (javaVersionUsedByMaven === '11.') {
+            javaVersionUsedByMaven = JDKVersion.JDK11
+        }
+    }
+    if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
+        // means either javaVersionUsedByMaven is undefined or it does not match the project JDK
+        // TO-DO: give user help on how to find JAVA_HOME for corresponding project JDK
+        const javaHome = await vscode.window.showInputBox({
+            title: CodeWhispererConstants.transformByQWindowTitle,
+            prompt: `${CodeWhispererConstants.enterJavaHomeMessage} ${transformByQState.getSourceJDKVersion()}`,
+        })
+        if (!javaHome || !javaHome.trim()) {
+            throw new ToolkitError('No JAVA_HOME provided', { code: 'NoJavaHomePath' })
+        }
+        transformByQState.setJavaHome(javaHome.trim())
     }
 }
 
@@ -149,6 +206,10 @@ export async function startTransformByQ() {
 
     // Validate inputs. If failed, Error will be thrown and execution stops
     const userInputState = await validateTransformationJob()
+
+    await setMaven()
+
+    await validateJavaHome()
 
     // Set the default state variables for our store and the UI
     await setTransformationToRunningState(userInputState)
@@ -192,7 +253,7 @@ export async function preTransformationUploadCode(userInputState: UserInputState
     let payloadFilePath = ''
     throwIfCancelled()
     try {
-        payloadFilePath = await zipCode(userInputState.project!.description!)
+        payloadFilePath = await zipCode()
         transformByQState.setPayloadFilePath(payloadFilePath)
         await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
         uploadId = await uploadPayload(payloadFilePath)
@@ -340,13 +401,12 @@ export async function validateTransformationJob() {
             result: MetadataResult.Pass,
         })
     }
-
+    transformByQState.setProjectPath(userInputState.project!.description!)
     return userInputState
 }
 
 export async function setTransformationToRunningState(userInputState: UserInputState) {
     transformByQState.setToRunning()
-    transformByQState.setProjectPath(userInputState.project!.description!)
     sessionPlanProgress['uploadCode'] = StepProgress.Pending
     sessionPlanProgress['buildCode'] = StepProgress.Pending
     sessionPlanProgress['transformCode'] = StepProgress.Pending
@@ -370,11 +430,8 @@ export async function setTransformationToRunningState(userInputState: UserInputS
         'aws.amazonq.showPlanProgressInHub',
         codeTransformTelemetryState.getStartTime()
     )
-    await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
-    await vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
-    await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
-    await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', false)
-    await resetReviewInProgress()
+
+    await setContextVariables()
 
     await vscode.commands.executeCommand('aws.amazonq.refresh')
 }
@@ -384,12 +441,9 @@ export async function postTransformationJob(userInputState: UserInputState) {
     const durationInMs = calculateTotalLatency(codeTransformTelemetryState.getStartTime())
     const resultStatusMessage = codeTransformTelemetryState.getResultStatus()
 
-    const versionInfoWrapper = await getVersionData('mvnw', transformByQState.getProjectPath())
-    let mavenVersionInfoMessage = versionInfoWrapper[0]
-    let javaVersionInfoMessage = versionInfoWrapper[1]
-    const versionInfo = await getVersionData('mvn', transformByQState.getProjectPath())
-    mavenVersionInfoMessage += ` (mvnw) -- ${versionInfo[0]} (mvn)`
-    javaVersionInfoMessage += ` (mvnw) -- ${versionInfo[1]} (mvn)`
+    const versionInfo = await getVersionData()
+    const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
+    const javaVersionInfoMessage = `${versionInfo[1]} (${transformByQState.getMavenName()})`
 
     // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
     telemetry.codeTransform_totalRunTime.emit({
@@ -515,7 +569,11 @@ export async function confirmStopTransformByQ(
     }
 }
 
-async function resetReviewInProgress() {
+async function setContextVariables() {
+    await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
+    await vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
+    await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
+    await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', false)
     await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
     await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
 }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp } from '@aws/mynah-ui'
+import { ChatItemAction } from '@aws/mynah-ui'
 import { existsSync } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -266,7 +266,7 @@ export class FeatureDevController {
         }
     }
 
-    private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemFollowUp[] {
+    private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemAction[] {
         switch (phase) {
             case 'Approach':
                 return [

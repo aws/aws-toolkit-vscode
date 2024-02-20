@@ -252,6 +252,7 @@ export enum BuildSystem {
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
     dependenciesRoot: string | undefined = 'dependencies/'
+    buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
 }
 
@@ -287,6 +288,10 @@ export class TransformByQState {
     private jobFailureErrorMessage: string = ''
 
     private errorLog: string = ''
+
+    private mavenName: string = ''
+
+    private javaHome: string | undefined = undefined
 
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
@@ -372,6 +377,14 @@ export class TransformByQState {
         return this.errorLog
     }
 
+    public getMavenName() {
+        return this.mavenName
+    }
+
+    public getJavaHome() {
+        return this.javaHome
+    }
+
     public appendToErrorLog(message: string) {
         this.errorLog += `${message}\n\n`
     }
@@ -450,6 +463,14 @@ export class TransformByQState {
 
     public setJobFailureErrorMessage(errorMessage: string) {
         this.jobFailureErrorMessage = errorMessage
+    }
+
+    public setMavenName(mavenName: string) {
+        this.mavenName = mavenName
+    }
+
+    public setJavaHome(javaHome: string) {
+        this.javaHome = javaHome
     }
 
     public getPrefixTextForButton() {

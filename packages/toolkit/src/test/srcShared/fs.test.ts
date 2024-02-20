@@ -6,13 +6,14 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { existsSync, mkdirSync, promises as fsPromises, readFileSync, rmSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, promises as fsPromises, readFileSync, rmSync } from 'fs'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { fsCommon } from '../../srcShared/fs'
 import * as os from 'os'
 import { isMinimumVersion } from '../../shared/vscode/env'
 import Sinon from 'sinon'
 import * as extensionUtilities from '../../shared/extensionUtilities'
+import { toFile } from '../testUtil'
 
 function isWin() {
     return os.platform() === 'win32'
@@ -24,12 +25,12 @@ describe('FileSystem', function () {
 
     before(async function () {
         fakeContext = await FakeExtensionContext.create()
+        sandbox = Sinon.createSandbox()
         await deleteTestRoot() // incase a previous test run failed to clean
     })
 
     beforeEach(async function () {
         await makeTestRoot()
-        sandbox = Sinon.createSandbox()
     })
 
     afterEach(async function () {
@@ -239,6 +240,20 @@ describe('FileSystem', function () {
         })
     })
 
+    describe('copy()', function () {
+        it('copies files and folders from one dir to another', async function () {
+            const targetDir = await makeFolder('targetDir')
+            await makeFile('targetDir/a.txt', 'I am A')
+            await makeFile('targetDir/dirB/b.txt', 'I am B')
+
+            const destDir = path.join(testRootPath(), 'destDir')
+            await fsCommon.copy(targetDir, destDir)
+
+            assert.strictEqual(await fsCommon.readFileAsString(path.join(destDir, 'a.txt')), 'I am A')
+            assert.strictEqual(await fsCommon.readFileAsString(path.join(destDir, 'dirB/b.txt')), 'I am B')
+        })
+    })
+
     describe('delete()', function () {
         it('deletes a file', async function () {
             const filePath = await makeFile('test.txt', 'hello world')
@@ -253,6 +268,12 @@ describe('FileSystem', function () {
             await fsCommon.delete(dirPath)
 
             assert.ok(!existsSync(dirPath))
+        })
+
+        it('does not error if the file to delete does not exist', async function () {
+            const nonExistantFilePath = 'does/not/exist'
+            await fsCommon.delete(nonExistantFilePath)
+            assert.ok(!existsSync(nonExistantFilePath))
         })
 
         it('uses the "fs" rm method if in C9', async function () {
@@ -286,7 +307,13 @@ describe('FileSystem', function () {
 
     async function makeFile(relativePath: string, content?: string, options?: { mode?: number }): Promise<string> {
         const filePath = path.join(testRootPath(), relativePath)
-        writeFileSync(filePath, content ?? '', { mode: options?.mode })
+
+        await toFile(content ?? '', filePath)
+
+        if (options?.mode !== undefined) {
+            await fsPromises.chmod(filePath, options.mode)
+        }
+
         return filePath
     }
 

@@ -278,6 +278,9 @@ export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVA
 
 export const selectProjectPrompt = 'Select the project you want to transform'
 
+export const unsupportedJavaVersionSelectedMessage =
+    'Thank you for trying our product. We currently only support Java 8 and 11. We appreciate you taking the time to use the product, and hope to expand support to more Java versions in the future.'
+
 export const transformByQWindowTitle = 'Amazon Q Code Transformation'
 
 export const stopTransformByQMessage = 'Stop Transformation?'
@@ -331,6 +334,8 @@ export const planIntroductionMessage =
 
 export const planDisclaimerMessage = '**Proposed transformation changes** \n\n\n'
 
+export const enterJavaHomeMessage = 'Enter the value of JAVA_HOME for Java'
+
 export const JDK8VersionNumber = '52'
 
 export const JDK11VersionNumber = '55'
@@ -356,10 +361,6 @@ export const transformationJobPollingIntervalSeconds = 10
 export const transformationJobTimeoutSeconds = 72000
 
 export const progressIntervalMs = 1000
-
-export const targetLanguages = ['Java']
-
-export const targetVersions = new Map<string, string[]>([['Java', ['JDK17']]])
 
 export const defaultLanguage = 'Java'
 

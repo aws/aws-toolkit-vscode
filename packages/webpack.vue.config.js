@@ -11,6 +11,7 @@ const path = require('path')
 const glob = require('glob')
 const { VueLoaderPlugin } = require('vue-loader')
 const baseConfig = require('./webpack.base.config')
+const currentDir = process.cwd()
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
@@ -21,7 +22,7 @@ const baseConfig = require('./webpack.base.config')
  * @param {string} file
  */
 const createVueBundleName = file => {
-    return path.relative(__dirname, file).split('.').slice(0, -1).join(path.sep)
+    return path.relative(currentDir, file).split('.').slice(0, -1).join(path.sep)
 }
 
 /**
@@ -30,7 +31,7 @@ const createVueBundleName = file => {
  */
 const createVueEntries = (targetPattern = 'index.ts') => {
     return glob
-        .sync(path.resolve(__dirname, 'src', '**', 'vue', '**', targetPattern))
+        .sync(path.resolve(currentDir, 'src', '**', 'vue', '**', targetPattern))
         .map(f => ({ name: createVueBundleName(f), path: f }))
         .reduce((a, b) => ((a[b.name] = b.path), a), {})
 }
@@ -40,10 +41,6 @@ const vueConfig = {
     ...baseConfig,
     name: 'vue',
     target: 'web',
-    entry: {
-        ...createVueEntries(),
-        'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
-    },
     output: {
         ...baseConfig.output,
         libraryTarget: 'this',
@@ -75,7 +72,7 @@ const vueHotReload = {
     name: 'vue-hmr',
     devServer: {
         static: {
-            directory: path.resolve(__dirname, 'dist'),
+            directory: path.resolve(currentDir, 'dist'),
         },
         headers: {
             'Access-Control-Allow-Origin': '*',
@@ -90,4 +87,9 @@ const vueHotReload = {
     },
 }
 
-module.exports = process.env.npm_lifecycle_event === 'serve' ? [vueConfig, vueHotReload] : [vueConfig]
+module.exports = {
+    configs: process.env.npm_lifecycle_event === 'serve' ? [vueConfig, vueHotReload] : [vueConfig],
+    utils: {
+        createVueEntries,
+    },
+}

@@ -12,7 +12,8 @@ import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs-extra'
 import AdmZip from 'adm-zip'
-import { setValidConnection, skipTestIfNoValidConn } from '../util/amazonQUtil'
+import { setValidConnection } from '../util/amazonQUtil'
+import { transformByQState } from '../../codewhisperer/models/model'
 
 describe('transformByQ', async function () {
     let tempDir = ''
@@ -23,16 +24,16 @@ describe('transformByQ', async function () {
 
     before(async function () {
         validConnection = await setValidConnection()
+        if (!validConnection) {
+            this.skip()
+        }
         tempDir = path.join(os.tmpdir(), 'gumby-test')
         fs.mkdirSync(tempDir)
         tempFileName = `testfile-${Date.now()}.txt`
         tempFilePath = path.join(tempDir, tempFileName)
         fs.writeFileSync(tempFilePath, 'sample content for the test file')
-        zippedCodePath = await zipCode(tempDir)
-    })
-
-    beforeEach(function () {
-        skipTestIfNoValidConn(validConnection, this) // need valid IdC connection
+        transformByQState.setProjectPath(tempDir)
+        zippedCodePath = await zipCode()
     })
 
     after(async function () {

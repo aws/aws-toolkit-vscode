@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemFollowUp, FeedbackPayload, Engagement } from '@aws/mynah-ui'
+import { ChatItem, FeedbackPayload, Engagement, ChatItemAction } from '@aws/mynah-ui'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
 import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
@@ -280,7 +280,7 @@ export class Connector {
         }
     }
 
-    onFollowUpClicked = (tabID: string, messageId: string, followUp: ChatItemFollowUp): void => {
+    onFollowUpClicked = (tabID: string, messageId: string, followUp: ChatItemAction): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             // TODO: We cannot rely on the tabType here,
             // It can come up at a later point depending on the future UX designs,

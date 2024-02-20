@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
+import { fsCommon } from '../../../srcShared/fs'
 import * as vscode from 'vscode'
 import admZip from 'adm-zip'
-import { existsSync, statSync } from 'fs'
 import { asyncCallWithTimeout } from '../commonUtil'
 import * as path from 'path'
 import { tempDirPath } from '../../../shared/filesystemUtilities'
@@ -137,12 +136,12 @@ export abstract class DependencyGraph {
         return paths
     }
 
-    protected copyFileToTmp(uri: vscode.Uri, destDir: string) {
+    protected async copyFileToTmp(uri: vscode.Uri, destDir: string) {
         const projectName = this.getProjectName(uri)
         if (projectName) {
             const pos = uri.path.indexOf(projectName)
             const dest = path.join(destDir, uri.path.substring(pos))
-            fs.copySync(uri.fsPath, dest)
+            await fsCommon.copy(uri.fsPath, dest)
         }
     }
 
@@ -151,18 +150,6 @@ export abstract class DependencyGraph {
         zip.addLocalFolder(dir)
         zip.writeZip(dir + extension)
         return dir + extension
-    }
-
-    protected removeDir(dir: string) {
-        if (existsSync(dir)) {
-            fs.removeSync(dir)
-        }
-    }
-
-    protected removeZip(zipFilePath: string) {
-        if (existsSync(zipFilePath)) {
-            fs.unlinkSync(zipFilePath)
-        }
     }
 
     protected getTruncDirPath(uri: vscode.Uri) {
@@ -175,20 +162,22 @@ export abstract class DependencyGraph {
         return this._truncDir
     }
 
-    protected getFilesTotalSize(files: string[]) {
-        return files.map(file => statSync(file)).reduce((accumulator, { size }) => accumulator + size, 0)
+    protected async getFilesTotalSize(files: string[]) {
+        const statsPromises = files.map(file => fsCommon.stat(file))
+        const stats = await Promise.all(statsPromises)
+        return stats.reduce((accumulator, stat) => accumulator + stat.size, 0)
     }
 
-    protected copyFilesToTmpDir(files: Set<string> | string[], dir: string) {
-        files.forEach(filePath => {
-            this.copyFileToTmp(vscode.Uri.file(filePath), dir)
-        })
+    protected async copyFilesToTmpDir(files: Set<string> | string[], dir: string) {
+        for (const filePath of files) {
+            await this.copyFileToTmp(vscode.Uri.file(filePath), dir)
+        }
     }
 
-    public removeTmpFiles(truncation: Truncation) {
+    public async removeTmpFiles(truncation: Truncation) {
         getLogger().verbose(`Cleaning up temporary files...`)
-        this.removeZip(truncation.zipFilePath)
-        this.removeDir(truncation.rootDir)
+        await fsCommon.delete(truncation.zipFilePath)
+        await fsCommon.delete(truncation.rootDir)
         getLogger().verbose(`Complete cleaning up temporary files.`)
     }
 
