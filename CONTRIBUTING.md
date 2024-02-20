@@ -148,11 +148,11 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 ---
 
-### Browser
+### Web Mode
 
-The AWS Toolkit VSCode extension has a support (with limited functionality) for running in the browser, eg [vscode.dev](https://vscode.dev).
+The AWS Toolkit VSCode extension has a support (with limited functionality) for running in a web browser, eg [vscode.dev](https://vscode.dev).
 
-See [web.md](./docs/web.md) for working with the browser implementation of the extension.
+See [web.md](./docs/web.md) for working with the web mode implementation of the extension.
 
 ---
 
@@ -213,12 +213,6 @@ To run tests against a specific folder in VSCode, do any one of:
         ```
         $Env:TEST_DIR = "src/test/foo"; npm run test
         ```
-
-### Browser Support
-
-Running the extension in the browser (eg: [vscode.dev](https://vscode.dev/)).
-
-[See documentation here](./packages/toolkit/src/browser/README.md).
 
 ### Coverage report
 

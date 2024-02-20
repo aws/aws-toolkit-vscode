@@ -72,6 +72,10 @@ VS Code window, in the background it is running in a Browser context.
 
 > NOTE: Tests do not spin up an actual browser window, but if we find a good reason to switch it will require some additional work. The current way does not require dowloading a separate browser like Chromium.
 
+## Adding Web mode specific npm modules
+
+If you need to manage npm modules required for Web mode, such as a [browserfied module](https://www.npmjs.com/package/os-browserify), see [the documentation here](../packages/toolkit/src/browser/README.md).
+
 ## Finding incompatible transitive dependencies
 
 For example, if I have a Typescript module, `myFile.ts`, that imports a module which imports another module (transitive dependency) such as `fs-extra`,
