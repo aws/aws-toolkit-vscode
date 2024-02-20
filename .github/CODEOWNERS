@@ -1,5 +1,5 @@
 * @aws/aws-ides-team
-src/codewhisperer/ @aws/codewhisperer-team
-src/amazonqFeatureDev/ @aws/earlybird
-src/codewhispererChat/ @aws/aws-mynah
-src/amazonq/ @aws/aws-mynah
+packages/toolkit/src/codewhisperer/ @aws/codewhisperer-team
+packages/toolkit/src/amazonqFeatureDev/ @aws/earlybird
+packages/toolkit/src/codewhispererChat/ @aws/aws-mynah
+packages/toolkit/src/amazonq/ @aws/aws-mynah

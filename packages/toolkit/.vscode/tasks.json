@@ -1,0 +1,137 @@
+// See https://go.microsoft.com/fwlink/?LinkId=733558
+// for the documentation about the tasks.json format
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "watch",
+            "type": "npm",
+            "script": "watch",
+            "problemMatcher": "$tsc-watch",
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": ["serve"]
+        },
+        {
+            "label": "serve",
+            "type": "npm",
+            "script": "serve",
+            "group": "build",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "custom",
+                "pattern": {
+                    "regexp": ".",
+                    "file": 1,
+                    "location": 2,
+                    "message": 3
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "Project is running at",
+                    "endsPattern": "compiled successfully"
+                }
+            }
+        },
+        {
+            "label": "browserWatch",
+            "type": "npm",
+            "script": "browserWatch",
+            "detail": "Webpacks our toolkit code (with --watch) in preparation to be run in the browser",
+            "isBackground": true,
+            // Since `webpack --watch` never terminates (but finishes packaging at some point),
+            // VS Code uses this to parse the CLI output to pattern match something that indicates it is done
+            "problemMatcher": "$ts-webpack-watch"
+        },
+        {
+            "label": "browserRun",
+            "type": "npm",
+            "script": "browserRun",
+            "detail": "Runs VS Code in the Chrome browser with our toolkit installed",
+            "isBackground": true,
+            "dependsOn": ["browserWatch"],
+            /**
+            We only need this problem matcher to signal when this task is completed.
+            Since this task starts a web server it does not terminate and we need to use
+            problemMatcher.background.endsPattern to read the CLI and know when this task
+            can signal it is done.
+
+            The rest of the data in problemMatcher is required by VS Code to be "valid",
+            but not important for what we need.
+
+            Doc: https://code.visualstudio.com/Docs/editor/tasks#_defining-a-problem-matcher
+            **/
+            "problemMatcher": {
+                "pattern": [
+                    {
+                        "regexp": "this section irrelevant but it must exist to work",
+                        "file": 1,
+                        "location": 2,
+                        "message": 3
+                    }
+                ],
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^@vscode/test-web",
+                    "endsPattern": "^Listening on"
+                }
+            }
+        },
+        /**
+        After we stop debugging our browser, we also want to stop the web server.
+        When this task is ran it will stop the web server.
+
+        From: https://stackoverflow.com/a/60330174
+        **/
+        {
+            "label": "browserRunTerminate",
+            "command": "echo ${input:browserRunTerminate}",
+            "type": "shell"
+        },
+        {
+            "type": "npm",
+            "script": "lint",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "type": "npm",
+            "script": "lintfix",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "type": "npm",
+            "script": "compile",
+            "dependsOn": ["Kill Tasks"],
+            "problemMatcher": "$tsc"
+        },
+        {
+            "type": "npm",
+            "script": "clean",
+            "dependsOn": ["Kill Tasks"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Kill Tasks",
+            "type": "process",
+            "command": "${input:killTasks}",
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "killTasks",
+            "type": "command",
+            "command": "workbench.action.tasks.terminate",
+            "args": "terminateAll"
+        },
+        {
+            "id": "browserRunTerminate",
+            "type": "command",
+            "command": "workbench.action.tasks.terminate",
+            "args": "browserRun"
+        }
+    ]
+}

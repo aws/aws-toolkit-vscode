@@ -1,0 +1,20 @@
+{
+    "report-dir": "../../coverage",
+    "reporter": ["lcov"],
+    "all": true,
+    "include": ["src/**", "dist/src/**"],
+    "exclude": [
+        "dist/src/ssmDocument/ssm/ssmServer.js",
+        "dist/src/test/**",
+        "dist/src/testE2E/**",
+        "dist/src/testLint/**",
+        "dist/src/testInteg/**",
+        "dist/src/testFixtures/**",
+        "src/ssmDocument/ssm/ssmServer.js",
+        "src/test/**",
+        "src/testE2E/**",
+        "src/testLint/**",
+        "src/testInteg/**",
+        "src/testFixtures/**"
+    ]
+}
