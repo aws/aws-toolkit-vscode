@@ -79,7 +79,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
     }
 
     private _getHtmlForWebview(extensionURI: Uri, webview: vscode.Webview) {
-        const source = path.join('src', 'ac', 'webview', 'vue', 'index.js')
+        const source = path.join('src', 'login', 'webview', 'vue', 'index.js')
         const assetsPath = Uri.joinPath(extensionURI)
         const javascriptUri = Uri.joinPath(assetsPath, 'dist', source)
         // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.

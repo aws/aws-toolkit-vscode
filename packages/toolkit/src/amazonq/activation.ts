@@ -15,7 +15,7 @@ import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amaz
 import { activateBadge } from './util/viewBadgeHandler'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../auth/ui/vue/show'
-import { CommonAuthViewProvider } from '../ac/webview/commonAuthViewProvider'
+import { CommonAuthViewProvider } from '../login/webview/commonAuthViewProvider'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance

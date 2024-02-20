@@ -26,7 +26,7 @@ export const userCancelled = 'userCancelled'
 
 export class CommonAuthWebview extends VueWebview {
     public override id: string = 'aws.AmazonCommonAuth'
-    public override source: string = 'src/ac/webview/vue/index.js'
+    public override source: string = 'src/login/webview/vue/index.js'
 
     public getRegions(): Region[] {
         return globals.regionProvider.getRegions().reverse()
