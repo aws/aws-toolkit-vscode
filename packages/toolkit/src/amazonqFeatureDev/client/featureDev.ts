@@ -159,14 +159,20 @@ export class FeatureDevClient {
                 return undefined
             }
 
-            const assistantResponse = []
+            const assistantResponse: string[] = []
             for await (const responseItem of response.planningResponseStream) {
                 if (responseItem.error !== undefined) {
                     throw responseItem.error
+                } else if (responseItem.invalidStateEvent !== undefined) {
+                    getLogger().debug('Received Invalid State Event: %O', responseItem.invalidStateEvent)
+                    assistantResponse.splice(0)
+                    assistantResponse.push(responseItem.invalidStateEvent.message ?? '')
+                    break
+                } else if (responseItem.assistantResponseEvent !== undefined) {
+                    assistantResponse.push(responseItem.assistantResponseEvent.content ?? '')
                 }
-                assistantResponse.push(responseItem.assistantResponseEvent!.content)
             }
-            return assistantResponse.join(' ')
+            return assistantResponse.join('')
         } catch (e) {
             if (isCodeWhispererStreamingServiceException(e)) {
                 getLogger().error(

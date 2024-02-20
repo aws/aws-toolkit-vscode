@@ -272,6 +272,10 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  * //         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION",
  * //       },
  * //     },
+ * //     invalidStateEvent: { // InvalidStateEvent
+ * //       reason: "INVALID_TASK_ASSIST_PLAN", // required
+ * //       message: "STRING_VALUE", // required
+ * //     },
  * //     error: { // InternalServerException
  * //       message: "STRING_VALUE", // required
  * //     },
