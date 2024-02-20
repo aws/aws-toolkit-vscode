@@ -335,10 +335,10 @@ export const planIntroductionMessage =
 
 export const planDisclaimerMessage = '**Proposed transformation changes** \n\n\n'
 
-export const enterJavaHomeMessage = 'Enter the JAVA_HOME of JDK'
+export const enterJavaHomeMessage = 'Enter the path to JDK'
 
 export const windowsJavaHomeHelpMessage =
-    'In a terminal, try running "cd C:\\Program Files\\Java" and then "dir" to see a list of installed JDKs. Then "cd" into JDK JAVA_VERSION_HERE (if present) and run "cd" once more to get the JAVA_HOME. It should look something like "C:\\Program Files\\Java\\jdk-11.0.1"'
+    'In a terminal, try running "cd C:\\Program Files\\Java" and then "dir" to see a list of installed JDKs. Then "cd" into JDK JAVA_VERSION_HERE (if present) and run "cd" once more to get the path we need. It should look something like "C:\\Program Files\\Java\\jdk-11.0.1"'
 
 export const nonWindowsJava8HomeHelpMessage =
     'Try running "/usr/libexec/java_home -v 1.8" in a terminal to find this. It should look something like "/Library/Java/JavaVirtualMachines/jdk-8.jdk/Contents/Home"'
