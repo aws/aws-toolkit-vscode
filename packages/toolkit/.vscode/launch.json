@@ -92,7 +92,7 @@
             "preLaunchTask": "${defaultBuildTask}"
         },
         {
-            "name": "Extension Tests (browser)",
+            "name": "Extension Tests (web)",
             "type": "extensionHost",
             "debugWebWorkerHost": true,
             "request": "launch",
