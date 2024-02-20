@@ -52,6 +52,9 @@ class ChatPromptHandler(private val telemetryHelper: TelemetryHelper) {
                 // Don't emit any other responses if we cancelled the collection
                 if (error is CancellationException) {
                     return@onCompletion
+                } // for any other exception, let the `catch` operator handle it.
+                else if (error != null) {
+                    throw error
                 }
 
                 // Send the gathered suggestions in a final answer-part message

@@ -69,6 +69,16 @@ class BannedImportsRule : Rule() {
                     )
                 )
             }
+
+            if (importedFqName == "com.google.gson.Gson") {
+                report(
+                    CodeSmell(
+                        issue,
+                        Entity.from(element),
+                        message = "Use jacksonObjectMapper() insted of Gson"
+                    )
+                )
+            }
         }
     }
 }
