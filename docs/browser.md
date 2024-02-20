@@ -7,6 +7,10 @@ the desktop version.
 
 You can run the browser implementation of the extension in the following ways.
 
+## Pre-requisutes
+
+[See the CONTRIBUTING document.](../CONTRIBUTING.md#setup)
+
 ### General Notes
 
 -   To see logs, using the Command Palette search: `Toggle Developer Tools`. Then go to the `Console` tab. In browser mode VS Code seems to duplicate log messages, idk how to fix this.
@@ -70,7 +74,7 @@ VS Code window, in the background it is running in a Browser context.
 
 ## Finding incompatible transitive dependencies
 
-For example, if I have a Typescript module, `myFile.ts`, that imports a module, which imports another module (transitive dependency) such as `fs-extra`,
+For example, if I have a Typescript module, `myFile.ts`, that imports a module which imports another module (transitive dependency) such as `fs-extra`,
 when I execute `myFile.ts` in the browser it will break due to `fs-extra` not being browser compatible.
 
 It may be difficult to determine which module imported `fs-extra` due to a nested chain of transitive dependencies.
