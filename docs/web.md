@@ -57,7 +57,7 @@ such as telemetry or auth do not support CORS (at the moment of writing) for the
 In the case you want to enable CORS in the browser to test CORS compatibility
 do the following:
 
--   In `package.json` find the `browserRun` script
+-   In `package.json` find the `webRun` script
 -   Temporarily remove `--browserOption=--disable-web-security`
 
 Now when you run the extension in the browser it will do CORS checks.

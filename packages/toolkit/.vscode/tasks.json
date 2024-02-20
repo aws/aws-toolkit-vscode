@@ -47,9 +47,9 @@
             "problemMatcher": "$ts-webpack-watch"
         },
         {
-            "label": "browserRun",
+            "label": "webRun",
             "type": "npm",
-            "script": "browserRun",
+            "script": "webRun",
             "detail": "Runs VS Code in the Chrome browser with our toolkit installed",
             "isBackground": true,
             "dependsOn": ["webWatch"],
@@ -87,8 +87,8 @@
         From: https://stackoverflow.com/a/60330174
         **/
         {
-            "label": "browserRunTerminate",
-            "command": "echo ${input:browserRunTerminate}",
+            "label": "webRunTerminate",
+            "command": "echo ${input:webRunTerminate}",
             "type": "shell"
         },
         {
@@ -128,10 +128,10 @@
             "args": "terminateAll"
         },
         {
-            "id": "browserRunTerminate",
+            "id": "webRunTerminate",
             "type": "command",
             "command": "workbench.action.tasks.terminate",
-            "args": "browserRun"
+            "args": "webRun"
         }
     ]
 }

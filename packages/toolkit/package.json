@@ -4248,7 +4248,7 @@
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
         "webWatch": "npm run clean && npm run buildScripts && webpack --config-name web --watch",
         "webCompile": "npm run clean && npm run buildScripts && webpack --config-name web",
-        "browserRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
+        "webRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "testCompile": "npm run buildScripts && tsc -p ./",

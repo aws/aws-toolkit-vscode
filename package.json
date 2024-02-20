@@ -40,7 +40,7 @@
         "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules packages/toolkit/node_modules && npm install",
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/",
         "watch": "npm run watch -w packages/toolkit",
-        "browserRun": "npm run browserRun -w packages/toolkit",
+        "webRun": "npm run webRun -w packages/toolkit",
         "webWatch": "npm run webWatch -w packages/toolkit"
     },
     "devDependencies": {
