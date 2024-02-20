@@ -7,7 +7,7 @@ the desktop version.
 
 You can run the browser implementation of the extension in the following ways.
 
-## Pre-requisutes
+## Pre-requisites
 
 [See the CONTRIBUTING document.](../CONTRIBUTING.md#setup)
 
