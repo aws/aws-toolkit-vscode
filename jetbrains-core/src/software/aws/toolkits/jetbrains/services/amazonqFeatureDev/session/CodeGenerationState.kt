@@ -3,10 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
+import kotlinx.coroutines.delay
+import software.amazon.awssdk.services.codewhispererruntime.model.CodeGenerationWorkflowStatus
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.codeGenerationFailedError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAnswerPart
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.getTaskAssistCodeGeneration
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.startTaskAssistCodeGeneration
-import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.resources.message
 
 class CodeGenerationState(
@@ -14,16 +17,38 @@ class CodeGenerationState(
     override var approach: String,
     val config: SessionStateConfig,
     val uploadId: String,
-    var filePaths: Array<NewFileZipInfo>,
-    var deletedFiles: Array<DeletedFileZipInfo>,
-    var references: Array<CodeReference>,
-    var currentIteration: Int,
+    val currentIteration: Int,
     val messenger: MessagePublisher
 ) : SessionState {
     override val phase = SessionStatePhase.CODEGEN
 
+    private val pollCount = 180
+    private val requestDelay = 10000L
+
+    private suspend fun generateCode(codeGenerationId: String): CodeGenerationResult {
+        repeat(pollCount) {
+            val codeGenerationResult = getTaskAssistCodeGeneration(
+                proxyClient = config.proxyClient,
+                conversationId = config.conversationId,
+                codeGenerationId = codeGenerationId,
+            )
+
+            when (codeGenerationResult.codeGenerationStatus().status()) {
+                CodeGenerationWorkflowStatus.COMPLETE -> {
+                    // TODO: do exportResultArchive to download generated code
+                    return CodeGenerationResult(emptyArray(), emptyArray(), emptyArray())
+                }
+                CodeGenerationWorkflowStatus.IN_PROGRESS -> delay(requestDelay)
+                CodeGenerationWorkflowStatus.FAILED -> codeGenerationFailedError()
+                else -> error("Unknown status: ${codeGenerationResult.codeGenerationStatus().status()}")
+            }
+        }
+
+        return CodeGenerationResult(emptyArray(), emptyArray(), emptyArray())
+    }
+
     override suspend fun interact(action: SessionStateAction): SessionStateInteraction {
-        startTaskAssistCodeGeneration(
+        val response = startTaskAssistCodeGeneration(
             proxyClient = config.proxyClient,
             conversationId = config.conversationId,
             uploadId = uploadId,
@@ -35,7 +60,7 @@ class CodeGenerationState(
             message = message("amazonqFeatureDev.code_generation.generating_code")
         )
 
-        val codeGenerationResult = generateCode()
+        val codeGenerationResult = generateCode(codeGenerationId = response.codeGenerationId())
 
         val nextState = PrepareCodeGenerationState(
             tabID = tabID,
@@ -56,6 +81,3 @@ class CodeGenerationState(
         )
     }
 }
-
-// TODO: this is a dummy generateCode, it will be implemented in a follow up.
-fun generateCode(): CodeGenerationResult = CodeGenerationResult(emptyArray(), emptyArray(), emptyArray())

@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.APPROACH_RETRY_LIMIT
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.CODE_GENERATION_RETRY_LIMIT
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAsyncEventProgress
@@ -20,7 +21,10 @@ class Session(val tabID: String, val project: Project) {
     private var _latestMessage: String = ""
     private var task: String = ""
     private val proxyClient: FeatureDevClient
+
+    // retry session state vars
     private var approachRetries: Int
+    private var codegenRetries: Int
 
     // Used to keep track of whether the current session/tab is currently authenticating/needs authenticating
     var isAuthenticating: Boolean
@@ -31,6 +35,7 @@ class Session(val tabID: String, val project: Project) {
         proxyClient = FeatureDevClient.getInstance(project)
         isAuthenticating = false
         approachRetries = APPROACH_RETRY_LIMIT
+        codegenRetries = CODE_GENERATION_RETRY_LIMIT
     }
 
     /**
@@ -133,12 +138,13 @@ class Session(val tabID: String, val project: Project) {
         get() = this._latestMessage
 
     val retries: Int
-        get() = approachRetries
+        get() = if (sessionState.phase == SessionStatePhase.CODEGEN) codegenRetries else approachRetries
 
     fun decreaseRetries() {
-        when (sessionState.phase) {
-            SessionStatePhase.APPROACH -> approachRetries -= 1
-            else -> {}
+        if (sessionState.phase == SessionStatePhase.CODEGEN) {
+            codegenRetries -= 1
+        } else {
+            approachRetries -= 1
         }
     }
 }

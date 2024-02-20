@@ -43,6 +43,8 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendC
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendSystemPrompt
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendUpdatePlaceholder
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.DeletedFileZipInfo
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.NewFileZipInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.PrepareCodeGenerationState
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Session
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
@@ -177,8 +179,18 @@ class FeatureDevController(
 
     private suspend fun writeCodeClicked(tabId: String) {
         val session = getSessionInfo(tabId)
-        session.initCodegen(messenger)
-        onCodeGeneration(session, "", tabId)
+        try {
+            session.initCodegen(messenger)
+            onCodeGeneration(session, "", tabId)
+        } catch (err: Exception) {
+            val message = createUserFacingErrorMessage(err.message)
+            messenger.sendError(
+                tabId = tabId,
+                errMessage = message ?: message("amazonqFeatureDev.exception.request_failed"),
+                retries = retriesRemaining(session),
+                phase = session.sessionState.phase
+            )
+        }
     }
 
     private fun acceptCode() {
@@ -300,13 +312,18 @@ class FeatureDevController(
 
             val state = session.sessionState
 
-            // it should be PrepareCodeGenerationState again.
-            if (state !is PrepareCodeGenerationState) {
-                TODO("Not yet implemented")
+            var filePaths: Array<NewFileZipInfo> = emptyArray()
+            var deletedFiles: Array<DeletedFileZipInfo> = emptyArray()
+
+            when (state) {
+                is PrepareCodeGenerationState -> {
+                    filePaths = state.filePaths
+                    deletedFiles = state.deletedFiles
+                }
             }
 
             // Atm this is the only possible path as codegen is mocked to return empty.
-            if (state.filePaths.size or state.deletedFiles.size == 0) {
+            if (filePaths.size or deletedFiles.size == 0) {
                 messenger.sendAnswer(
                     tabId = tabId,
                     messageType = FeatureDevMessageType.Answer,

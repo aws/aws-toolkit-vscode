@@ -14,10 +14,10 @@ class PrepareCodeGenerationState(
     override var tabID: String,
     override var approach: String,
     private var config: SessionStateConfig,
-    var filePaths: Array<NewFileZipInfo>,
-    var deletedFiles: Array<DeletedFileZipInfo>,
-    var references: Array<CodeReference>,
-    private var currentIteration: Int,
+    val filePaths: Array<NewFileZipInfo>,
+    val deletedFiles: Array<DeletedFileZipInfo>,
+    val references: Array<CodeReference>,
+    private val currentIteration: Int,
     private var messenger: MessagePublisher
 ) : SessionState {
     override val phase = SessionStatePhase.CODEGEN
@@ -43,9 +43,6 @@ class PrepareCodeGenerationState(
             approach = "", // No approach needed,
             config = this.config,
             uploadId = uploadUrlResponse.uploadId(),
-            filePaths = this.filePaths,
-            deletedFiles = this.deletedFiles,
-            references = this.references,
             currentIteration = this.currentIteration,
             messenger = messenger
         )

@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util
 
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ValidationException
 import software.aws.toolkits.core.utils.debug
@@ -94,6 +95,20 @@ fun startTaskAssistCodeGeneration(proxyClient: FeatureDevClient, conversationId:
         return startCodeGenerationResponse
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to execute startTaskAssistCodeGeneration" }
+        apiError(e.message, e.cause)
+    }
+}
+
+fun getTaskAssistCodeGeneration(proxyClient: FeatureDevClient, conversationId: String, codeGenerationId: String):
+    GetTaskAssistCodeGenerationResponse {
+    try {
+        logger.debug { "Executing GetTaskAssistCodeGeneration with conversationId: $conversationId , codeGenerationId: $codeGenerationId" }
+        val getCodeGenerationResponse = proxyClient.getTaskAssistCodeGeneration(conversationId, codeGenerationId)
+
+        logger.debug { "$FEATURE_NAME: Received code generation status $getCodeGenerationResponse" }
+        return getCodeGenerationResponse
+    } catch (e: Exception) {
+        logger.error(e) { "$FEATURE_NAME: Failed to execute GetTaskAssistCodeGeneration" }
         apiError(e.message, e.cause)
     }
 }

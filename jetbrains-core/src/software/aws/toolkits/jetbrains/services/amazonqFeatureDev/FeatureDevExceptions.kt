@@ -9,6 +9,9 @@ open class FeatureDevException(override val message: String?, override val cause
 
 class ContentLengthError(override val message: String, override val cause: Throwable?) : RuntimeException()
 
+internal fun codeGenerationFailedError(): Nothing =
+    throw FeatureDevException(message("amazonqFeatureDev.code_generation.failed_generation"))
+
 internal fun uploadCodeError(): Nothing =
     throw FeatureDevException(message("amazonqFeatureDev.exception.uploadCode"))
 
