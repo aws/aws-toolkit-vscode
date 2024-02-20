@@ -150,7 +150,7 @@ The confirmation prompt can be implemented using one of two UI facilities:
 
 ### API Client
 
-The `ResourceGroupsTaggingAPI` service client will be used. The client will be set up in a manner consistent with the Lambda and CloudFormation clients, allowing the clients to be stubbed out in unit tests. See the Toolkit's Lambda Client [Interface](/src/shared/clients/lambdaClient.ts) and [Implementation](/src/shared/clients/defaultLambdaClient.ts) as an example. A new client factory will be added to [ToolkitClientBuilder](/src/shared/clients/toolkitClientBuilder.ts) and [DefaultToolkitClientBuilder](/src/shared/clients/defaultToolkitClientBuilder.ts).
+The `ResourceGroupsTaggingAPI` service client will be used. The client will be set up in a manner consistent with the Lambda and CloudFormation clients, allowing the clients to be stubbed out in unit tests. See the Toolkit's Lambda Client [Interface](/packages/toolkit/src/shared/clients/lambdaClient.ts) and [Implementation](/packages/toolkit/src/shared/clients/defaultLambdaClient.ts) as an example. A new client factory will be added to [ToolkitClientBuilder](/packages/toolkit/src/shared/clients/toolkitClientBuilder.ts) and [DefaultToolkitClientBuilder](/packages/toolkit/src/shared/clients/defaultToolkitClientBuilder.ts).
 
 ### <a id="fallback-handling"></a>Fallback Handling
 

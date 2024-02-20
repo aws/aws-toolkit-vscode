@@ -49,12 +49,11 @@ jobs:
                   echo "FEAT_NAME=" >> $GITHUB_ENV
                   echo "TAG_NAME=prerelease" >> $GITHUB_ENV
             - run: npm ci
-            - name: vsix
+            - name: vsix # TODO: For packages/toolkit release only
               run: |
                   npm run createRelease  # Generate CHANGELOG.md
-                  npm run generateNonCodeFiles
                   cp ./README.quickstart.vscode.md ./README.md
-                  npm run package -- --feature "$FEAT_NAME"
+                  npm run -w packages/toolkit package -- --feature "$FEAT_NAME"
             - uses: actions/upload-artifact@v4
               with:
                   name: artifacts
@@ -65,7 +64,7 @@ jobs:
               run: |
                   echo "feature=$FEAT_NAME" >> $GITHUB_OUTPUT
                   echo "tagname=$TAG_NAME" >> $GITHUB_OUTPUT
-                  echo "version=$(grep -m 1 version package.json | grep -o '[0-9][^\"]\+' | sed 's/-SNAPSHOT//')" >> $GITHUB_OUTPUT
+                  echo "version=$(grep -m 1 version packages/toolkit/package.json | grep -o '[0-9][^\"]\+' | sed 's/-SNAPSHOT//')" >> $GITHUB_OUTPUT
                   echo 'changes<<EOF' >> $GITHUB_OUTPUT
                   cat CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print; exit if $. == 2' >> $GITHUB_OUTPUT
                   echo 'EOF' >> $GITHUB_OUTPUT

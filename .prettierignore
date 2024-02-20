@@ -1,12 +1,15 @@
 out
-resources/endpoints.json
 CHANGELOG.md
-src/shared/telemetry/service-2.json
 .changes
-src/testFixtures/**
 *.d.ts
 *.gen.ts
-dist/**
-types/*.d.ts
+dist
 src.gen/**
-plugins/*/dist/**
+
+# Duplicate entries because prettier can be ran from root or within the workspace/subpackage.
+# TODO: Avoid this.
+src/shared/telemetry/service-2.json
+src/testFixtures/**
+
+packages/toolkit/src/shared/telemetry/service-2.json
+packages/toolkit/src/testFixtures/**

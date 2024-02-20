@@ -80,8 +80,8 @@ to help us visualize the imports and determine which module is importing a certa
 
 ### How to use
 
-1. Install the `graphiz` cli, this provides the `dot` cli command
-    - Mac: `brew install graphiz`
+1. Install the `graphviz` cli, this provides the `dot` cli command
+    - Mac: `brew install graphviz`
     - Others: [See documentation](https://www.graphviz.org/download/)
 2. Run `npx depcruise {RELATIVE_PATH_TO_FILE}  --output-type dot | dot -T svg > dependency-graph.svg`
     - For example, `npx depcruise src/srcShared/fs.ts  --output-type dot | dot -T svg > dependency-graph.svg` generates the following which shows `fs-extra` is imported by `fileSystemUtilities.ts`:
