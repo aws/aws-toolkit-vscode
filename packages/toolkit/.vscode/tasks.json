@@ -37,9 +37,9 @@
             }
         },
         {
-            "label": "browserWatch",
+            "label": "webWatch",
             "type": "npm",
-            "script": "browserWatch",
+            "script": "webWatch",
             "detail": "Webpacks our toolkit code (with --watch) in preparation to be run in the browser",
             "isBackground": true,
             // Since `webpack --watch` never terminates (but finishes packaging at some point),
@@ -52,7 +52,7 @@
             "script": "browserRun",
             "detail": "Runs VS Code in the Chrome browser with our toolkit installed",
             "isBackground": true,
-            "dependsOn": ["browserWatch"],
+            "dependsOn": ["webWatch"],
             /**
             We only need this problem matcher to signal when this task is completed.
             Since this task starts a web server it does not terminate and we need to use
@@ -65,7 +65,7 @@
             Doc: https://code.visualstudio.com/Docs/editor/tasks#_defining-a-problem-matcher
             **/
             "problemMatcher": {
-                "pattern":[
+                "pattern": [
                     {
                         "regexp": "this section irrelevant but it must exist to work",
                         "file": 1,
@@ -75,11 +75,10 @@
                 ],
                 "background": {
                     "activeOnStart": true,
-                    "beginsPattern": "^@vscode\/test-web",
+                    "beginsPattern": "^@vscode/test-web",
                     "endsPattern": "^Listening on"
-                },
-
-            },
+                }
+            }
         },
         /**
         After we stop debugging our browser, we also want to stop the web server.
@@ -90,7 +89,7 @@
         {
             "label": "browserRunTerminate",
             "command": "echo ${input:browserRunTerminate}",
-            "type": "shell",
+            "type": "shell"
         },
         {
             "type": "npm",

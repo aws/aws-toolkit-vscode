@@ -41,7 +41,7 @@
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/",
         "watch": "npm run watch -w packages/toolkit",
         "browserRun": "npm run browserRun -w packages/toolkit",
-        "browserWatch": "npm run browserWatch -w packages/toolkit"
+        "webWatch": "npm run webWatch -w packages/toolkit"
     },
     "devDependencies": {
         "@types/vscode": "^1.68.0",

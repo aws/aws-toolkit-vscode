@@ -103,7 +103,7 @@
                 "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
-            "preLaunchTask": "browserWatch"
+            "preLaunchTask": "webWatch"
         },
         {
             "name": "Integration Tests",

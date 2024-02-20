@@ -4246,7 +4246,7 @@
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* README* CHANGELOG.md",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
-        "browserWatch": "npm run clean && npm run buildScripts && webpack --config-name web --watch",
+        "webWatch": "npm run clean && npm run buildScripts && webpack --config-name web --watch",
         "browserCompile": "npm run clean && npm run buildScripts && webpack --config-name web",
         "browserRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles",
