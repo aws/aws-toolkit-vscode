@@ -10,7 +10,6 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import org.apache.commons.codec.digest.DigestUtils
 import software.aws.toolkits.core.utils.createTemporaryZipFile
-import software.aws.toolkits.core.utils.inputStream
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.model.ZipCreationResult
 import java.io.File
@@ -22,7 +21,7 @@ import kotlin.io.path.relativeTo
 class FeatureDevSessionContext(val project: Project) {
 
     private var _projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
-    val ignorePatterns = listOf(
+    private val ignorePatterns = listOf(
         "/\\.idea/",
         "\\.zip$",
         "\\.bin$",
@@ -44,16 +43,34 @@ class FeatureDevSessionContext(val project: Project) {
         return ZipCreationResult(zippedProject, checkSum256, zippedProject.length())
     }
 
-    private fun ignoreFile(file: File): Boolean = ignorePatterns.any { p -> p.containsMatchIn(file.path) }
+    private fun ignoreFile(file: File): Boolean {
+        val ignorePatternsWithGitIgnore = ignorePatterns + parseGitIgnore(File(projectRoot.path, ".gitignore")).map { Regex(it) }
+        return ignorePatternsWithGitIgnore.any { p -> p.containsMatchIn(file.path) }
+    }
 
     private fun zipFiles(projectRoot: VirtualFile): File = createTemporaryZipFile {
         VfsUtil.collectChildrenRecursively(projectRoot).map { virtualFile -> File(virtualFile.path) }.forEach { file ->
             if (file.isFile() && !ignoreFile(file)) {
                 val relativePath = Path(file.path).relativeTo(projectRoot.toNioPath())
-                it.putNextEntry(relativePath.toString(), Path(file.path).inputStream())
+                it.putNextEntry(relativePath.toString(), Path(file.path))
             }
         }
     }.toFile()
+
+    private fun parseGitIgnore(gitIgnoreFile: File): List<String> {
+        if (!gitIgnoreFile.exists()) {
+            return emptyList()
+        }
+        return gitIgnoreFile.readLines()
+            .filterNot { it.isBlank() || it.startsWith("#") }
+            .map { it.trim() }
+            .map { convertGitIgnorePatternToRegex(it) }
+    }
+
+    private fun convertGitIgnorePatternToRegex(pattern: String): String = pattern
+        .replace(".", "\\.")
+        .replace("*", ".*")
+        .let { if (it.endsWith("/")) "$it?" else it } // Handle directory-specific patterns by optionally matching trailing slash
 
     var projectRoot: VirtualFile
         set(newRoot) {

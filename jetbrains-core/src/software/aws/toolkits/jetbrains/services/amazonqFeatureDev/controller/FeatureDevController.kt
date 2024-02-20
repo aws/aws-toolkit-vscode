@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller
 
 import com.intellij.ide.BrowserUtil
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Caret
@@ -139,13 +138,11 @@ class FeatureDevController(
             val caret: Caret = editor.caretModel.primaryCaret
             val offset: Int = caret.offset
 
-            ApplicationManager.getApplication().runWriteAction {
-                WriteCommandAction.runWriteCommandAction(context.project) {
-                    if (caret.hasSelection()) {
-                        editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
-                    }
-                    editor.document.insertString(offset, message.code)
+            WriteCommandAction.runWriteCommandAction(context.project) {
+                if (caret.hasSelection()) {
+                    editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
                 }
+                editor.document.insertString(offset, message.code)
             }
         }
     }
