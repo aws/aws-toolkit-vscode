@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
-import com.google.gson.Gson
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
@@ -379,6 +379,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     fun `test user Decision events record CodeWhisperer reference info`() {
         val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         withCodeWhispererServiceInvokedAndWait {}
+        val mapper = jacksonObjectMapper()
         argumentCaptor<MetricEvent>().apply {
             verify(batcher, atLeastOnce()).enqueue(capture())
             pythonResponse.completions().forEach {
@@ -386,7 +387,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                     allValues,
                     userDecision,
                     1,
-                    "codewhispererSuggestionReferences" to Gson().toJson(it.references().map { ref -> ref.licenseName() }.toSet()),
+                    "codewhispererSuggestionReferences" to mapper.writeValueAsString(it.references().map { ref -> ref.licenseName() }.toSet()),
                     "codewhispererSuggestionReferenceCount" to it.references().size.toString(),
                     "codewhispererUserGroup" to userGroup.name,
                     atLeast = true

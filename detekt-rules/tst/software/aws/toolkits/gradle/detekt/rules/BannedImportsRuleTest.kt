@@ -25,6 +25,13 @@ class BannedImportsRuleTest {
     }
 
     @Test
+    fun `Importing Gson fails`() {
+        assertThat(rule.lint("import com.google.gson.Gson"))
+            .singleElement()
+            .matches { it.id == "BannedImports" && it.message == "Use jacksonObjectMapper() insted of Gson" }
+    }
+
+    @Test
     fun `Importing Kotlin test assert fails`() {
         assertThat(rule.lint("import kotlin.test.assertTrue"))
             .singleElement()
