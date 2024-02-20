@@ -8,6 +8,7 @@ import { setInBrowser } from './common/browserUtils'
 import { getLogger } from './shared/logger'
 import { activateShared, deactivateShared } from './extensionShared'
 import { RegionProvider, defaultRegion } from './shared/regions/regionProvider'
+import os from 'os'
 
 export async function activate(context: vscode.ExtensionContext) {
     setInBrowser(true) // THIS MUST ALWAYS BE FIRST
@@ -17,6 +18,8 @@ export async function activate(context: vscode.ExtensionContext) {
     )
 
     try {
+        patchOsVersion()
+
         // IMPORTANT: Any new activation code should be done in the function below unless
         // it is browser specific activation code.
         await activateShared(context, () => {
@@ -32,6 +35,14 @@ export async function activate(context: vscode.ExtensionContext) {
         }
         getLogger().error(`Failed to activate extension`, error)
     }
+}
+
+/**
+ * The browserfied version of os does not have a `version()` method,
+ * so we patch it.
+ */
+function patchOsVersion() {
+    ;(os.version as any) = () => '1.0.0'
 }
 
 export async function deactivate() {
