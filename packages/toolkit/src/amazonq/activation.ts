@@ -15,7 +15,6 @@ import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amaz
 import { activateBadge } from './util/viewBadgeHandler'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../auth/ui/vue/show'
-import { CommonAuthViewProvider } from '../login/webview/commonAuthViewProvider'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -28,16 +27,10 @@ export async function activate(context: ExtensionContext) {
         appInitContext.getAppsToWebViewMessageListener(),
         appInitContext.onDidChangeAmazonQVisibility
     )
-    const provider2 = new CommonAuthViewProvider(context, appInitContext.onDidChangeAmazonQVisibility)
 
     const cwcWebViewToAppsPublisher = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!
 
     context.subscriptions.push(
-        window.registerWebviewViewProvider(CommonAuthViewProvider.viewType, provider2, {
-            webviewOptions: {
-                retainContextWhenHidden: true,
-            },
-        }),
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
             webviewOptions: {
                 retainContextWhenHidden: true,
