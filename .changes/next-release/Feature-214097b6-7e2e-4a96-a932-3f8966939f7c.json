@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Handle InvalidStateEvent in FeatureDev client"
+	"description": "Amazon Q: /dev command now supports the InvalidState event during the GenerateApproach step. The reason for the Approach to reach an Invalid State is printed in /dev's chat response."
 }
