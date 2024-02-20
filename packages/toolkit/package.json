@@ -4293,7 +4293,6 @@
         "@types/node-fetch": "^2.6.8",
         "@types/prismjs": "^1.26.0",
         "@types/readline-sync": "^1.4.3",
-        "@types/sanitize-html": "2.3.1",
         "@types/semver": "^7.5.0",
         "@types/sinon": "^10.0.5",
         "@types/sinonjs__fake-timers": "^8.1.2",
@@ -4321,12 +4320,12 @@
         "sass-loader": "^12.6.0",
         "sinon": "^14.0.0",
         "style-loader": "^3.3.1",
+        "ts-node": "^10.9.1",
+        "typescript": "^5.0.4",
         "umd-compat-loader": "^2.1.2",
         "vue-loader": "^17.2.2",
         "vue-style-loader": "^4.1.3",
-        "webfont": "^11.2.26",
-        "typescript": "^5.0.4",
-        "ts-node": "^10.9.1"
+        "webfont": "^11.2.26"
     },
     "dependencies": {
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
@@ -4367,7 +4366,6 @@
         "mime-types": "^2.1.32",
         "node-fetch": "^2.7.0",
         "portfinder": "^1.0.32",
-        "sanitize-html": "^2.3.3",
         "semver": "^7.5.4",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
