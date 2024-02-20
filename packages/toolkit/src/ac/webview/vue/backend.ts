@@ -127,19 +127,17 @@ export class CommonAuthWebview extends VueWebview {
     async getAuthenticatedCredentialsError(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
         return Auth.instance.authenticateData(data)
     }
+
     async startIamCredentialSetup(
         profileName: string,
         accessKey: string,
         secretKey: string
     ): Promise<AuthError | undefined> {
         // See submitData() in manageCredentials.vue
-        if (profileName.length === 0 || accessKey.length === 0 || secretKey.length === 0) {
-            return { id: 'Failed to create profile', text: 'Invalid input' }
-        }
         const data = { aws_access_key_id: accessKey, aws_secret_access_key: secretKey }
         const error = await this.getAuthenticatedCredentialsError(data)
         if (error) {
-            return { id: error.key, text: error.error }
+            return { id: this.id, text: error.error }
         }
         try {
             await tryAddCredentials(profileName, data, true)
@@ -147,7 +145,7 @@ export class CommonAuthWebview extends VueWebview {
             return
         } catch (e) {
             getLogger().error('Failed submitting credentials', e)
-            return { id: 'Failed', text: e as string }
+            return { id: this.id, text: e as string }
         }
     }
 
@@ -160,5 +158,9 @@ export class CommonAuthWebview extends VueWebview {
             return AuthUtil.instance.conn
         }
         return undefined
+    }
+
+    async errorNotification(e: AuthError) {
+        await vscode.window.showInformationMessage(`${e.text}`)
     }
 }

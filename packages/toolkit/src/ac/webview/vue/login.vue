@@ -188,7 +188,13 @@
             <input class="iamInput" type="text" id="secretKey" name="secretKey" v-model="secretKey" />
 
             <br /><br />
-            <button class="continue-button" v-on:click="handleContinueClick()">Continue</button>
+            <button
+                class="continue-button"
+                :disabled="profileName.length <= 0 || accessKey.length <= 0 || secretKey.length <= 0"
+                v-on:click="handleContinueClick()"
+            >
+                Continue
+            </button>
         </template>
     </div>
 </template>
@@ -287,6 +293,7 @@ export default defineComponent({
                     const error = await client.startBuilderIdSetup(this.app)
                     if (error) {
                         this.stage = 'START'
+                        void client.errorNotification(error)
                     } else {
                         this.stage = 'CONNECTED'
                     }
@@ -303,6 +310,7 @@ export default defineComponent({
                 const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
                 if (error) {
                     this.stage = 'START'
+                    void client.errorNotification(error)
                 } else {
                     this.stage = 'CONNECTED'
                 }
@@ -311,6 +319,7 @@ export default defineComponent({
                 const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey)
                 if (error) {
                     this.stage = 'START'
+                    void client.errorNotification(error)
                 } else {
                     this.stage = 'CONNECTED'
                 }
