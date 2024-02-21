@@ -10,7 +10,7 @@ import { Logger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
 import { isSourceMappingAvailable } from '../vscode/env'
 import { formatError, ToolkitError, UnknownError } from '../errors'
-import { isInBrowser } from '../../common/browserUtils'
+import { isWeb } from '../../common/browserUtils'
 import { SharedFileTransport } from './sharedFileTransport'
 import { ConsoleLogTransport } from './consoleLogTransport'
 
@@ -63,7 +63,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
 
     public logToFile(logPath: vscode.Uri): void {
         let fileTransport: winston.transport
-        if (isInBrowser()) {
+        if (isWeb()) {
             fileTransport = new SharedFileTransport({ logFile: logPath })
         } else {
             fileTransport = new winston.transports.File({ filename: logPath.fsPath })

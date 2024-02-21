@@ -33,7 +33,7 @@ import { CredentialsStore } from './auth/credentials/store'
 import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
 import { RegionProvider } from './shared/regions/regionProvider'
 import { ChildProcess } from './shared/utilities/childProcess'
-import { isInBrowser } from './common/browserUtils'
+import { isWeb } from './common/browserUtils'
 import { registerErrorHandler as registerCommandErrorHandler } from './shared/vscode/commands2'
 import { ToolkitError, isUserCancelledError, resolveErrorMessageToDisplay } from './shared/errors'
 import { getLogger } from './shared/logger'
@@ -179,7 +179,7 @@ export function registerCommands(extensionContext: vscode.ExtensionContext) {
 }
 
 async function getMachineId(): Promise<string> {
-    if (isInBrowser()) {
+    if (isWeb()) {
         return 'browser'
     }
     const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })

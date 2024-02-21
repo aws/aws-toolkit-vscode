@@ -15,7 +15,7 @@ import { cleanLogFiles } from './util'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
-import { isInBrowser } from '../../common/browserUtils'
+import { isWeb } from '../../common/browserUtils'
 import { fsCommon } from '../../srcShared/fs'
 
 const localize = nls.loadMessageBundle()
@@ -42,7 +42,7 @@ export async function activate(
         {
             logPaths: [logUri],
             outputChannels: [chan],
-            useConsoleLog: isInBrowser(),
+            useConsoleLog: isWeb(),
         },
         extensionContext.subscriptions
     )
@@ -173,7 +173,7 @@ function makeLogFilename(): string {
  * Watches for renames on the log file and notifies the user.
  */
 async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable> {
-    if (isInBrowser()) {
+    if (isWeb()) {
         getLogger().debug(`Not watching log file since we are in Browser.`)
         return { dispose: () => {} }
     }

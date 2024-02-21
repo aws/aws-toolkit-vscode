@@ -4,10 +4,10 @@
  */
 
 import * as assert from 'assert'
-import { isInBrowser } from '../common/browserUtils'
+import { isWeb } from '../common/browserUtils'
 
-describe('isInBrowser', function () {
+describe('isWeb', function () {
     it('returns false since not in browser', function () {
-        assert.strictEqual(isInBrowser(), false)
+        assert.strictEqual(isWeb(), false)
     })
 })

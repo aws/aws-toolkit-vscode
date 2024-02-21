@@ -12,7 +12,7 @@ import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
-import { isInBrowser } from '../common/browserUtils'
+import { isWeb } from '../common/browserUtils'
 
 // Animation:
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
@@ -123,7 +123,7 @@ function resolvePathsSync(rootDir: string, target: string): { light: Uri; dark: 
     const lightPath = path.join(rootDir, 'light', `${target}.svg`)
 
     try {
-        if (!isInBrowser() && fs.existsSync(darkPath) && fs.existsSync(lightPath)) {
+        if (!isWeb() && fs.existsSync(darkPath) && fs.existsSync(lightPath)) {
             return { dark: Uri.file(darkPath), light: Uri.file(lightPath) }
         }
     } catch (error) {
