@@ -74,6 +74,7 @@ class AmazonQStreamingClient(private val project: Project) {
             result.await()
         } catch (e: Exception) {
             onError(e)
+            throw e
         } finally {
             onStreamingFinished(startTime)
         }

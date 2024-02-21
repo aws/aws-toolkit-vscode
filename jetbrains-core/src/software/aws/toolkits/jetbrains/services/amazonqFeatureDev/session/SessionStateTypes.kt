@@ -51,3 +51,15 @@ data class CodeGenerationResult(
     var deletedFiles: Array<DeletedFileZipInfo>,
     var references: Array<CodeReference>,
 )
+
+@Suppress("ConstructorParameterNaming") // Unfortunately, this is exactly how the string json is received and is needed for parsing.
+data class CodeGenerationStreamResult(
+    var new_file_contents: Map<String, String>,
+    var deleted_files: Array<String>,
+    var references: Array<CodeReference>,
+)
+
+@Suppress("ConstructorParameterNaming") // Unfortunately, this is exactly how the string json is received and is needed for parsing.
+data class ExportTaskAssistResultArchiveStreamResult(
+    var code_generation_result: CodeGenerationStreamResult
+)

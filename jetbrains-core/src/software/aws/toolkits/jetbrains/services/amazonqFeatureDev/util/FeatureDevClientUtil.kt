@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
@@ -14,6 +16,9 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ContentLengthE
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.apiError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.exportParseError
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeGenerationStreamResult
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.ExportTaskAssistResultArchiveStreamResult
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 
@@ -111,4 +116,24 @@ fun getTaskAssistCodeGeneration(proxyClient: FeatureDevClient, conversationId: S
         logger.error(e) { "$FEATURE_NAME: Failed to execute GetTaskAssistCodeGeneration" }
         apiError(e.message, e.cause)
     }
+}
+
+suspend fun exportTaskAssistArchiveResult(proxyClient: FeatureDevClient, conversationId: String): CodeGenerationStreamResult {
+    val exportResponse: MutableList<ByteArray>
+    try {
+        exportResponse = proxyClient.exportTaskAssistResultArchive(conversationId)
+        logger.debug { "$FEATURE_NAME: Received export task assist result archive response" }
+    } catch (e: Exception) {
+        apiError(e.message, e.cause)
+    }
+
+    val parsedResult: ExportTaskAssistResultArchiveStreamResult
+    try {
+        val result = exportResponse.reduce { acc, next -> acc + next } // To map the result it is needed to combine the  full byte array
+        parsedResult = jacksonObjectMapper().readValue(result)
+    } catch (e: Exception) {
+        exportParseError()
+    }
+
+    return parsedResult.code_generation_result
 }
