@@ -15,7 +15,7 @@ import { cleanLogFiles } from './util'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
-import { isWeb } from '../../common/browserUtils'
+import { isWeb } from '../../common/webUtils'
 import { fsCommon } from '../../srcShared/fs'
 
 const localize = nls.loadMessageBundle()

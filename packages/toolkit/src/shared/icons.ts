@@ -12,7 +12,7 @@ import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
-import { isWeb } from '../common/browserUtils'
+import { isWeb } from '../common/webUtils'
 
 // Animation:
 // https://code.visualstudio.com/api/references/icons-in-labels#animation

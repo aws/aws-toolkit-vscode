@@ -53,7 +53,7 @@ import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
-import { isWeb } from '../../../common/browserUtils'
+import { isWeb } from '../../../common/webUtils'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'

@@ -14,7 +14,7 @@ import { ExtensionUse } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../codecatalyst/utils'
 import { showManageConnections } from './ui/vue/show'
-import { isWeb } from '../common/browserUtils'
+import { isWeb } from '../common/webUtils'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,

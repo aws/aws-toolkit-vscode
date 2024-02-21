@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { isWeb } from '../common/browserUtils'
+import { isWeb } from '../common/webUtils'
 
 describe('isWeb', function () {
     it('returns false since not in browser', function () {

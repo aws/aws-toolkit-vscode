@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { setWeb } from './common/browserUtils'
+import { setWeb } from './common/webUtils'
 import { getLogger } from './shared/logger'
 import { activateShared, deactivateShared } from './extensionShared'
 import { RegionProvider, defaultRegion } from './shared/regions/regionProvider'

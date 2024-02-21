@@ -10,7 +10,7 @@ import { Logger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
 import { isSourceMappingAvailable } from '../vscode/env'
 import { formatError, ToolkitError, UnknownError } from '../errors'
-import { isWeb } from '../../common/browserUtils'
+import { isWeb } from '../../common/webUtils'
 import { SharedFileTransport } from './sharedFileTransport'
 import { ConsoleLogTransport } from './consoleLogTransport'
 
