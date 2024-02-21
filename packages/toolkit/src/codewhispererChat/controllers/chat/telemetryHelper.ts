@@ -34,6 +34,7 @@ import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer
 import { isAwsError } from '../../../shared/errors'
 import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewhispereruserclient'
 import { supportedLanguagesList } from '../chat/chatRequest/converter'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -149,6 +150,7 @@ export class CWCTelemetryHelper {
                 message = message as InsertCodeAtCursorPosition
                 event = {
                     cwsprChatConversationId: conversationId ?? '',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'insertAtCursor',
                     cwsprChatAcceptedCharactersLength: message.code.length,
@@ -160,6 +162,7 @@ export class CWCTelemetryHelper {
                 message = message as CopyCodeToClipboard
                 event = {
                     cwsprChatConversationId: conversationId ?? '',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'copySnippet',
                     cwsprChatAcceptedCharactersLength: message.code.length,
@@ -171,6 +174,7 @@ export class CWCTelemetryHelper {
                 message = message as PromptMessage
                 event = {
                     cwsprChatConversationId: conversationId ?? '',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'clickFollowUp',
                 }
@@ -180,6 +184,7 @@ export class CWCTelemetryHelper {
                 event = {
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: message.vote,
                 }
                 break
@@ -188,6 +193,7 @@ export class CWCTelemetryHelper {
                 event = {
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: 'clickLink',
                     cwsprChatInteractionTarget: message.link,
                 }
@@ -197,6 +203,7 @@ export class CWCTelemetryHelper {
                 event = {
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: 'clickBodyLink',
                     cwsprChatInteractionTarget: message.link,
                 }
@@ -206,6 +213,7 @@ export class CWCTelemetryHelper {
                 event = {
                     cwsprChatMessageId: 'footer',
                     cwsprChatConversationId: conversationId ?? '',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: 'clickBodyLink',
                     cwsprChatInteractionTarget: message.link,
                 }

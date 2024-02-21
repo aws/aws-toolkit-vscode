@@ -625,6 +625,10 @@
                     "type": "cwsprChatConversationId"
                 },
                 {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
                     "type": "cwsprChatTriggerInteraction"
                 },
                 {
@@ -650,6 +654,10 @@
             "metadata": [
                 {
                     "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 },
                 {
                     "type": "cwsprChatMessageId"
@@ -726,6 +734,10 @@
                     "required": false
                 },
                 {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
                     "type": "cwsprChatTriggerInteraction"
                 },
                 {
@@ -771,6 +783,10 @@
                     "type": "cwsprChatConversationId"
                 },
                 {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
                     "type": "cwsprChatMessageId"
                 },
                 {
@@ -798,6 +814,10 @@
                     "type": "cwsprChatConversationId"
                 },
                 {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
                     "type": "cwsprChatMessageId"
                 },
                 {
@@ -811,6 +831,10 @@
             "metadata": [
                 {
                     "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },
@@ -820,6 +844,10 @@
             "metadata": [
                 {
                     "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },

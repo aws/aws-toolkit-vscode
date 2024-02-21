@@ -1,3 +1,7 @@
+## 2.10.0 2024-02-16
+
+- **Bug Fix** CDK Explorer: Refresh button is now visible.
+
 ## 2.9.0 2024-02-09
 
 - **Bug Fix** Cloud9: certain filesystem calls did not work in Cloud9
