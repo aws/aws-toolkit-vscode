@@ -12,6 +12,7 @@ import { sleep } from '../shared/utilities/timeoutUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { MetadataResult } from '../shared/telemetry/telemetryClient'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
+import { StartActionPositions } from './telemetry/codeTransformTelemetry'
 
 export async function processTransformByQ() {
     if (!AuthUtil.instance.isEnterpriseSsoInUse()) {
@@ -21,6 +22,11 @@ export async function processTransformByQ() {
     if (transformByQState.isNotStarted()) {
         await sleep(1000) // sleep so that chat can respond first, then show input prompt
         telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            result: MetadataResult.Pass,
+        })
+        telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
+            codeTransformStartSrcComponents: StartActionPositions.chatPrompt,
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             result: MetadataResult.Pass,
         })

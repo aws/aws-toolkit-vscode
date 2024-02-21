@@ -376,8 +376,21 @@ export async function validateTransformationJob() {
     let validProjects = undefined
     try {
         validProjects = await validateOpenProjects(openProjects)
-    } catch (err) {
+        const firstKey = validProjects.keys().next().value
+        const firstModuleEntry = validProjects.get(firstKey)
+        telemetry.codeTransform_projectDetails.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformLocalJavaVersion:
+                (JDKToTelemetryValue(firstModuleEntry) as CodeTransformJavaSourceVersionsAllowed) || undefined,
+        })
+    } catch (err: any) {
         getLogger().error('Selected project is not Java 8, not Java 11, or does not use Maven', err)
+        telemetry.codeTransform_projectDetails.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: err?.name || undefined,
+            result: MetadataResult.Fail,
+            reason: err?.code || undefined,
+        })
         throw err
     }
 
