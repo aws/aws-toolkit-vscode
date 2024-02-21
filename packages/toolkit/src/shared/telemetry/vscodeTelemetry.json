@@ -905,6 +905,18 @@
             ]
         },
         {
+            "name": "amazonq_codeGenerationThumbsDown",
+            "description": "User clicked on the thumbs down button to say that they are unsatisfied",
+            "unit": "Count",
+            "metadata": [
+                { "type": "amazonqConversationId" },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
             "name": "amazonq_isReviewedChanges",
             "description": "User reviewed changes",
             "passive": true,
