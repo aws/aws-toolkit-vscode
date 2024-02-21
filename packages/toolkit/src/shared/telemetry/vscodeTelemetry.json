@@ -905,7 +905,7 @@
             ]
         },
         {
-            "name": "amazonq_codeGenerationThumbsDown",
+            "name": "amazonq_approachThumbsDown",
             "description": "User clicked on the thumbs down button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
