@@ -10,19 +10,19 @@
  *
  */
 const webpack = require('webpack')
+const { merge } = require('webpack-merge')
 
 const baseConfig = require('./webpack.base.config')
 
 /** @type WebpackConfig */
-const webConfig = {
-    ...baseConfig,
+const webConfig = merge(baseConfig, {
     name: 'web',
     target: 'webworker',
     /**
      * The keys in the following 'entry' object are the relative paths of the final output files in 'dist'.
      * They are suffixed with '.js' implicitly.
      */
-    plugins: (baseConfig.plugins ?? []).concat(
+    plugins: [
         new webpack.optimize.LimitChunkCountPlugin({
             maxChunks: 1, // disable chunks by default since web extensions must be a single bundle
         }),
@@ -35,8 +35,8 @@ const webConfig = {
         new webpack.EnvironmentPlugin({
             NODE_DEBUG: 'development',
             READABLE_STREAM: 'disable',
-        })
-    ),
+        }),
+    ],
     resolve: {
         extensions: ['.ts', '.js'],
         fallback: {
@@ -67,6 +67,6 @@ const webConfig = {
     optimization: {
         minimize: false,
     },
-}
+})
 
 module.exports = webConfig
