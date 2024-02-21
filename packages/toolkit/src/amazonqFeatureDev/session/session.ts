@@ -13,6 +13,7 @@ import { approachRetryLimit } from '../limits'
 import { SessionConfig } from './sessionConfigFactory'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
@@ -55,6 +56,7 @@ export class Session {
                 amazonqConversationId: this.conversationId,
                 value: 1,
                 result: 'Succeeded',
+                credentialStartUrl: AuthUtil.instance.startUrl,
             })
 
             this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
@@ -72,7 +74,7 @@ export class Session {
 
         await telemetry.amazonq_startConversationInvoke.run(async span => {
             this._conversationId = await this.proxyClient.createConversation()
-            span.record({ amazonqConversationId: this._conversationId })
+            span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
         })
 
         this._state = new PrepareRefinementState(
