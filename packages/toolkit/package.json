@@ -1,5 +1,5 @@
 {
-    "name": "aws-toolkit-vscode2",
+    "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
     "description": "Including Amazon Q, CodeWhisperer, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
     "version": "2.11.0-SNAPSHOT",
@@ -55,6 +55,7 @@
         "onCommand:aws.codeWhisperer.accept"
     ],
     "main": "./dist/src/main",
+    "browser": "./dist/src/mainWeb",
     "contributes": "This field is currently inherited from the core library at package time.",
     "scripts": {
         "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
@@ -62,6 +63,9 @@
         "clean": "ts-node ../../scripts/clean.ts dist/",
         "compile": "npm run clean && webpack --mode development && npm run copyFiles",
         "testCompile": "npm run clean && tsc -p ./ && npm run copyFiles",
+        "browserWatch": "npm run clean && npm run copyFiles && webpack --config-name web --watch",
+        "browserCompile": "npm run clean && npm run copyFiles && webpack --config-name web",
+        "browserRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "package": "ts-node ../../scripts/package.ts",
         "watch": "npm run clean && npm run copyFiles && tsc -watch -p ./",
         "serve": "webpack serve --config-name vue-hmr --mode development"

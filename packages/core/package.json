@@ -3,7 +3,10 @@
     "description": "",
     "version": "1.0.0",
     "license": "Apache-2.0",
-    "main": "./dist/src/main",
+    "exports": {
+        ".": "./dist/src/extension",
+        "./web": "./dist/src/extensionWeb"
+    },
     "scripts": {
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
         "generateConfigurationAttributes": "ts-node ./scripts/build/generateConfigurationAttributes.ts",

@@ -9,12 +9,10 @@
 
 const baseConfig = require('../webpack.base.config')
 const baseVueConfig = require('../webpack.vue.config')
-const baseBrowserConfig = require('../webpack.browser.config')
 
 const config = {
     ...baseConfig,
     entry: {
-        'src/main': './src/main.ts',
         'src/stepFunctions/asl/aslServer': './src/stepFunctions/asl/aslServer.ts',
     },
 }
@@ -30,12 +28,4 @@ const vueConfigs = baseVueConfig.configs.map(c => {
     }
 })
 
-const browserConfig = {
-    ...baseBrowserConfig,
-    entry: {
-        'src/extensionWeb': './src/extensionWeb.ts',
-        'src/testBrowser/testRunner': './src/testBrowser/testRunner.ts',
-    },
-}
-
-module.exports = [config, ...vueConfigs, browserConfig]
+module.exports = [config, ...vueConfigs]
