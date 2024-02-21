@@ -1,7 +1,7 @@
 {
     "name": "root",
     "workspaces": [
-        "packages/toolkit/src/browser",
+        "packages/core/src/browser",
         "packages/*",
         "plugins/*",
         "src.gen/@amzn/codewhisperer-streaming"

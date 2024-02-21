@@ -40,7 +40,7 @@ const tasks: CopyTask[] = [
     //     return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
     // }),
 
-    { target: path.join('../toolkit', 'src', 'templates'), destination: path.join('src', 'templates') },
+    { target: path.join('../core', 'src', 'templates'), destination: path.join('src', 'templates') },
     // { target: path.join('src', 'test', 'shared', 'cloudformation', 'yaml') },
     // { target: path.join('src', 'test', 'codewhisperer', 'service', 'resources') },
     // { target: path.join('src', 'testFixtures') },
@@ -63,7 +63,7 @@ const tasks: CopyTask[] = [
     {
         target: path.join(
             '../../node_modules',
-            'aws-toolkit-vscode',
+            'aws-core-vscode',
             'dist',
             'src',
             'stepFunctions',
@@ -83,7 +83,7 @@ const tasks: CopyTask[] = [
         destination: path.join('libs', 'vue.min.js'),
     },
     {
-        target: path.join('../../node_modules', 'aws-toolkit-vscode', 'dist', 'vue'),
+        target: path.join('../../node_modules', 'aws-core-vscode', 'dist', 'vue'),
         destination: 'vue',
     },
 
