@@ -50,7 +50,6 @@ export class Session {
         if (!this.preloaderFinished) {
             await this.setupConversation(msg)
             this.preloaderFinished = true
-
             this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
         }
     }
