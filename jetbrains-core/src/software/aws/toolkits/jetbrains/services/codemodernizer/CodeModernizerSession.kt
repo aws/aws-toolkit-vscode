@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 const val ZIP_SOURCES_PATH = "sources"
 const val BUILD_LOG_PATH = "build-logs.txt"
 const val UPLOAD_ZIP_MANIFEST_VERSION = 1.0F
+const val MAX_ZIP_SIZE = 1000000000 // 1GB
 
 class CodeModernizerSession(
     val sessionContext: CodeModernizerSessionContext,
@@ -84,11 +85,18 @@ class CodeModernizerSession(
             }
 
             payload = result.payload
+
+            val payloadSize = payload.length().toInt()
+
             CodetransformTelemetry.jobCreateZipEndTime(
-                codeTransformTotalByteSize = payload.length().toInt(),
+                codeTransformTotalByteSize = payloadSize,
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformRunTimeLatency = calculateTotalLatency(startTime, Instant.now())
             )
+
+            if (payloadSize > MAX_ZIP_SIZE) {
+                return CodeModernizerStartJobResult.CancelledZipTooLarge
+            }
         } catch (e: Exception) {
             val errorMessage = "Failed to create zip"
             LOG.error(e) { errorMessage }

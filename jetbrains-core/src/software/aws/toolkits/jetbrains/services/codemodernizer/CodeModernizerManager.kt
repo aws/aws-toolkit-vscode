@@ -405,6 +405,10 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             is CodeModernizerStartJobResult.CancelledMissingDependencies -> {
                 CodeModernizerJobCompletedResult.JobAbortedMissingDependencies
             }
+
+            is CodeModernizerStartJobResult.CancelledZipTooLarge -> {
+                CodeModernizerJobCompletedResult.JobAbortedZipTooLarge
+            }
         }
     }
 
@@ -588,6 +592,12 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             is CodeModernizerJobCompletedResult.JobAbortedMissingDependencies -> notifyStickyInfo(
                 message("codemodernizer.notification.warn.maven_failed.title"),
                 message("codemodernizer.notification.warn.maven_failed.content"),
+                project,
+                listOf(openTroubleshootingGuideNotificationAction()),
+            )
+            is CodeModernizerJobCompletedResult.JobAbortedZipTooLarge -> notifyStickyInfo(
+                message("codemodernizer.notification.warn.zip_too_large.title"),
+                message("codemodernizer.notification.warn.zip_too_large.content"),
                 project,
                 listOf(openTroubleshootingGuideNotificationAction()),
             )

@@ -16,4 +16,5 @@ sealed class CodeModernizerJobCompletedResult {
     object ManagerDisposed : CodeModernizerJobCompletedResult()
     object JobAbortedBeforeStarting : CodeModernizerJobCompletedResult()
     object JobAbortedMissingDependencies : CodeModernizerJobCompletedResult()
+    object JobAbortedZipTooLarge : CodeModernizerJobCompletedResult()
 }
