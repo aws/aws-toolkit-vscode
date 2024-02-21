@@ -47,6 +47,7 @@ const webConfig = {
             fs: false,
             crypto: require.resolve('crypto-browserify'),
             'fs-extra': false,
+            perf_hooks: false, // should be using globalThis.performance instead
 
             // *** If one of these modules actually gets used an error will be raised ***
             // You may see something like: "TypeError: path_ignored_0.join is not a function"

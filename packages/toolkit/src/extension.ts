@@ -32,7 +32,6 @@ import { activate as activateEc2 } from './ec2/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
-import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
@@ -133,8 +132,6 @@ export async function activate(context: vscode.ExtensionContext) {
             remoteInvokeOutputChannel: globals.invokeOutputChannel,
         })
 
-        await activateCodeWhisperer(extContext)
-
         await activateAppRunner(extContext)
 
         await activateApiGateway({
@@ -230,7 +227,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
     await deactivateShared()
-    await codewhispererShutdown()
     await globals.resourceManager.dispose()
 }
 

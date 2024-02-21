@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp } from '@aws/mynah-ui'
+import { ChatItemAction } from '@aws/mynah-ui'
 import { existsSync } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -18,7 +18,7 @@ import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { FollowUpTypes, SessionStatePhase } from '../../types'
 import { Messenger } from './messenger/messenger'
-import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil, getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
@@ -117,12 +117,14 @@ export class FeatureDevController {
                         amazonqConversationId: session?.conversationId,
                         value: 1,
                         result: 'Succeeded',
+                        credentialStartUrl: AuthUtil.instance.startUrl,
                     })
                 } else if (vote === 'downvote') {
                     telemetry.amazonq_approachThumbsDown.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
                         result: 'Succeeded',
+                        credentialStartUrl: AuthUtil.instance.startUrl,
                     })
                 }
                 break
@@ -266,7 +268,7 @@ export class FeatureDevController {
         }
     }
 
-    private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemFollowUp[] {
+    private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemAction[] {
         switch (phase) {
             case 'Approach':
                 return [
@@ -358,6 +360,7 @@ export class FeatureDevController {
             amazonqConversationId: session.conversationId,
             enabled: true,
             result: 'Succeeded',
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
 
         if (message.deleted) {
@@ -421,6 +424,7 @@ export class FeatureDevController {
             amazonqConversationId: session.conversationId,
             amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
             result: 'Succeeded',
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
 
         // Old session for the tab is ending, delete it so we can create a new one for the message id
