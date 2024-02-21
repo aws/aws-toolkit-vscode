@@ -51,14 +51,6 @@ export class Session {
         if (!this.preloaderFinished) {
             await this.setupConversation(msg)
             this.preloaderFinished = true
-
-            telemetry.amazonq_startChat.emit({
-                amazonqConversationId: this.conversationId,
-                value: 1,
-                result: 'Succeeded',
-                credentialStartUrl: AuthUtil.instance.startUrl,
-            })
-
             this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
         }
     }
