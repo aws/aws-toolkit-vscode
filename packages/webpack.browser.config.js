@@ -19,6 +19,14 @@ const webConfig = merge(baseConfig, {
     name: 'web',
     target: 'webworker',
     /**
+     * We currently inherit the value "source-map" for the key 'devtool' from the base config. But during debugging w/ Chromium this
+     * is known to cause breakpoints to be offset. See this thread: https://github.com/webpack/webpack/issues/1487
+     *
+     * TODO: We do not want to use `eval-source-map` for Production since it is recommended for Development builds. Look for a solution to use something
+     * better when in Production. https://webpack.js.org/configuration/devtool/
+     */
+    devtool: 'eval-source-map',
+    /**
      * The keys in the following 'entry' object are the relative paths of the final output files in 'dist'.
      * They are suffixed with '.js' implicitly.
      */
