@@ -13,15 +13,11 @@ import os from 'os'
 export async function activate(context: vscode.ExtensionContext) {
     setWeb(true) // THIS MUST ALWAYS BE FIRST
 
-    void vscode.window.showInformationMessage(
-        'AWS Toolkit: Browser Mode Under Development. No features are currently provided'
-    )
-
     try {
         patchOsVersion()
 
         // IMPORTANT: Any new activation code should be done in the function below unless
-        // it is browser specific activation code.
+        // it is web mode specific activation code.
         await activateShared(context, () => {
             return {
                 guessDefaultRegion: () => defaultRegion,

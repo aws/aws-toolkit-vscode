@@ -51,11 +51,11 @@ disableAwsSdkWarning()
 let localize: nls.LocalizeFunc
 
 /**
- * Activation/setup code that is shared by the regular (nodejs) extension AND browser-compatible extension.
+ * Activation/setup code that is shared by the regular (nodejs) extension AND web mode extension.
  * Most setup code should live here, unless there is a reason not to.
  *
  * @param getRegionProvider - HACK telemetry requires the region provider but we cannot create it yet in this
- * "shared" function since it breaks in browser. So for now the caller must provide it.
+ * "shared" function since it breaks in web mode. So for now the caller must provide it.
  */
 export async function activateShared(
     context: vscode.ExtensionContext,
@@ -143,13 +143,13 @@ export async function activateShared(
     return extContext
 }
 
-/** Deactivation code that is shared between nodejs and browser implementations */
+/** Deactivation code that is shared between nodejs and web implementations */
 export async function deactivateShared() {
     await globals.telemetry.shutdown()
     await codewhispererShutdown()
 }
 /**
- * Registers generic commands used by both browser and node versions of the toolkit.
+ * Registers generic commands used by both web and node versions of the toolkit.
  */
 export function registerCommands(extensionContext: vscode.ExtensionContext) {
     extensionContext.subscriptions.push(
