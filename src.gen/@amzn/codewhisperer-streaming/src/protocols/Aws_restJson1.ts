@@ -30,6 +30,7 @@ import {
   FollowupPrompt,
   FollowupPromptEvent,
   InternalServerException,
+  InvalidStateEvent,
   MessageMetadataEvent,
   Position,
   ProgrammingLanguage,
@@ -338,6 +339,7 @@ const de_ExportResultArchiveCommandError = async(
         const data: any = parsedOutput.body;
         const doc = take(data, {
           'message': __expectString,
+          'reason': __expectString,
         });
         Object.assign(contents, doc);
         const exception = new AccessDeniedException({
@@ -488,6 +490,11 @@ const de_ExportResultArchiveCommandError = async(
                 followupPromptEvent: await de_FollowupPromptEvent_event(event["followupPromptEvent"], context),
               };
             }
+            if (event["invalidStateEvent"] != null) {
+              return {
+                invalidStateEvent: await de_InvalidStateEvent_event(event["invalidStateEvent"], context),
+              };
+            }
             if (event["error"] != null) {
               return {
                 error: await de_InternalServerException_event(event["error"], context),
@@ -581,6 +588,15 @@ const de_ExportResultArchiveCommandError = async(
         };
         return de_InternalServerExceptionRes(parsedOutput, context);
       }
+      const de_InvalidStateEvent_event = async (
+        output: any,
+        context: __SerdeContext
+      ): Promise<InvalidStateEvent> => {
+        const contents: InvalidStateEvent = {} as any;
+        const data: any = await parseBody(output.body, context);
+        Object.assign(contents, _json(data));
+        return contents;
+      }
       const de_MessageMetadataEvent_event = async (
         output: any,
         context: __SerdeContext
@@ -668,6 +684,8 @@ const de_ExportResultArchiveCommandError = async(
       // de_FollowupPrompt omitted.
 
       // de_FollowupPromptEvent omitted.
+
+      // de_InvalidStateEvent omitted.
 
       // de_MessageMetadataEvent omitted.
 

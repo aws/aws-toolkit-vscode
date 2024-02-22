@@ -35,6 +35,8 @@ describe('CloudFormation', function () {
     })
 
     it('isValidFilename()', async function () {
+        assert.deepStrictEqual(CloudFormation.isValidFilename('/foo/bar.json'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('/foo/bar.template'), true)
         assert.deepStrictEqual(CloudFormation.isValidFilename('/foo/bar.yaml'), true)
         assert.deepStrictEqual(CloudFormation.isValidFilename('/foo/template.yaml'), true)
         assert.deepStrictEqual(CloudFormation.isValidFilename('template.yaml'), true)

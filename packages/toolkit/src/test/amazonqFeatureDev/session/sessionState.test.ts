@@ -135,7 +135,8 @@ describe('sessionState', () => {
             const state = new RefinementState(testConfig, invalidHTMLApproach, tabId, 0)
             const result = await state.interact(testAction)
 
-            const expectedApproach = `<h1>hello world</h1>`
+            const expectedApproach =
+                '&lt;head&gt;&lt;script src="https://foo"&gt;&lt;/script&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;hello world&lt;/h1&gt;&lt;/body&gt;'
             assert.deepStrictEqual(result, {
                 nextState: new RefinementState(testConfig, expectedApproach, tabId, 1),
                 interaction: {

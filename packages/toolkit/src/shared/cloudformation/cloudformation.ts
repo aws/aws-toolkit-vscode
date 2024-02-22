@@ -19,7 +19,8 @@ export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api' // eslint-disable-line
 export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function' // eslint-disable-line @typescript-eslint/naming-convention
 export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function' // eslint-disable-line @typescript-eslint/naming-convention
 
-export const templateFileGlobPattern = '**/*.{yaml,yml}'
+export const templateFileGlobPattern = '**/*.{yaml,yml,json,template}'
+export const templateFileRegexPattern = /.*\.(yaml|yml|json|template)$/i
 export const devfileExcludePattern = /.*devfile\.(yaml|yml)/i
 /**
  * Match any file path that contains a .aws-sam folder. The way this works is:
@@ -378,16 +379,13 @@ export interface TemplateResources {
 export function isValidFilename(filename: string | vscode.Uri): boolean {
     filename = typeof filename === 'string' ? filename : filename.fsPath
     filename = filename.trim()
-    if (!filename.endsWith('.yml') && !filename.endsWith('.yaml')) {
+    if (!filename.match(templateFileRegexPattern)) {
         return false
     }
     // Note: intentionally _not_ checking `templateFileExcludePattern` here, because while excluding
     // template files in .aws-sam/ is relevant for the workspace scan, it's irrelevant if such
     // a file was opened explicitly by the user.
-    if (filename.match(devfileExcludePattern)) {
-        return false
-    }
-    return true
+    return !filename.match(devfileExcludePattern)
 }
 
 export async function load(filename: string, validate: boolean = true): Promise<Template> {
