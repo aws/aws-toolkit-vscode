@@ -64,6 +64,7 @@ type StepCache = { picked?: any; stepOffset?: [number, number] } & { [key: strin
 export type StateWithCache<TState, TProp> = TState & { stepCache: StepCache; estimator: StepEstimator<TProp> }
 
 export interface WizardOptions<TState> {
+    /** Optional {@link WizardForm} provided by the caller instead of the default. */
     readonly initForm?: WizardForm<TState>
     readonly initState?: Partial<TState>
     /** Provides a way to apply inputs to Prompters as if the user has already responded */
@@ -75,13 +76,26 @@ export interface WizardOptions<TState> {
  * A generic wizard that consumes data from a series of {@link Prompter prompters}. The 'form' public property
  * exposes functionality to add prompters to the wizard with optional context, utilizing the {@link WizardForm}
  * class. Wizards will modify a single property of their internal state with each prompt.
+ *
+ * Subclasses can override {@link init} if an "async constructor" is needed.
  */
 export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
-    protected readonly _form: WizardForm<TState>
+    protected readonly __form: WizardForm<TState>
     protected readonly boundSteps: Map<string, StepFunction<TState>> = new Map()
     protected stateController: StateMachineController<TState>
     private _stepOffset: [number, number] = [0, 0]
     private _exitStep?: StepFunction<TState>
+    /** Guards against accidental use of the Wizard before `init()`. */
+    private _ready: boolean
+
+    /** Checks that `init()` was performed (if it was defined). */
+    private assertReady() {
+        // Check for `false` explicity so that the base-class constructor can access `this._form`.
+        // We want to guard against confusion when implementing a subclass, not this base-class.
+        if (this._ready === false && this.init) {
+            throw Error('run() (or init()) must be called immediately after creating the Wizard')
+        }
+    }
 
     /**
      * The offset is applied to both the current step and total number of steps. Useful if the wizard is
@@ -95,6 +109,11 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     }
     public get totalSteps(): number {
         return this._stepOffset[1] + this.stateController.totalSteps
+    }
+
+    public get _form() {
+        this.assertReady()
+        return this.__form
     }
 
     public get form() {
@@ -117,10 +136,20 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
     public constructor(private readonly options: WizardOptions<TState> = {}) {
         this.stateController = new StateMachineController(options.initState as TState)
-        this._form = options.initForm ?? new WizardForm()
+        this.__form = options.initForm ?? new WizardForm()
         this._exitStep =
             options.exitPrompterProvider !== undefined ? this.createExitStep(options.exitPrompterProvider) : undefined
+
+        // Subclass constructor logic should live in `init()`, if it exists.
+        this._ready = !this.init
     }
+
+    /**
+     * Optional, one-time, asynchronous setup for subclasses that need an "async constructor". The
+     * subclass must put all of its constructor logic here, instead of its normal constructor.
+     * Called by `run()` exactly once.
+     */
+    public async init?(): Promise<this>
 
     private assignSteps(): void {
         this._form.properties.forEach(prop => {
@@ -132,6 +161,12 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     }
 
     public async run(): Promise<TState | undefined> {
+        if (!this._ready && this.init) {
+            this._ready = true // Let init() use `this._form`.
+            await this.init()
+            delete this.init
+        }
+
         this.assignSteps()
         this.resolveNextSteps((this.options.initState ?? {}) as TState).forEach(step =>
             this.stateController.addStep(step)

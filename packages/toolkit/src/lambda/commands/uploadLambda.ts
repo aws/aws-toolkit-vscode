@@ -9,15 +9,10 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import AdmZip from 'adm-zip'
-import * as fs from 'fs-extra'
 import * as path from 'path'
+import { fsCommon } from '../../srcShared/fs'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-import {
-    fileExists,
-    cloud9Findfile,
-    makeTemporaryToolkitFolder,
-    tryRemoveFolder,
-} from '../../shared/filesystemUtilities'
+import { cloud9Findfile, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
@@ -209,16 +204,15 @@ export interface UploadLambdaWizardState {
 }
 
 export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
-    constructor(lambda?: LambdaFunction, invokePath?: vscode.Uri) {
-        super({ initState: { lambda } })
+    public override async init(): Promise<this> {
         this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
 
-        if (invokePath) {
+        if (this.invokePath) {
             this.form.uploadType.setDefault('directory')
-            if (fs.statSync(invokePath.fsPath).isFile()) {
-                this.form.targetUri.setDefault(vscode.Uri.file(path.dirname(invokePath.fsPath)))
+            if (await fsCommon.existsFile(this.invokePath.fsPath)) {
+                this.form.targetUri.setDefault(vscode.Uri.file(path.dirname(this.invokePath.fsPath)))
             } else {
-                this.form.targetUri.setDefault(invokePath)
+                this.form.targetUri.setDefault(this.invokePath)
             }
         } else {
             this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
@@ -242,7 +236,7 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
 
         this.form.lambda.name.bindPrompter(state => {
             // invoking from the command palette passes no arguments
-            if (!invokePath) {
+            if (!this.invokePath) {
                 if (state.uploadType === 'directory') {
                     return createFunctionNamePrompter(state.lambda!.region!, state.targetUri)
                 } else {
@@ -253,10 +247,10 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
                     )
                 }
             } else {
-                return createFunctionNamePrompter(state.lambda!.region!, invokePath)
+                return createFunctionNamePrompter(state.lambda!.region!, this.invokePath)
             }
         })
-        if (lambda) {
+        if (this.lambda) {
             this.form.directoryBuildType.bindPrompter(() => createBuildPrompter(), {
                 showWhen: ({ uploadType }) => uploadType === 'directory',
             })
@@ -265,6 +259,12 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
         }
 
         this.form.confirmedDeploy.bindPrompter(state => createConfirmDeploymentPrompter(state.lambda!))
+
+        return this
+    }
+
+    constructor(readonly lambda?: LambdaFunction, readonly invokePath?: vscode.Uri) {
+        super({ initState: { lambda } })
     }
 }
 
@@ -304,7 +304,7 @@ async function runUploadLambdaWithSamBuild(lambda: Required<LambdaFunction>, par
     // Detect if handler is present and provide strong guidance against proceeding if not.
     try {
         const handlerFile = path.join(parentDir.fsPath, getLambdaDetails(lambda.configuration).fileName)
-        if (!(await fileExists(handlerFile))) {
+        if (!(await fsCommon.exists(handlerFile))) {
             const isConfirmed = await showConfirmationMessage({
                 prompt: localize(
                     'AWS.lambda.upload.handlerNotFound',
@@ -416,7 +416,7 @@ async function runUploadLambdaZipFile(lambda: LambdaFunction, zipFileUri: vscode
             cancellable: false,
         },
         async progress => {
-            const zipFile = await fs.readFile(zipFileUri.fsPath).catch(err => {
+            const zipFile = await fsCommon.readFile(zipFileUri.fsPath).catch(err => {
                 throw new ToolkitError('Failed to read zip', { cause: err })
             })
             return await uploadZipBuffer(lambda, zipFile, progress)
@@ -459,7 +459,7 @@ async function zipAndUploadDirectory(
  */
 async function uploadZipBuffer(
     lambda: LambdaFunction,
-    zip: Buffer,
+    zip: Uint8Array,
     progress: vscode.Progress<{
         message?: string | undefined
         increment?: number | undefined
@@ -482,14 +482,14 @@ export async function findApplicationJsonFile(
     startPath: vscode.Uri,
     cloud9 = isCloud9()
 ): Promise<vscode.Uri | undefined> {
-    if (!(await fileExists(startPath.fsPath))) {
+    if (!(await fsCommon.exists(startPath.fsPath))) {
         getLogger().error(
             'findApplicationJsonFile() invalid path (not accessible or does not exist): "%s"',
             startPath.fsPath
         )
         return undefined
     }
-    const isdir = fs.statSync(startPath.fsPath).isDirectory()
+    const isdir = await fsCommon.existsDir(startPath.fsPath)
     const parentDir = isdir ? startPath.fsPath : path.dirname(startPath.fsPath)
     const found = cloud9
         ? await cloud9Findfile(parentDir, '.application.json')
@@ -508,10 +508,10 @@ export async function findApplicationJsonFile(
     return found[0]
 }
 
-export function getFunctionNames(file: vscode.Uri, region: string): string[] | undefined {
+export async function getFunctionNames(file: vscode.Uri, region: string): Promise<string[] | undefined> {
     try {
         const names: string[] = []
-        const appData = JSON.parse(fs.readFileSync(file.fsPath, { encoding: 'utf-8' }).toString())
+        const appData = JSON.parse(await fsCommon.readFileAsString(file.fsPath))
         if (appData['Functions']) {
             const functions = Object.keys(appData['Functions'])
             if (functions) {
@@ -536,7 +536,7 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
     // Get Lambda functions from .application.json #2588
     if (path) {
         const appFile = await findApplicationJsonFile(path)
-        const namesFromAppFile = appFile ? getFunctionNames(appFile, region) : undefined
+        const namesFromAppFile = appFile ? await getFunctionNames(appFile, region) : undefined
         if (!appFile) {
             getLogger().debug('lambda: .application.json not found')
         } else if (!namesFromAppFile) {
