@@ -1,3 +1,9 @@
+## 2.11.0 2024-02-22
+
+- **Feature** Amazon Q: /dev command now supports the InvalidState event during the GenerateApproach step. The reason for the Approach to reach an Invalid State is printed in /dev's chat response.
+- **Feature** CloudFormation and SAM templates now have a CodeLens link to Application Composer
+- **Feature** Amazon Q CodeTransformation: show user build logs for Maven install and copy-deps commands
+
 ## 2.10.0 2024-02-16
 
 - **Bug Fix** CDK Explorer: Refresh button is now visible.
