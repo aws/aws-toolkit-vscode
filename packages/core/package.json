@@ -4,8 +4,8 @@
     "version": "1.0.0",
     "license": "Apache-2.0",
     "exports": {
-        ".": "./dist/src/extension",
-        "./web": "./dist/src/extensionWeb"
+        ".": "./dist/src/index.js",
+        "./web": "./dist/src/indexWeb.js"
     },
     "scripts": {
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
@@ -13,7 +13,7 @@
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles",
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* README* CHANGELOG.md",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "buildScripts": "npm run generateClients && npm run generateNonCodeFiles && npm run copyFiles",
+        "buildScripts": "npm run generateClients && npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
         "browserWatch": "npm run clean && npm run buildScripts && webpack --config-name web --watch",
         "browserCompile": "npm run clean && npm run buildScripts && webpack --config-name web",
         "browserRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
@@ -27,14 +27,12 @@
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "ts-node ./scripts/lint/testLint.ts && npm run format",
-        "package": "ts-node ../../scripts/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "generateClients": "npm run build -w @amzn/codewhisperer-streaming && ts-node ./scripts/build/generateServiceClient.ts ",
         "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
         "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "generateNonCodeFiles": "ts-node ./scripts/build/generateNonCodeFiles.ts",
-        "createRelease": "ts-node ./scripts/build/createRelease.ts",
-        "serve": "webpack serve --config-name vue-hmr --mode development"
+        "createRelease": "ts-node ./scripts/build/createRelease.ts"
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",

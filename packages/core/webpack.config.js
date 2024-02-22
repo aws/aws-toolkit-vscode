@@ -17,7 +17,7 @@ const config = {
     },
 }
 
-const vueConfigs = baseVueConfig.configs.map(c => {
+const vueConfigs = [baseVueConfig.configs.vue, baseVueConfig.configs.vueHotReload].map(c => {
     // Inject entry point into all configs.
     return {
         ...c,

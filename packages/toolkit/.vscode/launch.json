@@ -21,7 +21,7 @@
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
             },
             "envFile": "${workspaceFolder}/.local.env",
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
             "preLaunchTask": "watch"
         },
         {
@@ -41,7 +41,13 @@
             a file in `Developer Tools` > `Sources`.
             I was inspired by this: https://github.com/microsoft/vscode-test-web/blob/897bca4907a87a6bc564efc242ce6794e5da3232/.vscode/launch.json#L28
             **/
-            "resolveSourceMapLocations": ["!**/node_modules/**", "!**/vs/**", "!**/extensions/**"],
+            "resolveSourceMapLocations": [
+                "!**/node_modules/**",
+                "!**/vs/**",
+                "!**/extensions/**",
+                "${workspaceFolder}/dist",
+                "${workspaceFolder}/../core/dist"
+            ],
             "preLaunchTask": "browserRun",
             "postDebugTask": "browserRunTerminate"
         },
@@ -51,7 +57,7 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
             "preLaunchTask": "npm: compile"
         },
         {

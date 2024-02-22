@@ -175,7 +175,7 @@ export abstract class VueWebview {
 
         // Will be sent to the dist/vue folder by webpack
         // TODO!!! do not remove src or approve this PR if you are reading this
-        this.source = vscode.Uri.joinPath(vscode.Uri.parse('./vue'), source.replace('src/', '')).fsPath
+        this.source = source.replace('src/', 'src/vue/')
     }
 
     public get isDisposed() {

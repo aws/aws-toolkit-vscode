@@ -4,7 +4,8 @@
         "outDir": "dist",
         "baseUrl": ".",
         "rootDir": ".",
-        "declaration": true
+        "declaration": true,
+        "declarationMap": true
     },
     "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist"]
 }

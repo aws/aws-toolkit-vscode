@@ -6,55 +6,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Extension",
-            "type": "extensionHost",
-            "request": "launch",
-            "debugWebviews": true,
-            "rendererDebugOptions": {
-                "urlFilter": "*amazonwebservices.aws-toolkit-vscode*",
-                "webRoot": "${workspaceFolder}"
-            },
-            "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-            "env": {
-                "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
-                "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
-            },
-            "envFile": "${workspaceFolder}/.local.env",
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "watch"
-        },
-        {
-            /** Handles the entire process of building and running the toolkit extension in the browser. **/
-            "name": "Extension (Chrome)",
-            "type": "chrome",
-            "request": "attach",
-            "port": 9222,
-            /**
-            To get an understanding why we need the following:
-              - comment out the following
-              - set a breakpoint in VS Code that gets triggerd on extension startup
-            Now in the Chrome Developer Tools menu, the extension will load slower and open up random files.
-            I think this is due to source maps for irrelevant code being attempted to be resolved and slowing execution.
-
-            What this is doing is ignoring certain modules that match the following paths, it matches the path of
-            a file in `Developer Tools` > `Sources`.
-            I was inspired by this: https://github.com/microsoft/vscode-test-web/blob/897bca4907a87a6bc564efc242ce6794e5da3232/.vscode/launch.json#L28
-            **/
-            "resolveSourceMapLocations": ["!**/node_modules/**", "!**/vs/**", "!**/extensions/**"],
-            "preLaunchTask": "browserRun",
-            "postDebugTask": "browserRunTerminate"
-        },
-        {
-            "name": "Extension (webpack)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "npm: compile"
-        },
-        {
             "name": "Extension Tests",
             "type": "extensionHost",
             "request": "launch",

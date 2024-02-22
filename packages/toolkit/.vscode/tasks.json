@@ -32,7 +32,7 @@
                 "background": {
                     "activeOnStart": true,
                     "beginsPattern": "Project is running at",
-                    "endsPattern": "compiled successfully"
+                    "endsPattern": "compiled"
                 }
             }
         },

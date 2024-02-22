@@ -11,6 +11,7 @@ import * as path from 'path'
 
 const projectRoot = process.cwd()
 const outRoot = path.join(projectRoot, 'dist')
+let vueHr = false
 
 // The target file or directory must exist, otherwise we should fail the whole build.
 interface CopyTask {
@@ -83,8 +84,8 @@ const tasks: CopyTask[] = [
         destination: path.join('libs', 'vue.min.js'),
     },
     {
-        target: path.join('../../node_modules', 'aws-core-vscode', 'dist', 'vue'),
-        destination: 'vue',
+        target: path.join('../../node_modules', 'aws-core-vscode', 'dist', vueHr ? 'vuehr' : 'vue'),
+        destination: 'src/vue/',
     },
 
     // Mynah
@@ -137,6 +138,11 @@ void (async () => {
     // To use this something like: "npm run copyFiles -- --webpacked"
     if (args.includes('--webpacked')) {
         tasks.push(...webpackedTasks)
+    }
+
+    if (args.includes('--vueHr')) {
+        vueHr = true
+        console.log('Using Vue Hot Reload webpacks from core/')
     }
 
     try {
