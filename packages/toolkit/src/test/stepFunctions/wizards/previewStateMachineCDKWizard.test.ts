@@ -84,8 +84,8 @@ describe('getStateMachines', function () {
 describe('PreviewStateMachineCDKWizard', async function () {
     let tester: WizardTester<PreviewStateMachineCDKWizard>
 
-    beforeEach(function () {
-        tester = createWizardTester(new PreviewStateMachineCDKWizard())
+    beforeEach(async function () {
+        tester = await createWizardTester(new PreviewStateMachineCDKWizard())
     })
 
     it('prompts for location then a state machine', function () {

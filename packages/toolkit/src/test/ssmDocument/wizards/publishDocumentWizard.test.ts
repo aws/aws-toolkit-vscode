@@ -12,9 +12,9 @@ import {
 describe('AppRunnerCodeRepositoryWizard', function () {
     let tester: WizardTester<PublishSSMDocumentWizardResponse>
 
-    beforeEach(function () {
+    beforeEach(async function () {
         const wizard = new PublishSSMDocumentWizard()
-        tester = createWizardTester(wizard)
+        tester = await createWizardTester(wizard)
     })
 
     it('has 3 steps by default', function () {
@@ -32,9 +32,9 @@ describe('AppRunnerCodeRepositoryWizard', function () {
         tester.name.assertShowThird()
     })
 
-    it('skips the region prompt if provided a region', function () {
+    it('skips the region prompt if provided a region', async function () {
         const wizard = new PublishSSMDocumentWizard('us-west-2')
-        tester = createWizardTester(wizard)
+        tester = await createWizardTester(wizard)
         tester.region.assertDoesNotShow()
         tester.assertShowCount(2)
     })

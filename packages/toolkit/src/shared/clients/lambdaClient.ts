@@ -98,7 +98,7 @@ export class DefaultLambdaClient {
         }
     }
 
-    public async updateFunctionCode(name: string, zipFile: Buffer): Promise<Lambda.FunctionConfiguration> {
+    public async updateFunctionCode(name: string, zipFile: Uint8Array): Promise<Lambda.FunctionConfiguration> {
         getLogger().debug(`updateFunctionCode called for function: ${name}`)
         const client = await this.createSdkClient()
 

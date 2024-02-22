@@ -22,10 +22,10 @@ describe('AppRunnerCodeRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
     let repoTester: WizardTester<AppRunner.CodeRepository>
 
-    beforeEach(function () {
+    beforeEach(async function () {
         // apprunner client and git api will never be called
         const wizard = new AppRunnerCodeRepositoryWizard({} as any, {} as any)
-        tester = createWizardTester(wizard)
+        tester = await createWizardTester(wizard)
         repoTester = tester.CodeRepository
     })
 
