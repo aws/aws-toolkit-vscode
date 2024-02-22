@@ -13,6 +13,7 @@ import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerCon
 import software.aws.toolkits.jetbrains.core.gettingstarted.reauthenticateWithQ
 import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsForQ
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.TelemetryHelper
+import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CwsprChatCommandType
 import software.aws.toolkits.telemetry.UiTelemetry
@@ -70,7 +71,7 @@ class AuthController {
                 reauthenticateWithQ(project)
             }
         }
-        TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Auth, type.name)
+        TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Auth, type.name, getStartUrl(project))
     }
 
     companion object {

@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWh
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.InsertedCodeModificationEntry
+import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
@@ -197,7 +198,8 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
         AmazonqTelemetry.modifyCode(
             cwsprChatConversationId = insertedCode.conversationId,
             cwsprChatMessageId = insertedCode.messageId,
-            cwsprChatModificationPercentage = percentage
+            cwsprChatModificationPercentage = percentage,
+            credentialStartUrl = getStartUrl(project)
         )
         CodeWhispererClientAdaptor.getInstance(project).sendChatUserModificationTelemetry(insertedCode.conversationId, insertedCode.messageId, null, percentage)
     }

@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add startUrl in Amazon Q telemetry events"
+}

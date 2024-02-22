@@ -317,6 +317,10 @@
                 },
                 {
                     "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },
@@ -390,6 +394,10 @@
                 },
                 {
                     "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },
@@ -432,6 +440,10 @@
                 },
                 {
                     "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },
@@ -459,6 +471,10 @@
                 {
                     "type": "cwsprChatHasReference",
                     "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },
@@ -474,6 +490,10 @@
                 },
                 {
                     "type": "cwsprChatModificationPercentage"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },
@@ -504,6 +524,10 @@
                 },
                 {
                     "type": "cwsprChatCommandName",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
                     "required": false
                 }
             ]

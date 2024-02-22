@@ -56,6 +56,7 @@ import software.aws.toolkits.jetbrains.services.cwc.controller.chat.StaticTextRe
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.messenger.ChatPromptHandler
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.InsertedCodeModificationEntry
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.TelemetryHelper
+import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.userIntent.UserIntentRecognizer
 import software.aws.toolkits.jetbrains.services.cwc.editor.context.ActiveFileContext
 import software.aws.toolkits.jetbrains.services.cwc.editor.context.ActiveFileContextExtractor
@@ -100,7 +101,7 @@ class ChatController private constructor(
 
     override suspend fun processClearQuickAction(message: IncomingCwcMessage.ClearChat) {
         chatSessionStorage.deleteSession(message.tabId)
-        TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Clear)
+        TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Clear, startUrl = getStartUrl(context.project))
     }
 
     override suspend fun processHelpQuickAction(message: IncomingCwcMessage.Help) {
@@ -115,7 +116,7 @@ class ChatController private constructor(
             triggerId = triggerId,
             response = StaticTextResponse.Help,
         )
-        TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Help)
+        TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Help, startUrl = getStartUrl(context.project))
     }
 
     override suspend fun processTransformQuickAction(message: IncomingCwcMessage.Transform) {
@@ -148,7 +149,7 @@ class ChatController private constructor(
                 )
             }
         }
-        TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Transform)
+        TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Transform, startUrl = getStartUrl(context.project))
     }
 
     override suspend fun processPromptChatMessage(message: IncomingCwcMessage.ChatPrompt) {
