@@ -91,8 +91,8 @@ describe('securityIssueHoverProvider', () => {
                 )} 'Open "CodeWhisperer Security Issue"')\n`
         )
         assertTelemetry('codewhisperer_codeScanIssueHover', [
-            { findingId: 'finding-1', detectorId: 'language/detector-1', ruleId: 'Rule-123' },
-            { findingId: 'finding-2', detectorId: 'language/detector-2', ruleId: 'Rule-456' },
+            { findingId: 'finding-1', detectorId: 'language/detector-1', ruleId: 'Rule-123', includesFix: false },
+            { findingId: 'finding-2', detectorId: 'language/detector-2', ruleId: 'Rule-456', includesFix: false },
         ])
     })
 
