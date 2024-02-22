@@ -441,7 +441,7 @@ export async function tryLoad(
     // https://github.com/aws-cloudformation/aws-cfn-lint-visual-studio-code/blob/629de0bac4f36cfc6534e409a6f6766a2240992f/client/src/yaml-support/yaml-schema.ts#L39-L51
     if (rv.template?.AWSTemplateFormatVersion || rv.template?.Resources) {
         rv.kind =
-            rv.template?.Transform && rv.template.Transform.toString().startsWith('AWS::Serverless') ? 'sam' : 'cfn'
+            rv.template.Transform && rv.template.Transform.toString().startsWith('AWS::Serverless') ? 'sam' : 'cfn'
 
         return rv
     }
