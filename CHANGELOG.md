@@ -1,3 +1,7 @@
+# _2.8_ (2024-02-15)
+- **(Feature)** CodeTransform: smart select Java version of project
+- **(Bug Fix)** Fix for AmazonQ on Linux input focus problem ([#4100](https://github.com/aws/aws-toolkit-jetbrains/issues/4100))
+
 # _2.7_ (2024-02-07)
 - **(Bug Fix)** CodeWhisperer: Improve CodePercentage telemetry reporting
 
