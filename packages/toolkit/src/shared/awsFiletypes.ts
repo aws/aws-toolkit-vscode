@@ -67,10 +67,9 @@ export function activate(): void {
         vscode.workspace.onDidOpenTextDocument(async (doc: vscode.TextDocument) => {
             const isAwsFileExt = isAwsFiletype(doc)
             const isSchemaHandled = globals.schemaService.isMapped(doc.uri)
-            const cfnTemplate =
-                CloudFormation.isValidFilename(doc.uri) && doc.languageId === 'yaml'
-                    ? await CloudFormation.tryLoad(doc.uri)
-                    : undefined
+            const cfnTemplate = CloudFormation.isValidFilename(doc.uri)
+                ? await CloudFormation.tryLoad(doc.uri)
+                : undefined
             const isCfnTemplate = cfnTemplate?.template !== undefined
 
             if (!isAwsFileExt && !isSchemaHandled && !isCfnTemplate) {

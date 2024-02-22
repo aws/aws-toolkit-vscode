@@ -12,19 +12,14 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { trustedDomainCancellation } from '../../../auth/sso/model'
 import { handleWebviewError } from '../../../webviews/server'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
-import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
-import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { SsoConnection, createSsoProfile } from '../../../auth/connection'
+import { SsoConnection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
-import { tryAddCredentials } from '../../../auth/utils'
-import { getLogger } from '../../../shared/logger'
 
 export type AuthError = { id: string; text: string }
 export const userCancelled = 'userCancelled'
 
-export class CommonAuthWebview extends VueWebview {
+export abstract class CommonAuthWebview extends VueWebview {
     public override id: string = 'aws.AmazonCommonAuth'
     public override source: string = 'src/login/webview/vue/index.js'
 
@@ -39,7 +34,7 @@ export class CommonAuthWebview extends VueWebview {
      * @param setupFunc The function which will be executed in a try/catch so that we can handle common errors.
      * @returns
      */
-    private async ssoSetup(methodName: string, setupFunc: () => Promise<any>): Promise<AuthError | undefined> {
+    async ssoSetup(methodName: string, setupFunc: () => Promise<any>): Promise<AuthError | undefined> {
         try {
             await setupFunc()
             return
@@ -95,72 +90,25 @@ export class CommonAuthWebview extends VueWebview {
         }
     }
 
-    async startBuilderIdSetup(app: string): Promise<AuthError | undefined> {
-        return this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
-            if (app === 'AMAZONQ') {
-                await awsIdSignIn()
-                AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
-                await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
-            } else {
-                // no builder id in toolkit
-            }
-        })
-    }
+    abstract startBuilderIdSetup(app: string): Promise<AuthError | undefined>
 
-    async startEnterpriseSetup(startUrl: string, region: string, app: string): Promise<AuthError | undefined> {
-        if (app === 'AMAZONQ') {
-            return this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
-                await connectToEnterpriseSso(startUrl, region)
-                AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
-                void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
-            })
-        } else {
-            return this.ssoSetup('createIdentityCenterConnection', async () => {
-                const ssoProfile = createSsoProfile(startUrl, region)
-                const conn = await Auth.instance.createConnection(ssoProfile)
-                await Auth.instance.useConnection(conn)
-                void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
-                void this.showResourceExplorer()
-            })
-        }
-    }
+    abstract startEnterpriseSetup(startUrl: string, region: string, app: string): Promise<AuthError | undefined>
+
     async getAuthenticatedCredentialsError(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
         return Auth.instance.authenticateData(data)
     }
 
-    async startIamCredentialSetup(
+    abstract startIamCredentialSetup(
         profileName: string,
         accessKey: string,
         secretKey: string
-    ): Promise<AuthError | undefined> {
-        // See submitData() in manageCredentials.vue
-        const data = { aws_access_key_id: accessKey, aws_secret_access_key: secretKey }
-        const error = await this.getAuthenticatedCredentialsError(data)
-        if (error) {
-            return { id: this.id, text: error.error }
-        }
-        try {
-            await tryAddCredentials(profileName, data, true)
-            await this.showResourceExplorer()
-            return
-        } catch (e) {
-            getLogger().error('Failed submitting credentials', e)
-            return { id: this.id, text: e as string }
-        }
-    }
+    ): Promise<AuthError | undefined>
 
     async showResourceExplorer(): Promise<void> {
         await vscode.commands.executeCommand('aws.explorer.focus')
     }
 
-    fetchConnection(): SsoConnection | undefined {
-        if (AuthUtil.instance.isConnected() && AuthUtil.instance.conn?.type === 'sso') {
-            return AuthUtil.instance.conn
-        }
-        return undefined
-    }
+    abstract fetchConnection(): SsoConnection | undefined
 
-    async errorNotification(e: AuthError) {
-        await vscode.window.showInformationMessage(`${e.text}`)
-    }
+    abstract errorNotification(e: AuthError): void
 }

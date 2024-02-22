@@ -625,6 +625,10 @@
                     "type": "cwsprChatConversationId"
                 },
                 {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
                     "type": "cwsprChatTriggerInteraction"
                 },
                 {
@@ -650,6 +654,10 @@
             "metadata": [
                 {
                     "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 },
                 {
                     "type": "cwsprChatMessageId"
@@ -726,6 +734,10 @@
                     "required": false
                 },
                 {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
                     "type": "cwsprChatTriggerInteraction"
                 },
                 {
@@ -771,6 +783,10 @@
                     "type": "cwsprChatConversationId"
                 },
                 {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
                     "type": "cwsprChatMessageId"
                 },
                 {
@@ -798,6 +814,10 @@
                     "type": "cwsprChatConversationId"
                 },
                 {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
                     "type": "cwsprChatMessageId"
                 },
                 {
@@ -811,6 +831,10 @@
             "metadata": [
                 {
                     "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },
@@ -820,6 +844,10 @@
             "metadata": [
                 {
                     "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },
@@ -832,6 +860,132 @@
                 },
                 {
                     "type": "cwsprChatCommandName",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_codeGenerationThumbsUp",
+            "description": "User clicked on the thumbs up button to say that they are unsatisfied",
+            "unit": "Count",
+            "metadata": [
+                { "type": "amazonqConversationId" },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_codeGenerationThumbsDown",
+            "description": "User clicked on the thumbs down button to say that they are unsatisfied",
+            "unit": "Count",
+            "metadata": [
+                { "type": "amazonqConversationId" },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_approachThumbsUp",
+            "description": "User clicked on the thumbs up button, to mention that they are satisfied",
+            "unit": "Count",
+            "metadata": [
+                { "type": "amazonqConversationId" },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_approachThumbsDown",
+            "description": "User clicked on the thumbs down button to say that they are unsatisfied",
+            "unit": "Count",
+            "metadata": [
+                { "type": "amazonqConversationId" },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_isReviewedChanges",
+            "description": "User reviewed changes",
+            "passive": true,
+            "metadata": [
+                { "type": "enabled" },
+                { "type": "amazonqConversationId" },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+
+        {
+            "name": "amazonq_startChat",
+            "description": "Number of times the user have triggered /dev and started the chat",
+            "unit": "Count",
+            "metadata": [
+                { "type": "amazonqConversationId" },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_endChat",
+            "description": "Captures end of the conversation with amazonq /dev",
+            "metadata": [
+                { "type": "amazonqConversationId" },
+                { "type": "amazonqEndOfTheConversationLatency", "required": false },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_approachInvoke",
+            "description": "Captures Approach generation process",
+            "metadata": [
+                { "type": "amazonqConversationId" },
+                { "type": "amazonqGenerateApproachIteration" },
+                { "type": "amazonqGenerateApproachLatency" },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_startConversationInvoke",
+            "description": "Captures startConversation invocation process",
+            "metadata": [
+                { "type": "amazonqConversationId", "required": false },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_createUpload",
+            "description": "Captures createUploadUrl invocation process",
+            "metadata": [
+                { "type": "amazonqConversationId" },
+                { "type": "amazonqRepositorySize", "required": false },
+                {
+                    "type": "credentialStartUrl",
                     "required": false
                 }
             ]

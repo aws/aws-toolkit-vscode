@@ -88,9 +88,7 @@ async function collectInput(validProjects: Map<vscode.QuickPickItem, JDKVersion 
     } else if (state.sourceJavaVersion.label === 'Other') {
         telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
-                transformByQState.getSourceJDKVersion()!
-            ) as CodeTransformJavaSourceVersionsAllowed, // will be 'undefined'
+            codeTransformJavaSourceVersionsAllowed: 'Other',
             codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
                 transformByQState.getTargetJDKVersion()
             ) as CodeTransformJavaTargetVersionsAllowed,
@@ -169,11 +167,14 @@ async function setMaven() {
     if (fs.existsSync(mavenWrapperExecutablePath)) {
         if (mavenWrapperExecutableName === 'mvnw') {
             mavenWrapperExecutableName = './mvnw' // add the './' for non-Windows
+        } else if (mavenWrapperExecutableName === 'mvnw.cmd') {
+            mavenWrapperExecutableName = '.\\mvnw.cmd' // add the '.\' for Windows
         }
         transformByQState.setMavenName(mavenWrapperExecutableName)
     } else {
         transformByQState.setMavenName('mvn')
     }
+    getLogger().info(`CodeTransform: using Maven ${transformByQState.getMavenName()}`)
 }
 
 async function validateJavaHome() {
@@ -188,16 +189,41 @@ async function validateJavaHome() {
         }
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
+        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformPreValidationError: 'ProjectJDKDiffersFromMavenJDK',
+            result: MetadataResult.Fail,
+            reason: `${transformByQState.getSourceJDKVersion()} (project) - ${javaVersionUsedByMaven} (maven)`,
+        })
+        let javaHomePrompt = `${
+            CodeWhispererConstants.enterJavaHomeMessage
+        } ${transformByQState.getSourceJDKVersion()}. `
+        if (os.platform() === 'win32') {
+            javaHomePrompt += CodeWhispererConstants.windowsJavaHomeHelpMessage.replace(
+                'JAVA_VERSION_HERE',
+                transformByQState.getSourceJDKVersion()!
+            )
+        } else {
+            const jdkVersion = transformByQState.getSourceJDKVersion()
+            if (jdkVersion === JDKVersion.JDK8) {
+                javaHomePrompt += CodeWhispererConstants.nonWindowsJava8HomeHelpMessage
+            } else if (jdkVersion === JDKVersion.JDK11) {
+                javaHomePrompt += CodeWhispererConstants.nonWindowsJava11HomeHelpMessage
+            }
+        }
         // means either javaVersionUsedByMaven is undefined or it does not match the project JDK
-        // TO-DO: give user help on how to find JAVA_HOME for corresponding project JDK
         const javaHome = await vscode.window.showInputBox({
             title: CodeWhispererConstants.transformByQWindowTitle,
-            prompt: `${CodeWhispererConstants.enterJavaHomeMessage} ${transformByQState.getSourceJDKVersion()}`,
+            prompt: javaHomePrompt,
+            ignoreFocusOut: true,
         })
         if (!javaHome || !javaHome.trim()) {
             throw new ToolkitError('No JAVA_HOME provided', { code: 'NoJavaHomePath' })
         }
         transformByQState.setJavaHome(javaHome.trim())
+        getLogger().info(
+            `CodeTransform: using JAVA_HOME = ${transformByQState.getJavaHome()} since source JDK does not match Maven JDK`
+        )
     }
 }
 

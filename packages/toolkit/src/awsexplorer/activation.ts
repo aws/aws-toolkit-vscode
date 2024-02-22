@@ -21,24 +21,21 @@ import { AwsExplorer } from './awsExplorer'
 import { copyTextCommand } from './commands/copyText'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
-import { createToolView, ToolView } from './toolView'
+import { ToolView } from './toolView'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { cdkNode, CdkRootNode, refreshCdkExplorer } from '../cdk/explorer/rootNode'
-import {
-    CodeWhispererNode,
-    getCodewhispererNode,
-    refreshCodeWhisperer,
-    refreshCodeWhispererRootNode,
-} from '../codewhisperer/explorer/codewhispererNode'
-import { once } from '../shared/utilities/functionUtils'
+import { cdkNode, refreshCdkExplorer } from '../cdk/explorer/rootNode'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { amazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQNode'
 import { GlobalState } from '../shared/globalState'
+import { activateViewsShared, registerToolView } from './activationShared'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
+ *
+ * IMPORTANT: Views that should work in all vscode environments (node or browser)
+ * should be setup in {@link activateViewsShared}.
  */
 export async function activate(args: {
     context: ExtContext
@@ -119,30 +116,9 @@ export async function activate(args: {
         ...amazonQViewNode,
         ...codecatalystViewNode,
         { nodes: [cdkNode], view: 'aws.cdk', refreshCommands: [refreshCdkExplorer] },
-        {
-            nodes: [getCodewhispererNode()],
-            view: 'aws.codewhisperer',
-            refreshCommands: [refreshCodeWhisperer, refreshCodeWhispererRootNode],
-        },
     ]
     for (const viewNode of viewNodes) {
-        const toolView = createToolView(viewNode)
-        args.context.extensionContext.subscriptions.push(toolView)
-        if (viewNode.view === 'aws.cdk') {
-            // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
-            toolView.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
-        }
-
-        toolView.onDidExpandElement(e => {
-            if (e.element.resource instanceof CdkRootNode) {
-                // Legacy CDK metric, remove this when we add something generic
-                const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
-                recordExpandCdkOnce()
-            } else if (e.element.resource instanceof CodeWhispererNode) {
-                const onDidExpandCodeWhisperer = once(() => telemetry.ui_click.emit({ elementId: 'cw_parentNode' }))
-                onDidExpandCodeWhisperer()
-            }
-        })
+        registerToolView(viewNode, args.context.extensionContext)
     }
 }
 

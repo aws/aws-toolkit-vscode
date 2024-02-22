@@ -105,6 +105,7 @@ export class CodeWhispererTracker {
                     cwsprChatConversationId: suggestion.conversationID,
                     cwsprChatMessageId: suggestion.messageID,
                     cwsprChatModificationPercentage: percentage ? percentage : 0,
+                    credentialStartUrl: AuthUtil.instance.startUrl,
                 }
 
                 telemetry.amazonq_modifyCode.emit(event)

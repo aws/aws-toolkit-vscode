@@ -4,15 +4,15 @@
  */
 
 /**
- * This is the webview provider of login ux.
+ * This is the webview provider of login ux. It should be created per webview.
  * Usage:
  * 1. Create a view in package.json
  * {
-                    "type": "webview",
-                    "id": "aws.AmazonCommonAuth",
-                    "name": "%AWS.amazonq.login%",
-                    "when": "!isCloud9 && !aws.isSageMaker && !aws.amazonq.showView"
-                },
+        "type": "webview",
+        "id": "aws.AmazonCommonAuth",
+        "name": "%AWS.amazonq.login%",
+        "when": "!isCloud9 && !aws.isSageMaker && !aws.amazonq.showView"
+    },
 
  * 2. Assign when clause context to this view. Manage the state of when clause context.
  * 3. Init this provider at activation
@@ -39,22 +39,27 @@ import {
 } from 'vscode'
 import { registerAssetsHttpsFileSystem } from '../../amazonq/webview/assets/assetsHandler'
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
-import { CommonAuthWebview } from './vue/backend'
+import { AmazonQLoginWebview } from './vue/backend_amazonq'
+import { ToolkitLoginWebview } from './vue/backend_toolkit'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AmazonCommonAuth'
 
-    webView: VueWebviewPanel<CommonAuthWebview> | undefined
+    webView: VueWebviewPanel<ToolkitLoginWebview | AmazonQLoginWebview> | undefined
+    source: string = ''
 
     constructor(
         private readonly extensionContext: ExtensionContext,
-        private readonly onDidChangeVisibility: EventEmitter<boolean>
+        private readonly onDidChangeVisibility: EventEmitter<boolean>,
+        readonly app: string
     ) {
         registerAssetsHttpsFileSystem(extensionContext)
-
         // Create panel bindings using our class
-        const Panel = VueWebview.compilePanel(CommonAuthWebview)
-
+        const Panel =
+            app === 'TOOLKIT'
+                ? VueWebview.compilePanel(ToolkitLoginWebview)
+                : VueWebview.compilePanel(AmazonQLoginWebview)
+        this.source = path.join('src', 'login', 'webview', 'vue', 'index.js')
         // `context` is `ExtContext` provided on activation
         this.webView = new Panel(extensionContext)
     }
@@ -81,14 +86,13 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
     }
 
     private _getHtmlForWebview(extensionURI: Uri, webview: vscode.Webview) {
-        const source = path.join('src', 'login', 'webview', 'vue', 'index.js')
         const assetsPath = Uri.joinPath(extensionURI)
-        const javascriptUri = Uri.joinPath(assetsPath, 'dist', source)
+        const javascriptUri = Uri.joinPath(assetsPath, 'dist', this.source)
         // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
         const scriptUri = webview.asWebviewUri(javascriptUri)
         const serverHostname = process.env.WEBPACK_DEVELOPER_SERVER
         const entrypoint =
-            serverHostname !== undefined ? Uri.parse(serverHostname).with({ path: `/${source}` }) : scriptUri
+            serverHostname !== undefined ? Uri.parse(serverHostname).with({ path: `/${this.source}` }) : scriptUri
 
         return `
 			<!DOCTYPE html>
