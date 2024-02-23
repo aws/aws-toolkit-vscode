@@ -19,14 +19,6 @@ const webConfig = merge(baseConfig, {
     name: 'web',
     target: 'webworker',
     /**
-     * We currently inherit the value "source-map" for the key 'devtool' from the base config. But during debugging w/ Chromium this
-     * is known to cause breakpoints to be offset. See this thread: https://github.com/webpack/webpack/issues/1487
-     *
-     * TODO: We do not want to use `eval-source-map` for Production since it is recommended for Development builds. Look for a solution to use something
-     * better when in Production. https://webpack.js.org/configuration/devtool/
-     */
-    devtool: 'eval-source-map',
-    /**
      * The keys in the following 'entry' object are the relative paths of the final output files in 'dist'.
      * They are suffixed with '.js' implicitly.
      */
@@ -50,6 +42,15 @@ const webConfig = merge(baseConfig, {
          */
         new webpack.IgnorePlugin({
             resourceRegExp: /httpResourceFetcher/, // matches the path in the require() statement
+        }),
+        /**
+         * The following solves issues w/ breakpoints being offset when debugging in Chrome. IDK WHY!!!!
+         *
+         * To sanity check, comment out the following, set a breakpoint in the toolkit activation function, then see how the breakpoints
+         * are not working as expected.
+         */
+        new webpack.SourceMapDevToolPlugin({
+            exclude: /\*\*\/node_modules\/\*\*/,
         }),
     ],
     resolve: {
@@ -80,6 +81,7 @@ const webConfig = merge(baseConfig, {
     },
     mode: 'production', // lets see if we can change this to 'development' later
     optimization: {
+        // If `true` then we will get confusing variable names in the debugging menu
         minimize: false,
     },
 })
