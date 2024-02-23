@@ -43,7 +43,6 @@ const browserConfig = {
 
 const browserServeConfig = {
     ...browserConfig,
-    name: 'webHr',
     devServer: {
         static: {
             directory: path.resolve(currentDir, 'dist'),
@@ -57,4 +56,4 @@ const browserServeConfig = {
     },
 }
 
-module.exports = [serveConfig, browserConfig]
+module.exports = [serveConfig, browserServeConfig]

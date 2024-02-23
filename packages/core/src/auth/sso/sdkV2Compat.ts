@@ -6,6 +6,7 @@
 import * as AWS from 'aws-sdk'
 import { Token } from 'aws-sdk/lib/token'
 import { Connection } from '../connection'
+import { getLogger } from '../../shared/logger'
 
 /**
  * {@link AWS.Token} is defined when {@link Token} is imported.
@@ -14,8 +15,16 @@ import { Connection } from '../connection'
  * be undefined anymore.
  */
 Token
+AWS.Token
+let _TokenStub: typeof AWS.Token
+if (AWS.Token === undefined) {
+    getLogger().error('Tried importing AWS.Token but it is undefined.')
+    _TokenStub = class X {} as any
+} else {
+    _TokenStub = AWS.Token as any
+}
 
-export class TokenProvider extends AWS.Token {
+export class TokenProvider extends _TokenStub {
     public constructor(private readonly connection: Connection & { type: 'sso' }) {
         super({ token: '', expireTime: new Date(0) })
     }
