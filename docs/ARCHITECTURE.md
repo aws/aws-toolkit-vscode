@@ -6,7 +6,7 @@ An overview of the architecture for various components within the Toolkit.
 
 This project is currently set up as a typescript monorepo with a single subproject.
 We are currently working on splitting the Toolkit into various subprojects to help with
-sharing code between modules, browser extension development, etc. For now, there is just
+sharing code between modules, Web mode development, etc. For now, there is just
 one monolithic subproject with all the extension functionality: [`packages/toolkit/`](./packages/toolkit/).
 
 Unless otherwise stated, the documentation throughout this project is referring to the code and

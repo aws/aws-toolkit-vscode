@@ -73,7 +73,7 @@ export async function activate(context: vscode.ExtensionContext) {
     localize = nls.loadMessageBundle()
 
     try {
-        // IMPORTANT: If you are doing setup that should also work in browser, it should be done in the function below
+        // IMPORTANT: If you are doing setup that should also work in web mode (browser), it should be done in the function below
         const extContext = await activateShared(context, () =>
             RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
         )

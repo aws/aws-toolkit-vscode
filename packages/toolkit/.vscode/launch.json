@@ -42,8 +42,8 @@
             I was inspired by this: https://github.com/microsoft/vscode-test-web/blob/897bca4907a87a6bc564efc242ce6794e5da3232/.vscode/launch.json#L28
             **/
             "resolveSourceMapLocations": ["!**/node_modules/**", "!**/vs/**", "!**/extensions/**"],
-            "preLaunchTask": "browserRun",
-            "postDebugTask": "browserRunTerminate"
+            "preLaunchTask": "webRun",
+            "postDebugTask": "webRunTerminate"
         },
         {
             "name": "Extension (webpack)",
@@ -92,18 +92,18 @@
             "preLaunchTask": "${defaultBuildTask}"
         },
         {
-            "name": "Extension Tests (browser)",
+            "name": "Extension Tests (web)",
             "type": "extensionHost",
             "debugWebWorkerHost": true,
             "request": "launch",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionDevelopmentKind=web",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testBrowser/testRunner",
+                "--extensionTestsPath=${workspaceFolder}/dist/src/testWeb/testRunner",
                 "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
-            "preLaunchTask": "browserWatch"
+            "preLaunchTask": "webWatch"
         },
         {
             "name": "Integration Tests",
