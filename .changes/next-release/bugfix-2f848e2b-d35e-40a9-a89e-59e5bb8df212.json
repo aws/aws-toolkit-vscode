@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q: Service exceptions are not suppressed and displayed to the user."
-}

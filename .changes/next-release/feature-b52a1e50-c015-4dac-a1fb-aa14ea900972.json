@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "CodeTransformation: block upload if project > 1GB"
-}

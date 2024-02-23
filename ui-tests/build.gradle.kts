@@ -18,9 +18,9 @@ plugins {
 
 dependencies {
     testImplementation(gradleApi())
-    testImplementation(project(":core"))
-    testImplementation(project(path = ":core", configuration = "testArtifacts"))
-    testImplementation(project(":resources"))
+    testImplementation(project(":plugin-toolkit:core"))
+    testImplementation(project(path = ":plugin-toolkit:core", configuration = "testArtifacts"))
+    testImplementation(project(":plugin-toolkit:resources"))
     testImplementation(libs.kotlin.coroutines)
     testImplementation(libs.junit5.jupiterApi)
     testImplementation(libs.intellijRemoteFixtures)
@@ -44,8 +44,8 @@ tasks.test {
 }
 
 tasks.register<Test>("uiTestCore") {
-    dependsOn(":jetbrains-core:buildPlugin")
-    inputs.files(":jetbrains-core:buildPlugin")
+    dependsOn(":plugin-toolkit:jetbrains-core:buildPlugin")
+    inputs.files(":plugin-toolkit:jetbrains-core:buildPlugin")
 
     systemProperty("ide.experimental.ui", false)
     systemProperty("org.gradle.project.ideProfileName", ideProfileName)
@@ -55,7 +55,7 @@ tasks.register<Test>("uiTestCore") {
     systemProperty("testDataPath", project.rootDir.resolve("testdata").toString())
     systemProperty("testReportPath", project.buildDir.resolve("reports").resolve("tests").resolve("testRecordings").toString())
 
-    systemProperty("GRADLE_PROJECT", "jetbrains-core")
+    systemProperty("GRADLE_PROJECT", "plugin-toolkit:jetbrains-core")
     useJUnitPlatform {
         includeTags("core")
     }

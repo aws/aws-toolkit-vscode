@@ -28,11 +28,11 @@ jobs:
         run: git config --system core.longpaths true
         if: ${{ matrix.os == 'windows-latest' }}
       - uses: actions/checkout@v2
-      - name: Set up JDK 11
+      - name: Set up JDK 17
         uses: actions/setup-java@v1
         with:
-          java-version: 11
+          java-version: 17
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Build with Gradle
-        run: ./gradlew :jetbrains-core:integrationTest --info --full-stacktrace --console plain --tests "software.aws.toolkits.jetbrains.services.ssm.SsmPluginTest"
+        run: ./gradlew :plugin-toolkit:jetbrains-core:integrationTest --info --full-stacktrace --console plain --tests "software.aws.toolkits.jetbrains.services.ssm.SsmPluginTest"
