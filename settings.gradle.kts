@@ -93,9 +93,9 @@ plugins/
 file("plugins").listFiles()?.forEach root@ {
     if (!it.isDirectory) return@root
 
-    val name = it.name
-    include(":$name")
-    project(":$name").projectDir = it
+    val pluginRoot = "plugin-${it.name}"
+    include(":$pluginRoot")
+    project(":$pluginRoot").projectDir = it
 
     val path = ArrayDeque<String>()
     it.walk().maxDepth(2)
