@@ -28,13 +28,13 @@ val gatewayRunOnly by configurations.creating {
 
 dependencies {
     // link against :j-c: and rely on :intellij:buildPlugin to pull in :j-c:instrumentedJar, but gateway variant when runIde/buildPlugin from :jetbrains-gateway
-    compileOnly(project(":jetbrains-core"))
-    gatewayRunOnly(project(":jetbrains-core", "gatewayArtifacts"))
+    compileOnly(project(":plugin-toolkit:jetbrains-core"))
+    gatewayRunOnly(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
 
-    testImplementation(project(path = ":core", configuration = "testArtifacts"))
-    testCompileOnly(project(":jetbrains-core"))
-    testRuntimeOnly(project(":jetbrains-core", "gatewayArtifacts"))
-    testImplementation(project(path = ":jetbrains-core", configuration = "testArtifacts"))
+    testImplementation(project(path = ":plugin-toolkit:core", configuration = "testArtifacts"))
+    testCompileOnly(project(":plugin-toolkit:jetbrains-core"))
+    testRuntimeOnly(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
+    testImplementation(project(path = ":plugin-toolkit:jetbrains-core", configuration = "testArtifacts"))
     testImplementation(libs.kotlin.coroutinesTest)
     testImplementation(libs.kotlin.coroutinesDebug)
     testImplementation(libs.wiremock)

@@ -40,12 +40,12 @@ phases:
         }
 
          # Rider is very expensive (spikes our CI jobs to 50% CPU, so let it do the prep work in parallel, but run tests later
-        ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" check :jetbrains-rider:compileTestKotlin -x :jetbrains-rider:test --info --console plain --continue
+        ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" check :plugin-toolkit:jetbrains-rider:compileTestKotlin -x :plugin-toolkit:jetbrains-rider:test --info --console plain --continue
         if ($LastExitCode -ne 0) {
           Write-Host "Command failed with exit code $LastExitCode"
           exit -1
         }
-       # ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" :jetbrains-rider:check coverageReport --info --console plain
+       # ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" :plugin-toolkit:jetbrains-rider:check coverageReport --info --console plain
 
   post_build:
     commands:

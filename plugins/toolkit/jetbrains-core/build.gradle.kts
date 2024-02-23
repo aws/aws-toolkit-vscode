@@ -119,7 +119,7 @@ tasks.processTestResources {
 }
 
 dependencies {
-    api(project(":core"))
+    api(project(":plugin-toolkit:core"))
     api(libs.aws.apacheClient)
     api(libs.aws.apprunner)
     api(libs.aws.cloudcontrol)
@@ -141,13 +141,13 @@ dependencies {
     api(libs.aws.sqs)
     api(libs.aws.services)
 
-    implementation(project(":mynah-ui"))
+    implementation(project(":plugin-amazonq:mynah-ui"))
     implementation(libs.aws.crt)
     implementation(libs.bundles.jackson)
     implementation(libs.zjsonpatch)
     implementation(libs.commonmark)
 
-    testImplementation(project(path = ":core", configuration = "testArtifacts"))
+    testImplementation(project(path = ":plugin-toolkit:core", configuration = "testArtifacts"))
     testImplementation(libs.mockk)
     testImplementation(libs.kotlin.coroutinesTest)
     testImplementation(libs.kotlin.coroutinesDebug)

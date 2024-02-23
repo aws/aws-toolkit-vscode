@@ -52,12 +52,12 @@ sourceSets {
 }
 
 dependencies {
-    compileOnly(project(":jetbrains-core"))
-    runtimeOnly(project(":jetbrains-core", "instrumentedJar"))
+    compileOnly(project(":plugin-toolkit:jetbrains-core"))
+    runtimeOnly(project(":plugin-toolkit:jetbrains-core", "instrumentedJar"))
 
-    testCompileOnly(project(":jetbrains-core"))
-    testRuntimeOnly(project(":jetbrains-core", "instrumentedJar"))
-    testImplementation(project(path = ":jetbrains-core", configuration = "testArtifacts"))
+    testCompileOnly(project(":plugin-toolkit:jetbrains-core"))
+    testRuntimeOnly(project(":plugin-toolkit:jetbrains-core", "instrumentedJar"))
+    testImplementation(project(path = ":plugin-toolkit:jetbrains-core", configuration = "testArtifacts"))
 }
 
 /**

@@ -8,8 +8,8 @@ plugins {
 }
 
 dependencies {
-    api(project(":resources"))
-    api(project(":sdk-codegen"))
+    api(project(":plugin-toolkit:resources"))
+    api(project(":plugin-core:sdk-codegen"))
 
     api(libs.aws.cognitoidentity)
     api(libs.aws.ecr)

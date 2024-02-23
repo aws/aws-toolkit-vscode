@@ -1,11 +1,11 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run IDE - Rider [2023.2]" type="GradleRunConfiguration" factoryName="Gradle" folderName="2023.2">
-    <log_file alias="idea.log" path="$PROJECT_DIR$/jetbrains-rider/build/idea-sandbox/system/log/idea.log" />
+  <configuration default="false" name="Run AWS Toolkit - Rider [2023.3]" type="GradleRunConfiguration" factoryName="Gradle" folderName="2023.3">
+    <log_file alias="idea.log" path="$PROJECT_DIR$/plugins/toolkit/jetbrains-rider/build/idea-sandbox/system/log/idea.log" />
     <ExternalSystemSettings>
       <option name="executionName" />
-      <option name="externalProjectPath" value="$PROJECT_DIR$/jetbrains-rider" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$/plugins/toolkit/jetbrains-rider" />
       <option name="externalSystemIdString" value="GRADLE" />
-      <option name="scriptParameters" value="-PideProfileName=2023.2" />
+      <option name="scriptParameters" value="-PideProfileName=2023.3" />
       <option name="taskDescriptions">
         <list />
       </option>

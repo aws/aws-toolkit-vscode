@@ -61,17 +61,17 @@ tasks.test {
 }
 
 dependencies {
-    implementation(project(":jetbrains-core", "instrumentedJar"))
-    implementation(project(":jetbrains-ultimate", "instrumentedJar"))
-    project.findProject(":jetbrains-gateway")?.let {
+    implementation(project(":plugin-toolkit:jetbrains-core", "instrumentedJar"))
+    implementation(project(":plugin-toolkit:jetbrains-ultimate", "instrumentedJar"))
+    project.findProject(":plugin-toolkit:jetbrains-gateway")?.let {
         // does this need to be the instrumented variant?
         implementation(it)
-        gatewayResources(project(":jetbrains-gateway", configuration = "gatewayResources"))
+        gatewayResources(project(":plugin-toolkit:jetbrains-gateway", configuration = "gatewayResources"))
     }
-    project.findProject(":jetbrains-rider")?.let {
+    project.findProject(":plugin-toolkit:jetbrains-rider")?.let {
         // does this need to be the instrumented variant?
         implementation(it)
-        resharperDlls(project(":jetbrains-rider", configuration = "resharperDlls"))
+        resharperDlls(project(":plugin-toolkit:jetbrains-rider", configuration = "resharperDlls"))
     }
 }
 
