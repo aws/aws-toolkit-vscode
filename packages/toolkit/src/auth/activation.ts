@@ -14,7 +14,7 @@ import { ExtensionUse } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../codecatalyst/utils'
 import { showManageConnections } from './ui/vue/show'
-import { isInBrowser } from '../common/browserUtils'
+import { isWeb } from '../common/webUtils'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
@@ -41,7 +41,7 @@ export async function initialize(
 async function showManageConnectionsOnStartup() {
     // Do not show connection management to user in certain scenarios.
     let reason: string = ''
-    if (isInBrowser()) {
+    if (isWeb()) {
         // TODO: Figure out how we want users to connect to auth in browser mode
         reason = 'We are in the browser'
     } else if (!ExtensionUse.instance.isFirstUse()) {

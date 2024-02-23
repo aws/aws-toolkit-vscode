@@ -86,7 +86,7 @@ function getBrowserAlternatives() {
  * So as a solution, any global scoped objects must be stored in `globalThis` so that if defined
  * in Browser-compatible extension code, it shares the same context/scope as the Browser unit test code.
  *
- * See `browser.md` for more info.
+ * See `web.md` for more info.
  */
 function resolveGlobalsObject() {
     if ((globalThis as any).globals === undefined) {
@@ -166,6 +166,6 @@ interface ToolkitGlobals {
         endpoints: string
         lambdaSampleRequests: string
     }
-    /** If this extension is running in the Browser (webworker), compared to running on the desktop (node) */
-    isInBrowser: boolean
+    /** If this extension is running in Web mode (the browser), compared to running on the desktop (node) */
+    isWeb: boolean
 }

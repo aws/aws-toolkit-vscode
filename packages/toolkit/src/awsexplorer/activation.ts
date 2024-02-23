@@ -34,7 +34,7 @@ import { activateViewsShared, registerToolView } from './activationShared'
 /**
  * Activates the AWS Explorer UI and related functionality.
  *
- * IMPORTANT: Views that should work in all vscode environments (node or browser)
+ * IMPORTANT: Views that should work in all vscode environments (node or web)
  * should be setup in {@link activateViewsShared}.
  */
 export async function activate(args: {

@@ -1,7 +1,7 @@
 {
     "name": "root",
     "workspaces": [
-        "packages/toolkit/src/browser",
+        "packages/toolkit/src/web",
         "packages/*",
         "plugins/*",
         "src.gen/@amzn/codewhisperer-streaming"
@@ -40,8 +40,8 @@
         "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules packages/toolkit/node_modules && npm install",
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/",
         "watch": "npm run watch -w packages/toolkit",
-        "browserRun": "npm run browserRun -w packages/toolkit",
-        "browserWatch": "npm run browserWatch -w packages/toolkit"
+        "webRun": "npm run webRun -w packages/toolkit",
+        "webWatch": "npm run webWatch -w packages/toolkit"
     },
     "devDependencies": {
         "@types/vscode": "^1.68.0",
