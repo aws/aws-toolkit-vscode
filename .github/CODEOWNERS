@@ -2,5 +2,5 @@
 codewhisperer/ @aws/codewhisperer-team
 amazonq/ @aws/aws-mynah
 amazonqFeatureDev/ @aws/earlybird
-cwc/ @aws/aws-mynah
+mynah-ui/ @aws/aws-mynah
 codemodernizer/ @aws/elastic-gumby

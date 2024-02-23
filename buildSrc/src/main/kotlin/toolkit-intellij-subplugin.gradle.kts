@@ -147,7 +147,7 @@ val openedPackages = OpenedPackages + listOf(
 tasks.withType<Test>().all {
     systemProperty("log.dir", intellij.sandboxDir.map { "$it-test/logs" }.get())
     systemProperty("testDataPath", project.rootDir.resolve("testdata").absolutePath)
-    val jetbrainsCoreTestResources = project(":jetbrains-core").projectDir.resolve("tst-resources")
+    val jetbrainsCoreTestResources = project(":plugin-toolkit:jetbrains-core").projectDir.resolve("tst-resources")
     // FIX_WHEN_MIN_IS_221: log4j 1.2 removed in 221
     systemProperty("log4j.configuration", jetbrainsCoreTestResources.resolve("log4j.xml"))
     systemProperty("idea.log.config.properties.file", jetbrainsCoreTestResources.resolve("toolkit-test-log.properties"))

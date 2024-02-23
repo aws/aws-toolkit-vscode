@@ -48,13 +48,18 @@ tasks.createRelease.configure {
 }
 
 dependencies {
-    aggregateCoverage(project(":intellij"))
+    aggregateCoverage(project(":plugin-toolkit:intellij"))
+
+    project.findProject(":plugin-toolkit:jetbrains-gateway")?.let {
+        aggregateCoverage(it)
+    }
+
     aggregateCoverage(project(":ui-tests"))
 }
 
 tasks.register("runIde") {
     doFirst {
-        throw GradleException("Use project specific runIde command, i.e. :jetbrains-core:runIde, :intellij:runIde")
+        throw GradleException("Use project specific runIde command, i.e. :plugin-toolkit:jetbrains-core:runIde, :plugin-toolkit:intellij:runIde")
     }
 }
 
@@ -63,8 +68,8 @@ if (idea.project != null) { // may be null during script compilation
         project {
             settings {
                 taskTriggers {
-                    afterSync(":sdk-codegen:generateSdks")
-                    afterSync(":jetbrains-core:generateTelemetry")
+                    afterSync(":plugin-core:sdk-codegen:generateSdks")
+                    afterSync(":plugin-toolkit:jetbrains-core:generateTelemetry")
                 }
             }
         }

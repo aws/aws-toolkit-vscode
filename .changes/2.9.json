@@ -1,0 +1,14 @@
+{
+  "date" : "2024-02-22",
+  "version" : "2.9",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add startUrl in Amazon Q telemetry events"
+  }, {
+    "type" : "feature",
+    "description" : "CodeTransformation: block upload if project > 1GB"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q: Service exceptions are not suppressed and displayed to the user."
+  } ]
+}

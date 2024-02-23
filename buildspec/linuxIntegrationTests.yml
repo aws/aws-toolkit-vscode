@@ -48,7 +48,7 @@ phases:
       - ls -alh $AWS_CONFIG_FILE
       - cat $AWS_CONFIG_FILE
       - chmod +x gradlew
-      - DISPLAY=:22 ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME integrationTest coverageReport -x :jetbrains-rider:integrationTest --info --console plain
+      - DISPLAY=:22 ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME integrationTest coverageReport -x :plugin-toolkit:jetbrains-rider:integrationTest --info --console plain
       - |
         if [ $(docker ps -q | wc -l) -gt 0 ]; then
             echo 'Docker containers were not completely cleaned up!';
