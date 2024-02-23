@@ -51,7 +51,9 @@ fun createUploadUrl(proxyClient: FeatureDevClient, conversationId: String, conte
             contentChecksumSha256,
             contentLength
         )
-        logger.debug { "$FEATURE_NAME: Created upload url:" }
+        logger.debug {
+            "$FEATURE_NAME: Created upload url: {uploadId: ${uploadUrlResponse.uploadId()}, requestId: ${uploadUrlResponse.responseMetadata().requestId()}}"
+        }
         return uploadUrlResponse
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to generate presigned url: ${e.message}" }
@@ -78,10 +80,10 @@ suspend fun generatePlan(proxyClient: FeatureDevClient, conversationId: String, 
 
         )
 
-        logger.debug { "$FEATURE_NAME: Generated plan" }
+        logger.debug { "$FEATURE_NAME: Generated plan: $generatePlanResponse" }
         return generatePlanResponse
     } catch (e: Exception) {
-        logger.error(e) { "$FEATURE_NAME: Failed to execute planning" }
+        logger.error(e) { "$FEATURE_NAME: Failed to execute planning : ${e.message}" }
         apiError(e.message, e.cause)
     }
 }
@@ -99,7 +101,7 @@ fun startTaskAssistCodeGeneration(proxyClient: FeatureDevClient, conversationId:
         logger.debug { "$FEATURE_NAME: Started code generation" }
         return startCodeGenerationResponse
     } catch (e: Exception) {
-        logger.error(e) { "$FEATURE_NAME: Failed to execute startTaskAssistCodeGeneration" }
+        logger.error(e) { "$FEATURE_NAME: Failed to execute startTaskAssistCodeGeneration ${e.message}" }
         apiError(e.message, e.cause)
     }
 }
@@ -113,7 +115,7 @@ fun getTaskAssistCodeGeneration(proxyClient: FeatureDevClient, conversationId: S
         logger.debug { "$FEATURE_NAME: Received code generation status $getCodeGenerationResponse" }
         return getCodeGenerationResponse
     } catch (e: Exception) {
-        logger.error(e) { "$FEATURE_NAME: Failed to execute GetTaskAssistCodeGeneration" }
+        logger.error(e) { "$FEATURE_NAME: Failed to execute GetTaskAssistCodeGeneration ${e.message}" }
         apiError(e.message, e.cause)
     }
 }
@@ -124,6 +126,7 @@ suspend fun exportTaskAssistArchiveResult(proxyClient: FeatureDevClient, convers
         exportResponse = proxyClient.exportTaskAssistResultArchive(conversationId)
         logger.debug { "$FEATURE_NAME: Received export task assist result archive response" }
     } catch (e: Exception) {
+        logger.error(e) { "$FEATURE_NAME: Failed to export archive result: ${e.message}" }
         apiError(e.message, e.cause)
     }
 

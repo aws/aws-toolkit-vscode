@@ -50,10 +50,6 @@ export class FollowUpGenerator {
                             pillText: 'What are some examples?',
                             type: 'DevExamples',
                         },
-                        {
-                            pillText: 'Modify source folder',
-                            type: 'ModifyDefaultSourceFolder',
-                        },
                     ],
                 }
             default:
