@@ -329,7 +329,8 @@ class CodeWhispererTelemetryService {
         CodewhispererTelemetry.codeScanIssueHover(
             findingId = issue.findingId,
             detectorId = issue.detectorId,
-            ruleId = issue.ruleId
+            ruleId = issue.ruleId,
+            includesFix = issue.suggestedFixes.isNotEmpty()
         )
     }
 
