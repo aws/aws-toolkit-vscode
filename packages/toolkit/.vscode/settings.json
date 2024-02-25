@@ -1,0 +1,17 @@
+{
+    "files.exclude": {
+        "**/src/testFixtures": true
+    },
+    "search.exclude": {
+        "dist": true,
+        "node_modules": true,
+        ".vscode-test-web": true
+    },
+    "files.watcherExclude": {
+        "**/src/testFixtures": true
+    },
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "javascript.preferences.importModuleSpecifier": "relative",
+    "typescript.tsdk": "../../node_modules/typescript/lib",
+    "npm.packageManager": "npm"
+}

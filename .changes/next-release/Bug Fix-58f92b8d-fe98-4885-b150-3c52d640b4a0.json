@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Cloud9: certain filesystem calls did not work in Cloud9"
-}

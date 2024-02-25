@@ -7,11 +7,29 @@ import {
 
 /**
  * @public
+ * @enum
+ */
+export const AccessDeniedExceptionReason = {
+  UNAUTHORIZED_CUSTOMIZATION_RESOURCE_ACCESS: "UNAUTHORIZED_CUSTOMIZATION_RESOURCE_ACCESS",
+} as const
+/**
+ * @public
+ */
+export type AccessDeniedExceptionReason = typeof AccessDeniedExceptionReason[keyof typeof AccessDeniedExceptionReason]
+
+/**
+ * @public
  * This exception is thrown when the user does not have sufficient access to perform this action.
  */
 export class AccessDeniedException extends __BaseException {
   readonly name: "AccessDeniedException" = "AccessDeniedException";
   readonly $fault: "client" = "client";
+  /**
+   * @public
+   * Reason for AccessDeniedException
+   */
+  reason?: AccessDeniedExceptionReason | string;
+
   /**
    * @internal
    */
@@ -22,6 +40,7 @@ export class AccessDeniedException extends __BaseException {
       ...opts
     });
     Object.setPrototypeOf(this, AccessDeniedException.prototype);
+    this.reason = opts.reason;
   }
 }
 
@@ -1008,6 +1027,32 @@ export const FollowupPromptEventFilterSensitiveLog = (obj: FollowupPromptEvent):
 
 /**
  * @public
+ * @enum
+ */
+export const InvalidStateReason = {
+  INVALID_TASK_ASSIST_PLAN: "INVALID_TASK_ASSIST_PLAN",
+} as const
+/**
+ * @public
+ */
+export type InvalidStateReason = typeof InvalidStateReason[keyof typeof InvalidStateReason]
+
+/**
+ * @public
+ * Streaming Response Event when an Invalid State is reached
+ */
+export interface InvalidStateEvent {
+  /**
+   * @public
+   * Reasons for Invalid State Event
+   */
+  reason: InvalidStateReason | string | undefined;
+
+  message: string | undefined;
+}
+
+/**
+ * @public
  * Streaming Response Event for AssistantResponse Metadata
  */
 export interface MessageMetadataEvent {
@@ -1052,6 +1097,7 @@ export type ChatResponseStream =
   | ChatResponseStream.CodeReferenceEventMember
   | ChatResponseStream.ErrorMember
   | ChatResponseStream.FollowupPromptEventMember
+  | ChatResponseStream.InvalidStateEventMember
   | ChatResponseStream.MessageMetadataEventMember
   | ChatResponseStream.SupplementaryWebLinksEventMember
   | ChatResponseStream.$UnknownMember
@@ -1071,6 +1117,7 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
+    invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
   }
@@ -1085,6 +1132,7 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
+    invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
   }
@@ -1099,6 +1147,7 @@ export namespace ChatResponseStream {
     codeReferenceEvent: CodeReferenceEvent;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
+    invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
   }
@@ -1113,6 +1162,7 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent: SupplementaryWebLinksEvent;
     followupPromptEvent?: never;
+    invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
   }
@@ -1127,6 +1177,22 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent: FollowupPromptEvent;
+    invalidStateEvent?: never;
+    error?: never;
+    $unknown?: never;
+  }
+
+  /**
+   * @public
+   * Invalid State event
+   */
+  export interface InvalidStateEventMember {
+    messageMetadataEvent?: never;
+    assistantResponseEvent?: never;
+    codeReferenceEvent?: never;
+    supplementaryWebLinksEvent?: never;
+    followupPromptEvent?: never;
+    invalidStateEvent: InvalidStateEvent;
     error?: never;
     $unknown?: never;
   }
@@ -1141,6 +1207,7 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
+    invalidStateEvent?: never;
     error: InternalServerException;
     $unknown?: never;
   }
@@ -1154,6 +1221,7 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
+    invalidStateEvent?: never;
     error?: never;
     $unknown: [string, any];
   }
@@ -1164,6 +1232,7 @@ export namespace ChatResponseStream {
     codeReferenceEvent: (value: CodeReferenceEvent) => T;
     supplementaryWebLinksEvent: (value: SupplementaryWebLinksEvent) => T;
     followupPromptEvent: (value: FollowupPromptEvent) => T;
+    invalidStateEvent: (value: InvalidStateEvent) => T;
     error: (value: InternalServerException) => T;
     _: (name: string, value: any) => T;
   }
@@ -1177,6 +1246,7 @@ export namespace ChatResponseStream {
     if (value.codeReferenceEvent !== undefined) return visitor.codeReferenceEvent(value.codeReferenceEvent);
     if (value.supplementaryWebLinksEvent !== undefined) return visitor.supplementaryWebLinksEvent(value.supplementaryWebLinksEvent);
     if (value.followupPromptEvent !== undefined) return visitor.followupPromptEvent(value.followupPromptEvent);
+    if (value.invalidStateEvent !== undefined) return visitor.invalidStateEvent(value.invalidStateEvent);
     if (value.error !== undefined) return visitor.error(value.error);
     return visitor._(value.$unknown[0], value.$unknown[1]);
   }
@@ -1200,6 +1270,9 @@ export const ChatResponseStreamFilterSensitiveLog = (obj: ChatResponseStream): a
   };
   if (obj.followupPromptEvent !== undefined) return {followupPromptEvent:
     FollowupPromptEventFilterSensitiveLog(obj.followupPromptEvent)
+  };
+  if (obj.invalidStateEvent !== undefined) return {invalidStateEvent:
+    obj.invalidStateEvent
   };
   if (obj.error !== undefined) return {error:
     obj.error

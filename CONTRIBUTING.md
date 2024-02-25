@@ -8,6 +8,10 @@ codebase and sending pull requests.
 
 ## Getting Started
 
+This project is set up as a typescript monorepo. The documentation throughout this project
+is referring to the subproject in [`packages/toolkit/`](./packages/toolkit/). For more information,
+see [ARCHITECTURE.md](./docs/ARCHITECTURE.md#monorepo-structure)
+
 ### Find things to do
 
 If you're looking for ideas about where to contribute, consider
@@ -24,6 +28,7 @@ To develop this project, install these dependencies:
 -   [Git](https://git-scm.com/downloads)
     -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 -   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
+-   (required for Web mode) [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher)
 -   (optional) [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 -   (optional) [Docker](https://docs.docker.com/get-docker/)
 
@@ -34,6 +39,9 @@ Then clone the repository and install NPM packages:
     npm install
 
 ### Run
+
+Due to the monorepo structure of the project, you can run the extension in VSCode by either opening the
+`aws-toolkit-vscode/packages/toolkit` folder directly, or adding it as a root folder in the VSCode Workspace.
 
 To run the extension from VSCode as a Node.js app:
 
@@ -140,11 +148,11 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 ---
 
-### Browser
+### Web Mode
 
-The AWS Toolkit VSCode extension has a support (with limited functionality) for running in the browser, eg [vscode.dev](https://vscode.dev).
+The AWS Toolkit VSCode extension has a support (with limited functionality) for running in a web browser, eg [vscode.dev](https://vscode.dev).
 
-See [browser.md](./docs/browser.md) for working with the browser implementation of the extension.
+See [web.md](./docs/web.md) for working with the web mode implementation of the extension.
 
 ---
 
@@ -153,7 +161,9 @@ See [browser.md](./docs/browser.md) for working with the browser implementation 
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
-You can run tests directly from VSCode:
+You can run tests directly from VSCode. Due to the monorepo structure of the project, you must either open
+the `aws-toolkit-vscode/packages/toolkit/` folder directly, or add it as a root folder in the VSCode Workspace.
+Then:
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
@@ -203,12 +213,6 @@ To run tests against a specific folder in VSCode, do any one of:
         ```
         $Env:TEST_DIR = "src/test/foo"; npm run test
         ```
-
-### Browser Support
-
-Running the extension in the browser (eg: [vscode.dev](https://vscode.dev/)).
-
-[See documentation here](./src/browser/README.md).
 
 ### Coverage report
 
