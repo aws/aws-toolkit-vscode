@@ -867,7 +867,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 type: AWS_SAM_DEBUG_TYPE,
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs14.x',
+                runtime: 'nodejs20.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 useIkpdb: false,
                 workspaceFolder: {
@@ -1131,7 +1131,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 type: AWS_SAM_DEBUG_TYPE,
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs14.x',
+                runtime: 'nodejs20.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 useIkpdb: false,
                 workspaceFolder: {

@@ -28,7 +28,12 @@ export type RuntimePackageType = 'Image' | 'Zip'
 
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
-export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs18.x', 'nodejs16.x', 'nodejs14.x'])
+export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'nodejs20.x',
+    'nodejs18.x',
+    'nodejs16.x',
+    'nodejs14.x',
+])
 export function getNodeMajorVersion(version?: string): number | undefined {
     if (!version) {
         return undefined
@@ -71,9 +76,10 @@ export const deprecatedRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'nodejs6.10',
     'nodejs8.10',
     'nodejs10.x',
+    'nodejs12.x',
 ])
 const defaultRuntimes = ImmutableMap<RuntimeFamily, Runtime>([
-    [RuntimeFamily.NodeJS, 'nodejs18.x'],
+    [RuntimeFamily.NodeJS, 'nodejs20.x'],
     [RuntimeFamily.Python, 'python3.12'],
     [RuntimeFamily.DotNet, 'dotnet6'],
     [RuntimeFamily.Go, 'go1.x'],
@@ -91,6 +97,7 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
 export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.9',
     'python3.8',
+    'nodejs20.x',
     'nodejs18.x',
     'nodejs16.x',
     'nodejs14.x',

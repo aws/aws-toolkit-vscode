@@ -36,7 +36,7 @@ describe('SAM Local CodeLenses (JS)', async function () {
 
     it('appear when manifest in root', async function () {
         const appRoot = join(workspaceFolder, 'js-manifest-in-root')
-        const appCodePath = join(appRoot, 'src', 'subfolder', 'app.js')
+        const appCodePath = join(appRoot, 'src', 'subfolder', 'app.mjs')
         const expectedHandlerName = 'src/subfolder/app.handlerTwoFoldersDeep'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
