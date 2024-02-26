@@ -4272,7 +4272,7 @@
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
         "@aws-toolkits/telemetry": "^1.0.192",
-        "@aws/fully-qualified-names": "^2.1.1",
+        "@aws/fully-qualified-names": "^2.1.4",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
@@ -4375,7 +4375,7 @@
         "vscode-languageserver-protocol": "^3.15.3",
         "vscode-languageserver-textdocument": "^1.0.8",
         "vue": "^3.3.4",
-        "web-tree-sitter": "^0.20.7",
+        "web-tree-sitter": "^0.20.8",
         "whatwg-url": "^14.0.0",
         "winston": "^3.11.0",
         "winston-transport": "^4.6.0",

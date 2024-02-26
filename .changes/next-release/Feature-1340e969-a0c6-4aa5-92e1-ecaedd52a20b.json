@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Enable node 20 for SAM create and local Lambda debugging"
+}
