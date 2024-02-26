@@ -8,6 +8,7 @@ import globals from '../../shared/extensionGlobals'
 import { SecurityIssueProvider } from './securityIssueProvider'
 import { Component, telemetry } from '../../shared/telemetry/telemetry'
 import path from 'path'
+import { AuthUtil } from '../util/authUtil'
 
 export class SecurityIssueHoverProvider extends SecurityIssueProvider implements vscode.HoverProvider {
     static #instance: SecurityIssueHoverProvider
@@ -37,6 +38,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
                         detectorId: issue.detectorId,
                         ruleId: issue.ruleId,
                         includesFix: !!issue.suggestedFixes.length,
+                        credentialStartUrl: AuthUtil.instance.startUrl,
                     })
                 }
             }
