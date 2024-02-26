@@ -26,14 +26,10 @@ const settingsUpdated = localize('AWS.samcli.detect.settings.updated', 'Settings
  */
 export async function detectSamCli(args: { passive: boolean; showMessage: boolean | undefined }): Promise<void> {
     const config = SamCliSettings.instance
-
-    if (!args.passive) {
-        // Force getOrDetectSamCli() to search for SAM CLI.
-        await config.delete('location')
-    }
+    const isConfigured = '' !== config.get('location', '')
 
     const sam = await config.getOrDetectSamCli(true)
-    const notFound = sam.path === ''
+    const found = sam.path !== ''
 
     // Update the user setting.
     //
@@ -45,8 +41,8 @@ export async function detectSamCli(args: { passive: boolean; showMessage: boolea
         await config.update('location', sam.path)
     }
 
-    if (args.showMessage !== false || notFound) {
-        if (notFound) {
+    if (args.showMessage !== false || !found) {
+        if (!found) {
             notifyUserSamCliNotDetected(config)
         } else if (args.showMessage === true) {
             void vscode.window.showInformationMessage(getSettingsUpdatedMessage(sam.path ?? '?'))
@@ -54,7 +50,11 @@ export async function detectSamCli(args: { passive: boolean; showMessage: boolea
     }
 
     if (!args.passive) {
-        telemetry.sam_detect.emit({ result: sam.path ? 'Succeeded' : 'Failed' })
+        telemetry.sam_detect.emit({
+            passive: args.passive,
+            result: found ? 'Succeeded' : 'Failed',
+            ...(found ? {} : { reason: isConfigured ? 'SamCliInvalid' : 'SamCliNotFound' }),
+        })
     }
 }
 
