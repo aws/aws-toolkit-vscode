@@ -7,18 +7,50 @@ import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import * as codecatalyst from './clients/codecatalystClient'
 import * as codewhisperer from '../codewhisperer/client/codewhisperer'
-import { getLogger } from './logger'
+import { getLogger, showLogOutputChannel } from './logger'
 import { cast, FromDescriptor, Record, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
 import { assertHasProps, ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isNameMangled } from './vscode/env'
 import { once, onceChanged } from './utilities/functionUtils'
 import { ToolkitError } from './errors'
+import { telemetry } from './telemetry/telemetry'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
-/** Used by isValid(). Must be something that's defined in our package.json. */
-const testSetting = 'aws.samcli.lambdaTimeout'
+/** Used by isReadable(). Must be something that's defined in our package.json. */
+export const testSetting = 'aws.samcli.lambdaTimeout'
+
+export async function showSettingsFailedMsg(kind: 'read' | 'update', key?: string) {
+    const keyMsg = key ? ` (key: "${key}")` : ''
+    const msg = `Failed to ${kind} settings${keyMsg}. Check settings.json for syntax errors or insufficient permissions.`
+    const openSettingsItem = 'Open settings.json'
+    const logsItem = 'View Logs...'
+
+    const items = [openSettingsItem, logsItem]
+    const p = vscode.window.showErrorMessage(msg, {}, ...items)
+    return p.then<string | undefined>(async selection => {
+        if (selection === logsItem) {
+            showLogOutputChannel()
+        } else if (selection === openSettingsItem) {
+            await vscode.commands.executeCommand('workbench.action.openSettingsJson')
+        }
+        return selection
+    })
+}
+
+/**
+ * Shows an error message if we could't update settings, unless the last message was for the same `key`.
+ */
+const showSettingsUpdateFailedMsgOnce = onceChanged(key => {
+    // Edge cases:
+    //  - settings.json may intentionally be readonly. #4043
+    //  - settings.json may be open in multiple vscodes. #4453
+    //  - vscode will show its own error if settings.json cannot be written.
+    void showSettingsFailedMsg('update', key)
+
+    telemetry.aws_modifySetting.emit({ result: 'Failed', reason: 'UserSettingsWrite', settingId: key })
+})
 
 /**
  * A class for manipulating VS Code user settings (from all extensions).
@@ -83,6 +115,7 @@ export class Settings {
 
             return true
         } catch (e) {
+            showSettingsUpdateFailedMsgOnce(key)
             getLogger().warn('settings: failed to update "%s": %s', key, (e as Error).message)
 
             return false
@@ -90,46 +123,28 @@ export class Settings {
     }
 
     /**
-     * Checks that user `settings.json` actually works. #3910
+     * Checks that user `settings.json` is readable. #3910
      *
-     * Note: This checks that we can actually "roundtrip" (read and write) settings. vscode notifies
-     * the user if settings.json is complete nonsense, but silently fails if there are only
-     * "recoverable" JSON syntax errors.
+     * Note: Does NOT check that we can "roundtrip" (read-and-write) settings. vscode notifies the
+     * user if settings.json is complete nonsense, but silently fails if there are only
+     * "recoverable" JSON syntax errors. We can't test for "roundtrip" on _startup_ because it causes
+     * race conditions if multiple VSCode instances start simultaneously. #4453
+     * Instead we handle that in {@link Settings#update()}.
      */
-    public async isValid(): Promise<'ok' | 'invalid' | 'nowrite'> {
+    public async isReadable(): Promise<boolean> {
         const key = testSetting
         const config = this.getConfig()
-        const tempValOld = 1234 // Legacy temp value we are migrating from.
-        const tempVal = 91234 // Temp value used to check that read/write works.
-        const defaultVal = settingsProps[key].default
 
         try {
-            const userVal = config.get<number>(key)
-            // Try to write a temporary "sentinel" value to settings.json.
-            await config.update(key, tempVal, this.updateTarget)
-            if (userVal === undefined || [defaultVal, tempValOld, tempVal].includes(userVal)) {
-                // Avoid polluting the user's settings.json.
-                await config.update(key, undefined, this.updateTarget)
-            } else {
-                // Restore the user's actual setting value.
-                await config.update(key, userVal, this.updateTarget)
-            }
+            config.get<number>(key)
 
-            return 'ok'
+            return true
         } catch (e) {
             const err = e as Error
-            // If anything tries to update an unwritable settings.json, vscode will thereafter treat
-            // it as an "unsaved" file. #4043
-            if (err.message.includes('EACCES') || err.message.includes('the file has unsaved changes')) {
-                const logMsg = 'settings: unwritable settings.json: %s'
-                getLogger().warn(logMsg, err.message)
-                return 'nowrite'
-            }
-
             const logMsg = 'settings: invalid settings.json: %s'
             getLogger().error(logMsg, err.message)
 
-            return 'invalid'
+            return false
         }
     }
 
@@ -321,6 +336,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
                 return true
             } catch (e) {
+                showSettingsUpdateFailedMsgOnce(key)
                 this._log('failed to update "%s": %s', key, (e as Error).message)
 
                 return false
@@ -333,6 +349,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
                 return true
             } catch (e) {
+                showSettingsUpdateFailedMsgOnce(key)
                 this._log('failed to delete "%s": %s', key, (e as Error).message)
 
                 return false
@@ -394,9 +411,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
                 }
 
                 for (const key of props.filter(isDifferent)) {
-                    if (`${section}.${key}` !== testSetting) {
-                        this._log('key "%s" changed', key)
-                    }
+                    this._log('key "%s" changed', key)
                     emitter.fire({ key })
                 }
             })
