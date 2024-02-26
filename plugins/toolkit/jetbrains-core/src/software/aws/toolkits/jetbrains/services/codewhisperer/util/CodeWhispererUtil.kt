@@ -248,6 +248,13 @@ object CodeWhispererUtil {
         return connection.startUrl
     }
 
+    fun getCodeWhispererStartUrl(project: Project): String? {
+        val connection = ToolkitConnectionManager.getInstance(
+            project
+        ).activeConnectionForFeature(CodeWhispererConnection.getInstance()) as? AwsBearerTokenConnection?
+        return connection?.startUrl
+    }
+
     private fun tokenConnection(project: Project) = (
         ToolkitConnectionManager
             .getInstance(project)
