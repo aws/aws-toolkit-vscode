@@ -36,8 +36,8 @@ describe('redshiftNodeConnectionWizard', async function () {
         )
     })
 
-    it('shows all steps for provisionedNode and database username connection type', function () {
-        const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(provisionedNode))
+    it('shows all steps for provisionedNode and database username connection type', async function () {
+        const testWizard = await createWizardTester(new RedshiftNodeConnectionWizard(provisionedNode))
         testWizard.connectionType.assertShowFirst()
         testWizard.connectionType.applyInput(ConnectionType.TempCreds)
         testWizard.database.assertShowFirst()
@@ -45,16 +45,16 @@ describe('redshiftNodeConnectionWizard', async function () {
         testWizard.username.assertShowFirst()
     })
 
-    it('shows only database as input for serverlessNode and database username connection type', function () {
-        const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(serverlessNode))
+    it('shows only database as input for serverlessNode and database username connection type', async function () {
+        const testWizard = await createWizardTester(new RedshiftNodeConnectionWizard(serverlessNode))
         testWizard.connectionType.assertShowFirst()
         testWizard.connectionType.applyInput(ConnectionType.TempCreds)
         testWizard.database.assertShowFirst()
         testWizard.username.assertDoesNotShow()
     })
 
-    it('shows all steps for provisionedNode and secrets manager connection type', function () {
-        const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(provisionedNode))
+    it('shows all steps for provisionedNode and secrets manager connection type', async function () {
+        const testWizard = await createWizardTester(new RedshiftNodeConnectionWizard(provisionedNode))
         testWizard.connectionType.assertShowFirst()
         testWizard.connectionType.applyInput(ConnectionType.SecretsManager)
         testWizard.database.assertShowFirst()
@@ -63,8 +63,8 @@ describe('redshiftNodeConnectionWizard', async function () {
         testWizard.secret.applyInput('SecretTest')
     })
 
-    it('shows all steps for serverlessNode and secrets manager connection type', function () {
-        const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(serverlessNode))
+    it('shows all steps for serverlessNode and secrets manager connection type', async function () {
+        const testWizard = await createWizardTester(new RedshiftNodeConnectionWizard(serverlessNode))
         testWizard.connectionType.assertShowFirst()
         testWizard.connectionType.applyInput(ConnectionType.SecretsManager)
         testWizard.database.assertShowFirst()
@@ -77,8 +77,8 @@ describe('redshiftNodeConnectionWizard', async function () {
 describe('NotebookConnectionWizard', async () => {
     const mockRegionProvider: RegionProvider = <RegionProvider>{}
 
-    it('shows all steps for database username connection type', function () {
-        const testWizard = createWizardTester(new NotebookConnectionWizard(mockRegionProvider))
+    it('shows all steps for database username connection type', async function () {
+        const testWizard = await createWizardTester(new NotebookConnectionWizard(mockRegionProvider))
         testWizard.region.assertShowFirst()
         testWizard.region.applyInput({ id: 'US East - 1', name: 'us-east-1' })
         testWizard.warehouseIdentifier.assertShowFirst()
@@ -92,8 +92,8 @@ describe('NotebookConnectionWizard', async () => {
         testWizard.warehouseType.assertDoesNotShow()
     })
 
-    it('shows all steps for secrets manager connection type', function () {
-        const testWizard = createWizardTester(new NotebookConnectionWizard(mockRegionProvider))
+    it('shows all steps for secrets manager connection type', async function () {
+        const testWizard = await createWizardTester(new NotebookConnectionWizard(mockRegionProvider))
         testWizard.region.assertShowFirst()
         testWizard.region.applyInput({ id: 'US East - 1', name: 'us-east-1' })
         testWizard.warehouseIdentifier.assertShowFirst()

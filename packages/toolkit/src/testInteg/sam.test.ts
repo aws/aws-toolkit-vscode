@@ -56,17 +56,17 @@ interface TestScenario {
 const scenarios: TestScenario[] = [
     // zips
     {
-        runtime: 'nodejs16.x',
-        displayName: 'nodejs16.x (ZIP)',
-        path: 'hello-world/app.js',
+        runtime: 'nodejs18.x',
+        displayName: 'nodejs18.x (ZIP)',
+        path: 'hello-world/app.mjs',
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
         vscodeMinimum: '1.50.0',
     },
     {
-        runtime: 'nodejs18.x',
-        displayName: 'nodejs18.x (ZIP)',
+        runtime: 'nodejs20.x',
+        displayName: 'nodejs20.x (ZIP)',
         path: 'hello-world/app.mjs',
         debugSessionType: 'pwa-node',
         language: 'javascript',
@@ -152,19 +152,19 @@ const scenarios: TestScenario[] = [
 
     // images
     {
-        runtime: 'nodejs16.x',
-        displayName: 'nodejs16.x (Image)',
-        baseImage: 'amazon/nodejs16.x-base',
-        path: 'hello-world/app.js',
+        runtime: 'nodejs18.x',
+        displayName: 'nodejs18.x (Image)',
+        baseImage: 'amazon/nodejs18.x-base',
+        path: 'hello-world/app.mjs',
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
         vscodeMinimum: '1.50.0',
     },
     {
-        runtime: 'nodejs18.x',
-        displayName: 'nodejs18.x (Image)',
-        baseImage: 'amazon/nodejs18.x-base',
+        runtime: 'nodejs20.x',
+        displayName: 'nodejs20.x (Image)',
+        baseImage: 'amazon/nodejs20.x-base',
         path: 'hello-world/app.mjs',
         debugSessionType: 'pwa-node',
         language: 'javascript',

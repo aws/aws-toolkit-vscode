@@ -15,8 +15,8 @@ describe('CreateServiceWizard', function () {
     const createContainer = () =>
         new Container(stub(DefaultEcsClient, { regionCode: '' }), '', { clusterArn: '', taskRoleArn: '' })
 
-    beforeEach(function () {
-        tester = createWizardTester(new CommandWizard(createContainer(), false))
+    beforeEach(async function () {
+        tester = await createWizardTester(new CommandWizard(createContainer(), false))
     })
 
     it('should prompt for tasks and then command', function () {
@@ -24,8 +24,8 @@ describe('CreateServiceWizard', function () {
         tester.command.assertShowSecond()
     })
 
-    it('should ask for confirmation last', function () {
-        tester = createWizardTester(new CommandWizard(createContainer(), true))
+    it('should ask for confirmation last', async function () {
+        tester = await createWizardTester(new CommandWizard(createContainer(), true))
         tester.task.assertShowFirst()
         tester.command.assertShowSecond()
         tester.confirmation.assertShowThird()

@@ -1,5 +1,5 @@
 {
-    "name": "browser",
+    "name": "web-toolkit",
     "description": "Browser specific modules to separate concerns from main package.json",
     "license": "Apache-2.0",
     "dependencies": {
