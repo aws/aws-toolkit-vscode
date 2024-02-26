@@ -14,6 +14,7 @@ import { UriHandler } from './vscode/uriHandler'
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
+    awstoolkitcore: 'amazonwebservices.aws-core-vscode', // Core "extension" for tests - not a real extension.
     python: 'ms-python.python',
     // python depends on jupyter plugin
     jupyter: 'ms-toolsai.jupyter',

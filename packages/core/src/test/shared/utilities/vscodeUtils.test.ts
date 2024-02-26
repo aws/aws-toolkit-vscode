@@ -18,8 +18,8 @@ describe('vscodeUtils', async function () {
 
         assert.deepStrictEqual(vscodeUtil.isExtensionActive('invalid.extension'), false)
 
-        await vscodeUtil.activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false)
-        assert.deepStrictEqual(vscodeUtil.isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit), true)
+        await vscodeUtil.activateExtension(VSCODE_EXTENSION_ID.awstoolkitcore, false)
+        assert.deepStrictEqual(vscodeUtil.isExtensionActive(VSCODE_EXTENSION_ID.awstoolkitcore), true)
     })
 
     it('globDirPatterns()', async function () {

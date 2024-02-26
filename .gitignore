@@ -43,6 +43,8 @@ packages/*/README*
 packages/*/CHANGELOG.md
 packages/*/LICENSE
 packages/*/NOTICE
+packages/toolkit/package.nls.json
+packages/toolkit/resources
 
 # Icons
 packages/*/resources/icons/cloud9/generated/**

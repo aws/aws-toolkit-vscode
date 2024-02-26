@@ -5,7 +5,7 @@
     "search.exclude": {
         "dist": true,
         "node_modules": true,
-        ".vscode-test-web": true
+        ".vscode-test*": true
     },
     "files.watcherExclude": {
         "**/src/testFixtures": true

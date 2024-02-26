@@ -7,7 +7,6 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 
 // Moves all dependencies into `dist`
-// There is a single, optional flag `--webpacked` that moves localization files when present
 
 const projectRoot = process.cwd()
 const outRoot = path.join(projectRoot, 'dist')
@@ -27,24 +26,23 @@ interface CopyTask {
 }
 
 const tasks: CopyTask[] = [
-    // ...[
-    //     'CHANGELOG.md',
-    //     'LICENSE',
-    //     'NOTICE',
-    //     'README.md',
-    //     'README.quickstart.cloud9.md',
-    //     'README.quickstart.vscode.md',
-    //     'quickStartCloud9-cn.html',
-    //     'quickStartCloud9.html',
-    //     'quickStartVscode.html',
-    // ].map(f => {
-    //     return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
-    // }),
+    ...[
+        'CHANGELOG.md',
+        'LICENSE',
+        'NOTICE',
+        'README.md',
+        'README.quickstart.cloud9.md',
+        'README.quickstart.vscode.md',
+        'quickStartCloud9-cn.html',
+        'quickStartCloud9.html',
+        'quickStartVscode.html',
+    ].map(f => {
+        return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
+    }),
 
+    { target: path.join('../core', 'resources'), destination: path.join('..', 'resources') },
+    { target: path.join('../core', 'package.nls.json'), destination: path.join('..', 'package.nls.json') },
     { target: path.join('../core', 'src', 'templates'), destination: path.join('src', 'templates') },
-    // { target: path.join('src', 'test', 'shared', 'cloudformation', 'yaml') },
-    // { target: path.join('src', 'test', 'codewhisperer', 'service', 'resources') },
-    // { target: path.join('src', 'testFixtures') },
 
     // SSM
     {
@@ -76,7 +74,7 @@ const tasks: CopyTask[] = [
 
     // Vue
     {
-        target: path.join('resources', 'js', 'vscode.js'),
+        target: path.join('../core', 'resources', 'js', 'vscode.js'),
         destination: path.join('libs', 'vscode.js'),
     },
     {
@@ -105,18 +103,6 @@ const tasks: CopyTask[] = [
     },
 ]
 
-// Localization files are produced relative to `src` despite `tsc` emitting a compilation relative to the root
-const webpackedTasks: CopyTask[] = [
-    {
-        target: path.join('dist', 'nls.metadata.json'),
-        destination: path.join('src', 'nls.metadata.json'),
-    },
-    {
-        target: path.join('dist', 'nls.metadata.header.json'),
-        destination: path.join('src', 'nls.metadata.header.json'),
-    },
-]
-
 async function copy(task: CopyTask): Promise<void> {
     const src = path.resolve(projectRoot, task.target)
     const dst = path.resolve(outRoot, task.destination ?? task.target)
@@ -134,12 +120,6 @@ async function copy(task: CopyTask): Promise<void> {
 
 void (async () => {
     const args = process.argv.slice(2)
-
-    // To use this something like: "npm run copyFiles -- --webpacked"
-    if (args.includes('--webpacked')) {
-        tasks.push(...webpackedTasks)
-    }
-
     if (args.includes('--vueHr')) {
         vueHr = true
         console.log('Using Vue Hot Reload webpacks from core/')

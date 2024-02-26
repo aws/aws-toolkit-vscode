@@ -33,7 +33,7 @@ export async function mochaGlobalSetup(this: Mocha.Runner) {
     patchWindow()
 
     // Needed for getLogger().
-    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false)
+    await activateExtension(VSCODE_EXTENSION_ID.awstoolkitcore, false)
 
     // Log as much as possible, useful for debugging integration tests.
     getLogger().setLogLevel('debug')

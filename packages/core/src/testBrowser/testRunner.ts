@@ -46,7 +46,7 @@ function gatherTestFiles() {
  * So this function ensures the extension has fully activated.
  */
 async function activateToolkitExtension() {
-    await vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.activate()
+    await vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkitcore)?.activate()
 }
 
 function runMochaTests(resolve: (value: void | PromiseLike<void>) => void, reject: (reason?: any) => void) {

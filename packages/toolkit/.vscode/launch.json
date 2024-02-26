@@ -22,7 +22,8 @@
             },
             "envFile": "${workspaceFolder}/.local.env",
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
-            "preLaunchTask": "watch"
+            "preLaunchTask": "watch",
+            "postDebugTask": "terminate"
         },
         {
             /** Handles the entire process of building and running the toolkit extension in the browser. **/
@@ -42,11 +43,9 @@
             I was inspired by this: https://github.com/microsoft/vscode-test-web/blob/897bca4907a87a6bc564efc242ce6794e5da3232/.vscode/launch.json#L28
             **/
             "resolveSourceMapLocations": [
-                "!**/node_modules/**",
+                // "!**/node_modules/**", // TODO: Removing this makes it slow again, but debugging in VSCode won't work without it :(
                 "!**/vs/**",
-                "!**/extensions/**",
-                "${workspaceFolder}/dist",
-                "${workspaceFolder}/../core/dist"
+                "!**/extensions/**"
             ],
             "preLaunchTask": "browserRun",
             "postDebugTask": "browserRunTerminate"
@@ -58,111 +57,8 @@
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
-            "preLaunchTask": "npm: compile"
-        },
-        {
-            "name": "Extension Tests",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index",
-                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
-            ],
-            "env": {
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Extension Tests (current file)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js",
-                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
-            ],
-            "env": {
-                "TEST_FILE": "${relativeFile}",
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Extension Tests (browser)",
-            "type": "extensionHost",
-            "debugWebWorkerHost": true,
-            "request": "launch",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionDevelopmentKind=web",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testBrowser/testRunner",
-                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
-            ],
-            "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
-            "preLaunchTask": "browserWatch"
-        },
-        {
-            "name": "Integration Tests",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testInteg/index.js"
-            ],
-            "env": {
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Integration Tests (current file)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testInteg/index.js"
-            ],
-            "env": {
-                "TEST_FILE": "${relativeFile}",
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "E2E Test (current file)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testE2E/index.js"
-            ],
-            "env": {
-                "TEST_FILE": "${relativeFile}",
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "npm: compile",
+            "postDebugTask": "terminate"
         },
         {
             "name": "Test Lint",
