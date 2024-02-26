@@ -32,6 +32,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getCodeWhispererStartUrl
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getGettingStartedTaskType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
@@ -330,7 +331,8 @@ class CodeWhispererTelemetryService {
             findingId = issue.findingId,
             detectorId = issue.detectorId,
             ruleId = issue.ruleId,
-            includesFix = issue.suggestedFixes.isNotEmpty()
+            includesFix = issue.suggestedFixes.isNotEmpty(),
+            credentialStartUrl = getCodeWhispererStartUrl(issue.project)
         )
     }
 
@@ -341,7 +343,8 @@ class CodeWhispererTelemetryService {
             ruleId = issue.ruleId,
             component = Component.Hover,
             result = result,
-            reason = reason
+            reason = reason,
+            credentialStartUrl = getCodeWhispererStartUrl(issue.project)
         )
     }
 
