@@ -135,6 +135,7 @@ export class CodeWhispererCodeCoverageTracker {
             successCount: this._serviceInvocationCount,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
 
         client
