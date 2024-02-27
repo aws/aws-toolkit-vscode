@@ -6,8 +6,8 @@
 
             <svg
                 v-if="app === 'AMAZONQ' && stage !== 'CONNECTED'"
-                width="71"
-                height="71"
+                width="100"
+                height="100"
                 viewBox="0 0 71 71"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -47,8 +47,8 @@
             </svg>
             <svg
                 v-if="app === 'TOOLKIT' && stage !== 'CONNECTED'"
-                width="54"
-                height="54"
+                width="100"
+                height="100"
                 viewBox="0 0 54 54"
                 fill="none"
                 id="Layer_1"
@@ -366,10 +366,10 @@ export default defineComponent({
     display: flex;
     flex-direction: row;
     justify-content: left;
-    align-items: center;
+    align-items: flex-start;
     padding-top: 25px;
-    padding-bottom: 30px;
-    padding-left: 60px;
+    padding-bottom: 10px;
+    padding-left: 10px;
     height: auto;
 }
 .hint {

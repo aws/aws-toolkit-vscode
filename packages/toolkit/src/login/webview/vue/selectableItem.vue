@@ -102,4 +102,7 @@ export default defineComponent({
     display: flex;
     flex-direction: column;
 }
+.icon {
+    padding-left: 10px;
+}
 </style>
