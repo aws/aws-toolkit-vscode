@@ -160,12 +160,6 @@ export class AuthUtil {
 
     public async setVscodeContextProps() {
         if (!isCloud9()) {
-            if (!this.hasAlreadySeenMigrationAuthScreen) {
-                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showView', false)
-            } else {
-                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showView', this.isConnected())
-            }
-
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
             await vscode.commands.executeCommand(
                 'setContext',
