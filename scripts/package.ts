@@ -155,7 +155,7 @@ function main() {
         fs.copyFileSync('../../CHANGELOG.md', 'CHANGELOG.md')
 
         fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
-        child_process.execSync(`vsce package`, { stdio: 'inherit' })
+        child_process.execSync(`vsce package --ignoreFile '../.vscodeignore.packages'`, { stdio: 'inherit' })
 
         console.log(`VSIX Version: ${packageJson.version}`)
 

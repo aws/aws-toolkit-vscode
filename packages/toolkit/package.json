@@ -52,6 +52,7 @@
     ],
     "main": "./dist/src/main",
     "browser": "./dist/src/mainWeb",
+    "engines": "This field will be autopopulated from the core module during debugging and packaging.",
     "contributes": "This field will be autopopulated from the core module during debugging and packaging.",
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles",
@@ -63,9 +64,9 @@
         "testCompile": "npm run clean && npm run buildScripts && tsc -p ./",
         "webWatch": "npm run clean && npm run copyFiles --vueHr && webpack --config-name web --watch",
         "webCompile": "npm run clean && npm run buildScripts -- --vueHr && webpack --config-name web",
-        "webRun": "npx @vscode/test-web --port 3100 --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
+        "webRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "package": "npm run copyPackageJson && ts-node ../../scripts/package.ts && npm run restorePackageJson",
-        "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
+        "install-plugin": "vsce package --ignoreFile '../.vscodeignore.packages' -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "echo 'Nothing to lint yet!'",
@@ -75,8 +76,8 @@
         "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
         "restorePackageJson": "ts-node ./scripts/build/handlePackageJson --restore"
     },
-    "devDependencies": {
+    "devDependencies": {},
+    "dependencies": {
         "aws-core-vscode": "file:../core/"
-    },
-    "dependencies": {}
+    }
 }
