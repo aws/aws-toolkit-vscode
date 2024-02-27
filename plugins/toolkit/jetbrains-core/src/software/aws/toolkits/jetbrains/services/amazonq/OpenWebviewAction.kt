@@ -44,7 +44,6 @@ class QWebviewDialog(private val project: Project) : DialogWrapper(project) {
         init()
     }
 
-
     override fun createCenterPanel(): JComponent = panel {
         val browser = WebviewBrowser(project).apply {
             this.init()
