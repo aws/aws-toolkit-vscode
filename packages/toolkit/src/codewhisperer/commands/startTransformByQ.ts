@@ -174,7 +174,7 @@ async function setMaven() {
     } else {
         transformByQState.setMavenName('mvn')
     }
-    getLogger().info(`CodeTransform: using Maven ${transformByQState.getMavenName()}`)
+    getLogger().info(`CodeTransformation: using Maven ${transformByQState.getMavenName()}`)
 }
 
 async function validateJavaHome() {
@@ -218,11 +218,11 @@ async function validateJavaHome() {
             ignoreFocusOut: true,
         })
         if (!javaHome || !javaHome.trim()) {
-            throw new ToolkitError('No JAVA_HOME provided', { code: 'NoJavaHomePath' })
+            throw new ToolkitError('No JDK path provided', { code: 'NoJavaHomePath' })
         }
         transformByQState.setJavaHome(javaHome.trim())
         getLogger().info(
-            `CodeTransform: using JAVA_HOME = ${transformByQState.getJavaHome()} since source JDK does not match Maven JDK`
+            `CodeTransformation: using JAVA_HOME = ${transformByQState.getJavaHome()} since source JDK does not match Maven JDK`
         )
     }
 }
@@ -331,8 +331,9 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     try {
         await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForGettingPlan)
     } catch (error) {
-        const errorMessage = 'Failed to poll transformation job for plan availability, or job itself failed'
-        getLogger().error(errorMessage, error)
+        const errorMessage = 'Failed to get job status or job itself failed'
+        getLogger().error(`CodeTransformation: ${errorMessage}`, error)
+        transformByQState.setJobFailureErrorMessage(errorMessage)
         throw new ToolkitError(errorMessage, { cause: error as Error })
     }
     let plan = undefined
@@ -340,7 +341,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         plan = await getTransformationPlan(jobId)
     } catch (error) {
         const errorMessage = 'Failed to get transformation plan'
-        getLogger().error(errorMessage, error)
+        getLogger().error(`CodeTransformation: ${errorMessage}`, error)
         transformByQState.setJobFailureErrorMessage(errorMessage)
         throw new ToolkitError(errorMessage, { cause: error as Error })
     }
@@ -359,7 +360,7 @@ export async function pollTransformationStatusUntilComplete(jobId: string) {
         status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
     } catch (error) {
         const errorMessage = 'Failed to get transformation job status'
-        getLogger().error(errorMessage, error)
+        getLogger().error(`CodeTransformation: ${errorMessage}`, error)
         transformByQState.setJobFailureErrorMessage(errorMessage)
         throw new ToolkitError(errorMessage, { cause: error as Error })
     }
@@ -370,7 +371,7 @@ export async function pollTransformationStatusUntilComplete(jobId: string) {
 export async function finalizeTransformationJob(status: string) {
     if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
         const errorMessage = 'Failed to complete transformation'
-        getLogger().error(errorMessage)
+        getLogger().error(`CodeTransformation: ${errorMessage}`)
         sessionPlanProgress['transformCode'] = StepProgress.Failed
         transformByQState.setJobFailureErrorMessage(errorMessage)
         throw new ToolkitError(errorMessage, { code: 'JobDidNotSucceed' })
@@ -395,7 +396,7 @@ export async function validateTransformationJob() {
     try {
         openProjects = await getOpenProjects()
     } catch (err) {
-        getLogger().error('Failed to get open projects: ', err)
+        getLogger().error(`CodeTransformation: Failed to get open projects: ${err}`)
         throw err
     }
 
@@ -403,7 +404,7 @@ export async function validateTransformationJob() {
     try {
         validProjects = await validateOpenProjects(openProjects)
     } catch (err) {
-        getLogger().error('Selected project is not Java 8, not Java 11, or does not use Maven', err)
+        getLogger().error(`CodeTransformation: No open projects contain a .java file or a pom.xml file ${err}`)
         throw err
     }
 
@@ -517,8 +518,8 @@ export async function transformationJobErrorHandler(error: any) {
         codeTransformTelemetryState.setResultStatus('JobFailed')
         let displayedErrorMessage =
             transformByQState.getJobFailureErrorMessage() || CodeWhispererConstants.transformByQFailedMessage
-        if (transformByQState.getJobFailureReason() !== '') {
-            displayedErrorMessage += `: ${transformByQState.getJobFailureReason()}`
+        if (transformByQState.getJobFailureMetadata() !== '') {
+            displayedErrorMessage += `: ${transformByQState.getJobFailureMetadata()}`
         }
         void vscode.window.showErrorMessage(displayedErrorMessage)
     }
@@ -534,8 +535,7 @@ export async function transformationJobErrorHandler(error: any) {
     if (sessionPlanProgress['returnCode'] !== StepProgress.Succeeded) {
         sessionPlanProgress['returnCode'] = StepProgress.Failed
     }
-    // Log error to VSCode logs
-    getLogger().error('Amazon Q Code Transform', error)
+    getLogger().error(`CodeTransformation: ${error}`)
 }
 
 export async function cleanupTransformationJob(intervalId: NodeJS.Timeout | undefined) {
@@ -578,7 +578,7 @@ export async function confirmStopTransformByQ(
         stopTransformByQButton
     )
     if (resp === stopTransformByQButton && transformByQState.isRunning()) {
-        getLogger().verbose('User requested to stop transform by Q. Stopping transform by Q.')
+        getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
         transformByQState.setToCancelled()
         await vscode.commands.executeCommand('aws.amazonq.refresh')
         await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
