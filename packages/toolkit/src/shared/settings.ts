@@ -665,6 +665,7 @@ const devSettings = {
     codecatalystService: Record(String, String),
     codewhispererService: Record(String, String),
     ssoCacheDirectory: String,
+    newLogin: Boolean,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
@@ -713,6 +714,10 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
 
     public get activeSettings(): Readonly<typeof this.trappedSettings> {
         return this.trappedSettings
+    }
+
+    public isNewLoginEnabled(): boolean {
+        return true
     }
 
     public isDevMode(): boolean {

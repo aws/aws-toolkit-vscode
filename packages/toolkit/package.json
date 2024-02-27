@@ -723,15 +723,9 @@
             "amazonq": [
                 {
                     "type": "webview",
-                    "id": "aws.AmazonCommonAuth",
-                    "name": "%AWS.amazonq.login%",
-                    "when": "!isCloud9 && !aws.isSageMaker && !aws.amazonq.showView"
-                },
-                {
-                    "type": "webview",
                     "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
-                    "when": "!isCloud9 && !aws.isSageMaker && aws.amazonq.showView"
+                    "when": "!isCloud9 && !aws.isSageMaker"
                 },
                 {
                     "id": "aws.AmazonQNeverShowBadge",
@@ -743,25 +737,33 @@
                 {
                     "id": "aws.amazonq",
                     "name": "%AWS.amazonq.title%",
-                    "when": "!isCloud9 && !aws.isSageMaker"
+                    "when": "(!isCloud9 && !aws.isSageMaker) && !aws.explorer.showAuthView"
                 },
                 {
                     "id": "aws.codewhisperer",
-                    "name": "%AWS.codewhisperer.explorerTitle%"
+                    "name": "%AWS.codewhisperer.explorerTitle%",
+                    "when": "!aws.explorer.showAuthView"
                 },
                 {
                     "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%",
-                    "when": "isCloud9 || !aws.isWebExtHost"
+                    "when": "(isCloud9 || !aws.isWebExtHost) && !aws.explorer.showAuthView"
                 },
                 {
                     "id": "aws.cdk",
-                    "name": "%AWS.cdk.explorerTitle%"
+                    "name": "%AWS.cdk.explorerTitle%",
+                    "when": "!aws.explorer.showAuthView"
                 },
                 {
                     "id": "aws.codecatalyst",
                     "name": "%AWS.codecatalyst.explorerTitle%",
-                    "when": "!isCloud9 && !aws.isSageMaker || isCloud9CodeCatalyst"
+                    "when": "(!isCloud9 && !aws.isSageMaker || isCloud9CodeCatalyst) && !aws.explorer.showAuthView"
+                },
+                {
+                    "type": "webview",
+                    "id": "aws.AmazonCommonAuth",
+                    "name": "%AWS.amazonq.login%",
+                    "when": "!isCloud9 && !aws.isSageMaker && aws.explorer.showAuthView"
                 }
             ],
             "aws-codewhisperer-reference-log": [
