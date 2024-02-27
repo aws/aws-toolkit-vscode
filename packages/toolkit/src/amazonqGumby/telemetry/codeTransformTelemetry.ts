@@ -26,6 +26,7 @@ export enum CancelActionPositions {
 export enum StartActionPositions {
     DevToolsSidePanel = 'devToolsStartButton',
     BottomHubPanel = 'bottomPanelSideNavButton',
+    ChatPrompt = 'chatPrompt',
 }
 
 export const logCodeTransformInitiatedMetric = (source: string): void => {
