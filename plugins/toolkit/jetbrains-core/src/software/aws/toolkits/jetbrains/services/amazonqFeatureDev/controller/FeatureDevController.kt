@@ -90,7 +90,7 @@ class FeatureDevController(
             FollowUpTypes.SEND_FEEDBACK -> sendFeedback()
             FollowUpTypes.WRITE_CODE -> writeCodeClicked(message.tabId)
             FollowUpTypes.ACCEPT_CODE -> acceptCode()
-            FollowUpTypes.PROVIDE_FEEDBACK_AND_REGENERATE_CODE -> provideFeedbackAndRegenerateCode()
+            FollowUpTypes.PROVIDE_FEEDBACK_AND_REGENERATE_CODE -> provideFeedbackAndRegenerateCode(message.tabId)
         }
     }
 
@@ -194,8 +194,19 @@ class FeatureDevController(
         TODO("Not yet implemented")
     }
 
-    private fun provideFeedbackAndRegenerateCode() {
-        TODO("Not yet implemented")
+    private suspend fun provideFeedbackAndRegenerateCode(tabId: String) {
+        val session = getSessionInfo(tabId)
+        AmazonqTelemetry.isProvideFeedbackForCodeGen(amazonqConversationId = session.conversationId, enabled = true)
+
+        // Unblock the message button
+        messenger.sendAsyncEventProgress(tabId = tabId, inProgress = false)
+
+        messenger.sendAnswer(
+            tabId = tabId,
+            message = message("amazonqFeatureDev.code_generation.provide_code_feedback"),
+            messageType = FeatureDevMessageType.Answer
+        )
+        messenger.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.provide_code_feedback"))
     }
 
     private suspend fun handleChat(
@@ -280,6 +291,11 @@ class FeatureDevController(
             tabId = tabId,
             message = interactions.content,
             canBeVoted = true
+        )
+        messenger.sendAnswer(
+            tabId = tabId,
+            messageType = FeatureDevMessageType.Answer,
+            message = message("amazonqFeatureDev.plan_generation.ask_for_feedback")
         )
 
         // Follow up with action items and complete the request stream
