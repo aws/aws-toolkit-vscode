@@ -61,7 +61,6 @@
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* README* CHANGELOG.md",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development",
-        "testCompile": "npm run clean && npm run buildScripts && tsc -p ./",
         "webWatch": "npm run clean && npm run copyFiles --vueHr && webpack --config-name web --watch",
         "webCompile": "npm run clean && npm run buildScripts -- --vueHr && webpack --config-name web",
         "webRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
