@@ -68,6 +68,7 @@
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
+        "lint": "echo 'Nothing to lint yet!'",
         "createRelease": "ts-node ./scripts/build/createRelease.ts",
         "watch": "npm run clean && npm run buildScripts -- --vueHr && tsc -watch -p ./",
         "serve": "webpack serve --config-name main --mode development",
