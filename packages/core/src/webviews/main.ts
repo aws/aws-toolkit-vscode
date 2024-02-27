@@ -68,6 +68,7 @@ interface WebviewViewParams extends WebviewParams {
 }
 
 export interface VueWebviewPanel<T extends VueWebview = VueWebview> {
+    setup(webview: vscode.Webview): Promise<void>
     /**
      * Shows the webview with the given parameters.
      *
@@ -174,8 +175,8 @@ export abstract class VueWebview {
         this.protocol = commands
 
         // Will be sent to the dist/vue folder by webpack
-        // TODO!!! do not remove src or approve this PR if you are reading this
-        this.source = source.replace('src/', 'src/vue/')
+        const sourcePath = vscode.Uri.joinPath(vscode.Uri.parse('vue/'), source).path
+        this.source = sourcePath[0] === '/' ? sourcePath.slice(1) : sourcePath // VSCode URIs like to create root paths...
     }
 
     public get isDisposed() {
@@ -218,6 +219,13 @@ export abstract class VueWebview {
 
             public get server() {
                 return this.instance
+            }
+
+            public async setup(webview: vscode.Webview) {
+                const server = registerWebviewServer(webview, this.instance.protocol, this.instance.id)
+                this.instance.onDidDispose(() => {
+                    server.dispose()
+                })
             }
 
             public async show(params: Omit<WebviewPanelParams, 'id' | 'webviewJs'>): Promise<vscode.WebviewPanel> {

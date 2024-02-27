@@ -38,7 +38,7 @@ export class WebViewContentGenerator {
     }
 
     private async generateJS(extensionURI: Uri, webView: Webview): Promise<string> {
-        const source = path.join('src', 'vue', 'amazonq', 'webview', 'ui', 'amazonq-ui.js')
+        const source = path.join('vue', 'src', 'amazonq', 'webview', 'ui', 'amazonq-ui.js') // Sent to dist/vue folder in webpack.
         const assetsPath = Uri.joinPath(extensionURI)
         const javascriptUri = Uri.joinPath(assetsPath, 'dist', source)
 

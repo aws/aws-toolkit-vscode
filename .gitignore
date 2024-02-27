@@ -55,5 +55,5 @@ packages/*/resources/css/icons.css
 .local.env
 *.config.local.json
 
-# Created by `npm run browserRun` when testing extension in the browser
+# Created by `npm run webRun` when testing extension in web mode
 .vscode-test-web

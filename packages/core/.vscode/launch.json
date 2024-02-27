@@ -43,18 +43,18 @@
             "preLaunchTask": "${defaultBuildTask}"
         },
         {
-            "name": "Extension Tests (browser)",
+            "name": "Extension Tests (web)",
             "type": "extensionHost",
             "debugWebWorkerHost": true,
             "request": "launch",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionDevelopmentKind=web",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testBrowser/testRunner",
+                "--extensionTestsPath=${workspaceFolder}/dist/src/testWeb/testRunner",
                 "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
-            "preLaunchTask": "browserWatch"
+            "preLaunchTask": "webWatch"
         },
         {
             "name": "Integration Tests",

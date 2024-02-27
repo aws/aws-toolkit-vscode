@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
     "description": "Including Amazon Q, CodeWhisperer, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
-    "version": "2.11.0-SNAPSHOT",
+    "version": "2.12.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -61,9 +61,9 @@
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* README* CHANGELOG.md",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development",
         "testCompile": "npm run clean && npm run buildScripts && tsc -p ./",
-        "browserWatch": "npm run clean && npm run copyFiles --vueHr && webpack --config-name web --watch",
-        "browserCompile": "npm run clean && npm run buildScripts -- --vueHr && webpack --config-name web",
-        "browserRun": "npx @vscode/test-web --port 3012 --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
+        "webWatch": "npm run clean && npm run copyFiles --vueHr && webpack --config-name web --watch",
+        "webCompile": "npm run clean && npm run buildScripts -- --vueHr && webpack --config-name web",
+        "webRun": "npx @vscode/test-web --port 3100 --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "package": "npm run copyPackageJson && ts-node ../../scripts/package.ts && npm run restorePackageJson",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
@@ -75,8 +75,8 @@
         "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
         "restorePackageJson": "ts-node ./scripts/build/handlePackageJson --restore"
     },
-    "dependencies": {},
     "devDependencies": {
         "aws-core-vscode": "file:../core/"
-    }
+    },
+    "dependencies": {}
 }

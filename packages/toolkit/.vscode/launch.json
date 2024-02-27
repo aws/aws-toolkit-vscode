@@ -47,8 +47,8 @@
                 "!**/vs/**",
                 "!**/extensions/**"
             ],
-            "preLaunchTask": "browserRun",
-            "postDebugTask": "browserRunTerminate"
+            "preLaunchTask": "webRun",
+            "postDebugTask": "webRunTerminate"
         },
         {
             "name": "Extension (webpack)",

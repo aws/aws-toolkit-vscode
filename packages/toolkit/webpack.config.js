@@ -7,7 +7,17 @@ const path = require('path')
 const currentDir = process.cwd()
 
 const baseConfig = require('../webpack.base.config')
-const baseBrowserConfig = require('../webpack.browser.config')
+const baseWebConfig = require('../webpack.web.config')
+
+const devServer = {
+    static: {
+        directory: path.resolve(currentDir, 'dist'),
+    },
+    headers: {
+        'Access-Control-Allow-Origin': '*',
+    },
+    allowedHosts: 'all',
+}
 
 const config = {
     ...baseConfig,
@@ -18,42 +28,22 @@ const config = {
 
 const serveConfig = {
     ...config,
-    devServer: {
-        static: {
-            directory: path.resolve(currentDir, 'dist'),
-        },
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-        },
-        // This is not ideal, but since we're only running the server locally it's not too bad
-        // The webview debugger tries to establish a websocket with a GUID as its origin, so not much of a workaround
-        allowedHosts: 'all',
-    },
+    devServer,
     externals: {
         vscode: 'commonjs vscode',
     },
 }
 
-const browserConfig = {
-    ...baseBrowserConfig,
+const webConfig = {
+    ...baseWebConfig,
     entry: {
         'src/mainWeb': './src/mainWeb.ts',
     },
 }
 
-const browserServeConfig = {
-    ...browserConfig,
-    devServer: {
-        static: {
-            directory: path.resolve(currentDir, 'dist'),
-        },
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-        },
-        // This is not ideal, but since we're only running the server locally it's not too bad
-        // The webview debugger tries to establish a websocket with a GUID as its origin, so not much of a workaround
-        allowedHosts: 'all',
-    },
+const webServeConfig = {
+    ...webConfig,
+    devServer,
 }
 
-module.exports = [serveConfig, browserServeConfig]
+module.exports = process.env.npm_lifecycle_event === 'serve' ? [serveConfig, webServeConfig] : [config, webConfig]

@@ -28,6 +28,7 @@ To develop this project, install these dependencies:
 -   [Git](https://git-scm.com/downloads)
     -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 -   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
+-   (required for Web mode) [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher)
 -   (optional) [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 -   (optional) [Docker](https://docs.docker.com/get-docker/)
 
@@ -147,11 +148,11 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 ---
 
-### Browser
+### Web Mode
 
-The AWS Toolkit VSCode extension has a support (with limited functionality) for running in the browser, eg [vscode.dev](https://vscode.dev).
+The AWS Toolkit VSCode extension has a support (with limited functionality) for running in a web browser, eg [vscode.dev](https://vscode.dev).
 
-See [browser.md](./docs/browser.md) for working with the browser implementation of the extension.
+See [web.md](./docs/web.md) for working with the web mode implementation of the extension.
 
 ---
 
@@ -212,12 +213,6 @@ To run tests against a specific folder in VSCode, do any one of:
         ```
         $Env:TEST_DIR = "src/test/foo"; npm run test
         ```
-
-### Browser Support
-
-Running the extension in the browser (eg: [vscode.dev](https://vscode.dev/)).
-
-[See documentation here](./packages/toolkit/src/browser/README.md).
 
 ### Coverage report
 

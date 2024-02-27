@@ -37,9 +37,9 @@
             }
         },
         {
-            "label": "browserWatch",
+            "label": "webWatch",
             "type": "npm",
-            "script": "browserWatch",
+            "script": "webWatch",
             "detail": "Webpacks our toolkit code (with --watch) in preparation to be run in the browser",
             "isBackground": true,
             // Since `webpack --watch` never terminates (but finishes packaging at some point),
@@ -48,12 +48,12 @@
             "dependsOn": ["copyPackageJson"]
         },
         {
-            "label": "browserRun",
+            "label": "webRun",
             "type": "npm",
-            "script": "browserRun",
+            "script": "webRun",
             "detail": "Runs VS Code in the Chrome browser with our toolkit installed",
             "isBackground": true,
-            "dependsOn": ["browserWatch"],
+            "dependsOn": ["webWatch"],
             /**
             We only need this problem matcher to signal when this task is completed.
             Since this task starts a web server it does not terminate and we need to use
@@ -116,8 +116,8 @@
         From: https://stackoverflow.com/a/60330174
         **/
         {
-            "label": "browserRunTerminate",
-            "command": "echo ${input:browserRunTerminate}",
+            "label": "webRunTerminate",
+            "command": "echo ${input:webRunTerminate}",
             "type": "shell",
             "dependsOn": ["restorePackageJson"]
         },
@@ -158,10 +158,10 @@
             "args": "terminateAll"
         },
         {
-            "id": "browserRunTerminate",
+            "id": "webRunTerminate",
             "type": "command",
             "command": "workbench.action.tasks.terminate",
-            "args": "browserRun"
+            "args": "webRun"
         }
     ]
 }

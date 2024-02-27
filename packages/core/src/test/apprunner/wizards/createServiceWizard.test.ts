@@ -14,7 +14,7 @@ import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
 describe('CreateServiceWizard', function () {
     let tester: WizardTester<AppRunner.CreateServiceRequest>
 
-    beforeEach(function () {
+    beforeEach(async function () {
         const regionCode = 'us-east-1'
         const wizard = new CreateAppRunnerServiceWizard(
             regionCode,
@@ -27,7 +27,7 @@ describe('CreateServiceWizard', function () {
             }
         )
 
-        tester = createWizardTester(wizard)
+        tester = await createWizardTester(wizard)
     })
 
     describe('CreateAppRunnerServiceWizard', function () {

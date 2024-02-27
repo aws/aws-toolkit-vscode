@@ -11,6 +11,7 @@ const path = require('path')
 const glob = require('glob')
 const { VueLoaderPlugin } = require('vue-loader')
 const baseConfig = require('./webpack.base.config')
+const { merge } = require('webpack-merge')
 const currentDir = process.cwd()
 
 //@ts-check
@@ -22,7 +23,7 @@ const currentDir = process.cwd()
  * @param {string} file
  */
 const createVueBundleName = file => {
-    return path.relative(currentDir, file).replace('src/', '').split('.').slice(0, -1).join(path.sep)
+    return path.relative(currentDir, file).split('.').slice(0, -1).join(path.sep)
 }
 
 /**
@@ -37,8 +38,7 @@ const createVueEntries = (dir = currentDir, targetPattern = 'index.ts') => {
 }
 
 /** @type WebpackConfig */
-const vueConfig = {
-    ...baseConfig,
+const vueConfig = merge(baseConfig, {
     name: 'vue',
     target: 'web',
     output: {
@@ -46,7 +46,7 @@ const vueConfig = {
         libraryTarget: 'this',
     },
     module: {
-        rules: (baseConfig.module?.rules ?? []).concat(
+        rules: [
             {
                 test: /\.vue$/,
                 loader: 'vue-loader',
@@ -60,11 +60,11 @@ const vueConfig = {
                 use: 'file-loader',
             },
             // sass loaders for Mynah
-            { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'] }
-        ),
+            { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'] },
+        ],
     },
-    plugins: (baseConfig.plugins ?? []).concat(new VueLoaderPlugin()),
-}
+    plugins: [new VueLoaderPlugin()],
+})
 
 /** @type WebpackConfig */
 const vueHotReloadConfig = {

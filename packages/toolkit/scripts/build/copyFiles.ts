@@ -83,7 +83,7 @@ const tasks: CopyTask[] = [
     },
     {
         target: path.join('../../node_modules', 'aws-core-vscode', 'dist', vueHr ? 'vuehr' : 'vue'),
-        destination: 'src/vue/',
+        destination: 'vue/',
     },
 
     // Mynah

@@ -25,10 +25,10 @@ describe('WizardForm', function () {
     let testForm: Wizard<TestState>['form']
     let tester: WizardTester<TestState>
 
-    beforeEach(function () {
+    beforeEach(async function () {
         testWizard = new Wizard()
         testForm = testWizard.form
-        tester = createWizardTester(testWizard)
+        tester = await createWizardTester(testWizard)
     })
 
     it('can add prompter', function () {

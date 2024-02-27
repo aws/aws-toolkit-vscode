@@ -2,4 +2,4 @@ Resources:
     SourceCodeForCloudFormation:
         Type: AWS::Serverless::Function
         Properties:
-            Runtime: nodejs14.x
+            Runtime: nodejs20.x
