@@ -58,7 +58,7 @@ export async function activate(extensionContext: ExtensionContext) {
     let rangeFormatting: Disposable | undefined
 
     // The server is implemented in node
-    const serverModule = extensionContext.asAbsolutePath(path.join('./dist/src/stepFunctions/asl/', 'aslServer.js'))
+    const serverModule = extensionContext.asAbsolutePath(path.join('dist/src/stepFunctions/asl/', 'aslServer.js'))
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
     const debugOptions = { execArgv: ['--nolazy', '--inspect=6009', '--preserve-symlinks'] }
