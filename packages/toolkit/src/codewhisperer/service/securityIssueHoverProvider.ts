@@ -36,6 +36,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
                         findingId: issue.findingId,
                         detectorId: issue.detectorId,
                         ruleId: issue.ruleId,
+                        includesFix: !!issue.suggestedFixes.length,
                     })
                 }
             }

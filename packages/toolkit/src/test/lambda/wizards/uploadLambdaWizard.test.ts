@@ -16,8 +16,8 @@ describe('UploadLambdaWizard', function () {
     let tester: WizardTester<UploadLambdaWizardState>
 
     describe('invoked from command palette', function () {
-        beforeEach(function () {
-            tester = createWizardTester(new UploadLambdaWizard())
+        beforeEach(async () => {
+            tester = await createWizardTester(new UploadLambdaWizard())
         })
 
         it('shows all but build prompts', function () {
@@ -30,8 +30,8 @@ describe('UploadLambdaWizard', function () {
     })
 
     describe('invoked from lambda node', function () {
-        beforeEach(function () {
-            tester = createWizardTester(
+        beforeEach(async function () {
+            tester = await createWizardTester(
                 new UploadLambdaWizard({ name: 'lambdaName', region: 'us-east-1', configuration: {} } as LambdaFunction)
             )
         })
@@ -56,7 +56,7 @@ describe('UploadLambdaWizard', function () {
         beforeEach(async function () {
             tempDir = await makeTemporaryToolkitFolder()
             invokePath = vscode.Uri.file(tempDir)
-            tester = createWizardTester(new UploadLambdaWizard(undefined, invokePath))
+            tester = await createWizardTester(new UploadLambdaWizard(undefined, invokePath))
         })
         afterEach(async function () {
             await fs.remove(tempDir)
@@ -82,7 +82,7 @@ describe('UploadLambdaWizard', function () {
             tempDirUri = vscode.Uri.file(tempDir)
             writeFileSync(path.join(tempDir, 'template.yaml'), '')
             invokePath = vscode.Uri.file(path.join(tempDir, 'template.yaml'))
-            tester = createWizardTester(new UploadLambdaWizard(undefined, invokePath))
+            tester = await createWizardTester(new UploadLambdaWizard(undefined, invokePath))
         })
         afterEach(async function () {
             await fs.remove(tempDir)

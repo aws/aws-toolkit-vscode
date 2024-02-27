@@ -10,8 +10,8 @@ import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTes
 describe('CreateNewSamAppWizard', async function () {
     let tester: WizardTester<CreateNewSamAppWizardForm>
 
-    beforeEach(function () {
-        tester = createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '1.0.0', schemaRegions: [] }))
+    beforeEach(async function () {
+        tester = await createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '1.0.0', schemaRegions: [] }))
     })
 
     it('prompts for runtime first', function () {
@@ -39,14 +39,14 @@ describe('CreateNewSamAppWizard', async function () {
     })
 
     it('prompts for location before name', function () {
-        tester.runtimeAndPackage.applyInput({ runtime: 'nodejs14.x', packageType: 'Zip' })
+        tester.runtimeAndPackage.applyInput({ runtime: 'nodejs20.x', packageType: 'Zip' })
         tester.template.applyInput('template')
         tester.location.assertShowFirst()
         tester.name.assertShowSecond()
     })
 
     it('prompts for schema configuration if a schema template is selected', function () {
-        tester.runtimeAndPackage.applyInput({ runtime: 'nodejs14.x', packageType: 'Zip' })
+        tester.runtimeAndPackage.applyInput({ runtime: 'nodejs20.x', packageType: 'Zip' })
         tester.template.applyInput(eventBridgeStarterAppTemplate)
         tester.region.assertShowFirst()
         tester.registryName.assertShowSecond()
@@ -54,8 +54,8 @@ describe('CreateNewSamAppWizard', async function () {
     })
 
     describe('architecture', function () {
-        beforeEach(function () {
-            tester = createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '1.33.0', schemaRegions: [] }))
+        beforeEach(async function () {
+            tester = await createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '1.33.0', schemaRegions: [] }))
         })
 
         it('prompts for architecture after runtime (no dependency manager) if SAM CLI >= 1.33', function () {
@@ -69,8 +69,8 @@ describe('CreateNewSamAppWizard', async function () {
             tester.architecture.assertShowSecond()
         })
 
-        it('skips prompt for earlier versions of SAM CLI', function () {
-            tester = createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '1.32.0', schemaRegions: [] }))
+        it('skips prompt for earlier versions of SAM CLI', async function () {
+            tester = await createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '1.32.0', schemaRegions: [] }))
             tester.runtimeAndPackage.applyInput({ runtime: 'java11', packageType: 'Zip' })
             tester.architecture.assertDoesNotShow()
         })
