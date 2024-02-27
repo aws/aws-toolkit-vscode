@@ -25,7 +25,7 @@ import javax.swing.JButton
 import javax.swing.JComponent
 
 // This action is used to open the Q webview  development mode.
-class OpenAmazonQAction : DumbAwareAction() {
+class OpenAmazonQAction : DumbAwareAction("View Q Webview") {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
 
