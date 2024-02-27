@@ -72,7 +72,7 @@
         "lint": "echo 'Nothing to lint yet!'",
         "createRelease": "ts-node ./scripts/build/createRelease.ts",
         "watch": "npm run clean && npm run buildScripts -- --vueHr && tsc -watch -p ./",
-        "serve": "webpack serve --config-name main --mode development",
+        "serve": "webpack serve --config-name mainServe --mode development",
         "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
         "restorePackageJson": "ts-node ./scripts/build/handlePackageJson --restore"
     },

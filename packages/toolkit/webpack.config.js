@@ -28,6 +28,7 @@ const config = {
 
 const serveConfig = {
     ...config,
+    name: 'mainServe',
     devServer,
     externals: {
         vscode: 'commonjs vscode',
@@ -43,6 +44,7 @@ const webConfig = {
 
 const webServeConfig = {
     ...webConfig,
+    name: 'webServe',
     devServer,
 }
 
