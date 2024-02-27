@@ -16,12 +16,18 @@ import { getLogger } from '../../shared/logger'
  */
 Token
 AWS.Token
+
+/**
+ * But sometimes both are always undefined... it may be due to some race condition.
+ * This seems to only happen in the browser, and as of this writing Token is only
+ * used for CodeCatalyst. So, we can safely override it with a dummy if it is broken.
+ */
 let _TokenStub: typeof AWS.Token
 if (AWS.Token === undefined) {
-    getLogger().error('Tried importing AWS.Token but it is undefined.')
-    _TokenStub = class X {} as any
+    getLogger().error('Tried importing AWS.Token but it is undefined. Some Toolkit features may not work correctly.')
+    _TokenStub = class _Empty {} as any
 } else {
-    _TokenStub = AWS.Token as any
+    _TokenStub = AWS.Token
 }
 
 export class TokenProvider extends _TokenStub {
