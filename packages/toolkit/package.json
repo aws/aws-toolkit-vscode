@@ -737,12 +737,12 @@
                 {
                     "id": "aws.amazonq",
                     "name": "%AWS.amazonq.title%",
-                    "when": "(!isCloud9 && !aws.isSageMaker) && !aws.explorer.showAuthView"
+                    "when": "(!isCloud9 && !aws.isSageMaker) && !aws.explorer.showAuthView && !aws.explorer.newLoginEnabled"
                 },
                 {
                     "id": "aws.codewhisperer",
                     "name": "%AWS.codewhisperer.explorerTitle%",
-                    "when": "!aws.explorer.showAuthView"
+                    "when": "!aws.explorer.showAuthView && !aws.explorer.newLoginEnabled"
                 },
                 {
                     "id": "aws.explorer",

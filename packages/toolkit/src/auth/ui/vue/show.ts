@@ -54,6 +54,7 @@ import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { isWeb } from '../../../common/webUtils'
+import { DevSettings } from '../../../shared/settings'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -744,6 +745,12 @@ export const showManageConnections = Commands.declare(
         if (!isServiceItemId(serviceToShow)) {
             serviceToShow = undefined
         }
+
+        if (DevSettings.instance.isNewLoginEnabled()) {
+            void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
+            return
+        }
+
         return showAuthWebview(context, source, serviceToShow)
     }
 )

@@ -155,7 +155,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     }
 
     if (DevSettings.instance.isNewLoginEnabled()) {
-        const toolkitAuthProvider = new CommonAuthViewProvider(ctx, undefined, 'toolkit')
+        void vscode.commands.executeCommand('setContext', 'aws.explorer.newLoginEnabled', true)
+        const toolkitAuthProvider = new CommonAuthViewProvider(ctx, undefined, 'TOOLKIT')
         ctx.subscriptions.push(
             vscode.window.registerWebviewViewProvider(CommonAuthViewProvider.viewType, toolkitAuthProvider, {
                 webviewOptions: {
