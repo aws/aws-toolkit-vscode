@@ -17,12 +17,55 @@ import * as vscode from 'vscode'
 import { spawnSync } from 'child_process' // TO-DO: consider using ChildProcess once we finalize all spawnSync calls
 import AdmZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
-import { CodeTransformMavenBuildCommand, telemetry } from '../../shared/telemetry/telemetry'
+import {
+    CodeTransformJavaSourceVersionsAllowed,
+    CodeTransformMavenBuildCommand,
+    telemetry,
+} from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import {
+    calculateTotalLatency,
+    javapOutputToTelemetryValue,
+    JDKToTelemetryValue,
+} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
+
+/**
+ * @description A function to help validate and log project
+ * details.
+ */
+export async function validateAndLogProjectDetails() {
+    // Try to validate project silently
+    let reason,
+        result,
+        codeTransformLocalJavaVersion,
+        codeTransformPreValidationError = undefined
+    try {
+        const openProjects = await getOpenProjects()
+        const validProjects = await validateOpenProjects(openProjects, true)
+        if (validProjects.size > 0) {
+            const firstKey = validProjects.keys().next().value
+            const firstModuleEntry = validProjects.get(firstKey)
+            codeTransformLocalJavaVersion = JDKToTelemetryValue(
+                firstModuleEntry
+            ) as CodeTransformJavaSourceVersionsAllowed
+        }
+    } catch (err: any) {
+        result = MetadataResult.Fail
+        reason = err?.code
+        codeTransformPreValidationError = err?.name
+    } finally {
+        telemetry.codeTransform_projectDetails.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformLocalJavaVersion,
+            codeTransformPreValidationError,
+            result,
+            reason,
+        })
+    }
+}
 
 /* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
