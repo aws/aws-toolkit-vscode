@@ -20,7 +20,7 @@ import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { validateAndLogProjectDetails } from '../codewhisperer/service/transformByQHandler'
 
 export async function activate(context: ExtContext) {
-    // If the user is codewhisperer eligible, run these checks on startup
+    // If the user is codewhisperer eligible, activate the plugin
     if (AuthUtil.instance.isValidCodeTransformationAuthUser()) {
         const transformationHubViewProvider = new TransformationHubViewProvider()
         new ProposedTransformationExplorer(context.extensionContext)

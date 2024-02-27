@@ -57,13 +57,15 @@ export async function validateAndLogProjectDetails() {
         reason = err?.code
         codeTransformPreValidationError = err?.name
     } finally {
-        telemetry.codeTransform_projectDetails.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformLocalJavaVersion,
-            codeTransformPreValidationError,
-            result,
-            reason,
-        })
+        if (result || reason || codeTransformLocalJavaVersion || codeTransformPreValidationError) {
+            telemetry.codeTransform_projectDetails.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformLocalJavaVersion,
+                codeTransformPreValidationError,
+                result,
+                reason,
+            })
+        }
     }
 }
 
