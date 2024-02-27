@@ -159,7 +159,7 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Authenticating...</div>
+                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Connecting to IAM...</div>
                 <div v-else class="title">Authenticating in browser...</div>
                 <button class="continue-button" v-on:click="handleCancelButtom()">Cancel</button>
             </div>
@@ -367,7 +367,7 @@ export default defineComponent({
     flex-direction: row;
     justify-content: left;
     align-items: flex-start;
-    padding-top: 25px;
+    padding-top: 150px;
     padding-bottom: 10px;
     padding-left: 10px;
     height: auto;
@@ -380,7 +380,9 @@ export default defineComponent({
 .title {
     margin-bottom: 5px;
     margin-top: 5px;
-    font-size: 23px;
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
 }
 .continue-button:disabled {
     background-color: #252526;
