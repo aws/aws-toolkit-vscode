@@ -65,7 +65,7 @@ let localize: nls.LocalizeFunc
 /**
  * The entrypoint for the nodejs version of the toolkit
  *
- * **CONTIBUTORS** If you are adding code to this function prioritize adding it to
+ * **CONTRIBUTORS** If you are adding code to this function prioritize adding it to
  * {@link activateShared} if appropriate
  */
 export async function activate(context: vscode.ExtensionContext) {

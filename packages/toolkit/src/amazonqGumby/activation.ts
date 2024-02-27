@@ -25,14 +25,13 @@ import { MetadataResult } from '../shared/telemetry/telemetryClient'
 import { AuthUtil as CodeWhispererAuth } from '../codewhisperer/util/authUtil'
 
 export async function activate(context: ExtContext) {
-    const transformationHubViewProvider = new TransformationHubViewProvider()
-    new ProposedTransformationExplorer(context.extensionContext)
-
-    // Register an activation event listener to determine when the IDE opens, closes or users
-    // select to open a new workspace
-    const workspaceChangeEvent = vscode.workspace.onDidChangeWorkspaceFolders(event => {
-        // If the user is codewhisperer eligible, run these checks on startup
-        if (CodeWhispererAuth.instance.isEnterpriseSsoInUse() && CodeWhispererAuth.instance.isConnectionValid()) {
+    // If the user is codewhisperer eligible, run these checks on startup
+    if (CodeWhispererAuth.instance.isEnterpriseSsoInUse() && CodeWhispererAuth.instance.isConnectionValid()) {
+        const transformationHubViewProvider = new TransformationHubViewProvider()
+        new ProposedTransformationExplorer(context.extensionContext)
+        // Register an activation event listener to determine when the IDE opens, closes or users
+        // select to open a new workspace
+        const workspaceChangeEvent = vscode.workspace.onDidChangeWorkspaceFolders(event => {
             // A loophole to register the IDE closed. This is when no folders were added nor
             // removed, but the event still fired. This assumes the user closed the workspace
             if (event.added.length === 0 && event.removed.length === 0) {
@@ -51,64 +50,64 @@ export async function activate(context: ExtContext) {
                     codeTransformStatus: transformByQState.getStatus(),
                 })
             }
+        })
+
+        context.extensionContext.subscriptions.push(
+            showTransformByQ.register(context),
+
+            showTransformationHub.register(),
+
+            vscode.window.registerWebviewViewProvider('aws.amazonq.transformationHub', transformationHubViewProvider),
+
+            Commands.register('aws.amazonq.startTransformationInHub', async () => {
+                logCodeTransformInitiatedMetric(CodeTransformConstants.HubStartButton)
+                await startTransformByQWithProgress()
+            }),
+
+            Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
+                if (transformByQState.isRunning()) {
+                    void confirmStopTransformByQ(transformByQState.getJobId(), cancelSrc)
+                } else {
+                    void vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
+                }
+            }),
+
+            Commands.register('aws.amazonq.showHistoryInHub', async () => {
+                transformationHubViewProvider.updateContent('job history', 0) // 0 is dummy value for startTime - not used
+            }),
+
+            Commands.register('aws.amazonq.showPlanProgressInHub', async (startTime: number) => {
+                transformationHubViewProvider.updateContent('plan progress', startTime)
+            }),
+
+            Commands.register('aws.amazonq.showTransformationPlanInHub', async () => {
+                void vscode.commands.executeCommand(
+                    'markdown.showPreview',
+                    vscode.Uri.file(transformByQState.getPlanFilePath())
+                )
+            }),
+
+            workspaceChangeEvent
+        )
+
+        // Try to validate project silently
+        try {
+            const openProjects = await getOpenProjects()
+            const validProjects = await validateOpenProjects(openProjects)
+            const firstKey = validProjects.keys().next().value
+            const firstModuleEntry = validProjects.get(firstKey)
+            telemetry.codeTransform_projectDetails.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformLocalJavaVersion:
+                    (JDKToTelemetryValue(firstModuleEntry) as CodeTransformJavaSourceVersionsAllowed) || undefined,
+            })
+        } catch (err: any) {
+            telemetry.codeTransform_projectDetails.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformPreValidationError: err?.name || undefined,
+                result: MetadataResult.Fail,
+                reason: err?.code || undefined,
+            })
         }
-    })
-
-    context.extensionContext.subscriptions.push(
-        showTransformByQ.register(context),
-
-        showTransformationHub.register(),
-
-        vscode.window.registerWebviewViewProvider('aws.amazonq.transformationHub', transformationHubViewProvider),
-
-        Commands.register('aws.amazonq.startTransformationInHub', async () => {
-            logCodeTransformInitiatedMetric(CodeTransformConstants.HubStartButton)
-            await startTransformByQWithProgress()
-        }),
-
-        Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
-            if (transformByQState.isRunning()) {
-                void confirmStopTransformByQ(transformByQState.getJobId(), cancelSrc)
-            } else {
-                void vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
-            }
-        }),
-
-        Commands.register('aws.amazonq.showHistoryInHub', async () => {
-            transformationHubViewProvider.updateContent('job history', 0) // 0 is dummy value for startTime - not used
-        }),
-
-        Commands.register('aws.amazonq.showPlanProgressInHub', async (startTime: number) => {
-            transformationHubViewProvider.updateContent('plan progress', startTime)
-        }),
-
-        Commands.register('aws.amazonq.showTransformationPlanInHub', async () => {
-            void vscode.commands.executeCommand(
-                'markdown.showPreview',
-                vscode.Uri.file(transformByQState.getPlanFilePath())
-            )
-        }),
-
-        workspaceChangeEvent
-    )
-
-    // Try to validate project silently
-    try {
-        const openProjects = await getOpenProjects()
-        const validProjects = await validateOpenProjects(openProjects)
-        const firstKey = validProjects.keys().next().value
-        const firstModuleEntry = validProjects.get(firstKey)
-        telemetry.codeTransform_projectDetails.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformLocalJavaVersion:
-                (JDKToTelemetryValue(firstModuleEntry) as CodeTransformJavaSourceVersionsAllowed) || undefined,
-        })
-    } catch (err: any) {
-        telemetry.codeTransform_projectDetails.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: err?.name || undefined,
-            result: MetadataResult.Fail,
-            reason: err?.code || undefined,
-        })
     }
 }
