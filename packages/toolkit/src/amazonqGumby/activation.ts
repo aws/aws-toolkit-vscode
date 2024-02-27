@@ -22,11 +22,11 @@ import {
 import { CodeTransformConstants } from './models/constants'
 import { getOpenProjects, validateOpenProjects } from '../codewhisperer/service/transformByQHandler'
 import { MetadataResult } from '../shared/telemetry/telemetryClient'
-import { AuthUtil as CodeWhispererAuth } from '../codewhisperer/util/authUtil'
+import { AuthUtil } from '../codewhisperer/util/authUtil'
 
 export async function activate(context: ExtContext) {
     // If the user is codewhisperer eligible, run these checks on startup
-    if (CodeWhispererAuth.instance.isEnterpriseSsoInUse() && CodeWhispererAuth.instance.isConnectionValid()) {
+    if (AuthUtil.instance.isValidCodeTransformationAuthUser()) {
         const transformationHubViewProvider = new TransformationHubViewProvider()
         new ProposedTransformationExplorer(context.extensionContext)
         // Register an activation event listener to determine when the IDE opens, closes or users

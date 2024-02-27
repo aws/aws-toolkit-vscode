@@ -25,7 +25,7 @@ import {
     validateOpenProjects,
 } from '../service/transformByQHandler'
 import { QuickPickItem } from 'vscode'
-import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
+import { MultiStepInputFlowController } from '../../shared/multiStepInputFlowController'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'

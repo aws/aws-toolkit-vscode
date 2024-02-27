@@ -15,7 +15,7 @@ import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryS
 import { StartActionPositions } from './telemetry/codeTransformTelemetry'
 
 export async function processTransformByQ() {
-    if (!AuthUtil.instance.isEnterpriseSsoInUse()) {
+    if (!AuthUtil.instance.isEnterpriseSsoInUse() && !AuthUtil.instance.isConnectionValid()) {
         void vscode.window.showErrorMessage(noActiveIdCMessage)
         return
     }
