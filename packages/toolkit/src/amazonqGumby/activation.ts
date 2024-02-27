@@ -22,6 +22,7 @@ import {
 import { CodeTransformConstants } from './models/constants'
 import { getOpenProjects, validateOpenProjects } from '../codewhisperer/service/transformByQHandler'
 import { MetadataResult } from '../shared/telemetry/telemetryClient'
+import { AuthUtil as CodeWhispererAuth } from '../codewhisperer/util/authUtil'
 
 export async function activate(context: ExtContext) {
     const transformationHubViewProvider = new TransformationHubViewProvider()
@@ -30,23 +31,26 @@ export async function activate(context: ExtContext) {
     // Register an activation event listener to determine when the IDE opens, closes or users
     // select to open a new workspace
     const workspaceChangeEvent = vscode.workspace.onDidChangeWorkspaceFolders(event => {
-        // A loophole to register the IDE closed. This is when no folders were added nor
-        // removed, but the event still fired. This assumes the user closed the workspace
-        if (event.added.length === 0 && event.removed.length === 0) {
-            // Only fire closed during running/active job status
-            if (transformByQState.isRunning()) {
-                telemetry.codeTransform_jobIsClosedDuringIdeRun.emit({
+        // If the user is codewhisperer eligible, run these checks on startup
+        if (CodeWhispererAuth.instance.isEnterpriseSsoInUse() && CodeWhispererAuth.instance.isConnectionValid()) {
+            // A loophole to register the IDE closed. This is when no folders were added nor
+            // removed, but the event still fired. This assumes the user closed the workspace
+            if (event.added.length === 0 && event.removed.length === 0) {
+                // Only fire closed during running/active job status
+                if (transformByQState.isRunning()) {
+                    telemetry.codeTransform_jobIsClosedDuringIdeRun.emit({
+                        codeTransformJobId: transformByQState.getJobId(),
+                        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                        codeTransformStatus: transformByQState.getStatus(),
+                    })
+                }
+            } else {
+                telemetry.codeTransform_jobIsResumedAfterIdeClose.emit({
                     codeTransformJobId: transformByQState.getJobId(),
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformStatus: transformByQState.getStatus(),
                 })
             }
-        } else {
-            telemetry.codeTransform_jobIsResumedAfterIdeClose.emit({
-                codeTransformJobId: transformByQState.getJobId(),
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformStatus: transformByQState.getStatus(),
-            })
         }
     })
 
