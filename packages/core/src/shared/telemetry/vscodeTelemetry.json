@@ -617,7 +617,7 @@
             "metadata": [{ "type": "didSave" }]
         },
         {
-            "name": "appcomposer_initializeProjectSucceeded",
+            "name": "appcomposer_initializeProject",
             "description": "Called when a project successfully loads",
             "metadata": [{ "type": "resourceCounts" }, { "type": "totalResourceCount" }]
         },
