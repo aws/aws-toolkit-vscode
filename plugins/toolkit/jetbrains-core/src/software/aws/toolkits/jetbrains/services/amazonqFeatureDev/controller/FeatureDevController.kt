@@ -100,8 +100,8 @@ class FeatureDevController(
             FollowUpTypes.WRITE_CODE -> writeCodeClicked(message.tabId)
             FollowUpTypes.ACCEPT_CODE -> acceptCode(message.tabId)
             FollowUpTypes.PROVIDE_FEEDBACK_AND_REGENERATE_CODE -> provideFeedbackAndRegenerateCode(message.tabId)
-            FollowUpTypes.NEW_TASK -> newTask()
-            FollowUpTypes.CLOSE_SESSION -> closeSession()
+            FollowUpTypes.NEW_TASK -> newTask(message.tabId)
+            FollowUpTypes.CLOSE_SESSION -> closeSession(message.tabId)
         }
     }
 
@@ -304,12 +304,23 @@ class FeatureDevController(
         }
     }
 
-    private fun newTask() {
-        TODO("Not yet implemented")
+    private suspend fun newTask(tabId: String) {
+        closeSession(tabId)
+        chatSessionStorage.deleteSession(tabId)
+
+        newTabOpened(tabId)
+
+        messenger.sendAnswer(tabId = tabId, messageType = FeatureDevMessageType.Answer, message = message("amazonqFeatureDev.chat_message.ask_for_new_task"))
+        messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.new_plan"))
     }
 
-    private fun closeSession() {
-        TODO("Not yet implemented")
+    private suspend fun closeSession(tabId: String) {
+        messenger.sendAnswer(tabId = tabId, messageType = FeatureDevMessageType.Answer, message = message("amazonqFeatureDev.chat_message.closed_session"))
+
+        messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.closed_session"))
+        messenger.sendChatInputEnabledMessage(tabId = tabId, enabled = false)
+
+        // TODO: add here endChat telemetry.
     }
 
     private suspend fun provideFeedbackAndRegenerateCode(tabId: String) {
