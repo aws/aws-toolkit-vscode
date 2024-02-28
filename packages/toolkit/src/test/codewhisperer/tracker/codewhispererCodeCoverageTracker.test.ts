@@ -232,7 +232,7 @@ describe('codewhispererCodecoverageTracker', function () {
             CodeWhispererCodeCoverageTracker.instances.clear()
         })
 
-        it('Should skip when content change size is not 1', function () {
+        it('Should skip when content change size is more than 500', function () {
             if (!tracker) {
                 assert.fail()
             }
@@ -241,16 +241,33 @@ describe('codewhispererCodecoverageTracker', function () {
                 document: createMockDocument(),
                 contentChanges: [
                     {
-                        range: new vscode.Range(0, 0, 0, 30),
+                        range: new vscode.Range(0, 0, 0, 600),
                         rangeOffset: 0,
-                        rangeLength: 30,
-                        text: 'def twoSum(nums, target):\nfor',
+                        rangeLength: 600,
+                        text: 'def twoSum(nums, target):\nfor '.repeat(20),
                     },
                 ],
             })
+            assert.strictEqual(Object.keys(tracker.totalTokens).length, 0)
+        })
 
-            const startedSpy = sinon.spy(CodeWhispererCodeCoverageTracker.prototype, 'addTotalTokens')
-            assert.ok(!startedSpy.called)
+        it('Should not skip when content change size is less than 500', function () {
+            if (!tracker) {
+                assert.fail()
+            }
+            tracker.countTotalTokens({
+                reason: undefined,
+                document: createMockDocument(),
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 300),
+                        rangeOffset: 0,
+                        rangeLength: 300,
+                        text: 'def twoSum(nums, target):\nfor '.repeat(10),
+                    },
+                ],
+            })
+            assert.strictEqual(tracker.totalTokens['/test.py'], 300)
         })
 
         it('Should skip when CodeWhisperer is editing', function () {
