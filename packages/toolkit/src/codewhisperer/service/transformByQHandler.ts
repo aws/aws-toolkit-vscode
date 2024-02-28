@@ -14,7 +14,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { spawnSync } from 'child_process' // TO-DO: consider using ChildProcess once we finalize all spawnSync calls
+import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
 import AdmZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
 import { CodeTransformMavenBuildCommand, telemetry } from '../../shared/telemetry/telemetry'
@@ -24,7 +24,7 @@ import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazon
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
 
-/* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
+/* Once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
  * Current functionality: given number of milliseconds elapsed (ex. 4,500,000) return hr / min / sec it represents (ex. 1 hr 15 min)
  */
@@ -232,7 +232,7 @@ export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {
     return headersObj
 }
 
-// TODO: later, consider enhancing the S3 client to include this functionality
+// Consider enhancing the S3 client to include this functionality
 export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
     const sha256 = getSha256(fileName)
     const headersObj = getHeadersObj(sha256, resp.kmsKeyArn)
