@@ -10,6 +10,7 @@ import com.intellij.diff.contents.EmptyContent
 import com.intellij.diff.requests.SimpleDiffRequest
 import com.intellij.diff.util.DiffUserDataKeys
 import com.intellij.ide.BrowserUtil
+import com.intellij.notification.NotificationAction
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Caret
@@ -19,6 +20,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.withContext
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
@@ -29,6 +31,7 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.EDT
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthController
+import software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ContentLengthError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.DEFAULT_RETRY_LIMIT
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
@@ -58,6 +61,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Sessio
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
+import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 import java.util.UUID
@@ -69,6 +73,7 @@ class FeatureDevController(
 
     private val authController = AuthController()
     private val messenger = context.messagesFromAppToUi
+    private val toolWindow = ToolWindowManager.getInstance(context.project).getToolWindow(AmazonQToolWindowFactory.WINDOW_ID)
 
     override suspend fun processPromptChatMessage(message: IncomingFeatureDevMessage.ChatPrompt) {
         handleChat(
@@ -499,8 +504,19 @@ class FeatureDevController(
             messenger.sendAsyncEventProgress(tabId = tabId, inProgress = false) // Finish processing the event
             messenger.sendChatInputEnabledMessage(tabId = tabId, enabled = false) // Lock chat input until a follow-up is clicked.
 
-            // TODO: follow-up handle notification if amazonq is not visible to let the user know the code has been generated.
+            if (toolWindow != null && !toolWindow.isVisible) {
+                notifyInfo(
+                    title = message("amazonqFeatureDev.code_generation.notification_title"),
+                    content = message("amazonqFeatureDev.code_generation.notification_message"),
+                    project = context.project,
+                    notificationActions = listOf(openChatNotificationAction())
+                )
+            }
         }
+    }
+
+    private fun openChatNotificationAction() = NotificationAction.createSimple(message("amazonqFeatureDev.code_generation.notification_open_link")) {
+        toolWindow?.show()
     }
 
     private fun getFollowUpOptions(phase: SessionStatePhase?): List<FollowUp> {
