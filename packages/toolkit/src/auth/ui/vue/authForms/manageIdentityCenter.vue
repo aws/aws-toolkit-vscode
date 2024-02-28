@@ -150,7 +150,7 @@ export default defineComponent({
             if (this.isConnected && !this.checkIfConnected) {
                 this.buttonText = 'Add an IAM Identity Center profile'
             } else {
-                this.buttonText = this.authName === 'Sign in with IAM Identity Center (SSO)'
+                this.buttonText = 'Sign in with IAM Identity Center (SSO)'
             }
         },
         async emitUpdate(cause?: ConnectionUpdateCause) {
