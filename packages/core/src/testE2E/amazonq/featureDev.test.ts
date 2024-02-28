@@ -7,39 +7,22 @@ import assert from 'assert'
 import { qTestingFramework } from './framework/framework'
 import { FollowUpTypes } from '../../amazonqFeatureDev/types'
 import sinon from 'sinon'
-import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { verifyTextOrder } from './framework/text'
 import { examples } from '../../amazonqFeatureDev/userFacingText'
-import * as authUtil from '../../codewhisperer/util/authUtil'
-import request from '../../common/request'
+import { registerAuthHook, using } from '../../test/setupUtil'
+import { loginToIdC } from './utils/setup'
 
 describe('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
 
-    const samplePlanResponse = 'sample plan response'
+    before(async function () {
+        await using(registerAuthHook('amazonq-test-account'), async () => {
+            await loginToIdC()
+        })
+    })
 
     beforeEach(() => {
-        /**
-         * TODO remove these stubs when we know the backend can handle all the test load + when we know the tests
-         * are working without any flakiness
-         */
-        sinon.stub(authUtil, 'getChatAuthState').resolves({
-            amazonQ: 'connected',
-            codewhispererChat: 'connected',
-            codewhispererCore: 'connected',
-        })
-        sinon.stub(FeatureDevClient.prototype, 'createConversation').resolves('1234')
-        sinon.stub(FeatureDevClient.prototype, 'createUploadUrl').resolves({
-            uploadId: '5678',
-            uploadUrl: 'foo',
-            $response: sinon.mock() as any,
-        })
-        sinon.stub(FeatureDevClient.prototype, 'generatePlan').resolves(samplePlanResponse)
-        sinon.stub(request, 'fetch').resolves({
-            response: {
-                status: 200,
-            },
-        })
+        registerAuthHook('amazonq-test-account')
         framework = new qTestingFramework('featuredev', true, true)
     })
 
@@ -85,8 +68,12 @@ describe('Amazon Q Feature Dev', function () {
 
             const chatItems = q.getChatItems()
 
-            // Verify that all the responses come back in the correct order
-            verifyTextOrder(chatItems, ['Welcome to /dev', prompt, samplePlanResponse])
+            /**
+             * Verify that all the responses come back in the correct order and that a response
+             * after the prompt is non empty (represents a response from the backend, since the same response isn't
+             * guarenteed we can't verify direct responses)
+             */
+            verifyTextOrder(chatItems, [/Welcome to \/dev/, new RegExp(prompt), /.\S/])
 
             // Check that the last UI message has the two buttons
             assert.notStrictEqual(chatItems.pop()?.followUp?.options, [
@@ -123,8 +110,12 @@ describe('Amazon Q Feature Dev', function () {
 
             const chatItems = q.getChatItems()
 
-            // Verify that all the responses come back in the correct order
-            verifyTextOrder(chatItems, [prompt, samplePlanResponse])
+            /**
+             * Verify that all the responses come back in the correct order and that a response
+             * after the prompt is non empty (represents a response from the backend, since the same response isn't
+             * guarenteed we can't verify direct responses)
+             */
+            verifyTextOrder(chatItems, [/Welcome to \/dev/, new RegExp(prompt), /.\S/])
 
             // Check that the UI has the two buttons
             assert.notStrictEqual(chatItems.pop()?.followUp?.options, [

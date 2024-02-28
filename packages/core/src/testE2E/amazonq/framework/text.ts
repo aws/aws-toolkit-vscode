@@ -12,10 +12,11 @@ import { ChatItem } from '@aws/mynah-ui'
  * @param expectedText An array of expected text items in order
  * @returns true if the items in expectedText are found in the correct order in chatItems otherwise false
  */
-export function verifyTextOrder(chatItems: ChatItem[], expectedText: string[]) {
+export function verifyTextOrder(chatItems: ChatItem[], expectedText: RegExp[]) {
     let currInd = 0
     for (const item of chatItems) {
-        if (item.body?.includes(expectedText[currInd])) {
+        const currentExpected = expectedText[currInd]
+        if (currentExpected && item.body?.match(currentExpected)) {
             currInd++
         }
     }
