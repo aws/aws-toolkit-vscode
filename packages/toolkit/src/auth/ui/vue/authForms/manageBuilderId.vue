@@ -170,7 +170,7 @@ abstract class BaseBuilderIdState implements AuthForm {
      */
     async getSubmitButtonText(): Promise<string> {
         if (!(await this.anyBuilderIdConnected())) {
-            return 'Use for free, no AWS Account required'
+            return 'Use for free with AWS Builder ID'
         } else {
             return `Connect AWS Builder ID with ${this.name}`
         }
