@@ -75,7 +75,7 @@
             </div>
         </div>
         <div>
-            <div style="font-size: 1.6rem; font-weight: bold">Sign in to Get Started</div>
+            <div style="font-size: 2.1rem; font-weight: bold">Select a sign-in option to continue:</div>
             <hr style="margin: 1em 0 1em 0; border-color: var(--vscode-textBlockQuote-border)" />
             <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 1em">
                 <CodeWhispererContent
