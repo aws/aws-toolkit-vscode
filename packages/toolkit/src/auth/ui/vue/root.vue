@@ -46,7 +46,7 @@
                     </svg>
                 </div>
                 <div>
-                    <div style="font-size: 1.8rem; font-weight: bold">AWS Toolkit for VS Code</div>
+                    <div style="font-size: 1.4rem; font-weight: bold">AWS Toolkit for VS Code</div>
                     <div style="font-size: 1rem; font-weight: bold">
                         <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html"
                             >Documentation</a
