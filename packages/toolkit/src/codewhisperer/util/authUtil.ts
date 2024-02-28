@@ -373,10 +373,6 @@ export class AuthUtil {
         void this.showReauthenticatePrompt(isAutoTrigger)
         await this.setVscodeContextProps()
     }
-
-    public isValidCodeTransformationAuthUser(): boolean {
-        return this.isEnterpriseSsoInUse() && this.isConnectionValid()
-    }
 }
 
 /**
