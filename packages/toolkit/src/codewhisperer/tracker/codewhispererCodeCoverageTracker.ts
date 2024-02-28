@@ -24,6 +24,23 @@ interface CodeWhispererToken {
     accepted: number
 }
 
+interface UserInputDetail {
+    count: number
+    total: number
+}
+
+interface UserInputDetails {
+    lt1: UserInputDetail
+    lt50: UserInputDetail
+    lt100: UserInputDetail
+    lt200: UserInputDetail
+    lt300: UserInputDetail
+    lt400: UserInputDetail
+    lt500: UserInputDetail
+    lt1000: UserInputDetail
+    gt1000: UserInputDetail
+}
+
 const autoClosingKeystrokeInputs = ['[]', '{}', '()', '""', "''"]
 
 /**
@@ -37,12 +54,25 @@ export class CodeWhispererCodeCoverageTracker {
     private _language: CodewhispererLanguage
     private _serviceInvocationCount: number
 
+    private _userInputDetails: UserInputDetails
+
     private constructor(language: CodewhispererLanguage) {
         this._acceptedTokens = {}
         this._totalTokens = {}
         this._startTime = 0
         this._language = language
         this._serviceInvocationCount = 0
+        this._userInputDetails = {
+            lt1: { count: 0, total: 0 },
+            lt50: { count: 0, total: 0 },
+            lt100: { count: 0, total: 0 },
+            lt200: { count: 0, total: 0 },
+            lt300: { count: 0, total: 0 },
+            lt400: { count: 0, total: 0 },
+            lt500: { count: 0, total: 0 },
+            lt1000: { count: 0, total: 0 },
+            gt1000: { count: 0, total: 0 },
+        }
     }
 
     public get serviceInvocationCount(): number {
@@ -110,7 +140,7 @@ export class CodeWhispererCodeCoverageTracker {
         }
         // the accepted characters without counting user modification
         let acceptedTokens = 0
-        // the accepted characters after calculating user modificaiton
+        // the accepted characters after calculating user modification
         let unmodifiedAcceptedTokens = 0
         for (const filename in this._acceptedTokens) {
             this._acceptedTokens[filename].forEach(v => {
@@ -136,6 +166,7 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             credentialStartUrl: AuthUtil.instance.startUrl,
+            codewhispererUserInputDetails: JSON.stringify(this._userInputDetails),
         })
 
         client
@@ -206,6 +237,17 @@ export class CodeWhispererCodeCoverageTracker {
         this._acceptedTokens = {}
         this._startTime = 0
         this._serviceInvocationCount = 0
+        this._userInputDetails = {
+            lt1: { count: 0, total: 0 },
+            lt50: { count: 0, total: 0 },
+            lt100: { count: 0, total: 0 },
+            lt200: { count: 0, total: 0 },
+            lt300: { count: 0, total: 0 },
+            lt400: { count: 0, total: 0 },
+            lt500: { count: 0, total: 0 },
+            lt1000: { count: 0, total: 0 },
+            gt1000: { count: 0, total: 0 },
+        }
     }
 
     private closeTimer() {
@@ -287,9 +329,54 @@ export class CodeWhispererCodeCoverageTracker {
         if (this.isFromUserKeystroke(e)) {
             this.tryStartTimer()
             this.addTotalTokens(e.document.fileName, 1)
+            this._userInputDetails.lt1.count += 1
+            this._userInputDetails.lt1.total += 1
         } else if (this.getCharacterCountFromComplexEvent(e) !== 0) {
             this.tryStartTimer()
-            this.addTotalTokens(e.document.fileName, this.getCharacterCountFromComplexEvent(e))
+            const characterIncrease = this.getCharacterCountFromComplexEvent(e)
+            this.addTotalTokens(e.document.fileName, characterIncrease)
+            this._userInputDetails.lt1.count += 1
+            this._userInputDetails.lt1.total += characterIncrease
+        }
+        // also include multi character input within 500 characters (not from CWSPR)
+        else if (
+            e.contentChanges.length === 1 &&
+            e.contentChanges[0].text.length > 1 &&
+            TelemetryHelper.instance.lastSuggestionInDisplay !== e.contentChanges[0].text
+        ) {
+            const multiCharInputSize = e.contentChanges[0].text.length
+
+            // select 500 as the cut-off threshold for counting user input.
+            if (multiCharInputSize < 500) {
+                this.addTotalTokens(e.document.fileName, multiCharInputSize)
+            }
+
+            // report multiple user input patterns for adjusting the threshold
+            if (multiCharInputSize < 50) {
+                this._userInputDetails.lt50.total += multiCharInputSize
+                this._userInputDetails.lt50.count += 1
+            } else if (multiCharInputSize < 100) {
+                this._userInputDetails.lt100.total += multiCharInputSize
+                this._userInputDetails.lt100.count += 1
+            } else if (multiCharInputSize < 200) {
+                this._userInputDetails.lt200.total += multiCharInputSize
+                this._userInputDetails.lt200.count += 1
+            } else if (multiCharInputSize < 300) {
+                this._userInputDetails.lt300.total += multiCharInputSize
+                this._userInputDetails.lt300.count += 1
+            } else if (multiCharInputSize < 400) {
+                this._userInputDetails.lt400.total += multiCharInputSize
+                this._userInputDetails.lt400.count += 1
+            } else if (multiCharInputSize < 500) {
+                this._userInputDetails.lt500.total += multiCharInputSize
+                this._userInputDetails.lt500.count += 1
+            } else if (multiCharInputSize < 1000) {
+                this._userInputDetails.lt1000.total += multiCharInputSize
+                this._userInputDetails.lt1000.count += 1
+            } else {
+                this._userInputDetails.gt1000.total += multiCharInputSize
+                this._userInputDetails.gt1000.count += 1
+            }
         }
     }
 
