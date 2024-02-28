@@ -5,7 +5,10 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages
 
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthNeededState
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.NewFileZipInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
+import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
+import software.aws.toolkits.jetbrains.services.cwc.messages.RecommendationContentSpan
 import software.aws.toolkits.resources.message
 import java.util.UUID
 
@@ -161,5 +164,31 @@ suspend fun MessagePublisher.initialExamples(tabId: String) {
         tabId = tabId,
         messageType = FeatureDevMessageType.Answer,
         message = message("amazonqFeatureDev.example_text"),
+    )
+}
+
+suspend fun MessagePublisher.sendCodeResult(
+    tabId: String,
+    uploadId: String,
+    filePaths: List<NewFileZipInfo>,
+    deletedFiles: Array<String>,
+    references: Array<CodeReference>
+) {
+    // It is being done this mapping as featureDev currently doesn't support fully references.
+    val refs = references.filter { it.licenseName != null && it.url != null && it.repository != null }.map {
+        ReducedCodeReference(
+            information = it.information, // TODO: double check this references logic. As we have a licenseText function in vscode toolkit.
+            recommendationContentSpan = RecommendationContentSpan(start = 0, end = 0)
+        )
+    }
+
+    this.publish(
+        CodeResultMessage(
+            tabId = tabId,
+            conversationId = uploadId,
+            filePaths = filePaths.map { it.zipFilePath },
+            deletedFiles = deletedFiles.asList(),
+            references = refs
+        )
     )
 }

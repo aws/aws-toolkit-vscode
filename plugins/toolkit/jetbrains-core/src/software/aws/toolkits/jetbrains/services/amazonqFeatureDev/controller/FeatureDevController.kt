@@ -3,6 +3,12 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller
 
+import com.intellij.diff.DiffContentFactory
+import com.intellij.diff.DiffManager
+import com.intellij.diff.contents.DiffContent
+import com.intellij.diff.contents.EmptyContent
+import com.intellij.diff.requests.SimpleDiffRequest
+import com.intellij.diff.util.DiffUserDataKeys
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.command.WriteCommandAction
@@ -12,11 +18,13 @@ import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.guessProjectDir
+import com.intellij.openapi.vfs.VfsUtil
 import kotlinx.coroutines.withContext
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.core.utils.readText
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.EDT
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
@@ -39,6 +47,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendA
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAuthNeededException
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAuthenticationInProgressMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendChatInputEnabledMessage
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendCodeResult
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendSystemPrompt
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendUpdatePlaceholder
@@ -47,6 +56,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Prepar
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Session
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
+import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
@@ -144,6 +154,53 @@ class FeatureDevController(
                     editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
                 }
                 editor.document.insertString(offset, message.code)
+            }
+        }
+    }
+
+    override suspend fun processOpenDiff(message: IncomingFeatureDevMessage.OpenDiff) {
+        val session = getSessionInfo(message.tabId)
+
+        val project = context.project
+        val sessionState = session.sessionState
+
+        val leftDiffContent: DiffContent
+        val rightDiffContent: DiffContent
+        when (sessionState) {
+            is PrepareCodeGenerationState ->
+                {
+                    val existingFile = VfsUtil.findRelativeFile(message.filePath, session.context.projectRoot)
+
+                    leftDiffContent = if (existingFile == null) {
+                        EmptyContent()
+                    } else {
+                        DiffContentFactory.getInstance().create(project, existingFile)
+                    }
+
+                    val newFileContent = sessionState.filePaths.find {
+                        it.zipFilePath.equals(
+                            message.filePath
+                        )
+                    }?.newFilePath?.readText()
+
+                    rightDiffContent = if (message.deleted || newFileContent == null) {
+                        EmptyContent()
+                    } else {
+                        DiffContentFactory.getInstance().create(newFileContent)
+                    }
+
+                    val request = SimpleDiffRequest(message.filePath, leftDiffContent, rightDiffContent, null, null)
+                    request.putUserData(DiffUserDataKeys.FORCE_READ_ONLY, true)
+                    DiffManager.getInstance().showDiff(project, request)
+                }
+            else -> {
+                logger.error { "$FEATURE_NAME: OpenDiff event is received for a conversation that has ${session.sessionState.phase} phase" }
+                messenger.sendError(
+                    tabId = message.tabId,
+                    errMessage = message("amazonqFeatureDev.exception.open_diff_failed"),
+                    retries = 0,
+                    phase = session.sessionState.phase
+                )
             }
         }
     }
@@ -385,11 +442,15 @@ class FeatureDevController(
 
             var filePaths: List<NewFileZipInfo> = emptyList()
             var deletedFiles: Array<String> = emptyArray()
+            var references: Array<CodeReference> = emptyArray()
+            var uploadId = ""
 
             when (state) {
                 is PrepareCodeGenerationState -> {
                     filePaths = state.filePaths
                     deletedFiles = state.deletedFiles
+                    references = state.references
+                    uploadId = state.uploadId
                 }
             }
 
@@ -418,7 +479,7 @@ class FeatureDevController(
                 return
             }
 
-            // TODO: send code result to mynah ui, i.e. diff view message.
+            messenger.sendCodeResult(tabId = tabId, uploadId = uploadId, filePaths = filePaths, deletedFiles = deletedFiles, references = references)
 
             messenger.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase))
 

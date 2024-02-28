@@ -14,4 +14,5 @@ interface InboundAppMessagesHandler {
     suspend fun processChatItemVotedMessage(message: IncomingFeatureDevMessage.ChatItemVotedMessage)
     suspend fun processLinkClick(message: IncomingFeatureDevMessage.ClickedLink)
     suspend fun processInsertCodeAtCursorPosition(message: IncomingFeatureDevMessage.InsertCodeAtCursorPosition)
+    suspend fun processOpenDiff(message: IncomingFeatureDevMessage.OpenDiff)
 }

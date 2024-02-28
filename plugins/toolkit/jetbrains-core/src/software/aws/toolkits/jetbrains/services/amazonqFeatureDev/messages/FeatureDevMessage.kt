@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthFollowUpType
 import software.aws.toolkits.jetbrains.services.amazonq.messages.AmazonQMessage
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
+import software.aws.toolkits.jetbrains.services.cwc.messages.RecommendationContentSpan
 import java.time.Instant
 import java.util.UUID
 
@@ -62,6 +63,12 @@ sealed interface IncomingFeatureDevMessage : FeatureDevBaseMessage {
         val code: String,
         val insertionTargetType: String?,
         val codeReference: List<CodeReference>?,
+    ) : IncomingFeatureDevMessage
+
+    data class OpenDiff(
+        @JsonProperty("tabID") val tabId: String,
+        val filePath: String,
+        val deleted: Boolean
     ) : IncomingFeatureDevMessage
 }
 
@@ -152,6 +159,17 @@ data class AuthNeededException(
     type = "authNeededException",
 )
 
+data class CodeResultMessage(
+    @JsonProperty("tabID") override val tabId: String,
+    val conversationId: String,
+    val filePaths: List<String>,
+    val deletedFiles: List<String>,
+    val references: List<ReducedCodeReference>
+) : UiMessage(
+    tabId = tabId,
+    type = "codeResultMessage"
+)
+
 data class FollowUp(
     val type: FollowUpTypes,
     val pillText: String,
@@ -191,3 +209,9 @@ enum class FollowUpTypes(
     NEW_TASK("NewTask"),
     CLOSE_SESSION("CloseSession")
 }
+
+// Util classes
+data class ReducedCodeReference(
+    val information: String,
+    val recommendationContentSpan: RecommendationContentSpan
+)

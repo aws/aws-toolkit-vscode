@@ -50,6 +50,7 @@ class CodeGenerationState(
             deletedFiles = codeGenerationResult.deletedFiles,
             references = codeGenerationResult.references,
             currentIteration = currentIteration + 1,
+            uploadId = uploadId,
             messenger = messenger,
         )
 

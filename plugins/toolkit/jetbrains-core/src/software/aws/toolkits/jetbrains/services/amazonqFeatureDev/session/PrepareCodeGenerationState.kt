@@ -16,6 +16,7 @@ class PrepareCodeGenerationState(
     private var config: SessionStateConfig,
     val filePaths: List<NewFileZipInfo>,
     val deletedFiles: Array<String>,
+    var uploadId: String,
     val references: Array<CodeReference>,
     private val currentIteration: Int,
     private var messenger: MessagePublisher
@@ -38,11 +39,12 @@ class PrepareCodeGenerationState(
 
         uploadArtifactToS3(uploadUrlResponse.uploadUrl(), fileToUpload, zipFileChecksum, zipFileLength, uploadUrlResponse.kmsKeyArn())
 
+        this.uploadId = uploadUrlResponse.uploadId()
         val nextState = CodeGenerationState(
             tabID = this.tabID,
             approach = "", // No approach needed,
             config = this.config,
-            uploadId = uploadUrlResponse.uploadId(),
+            uploadId = this.uploadId,
             currentIteration = this.currentIteration,
             messenger = messenger
         )

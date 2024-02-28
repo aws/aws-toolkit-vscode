@@ -76,7 +76,8 @@ class Session(val tabID: String, val project: Project) {
             filePaths = emptyList(),
             deletedFiles = emptyArray(),
             references = emptyArray(),
-            currentIteration = 0,
+            currentIteration = 0, // first code gen iteration
+            uploadId = "", // There is no code gen uploadId so far
             messenger = messenger,
         )
         this._latestMessage = ""
