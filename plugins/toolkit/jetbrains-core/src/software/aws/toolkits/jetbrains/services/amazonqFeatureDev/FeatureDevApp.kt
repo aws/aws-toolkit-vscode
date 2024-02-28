@@ -16,6 +16,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller.Fea
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.AuthenticationUpdateMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.IncomingFeatureDevMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
+import software.aws.toolkits.jetbrains.services.codemodernizer.isCodeModernizerAvailable
 
 class FeatureDevApp : AmazonQApp {
 
@@ -56,6 +57,7 @@ class FeatureDevApp : AmazonQApp {
                         context.messagesFromAppToUi.publish(
                             AuthenticationUpdateMessage(
                                 featureDevEnabled = isFeatureDevAvailable(context.project),
+                                gumbyEnabled = isCodeModernizerAvailable(context.project),
                                 authenticatingTabIDs = chatSessionStorage.getAuthenticatingSessions().map { it.tabID }
                             )
                         )

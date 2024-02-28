@@ -141,6 +141,7 @@ data class ErrorMessage(
 data class AuthenticationUpdateMessage(
     val authenticatingTabIDs: List<String>,
     val featureDevEnabled: Boolean,
+    val gumbyEnabled: Boolean,
     val message: String? = null,
     val messageId: String = UUID.randomUUID().toString(),
 

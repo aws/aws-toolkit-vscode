@@ -23,6 +23,7 @@ export class QuickActionHandler {
     private tabsStorage: TabsStorage
     private tabDataGenerator: TabDataGenerator
     public isFeatureDevEnabled: boolean
+    public isGumbyEnabled: boolean
 
     constructor(props: QuickActionsHandlerProps) {
         this.mynahUI = props.mynahUI
@@ -33,6 +34,7 @@ export class QuickActionHandler {
             isGumbyEnabled: props.isGumbyEnabled,
         })
         this.isFeatureDevEnabled = props.isFeatureDevEnabled
+        this.isGumbyEnabled = props.isGumbyEnabled
     }
 
     public handle(chatPrompt: ChatPrompt, tabID: string) {
@@ -54,6 +56,9 @@ export class QuickActionHandler {
     }
 
     private handleGumbyCommand(tabID: string) {
+        if (!this.isGumbyEnabled) {
+            return
+        }
         this.connector.transform(tabID)
     }
 

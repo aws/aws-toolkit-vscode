@@ -39,7 +39,7 @@ export interface ConnectorProps {
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
-    onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
+    onUpdateAuthentication: (featureDevEnabled: boolean, gumbyEnabled: boolean, authenticatingTabIDs: string[]) => void
     onNewTab: (tabType: TabType) => void
     tabsStorage: TabsStorage
 }
