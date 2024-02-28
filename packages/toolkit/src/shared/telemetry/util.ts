@@ -105,23 +105,25 @@ type EnvType =
     | 'other'
 
 export function getComputeEnvType(): EnvType {
-    if (isCloud9('classic')) { return 'cloud9' }
-
-    else if (isCloud9('codecatalyst')) { return 'cloud9-codecatalyst' }
-
-    else if (isInDevEnv()) { return 'codecatalyst' }
-
-    else if (isCn()) { return 'amazon-cloud9' }
-
-    else if (isSageMaker()) { return 'sagemaker' }
-
-    else if (env.remoteName === 'ssh-remote' && !isInDevEnv()) { return 'ec2' }
-
-    else if (isAutomation()) { return 'test' }
-
-    else if (!env.remoteName) { return 'local' }
-
-    else { return 'other' }
+    if (isCloud9('classic')) {
+        return 'cloud9'
+    } else if (isCloud9('codecatalyst')) {
+        return 'cloud9-codecatalyst'
+    } else if (isInDevEnv()) {
+        return 'codecatalyst'
+    } else if (isCn()) {
+        return 'amazon-cloud9'
+    } else if (isSageMaker()) {
+        return 'sagemaker'
+    } else if (env.remoteName === 'ssh-remote' && !isInDevEnv()) {
+        return 'ec2'
+    } else if (isAutomation()) {
+        return 'test'
+    } else if (!env.remoteName) {
+        return 'local'
+    } else {
+        return 'other'
+    }
 }
 
 /**
