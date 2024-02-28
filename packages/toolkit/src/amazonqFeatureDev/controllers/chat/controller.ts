@@ -18,7 +18,7 @@ import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { FollowUpTypes, SessionStatePhase } from '../../types'
 import { Messenger } from './messenger/messenger'
-import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil, getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
@@ -143,12 +143,14 @@ export class FeatureDevController {
                         amazonqConversationId: session?.conversationId,
                         value: 1,
                         result: 'Succeeded',
+                        credentialStartUrl: AuthUtil.instance.startUrl,
                     })
                 } else if (vote === 'downvote') {
                     telemetry.amazonq_approachThumbsDown.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
                         result: 'Succeeded',
+                        credentialStartUrl: AuthUtil.instance.startUrl,
                     })
                 }
                 break
@@ -591,6 +593,7 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
             amazonqConversationId: session.conversationId,
             enabled: true,
             result: 'Succeeded',
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
 
         const workspacePrefixMapping = getWorkspaceFoldersByPrefixes(session.config.workspaceFolders)

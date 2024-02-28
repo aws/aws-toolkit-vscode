@@ -82,6 +82,10 @@ export class AuthUtil {
     private _isCustomizationFeatureEnabled: boolean = false
     private readonly mementoKey: string = 'hasAlreadySeenQWelcomeObj'
 
+    // user should only see that screen once.
+    // TODO: move to memento
+    public hasAlreadySeenMigrationAuthScreen: boolean = false
+
     public get isCustomizationFeatureEnabled(): boolean {
         return this._isCustomizationFeatureEnabled
     }

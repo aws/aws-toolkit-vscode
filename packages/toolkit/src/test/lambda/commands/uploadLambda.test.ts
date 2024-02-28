@@ -74,8 +74,8 @@ describe('uploadLambda', async function () {
     it('lists functions from .application.json', async function () {
         const filePath = path.join(tempFolder, '.application.json')
         await toFile(dotApplicationJsonData, filePath)
-        const foundFunctions1 = getFunctionNames(vscode.Uri.file(filePath), 'us-west-2')
-        const foundFunctions2 = getFunctionNames(vscode.Uri.file(filePath), 'us-east-1')
+        const foundFunctions1 = await getFunctionNames(vscode.Uri.file(filePath), 'us-west-2')
+        const foundFunctions2 = await getFunctionNames(vscode.Uri.file(filePath), 'us-east-1')
         assert.deepStrictEqual(foundFunctions1, ['sampleFunction-w2'])
         assert.deepStrictEqual(foundFunctions2, ['sampleFunction-e1', 'differentFunction-e1'])
     })
@@ -84,7 +84,7 @@ describe('uploadLambda', async function () {
         const filePath = path.join(tempFolder, '.application.json')
         const invalidJson = '{ "DeploymentMethod": "lambda", "Functions": { ?? } }'
         await toFile(invalidJson, filePath)
-        assert.deepStrictEqual(getFunctionNames(vscode.Uri.file(filePath), 'us-west-2'), undefined)
-        assert.deepStrictEqual(getFunctionNames(vscode.Uri.file(filePath), 'us-east-1'), undefined)
+        assert.deepStrictEqual(await getFunctionNames(vscode.Uri.file(filePath), 'us-west-2'), undefined)
+        assert.deepStrictEqual(await getFunctionNames(vscode.Uri.file(filePath), 'us-east-1'), undefined)
     })
 })

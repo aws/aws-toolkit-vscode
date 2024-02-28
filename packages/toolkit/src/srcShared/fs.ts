@@ -82,6 +82,25 @@ export class FileSystemCommon {
 
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
         path = FileSystemCommon.getUri(path)
+
+        if (isCloud9()) {
+            // vscode.workspace.fs.stat() is SLOW. Avoid it on Cloud9.
+            try {
+                const stat = await fsPromises.stat(path.fsPath)
+                // Note: comparison is bitwise (&) because `FileType` enum is bitwise.
+                // See vscode.FileType docstring.
+                if (fileType === undefined || fileType & vscode.FileType.Unknown) {
+                    return true
+                } else if (fileType & vscode.FileType.Directory) {
+                    return stat.isDirectory()
+                } else if (fileType & vscode.FileType.File) {
+                    return stat.isFile()
+                }
+            } catch {
+                return false
+            }
+        }
+
         try {
             const stat = await this.stat(path)
             // check filetype if it was given

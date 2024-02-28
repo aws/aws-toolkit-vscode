@@ -176,7 +176,7 @@ describe('FileSystem', function () {
                 await fsCommon.mkdir(dirPath)
 
                 assert(existsSync(dirPath))
-                assert.strictEqual(mkdirSpy.callCount, 1)
+                assert.deepStrictEqual(mkdirSpy.args, [[dirPath, { recursive: true }]])
             })
         })
     })
