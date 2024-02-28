@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { setWeb } from './common/webUtils'
 import { getLogger } from './shared/logger'
 import { activateShared, deactivateShared } from './extensionShared'
-import { RegionProvider, defaultRegion } from './shared/regions/regionProvider'
 import os from 'os'
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -18,11 +17,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // IMPORTANT: Any new activation code should be done in the function below unless
         // it is web mode specific activation code.
-        await activateShared(context, () => {
-            return {
-                guessDefaultRegion: () => defaultRegion,
-            } as RegionProvider
-        })
+        await activateShared(context)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
