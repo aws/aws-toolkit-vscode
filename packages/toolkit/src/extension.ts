@@ -14,7 +14,6 @@ import { SharedCredentialsProviderFactory } from './auth/providers/sharedCredent
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
-import { endpointsFileUrl } from './shared/constants'
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     getIdeProperties,
@@ -24,9 +23,6 @@ import {
     showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
-import { getEndpointsFromFetcher, RegionProvider } from './shared/regions/regionProvider'
-import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
-import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
 import { activate as activateEcr } from './ecr/activation'
 import { activate as activateEc2 } from './ec2/activation'
 import { activate as activateSam } from './shared/sam/activation'
@@ -74,9 +70,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     try {
         // IMPORTANT: If you are doing setup that should also work in web mode (browser), it should be done in the function below
-        const extContext = await activateShared(context, () =>
-            RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
-        )
+        const extContext = await activateShared(context)
 
         initializeNetworkAgent()
         initializeCredentialsProviderManager()
@@ -234,16 +228,6 @@ function initializeCredentialsProviderManager() {
     const manager = CredentialsProviderManager.getInstance()
     manager.addProviderFactory(new SharedCredentialsProviderFactory())
     manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
-}
-
-function makeEndpointsProvider() {
-    const localManifestFetcher = new FileResourceFetcher(globals.manifestPaths.endpoints)
-    const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
-
-    return {
-        local: () => getEndpointsFromFetcher(localManifestFetcher),
-        remote: () => getEndpointsFromFetcher(remoteManifestFetcher),
-    }
 }
 
 function recordToolkitInitialization(activationStartedOn: number, settingsValid: boolean, logger?: Logger) {
