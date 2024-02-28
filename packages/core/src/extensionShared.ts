@@ -48,6 +48,10 @@ import { disableAwsSdkWarning } from './shared/awsClientBuilder'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { ResourceFetcher } from './shared/resourcefetcher/resourcefetcher'
 
+// In web mode everything must be in a single file, so things like the endpoints file will not be available.
+// The following imports the endpoints file, which causes webpack to bundle it in the final output file
+import endpoints from '../resources/endpoints.json'
+
 disableAwsSdkWarning()
 
 let localize: nls.LocalizeFunc
@@ -243,9 +247,6 @@ function makeEndpointsProvider() {
     let localManifestFetcher: ResourceFetcher
     let remoteManifestFetcher: ResourceFetcher
     if (isWeb()) {
-        // In web mode everything must be in a single file, so things like the endpoints file will not be available.
-        // The following imports the endpoints file, which causes webpack to bundle it in the final output file
-        const endpoints = require('../resources/endpoints.json')
         localManifestFetcher = { get: async () => JSON.stringify(endpoints) }
         // Cannot use HttpResourceFetcher due to web mode breaking on import
         remoteManifestFetcher = { get: async () => (await fetch(endpointsFileUrl)).text() }
