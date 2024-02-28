@@ -267,7 +267,8 @@ describe('codewhispererCodecoverageTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker.totalTokens['/test.py'], 300)
+            assert.strictEqual(Object.keys(tracker.totalTokens).length, 1)
+            assert.strictEqual(Object.values(tracker.totalTokens)[0], 300)
         })
 
         it('Should skip when CodeWhisperer is editing', function () {
