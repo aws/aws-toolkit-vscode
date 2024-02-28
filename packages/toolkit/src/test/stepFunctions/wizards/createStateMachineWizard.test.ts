@@ -9,8 +9,8 @@ import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTes
 describe('CreateStateMachineWizard', function () {
     let tester: WizardTester<CreateStateMachineWizard>
 
-    beforeEach(function () {
-        tester = createWizardTester(new CreateStateMachineWizard())
+    beforeEach(async function () {
+        tester = await createWizardTester(new CreateStateMachineWizard())
     })
 
     it('prompts for a file name and format', async function () {

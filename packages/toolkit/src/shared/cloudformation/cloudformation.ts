@@ -19,7 +19,8 @@ export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api' // eslint-disable-line
 export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function' // eslint-disable-line @typescript-eslint/naming-convention
 export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function' // eslint-disable-line @typescript-eslint/naming-convention
 
-export const templateFileGlobPattern = '**/*.{yaml,yml}'
+export const templateFileGlobPattern = '**/*.{yaml,yml,json,template}'
+export const templateFileRegexPattern = /.*\.(yaml|yml|json|template)$/i
 export const devfileExcludePattern = /.*devfile\.(yaml|yml)/i
 /**
  * Match any file path that contains a .aws-sam folder. The way this works is:
@@ -378,16 +379,13 @@ export interface TemplateResources {
 export function isValidFilename(filename: string | vscode.Uri): boolean {
     filename = typeof filename === 'string' ? filename : filename.fsPath
     filename = filename.trim()
-    if (!filename.endsWith('.yml') && !filename.endsWith('.yaml')) {
+    if (!templateFileRegexPattern.test(filename)) {
         return false
     }
     // Note: intentionally _not_ checking `templateFileExcludePattern` here, because while excluding
     // template files in .aws-sam/ is relevant for the workspace scan, it's irrelevant if such
     // a file was opened explicitly by the user.
-    if (filename.match(devfileExcludePattern)) {
-        return false
-    }
-    return true
+    return !devfileExcludePattern.test(filename)
 }
 
 export async function load(filename: string, validate: boolean = true): Promise<Template> {
@@ -402,7 +400,12 @@ export async function load(filename: string, validate: boolean = true): Promise<
 export async function loadByContents(contents: string, validate: boolean = true): Promise<Template> {
     const template = yaml.load(contents, {
         schema: schema as any,
-    }) as Template
+    }) as Template | undefined
+
+    // XXX: yaml.load() returns `undefined` if given an empty string (i.e. contents='')!
+    if (!template) {
+        return {}
+    }
 
     if (validate) {
         validateTemplate(template)
@@ -441,7 +444,7 @@ export async function tryLoad(
 
     // Check if the template is a SAM template, using the same heuristic as the cfn-lint team:
     // https://github.com/aws-cloudformation/aws-cfn-lint-visual-studio-code/blob/629de0bac4f36cfc6534e409a6f6766a2240992f/client/src/yaml-support/yaml-schema.ts#L39-L51
-    if (rv.template.AWSTemplateFormatVersion || rv.template.Resources) {
+    if (rv.template?.AWSTemplateFormatVersion || rv.template?.Resources) {
         rv.kind =
             rv.template.Transform && rv.template.Transform.toString().startsWith('AWS::Serverless') ? 'sam' : 'cfn'
 

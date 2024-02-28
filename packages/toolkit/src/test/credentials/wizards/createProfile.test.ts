@@ -30,23 +30,23 @@ class TestPrompter extends Prompter<string | undefined> {
 }
 
 describe('CreateProfileWizard', function () {
-    it('prompts for profile name, access key, secret, and then validates (static)', function () {
-        const tester = createWizardTester(new CreateProfileWizard({ foo: {} }, staticCredentialsTemplate))
+    it('prompts for profile name, access key, secret, and then validates (static)', async function () {
+        const tester = await createWizardTester(new CreateProfileWizard({ foo: {} }, staticCredentialsTemplate))
         tester.name.assertShowFirst()
         tester.profile[SharedCredentialsKeys.AWS_ACCESS_KEY_ID].assertShowSecond()
         tester.profile[SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY].assertShowThird()
         tester.accountId.assertShow(4)
     })
 
-    it('prompts for profile name, command, and then validates (credential_process)', function () {
-        const tester = createWizardTester(new CreateProfileWizard({ foo: {} }, processCredentialsTemplate))
+    it('prompts for profile name, command, and then validates (credential_process)', async function () {
+        const tester = await createWizardTester(new CreateProfileWizard({ foo: {} }, processCredentialsTemplate))
         tester.name.assertShowFirst()
         tester.profile[SharedCredentialsKeys.CREDENTIAL_PROCESS].assertShowSecond()
         tester.accountId.assertShowThird()
     })
 
-    it('skips profile name step (and uses "default") if starting with no profiles', function () {
-        const tester = createWizardTester(new CreateProfileWizard({}, processCredentialsTemplate))
+    it('skips profile name step (and uses "default") if starting with no profiles', async function () {
+        const tester = await createWizardTester(new CreateProfileWizard({}, processCredentialsTemplate))
         tester.name.assertDoesNotShow()
         tester.name.assertValue('default')
         tester.assertShowCount(2)

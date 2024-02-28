@@ -6,7 +6,7 @@ An overview of the architecture for various components within the Toolkit.
 
 This project is currently set up as a typescript monorepo with a single subproject.
 We are currently working on splitting the Toolkit into various subprojects to help with
-sharing code between modules, browser extension development, etc. For now, there is just
+sharing code between modules, Web mode development, etc. For now, there is just
 one monolithic subproject with all the extension functionality: [`packages/toolkit/`](./packages/toolkit/).
 
 Unless otherwise stated, the documentation throughout this project is referring to the code and
@@ -337,7 +337,14 @@ Abstractly, a 'wizard' is a collection of discrete, linear steps (subroutines), 
 
 ### Creating a Wizard (Quick Picks)
 
-A new wizard can be created by extending off the base `Wizard` class, using the template type to specify the shape of the wizard state. All wizards have an internal 'form' property that is used to assign steps. We can assign UI elements (namely, quick picks) using the `bindPrompter` method on form elements. This method accepts a callback that should return a `Prompter` given the current state. For this example, we will use `createQuickPick` and `createInputBox` for our prompters:
+Create a new wizard by extending the base `Wizard` class, using the template type to specify the
+shape of the wizard state. All wizards have an internal `form` property that is used to assign
+steps. You can assign UI elements (namely, quickpicks) using the `bindPrompter` method on form
+elements. This method accepts a callback that should return a `Prompter` given the current state.
+For this example, we will use `createQuickPick` and `createInputBox` for our prompters:
+
+If you need to call async functions to construct your `Wizard` subclass, define your init logic in
+the `init()` method instead of the constructor.
 
 ```ts
 interface ExampleState {
@@ -382,7 +389,7 @@ Note that all wizards can potentially return `undefined` if the workflow was can
 Use `createWizardTester` on an instance of a wizard. Tests can then be constructed by asserting both the user-defined and internal state. Using the above `ExampleWizard`:
 
 ```ts
-const tester = createWizardTester(new ExampleWizard())
+const tester = await createWizardTester(new ExampleWizard())
 tester.foo.assertShowFirst() // Fails if `foo` is not shown (or not shown first)
 tester.bar.assertDoesNotShow() // True since `foo` is not assigned an explicit value
 tester.foo.applyInput('Hello, world!') // Manipulate 'user' state

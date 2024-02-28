@@ -42,6 +42,7 @@ export async function getDirSize(
             return getDirSize(filePath, startTime, duration, fileExt)
         }
         if (type === vscode.FileType.File && fileName.endsWith(fileExt)) {
+            // TODO: This is SLOW on Cloud9.
             const stat = await fsCommon.stat(filePath)
             return stat.size
         }
@@ -271,6 +272,7 @@ export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: v
  * @returns  List of one or zero Uris (for compat with vscode.workspace.findFiles())
  */
 export async function cloud9Findfile(dir: string, fileName: string): Promise<vscode.Uri[]> {
+    getLogger().debug('cloud9Findfile: %s', dir)
     const files = await fsCommon.readdir(dir)
     const subDirs: vscode.Uri[] = []
     for (const file of files) {

@@ -53,7 +53,7 @@ import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
-import { isInBrowser } from '../../../common/browserUtils'
+import { isWeb } from '../../../common/webUtils'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -733,7 +733,7 @@ export const showManageConnections = Commands.declare(
 
         // The auth webview page does not make sense to use in C9,
         // so show the auth quick pick instead.
-        if (isCloud9('any') || isInBrowser()) {
+        if (isCloud9('any') || isWeb()) {
             if (source.toLowerCase().includes('codewhisperer')) {
                 // Show CW specific quick pick for CW connections
                 return showCodeWhispererConnectionPrompt()

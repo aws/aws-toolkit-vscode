@@ -498,6 +498,7 @@ export class TransformByQState {
         this.polledJobStatus = '' // reset polled job status too
         this.jobFailureErrorMessage = ''
         this.payloadFilePath = ''
+        this.errorLog = ''
     }
 }
 

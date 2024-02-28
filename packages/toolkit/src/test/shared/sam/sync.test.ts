@@ -20,36 +20,36 @@ import globals from '../../../shared/extensionGlobals'
 
 describe('SyncWizard', async function () {
     const registry = await globals.templateRegistry
-    const createTester = (params?: Partial<SyncParams>) =>
+    const createTester = async (params?: Partial<SyncParams>) =>
         createWizardTester(new SyncWizard({ deployType: 'code', ...params }, registry))
 
-    it('shows steps in correct order', function () {
-        const tester = createTester()
+    it('shows steps in correct order', async function () {
+        const tester = await createTester()
         tester.region.assertShowFirst()
         tester.template.assertShowSecond()
         tester.stackName.assertShowThird()
         tester.bucketName.assertShow(4)
     })
 
-    it('prompts for ECR repo if template has image-based resource', function () {
+    it('prompts for ECR repo if template has image-based resource', async function () {
         const template = { uri: vscode.Uri.file('/'), data: createBaseImageTemplate() }
-        const tester = createTester({ template })
+        const tester = await createTester({ template })
         tester.ecrRepoUri.assertShow()
     })
 
-    it('skips prompt for ECR repo if template has no image-based resources', function () {
+    it('skips prompt for ECR repo if template has no image-based resources', async function () {
         const template = { uri: vscode.Uri.file('/'), data: createBaseTemplate() }
-        const tester = createTester({ template })
+        const tester = await createTester({ template })
         tester.ecrRepoUri.assertDoesNotShow()
     })
 
-    it("uses the template's workspace as the project root is not set", function () {
+    it("uses the template's workspace as the project root is not set", async function () {
         const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
         assert.ok(workspaceUri)
 
         const templateUri = vscode.Uri.joinPath(workspaceUri, 'my', 'template.yaml')
         const template = { uri: templateUri, data: createBaseTemplate() }
-        const tester = createTester({ template })
+        const tester = await createTester({ template })
         tester.projectRoot.assertValue(workspaceUri)
     })
 })

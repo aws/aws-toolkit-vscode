@@ -33,6 +33,7 @@ import { uploadCode } from '../util/upload'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -56,7 +57,10 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const uploadId = await telemetry.amazonq_createUpload.run(async span => {
-            span.record({ amazonqConversationId: this.config.conversationId })
+            span.record({
+                amazonqConversationId: this.config.conversationId,
+                credentialStartUrl: AuthUtil.instance.startUrl,
+            })
             const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
                 this.config.sourceRoots,
                 this.config.workspaceFolders,
@@ -101,7 +105,10 @@ export class RefinementState implements SessionState {
                 return new MockCodeGenState(this.config, this.approach, this.tabID).interact(action)
             }
             try {
-                span.record({ amazonqConversationId: this.conversationId })
+                span.record({
+                    amazonqConversationId: this.conversationId,
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                })
                 action.telemetry.setGenerateApproachIteration(this.currentIteration)
                 action.telemetry.setGenerateApproachLastInvocationTime()
                 if (!action.msg) {
