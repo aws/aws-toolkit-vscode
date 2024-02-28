@@ -48,6 +48,9 @@ export class TelemetryHelper {
     private classifierResult?: number = undefined
     private classifierThreshold?: number = undefined
 
+    // use this to distinguish DocumentChangeEvent from CWSPR or from other sources
+    public lastSuggestionInDisplay = ''
+
     constructor() {}
 
     static #instance: TelemetryHelper
