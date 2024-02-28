@@ -96,13 +96,12 @@ type EnvType =
     | 'cloud9'
     | 'cloud9-codecatalyst'
     | 'amazon-cloud9'
-    | 'cloud9-ec2'
     | 'codecatalyst'
     | 'local'
     | 'ec2'
     | 'sagemaker'
     | 'test'
-    | 'other'
+    | 'unknown'
 
 export function getComputeEnvType(): EnvType {
     if (isCloud9('classic')) {
@@ -111,8 +110,6 @@ export function getComputeEnvType(): EnvType {
         return 'cloud9-codecatalyst'
     } else if (isInDevEnv()) {
         return 'codecatalyst'
-    } else if (isCn()) {
-        return 'amazon-cloud9'
     } else if (isSageMaker()) {
         return 'sagemaker'
     } else if (env.remoteName === 'ssh-remote' && !isInDevEnv()) {
@@ -122,7 +119,7 @@ export function getComputeEnvType(): EnvType {
     } else if (!env.remoteName) {
         return 'local'
     } else {
-        return 'other'
+        return 'unknown'
     }
 }
 
