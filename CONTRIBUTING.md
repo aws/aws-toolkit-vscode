@@ -9,8 +9,9 @@ codebase and sending pull requests.
 ## Getting Started
 
 This project is set up as a typescript monorepo. The documentation throughout this project
-is referring to the subproject in [`packages/toolkit/`](./packages/toolkit/). For more information,
-see [ARCHITECTURE.md](./docs/ARCHITECTURE.md#monorepo-structure)
+is referring to the subprojects [`packages/toolkit/`](./packages/toolkit/) and [`packages/core/`](./packages/core/).
+Please see [ARCHITECTURE.md](./docs/ARCHITECTURE.md#monorepo-structure) to understand the
+structure of thispackage before contributing.
 
 ### Find things to do
 
@@ -162,7 +163,7 @@ See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
 You can run tests directly from VSCode. Due to the monorepo structure of the project, you must either open
-the `aws-toolkit-vscode/packages/toolkit/` folder directly, or add it as a root folder in the VSCode Workspace.
+the `aws-toolkit-vscode/packages/core/` folder directly, or add it as a root folder in the VSCode Workspace.
 Then:
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
