@@ -560,6 +560,7 @@
     </extensions>
 
     <actions>
+        <action id="aws.toolkit.open.q.window" class="software.aws.toolkits.jetbrains.services.amazonq.OpenAmazonQAction"/>
         <action id="aws.toolkit.open.telemetry.viewer" class="software.aws.toolkits.jetbrains.services.telemetry.OpenTelemetryAction"/>
         <action id="aws.settings.refresh" class="software.aws.toolkits.jetbrains.core.credentials.RefreshConnectionAction"/>
         <action id="aws.toolkit.showFeedback" class="software.aws.toolkits.jetbrains.ui.feedback.ShowFeedbackDialogAction"/>
