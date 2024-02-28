@@ -69,7 +69,6 @@
       "enum":[
         "cloud9",
         "cloud9-codecatalyst",
-        "cloud9-ec2",
         "codecatalyst",
         "ec2",
         "local",
