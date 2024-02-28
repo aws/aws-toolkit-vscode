@@ -21,7 +21,7 @@ import { validateAndLogProjectDetails } from '../codewhisperer/service/transform
 
 export async function activate(context: ExtContext) {
     // If the user is codewhisperer eligible, activate the plugin
-    if (AuthUtil.instance.isValidEnterpriseSsoInUse()) {
+    if (AuthUtil.instance.isValidCodeTransformationAuthUser()) {
         const transformationHubViewProvider = new TransformationHubViewProvider()
         new ProposedTransformationExplorer(context.extensionContext)
         // Register an activation event listener to determine when the IDE opens, closes or users

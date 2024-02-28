@@ -16,7 +16,7 @@ describe('EntryPointTest', () => {
 
     it('should not start transformation when attempted without active IdC', async () => {
         sinon.stub(AuthUtil.instance, 'isEnterpriseSsoInUse').returns(false)
-        sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
+        sinon.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
         const startTransformByQWithProgressStub = sinon.stub(startTransformByQ, 'startTransformByQWithProgress')
         transformByQState.setToNotStarted()
         await processTransformByQ()
@@ -25,7 +25,7 @@ describe('EntryPointTest', () => {
 
     it('should not start transformation when attempted with expired connection', async () => {
         sinon.stub(AuthUtil.instance, 'isEnterpriseSsoInUse').returns(true)
-        sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
+        sinon.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
         const startTransformByQWithProgressStub = sinon.stub(startTransformByQ, 'startTransformByQWithProgress')
         transformByQState.setToNotStarted()
         await processTransformByQ()
@@ -34,7 +34,7 @@ describe('EntryPointTest', () => {
 
     it('should start transformation when attempted with active IdC and no job is in-progress', async () => {
         sinon.stub(AuthUtil.instance, 'isEnterpriseSsoInUse').returns(true)
-        sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+        sinon.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
         const startTransformByQWithProgressStub = sinon.stub(startTransformByQ, 'startTransformByQWithProgress')
         transformByQState.setToNotStarted()
         await processTransformByQ()
