@@ -420,7 +420,7 @@ Unlike the user setting overrides, not all of these environment variables have t
 
 #### Lambda
 
--   `AUTH_UTIL_LAMBDA_ARN`: The Amazon Resource Name (ARN) of the lambda function
+-   `AUTH_UTIL_LAMBDA_ARN`: The Auth Util Lambda is used to log into using Builder ID/IdC automatically when running e2e tests. This is the arn that points to the auth util lambda.
 
 #### ECS
 
@@ -436,8 +436,10 @@ Unlike the user setting overrides, not all of these environment variables have t
 -   `GITHUB_ACTION`: The name of the current GitHub Action workflow step that is running
 -   `CODEBUILD_BUILD_ID`: The unique ID of the current CodeBuild build that is executing
 -   `AWS_TOOLKIT_AUTOMATION`: If tests are currently being ran
--   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
+-   `TEST_SSO_STARTURL`: The start url you want to use on E2E tests
+-   `TEST_SSO_REGION`: The region for the start url you want to use on E2E tests
 -   `AWS_TOOLKIT_TEST_NO_COLOR`: If the tests should include colour in their output
+-   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
 -   `TEST_DIR` - The directory where the test runner should find the tests
 
 ### SAM/CFN ("goformation") JSON schema
