@@ -12,6 +12,10 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.exportTas
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.getTaskAssistCodeGeneration
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.startTaskAssistCodeGeneration
 import software.aws.toolkits.resources.message
+import kotlin.io.path.Path
+import kotlin.io.path.createDirectories
+import kotlin.io.path.createDirectory
+import kotlin.io.path.writeBytes
 
 class CodeGenerationState(
     override val tabID: String,
@@ -75,7 +79,14 @@ private suspend fun CodeGenerationState.generateCode(codeGenerationId: String): 
                     proxyClient = config.proxyClient,
                     conversationId = config.conversationId
                 )
-                return CodeGenerationResult(emptyArray(), emptyArray(), codeGenerationStreamResult.references)
+
+                val newFileInfo = registerNewFiles(newFileContents = codeGenerationStreamResult.new_file_contents, uploadId = this.uploadId)
+
+                return CodeGenerationResult(
+                    newFiles = newFileInfo,
+                    deletedFiles = codeGenerationStreamResult.deleted_files,
+                    references = codeGenerationStreamResult.references
+                )
             }
             CodeGenerationWorkflowStatus.IN_PROGRESS -> delay(requestDelay)
             CodeGenerationWorkflowStatus.FAILED -> codeGenerationFailedError()
@@ -83,5 +94,20 @@ private suspend fun CodeGenerationState.generateCode(codeGenerationId: String): 
         }
     }
 
-    return CodeGenerationResult(emptyArray(), emptyArray(), emptyArray())
+    return CodeGenerationResult(emptyList(), emptyArray(), emptyArray())
+}
+
+fun registerNewFiles(newFileContents: Map<String, String>, uploadId: String): List<NewFileZipInfo> {
+    val generatedCodeRoot = Path(uploadId)
+    generatedCodeRoot.createDirectory()
+
+    return newFileContents.map {
+        val newFilePath = generatedCodeRoot.resolve(it.key)
+        newFilePath.parent.createDirectories() // create parent directories if needed
+
+        newFilePath.writeBytes(it.value.toByteArray(Charsets.UTF_8))
+        newFilePath.toFile().deleteOnExit()
+
+        NewFileZipInfo(zipFilePath = it.key, newFilePath = newFilePath)
+    }
 }

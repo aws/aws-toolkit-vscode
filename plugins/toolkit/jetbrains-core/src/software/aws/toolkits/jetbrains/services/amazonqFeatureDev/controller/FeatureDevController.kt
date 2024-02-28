@@ -42,7 +42,6 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendC
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendSystemPrompt
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendUpdatePlaceholder
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.DeletedFileZipInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.NewFileZipInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.PrepareCodeGenerationState
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Session
@@ -89,8 +88,10 @@ class FeatureDevController(
             FollowUpTypes.NEW_PLAN -> newPlan(message.tabId)
             FollowUpTypes.SEND_FEEDBACK -> sendFeedback()
             FollowUpTypes.WRITE_CODE -> writeCodeClicked(message.tabId)
-            FollowUpTypes.ACCEPT_CODE -> acceptCode()
+            FollowUpTypes.ACCEPT_CODE -> acceptCode(message.tabId)
             FollowUpTypes.PROVIDE_FEEDBACK_AND_REGENERATE_CODE -> provideFeedbackAndRegenerateCode(message.tabId)
+            FollowUpTypes.NEW_TASK -> newTask()
+            FollowUpTypes.CLOSE_SESSION -> closeSession()
         }
     }
 
@@ -190,7 +191,67 @@ class FeatureDevController(
         }
     }
 
-    private fun acceptCode() {
+    private suspend fun acceptCode(tabId: String) {
+        var session: Session? = null
+        try {
+            session = getSessionInfo(tabId)
+
+            var filePaths: List<NewFileZipInfo> = emptyList()
+            var deletedFiles: Array<String> = emptyArray()
+
+            when (val state = session.sessionState) {
+                is PrepareCodeGenerationState -> {
+                    filePaths = state.filePaths
+                    deletedFiles = state.deletedFiles
+                }
+            }
+
+            session.acceptChanges(filePaths = filePaths, deletedFiles = deletedFiles)
+
+            messenger.sendAnswer(
+                tabId = tabId,
+                message = message("amazonqFeatureDev.code_generation.updated_code"),
+                messageType = FeatureDevMessageType.Answer
+            )
+
+            messenger.sendSystemPrompt(
+                tabId = tabId,
+                followUp = listOf(
+                    FollowUp(
+                        pillText = message("amazonqFeatureDev.follow_up.new_task"),
+                        type = FollowUpTypes.NEW_TASK,
+                        status = FollowUpStatusType.Info
+                    ),
+                    FollowUp(
+                        pillText = message("amazonqFeatureDev.follow_up.close_session"),
+                        type = FollowUpTypes.CLOSE_SESSION,
+                        status = FollowUpStatusType.Info
+                    )
+                )
+            )
+
+            // Ensure that chat input is enabled so that customers can iterate over code generation if they choose to do so
+            messenger.sendChatInputEnabledMessage(tabId = tabId, enabled = true)
+            messenger.sendUpdatePlaceholder(
+                tabId = tabId,
+                newPlaceholder = message("amazonqFeatureDev.placeholder.additional_improvements")
+            )
+        } catch (err: Exception) {
+            val message = createUserFacingErrorMessage("Failed to accept code changes: ${err.message}")
+            messenger.sendError(
+                tabId = tabId,
+                errMessage = message ?: message("amazonqFeatureDev.exception.accept_code_failed"),
+                retries = retriesRemaining(session),
+                phase = session?.sessionState?.phase
+            )
+        }
+    }
+
+    private fun newTask() {
+        TODO("Not yet implemented")
+    }
+
+    private fun closeSession() {
         TODO("Not yet implemented")
     }
 
@@ -287,11 +348,8 @@ class FeatureDevController(
         val interactions = session.send(message)
         messenger.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.iterate_plan"))
 
-        messenger.sendAnswerPart(
-            tabId = tabId,
-            message = interactions.content,
-            canBeVoted = true
-        )
+        messenger.sendAnswerPart(tabId = tabId, message = interactions.content, canBeVoted = true)
+
         messenger.sendAnswer(
             tabId = tabId,
             messageType = FeatureDevMessageType.Answer,
@@ -325,8 +383,8 @@ class FeatureDevController(
 
             val state = session.sessionState
 
-            var filePaths: Array<NewFileZipInfo> = emptyArray()
-            var deletedFiles: Array<DeletedFileZipInfo> = emptyArray()
+            var filePaths: List<NewFileZipInfo> = emptyList()
+            var deletedFiles: Array<String> = emptyArray()
 
             when (state) {
                 is PrepareCodeGenerationState -> {
@@ -363,6 +421,8 @@ class FeatureDevController(
             // TODO: send code result to mynah ui, i.e. diff view message.
 
             messenger.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase))
+
+            messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.after_code_generation"))
         } finally {
             messenger.sendAsyncEventProgress(tabId = tabId, inProgress = false) // Finish processing the event
             messenger.sendChatInputEnabledMessage(tabId = tabId, enabled = false) // Lock chat input until a follow-up is clicked.

@@ -188,4 +188,6 @@ enum class FollowUpTypes(
     WRITE_CODE("WriteCode"),
     ACCEPT_CODE("AcceptCode"),
     PROVIDE_FEEDBACK_AND_REGENERATE_CODE("ProvideFeedbackAndRegenerateCode"),
+    NEW_TASK("NewTask"),
+    CLOSE_SESSION("CloseSession")
 }

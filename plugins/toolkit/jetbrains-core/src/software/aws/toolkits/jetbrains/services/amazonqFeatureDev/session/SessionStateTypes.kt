@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 import com.fasterxml.jackson.annotation.JsonValue
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
+import java.nio.file.Path
 
 data class SessionStateAction(
     val task: String,
@@ -35,20 +36,14 @@ data class SessionStateConfig(
     val repoContext: FeatureDevSessionContext,
 )
 
-data class DeletedFileZipInfo(
-    val zipFilePath: String,
-    val relativePath: String,
-)
-
 data class NewFileZipInfo(
     val zipFilePath: String,
-    val relativePath: String,
-    val fileContent: String,
+    val newFilePath: Path,
 )
 
 data class CodeGenerationResult(
-    var newFiles: Array<NewFileZipInfo>,
-    var deletedFiles: Array<DeletedFileZipInfo>,
+    var newFiles: List<NewFileZipInfo>,
+    var deletedFiles: Array<String>, // The string is the path of the file to be deleted
     var references: Array<CodeReference>,
 )
 

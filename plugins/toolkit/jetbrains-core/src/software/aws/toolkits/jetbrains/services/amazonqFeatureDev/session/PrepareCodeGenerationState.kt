@@ -14,8 +14,8 @@ class PrepareCodeGenerationState(
     override var tabID: String,
     override var approach: String,
     private var config: SessionStateConfig,
-    val filePaths: Array<NewFileZipInfo>,
-    val deletedFiles: Array<DeletedFileZipInfo>,
+    val filePaths: List<NewFileZipInfo>,
+    val deletedFiles: Array<String>,
     val references: Array<CodeReference>,
     private val currentIteration: Int,
     private var messenger: MessagePublisher

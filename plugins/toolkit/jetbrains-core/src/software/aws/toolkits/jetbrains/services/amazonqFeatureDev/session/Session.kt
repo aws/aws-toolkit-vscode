@@ -11,6 +11,10 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.Featur
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAsyncEventProgress
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createConversation
+import kotlin.io.path.createDirectories
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.readBytes
+import kotlin.io.path.writeBytes
 
 class Session(val tabID: String, val project: Project) {
     private var _state: SessionState?
@@ -69,7 +73,7 @@ class Session(val tabID: String, val project: Project) {
             tabID = sessionState.tabID,
             approach = sessionState.approach,
             config = getSessionStateConfig(),
-            filePaths = emptyArray(),
+            filePaths = emptyList(),
             deletedFiles = emptyArray(),
             references = emptyArray(),
             currentIteration = 0,
@@ -78,6 +82,26 @@ class Session(val tabID: String, val project: Project) {
         this._latestMessage = ""
 
         // TODO: add here telemetry for approach being accepted. Will be done in a follow-up
+    }
+
+    /**
+     * Triggered by the Accept code follow-up button to apply code changes.
+     */
+    fun acceptChanges(filePaths: List<NewFileZipInfo>, deletedFiles: Array<String>) {
+        val projectRootPath = context.projectRoot.toNioPath()
+
+        filePaths.forEach {
+            val filePath = projectRootPath.resolve(it.zipFilePath)
+            filePath.parent.createDirectories() // Create directories if needed
+            filePath.writeBytes(it.newFilePath.readBytes())
+        }
+
+        deletedFiles.forEach {
+            val deleteFilePath = projectRootPath.resolve(it)
+            deleteFilePath.deleteIfExists()
+        }
+
+        // TODO: References received from code generation should be logged.
     }
 
     suspend fun send(msg: String): Interaction {
