@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Improve percentage code written metrics to include user multi character input"
+	"description": "CodeWhisperer: Improve percentage code written metrics to include user multi character input"
 }
