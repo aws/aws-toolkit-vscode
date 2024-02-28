@@ -263,7 +263,7 @@ describe('codewhispererCodecoverageTracker', function () {
                         range: new vscode.Range(0, 0, 0, 300),
                         rangeOffset: 0,
                         rangeLength: 300,
-                        text: 'def twoSum(nums, target):\nfor '.repeat(10),
+                        text: 'def twoSum(nums, target): for '.repeat(10),
                     },
                 ],
             })
