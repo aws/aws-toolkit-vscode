@@ -78,7 +78,7 @@
         "test",
         "web",
         "wsl",
-        "other"
+        "unknown"
       ]
     },
     "Datapoint":{
