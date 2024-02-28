@@ -126,7 +126,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     Sentiment: feedback.sentiment,
                 })
                 .promise()
-            this.logger.info(getComputeEnvType())
+            this.logger.debug(`ComputeEnv detected for telemetry: ${getComputeEnvType()}`)
             this.logger.info('Successfully posted feedback')
         } catch (err) {
             this.logger.error(`Failed to post feedback: ${err}`)
