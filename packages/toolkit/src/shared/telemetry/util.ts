@@ -95,7 +95,6 @@ export async function getUserAgent(
 type EnvType =
     | 'cloud9'
     | 'cloud9-codecatalyst'
-    | 'amazon-cloud9'
     | 'codecatalyst'
     | 'local'
     | 'ec2'
