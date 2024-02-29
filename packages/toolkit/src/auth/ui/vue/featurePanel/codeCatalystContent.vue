@@ -35,6 +35,10 @@
                 ></IdentityCenterForm>
 
                 <button v-if="connectedAuth" v-on:click="showCodeCatalystNode()">Open CodeCatalyst in Toolkit</button>
+                <div v-if="!connectedAuth">
+                    Don't have a CodeCatalyst account?
+                    <a href="https://codecatalyst.aws/onboarding/view">Get started with creating a Space.</a>
+                </div>
             </div>
         </template>
     </div>

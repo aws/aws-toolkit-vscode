@@ -1,7 +1,7 @@
 <template>
     <div :id="panelId" class="feature-panel-container border-common" :class="isActive ? 'feature-panel-selected' : ''">
         <div class="feature-panel-container-upper">
-            <div class="feature-panel-container-title">AWS Explorer</div>
+            <div class="feature-panel-container-title">Resource Explorer</div>
 
             <img
                 class="feature-panel-image"
