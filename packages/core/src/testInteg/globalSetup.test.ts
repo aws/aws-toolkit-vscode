@@ -13,6 +13,7 @@ import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 import { activateExtension } from '../shared/utilities/vsCodeUtils'
 import { mapTestErrors, normalizeError, patchObject, setRunnableTimeout } from '../test/setupUtil'
 import { getTestWindow, resetTestWindow } from '../test/shared/vscode/window'
+import { setCodeScanLogsOutputChannelId, codeScanLogsOutputChannelId } from '../codewhisperer/models/constants'
 
 // ASSUMPTION: Tests are not run concurrently
 
@@ -33,6 +34,9 @@ export async function mochaGlobalSetup(this: Mocha.Runner) {
     patchWindow()
 
     // Needed for getLogger().
+    setCodeScanLogsOutputChannelId(
+        codeScanLogsOutputChannelId.replace(VSCODE_EXTENSION_ID.awstoolkit, VSCODE_EXTENSION_ID.awstoolkitcore)
+    )
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkitcore, false)
 
     // Log as much as possible, useful for debugging integration tests.

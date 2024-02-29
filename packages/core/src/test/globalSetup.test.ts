@@ -26,6 +26,7 @@ import { getTestWindow, resetTestWindow } from './shared/vscode/window'
 import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
 import { TelemetryDebounceInfo } from '../shared/vscode/commands2'
 import { disableAwsSdkWarning } from '../shared/awsClientBuilder'
+import { setCodeScanLogsOutputChannelId, codeScanLogsOutputChannelId } from '../codewhisperer/models/constants'
 
 disableAwsSdkWarning()
 
@@ -52,6 +53,9 @@ export async function mochaGlobalSetup(this: Mocha.Runner) {
     // Extension activation has many side-effects such as changing globals
     // For stability in tests we will wait until the extension has activated prior to injecting mocks
     const activationLogger = (msg: string, ...meta: any[]) => console.log(format(msg, ...meta))
+    setCodeScanLogsOutputChannelId(
+        codeScanLogsOutputChannelId.replace(VSCODE_EXTENSION_ID.awstoolkit, VSCODE_EXTENSION_ID.awstoolkitcore)
+    )
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkitcore, false, activationLogger)
     const fakeContext = await FakeExtensionContext.create()
     fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri

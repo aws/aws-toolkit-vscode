@@ -10,6 +10,7 @@
 import 'mocha' // Imports mocha for the browser, defining the `mocha` global.
 import * as vscode from 'vscode'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { setCodeScanLogsOutputChannelId, codeScanLogsOutputChannelId } from '../codewhisperer/models/constants'
 
 export async function run(): Promise<void> {
     await activateToolkitExtension()
@@ -46,6 +47,9 @@ function gatherTestFiles() {
  * So this function ensures the extension has fully activated.
  */
 async function activateToolkitExtension() {
+    setCodeScanLogsOutputChannelId(
+        codeScanLogsOutputChannelId.replace(VSCODE_EXTENSION_ID.awstoolkit, VSCODE_EXTENSION_ID.awstoolkitcore)
+    )
     await vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkitcore)?.activate()
 }
 

@@ -10,6 +10,7 @@ import { join, resolve } from 'path'
 import { runTests } from '@vscode/test-electron'
 import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
 import { TestOptions } from '@vscode/test-electron/out/runTest'
+import { defaultCachePath } from '@vscode/test-electron/out/download'
 
 const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
 
@@ -85,6 +86,9 @@ async function getVSCodeCliArgs(params: {
     const workspacePath = join(projectRootDir, 'dist', 'src', 'testFixtures', 'workspaceFolder')
     // This tells VS Code to run the extension in a web environment, which mimics vscode.dev
     const webExtensionKind = params.suite === 'web' ? ['--extensionDevelopmentKind=web'] : []
+    const userDataDir = process.env.AWS_TOOLKIT_TEST_USER_DIR
+        ? [`--user-data-dir=${process.env.AWS_TOOLKIT_TEST_USER_DIR}`]
+        : []
 
     return {
         vscodeExecutablePath: params.vsCodeExecutablePath,
@@ -92,7 +96,13 @@ async function getVSCodeCliArgs(params: {
 
         extensionTestsPath: resolve(projectRootDir, params.relativeTestEntryPoint),
         // For verbose VSCode logs, add "--verbose --log debug". c2165cf48e62c
-        launchArgs: [...disableExtensionsArgs, workspacePath, ...disableWorkspaceTrustArg, ...webExtensionKind],
+        launchArgs: [
+            ...disableExtensionsArgs,
+            workspacePath,
+            ...disableWorkspaceTrustArg,
+            ...webExtensionKind,
+            ...userDataDir,
+        ],
         extensionTestsEnv: {
             ['DEVELOPMENT_PATH']: projectRootDir,
             ['AWS_TOOLKIT_AUTOMATION']: params.suite,
@@ -122,7 +132,14 @@ async function setupVSCodeTestInstance(suite: SuiteName): Promise<string> {
 
     console.log(`Setting up VS Code test instance, version: ${vsCodeVersion}`)
     const platform = process.platform === 'win32' ? 'win32-x64-archive' : undefined
-    const vsCodeExecutablePath = await downloadAndUnzipVSCode(vsCodeVersion, platform)
+
+    const downloadOptions = {
+        platform,
+        version: vsCodeVersion,
+        cachePath: process.env.AWS_TOOLKIT_TEST_CACHE_DIR ?? defaultCachePath,
+    }
+
+    const vsCodeExecutablePath = await downloadAndUnzipVSCode(downloadOptions)
     console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
     console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--version']))
 
@@ -141,12 +158,13 @@ async function setupVSCodeTestInstance(suite: SuiteName): Promise<string> {
 
 async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Promise<string> {
     const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(vsCodeExecutablePath)
-    const cmdArgs = [...cliArgs, ...args]
+    let cmdArgs = [...cliArgs, ...args]
 
     // Workaround: set --user-data-dir to avoid this error in CI:
     // "You are trying to start Visual Studio Code as a super user …"
     if (process.env.AWS_TOOLKIT_TEST_USER_DIR) {
-        cmdArgs.push('--user-data-dir', process.env.AWS_TOOLKIT_TEST_USER_DIR)
+        cmdArgs = cmdArgs.filter(a => !a.startsWith('--user-data-dir='))
+        cmdArgs.push(`--user-data-dir=${process.env.AWS_TOOLKIT_TEST_USER_DIR}`)
     }
 
     console.log(`Invoking vscode CLI command:\n    "${cli}" ${JSON.stringify(cmdArgs)}`)

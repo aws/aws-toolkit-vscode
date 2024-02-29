@@ -25,7 +25,7 @@ export const VSCODE_EXTENSION_ID = {
     dotnet: 'ms-dotnettools.csdevkit',
     git: 'vscode.git',
     remotessh: 'ms-vscode-remote.remote-ssh',
-}
+} as const
 
 export const vscodeExtensionMinVersion = {
     remotessh: '0.74.0',
