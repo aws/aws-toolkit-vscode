@@ -17,6 +17,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.summary.CodeModer
 import java.beans.PropertyChangeListener
 import javax.swing.BorderFactory
 import javax.swing.JEditorPane
+import javax.swing.SwingUtilities
 import javax.swing.event.HyperlinkEvent
 
 class CodeModernizerSummaryEditor(val project: Project, val virtualFile: VirtualFile) : UserDataHolderBase(), FileEditor {
@@ -515,7 +516,10 @@ class CodeModernizerSummaryEditor(val project: Project, val virtualFile: Virtual
             }
             text = description
         }
-        return JBScrollPane(editorPane)
+        val pane = JBScrollPane(editorPane)
+        // scroll to top of pane after it opens (default is bottom)
+        SwingUtilities.invokeLater { pane.verticalScrollBar.setValue(0) }
+        return pane
     }
 
     override fun dispose() {}

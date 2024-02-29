@@ -3,21 +3,15 @@
 
 package software.aws.toolkits.jetbrains.services.codemodernizer
 
-import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.ProcessNotCreatedException
-import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.serviceContainer.AlreadyDisposedException
 import org.jetbrains.idea.maven.project.MavenProjectsManager
-import org.jetbrains.idea.maven.utils.MavenUtil
 import org.jetbrains.plugins.gradle.settings.GradleSettings
-import org.slf4j.LoggerFactory
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
@@ -33,9 +27,7 @@ import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.utils.WaiterUnrecoverableException
 import software.aws.toolkits.core.utils.Waiters.waitUntil
 import software.aws.toolkits.core.utils.createParentDirectories
-import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.exists
-import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
@@ -47,6 +39,8 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClien
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MAVEN_CONFIGURATION_FILE_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
+import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
+import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.io.File
 import java.io.FileOutputStream
@@ -94,7 +88,12 @@ val TERMINAL_STATES = setOf(
     TransformationStatus.COMPLETED,
 )
 
-private val LOG = LoggerFactory.getLogger("CodeTransformUtils")
+const val TROUBLESHOOTING_URL_DOWNLOAD_DIFF =
+    "https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19c11"
+const val TROUBLESHOOTING_URL_MAVEN_COMMANDS =
+    "https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19b7"
+const val TROUBLESHOOTING_URL_PREREQUISITES =
+    "https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites"
 
 fun String.toVirtualFile() = VirtualFileManager.getInstance().findFileByUrl(VfsUtilCore.pathToUrl(this))
 fun Project.moduleFor(path: String) = ModuleUtil.findModuleForFile(
@@ -287,52 +286,13 @@ fun isGradleProject(project: Project) = !GradleSettings.getInstance(project).lin
 
 fun getJavaVersionFromProjectSetting(project: Project): String? = project.tryGetJdk()?.toString()
 
-fun getMavenVersions(project: Project): String {
-    fun getVersion(mavenCommand: String): String? {
-        try {
-            val commandLine = GeneralCommandLine(listOf(mavenCommand, "-v"))
-                .withWorkDirectory(project.basePath)
-                .withRedirectErrorStream(true)
-            val output = ExecUtil.execAndGetOutput(commandLine)
-            if (output.exitCode == 0) {
-                return parseMavenVersion(output.stdout)
-            } else {
-                LOG.error { "Failed to fetch $mavenCommand version: ${output.stdout}" }
-            }
-        } catch (e: ProcessNotCreatedException) {
-            LOG.warn { "$mavenCommand not set up" }
-        } catch (e: Exception) {
-            LOG.error(e) { "Failed to fetch $mavenCommand version" }
-        }
-        return null
-    }
-
-    // Get local maven version
-    val localMavenVersion: String? = getVersion("mvn")
-
-    // Get wrapper maven version
-    val mvnw = if (SystemInfo.isWindows) "./mvnw.cmd" else "./mvnw"
-    val wrapperMavenVersion: String? = getVersion(mvnw)
-
-    // Get user's Maven setting (using bundled vs local vs wrapper)
+fun getMavenVersion(project: Project): String {
     val mavenSettings = MavenProjectsManager.getInstance(project).getGeneralSettings()
-    val mavenHome = mavenSettings.getMavenHome()
-    // Need to detect bundled Maven version that come with IDEA
-    // The utility returns "Use Maven wrapper" if using wrapper, "Bundled (Maven 3)" if using Bundled Maven, otherwise the local maven version.
-    val userMavenSetting = MavenUtil.getMavenVersion(mavenHome) ?: mavenHome
-
-    return "$wrapperMavenVersion (mvnw) -- $localMavenVersion (mvn) -- user setting: $userMavenSetting"
+    // should be set to "Bundled (Maven X)" if setup instructions were followed
+    return mavenSettings.getMavenHome() ?: "Unknown"
 }
 
-private fun parseMavenVersion(output: String?): String? {
-    if (output == null) return null
-    val mavenVersionIndex = output.indexOf("Apache Maven")
-    if (mavenVersionIndex == -1) return null
-    return try {
-        val mavenVersionString = output.slice(IntRange(mavenVersionIndex + 13, output.length - 1))
-        mavenVersionString.slice(IntRange(0, output.indexOf(' ') - 1))
-    } catch (e: StringIndexOutOfBoundsException) {
-        LOG.error(e) { "Failed to parse Maven version from output: $output" }
-        null
-    }
-}
+fun openTroubleshootingGuideNotificationAction(targetUrl: String) = OpenBrowserAction(
+    message("codemodernizer.notification.info.view_troubleshooting_guide"),
+    url = targetUrl
+)
