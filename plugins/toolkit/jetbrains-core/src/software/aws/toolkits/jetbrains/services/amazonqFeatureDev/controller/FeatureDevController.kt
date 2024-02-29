@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller
 
 import com.intellij.diff.DiffContentFactory
 import com.intellij.diff.DiffManager
-import com.intellij.diff.contents.DiffContent
 import com.intellij.diff.contents.EmptyContent
 import com.intellij.diff.requests.SimpleDiffRequest
 import com.intellij.diff.util.DiffUserDataKeys
@@ -169,14 +168,12 @@ class FeatureDevController(
         val project = context.project
         val sessionState = session.sessionState
 
-        val leftDiffContent: DiffContent
-        val rightDiffContent: DiffContent
         when (sessionState) {
-            is PrepareCodeGenerationState ->
-                {
+            is PrepareCodeGenerationState -> {
+                runInEdt {
                     val existingFile = VfsUtil.findRelativeFile(message.filePath, session.context.projectRoot)
 
-                    leftDiffContent = if (existingFile == null) {
+                    val leftDiffContent = if (existingFile == null) {
                         EmptyContent()
                     } else {
                         DiffContentFactory.getInstance().create(project, existingFile)
@@ -188,7 +185,7 @@ class FeatureDevController(
                         )
                     }?.newFilePath?.readText()
 
-                    rightDiffContent = if (message.deleted || newFileContent == null) {
+                    val rightDiffContent = if (message.deleted || newFileContent == null) {
                         EmptyContent()
                     } else {
                         DiffContentFactory.getInstance().create(newFileContent)
@@ -198,6 +195,7 @@ class FeatureDevController(
                     request.putUserData(DiffUserDataKeys.FORCE_READ_ONLY, true)
                     DiffManager.getInstance().showDiff(project, request)
                 }
+            }
             else -> {
                 logger.error { "$FEATURE_NAME: OpenDiff event is received for a conversation that has ${session.sessionState.phase} phase" }
                 messenger.sendError(
