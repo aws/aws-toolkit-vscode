@@ -571,14 +571,20 @@ export class AuthNode implements TreeNode<Auth> {
 
         if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
+            //
+            if (DevSettings.instance.isNewLoginEnabled()) {
+                void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
+                return item
+            }
             const source: AuthSource = 'authNode'
             item.command = {
                 title: 'Add Connection',
                 command: showConnectionsPageCommand,
                 arguments: [placeholder, source],
             }
-
             return item
+        } else if (DevSettings.instance.isNewLoginEnabled()) {
+            void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
         }
 
         const conn = this.resource.activeConnection

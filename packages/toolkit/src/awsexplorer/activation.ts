@@ -30,6 +30,8 @@ import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { amazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQNode'
 import { GlobalState } from '../shared/globalState'
 import { activateViewsShared, registerToolView } from './activationShared'
+import { DevSettings } from '../shared/settings'
+import { amazonQMigrationNode } from './amazonQMigrationNode'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -107,7 +109,7 @@ export async function activate(args: {
     const amazonQViewNode: ToolView[] = []
     if (!isCloud9()) {
         amazonQViewNode.push({
-            nodes: [amazonQNode],
+            nodes: [DevSettings.instance.isNewLoginEnabled() ? amazonQMigrationNode : amazonQNode],
             view: 'aws.amazonq',
             refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
         })

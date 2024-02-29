@@ -715,6 +715,10 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         return this.trappedSettings
     }
 
+    public isNewLoginEnabled(): boolean {
+        return false
+    }
+
     public isDevMode(): boolean {
         // This setting takes precedence over everything.
         // It must be removed completely from the settings to not be considered.

@@ -10,10 +10,6 @@ import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
-    // TODO: update source, id
-    public override id: string = 'aws.AmazonCommonAuth'
-    public override source: string = 'src/login/webview/vue/index.js'
-
     fetchConnection(): SsoConnection | undefined {
         if (AuthUtil.instance.isConnected() && AuthUtil.instance.conn?.type === 'sso') {
             return AuthUtil.instance.conn
