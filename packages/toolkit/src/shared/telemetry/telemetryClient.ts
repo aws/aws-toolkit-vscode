@@ -17,6 +17,7 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import globals from '../extensionGlobals'
 import { DevSettings } from '../settings'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { getComputeEnvType } from './util'
 
 export const accountMetadataKey = 'awsAccount'
 export const regionKey = 'awsRegion'
@@ -91,6 +92,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                         ClientID: this.clientId,
                         OS: os.platform(),
                         OSVersion: os.release(),
+                        ComputeEnv: getComputeEnvType(),
                         ParentProduct: vscode.env.appName,
                         ParentProductVersion: vscode.version,
                         MetricData: batch,
@@ -117,12 +119,14 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     AWSProductVersion: extensionVersion,
                     OS: os.platform(),
                     OSVersion: os.release(),
+                    ComputeEnv: getComputeEnvType(),
                     ParentProduct: vscode.env.appName,
                     ParentProductVersion: vscode.version,
                     Comment: feedback.comment,
                     Sentiment: feedback.sentiment,
                 })
                 .promise()
+            this.logger.debug(`ComputeEnv detected for telemetry: ${getComputeEnvType()}`)
             this.logger.info('Successfully posted feedback')
         } catch (err) {
             this.logger.error(`Failed to post feedback: ${err}`)
