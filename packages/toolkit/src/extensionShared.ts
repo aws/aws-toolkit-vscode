@@ -14,7 +14,7 @@ import * as nls from 'vscode-nls'
 import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
-import { documentationUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
+import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { getIdeProperties, aboutToolkit, isCloud9 } from './shared/extensionUtilities'
 import { telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
@@ -31,7 +31,7 @@ import { initialize as initializeAuth } from './auth/activation'
 import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsStore } from './auth/credentials/store'
 import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
-import { RegionProvider } from './shared/regions/regionProvider'
+import { RegionProvider, getEndpointsFromFetcher } from './shared/regions/regionProvider'
 import { ChildProcess } from './shared/utilities/childProcess'
 import { isWeb } from './common/webUtils'
 import { registerErrorHandler as registerCommandErrorHandler } from './shared/vscode/commands2'
@@ -45,6 +45,8 @@ import { ExtContext } from './shared/extensions'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { disableAwsSdkWarning } from './shared/awsClientBuilder'
+import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
+import { ResourceFetcher } from './shared/resourcefetcher/resourcefetcher'
 
 disableAwsSdkWarning()
 
@@ -53,14 +55,8 @@ let localize: nls.LocalizeFunc
 /**
  * Activation/setup code that is shared by the regular (nodejs) extension AND web mode extension.
  * Most setup code should live here, unless there is a reason not to.
- *
- * @param getRegionProvider - HACK telemetry requires the region provider but we cannot create it yet in this
- * "shared" function since it breaks in web mode. So for now the caller must provide it.
  */
-export async function activateShared(
-    context: vscode.ExtensionContext,
-    getRegionProvider: () => RegionProvider
-): Promise<ExtContext> {
+export async function activateShared(context: vscode.ExtensionContext): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
 
     // some "initialize" functions
@@ -109,7 +105,7 @@ export async function activateShared(
     globals.manifestPaths.lambdaSampleRequests = context.asAbsolutePath(
         join('resources', 'vs-lambda-sample-request-manifest.xml')
     )
-    globals.regionProvider = getRegionProvider()
+    globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
 
     // telemetry
     await activateTelemetry(context, globals.awsContext, Settings.instance)
@@ -236,6 +232,36 @@ function logAndShowWebviewError(err: unknown, webviewId: string, command: string
     logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch(e => {
         getLogger().error('logAndShowError failed: %s', (e as Error).message)
     })
+}
+
+/**
+ * Returns an object that provides AWS service endpoints that the toolkit supports.
+ *
+ * https://docs.aws.amazon.com/general/latest/gr/rande.html
+ */
+function makeEndpointsProvider() {
+    let localManifestFetcher: ResourceFetcher
+    let remoteManifestFetcher: ResourceFetcher
+    if (isWeb()) {
+        // In web mode everything must be in a single file, so things like the endpoints file will not be available.
+        // The following imports the endpoints file, which causes webpack to bundle it in the final output file
+        const endpoints = require('../resources/endpoints.json')
+        localManifestFetcher = { get: async () => JSON.stringify(endpoints) }
+        // Cannot use HttpResourceFetcher due to web mode breaking on import
+        remoteManifestFetcher = { get: async () => (await fetch(endpointsFileUrl)).text() }
+    } else {
+        localManifestFetcher = new FileResourceFetcher(globals.manifestPaths.endpoints)
+        // HACK: HttpResourceFetcher breaks web mode when imported, so we use webpack.IgnorePlugin()
+        // to exclude it from the bundle.
+        // TODO: Make HttpResourceFetcher web mode compatible
+        const { HttpResourceFetcher } = require('./shared/resourcefetcher/httpResourceFetcher')
+        remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
+    }
+
+    return {
+        local: () => getEndpointsFromFetcher(localManifestFetcher),
+        remote: () => getEndpointsFromFetcher(remoteManifestFetcher),
+    }
 }
 
 /**

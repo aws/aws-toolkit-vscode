@@ -223,6 +223,7 @@ export const openSecurityIssuePanel = Commands.declare(
             findingId: issue.findingId,
             detectorId: issue.detectorId,
             ruleId: issue.ruleId,
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
     }
 )
@@ -257,6 +258,7 @@ export const applySecurityFix = Commands.declare(
             ruleId: issue.ruleId,
             component: source,
             result: 'Succeeded',
+            credentialStartUrl: AuthUtil.instance.startUrl,
         }
 
         try {

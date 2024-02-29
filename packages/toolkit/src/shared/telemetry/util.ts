@@ -15,6 +15,8 @@ import { mapMetadata } from './telemetryLogger'
 import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
+import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { isInDevEnv } from '../../codecatalyst/utils'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -88,6 +90,28 @@ export async function getUserAgent(
     }
 
     return pairs.join(' ')
+}
+
+type EnvType = 'cloud9' | 'cloud9-codecatalyst' | 'codecatalyst' | 'local' | 'ec2' | 'sagemaker' | 'test' | 'unknown'
+
+export function getComputeEnvType(): EnvType {
+    if (isCloud9('classic')) {
+        return 'cloud9'
+    } else if (isCloud9('codecatalyst')) {
+        return 'cloud9-codecatalyst'
+    } else if (isInDevEnv()) {
+        return 'codecatalyst'
+    } else if (isSageMaker()) {
+        return 'sagemaker'
+    } else if (env.remoteName === 'ssh-remote' && !isInDevEnv()) {
+        return 'ec2'
+    } else if (isAutomation()) {
+        return 'test'
+    } else if (!env.remoteName) {
+        return 'local'
+    } else {
+        return 'unknown'
+    }
 }
 
 /**

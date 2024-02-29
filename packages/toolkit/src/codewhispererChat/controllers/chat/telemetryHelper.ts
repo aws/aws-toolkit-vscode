@@ -51,6 +51,7 @@ export function logSendTelemetryEventFailure(error: any) {
 
 export function recordTelemetryChatRunCommand(type: CwsprChatCommandType, command?: string) {
     telemetry.amazonq_runCommand.emit({
+        result: 'Succeeded',
         cwsprChatCommandType: type,
         cwsprChatCommandName: command,
         credentialStartUrl: AuthUtil.instance.startUrl,
@@ -91,19 +92,19 @@ export class CWCTelemetryHelper {
     }
 
     public recordOpenChat() {
-        telemetry.amazonq_openChat.emit({ passive: true })
+        telemetry.amazonq_openChat.emit({ result: 'Succeeded', passive: true })
     }
 
     public recordCloseChat() {
-        telemetry.amazonq_closeChat.emit({ passive: true })
+        telemetry.amazonq_closeChat.emit({ result: 'Succeeded', passive: true })
     }
 
     public recordEnterFocusChat() {
-        telemetry.amazonq_enterFocusChat.emit({ passive: true })
+        telemetry.amazonq_enterFocusChat.emit({ result: 'Succeeded', passive: true })
     }
 
     public recordExitFocusChat() {
-        telemetry.amazonq_exitFocusChat.emit({ passive: true })
+        telemetry.amazonq_exitFocusChat.emit({ result: 'Succeeded', passive: true })
     }
 
     public async recordFeedback(message: ChatItemFeedbackMessage) {
@@ -153,6 +154,7 @@ export class CWCTelemetryHelper {
             case 'insert_code_at_cursor_position':
                 message = message as InsertCodeAtCursorPosition
                 event = {
+                    result: 'Succeeded',
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
@@ -165,6 +167,7 @@ export class CWCTelemetryHelper {
             case 'code_was_copied_to_clipboard':
                 message = message as CopyCodeToClipboard
                 event = {
+                    result: 'Succeeded',
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
@@ -177,6 +180,7 @@ export class CWCTelemetryHelper {
             case 'follow-up-was-clicked':
                 message = message as PromptMessage
                 event = {
+                    result: 'Succeeded',
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
@@ -186,6 +190,7 @@ export class CWCTelemetryHelper {
             case 'chat-item-voted':
                 message = message as ChatItemVotedMessage
                 event = {
+                    result: 'Succeeded',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -195,6 +200,7 @@ export class CWCTelemetryHelper {
             case 'source-link-click':
                 message = message as SourceLinkClickMessage
                 event = {
+                    result: 'Succeeded',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -205,6 +211,7 @@ export class CWCTelemetryHelper {
             case 'response-body-link-click':
                 message = message as ResponseBodyLinkClickMessage
                 event = {
+                    result: 'Succeeded',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -215,6 +222,7 @@ export class CWCTelemetryHelper {
             case 'footer-info-link-click':
                 message = message as FooterInfoLinkClick
                 event = {
+                    result: 'Succeeded',
                     cwsprChatMessageId: 'footer',
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -291,6 +299,7 @@ export class CWCTelemetryHelper {
         const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
 
         telemetry.amazonq_startConversation.emit({
+            result: 'Succeeded',
             cwsprChatConversationId: this.getConversationId(triggerEvent.tabID) ?? '',
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatConversationType: 'Chat',
@@ -305,6 +314,7 @@ export class CWCTelemetryHelper {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
 
         const event: AmazonqAddMessage = {
+            result: 'Succeeded',
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
             cwsprChatMessageId: message.messageID,
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
@@ -356,6 +366,7 @@ export class CWCTelemetryHelper {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(tabID)
 
         telemetry.amazonq_messageResponseError.emit({
+            result: 'Succeeded',
             cwsprChatConversationId: this.getConversationId(tabID) ?? '',
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload.userIntent),
@@ -374,6 +385,7 @@ export class CWCTelemetryHelper {
         const conversationId = this.getConversationId(tabID)
         if (conversationId) {
             telemetry.amazonq_enterFocusConversation.emit({
+                result: 'Succeeded',
                 cwsprChatConversationId: conversationId,
             })
         }
@@ -383,6 +395,7 @@ export class CWCTelemetryHelper {
         const conversationId = this.getConversationId(tabID)
         if (conversationId) {
             telemetry.amazonq_exitFocusConversation.emit({
+                result: 'Succeeded',
                 cwsprChatConversationId: conversationId,
             })
         }

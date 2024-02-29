@@ -104,6 +104,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             }
             return undefined
         }
+        TelemetryHelper.instance.lastSuggestionInDisplay = truncatedSuggestion
         return {
             insertText: truncatedSuggestion,
             range: new vscode.Range(start, end),

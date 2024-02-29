@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
+import { fsCommon } from '../../srcShared/fs'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
 
@@ -18,7 +18,7 @@ export class FileResourceFetcher implements ResourceFetcher {
     public async get(): Promise<string | undefined> {
         try {
             this.logger.verbose('loading file resource: "%s"', this.filepath)
-            return (await fs.readFile(this.filepath)).toString()
+            return await fsCommon.readFileAsString(this.filepath)
         } catch (err) {
             this.logger.verbose('failed to load file resource: "%s": %s', this.filepath, (err as Error).message)
             return undefined
