@@ -737,7 +737,7 @@
                 {
                     "id": "aws.amazonq",
                     "name": "%AWS.amazonq.title%",
-                    "when": "(!isCloud9 && !aws.isSageMaker) && !aws.explorer.showAuthView && !aws.explorer.newLoginEnabled"
+                    "when": "(!isCloud9 && !aws.isSageMaker) && !aws.explorer.showAuthView"
                 },
                 {
                     "id": "aws.codewhisperer",
