@@ -170,9 +170,9 @@ export class DiffModel {
             },
             complete: function (err) {
                 if (err) {
-                    getLogger().error(`CodeTransform: ${err} when applying patch`)
+                    getLogger().error(`CodeTransformation: ${err} when applying patch`)
                 } else {
-                    getLogger().info('CodeTransform: Patch applied successfully')
+                    getLogger().info('CodeTransformation: Patch applied successfully')
                 }
             },
         })
@@ -327,8 +327,8 @@ export class ProposedTransformationExplorer {
                     'gumby.reviewState',
                     TransformByQReviewStatus.NotStarted
                 )
-                const errorMessage = 'There was a problem fetching the transformed code.'
-                getLogger().error('CodeTransform: ExportResultArchive error = ', errorMessage)
+                const errorMessage = CodeWhispererConstants.errorDownloadingDiffMessage
+                getLogger().error(`CodeTransformation: ExportResultArchive error = ${errorMessage}`)
                 telemetry.codeTransform_logApiError.emit({
                     codeTransformApiNames: 'ExportResultArchive',
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -378,11 +378,9 @@ export class ProposedTransformationExplorer {
                 void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
-                deserializeErrorMessage =
-                    (e as Error).message ??
-                    'Transform by Q experienced an error during the deserialization of the downloaded result archive'
-                getLogger().error('CodeTransform: ParseDiff error = ', deserializeErrorMessage)
-                void vscode.window.showErrorMessage(deserializeErrorMessage)
+                deserializeErrorMessage = (e as Error).message ?? CodeWhispererConstants.errorDeserializingDiffMessage
+                getLogger().error(`CodeTransformation: ParseDiff error = ${deserializeErrorMessage}`)
+                void vscode.window.showErrorMessage(CodeWhispererConstants.errorDeserializingDiffMessage)
             } finally {
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),

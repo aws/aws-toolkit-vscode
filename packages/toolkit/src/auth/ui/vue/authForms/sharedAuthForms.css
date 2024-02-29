@@ -19,6 +19,14 @@
     flex-direction: column;
 }
 
+.auth-container-section button {
+    font-size: 1.3rem;
+}
+
+.auth-container > div > button {
+    font-size: 1.3rem;
+}
+
 .auth-form-container {
     display: flex;
     flex-direction: column;
