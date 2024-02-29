@@ -742,7 +742,7 @@
                 {
                     "id": "aws.codewhisperer",
                     "name": "%AWS.codewhisperer.explorerTitle%",
-                    "when": "!aws.explorer.showAuthView && !aws.explorer.newLoginEnabled"
+                    "when": "!aws.explorer.showAuthView && !aws.dev.newLoginEnabled"
                 },
                 {
                     "id": "aws.explorer",
