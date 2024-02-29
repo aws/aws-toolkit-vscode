@@ -64,6 +64,22 @@
       "type":"string",
       "max":2000
     },
+    "ComputeEnv":{
+      "type":"string",
+      "enum":[
+        "cloud9",
+        "cloud9-codecatalyst",
+        "codecatalyst",
+        "ec2",
+        "local",
+        "sagemaker",
+        "ssh",
+        "test",
+        "web",
+        "wsl",
+        "unknown"
+      ]
+    },
     "Datapoint":{
       "type":"double",
       "min":0
@@ -169,6 +185,7 @@
         "AWSProductVersion":{"shape":"AWSProductVersion"},
         "OS":{"shape":"Value"},
         "OSVersion":{"shape":"Value"},
+        "ComputeEnv": {"shape":"ComputeEnv"},
         "ParentProduct":{"shape":"Value"},
         "ParentProductVersion":{"shape":"Value"},
         "Metadata":{"shape":"Metadata"},
@@ -190,6 +207,7 @@
         "ClientID":{"shape":"ClientID"},
         "OS":{"shape":"Value"},
         "OSVersion":{"shape":"Value"},
+        "ComputeEnv": {"shape":"ComputeEnv"},
         "ParentProduct":{"shape":"Value"},
         "ParentProductVersion":{"shape":"Value"},
         "MetricData":{"shape":"MetricData"}
