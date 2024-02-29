@@ -15,7 +15,7 @@ import { mapMetadata } from './telemetryLogger'
 import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
-import { isCloud9, isSageMaker, isCn } from '../../shared/extensionUtilities'
+import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { isInDevEnv } from '../../codecatalyst/utils'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
