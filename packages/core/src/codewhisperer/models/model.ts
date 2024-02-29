@@ -281,7 +281,7 @@ export class TransformByQState {
 
     private polledJobStatus: string = ''
 
-    private jobFailureReason: string = ''
+    private jobFailureMetadata: string = ''
 
     private payloadFilePath: string = ''
 
@@ -361,8 +361,8 @@ export class TransformByQState {
         return this.projectCopyFilePath
     }
 
-    public getJobFailureReason() {
-        return this.jobFailureReason
+    public getJobFailureMetadata() {
+        return this.jobFailureMetadata
     }
 
     public getPayloadFilePath() {
@@ -453,8 +453,8 @@ export class TransformByQState {
         this.projectCopyFilePath = filePath
     }
 
-    public setJobFailureReason(reason: string) {
-        this.jobFailureReason = reason
+    public setJobFailureMetadata(data: string) {
+        this.jobFailureMetadata = data
     }
 
     public setPayloadFilePath(payloadFilePath: string) {
