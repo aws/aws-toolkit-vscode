@@ -1,3 +1,8 @@
+# _2.9_ (2024-02-22)
+- **(Feature)** Add startUrl in Amazon Q telemetry events
+- **(Feature)** CodeTransformation: block upload if project > 1GB
+- **(Bug Fix)** Amazon Q: Service exceptions are not suppressed and displayed to the user.
+
 # _2.8_ (2024-02-15)
 - **(Feature)** CodeTransform: smart select Java version of project
 - **(Bug Fix)** Fix for AmazonQ on Linux input focus problem ([#4100](https://github.com/aws/aws-toolkit-jetbrains/issues/4100))
