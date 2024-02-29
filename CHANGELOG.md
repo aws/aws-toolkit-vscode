@@ -1,3 +1,12 @@
+## 2.12.0 2024-02-29
+
+- **Bug Fix** Amazon Q: Static analysis of document symbols used as context in Amazon Q requests must filter tree-sitter "extra" CST nodes (comments) in order to avoid crashes which freeze the chat panel
+- **Feature** Enable node 20 for SAM create and local Lambda debugging
+- **Feature** Amazon Q CodeTransform: show link to documentation after errors
+- **Feature** CodeWhisperer: Improve percentage code written metrics to include user multi character input
+- **Feature** CodeWhisperer: Add startUrl to security scan telemetry
+- **Feature** UI: Improve text description in login page
+
 ## 2.11.0 2024-02-22
 
 - **Feature** Amazon Q: /dev command now supports the InvalidState event during the GenerateApproach step. The reason for the Approach to reach an Invalid State is printed in /dev's chat response.
