@@ -727,32 +727,33 @@ export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]
 
 export const showManageConnections = Commands.declare(
     { id: 'aws.auth.manageConnections', compositeKey: { 1: 'source' } },
-    (context: vscode.ExtensionContext) => (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
-        if (_ !== placeholder) {
-            source = 'vscodeComponent'
-        }
-
-        // The auth webview page does not make sense to use in C9,
-        // so show the auth quick pick instead.
-        if (isCloud9('any') || isWeb()) {
-            if (source.toLowerCase().includes('codewhisperer')) {
-                // Show CW specific quick pick for CW connections
-                return showCodeWhispererConnectionPrompt()
+    (context: vscode.ExtensionContext) =>
+        async (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
+            if (_ !== placeholder) {
+                source = 'vscodeComponent'
             }
-            return addConnection.execute()
-        }
 
-        if (!isServiceItemId(serviceToShow)) {
-            serviceToShow = undefined
-        }
+            // The auth webview page does not make sense to use in C9,
+            // so show the auth quick pick instead.
+            if (isCloud9('any') || isWeb()) {
+                if (source.toLowerCase().includes('codewhisperer')) {
+                    // Show CW specific quick pick for CW connections
+                    return showCodeWhispererConnectionPrompt()
+                }
+                return addConnection.execute()
+            }
 
-        if (DevSettings.instance.isNewLoginEnabled()) {
-            void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
-            return
-        }
+            if (!isServiceItemId(serviceToShow)) {
+                serviceToShow = undefined
+            }
 
-        return showAuthWebview(context, source, serviceToShow)
-    }
+            if (DevSettings.instance.isNewLoginEnabled()) {
+                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
+                return
+            }
+
+            return showAuthWebview(context, source, serviceToShow)
+        }
 )
 
 async function showAuthWebview(

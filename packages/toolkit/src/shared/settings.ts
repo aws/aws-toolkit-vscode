@@ -717,7 +717,7 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
     }
 
     public isNewLoginEnabled(): boolean {
-        return true
+        return false
     }
 
     public isDevMode(): boolean {
