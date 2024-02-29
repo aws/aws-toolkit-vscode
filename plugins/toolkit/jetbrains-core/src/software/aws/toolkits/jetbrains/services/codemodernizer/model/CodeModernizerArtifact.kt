@@ -53,7 +53,7 @@ open class CodeModernizerArtifact(
                 val manifest = loadManifest()
                 if (manifest.version > maxSupportedVersion) {
                     // If not supported we can still try to use it, i.e. the versions should largely be backwards compatible
-                    // TODO change to notify that user should consider upgrading the toolkit version.
+                    // Can also notify user to consider upgrading the toolkit version.
                     LOG.warn { "Unsupported version: ${manifest.version}" }
                 }
                 val patches = extractPatches(manifest)

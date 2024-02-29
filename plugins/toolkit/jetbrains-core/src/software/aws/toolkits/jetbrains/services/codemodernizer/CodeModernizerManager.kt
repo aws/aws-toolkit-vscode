@@ -56,10 +56,8 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.toolwindow.CodeMo
 import software.aws.toolkits.jetbrains.services.codemodernizer.ui.components.BuildErrorDialog
 import software.aws.toolkits.jetbrains.services.codemodernizer.ui.components.PreCodeTransformUserDialog
 import software.aws.toolkits.jetbrains.services.codemodernizer.ui.components.ValidationErrorDialog
-import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
-import software.aws.toolkits.jetbrains.utils.notifyError
-import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.jetbrains.utils.notifyStickyError
 import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformCancelSrcComponents
@@ -286,7 +284,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     }
 
     internal fun notifyTransformationStopped() {
-        notifyInfo(
+        notifyStickyInfo(
             message("codemodernizer.notification.info.transformation_stop.title"),
             message("codemodernizer.notification.info.transformation_stop.content"),
             project,
@@ -302,7 +300,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     }
 
     internal fun notifyTransformationStartStopping() {
-        notifyInfo(
+        notifyStickyInfo(
             message("codemodernizer.notification.info.transformation_start_stopping.title"),
             message("codemodernizer.notification.info.transformation_start_stopping.content"),
             project,
@@ -310,7 +308,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     }
 
     internal fun notifyTransformationStartCannotYetStop() {
-        notifyError(
+        notifyStickyError(
             message("codemodernizer.notification.info.transformation_start_stopping.failed_title"),
             message("codemodernizer.notification.info.transformation_start_stopping.failed_as_job_not_started"),
             project,
@@ -318,7 +316,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     }
 
     internal fun notifyTransformationFailedToStop(message: String) {
-        notifyError(
+        notifyStickyError(
             message("codemodernizer.notification.info.transformation_start_stopping.failed_title"),
             message("codemodernizer.notification.info.transformation_start_stopping.failed_content", message),
             project,
@@ -385,7 +383,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
 
             is CodeModernizerStartJobResult.UnableToStartJob -> {
                 CodeModernizerJobCompletedResult.UnableToCreateJob(
-                    message("codemodernizer.notification.warn.unable_to_start_job", result.exception), // TODO maybe not display the entire message
+                    message("codemodernizer.notification.warn.unable_to_start_job", result.exception),
                     true,
                 )
             }
@@ -533,11 +531,6 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         artifactHandler.displayDiffAction(jobId)
     }
 
-    private fun openTroubleshootingGuideNotificationAction() = OpenBrowserAction(
-        message("codemodernizer.notification.info.view_troubleshooting_guide"),
-        url = "https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#transform-issues"
-    )
-
     private fun displaySummaryNotificationAction(jobId: JobId) =
         NotificationAction.createSimple(message("codemodernizer.notification.info.modernize_complete.view_summary")) {
             artifactHandler.showTransformationSummary(jobId)
@@ -549,7 +542,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             codeTransformResultStatusMessage = result.toString(),
             codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
             codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
-            codeTransformLocalMavenVersion = getMavenVersions(project),
+            codeTransformLocalMavenVersion = getMavenVersion(project),
         )
         when (result) {
             is CodeModernizerJobCompletedResult.UnableToCreateJob -> notifyJobFailure(
@@ -593,13 +586,13 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 message("codemodernizer.notification.warn.maven_failed.title"),
                 message("codemodernizer.notification.warn.maven_failed.content"),
                 project,
-                listOf(openTroubleshootingGuideNotificationAction()),
+                listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_MAVEN_COMMANDS)),
             )
             is CodeModernizerJobCompletedResult.JobAbortedZipTooLarge -> notifyStickyInfo(
                 message("codemodernizer.notification.warn.zip_too_large.title"),
                 message("codemodernizer.notification.warn.zip_too_large.content"),
                 project,
-                listOf(openTroubleshootingGuideNotificationAction()),
+                listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_PREREQUISITES)),
             )
         }
     }
@@ -636,7 +629,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                         codeTransformResultStatusMessage = "JobCancelled",
                         codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
                         codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
-                        codeTransformLocalMavenVersion = getMavenVersions(project),
+                        codeTransformLocalMavenVersion = getMavenVersion(project),
                     )
                 }
             } catch (e: Exception) {
@@ -647,7 +640,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                     codeTransformResultStatusMessage = "JobCancelled",
                     codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
                     codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
-                    codeTransformLocalMavenVersion = getMavenVersions(project),
+                    codeTransformLocalMavenVersion = getMavenVersion(project),
                 )
             }
         }
@@ -680,6 +673,12 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         ApplicationManager.getApplication().invokeLater {
             runInEdt { ValidationErrorDialog.create(maybeUnknownReason) }
         }
+        notifyStickyInfo(
+            message("codemodernizer.validationerrordialog.description.title"),
+            message("codemodernizer.validationerrordialog.description.main"),
+            project,
+            listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_PREREQUISITES)),
+        )
     }
 
     fun getTransformationPlan(): TransformationPlan? = codeTransformationSession?.getTransformationPlan()

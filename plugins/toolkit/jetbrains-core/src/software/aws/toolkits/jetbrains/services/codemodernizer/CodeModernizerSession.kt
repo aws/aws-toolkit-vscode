@@ -236,7 +236,7 @@ class CodeModernizerSession(
                 it.setRequestProperty(SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID, kmsArn)
             }
         }
-            .connect { request ->
+            .connect { request -> // default connect timeout is 10s
                 val connection = request.connection as HttpURLConnection
                 connection.setFixedLengthStreamingMode(fileToUpload.length())
                 fileToUpload.inputStream().use { inputStream ->
@@ -421,7 +421,6 @@ class CodeModernizerSession(
                 TransformationStatus.FAILED,
             )
         ) {
-            // val response = TODO()
             val summary = TransformationSummary(
                 """
             # Transformation summary
