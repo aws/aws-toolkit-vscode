@@ -164,6 +164,8 @@ class FeatureDevController(
     override suspend fun processOpenDiff(message: IncomingFeatureDevMessage.OpenDiff) {
         val session = getSessionInfo(message.tabId)
 
+        AmazonqTelemetry.isReviewedChanges(amazonqConversationId = session.conversationId, enabled = true)
+
         val project = context.project
         val sessionState = session.sessionState
 
@@ -252,6 +254,8 @@ class FeatureDevController(
         try {
             session = getSessionInfo(tabId)
 
+            AmazonqTelemetry.isAcceptedCodeChanges(amazonqConversationId = session.conversationId, enabled = true)
+
             var filePaths: List<NewFileZipInfo> = emptyList()
             var deletedFiles: Array<String> = emptyArray()
 
@@ -319,11 +323,14 @@ class FeatureDevController(
         messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.closed_session"))
         messenger.sendChatInputEnabledMessage(tabId = tabId, enabled = false)
 
-        // TODO: add here endChat telemetry.
+        val session = getSessionInfo(tabId)
+        val sessionLatency = System.currentTimeMillis() - session.sessionStartTime
+        AmazonqTelemetry.endChat(amazonqConversationId = session.conversationId, amazonqEndOfTheConversationLatency = sessionLatency.toDouble())
     }
 
     private suspend fun provideFeedbackAndRegenerateCode(tabId: String) {
         val session = getSessionInfo(tabId)
+
         AmazonqTelemetry.isProvideFeedbackForCodeGen(amazonqConversationId = session.conversationId, enabled = true)
 
         // Unblock the message button

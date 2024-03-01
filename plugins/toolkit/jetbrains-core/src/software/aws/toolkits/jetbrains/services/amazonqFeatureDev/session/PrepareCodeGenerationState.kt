@@ -9,6 +9,8 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createUpl
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.uploadArtifactToS3
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AmazonqTelemetry
+import software.aws.toolkits.telemetry.AmazonqUploadIntent
 
 class PrepareCodeGenerationState(
     override var tabID: String,
@@ -39,13 +41,21 @@ class PrepareCodeGenerationState(
 
         uploadArtifactToS3(uploadUrlResponse.uploadUrl(), fileToUpload, zipFileChecksum, zipFileLength, uploadUrlResponse.kmsKeyArn())
 
+        AmazonqTelemetry.createUpload(
+            amazonqConversationId = config.conversationId,
+            amazonqRepositorySize = zipFileLength.toDouble(),
+            amazonqUploadIntent = AmazonqUploadIntent.TASKASSISTPLANNING
+        )
+
         this.uploadId = uploadUrlResponse.uploadId()
+
         val nextState = CodeGenerationState(
             tabID = this.tabID,
             approach = "", // No approach needed,
             config = this.config,
             uploadId = this.uploadId,
             currentIteration = this.currentIteration,
+            repositorySize = zipFileLength.toDouble(),
             messenger = messenger
         )
 

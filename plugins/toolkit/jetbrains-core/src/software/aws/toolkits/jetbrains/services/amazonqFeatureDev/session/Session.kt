@@ -11,13 +11,16 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.Featur
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAsyncEventProgress
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createConversation
+import software.aws.toolkits.telemetry.AmazonqTelemetry
 import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.writeBytes
 
 class Session(val tabID: String, val project: Project) {
-    private var _state: SessionState?
     var context: FeatureDevSessionContext
+    val sessionStartTime = System.currentTimeMillis()
+
+    private var _state: SessionState?
     private var preloaderFinished: Boolean = false
     private var _conversationId: String? = null
     private var _latestMessage: String = ""
@@ -81,7 +84,7 @@ class Session(val tabID: String, val project: Project) {
         )
         this._latestMessage = ""
 
-        // TODO: add here telemetry for approach being accepted. Will be done in a follow-up
+        AmazonqTelemetry.isApproachAccepted(amazonqConversationId = conversationId, enabled = true)
     }
 
     /**
