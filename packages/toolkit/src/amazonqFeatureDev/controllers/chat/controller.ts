@@ -394,6 +394,7 @@ export class FeatureDevController {
             telemetry.amazonq_isAcceptedCodeChanges.emit({
                 amazonqConversationId: session.conversationId,
                 enabled: true,
+                result: 'Succeeded',
             })
             await session.acceptChanges()
 
@@ -438,6 +439,7 @@ export class FeatureDevController {
         telemetry.amazonq_isProvideFeedbackForCodeGen.emit({
             amazonqConversationId: session.conversationId,
             enabled: true,
+            result: 'Succeeded',
         })
         // Unblock the message button
         this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
