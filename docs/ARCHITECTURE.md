@@ -22,6 +22,8 @@ If you are considering contributing, please consider whether your implementation
 library or in `packages/toolkit`. If your work could be re-used by other packages (e.g. auth mechanisms,
 utilities), then it may belong in the core library. If instead you are adding something toolkit specific
 (eg. an integration to a new AWS service in the Explorer Tree), consider putting it in `packages/toolkit`.
+To import from the core library, please export your desired code using `index.ts` files, and add an appropriate `exports` statement
+in `packages/core/package.json`.
 
 Unless otherwise stated, the documentation throughout this project is referring to the code and
 functionality in `packages/core/` and `packages/toolkit`.
