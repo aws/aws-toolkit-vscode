@@ -13,7 +13,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": ["serve"]
+            "dependsOn": ["copyPackageJson", "serve"]
         },
         {
             "label": "serve",
@@ -32,7 +32,7 @@
                 "background": {
                     "activeOnStart": true,
                     "beginsPattern": "Project is running at",
-                    "endsPattern": "compiled successfully"
+                    "endsPattern": "compiled"
                 }
             }
         },
@@ -44,7 +44,8 @@
             "isBackground": true,
             // Since `webpack --watch` never terminates (but finishes packaging at some point),
             // VS Code uses this to parse the CLI output to pattern match something that indicates it is done
-            "problemMatcher": "$ts-webpack-watch"
+            "problemMatcher": "$ts-webpack-watch",
+            "dependsOn": ["copyPackageJson"]
         },
         {
             "label": "webRun",
@@ -80,6 +81,34 @@
                 }
             }
         },
+        {
+            "label": "copyPackageJson",
+            "type": "npm",
+            "script": "copyPackageJson",
+            "problemMatcher": [],
+            "isBackground": false,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "restorePackageJson",
+            "type": "npm",
+            "script": "restorePackageJson",
+            "problemMatcher": [],
+            "isBackground": false,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "terminate",
+            "command": "echo run terminate",
+            "type": "shell",
+            "dependsOn": ["restorePackageJson"]
+        },
         /**
         After we stop debugging our browser, we also want to stop the web server.
         When this task is ran it will stop the web server.
@@ -89,7 +118,8 @@
         {
             "label": "webRunTerminate",
             "command": "echo ${input:webRunTerminate}",
-            "type": "shell"
+            "type": "shell",
+            "dependsOn": ["restorePackageJson"]
         },
         {
             "type": "npm",
@@ -104,7 +134,7 @@
         {
             "type": "npm",
             "script": "compile",
-            "dependsOn": ["Kill Tasks"],
+            "dependsOn": ["Kill Tasks", "copyPackageJson"],
             "problemMatcher": "$tsc"
         },
         {

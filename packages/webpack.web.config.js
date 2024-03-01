@@ -36,7 +36,7 @@ const webConfig = merge(baseConfig, {
             NODE_DEBUG: 'development',
             READABLE_STREAM: 'disable',
         }),
-        /** 
+        /**
          * HACK: the HttpResourceFetcher breaks Web mode if imported, BUT we still dynamically import this module for non web mode
          * environments. The following allows compilation to pass in Web mode by never bundling the module in the final output.
          */

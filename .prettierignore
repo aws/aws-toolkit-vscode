@@ -11,5 +11,5 @@ src.gen/**
 src/shared/telemetry/service-2.json
 src/testFixtures/**
 
-packages/toolkit/src/shared/telemetry/service-2.json
-packages/toolkit/src/testFixtures/**
+packages/core/src/shared/telemetry/service-2.json
+packages/core/src/testFixtures/**

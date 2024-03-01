@@ -1,0 +1,103 @@
+// See https://go.microsoft.com/fwlink/?LinkId=733558
+// for the documentation about the tasks.json format
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "watch",
+            "type": "npm",
+            "script": "watch",
+            "problemMatcher": "$tsc-watch",
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": ["serve"]
+        },
+        {
+            "label": "serve",
+            "type": "npm",
+            "script": "serve",
+            "group": "build",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "custom",
+                "pattern": {
+                    "regexp": ".",
+                    "file": 1,
+                    "location": 2,
+                    "message": 3
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "Project is running at",
+                    "endsPattern": "compiled successfully"
+                }
+            }
+        },
+        {
+            "label": "webWatch",
+            "type": "npm",
+            "script": "webWatch",
+            "detail": "Webpacks our toolkit code (with --watch) in preparation to be run in the browser",
+            "isBackground": true,
+            // Since `webpack --watch` never terminates (but finishes packaging at some point),
+            // VS Code uses this to parse the CLI output to pattern match something that indicates it is done
+            "problemMatcher": "$ts-webpack-watch"
+        },
+        /**
+        After we stop debugging our browser, we also want to stop the web server.
+        When this task is ran it will stop the web server.
+
+        From: https://stackoverflow.com/a/60330174
+        **/
+        {
+            "label": "webRunTerminate",
+            "command": "echo ${input:webRunTerminate}",
+            "type": "shell"
+        },
+        {
+            "type": "npm",
+            "script": "lint",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "type": "npm",
+            "script": "lintfix",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "type": "npm",
+            "script": "compile",
+            "dependsOn": ["Kill Tasks"],
+            "problemMatcher": "$tsc"
+        },
+        {
+            "type": "npm",
+            "script": "clean",
+            "dependsOn": ["Kill Tasks"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Kill Tasks",
+            "type": "process",
+            "command": "${input:killTasks}",
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "killTasks",
+            "type": "command",
+            "command": "workbench.action.tasks.terminate",
+            "args": "terminateAll"
+        },
+        {
+            "id": "webRunTerminate",
+            "type": "command",
+            "command": "workbench.action.tasks.terminate",
+            "args": "webRun"
+        }
+    ]
+}
