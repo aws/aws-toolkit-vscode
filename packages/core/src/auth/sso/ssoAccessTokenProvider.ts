@@ -27,10 +27,12 @@ import { AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemet
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { indent } from '../../shared/utilities/textUtilities'
 import { UriHandler } from '../../shared/vscode/uriHandler'
+import OidcClientPKCE from './oidcclientpkce'
 
 const clientRegistrationType = 'public'
 const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
 const refreshGrantType = 'refresh_token'
+const authorizationGrantType = 'authorization_code'
 
 /**
  *  SSO flow (RFC: https://tools.ietf.org/html/rfc8628)
@@ -188,11 +190,10 @@ export class SsoAccessTokenProvider {
             throw new CancellationError('user')
         }
 
-        const tokenRequest = {
+        const tokenRequest: OidcClientPKCE.CreateTokenRequest = {
             clientId: registration.clientId,
             clientSecret: registration.clientSecret,
-            deviceCode: authorization.deviceCode,
-            grantType: deviceGrantType,
+            grantType: authorizationGrantType,
         }
 
         await waitForUser()
@@ -223,6 +224,7 @@ export class SsoAccessTokenProvider {
             clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} Toolkit for VSCode`,
             clientType: clientRegistrationType,
             scopes: this.profile.scopes,
+            grantTypes: [authorizationGrantType, refreshGrantType],
         })
     }
 
