@@ -25,7 +25,6 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.core.utils.readText
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.EDT
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
@@ -179,11 +178,7 @@ class FeatureDevController(
                         DiffContentFactory.getInstance().create(project, existingFile)
                     }
 
-                    val newFileContent = sessionState.filePaths.find {
-                        it.zipFilePath.equals(
-                            message.filePath
-                        )
-                    }?.newFilePath?.readText()
+                    val newFileContent = sessionState.filePaths.find { it.zipFilePath == message.filePath }?.fileContent
 
                     val rightDiffContent = if (message.deleted || newFileContent == null) {
                         EmptyContent()
@@ -193,6 +188,7 @@ class FeatureDevController(
 
                     val request = SimpleDiffRequest(message.filePath, leftDiffContent, rightDiffContent, null, null)
                     request.putUserData(DiffUserDataKeys.FORCE_READ_ONLY, true)
+
                     DiffManager.getInstance().showDiff(project, request)
                 }
             }

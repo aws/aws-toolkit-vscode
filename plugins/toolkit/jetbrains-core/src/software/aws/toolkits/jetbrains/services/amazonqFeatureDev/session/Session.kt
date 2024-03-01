@@ -13,7 +13,6 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendA
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createConversation
 import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteIfExists
-import kotlin.io.path.readBytes
 import kotlin.io.path.writeBytes
 
 class Session(val tabID: String, val project: Project) {
@@ -94,7 +93,7 @@ class Session(val tabID: String, val project: Project) {
         filePaths.forEach {
             val filePath = projectRootPath.resolve(it.zipFilePath)
             filePath.parent.createDirectories() // Create directories if needed
-            filePath.writeBytes(it.newFilePath.readBytes())
+            filePath.writeBytes(it.fileContent.toByteArray(Charsets.UTF_8))
         }
 
         deletedFiles.forEach {

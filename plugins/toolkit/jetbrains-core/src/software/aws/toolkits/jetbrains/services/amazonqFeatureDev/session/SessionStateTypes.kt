@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 import com.fasterxml.jackson.annotation.JsonValue
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
-import java.nio.file.Path
 
 data class SessionStateAction(
     val task: String,
@@ -38,7 +37,7 @@ data class SessionStateConfig(
 
 data class NewFileZipInfo(
     val zipFilePath: String,
-    val newFilePath: Path,
+    val fileContent: String,
 )
 
 data class CodeGenerationResult(
