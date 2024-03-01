@@ -54,7 +54,8 @@
                 "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
-            "preLaunchTask": "webWatch"
+            "preLaunchTask": "webWatch",
+            "postDebugTask": "webRunTerminate"
         },
         {
             "name": "Integration Tests",

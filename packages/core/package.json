@@ -4227,6 +4227,7 @@
         "testCompile": "npm run clean && npm run buildScripts && tsc -p ./",
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
         "webCompile": "npm run clean && npm run buildScripts && webpack --config-name web",
+        "webWatch": "npm run webCompile -- --watch",
         "testWeb": "npm run webCompile && c8 ts-node ./scripts/test/testWeb.ts",
         "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts",
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",

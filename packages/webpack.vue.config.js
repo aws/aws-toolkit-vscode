@@ -30,7 +30,7 @@ const createVueBundleName = file => {
  * Generates Vue entry points if the filename is matches `targetPattern` (default: index.ts)
  * and is under a `vue` directory.
  */
-const createVueEntries = (dir = currentDir, targetPattern = 'index.ts') => {
+const createVueEntries = (targetPattern = 'index.ts') => {
     return glob
         .sync(path.resolve(currentDir, 'src', '**', 'vue', '**', targetPattern))
         .map(f => ({ name: createVueBundleName(f), path: f }))
