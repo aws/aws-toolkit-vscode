@@ -41,8 +41,8 @@ Then clone the repository and install NPM packages:
 
 ### Run
 
-Due to the monorepo structure of the project, you can run the extension in VSCode by either opening the
-`aws-toolkit-vscode/packages/toolkit` folder directly, or adding it as a root folder in the VSCode Workspace.
+Due to the monorepo structure of the project, you must have the `aws-toolkit-vscode/packages/toolkit` folder open as root folder in the workspace.
+The easiest way to open the project: File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
 
 To run the extension from VSCode as a Node.js app:
 
@@ -162,9 +162,8 @@ See [web.md](./docs/web.md) for working with the web mode implementation of the 
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
-You can run tests directly from VSCode. Due to the monorepo structure of the project, you must either open
-the `aws-toolkit-vscode/packages/core/` folder directly, or add it as a root folder in the VSCode Workspace.
-Then:
+You can run tests directly from VSCode. Due to the monorepo structure of the project, you must have the `aws-toolkit-vscode/packages/toolkit` folder open as root folder in the workspace.
+The easiest way to open the project: File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.

@@ -4,6 +4,8 @@ An overview of the architecture for various components within the Toolkit.
 
 ## Monorepo Structure
 
+**The easiest way to open the project for running/debugging:** File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
+
 This project is currently set up as a typescript monorepo with the following subprojects:
 
 -   [`packages/core/`](./packages/core/)
