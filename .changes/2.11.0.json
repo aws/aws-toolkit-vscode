@@ -1,0 +1,18 @@
+{
+	"date": "2024-02-22",
+	"version": "2.11.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Amazon Q: /dev command now supports the InvalidState event during the GenerateApproach step. The reason for the Approach to reach an Invalid State is printed in /dev's chat response."
+		},
+		{
+			"type": "Feature",
+			"description": "CloudFormation and SAM templates now have a CodeLens link to Application Composer"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q CodeTransformation: show user build logs for Maven install and copy-deps commands"
+		}
+	]
+}

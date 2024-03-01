@@ -1,5 +1,0 @@
-Resources:
-    SourceCodeForTerraform:
-        Type: AWS::Serverless::Function
-        Properties:
-            Runtime: nodejs14.x

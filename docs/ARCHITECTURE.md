@@ -2,11 +2,44 @@
 
 An overview of the architecture for various components within the Toolkit.
 
+## Monorepo Structure
+
+This project is currently set up as a typescript monorepo with a single subproject.
+We are currently working on splitting the Toolkit into various subprojects to help with
+sharing code between modules, Web mode development, etc. For now, there is just
+one monolithic subproject with all the extension functionality: [`packages/toolkit/`](./packages/toolkit/).
+
+Unless otherwise stated, the documentation throughout this project is referring to the code and
+functionality of that subproject.
+
+Current quirks of the current monorepo status that should be resolved/evaluated in later versions (TODO):
+
+-   [**Running the test suites in VSCode has changed**](../CONTRIBUTING.md#test)
+-   The [root package.json](../package.json) contains common dependencies for subprojects, and workspace
+    entries for each of the subprojects.
+    -   This package contains shortcuts to some of the `npm` scripts found in the subproject(s).
+    -   Other scripts, like `createRelease` and `newChange` run at the root level.
+    -   To run a script not present in the root `package.json`, use `npm run -w packages/toolkit <script>`
+-   `coverage/`, `.test-reports/`, `node_modules/` are hoisted to the project root. As more subprojects are added,
+    we will need to evaluate how to merge and publish coverage reports.
+    -   `dist/` however remains at the subproject level, along with a local `node_modules/`. See [`npm workspaces`](https://docs.npmjs.com/cli/v8/using-npm/workspaces)
+        for more info on how `node_modules/` hoisting works.
+    -   Because of `node_modules/` hoisting, references to this folder in code access the root project modules folder. This may be
+        an issue if more subprojects are added and the contents of the root and local modules folders differ.
+-   [`globalSetup.test.ts`](../packages/toolkit/src/test/globalSetup.test.ts) should be configured to work as a library/run tests for all subprojects.
+-   Subproject `tsconfig.json`s should extend a root `tsconfig.packages.json`.
+-   Linting tests should run at the root level, not subproject level.
+-   `packages/toolkit/scripts/` should be generalized and moved to the root of the project as needed.
+-   LICENSE, README.md, and other non-code artifacts that must be packaged into the .vsix are currently
+    being copied into the packaging subproject directory from the root project directory as part of the `copyFiles` task.
+-   Pre-release only publishes packages/toolkit extension directly. It should be extended to other added extensions. See [`release.yml`](../.github/workflows/release.yml)
+-   VSCode does not support inheriting/extending `.vscode/` settings: https://github.com/microsoft/vscode/issues/15909
+
 ## Commands
 
 Many parts of the VS Code API relies on the use of 'commands' which are simply functions bound to a global ID. For small projects, this simplicity is great. But the base API doesn't offer a lot of common functionality that a large project might want: logging, error handling, etc.
 
-For the Toolkit, common command functionality is implemented in [Commands](../src/shared/vscode/commands2.ts). The goal with this abstraction is to increase consistency across the Toolkit for anything related to commands.
+For the Toolkit, common command functionality is implemented in [Commands](../packages/toolkit/src/shared/vscode/commands2.ts). The goal with this abstraction is to increase consistency across the Toolkit for anything related to commands.
 
 ### Examples
 
@@ -90,7 +123,7 @@ _See also [CODE_GUIDELINES.md](./CODE_GUIDELINES.md#exceptions)._
 
 Large applications often have a correspondingly large number of failure points. For feature-level logic, these failures are often non-recoverable. The best we can do is show the user that something went wrong and maybe offer guidance on how to fix it.
 
-Because this is such a common pattern, shared error handling logic is defined by `ToolkitError` found [here](../src/shared/errors.ts). This class provides the basic structure for errors throughout the Toolkit.
+Because this is such a common pattern, shared error handling logic is defined by `ToolkitError` found [here](../packages/toolkit/src/shared/errors.ts). This class provides the basic structure for errors throughout the Toolkit.
 
 ### Chaining
 
@@ -100,7 +133,7 @@ By adding additional information as the exception bubbles up, we can create a be
 
 ### Handlers
 
-Any code paths exercised via `Commands` will have errors handled by `handleError` in [extensions.ts](../src/extension.ts). A better API for error handling across more than just commands will be added in a future PR.
+Any code paths exercised via `Commands` will have errors handled by `handleError` in [extensions.ts](../packages/toolkit/src/extension.ts). A better API for error handling across more than just commands will be added in a future PR.
 
 ### Best Practices
 
@@ -304,7 +337,14 @@ Abstractly, a 'wizard' is a collection of discrete, linear steps (subroutines), 
 
 ### Creating a Wizard (Quick Picks)
 
-A new wizard can be created by extending off the base `Wizard` class, using the template type to specify the shape of the wizard state. All wizards have an internal 'form' property that is used to assign steps. We can assign UI elements (namely, quick picks) using the `bindPrompter` method on form elements. This method accepts a callback that should return a `Prompter` given the current state. For this example, we will use `createQuickPick` and `createInputBox` for our prompters:
+Create a new wizard by extending the base `Wizard` class, using the template type to specify the
+shape of the wizard state. All wizards have an internal `form` property that is used to assign
+steps. You can assign UI elements (namely, quickpicks) using the `bindPrompter` method on form
+elements. This method accepts a callback that should return a `Prompter` given the current state.
+For this example, we will use `createQuickPick` and `createInputBox` for our prompters:
+
+If you need to call async functions to construct your `Wizard` subclass, define your init logic in
+the `init()` method instead of the constructor.
 
 ```ts
 interface ExampleState {
@@ -349,7 +389,7 @@ Note that all wizards can potentially return `undefined` if the workflow was can
 Use `createWizardTester` on an instance of a wizard. Tests can then be constructed by asserting both the user-defined and internal state. Using the above `ExampleWizard`:
 
 ```ts
-const tester = createWizardTester(new ExampleWizard())
+const tester = await createWizardTester(new ExampleWizard())
 tester.foo.assertShowFirst() // Fails if `foo` is not shown (or not shown first)
 tester.bar.assertDoesNotShow() // True since `foo` is not assigned an explicit value
 tester.foo.applyInput('Hello, world!') // Manipulate 'user' state

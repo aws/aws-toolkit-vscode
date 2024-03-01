@@ -1,0 +1,7 @@
+Resources:
+    SourceCodeBesidePackageJson:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src
+            Handler: app.handlerBesidePackageJson
+            Runtime: nodejs20.x

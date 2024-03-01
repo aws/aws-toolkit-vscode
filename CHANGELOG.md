@@ -1,3 +1,28 @@
+## 2.12.0 2024-02-29
+
+- **Bug Fix** Amazon Q: Static analysis of document symbols used as context in Amazon Q requests must filter tree-sitter "extra" CST nodes (comments) in order to avoid crashes which freeze the chat panel
+- **Feature** Enable node 20 for SAM create and local Lambda debugging
+- **Feature** Amazon Q CodeTransform: show link to documentation after errors
+- **Feature** CodeWhisperer: Improve percentage code written metrics to include user multi character input
+- **Feature** CodeWhisperer: Add startUrl to security scan telemetry
+- **Feature** UI: Improve text description in login page
+
+## 2.11.0 2024-02-22
+
+- **Feature** Amazon Q: /dev command now supports the InvalidState event during the GenerateApproach step. The reason for the Approach to reach an Invalid State is printed in /dev's chat response.
+- **Feature** CloudFormation and SAM templates now have a CodeLens link to Application Composer
+- **Feature** Amazon Q CodeTransformation: show user build logs for Maven install and copy-deps commands
+
+## 2.10.0 2024-02-16
+
+- **Bug Fix** CDK Explorer: Refresh button is now visible.
+
+## 2.9.0 2024-02-09
+
+- **Bug Fix** Cloud9: certain filesystem calls did not work in Cloud9
+- **Bug Fix** EC2 Credentials: Use IMDSv2 calls if available, otherwise fall back IMDSv1.
+- **Feature** Enable java 17 for SAM create and local Lambda debugging
+
 ## 2.8.0 2024-02-01
 
 - **Bug Fix** CodeWhisperer: Improve CodePercentage telemetry reporting

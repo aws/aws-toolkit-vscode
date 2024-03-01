@@ -1,7 +1,0 @@
-Resources:
-    SourceCodeInSubfolderToManifest:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: src/
-            Handler: subfolder/app.handlerInManifestSubfolder
-            Runtime: nodejs14.x
