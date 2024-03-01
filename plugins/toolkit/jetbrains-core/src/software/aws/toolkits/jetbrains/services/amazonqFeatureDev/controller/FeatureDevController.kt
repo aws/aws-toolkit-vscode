@@ -525,11 +525,6 @@ class FeatureDevController(
             SessionStatePhase.APPROACH -> {
                 return listOf(
                     FollowUp(
-                        pillText = message("amazonqFeatureDev.follow_up.new_plan"),
-                        type = FollowUpTypes.NEW_PLAN,
-                        status = FollowUpStatusType.Info,
-                    ),
-                    FollowUp(
                         pillText = message("amazonqFeatureDev.follow_up.write_code"),
                         type = FollowUpTypes.WRITE_CODE,
                         status = FollowUpStatusType.Info,
