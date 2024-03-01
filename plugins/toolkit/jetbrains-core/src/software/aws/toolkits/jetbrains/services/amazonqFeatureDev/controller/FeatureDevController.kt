@@ -388,7 +388,7 @@ class FeatureDevController(
                     ),
                 )
             } else {
-                val mssg = createUserFacingErrorMessage("$FEATURE_NAME request failed: ${err.cause?.message ?: err.message}")
+                val mssg = createUserFacingErrorMessage("$FEATURE_NAME request failed: ${err.message ?: err.cause?.message}")
                 messenger.sendError(
                     tabId = tabId,
                     errMessage = mssg ?: message("amazonqFeatureDev.exception.request_failed"),

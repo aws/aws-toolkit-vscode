@@ -27,6 +27,6 @@ internal fun apiError(message: String?, cause: Throwable?): Nothing =
 internal fun exportParseError(): Nothing =
     throw FeatureDevException(message("amazonqFeatureDev.exception.export_parsing_error"))
 
-val denyListedErrors = arrayOf("Deserialization error", "Inaccessible host")
+val denyListedErrors = arrayOf("Deserialization error", "Inaccessible host", "UnknownHost")
 fun createUserFacingErrorMessage(message: String?): String? =
     if (message != null && denyListedErrors.any { message.contains(it) }) "$FEATURE_NAME API request failed" else message

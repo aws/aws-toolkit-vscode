@@ -5,10 +5,12 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ValidationException
+import software.amazon.awssdk.services.codewhispererstreaming.model.CodeWhispererStreamingException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -38,7 +40,13 @@ fun createConversation(proxyClient: FeatureDevClient): String {
         return conversationId
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to start conversation: ${e.message}" }
-        apiError(e.message, e.cause)
+
+        var errMssg = e.message
+        if (e is CodeWhispererRuntimeException) {
+            errMssg = e.awsErrorDetails().errorMessage()
+            logger.error(e) { "Start conversation failed for request: ${e.requestId()}" }
+        }
+        apiError(errMssg, e.cause)
     }
 }
 
@@ -57,10 +65,17 @@ fun createUploadUrl(proxyClient: FeatureDevClient, conversationId: String, conte
         return uploadUrlResponse
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to generate presigned url: ${e.message}" }
-        if (e is ValidationException && e.message?.contains("Invalid contentLength") == true) {
-            throw ContentLengthError(message("amazonqFeatureDev.content_length.error_text"), e.cause)
+
+        var errMssg = e.message
+        if (e is CodeWhispererRuntimeException) {
+            errMssg = e.awsErrorDetails().errorMessage()
+            logger.error(e) { "Create UploadUrl failed for request: ${e.requestId()}" }
+
+            if (e is ValidationException && e.message?.contains("Invalid contentLength") == true) {
+                throw ContentLengthError(message("amazonqFeatureDev.content_length.error_text"), e.cause)
+            }
         }
-        apiError(e.message, e.cause)
+        apiError(errMssg, e.cause)
     }
 }
 
@@ -84,7 +99,13 @@ suspend fun generatePlan(proxyClient: FeatureDevClient, conversationId: String, 
         return generatePlanResponse
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to execute planning : ${e.message}" }
-        apiError(e.message, e.cause)
+
+        var errMssg = e.message
+        if (e is CodeWhispererStreamingException) {
+            errMssg = e.awsErrorDetails().errorMessage()
+            logger.error(e) { "Generate plan failed for request: ${e.requestId()}" }
+        }
+        apiError(errMssg, e.cause)
     }
 }
 
@@ -98,11 +119,17 @@ fun startTaskAssistCodeGeneration(proxyClient: FeatureDevClient, conversationId:
             message
         )
 
-        logger.debug { "$FEATURE_NAME: Started code generation" }
+        logger.debug { "$FEATURE_NAME: Started code generation with requestId: ${startCodeGenerationResponse.responseMetadata().requestId()}" }
         return startCodeGenerationResponse
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to execute startTaskAssistCodeGeneration ${e.message}" }
-        apiError(e.message, e.cause)
+
+        var errMssg = e.message
+        if (e is CodeWhispererRuntimeException) {
+            errMssg = e.awsErrorDetails().errorMessage()
+            logger.error(e) { "StartTaskAssistCodeGeneration failed for request: ${e.requestId()}" }
+        }
+        apiError(errMssg, e.cause)
     }
 }
 
@@ -112,11 +139,20 @@ fun getTaskAssistCodeGeneration(proxyClient: FeatureDevClient, conversationId: S
         logger.debug { "Executing GetTaskAssistCodeGeneration with conversationId: $conversationId , codeGenerationId: $codeGenerationId" }
         val getCodeGenerationResponse = proxyClient.getTaskAssistCodeGeneration(conversationId, codeGenerationId)
 
-        logger.debug { "$FEATURE_NAME: Received code generation status $getCodeGenerationResponse" }
+        logger.debug {
+            "$FEATURE_NAME: Received code generation status $getCodeGenerationResponse with requestId ${getCodeGenerationResponse.responseMetadata()
+                .requestId()}"
+        }
         return getCodeGenerationResponse
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to execute GetTaskAssistCodeGeneration ${e.message}" }
-        apiError(e.message, e.cause)
+
+        var errMssg = e.message
+        if (e is CodeWhispererRuntimeException) {
+            errMssg = e.awsErrorDetails().errorMessage()
+            logger.error(e) { "GetTaskAssistCodeGeneration failed for request:  ${e.requestId()}" }
+        }
+        apiError(errMssg, e.cause)
     }
 }
 
@@ -127,7 +163,13 @@ suspend fun exportTaskAssistArchiveResult(proxyClient: FeatureDevClient, convers
         logger.debug { "$FEATURE_NAME: Received export task assist result archive response" }
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to export archive result: ${e.message}" }
-        apiError(e.message, e.cause)
+
+        var errMssg = e.message
+        if (e is CodeWhispererStreamingException) {
+            errMssg = e.awsErrorDetails().errorMessage()
+            logger.error(e) { "ExportTaskAssistArchiveResult failed for request: ${e.requestId()}" }
+        }
+        apiError(errMssg, e.cause)
     }
 
     val parsedResult: ExportTaskAssistResultArchiveStreamResult
