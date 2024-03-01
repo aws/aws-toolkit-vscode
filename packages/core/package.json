@@ -4234,7 +4234,7 @@
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "ts-node ./scripts/lint/testLint.ts && npm run format",
-        "generateClients": "npm run build -w @amzn/codewhisperer-streaming && ts-node ./scripts/build/generateServiceClient.ts ",
+        "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
         "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
         "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "serve": "webpack serve --config-name vue-hmr --mode development"
