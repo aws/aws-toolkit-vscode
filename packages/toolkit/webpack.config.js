@@ -3,39 +3,49 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**
- * This is the final webpack config that collects all webpack configs.
- */
+const path = require('path')
+const currentDir = process.cwd()
 
 const baseConfig = require('../webpack.base.config')
-const baseVueConfig = require('../webpack.vue.config')
 const baseWebConfig = require('../webpack.web.config')
+
+const devServer = {
+    static: {
+        directory: path.resolve(currentDir, 'dist'),
+    },
+    headers: {
+        'Access-Control-Allow-Origin': '*',
+    },
+    allowedHosts: 'all',
+}
 
 const config = {
     ...baseConfig,
     entry: {
         'src/main': './src/main.ts',
-        'src/stepFunctions/asl/aslServer': './src/stepFunctions/asl/aslServer.ts',
     },
 }
 
-const vueConfigs = baseVueConfig.configs.map(c => {
-    // Inject entry point into all configs.
-    return {
-        ...c,
-        entry: {
-            ...baseVueConfig.utils.createVueEntries(),
-            'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
-        },
-    }
-})
+const serveConfig = {
+    ...config,
+    name: 'mainServe',
+    devServer,
+    externals: {
+        vscode: 'commonjs vscode',
+    },
+}
 
 const webConfig = {
     ...baseWebConfig,
     entry: {
-        'src/extensionWeb': './src/extensionWeb.ts',
-        'src/testWeb/testRunner': './src/testWeb/testRunner.ts',
+        'src/mainWeb': './src/mainWeb.ts',
     },
 }
 
-module.exports = [config, ...vueConfigs, webConfig]
+const webServeConfig = {
+    ...webConfig,
+    name: 'webServe',
+    devServer,
+}
+
+module.exports = process.env.npm_lifecycle_event === 'serve' ? [serveConfig, webServeConfig] : [config, webConfig]

@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as extension from './extension'
 import type { ExtensionContext } from 'vscode'
+import { awsToolkitActivate, awsToolkitDeactivate } from 'aws-core-vscode'
 
 export async function activate(context: ExtensionContext) {
-    return extension.awsToolkitActivate(context)
+    return awsToolkitActivate(context)
 }
 
 export async function deactivate() {
-    await extension.awsToolkitDeactivate()
+    await awsToolkitDeactivate()
 }
