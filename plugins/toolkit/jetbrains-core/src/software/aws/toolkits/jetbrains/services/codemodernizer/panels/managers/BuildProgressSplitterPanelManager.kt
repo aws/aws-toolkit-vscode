@@ -263,7 +263,7 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
             }
         }
         statusTreePanel.renderTree(updatedStatuses)
-        if (backendProgressStepsAvailable) {
+        if (backendProgressStepsAvailable && newState != TransformationStatus.FAILED) {
             if (this.secondComponent == loadingPanel) {
                 this.remove(loadingPanel)
                 setProgressStepsDefaultUI()
@@ -277,8 +277,9 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
             }
             repaint()
             revalidate()
-        } else if (newState == TransformationStatus.STOPPED) {
+        } else if (newState == TransformationStatus.STOPPED || newState == TransformationStatus.FAILED) {
             setSplitPanelStopView()
+            buildProgressStepDetailsPanel.setStopView(newState)
             revalidate()
             repaint()
         } else {

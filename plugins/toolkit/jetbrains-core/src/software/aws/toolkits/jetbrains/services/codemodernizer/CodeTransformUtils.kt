@@ -13,7 +13,7 @@ import com.intellij.serviceContainer.AlreadyDisposedException
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.settings.GradleSettings
 import software.amazon.awssdk.awscore.exception.AwsServiceException
-import software.amazon.awssdk.core.exception.SdkClientException
+import software.amazon.awssdk.services.codewhispererruntime.model.AccessDeniedException
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.amazon.awssdk.services.codewhispererruntime.model.GetTransformationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.InternalServerException
@@ -167,15 +167,13 @@ suspend fun JobId.pollTransformationStatusAndPlan(
 
     try {
         waitUntil(
-            succeedOn = { state in succeedOn },
-            failOn = { state in failOn },
+            succeedOn = { result -> result in succeedOn },
+            failOn = { result -> result in failOn },
             maxDuration = maxDuration,
             exceptionsToStopOn = setOf(
                 InternalServerException::class,
                 ValidationException::class,
-                AccessDeniedException::class,
                 AwsServiceException::class,
-                SdkClientException::class,
                 CodeWhispererRuntimeException::class,
                 RuntimeException::class,
             ),
@@ -208,21 +206,30 @@ suspend fun JobId.pollTransformationStatusAndPlan(
                         codeTransformStatus = "PLAN_UPDATED"
                     )
                 }
-                if (newStatus != state || newPlan != transformationPlan) {
+                if (newStatus !in failOn && (newStatus != state || newPlan != transformationPlan)) {
                     transformationPlan = newPlan
                     onStateChange(state, newStatus, transformationPlan)
                 }
                 state = newStatus
                 numRefreshes = 0
+                return@waitUntil state
             } catch (e: AccessDeniedException) {
                 if (numRefreshes++ > maxRefreshes) throw e
                 refreshToken(project)
+                return@waitUntil state
             } finally {
                 sleep(sleepDurationMillis)
             }
         }
-    } catch (e: WaiterUnrecoverableException) {
-        return PollingResult(false, transformationResponse?.transformationJob(), state, transformationPlan)
+    } catch (e: Exception) {
+        // Still call onStateChange to update the UI
+        onStateChange(state, TransformationStatus.FAILED, transformationPlan)
+        when (e) {
+            is WaiterUnrecoverableException, is AccessDeniedException -> {
+                return PollingResult(false, transformationResponse?.transformationJob(), state, transformationPlan)
+            }
+            else -> throw e
+        }
     }
     return PollingResult(true, transformationResponse?.transformationJob(), state, transformationPlan)
 }
