@@ -18,7 +18,7 @@ object Waiters {
      * Creates a waiter that attempts executing the provided [call] until the specified conditions are met.
      *
      * @param T The response type of the [call]
-     * @param succeedOn The condition on the response under which the thing we are trying is complete. Defaults to if the call succeeds, we stop wating
+     * @param succeedOn The condition on the response under which the thing we are trying is complete. Defaults to if the call succeeds, we stop waiting
      * @param failOn The condition on the response under which the thing we are trying has already failed and further attempts are pointless. Defaults to always try again
      * @param exceptionsToStopOn The exception types that should be considered a success and stop waiting. Default to never stop on any exception
      * @param exceptionsToIgnore The exception types that should be ignored if the thing we are trying throws them. Default to not ignoring any exceptions and let it bubble out
