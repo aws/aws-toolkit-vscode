@@ -92,7 +92,7 @@ export async function getUserAgent(
     return pairs.join(' ')
 }
 
-type EnvType = 'cloud9' | 'cloud9-codecatalyst' | 'codecatalyst' | 'local' | 'ec2' | 'sagemaker' | 'test' | 'wsl' |'unknown' 
+type EnvType = 'cloud9' | 'cloud9-codecatalyst' | 'codecatalyst' | 'local' | 'ec2' | 'sagemaker' | 'test' | 'wsl' |'unknown'
 
 export function getComputeEnvType(): EnvType {
     if (isCloud9('classic')) {
