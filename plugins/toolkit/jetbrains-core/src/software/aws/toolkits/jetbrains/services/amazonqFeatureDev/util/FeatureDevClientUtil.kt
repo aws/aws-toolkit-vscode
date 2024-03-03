@@ -18,6 +18,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ContentLengthE
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.apiError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.GenerateTaskAssistPlanResult
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.exportParseError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeGenerationStreamResult
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.ExportTaskAssistResultArchiveStreamResult
@@ -79,11 +80,18 @@ fun createUploadUrl(proxyClient: FeatureDevClient, conversationId: String, conte
     }
 }
 
-suspend fun generatePlan(proxyClient: FeatureDevClient, conversationId: String, uploadId: String, message: String, currentIteration: Int): String {
+suspend fun generatePlan(
+    proxyClient: FeatureDevClient,
+    conversationId: String,
+    uploadId:
+    String,
+    message: String,
+    currentIteration: Int
+): GenerateTaskAssistPlanResult {
     try {
         val startTime = System.currentTimeMillis()
         logger.debug { "Executing generateTaskAssistPlan with conversationId $conversationId" }
-        val generatePlanResponse = proxyClient.generateTaskAssistPlan(
+        val generatePlanResult = proxyClient.generateTaskAssistPlan(
             conversationId,
             uploadId,
             message
@@ -95,8 +103,8 @@ suspend fun generatePlan(proxyClient: FeatureDevClient, conversationId: String, 
 
         )
 
-        logger.debug { "$FEATURE_NAME: Generated plan: $generatePlanResponse" }
-        return generatePlanResponse
+        logger.debug { "$FEATURE_NAME: Generated plan: $generatePlanResult" }
+        return generatePlanResult
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to execute planning : ${e.message}" }
 

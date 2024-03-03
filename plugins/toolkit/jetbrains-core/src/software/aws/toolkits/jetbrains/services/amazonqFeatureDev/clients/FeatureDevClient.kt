@@ -72,8 +72,9 @@ class FeatureDevClient(private val project: Project) {
                 )
         }
 
-    suspend fun generateTaskAssistPlan(conversationId: String, uploadId: String, userMessage: String): String {
+    suspend fun generateTaskAssistPlan(conversationId: String, uploadId: String, userMessage: String): GenerateTaskAssistPlanResult {
         val assistantResponse = mutableListOf<String>()
+        var succeededPlanning = true
 
         val result = streamingBearerClient().generateTaskAssistPlan(
             GenerateTaskAssistPlanRequest.builder()
@@ -105,6 +106,10 @@ class FeatureDevClient(private val project: Project) {
                 GenerateTaskAssistPlanResponseHandler.Visitor.builder()
                     .onAssistantResponseEvent {
                         assistantResponse.add(it.content())
+                    }.onInvalidStateEvent {
+                        assistantResponse.clear()
+                        assistantResponse.add(it.message())
+                        succeededPlanning = false
                     }
                     .build()
             )
@@ -112,7 +117,7 @@ class FeatureDevClient(private val project: Project) {
         )
 
         result.await()
-        return assistantResponse.joinToString(" ")
+        return GenerateTaskAssistPlanResult(approach = assistantResponse.joinToString(" "), succeededPlanning = succeededPlanning)
     }
 
     fun startTaskAssistCodeGeneration(conversationId: String, uploadId: String, userMessage: String): StartTaskAssistCodeGenerationResponse = bearerClient()

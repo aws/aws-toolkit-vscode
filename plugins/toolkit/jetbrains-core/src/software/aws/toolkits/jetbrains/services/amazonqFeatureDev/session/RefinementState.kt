@@ -21,11 +21,12 @@ class RefinementState(
         }
         val approachResponse = generatePlan(config.proxyClient, config.conversationId, uploadId, action.msg, currentIteration)
 
-        approach = approachResponse
+        approach = approachResponse.approach
+
         val nextIteration = currentIteration + 1
 
         val nextState = RefinementState(approach, tabID, config, uploadId, nextIteration)
-        val interaction = Interaction(content = "$approach\n")
+        val interaction = Interaction(content = "$approach\n", interactionSucceeded = approachResponse.succeededPlanning)
         return SessionStateInteraction(
             nextState = nextState,
             interaction = interaction

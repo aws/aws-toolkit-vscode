@@ -13,7 +13,8 @@ data class SessionStateAction(
 )
 
 data class Interaction(
-    val content: String?
+    val content: String?,
+    val interactionSucceeded: Boolean
 )
 
 data class SessionStateInteraction(

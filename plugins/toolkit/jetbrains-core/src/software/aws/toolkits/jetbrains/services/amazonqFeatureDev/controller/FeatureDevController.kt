@@ -388,10 +388,10 @@ class FeatureDevController(
                     ),
                 )
             } else {
-                val mssg = createUserFacingErrorMessage("$FEATURE_NAME request failed: ${err.message ?: err.cause?.message}")
+                val msg = createUserFacingErrorMessage("$FEATURE_NAME request failed: ${err.message ?: err.cause?.message}")
                 messenger.sendError(
                     tabId = tabId,
-                    errMessage = mssg ?: message("amazonqFeatureDev.exception.request_failed"),
+                    errMessage = msg ?: message("amazonqFeatureDev.exception.request_failed"),
                     retries = retriesRemaining(session),
                     phase = session?.sessionState?.phase
                 )
@@ -422,16 +422,18 @@ class FeatureDevController(
         val interactions = session.send(message)
         messenger.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.iterate_plan"))
 
-        messenger.sendAnswerPart(tabId = tabId, message = interactions.content, canBeVoted = true)
+        messenger.sendAnswerPart(tabId = tabId, message = interactions.content, canBeVoted = interactions.interactionSucceeded)
 
-        messenger.sendAnswer(
-            tabId = tabId,
-            messageType = FeatureDevMessageType.Answer,
-            message = message("amazonqFeatureDev.plan_generation.ask_for_feedback")
-        )
+        if (interactions.interactionSucceeded) {
+            messenger.sendAnswer(
+                tabId = tabId,
+                messageType = FeatureDevMessageType.Answer,
+                message = message("amazonqFeatureDev.plan_generation.ask_for_feedback")
+            )
+        }
 
         // Follow up with action items and complete the request stream
-        messenger.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase))
+        messenger.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase, interactions.interactionSucceeded))
 
         // Unlock the prompt again so that users can iterate
         messenger.sendAsyncEventProgress(tabId = tabId, inProgress = false)
@@ -498,7 +500,7 @@ class FeatureDevController(
 
             messenger.sendCodeResult(tabId = tabId, uploadId = uploadId, filePaths = filePaths, deletedFiles = deletedFiles, references = references)
 
-            messenger.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase))
+            messenger.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase, interactionSucceeded = true))
 
             messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.after_code_generation"))
         } finally {
@@ -520,16 +522,20 @@ class FeatureDevController(
         toolWindow?.show()
     }
 
-    private fun getFollowUpOptions(phase: SessionStatePhase?): List<FollowUp> {
+    private fun getFollowUpOptions(phase: SessionStatePhase?, interactionSucceeded: Boolean): List<FollowUp> {
         when (phase) {
             SessionStatePhase.APPROACH -> {
-                return listOf(
-                    FollowUp(
-                        pillText = message("amazonqFeatureDev.follow_up.write_code"),
-                        type = FollowUpTypes.WRITE_CODE,
-                        status = FollowUpStatusType.Info,
+                return when (interactionSucceeded) {
+                    true -> listOf(
+                        FollowUp(
+                            pillText = message("amazonqFeatureDev.follow_up.write_code"),
+                            type = FollowUpTypes.WRITE_CODE,
+                            status = FollowUpStatusType.Info,
+                        )
                     )
-                )
+
+                    false -> emptyList()
+                }
             }
             SessionStatePhase.CODEGEN -> {
                 return listOf(

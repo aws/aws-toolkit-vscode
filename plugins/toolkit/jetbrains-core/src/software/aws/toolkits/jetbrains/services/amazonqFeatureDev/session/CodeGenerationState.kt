@@ -68,7 +68,7 @@ class CodeGenerationState(
         // returns a SessionStateInteraction object to be handled by the controller.
         return SessionStateInteraction(
             nextState = nextState,
-            interaction = Interaction(content = "")
+            interaction = Interaction(content = "", interactionSucceeded = true)
         )
     }
 }
