@@ -38,7 +38,7 @@ github_checks:
 flags:
     codewhisperer:
         paths:
-            - packages/toolkit/src/codewhisperer/
+            - packages/core/src/codewhisperer/
     amazonqFeatureDev:
         paths:
-            - packages/toolkit/src/amazonqFeatureDev/
+            - packages/core/src/amazonqFeatureDev/
