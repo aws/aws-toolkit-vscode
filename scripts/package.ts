@@ -108,7 +108,10 @@ function main() {
     // It is expected that this will package from a packages/{subproject} folder.
     // There is a base config in packages/
     const packageJsonFile = './package.json'
+    const backupJsonFile = `${packageJsonFile}.package.bk`
     const webpackConfigJsFile = '../webpack.base.config.js'
+    const backupWebpackConfigFile = `${webpackConfigJsFile}.package.bk`
+
     if (!fs.existsSync(packageJsonFile)) {
         throw new Error(`package.json not found, cannot package this directory: ${process.cwd()}`)
     }
@@ -121,12 +124,11 @@ function main() {
         if (release && isBeta()) {
             throw new Error('Cannot package VSIX as both a release and a beta simultaneously')
         }
+        // Create backup file so we can restore the originals later.
+        fs.copyFileSync(packageJsonFile, backupJsonFile)
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
 
         if (!release || args.debug) {
-            // Create backup file so we can restore the originals later.
-            fs.copyFileSync(packageJsonFile, `${packageJsonFile}.bk`)
-
-            const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
             const versionSuffix = getVersionSuffix(args.feature, args.debug)
             const version = packageJson.version
             if (isBeta()) {
@@ -143,10 +145,8 @@ function main() {
                 packageJson.scripts['vscode:prepublish'] = replaced
             }
 
-            fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
-
             if (args.debug) {
-                fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
+                fs.copyFileSync(webpackConfigJsFile, backupWebpackConfigFile)
                 const webpackConfigJs = fs.readFileSync(webpackConfigJsFile, { encoding: 'utf-8' })
                 fs.writeFileSync(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
             }
@@ -154,8 +154,9 @@ function main() {
         // Always include CHANGELOG.md until we can have separate changelogs for packages
         fs.copyFileSync('../../CHANGELOG.md', 'CHANGELOG.md')
 
-        child_process.execSync(`vsce package`, { stdio: 'inherit' })
-        const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
+        fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
+        child_process.execSync(`vsce package --ignoreFile '../.vscodeignore.packages'`, { stdio: 'inherit' })
+
         console.log(`VSIX Version: ${packageJson.version}`)
 
         // Hoist .vsix to root folder, because the release infra expects it to be there.
@@ -168,13 +169,11 @@ function main() {
         throw Error('package.ts: failed')
     } finally {
         // Restore the original files.
-        if (!release) {
-            fs.copyFileSync(`${packageJsonFile}.bk`, packageJsonFile)
-            fs.unlinkSync(`${packageJsonFile}.bk`)
-        }
+        fs.copyFileSync(backupJsonFile, packageJsonFile)
+        fs.unlinkSync(backupJsonFile)
         if (args.debug) {
-            fs.copyFileSync(`${webpackConfigJsFile}.bk`, webpackConfigJsFile)
-            fs.unlinkSync(`${webpackConfigJsFile}.bk`)
+            fs.copyFileSync(backupWebpackConfigFile, webpackConfigJsFile)
+            fs.unlinkSync(backupWebpackConfigFile)
         }
     }
 }

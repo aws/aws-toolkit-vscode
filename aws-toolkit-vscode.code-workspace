@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "packages/core"
+		},
+		{
+			"path": "packages/toolkit"
+		},
+		{
+			"path": "packages/amazonq"
+		}
+	],
+	"settings": {
+		"typescript.tsdk": "node_modules/typescript/lib"
+	}
+}

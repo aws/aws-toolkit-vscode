@@ -42,6 +42,7 @@ const vueConfig = merge(baseConfig, {
     name: 'vue',
     target: 'web',
     output: {
+        path: path.resolve(currentDir, 'dist', 'vue'),
         libraryTarget: 'this',
     },
     module: {
@@ -66,9 +67,13 @@ const vueConfig = merge(baseConfig, {
 })
 
 /** @type WebpackConfig */
-const vueHotReload = {
+const vueHotReloadConfig = {
     ...vueConfig,
     name: 'vue-hmr',
+    output: {
+        path: path.resolve(currentDir, 'dist', 'vuehr'),
+        libraryTarget: 'this',
+    },
     devServer: {
         static: {
             directory: path.resolve(currentDir, 'dist'),
@@ -87,7 +92,10 @@ const vueHotReload = {
 }
 
 module.exports = {
-    configs: process.env.npm_lifecycle_event === 'serve' ? [vueConfig, vueHotReload] : [vueConfig],
+    configs: {
+        vue: vueConfig,
+        vueHotReload: vueHotReloadConfig,
+    },
     utils: {
         createVueEntries,
     },

@@ -1,0 +1,103 @@
+.auth-container {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    color: var(--vscode-button-foreground);
+
+    gap: 0.6em;
+}
+
+.disabled-form {
+    pointer-events: none;
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+
+/* The immediate children of the auth-container */
+.auth-container > * {
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-container-section button {
+    font-size: 1.3rem;
+}
+
+.auth-container > div > button {
+    font-size: 1.3rem;
+}
+
+.auth-form-container {
+    display: flex;
+    flex-direction: column;
+
+    background-color: var(--vscode-quickInput-background);
+
+    text-align: left;
+
+    padding: 1em;
+
+    gap: 0.6em;
+
+    border-radius: 0.5rem;
+}
+
+.auth-form-container > * {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+}
+
+.auth-container-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.input-title {
+    font-size: 1rem;
+}
+
+.form-description-color {
+    color: var(--vscode-descriptionForeground);
+}
+
+.input-description-small {
+    font-size: 0.8rem;
+}
+
+.error-text {
+    color: #f14c4c;
+    font-size: 0.8rem;
+}
+
+input[data-invalid='true'] {
+    /* Using important since base.css overrides these errors */
+    /* TODO: If I can get base.css to be resolved before this the important is not needed */
+    border: 1px solid !important;
+    border-color: #f14c4c !important;
+}
+
+/* When an input box is clicked and has invalid data*/
+input[data-invalid='true']:focus {
+    /* Ensures the border stays red even when selected */
+    outline: none !important;
+}
+
+.auth-container input {
+    font-size: 1rem;
+    padding: 0.5em;
+}
+
+/* Remove underline from anchor elements */
+a {
+    text-decoration: none;
+}
+
+.auth-container-icon {
+    color: var(--vscode-button-foreground);
+}
+
+.low-priority-button {
+    background-color: var(--vscode-textSeparator-foreground);
+    border-color: var(--vscode-textSeparator-foreground);
+}
