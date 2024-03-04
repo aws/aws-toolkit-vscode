@@ -24,6 +24,11 @@ import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazon
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
 
+interface FolderInfo {
+    path: string
+    name: string
+}
+
 /* Once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
  * Current functionality: given number of milliseconds elapsed (ex. 4,500,000) return hr / min / sec it represents (ex. 1 hr 15 min)
@@ -383,7 +388,7 @@ function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string
 }
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
-function installProjectDependencies() {
+function installProjectDependencies(dependenciesFolder: FolderInfo) {
     // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
     const baseCommand = transformByQState.getMavenName()
     const modulePath = transformByQState.getProjectPath()
@@ -391,7 +396,7 @@ function installProjectDependencies() {
     transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
     // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
-    const args = ['clean', 'install', '-q']
+    const args = [`-Dmaven.repo.local=${dependenciesFolder.path}`, 'clean', 'install', '-q']
     let environment = process.env
     // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
     if (transformByQState.getJavaHome() !== undefined) {
@@ -446,11 +451,7 @@ function installProjectDependencies() {
     }
 }
 
-function copyProjectDependencies(): string[] {
-    // Make temp directory
-    const folderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
-    const folderPath = path.join(os.tmpdir(), folderName)
-
+function copyProjectDependencies(dependenciesFolder: FolderInfo) {
     // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
     const baseCommand = transformByQState.getMavenName()
     const modulePath = transformByQState.getProjectPath()
@@ -459,7 +460,7 @@ function copyProjectDependencies(): string[] {
 
     const args = [
         'dependency:copy-dependencies',
-        '-DoutputDirectory=' + folderPath,
+        `-DoutputDirectory=${dependenciesFolder.path}`,
         '-Dmdep.useRepositoryLayout=true',
         '-Dmdep.copyPom=true',
         '-Dmdep.addParentPoms=true',
@@ -514,8 +515,15 @@ function copyProjectDependencies(): string[] {
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies succeeded`)
     }
+}
 
-    return [folderPath, folderName]
+function getDependenciesFolderInfo(): FolderInfo {
+    const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
+    const dependencyFolderPath = path.join(os.tmpdir(), dependencyFolderName)
+    return {
+        name: dependencyFolderName,
+        path: dependencyFolderPath,
+    }
 }
 
 export async function writeLogs() {
@@ -531,9 +539,18 @@ export async function zipCode() {
     const zipStartTime = Date.now()
     const sourceFolder = modulePath
     const sourceFiles = getFilesRecursively(sourceFolder, false)
+    const dependenciesFolder: FolderInfo = getDependenciesFolderInfo()
 
     try {
-        installProjectDependencies()
+        copyProjectDependencies(dependenciesFolder)
+    } catch (err) {
+        // continue in case of errors
+    }
+
+    throwIfCancelled()
+
+    try {
+        installProjectDependencies(dependenciesFolder)
     } catch (err) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.installErrorMessage)
         // open build-logs.txt file to show user error logs
@@ -542,23 +559,6 @@ export async function zipCode() {
         await vscode.window.showTextDocument(doc)
         throw err
     }
-
-    throwIfCancelled()
-
-    let dependencyFolderInfo: string[] = []
-    try {
-        dependencyFolderInfo = copyProjectDependencies()
-    } catch (err) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
-        // open build-logs.txt file to show user error logs
-        const logFilePath = await writeLogs()
-        const doc = await vscode.workspace.openTextDocument(logFilePath)
-        await vscode.window.showTextDocument(doc)
-        throw err
-    }
-
-    const dependencyFolderPath = dependencyFolderInfo[0]
-    const dependencyFolderName = dependencyFolderInfo[1]
 
     throwIfCancelled()
 
@@ -574,17 +574,17 @@ export async function zipCode() {
     throwIfCancelled()
 
     let dependencyFiles: string[] = []
-    if (fs.existsSync(dependencyFolderPath)) {
-        dependencyFiles = getFilesRecursively(dependencyFolderPath, true)
+    if (fs.existsSync(dependenciesFolder.path)) {
+        dependencyFiles = getFilesRecursively(dependenciesFolder.path, true)
     }
 
     if (dependencyFiles.length > 0) {
         for (const file of dependencyFiles) {
-            const relativePath = path.relative(dependencyFolderPath, file)
-            const paddedPath = path.join(`dependencies/${dependencyFolderName}`, relativePath)
+            const relativePath = path.relative(dependenciesFolder.path, file)
+            const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
             zip.addLocalFile(file, path.dirname(paddedPath))
         }
-        zipManifest.dependenciesRoot += `${dependencyFolderName}/`
+        zipManifest.dependenciesRoot += `${dependenciesFolder.name}/`
         telemetry.codeTransform_dependenciesCopied.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             result: MetadataResult.Pass,
@@ -603,8 +603,8 @@ export async function zipCode() {
 
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
     fs.writeFileSync(tempFilePath, zip.toBuffer())
-    if (fs.existsSync(dependencyFolderPath)) {
-        fs.rmSync(dependencyFolderPath, { recursive: true, force: true })
+    if (fs.existsSync(dependenciesFolder.path)) {
+        fs.rmSync(dependenciesFolder.path, { recursive: true, force: true })
     }
     fs.rmSync(logFilePath) // will always exist here
 
