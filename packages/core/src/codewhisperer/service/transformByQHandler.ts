@@ -396,7 +396,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
     transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
     // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
-    const args = [`-Dmaven.repo.local=${dependenciesFolder.path}`, 'clean', 'install']
+    const args = [`-Dmaven.repo.local=${dependenciesFolder.path}`, 'clean', 'install', '-q']
     let environment = process.env
     // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
     if (transformByQState.getJavaHome() !== undefined) {
@@ -464,6 +464,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
         '-Dmdep.useRepositoryLayout=true',
         '-Dmdep.copyPom=true',
         '-Dmdep.addParentPoms=true',
+        '-q',
     ]
     let environment = process.env
     // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
