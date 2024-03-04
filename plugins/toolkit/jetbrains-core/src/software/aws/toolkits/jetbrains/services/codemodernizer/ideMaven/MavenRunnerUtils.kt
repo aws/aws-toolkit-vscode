@@ -38,8 +38,20 @@ fun runMavenCopyCommands(sourceFolder: File, buildlogBuilder: StringBuilder, log
         val transformMvnRunner = TransformMavenRunner(project)
         val mvnSettings = MavenRunner.getInstance(project).settings.clone() // clone required to avoid editing user settings
 
+        // run copy dependencies
+        val copyDependenciesRunnable = runMavenCopyDependencies(sourceFolder, buildlogBuilder, mvnSettings, transformMvnRunner, destinationDir, logger)
+        copyDependenciesRunnable.await()
+        buildlogBuilder.appendLine(copyDependenciesRunnable.getOutput())
+        if (copyDependenciesRunnable.isComplete() == 0) {
+            val successMsg = "IntelliJ bundled Maven copy-dependencies executed successfully"
+            logger.info { successMsg }
+            buildlogBuilder.appendLine(successMsg)
+        } else {
+            emitMavenFailure("Maven Copy: bundled Maven failed: exitCode ${copyDependenciesRunnable.isComplete()}", logger)
+        }
+
         // Run clean
-        val cleanRunnable = runMavenClean(sourceFolder, buildlogBuilder, mvnSettings, transformMvnRunner, logger)
+        val cleanRunnable = runMavenClean(sourceFolder, buildlogBuilder, mvnSettings, transformMvnRunner, logger, destinationDir)
         cleanRunnable.await()
         buildlogBuilder.appendLine(cleanRunnable.getOutput())
         if (cleanRunnable.isComplete() == 0) {
@@ -52,7 +64,7 @@ fun runMavenCopyCommands(sourceFolder: File, buildlogBuilder: StringBuilder, log
         }
 
         // Run install
-        val installRunnable = runMavenInstall(sourceFolder, buildlogBuilder, mvnSettings, transformMvnRunner, logger)
+        val installRunnable = runMavenInstall(sourceFolder, buildlogBuilder, mvnSettings, transformMvnRunner, logger, destinationDir)
         installRunnable.await()
         buildlogBuilder.appendLine(installRunnable.getOutput())
         if (installRunnable.isComplete() == 0) {
@@ -61,19 +73,6 @@ fun runMavenCopyCommands(sourceFolder: File, buildlogBuilder: StringBuilder, log
             buildlogBuilder.appendLine(successMsg)
         } else if (installRunnable.isComplete() != Integer.MIN_VALUE) {
             emitMavenFailure("Maven Install: bundled Maven failed: exitCode ${installRunnable.isComplete()}", logger)
-            return MavenCopyCommandsResult.Failure
-        }
-
-        // run copy dependencies
-        val copyDependenciesRunnable = runMavenCopyDependencies(sourceFolder, buildlogBuilder, mvnSettings, transformMvnRunner, destinationDir, logger)
-        copyDependenciesRunnable.await()
-        buildlogBuilder.appendLine(copyDependenciesRunnable.getOutput())
-        if (copyDependenciesRunnable.isComplete() == 0) {
-            val successMsg = "IntelliJ bundled Maven copy-dependencies executed successfully"
-            logger.info { successMsg }
-            buildlogBuilder.appendLine(successMsg)
-        } else {
-            emitMavenFailure("Maven Copy: bundled Maven failed: exitCode ${copyDependenciesRunnable.isComplete()}", logger)
             return MavenCopyCommandsResult.Failure
         }
     } catch (t: Throwable) {
@@ -99,7 +98,6 @@ private fun runMavenCopyDependencies(
         "-Dmdep.useRepositoryLayout=true",
         "-Dmdep.copyPom=true",
         "-Dmdep.addParentPoms=true",
-        "-q",
     )
     val copyParams = MavenRunnerParameters(
         false,
@@ -133,14 +131,15 @@ private fun runMavenClean(
     buildlogBuilder: StringBuilder,
     mvnSettings: MavenRunnerSettings,
     transformMavenRunner: TransformMavenRunner,
-    logger: Logger
+    logger: Logger,
+    destinationDir: Path
 ): TransformRunnable {
     buildlogBuilder.appendLine("Command Run: IntelliJ bundled Maven clean")
     val cleanParams = MavenRunnerParameters(
         false,
         sourceFolder.absolutePath,
         null,
-        listOf("clean", "-q"),
+        listOf("-Dmaven.repo.local=$destinationDir", "clean"),
         emptyList<String>(),
         null
     )
@@ -163,14 +162,15 @@ private fun runMavenInstall(
     buildlogBuilder: StringBuilder,
     mvnSettings: MavenRunnerSettings,
     transformMavenRunner: TransformMavenRunner,
-    logger: Logger
+    logger: Logger,
+    destinationDir: Path
 ): TransformRunnable {
     buildlogBuilder.appendLine("Command Run: IntelliJ bundled Maven install")
     val installParams = MavenRunnerParameters(
         false,
         sourceFolder.absolutePath,
         null,
-        listOf("install", "-q"),
+        listOf("-Dmaven.repo.local=$destinationDir", "install"),
         emptyList<String>(),
         null
     )
