@@ -478,9 +478,6 @@ export class FeatureDevController {
         } finally {
             // Finish processing the event
             this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
-
-            // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(message.tabID, false)
         }
     }
 
@@ -521,6 +518,21 @@ export class FeatureDevController {
             canSelectFolders: true,
             canSelectFiles: false,
         }).prompt()
+
+        if (!(uri instanceof vscode.Uri)) {
+            this.messenger.sendAnswer({
+                tabID: message.tabID,
+                type: 'system-prompt',
+                followUps: [
+                    {
+                        pillText: 'Select files for context',
+                        type: 'ModifyDefaultSourceFolder',
+                        status: 'info',
+                    },
+                ],
+            })
+            return
+        }
 
         if (uri instanceof vscode.Uri && !vscode.workspace.getWorkspaceFolder(uri)) {
             this.messenger.sendAnswer({
