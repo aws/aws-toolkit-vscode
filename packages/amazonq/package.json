@@ -1,5 +1,5 @@
 {
-    "name": "amazonq",
+    "name": "amazon-q-vscode",
     "displayName": "Amazon Q (Preview) + CodeWhisperer",
     "description": "Amazon Q (Preview) + CodeWhisperer",
     "version": "1.0.0-SNAPSHOT",

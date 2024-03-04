@@ -92,7 +92,7 @@ export async function getUserAgent(
     return pairs.join(' ')
 }
 
-type EnvType = 'cloud9' | 'cloud9-codecatalyst' | 'codecatalyst' | 'local' | 'ec2' | 'sagemaker' | 'test' | 'unknown'
+type EnvType = 'cloud9' | 'cloud9-codecatalyst' | 'codecatalyst' | 'local' | 'ec2' | 'sagemaker' | 'test' | 'wsl' |'unknown'
 
 export function getComputeEnvType(): EnvType {
     if (isCloud9('classic')) {
@@ -105,6 +105,8 @@ export function getComputeEnvType(): EnvType {
         return 'sagemaker'
     } else if (env.remoteName === 'ssh-remote' && !isInDevEnv()) {
         return 'ec2'
+    } else if (env.remoteName) {
+        return 'wsl'
     } else if (isAutomation()) {
         return 'test'
     } else if (!env.remoteName) {
