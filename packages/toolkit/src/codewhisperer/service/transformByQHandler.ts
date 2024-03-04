@@ -149,7 +149,7 @@ async function getMavenJavaProjects(javaProjects: vscode.QuickPickItem[]) {
     return mavenJavaProjects
 }
 
-async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[], projectOnLoad: boolean) {
+async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[], onProjectFirstOpen: boolean) {
     const projectsValidToTransform = new Map<vscode.QuickPickItem, JDKVersion | undefined>()
     for (const project of mavenJavaProjects) {
         let detectedJavaVersion = undefined
@@ -183,7 +183,7 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                     const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
                     errorReason += `-${errorCode}`
                 }
-                if (!projectOnLoad) {
+                if (!onProjectFirstOpen) {
                     telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                         codeTransformPreValidationError: 'NoJavaProject',
@@ -201,7 +201,7 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                     detectedJavaVersion = JDKVersion.JDK11
                 } else {
                     detectedJavaVersion = JDKVersion.UNSUPPORTED
-                    if (!projectOnLoad) {
+                    if (!onProjectFirstOpen) {
                         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                             codeTransformPreValidationError: 'UnsupportedJavaVersion',
@@ -224,10 +224,10 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
  * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
  * and we allow the user to specify the Java version.
  */
-export async function validateOpenProjects(projects: vscode.QuickPickItem[], projectOnLoad = false) {
+export async function validateOpenProjects(projects: vscode.QuickPickItem[], onProjectFirstOpen = false) {
     const javaProjects = await getJavaProjects(projects)
     if (javaProjects.length === 0) {
-        if (!projectOnLoad) {
+        if (!onProjectFirstOpen) {
             void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -240,7 +240,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], pro
     }
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
-        if (!projectOnLoad) {
+        if (!onProjectFirstOpen) {
             void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -257,7 +257,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], pro
      * here we try to get the Java version of each project so that we
      * can pre-select a default version in the QuickPick for them.
      */
-    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects, projectOnLoad)
+    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects, onProjectFirstOpen)
 
     return projectsValidToTransform
 }

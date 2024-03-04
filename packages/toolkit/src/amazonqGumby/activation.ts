@@ -85,6 +85,6 @@ export async function activate(context: ExtContext) {
             workspaceChangeEvent
         )
 
-        validateAndLogProjectDetails()
+        await validateAndLogProjectDetails()
     }
 }
