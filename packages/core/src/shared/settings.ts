@@ -40,7 +40,7 @@ export async function showSettingsFailedMsg(kind: 'read' | 'update', key?: strin
 }
 
 /**
- * Shows an error message if we could't update settings, unless the last message was for the same `key`.
+ * Shows an error message if we couldn't update settings, unless the last message was for the same `key`.
  */
 const showSettingsUpdateFailedMsgOnce = onceChanged(key => {
     // Edge cases:
@@ -116,9 +116,9 @@ export class Settings {
 
             return true
         } catch (e) {
-            const fullKey = config.inspect(key)?.key
+            const fullKey = config.inspect(key)?.key ?? key
             getLogger().warn('settings: failed to update "%s": %s', fullKey, (e as Error).message)
-            showSettingsUpdateFailedMsgOnce(fullKey ?? key)
+            showSettingsUpdateFailedMsgOnce(fullKey)
 
             return false
         }
