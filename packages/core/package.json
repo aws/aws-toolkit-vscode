@@ -4214,7 +4214,24 @@
                     }
                 ]
             }
-        ]
+        ],
+        "customEditors": [
+            {
+                "viewType": "threatComposer.tc.json",
+                "displayName": "%AWS.threatComposer.title%",
+                "selector": [
+                    {
+                        "filenamePattern": "*.tc.json"
+                    }
+                ]
+            }
+        ],
+        "configurationDefaults": {
+            "workbench.editorAssociations": {
+                "git:/**/*.tc.json": "default",
+                "gitlens:/**/*.tc.json": "default"
+            }
+        }
     },
     "scripts": {
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes && npm run compile",

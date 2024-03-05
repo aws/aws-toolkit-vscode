@@ -67,7 +67,7 @@ export class FeedbackWebview extends VueWebview {
     }
 }
 
-type FeedbackId = 'AWS Toolkit' | 'CodeWhisperer' | 'Amazon Q' | 'Application Composer'
+type FeedbackId = 'AWS Toolkit' | 'CodeWhisperer' | 'Amazon Q' | 'Application Composer' | 'Threat Composer'
 
 export const submitFeedback = Commands.declare(
     { id: 'aws.submitFeedback', autoconnect: false },

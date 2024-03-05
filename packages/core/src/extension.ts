@@ -54,6 +54,7 @@ import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
 import { activateShared, deactivateShared } from './extensionShared'
+import { activate as activateThreatComposerEditor } from './threatcomposereditor/activation'
 
 let localize: nls.LocalizeFunc
 
@@ -160,6 +161,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 await activateQGumby(extContext)
             }
             await activateApplicationComposer(context)
+            await activateThreatComposerEditor(context)
         }
 
         await activateStepFunctions(context, globals.awsContext, globals.outputChannel)

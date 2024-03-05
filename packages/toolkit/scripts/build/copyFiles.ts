@@ -101,6 +101,12 @@ const tasks: CopyTask[] = [
         target: path.join('../../node_modules', 'web-tree-sitter', 'tree-sitter.wasm'),
         destination: path.join('src', 'tree-sitter.wasm'),
     },
+
+    //ThreatComposer
+    {
+        target: path.join('../core', 'src', 'threatcomposereditor', 'VSCodeExtensionInterface.js'),
+        destination: path.join('src', 'threatcomposereditor', 'VSCodeExtensionInterface.js'),
+    },
 ]
 
 async function copy(task: CopyTask): Promise<void> {
