@@ -300,6 +300,11 @@ tasks.clean {
 // `runIde` depends on `prepareSandbox` task and then executes IJ inside the sandbox dir
 // `prepareSandbox` depends on the standard Java `jar` and then copies everything into the sandbox dir
 
+intellij {
+    // kotlin and .NET parts of the plugin need to be in the same plugin base directroy
+    pluginName.set("aws-toolkit-jetbrains")
+}
+
 tasks.withType<PrepareSandboxTask>().all {
     dependsOn(resharperDllsDir)
 

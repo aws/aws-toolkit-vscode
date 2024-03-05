@@ -58,16 +58,6 @@ configurations {
         exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
     }
 
-    // TODO: https://github.com/gradle/gradle/issues/15383
-    val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-    dependencies {
-        testImplementation(platform(versionCatalog.findLibrary("junit5-bom").get()))
-        testImplementation(versionCatalog.findLibrary("junit5-jupiterApi").get())
-
-        testRuntimeOnly(versionCatalog.findLibrary("junit5-jupiterEngine").get())
-        testRuntimeOnly(versionCatalog.findLibrary("junit5-jupiterVintage").get())
-    }
-
     all {
         if (name.startsWith("detekt")) {
             return@all
@@ -94,7 +84,9 @@ tasks.processResources {
 
 // Run after the project has been evaluated so that the extension (intellijToolkit) has been configured
 intellij {
-    pluginName.set("aws-toolkit-jetbrains")
+    // find the name of first subproject depth, or root if not applied to a subproject hierarchy
+    val projectName = generateSequence(project) { it.parent }.first { it.depth <= 1 }.name
+    pluginName.convention(projectName)
 
     localPath.set(toolkitIntelliJ.localPath())
     version.set(toolkitIntelliJ.version())
@@ -106,7 +98,8 @@ intellij {
 }
 
 tasks.jar {
-    archiveBaseName.set(toolkitIntelliJ.ideFlavor.map { "aws-toolkit-jetbrains-$it" })
+    // :plugin-toolkit:jetbrains-community results in: --plugin-toolkit-jetbrains-community-IC-<version>.jar
+    archiveBaseName.set(toolkitIntelliJ.ideFlavor.map { "${project.buildTreePath.replace(':', '-')}-$it" })
 }
 
 tasks.withType<PatchPluginXmlTask>().all {
@@ -148,14 +141,10 @@ tasks.withType<Test>().all {
     systemProperty("log.dir", intellij.sandboxDir.map { "$it-test/logs" }.get())
     systemProperty("testDataPath", project.rootDir.resolve("testdata").absolutePath)
     val jetbrainsCoreTestResources = project(":plugin-toolkit:jetbrains-core").projectDir.resolve("tst-resources")
-    // FIX_WHEN_MIN_IS_221: log4j 1.2 removed in 221
-    systemProperty("log4j.configuration", jetbrainsCoreTestResources.resolve("log4j.xml"))
     systemProperty("idea.log.config.properties.file", jetbrainsCoreTestResources.resolve("toolkit-test-log.properties"))
     systemProperty("org.gradle.project.ideProfileName", ideProfile.name)
 
     jvmArgs(openedPackages)
-
-    useJUnitPlatform()
 }
 
 tasks.withType<JavaExec> {
