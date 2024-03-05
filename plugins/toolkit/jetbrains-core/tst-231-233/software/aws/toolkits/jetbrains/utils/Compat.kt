@@ -9,11 +9,12 @@ import org.jetbrains.idea.maven.model.MavenExplicitProfiles
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 
 @Suppress("UNUSED_PARAMETER", "RedundantSuspendModifier")
-suspend fun MavenProjectsManager.addManagedFilesWithProfilesAndUpdate(
+suspend fun MavenProjectsManager.addManagedFilesWithProfiles(
     poms: List<VirtualFile>,
     profiles: MavenExplicitProfiles,
     nothing: Nothing?,
-    nothing1: Nothing?
+    nothing1: Nothing?,
+    nothing3: Boolean
 ) {
     resetManagedFilesAndProfilesInTests(poms, profiles)
     runInEdtAndWait {

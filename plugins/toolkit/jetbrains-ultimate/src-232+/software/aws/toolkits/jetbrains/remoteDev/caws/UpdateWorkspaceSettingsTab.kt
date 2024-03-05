@@ -24,6 +24,7 @@ import com.jetbrains.rd.ui.bedsl.dsl.horizontalGrid
 import com.jetbrains.rd.ui.bedsl.dsl.label
 import com.jetbrains.rd.ui.bedsl.dsl.replaceWith
 import com.jetbrains.rd.ui.bedsl.dsl.textBox
+import com.jetbrains.rd.ui.bedsl.dsl.util.BeMarginsBuilder
 import com.jetbrains.rd.ui.bedsl.dsl.verticalGrid
 import com.jetbrains.rd.ui.bedsl.dsl.withColor
 import com.jetbrains.rd.ui.bedsl.dsl.withMargin
@@ -246,9 +247,7 @@ class UpdateWorkspaceSettingsTab : GatewayControlCenterTabProvider {
                 }
             }
         }
-    }.withMargin {
-        margin(25, 25, 25, 25)
-    }
+    }.withMargin(BeMarginsBuilder().margin(25, 25, 25, 25))
 
     private fun inferActiveProject() = ProjectManager.getInstance().openProjects.first()
 

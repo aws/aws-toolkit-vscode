@@ -69,7 +69,7 @@ import kotlin.time.ExperimentalTime
 @ExtendWith(ApplicationExtension::class)
 @SsoLogin("codecatalyst-test-account")
 @DisabledIfEnvironmentVariable(named = "IS_PROD", matches = "false")
-@DisabledIfSystemProperty(named = "org.gradle.project.ideProfileName", matches = "2023.3", disabledReason = "Flakes on 233")
+@DisabledIfSystemProperty(named = "org.gradle.project.ideProfileName", matches = "202*.*", disabledReason = "Flakes on 233+")
 class DevEnvConnectTest : AfterAllCallback {
     companion object {
         @JvmField

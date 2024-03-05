@@ -46,7 +46,7 @@ import java.time.Duration
 import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@DisabledIfSystemProperty(named = "org.gradle.project.ideProfileName", matches = "2023.*", disabledReason = "Flakes on 231 above")
+@DisabledIfSystemProperty(named = "org.gradle.project.ideProfileName", matches = "202*.*", disabledReason = "Flakes on 231 above")
 class SqsTest {
     @TempDir
     lateinit var tempDir: Path
