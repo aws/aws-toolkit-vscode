@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.actions
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -15,6 +16,8 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 
 class CodeWhispererRecommendationAction : AnAction(message("codewhisperer.trigger.service")), DumbAware {
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabled = e.project != null && e.getData(CommonDataKeys.EDITOR) != null
     }

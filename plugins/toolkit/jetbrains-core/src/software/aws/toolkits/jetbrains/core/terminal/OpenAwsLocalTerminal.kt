@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.terminal
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.ApplicationManager
@@ -32,6 +33,7 @@ class OpenAwsLocalTerminal : DumbAwareAction(
     { message("aws.terminal.action.tooltip") },
     TerminalIcons.OpenTerminal_13x13
 ) {
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
         if (AwsLocalTerminalExperiment.isEnabled()) {

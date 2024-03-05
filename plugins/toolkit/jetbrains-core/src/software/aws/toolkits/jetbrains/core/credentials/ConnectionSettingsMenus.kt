@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
@@ -169,6 +170,7 @@ open class ProjectLevelSettingSelector(private val project: Project, settingsMod
 }
 
 class ToolkitConnectionComboBoxAction(private val project: Project) : ComboBoxAction(), DumbAware {
+
     private val logic = object : ProjectLevelSettingSelector(project, CREDENTIALS) {
         override fun currentCredentials(): CredentialIdentifier? {
             val active = ToolkitConnectionManager.getInstance(project).activeConnection()
@@ -191,7 +193,9 @@ class ToolkitConnectionComboBoxAction(private val project: Project) : ComboBoxAc
         }
     }
 
-    override fun createPopupActionGroup(button: JComponent?) = logic.selectionMenuActions()
+    override fun createPopupActionGroup(button: JComponent, dataContext: DataContext) = logic.selectionMenuActions()
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
         val active = ToolkitConnectionManager.getInstance(project).activeConnection()
@@ -209,7 +213,9 @@ class ToolkitConnectionComboBoxAction(private val project: Project) : ComboBoxAc
 }
 
 class SettingsSelectorComboBoxAction(private val selectorLogic: SettingsSelectorLogicBase) : ComboBoxAction(), DumbAware {
-    override fun createPopupActionGroup(button: JComponent?) = selectorLogic.selectionMenuActions()
+    override fun createPopupActionGroup(button: JComponent, dataContext: DataContext) = selectorLogic.selectionMenuActions()
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
         updatePresentation(e.presentation)

@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.federation
 
 import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.editor.Editor
@@ -18,6 +19,8 @@ class OpenArnInConsoleEditorPopupAction : DumbAwareAction() {
 
         AwsConsoleUrlFactory.openArnInConsole(project, ActionPlaces.EDITOR_POPUP, selection)
     }
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR)

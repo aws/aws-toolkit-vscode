@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.remoteDev.caws
 
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 
@@ -12,6 +13,8 @@ class RebuildAction : AnAction() {
         val a = ActionManager.getInstance().getAction("aws.caws.updateDevfile")
         a.actionPerformed(e)
     }
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabledAndVisible = DevfileWatcher.getInstance().hasDevfileChanged()
