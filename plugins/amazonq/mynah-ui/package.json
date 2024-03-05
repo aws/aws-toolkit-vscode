@@ -17,7 +17,7 @@
         "fs-extra": "^10.0.1",
         "ts-node": "^10.7.0",
         "uuid": "^8.3.2",
-        "sanitize-html": "^2.8.0",
+        "sanitize-html": "^2.12.1",
         "web-tree-sitter": "^0.20.7"
     },
     "devDependencies": {
