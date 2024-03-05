@@ -32,5 +32,5 @@ phases:
 
 artifacts:
     files:
-        - aws-toolkit-vscode*
+        - aws-toolkit-vscode*vsix
     discard-paths: true
