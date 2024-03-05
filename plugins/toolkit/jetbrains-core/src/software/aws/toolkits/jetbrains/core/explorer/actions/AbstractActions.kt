@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.explorer.actions
 
 import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys
@@ -67,6 +68,8 @@ abstract class SingleExplorerNodeAction<in T : AwsExplorerNode<*>> : ExplorerNod
 abstract class ExplorerNodeAction<in T : AwsExplorerNode<*>> : AnAction {
     constructor() : super()
     constructor(text: String, description: String? = null, icon: Icon? = null) : super(text, description, icon)
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     /**
      * Invoked periodically with the selected items of type [T].

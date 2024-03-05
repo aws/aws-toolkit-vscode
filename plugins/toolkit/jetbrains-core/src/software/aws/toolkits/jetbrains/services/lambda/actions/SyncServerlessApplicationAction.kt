@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.actions
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import icons.AwsIcons
@@ -14,6 +15,8 @@ class SyncServerlessApplicationAction : AnAction(message("serverless.application
     override fun actionPerformed(e: AnActionEvent) {
         SyncServerlessAppAction().actionPerformed(e)
     }
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
         super.update(e)

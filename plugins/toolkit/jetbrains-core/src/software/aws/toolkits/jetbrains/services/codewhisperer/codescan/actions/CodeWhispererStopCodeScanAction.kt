@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.codescan.actions
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
@@ -14,6 +15,8 @@ class CodeWhispererStopCodeScanAction : DumbAwareAction(
     null,
     AllIcons.Actions.Suspend
 ) {
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
     override fun update(event: AnActionEvent) {
         val project = event.project ?: return
         val scanManager = CodeWhispererCodeScanManager.getInstance(project)
