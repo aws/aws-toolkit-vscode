@@ -98,7 +98,7 @@ file("plugins").listFiles()?.forEach root@ {
     project(":$pluginRoot").projectDir = it
 
     val path = ArrayDeque<String>()
-    it.walk().maxDepth(2)
+    it.walk().maxDepth(3)
         .onEnter {
             // dont bother traversing a directory if it does not declare a subproject
             if (!it.resolve("build.gradle.kts").isFile) {
