@@ -11,9 +11,6 @@ import { SsoConnection, createSsoProfile } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
-    public override id: string = 'aws.AmazonCommonAuth'
-    public override source: string = 'src/login/webview/vue/index.js'
-
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
         return this.ssoSetup('createIdentityCenterConnection', async () => {
             const ssoProfile = createSsoProfile(startUrl, region)
