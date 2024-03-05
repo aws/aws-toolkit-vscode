@@ -116,9 +116,9 @@ export class Settings {
 
             return true
         } catch (e) {
-            const fqkey = config.inspect(key)?.key
-            showSettingsUpdateFailedMsgOnce(fqkey ?? key)
-            getLogger().warn('settings: failed to update "%s": %s', key, (e as Error).message)
+            const fullKey = config.inspect(key)?.key
+            getLogger().warn('settings: failed to update "%s": %s', fullKey, (e as Error).message)
+            showSettingsUpdateFailedMsgOnce(fullKey ?? key)
 
             return false
         }
@@ -338,7 +338,8 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
                 return true
             } catch (e) {
-                showSettingsUpdateFailedMsgOnce(key)
+                const fullKey = `${section}.${key}`
+                showSettingsUpdateFailedMsgOnce(fullKey)
                 this._log('failed to update "%s": %s', key, (e as Error).message)
 
                 return false
@@ -351,7 +352,8 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
                 return true
             } catch (e) {
-                showSettingsUpdateFailedMsgOnce(key)
+                const fullKey = `${section}.${key}`
+                showSettingsUpdateFailedMsgOnce(fullKey)
                 this._log('failed to delete "%s": %s', key, (e as Error).message)
 
                 return false
