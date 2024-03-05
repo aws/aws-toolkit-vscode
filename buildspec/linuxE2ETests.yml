@@ -8,6 +8,11 @@ env:
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
         # Suppress noisy apt-get/dpkg warnings like "debconf: unable to initialize frontend: Dialog").
         DEBIAN_FRONTEND: 'noninteractive'
+        # Required dir overrides, otherwise the test will likely fail due to too long path names.
+        # E.g. WARNING: IPC handle <path> is longer than 107 chars, try a shorter --user-data-dir
+        # followed by Error: Could not delete obsolete instance handle Error: ENOENT: no such file or directory, unlink <path>
+        AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+        AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
 
 phases:
     install:

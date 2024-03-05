@@ -12,8 +12,8 @@ src/codewhisperer/client/codewhispererclient.d.ts
 src/codewhisperer/client/codewhispereruserclient.d.ts
 src/amazonqFeatureDev/client/featuredevproxyclient.d.ts
 src/testFixtures/**
-packages/toolkit/src/shared/telemetry/clienttelemetry.d.ts
-packages/toolkit/src/codewhisperer/client/codewhispererclient.d.ts
-packages/toolkit/src/codewhisperer/client/codewhispereruserclient.d.ts
-packages/toolkit/src/amazonqFeatureDev/client/featuredevproxyclient.d.ts
-packages/toolkit/src/testFixtures/**
+packages/core/src/shared/telemetry/clienttelemetry.d.ts
+packages/core/src/codewhisperer/client/codewhispererclient.d.ts
+packages/core/src/codewhisperer/client/codewhispereruserclient.d.ts
+packages/core/src/amazonqFeatureDev/client/featuredevproxyclient.d.ts
+packages/core/src/testFixtures/**

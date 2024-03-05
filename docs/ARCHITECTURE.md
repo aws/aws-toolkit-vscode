@@ -4,13 +4,29 @@ An overview of the architecture for various components within the Toolkit.
 
 ## Monorepo Structure
 
-This project is currently set up as a typescript monorepo with a single subproject.
-We are currently working on splitting the Toolkit into various subprojects to help with
-sharing code between modules, Web mode development, etc. For now, there is just
-one monolithic subproject with all the extension functionality: [`packages/toolkit/`](./packages/toolkit/).
+**The easiest way to open the project for running/debugging:** File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
+
+This project is currently set up as a typescript monorepo with the following subprojects:
+
+-   [`packages/core/`](./packages/core/)
+    -   Currently, this package contains almost all of the functionality required for the extension.
+        It was created by moving all of the code from `packages/tookit/` to here.
+        We are currently working on separating non-shareable code out of the core library into the relevant
+        subproject. Running tests for most of the toolkit extension logic occurs in this subproject.
+-   [`packages/toolkit/`](./packages/toolkit/)
+    -   Currently, this package is a barebones wrapper that calls activation functions from the core library.
+        As we discover what code cannot be shared across other projects, it will be moved to this package.
+        Running and packaging the extension occurs from this subproject.
+
+If you are considering contributing, please consider whether your implementation should live in the core
+library or in `packages/toolkit`. If your work could be re-used by other packages (e.g. auth mechanisms,
+utilities), then it may belong in the core library. If instead you are adding something toolkit specific
+(eg. an integration to a new AWS service in the Explorer Tree), consider putting it in `packages/toolkit`.
+To import from the core library, please export your desired code using `index.ts` files, and add an appropriate `exports` statement
+in `packages/core/package.json`.
 
 Unless otherwise stated, the documentation throughout this project is referring to the code and
-functionality of that subproject.
+functionality in `packages/core/` and `packages/toolkit`.
 
 Current quirks of the current monorepo status that should be resolved/evaluated in later versions (TODO):
 
@@ -26,20 +42,27 @@ Current quirks of the current monorepo status that should be resolved/evaluated 
         for more info on how `node_modules/` hoisting works.
     -   Because of `node_modules/` hoisting, references to this folder in code access the root project modules folder. This may be
         an issue if more subprojects are added and the contents of the root and local modules folders differ.
--   [`globalSetup.test.ts`](../packages/toolkit/src/test/globalSetup.test.ts) should be configured to work as a library/run tests for all subprojects.
+-   [`globalSetup.test.ts`](../packages/core/src/test/globalSetup.test.ts) should be configured to work as a library/run tests for all subprojects.
 -   Subproject `tsconfig.json`s should extend a root `tsconfig.packages.json`.
 -   Linting tests should run at the root level, not subproject level.
--   `packages/toolkit/scripts/` should be generalized and moved to the root of the project as needed.
+-   `packages/*/scripts/` should be generalized and moved to the root of the project as needed.
 -   LICENSE, README.md, and other non-code artifacts that must be packaged into the .vsix are currently
     being copied into the packaging subproject directory from the root project directory as part of the `copyFiles` task.
 -   Pre-release only publishes packages/toolkit extension directly. It should be extended to other added extensions. See [`release.yml`](../.github/workflows/release.yml)
 -   VSCode does not support inheriting/extending `.vscode/` settings: https://github.com/microsoft/vscode/issues/15909
 
+Additional quirks introduced by creating a core library from the original extension code:
+
+-   Tests are ran from `packages/core/`
+-   Extension runs from `packages/toolkit`
+-   Extension tests run from the core lib. Since some of the tests require an extension context/sandbox, we initiate a "fake" extension to run these tests. This is also why there are vscode extensionproperties in the package.json
+-   Some of original extension code (that now lives in `packages/core`) depends on the package.json, specifically the contributes section. This section is very large AND needs to be present in both the core library and toolkit extension package.jsons. The core library code needs access to this section to create types, set up SAM debuggers, etc. The toolkit needs this section during packaging/debugging so that the extension can run in vscode. The short term solution was to creat a [build script](../packages/toolkit/scripts/build/handlePackageJson.ts) to copy necessary fields over to the toolkit extension during packaging and debugging.
+
 ## Commands
 
 Many parts of the VS Code API relies on the use of 'commands' which are simply functions bound to a global ID. For small projects, this simplicity is great. But the base API doesn't offer a lot of common functionality that a large project might want: logging, error handling, etc.
 
-For the Toolkit, common command functionality is implemented in [Commands](../packages/toolkit/src/shared/vscode/commands2.ts). The goal with this abstraction is to increase consistency across the Toolkit for anything related to commands.
+For the Toolkit, common command functionality is implemented in [Commands](../packages/core/src/shared/vscode/commands2.ts). The goal with this abstraction is to increase consistency across the Toolkit for anything related to commands.
 
 ### Examples
 
@@ -123,7 +146,7 @@ _See also [CODE_GUIDELINES.md](./CODE_GUIDELINES.md#exceptions)._
 
 Large applications often have a correspondingly large number of failure points. For feature-level logic, these failures are often non-recoverable. The best we can do is show the user that something went wrong and maybe offer guidance on how to fix it.
 
-Because this is such a common pattern, shared error handling logic is defined by `ToolkitError` found [here](../packages/toolkit/src/shared/errors.ts). This class provides the basic structure for errors throughout the Toolkit.
+Because this is such a common pattern, shared error handling logic is defined by `ToolkitError` found [here](../packages/core/src/shared/errors.ts). This class provides the basic structure for errors throughout the Toolkit.
 
 ### Chaining
 
@@ -133,7 +156,7 @@ By adding additional information as the exception bubbles up, we can create a be
 
 ### Handlers
 
-Any code paths exercised via `Commands` will have errors handled by `handleError` in [extensions.ts](../packages/toolkit/src/extension.ts). A better API for error handling across more than just commands will be added in a future PR.
+Any code paths exercised via `Commands` will have errors handled by `handleError` in [extensions.ts](../packages/core/src/extension.ts). A better API for error handling across more than just commands will be added in a future PR.
 
 ### Best Practices
 

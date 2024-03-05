@@ -1,5 +1,5 @@
 {
-    "name": "amazonq",
+    "name": "amazon-q-vscode",
     "displayName": "Amazon Q (Preview) + CodeWhisperer",
     "description": "Amazon Q (Preview) + CodeWhisperer",
     "version": "1.0.0-SNAPSHOT",
@@ -47,6 +47,7 @@
         "clean": "ts-node ../../scripts/clean.ts dist/",
         "compile": "npm run clean && tsc -p ./ && webpack --mode development",
         "testCompile": "tsc -p ./",
+        "lint": "echo 'Nothing to lint yet!'",
         "watch": "npm run clean && tsc -watch -p ./",
         "serve": "webpack serve --config-name vue-hmr --mode development",
         "package": "ts-node ../../scripts/package.ts"
