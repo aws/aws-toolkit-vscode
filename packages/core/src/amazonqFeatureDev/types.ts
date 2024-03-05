@@ -15,6 +15,7 @@ import { CodeReference } from '../amazonq/webview/ui/connector'
 export type Interaction = {
     // content to be sent back to the chat UI
     content?: string
+    responseType?: LLMResponseType
 }
 
 export interface SessionStateInteraction {
@@ -95,3 +96,5 @@ export function createUri(filePath: string, tabID?: string) {
         ...(tabID ? { query: `tabID=${tabID}` } : {}),
     })
 }
+
+export type LLMResponseType = 'EMPTY' | 'INVALID_STATE' | 'VALID'

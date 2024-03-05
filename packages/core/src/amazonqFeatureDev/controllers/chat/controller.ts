@@ -262,18 +262,20 @@ export class FeatureDevController {
             canBeVoted: true,
         })
 
-        this.messenger.sendAnswer({
-            type: 'answer',
-            tabID,
-            message: `Would you like to generate a suggestion for this? You’ll review a file diff before inserting into your project.`,
-        })
+        if (interactions.responseType === 'VALID') {
+            this.messenger.sendAnswer({
+                type: 'answer',
+                tabID,
+                message: `Would you like to generate a suggestion for this? You’ll review a file diff before inserting into your project.`,
+            })
 
-        // Follow up with action items and complete the request stream
-        this.messenger.sendAnswer({
-            type: 'system-prompt', // show the followups on the right side
-            followUps: this.getFollowUpOptions(session.state.phase),
-            tabID: tabID,
-        })
+            // Follow up with action items and complete the request stream
+            this.messenger.sendAnswer({
+                type: 'system-prompt', // show the followups on the right side
+                followUps: this.getFollowUpOptions(session.state.phase),
+                tabID: tabID,
+            })
+        }
 
         // Unlock the prompt again so that users can iterate
         this.messenger.sendAsyncEventProgress(tabID, false, undefined)

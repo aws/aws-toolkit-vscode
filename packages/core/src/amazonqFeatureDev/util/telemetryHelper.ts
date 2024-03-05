@@ -5,6 +5,7 @@
 
 import { getLogger } from '../../shared/logger/logger'
 import { AmazonqApproachInvoke, AmazonqCodeGenerationInvoke, Metric } from '../../shared/telemetry/telemetry'
+import { LLMResponseType } from '../types'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -31,11 +32,16 @@ export class TelemetryHelper {
         this.sessionStartTime = performance.now()
     }
 
-    public recordUserApproachTelemetry(span: Metric<AmazonqApproachInvoke>, amazonqConversationId: string) {
+    public recordUserApproachTelemetry(
+        span: Metric<AmazonqApproachInvoke>,
+        amazonqConversationId: string,
+        responseType: LLMResponseType
+    ) {
         const event = {
             amazonqConversationId,
             amazonqGenerateApproachIteration: this.generateApproachIteration,
             amazonqGenerateApproachLatency: performance.now() - this.generateApproachLastInvocationTime,
+            amazonqGenerateApproachResponseType: responseType,
         }
         getLogger().debug(`recordUserApproachTelemetry: %O`, event)
         span.record(event)

@@ -18,6 +18,7 @@ import { CodeReference } from '../../amazonq/webview/ui/connector'
 import { ApiError, ContentLengthError, UnknownApiError } from '../errors'
 import { ToolkitError, isAwsError, isCodeWhispererStreamingServiceException } from '../../shared/errors'
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
+import { LLMResponseType } from '../types'
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
@@ -136,7 +137,13 @@ export class FeatureDevClient {
             throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'CreateUploadUrl')
         }
     }
-    public async generatePlan(conversationId: string, uploadId: string, userMessage: string) {
+    public async generatePlan(
+        conversationId: string,
+        uploadId: string,
+        userMessage: string
+    ): Promise<
+        { responseType: 'EMPTY'; approach?: string } | { responseType: 'VALID' | 'INVALID_STATE'; approach: string }
+    > {
         try {
             const streamingClient = await this.getStreamingClient()
             const params = {
@@ -155,8 +162,9 @@ export class FeatureDevClient {
             getLogger().debug(`${featureName}: Generated plan: %O`, {
                 requestId: response.$metadata.requestId,
             })
+            let responseType: LLMResponseType = 'EMPTY'
             if (!response.planningResponseStream) {
-                return undefined
+                return { responseType }
             }
 
             const assistantResponse: string[] = []
@@ -167,12 +175,14 @@ export class FeatureDevClient {
                     getLogger().debug('Received Invalid State Event: %O', responseItem.invalidStateEvent)
                     assistantResponse.splice(0)
                     assistantResponse.push(responseItem.invalidStateEvent.message ?? '')
+                    responseType = 'INVALID_STATE'
                     break
                 } else if (responseItem.assistantResponseEvent !== undefined) {
+                    responseType = 'VALID'
                     assistantResponse.push(responseItem.assistantResponseEvent.content ?? '')
                 }
             }
-            return assistantResponse.join('')
+            return { responseType, approach: assistantResponse.join('') }
         } catch (e) {
             if (isCodeWhispererStreamingServiceException(e)) {
                 getLogger().error(

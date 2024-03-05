@@ -118,7 +118,7 @@ describe('sessionState', () => {
         it('transitions to RefinementState and returns an approach', async () => {
             sinon.stub(performance, 'now').returns(0)
 
-            mockGeneratePlan = sinon.stub().resolves(testApproach)
+            mockGeneratePlan = sinon.stub().resolves({ responseType: 'TEST_RESPONSE_TYPE', approach: testApproach })
             const state = new RefinementState(testConfig, testApproach, tabId, 0)
             const result = await state.interact(testAction)
 
@@ -126,6 +126,7 @@ describe('sessionState', () => {
                 nextState: new RefinementState(testConfig, testApproach, tabId, 1),
                 interaction: {
                     content: `${testApproach}\n`,
+                    responseType: 'TEST_RESPONSE_TYPE',
                 },
             })
 
@@ -138,7 +139,7 @@ describe('sessionState', () => {
         })
 
         it('transitions to RefinementState but does not return an approach', async () => {
-            mockGeneratePlan = sinon.stub().resolves(undefined)
+            mockGeneratePlan = sinon.stub().resolves({ responseType: 'TEST_RESPONSE_TYPE', approach: undefined })
             const state = new RefinementState(testConfig, testApproach, tabId, 0)
             const result = await state.interact(testAction)
             const invokeFailureApproach =
@@ -148,6 +149,7 @@ describe('sessionState', () => {
                 nextState: new RefinementState(testConfig, invokeFailureApproach, tabId, 1),
                 interaction: {
                     content: `${invokeFailureApproach}\n`,
+                    responseType: 'TEST_RESPONSE_TYPE',
                 },
             })
         })
@@ -155,7 +157,9 @@ describe('sessionState', () => {
         it('invalid html gets sanitized', async () => {
             const invalidHTMLApproach =
                 '<head><script src="https://foo"></script></head><body><h1>hello world</h1></body>'
-            mockGeneratePlan = sinon.stub().resolves(invalidHTMLApproach)
+            mockGeneratePlan = sinon
+                .stub()
+                .resolves({ responseType: 'TEST_RESPONSE_TYPE', approach: invalidHTMLApproach })
             const state = new RefinementState(testConfig, invalidHTMLApproach, tabId, 0)
             const result = await state.interact(testAction)
 
@@ -165,6 +169,7 @@ describe('sessionState', () => {
                 nextState: new RefinementState(testConfig, expectedApproach, tabId, 1),
                 interaction: {
                     content: `${expectedApproach}\n`,
+                    responseType: 'TEST_RESPONSE_TYPE',
                 },
             })
         })

@@ -115,7 +115,7 @@ export class RefinementState implements SessionState {
                     throw new UserMessageNotFoundError()
                 }
 
-                const approach = await this.config.proxyClient.generatePlan(
+                const { responseType, approach } = await this.config.proxyClient.generatePlan(
                     this.config.conversationId,
                     this.config.uploadId,
                     action.msg
@@ -126,7 +126,7 @@ export class RefinementState implements SessionState {
                         'There has been a problem generating an approach. Please open a conversation in a new tab'
                 )
 
-                action.telemetry.recordUserApproachTelemetry(span, this.conversationId)
+                action.telemetry.recordUserApproachTelemetry(span, this.conversationId, responseType)
                 return {
                     nextState: new RefinementState(
                         {
@@ -139,6 +139,7 @@ export class RefinementState implements SessionState {
                     ),
                     interaction: {
                         content: `${this.approach}\n`,
+                        responseType,
                     },
                 }
             } catch (e) {
