@@ -48,8 +48,8 @@ export class TestSettings implements ClassToInterfaceType<Settings> {
         return !type || value === undefined ? value : cast(value, type)
     }
 
-    public async isValid(): Promise<'ok' | 'invalid' | 'nowrite'> {
-        return 'ok'
+    public async isReadable(): Promise<boolean> {
+        return true
     }
 
     public async update(key: string, value: unknown): Promise<boolean> {

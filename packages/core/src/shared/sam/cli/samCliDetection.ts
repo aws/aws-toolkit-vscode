@@ -37,14 +37,12 @@ export async function detectSamCli(args: { passive: boolean; showMessage: boolea
     // conflicts with VSCode "remote": each VSCode instance will update the
     // setting based on its local environment, but the user settings are
     // shared across VSCode instances...
-    if (!args.passive && sam.autoDetected && sam.path) {
-        await config.update('location', sam.path)
-    }
+    const update = !args.passive && sam.autoDetected && sam.path && (await config.update('location', sam.path))
 
     if (args.showMessage !== false || !found) {
         if (!found) {
             notifyUserSamCliNotDetected(config)
-        } else if (args.showMessage === true) {
+        } else if (update && args.showMessage === true) {
             void vscode.window.showInformationMessage(getSettingsUpdatedMessage(sam.path ?? '?'))
         }
     }
