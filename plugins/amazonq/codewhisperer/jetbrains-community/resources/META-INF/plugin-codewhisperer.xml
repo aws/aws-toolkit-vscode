@@ -1,0 +1,8 @@
+<!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <actions>
+        <action class="Hello" id="q.hello" />
+    </actions>
+</idea-plugin>

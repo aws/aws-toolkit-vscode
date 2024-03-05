@@ -13,6 +13,10 @@ private val BUNDLE by lazy {
     ResourceBundle.getBundle(BUNDLE_NAME) ?: throw RuntimeException("Cannot find resource bundle '$BUNDLE_NAME'.")
 }
 
+@Deprecated(
+    "Use extension-specific localization bundle instead",
+    ReplaceWith("AwsToolkitBundle.message(key, *params)", "software.aws.toolkits.resources.AwsToolkitBundle")
+)
 fun message(@PropertyKey(resourceBundle = BUNDLE_NAME) key: String, vararg params: Any): String {
     val value = BUNDLE.getString(key) ?: throw RuntimeException("Key $key not found in $BUNDLE")
     if (params.isNotEmpty() && value.contains("{")) {
