@@ -70,7 +70,7 @@ class SamTemplateProjectWizardTest {
                     projectStructureDialog {
                         val fixture = comboBox(byXpath("//div[@class='JdkComboBox']"))
                         // TODO set based on Runtime
-                        assertThat(fixture.selectedText()).startsWith("1")
+                        assertThat(fixture.selectedText()).startsWith("2")
                     }
                 }
             }
