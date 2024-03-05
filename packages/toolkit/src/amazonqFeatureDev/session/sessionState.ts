@@ -410,7 +410,7 @@ export class MockCodeGenState implements SessionState {
                         status: 'success',
                     },
                     {
-                        pillText: 'Provide feedback & regenerate',
+                        pillText: 'Provide feedback and regenerate',
                         type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
                         icon: 'refresh' as MynahIcons,
                         status: 'info',

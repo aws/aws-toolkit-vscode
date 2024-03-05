@@ -500,7 +500,7 @@ export class FeatureDevController {
                         status: 'success',
                     },
                     {
-                        pillText: 'Provide feedback & regenerate',
+                        pillText: 'Provide feedback and regenerate',
                         type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
                         icon: 'refresh' as MynahIcons,
                         status: 'info',
@@ -568,7 +568,7 @@ export class FeatureDevController {
         const examples = `
 You can use /dev to:
 - Add a new feature or logic
-- Write tests 
+- Write tests
 - Fix a bug in your project
 - Generate a README for a file, folder, or project
 
