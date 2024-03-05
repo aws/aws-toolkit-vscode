@@ -6,11 +6,19 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { DevSettings, Experiments, fromExtensionManifest, PromptSettings, Settings } from '../../shared/settings'
+import {
+    DevSettings,
+    Experiments,
+    fromExtensionManifest,
+    PromptSettings,
+    Settings,
+    testSetting,
+} from '../../shared/settings'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 import { Optional } from '../../shared/utilities/typeConstructors'
 import { ToolkitError } from '../../shared/errors'
+import { getTestWindow } from './vscode/window'
 
 const settingsTarget = vscode.ConfigurationTarget.Workspace
 
@@ -46,10 +54,13 @@ describe('Settings', function () {
         // Note: we don't test undefined because retrieval returns the package.json configured default value, if there is one
     ]
 
-    it('isValid()', async () => {
+    it('isReadable()', async () => {
         // TODO: could avoid sinon if we can force vscode to use a dummy settings.json file.
         const fake = {
-            get: async () => {
+            get: (key: string) => {
+                if (key === testSetting) {
+                    throw Error()
+                }
                 return 'setting-value'
             },
             update: async () => {
@@ -58,17 +69,7 @@ describe('Settings', function () {
         } as unknown as vscode.WorkspaceConfiguration
         sinon.stub(vscode.workspace, 'getConfiguration').returns(fake)
 
-        assert.deepStrictEqual(await sut.isValid(), 'invalid')
-
-        fake.update = async () => {
-            throw Error('EACCES')
-        }
-        assert.deepStrictEqual(await sut.isValid(), 'nowrite')
-
-        fake.update = async () => {
-            throw Error('xxx the file has unsaved changes xxx')
-        }
-        assert.deepStrictEqual(await sut.isValid(), 'nowrite')
+        assert.deepStrictEqual(await sut.isReadable(), false)
     })
 
     describe('get', function () {
@@ -121,6 +122,43 @@ describe('Settings', function () {
 
                 assert.deepStrictEqual(savedValue, scenario.testValue)
             })
+        })
+
+        it('shows message on failure', async () => {
+            // TODO: could avoid sinon if we can force vscode to use a dummy settings.json file.
+            // const fakeSettings = {}
+            const fake = {
+                lastValue: 'x',
+                get: (key: string) => {
+                    return `${key}-value`
+                },
+                update: async (key: string, val: any) => {
+                    // Do nothing (success).
+                    // (fakeSettings as any)[key] = val
+                },
+                inspect: (key: string) => {
+                    return {}
+                },
+            } as unknown as vscode.WorkspaceConfiguration
+            sinon.stub(vscode.workspace, 'getConfiguration').returns(fake)
+
+            assert.deepStrictEqual(await sut.update(testSetting, 91234), true)
+            // No errors.
+            assert.deepStrictEqual(getTestWindow().shownMessages.length, 0)
+
+            fake.update = async () => {
+                throw Error('EACCES')
+            }
+            assert.deepStrictEqual(await sut.update(testSetting, 91234), false)
+            getTestWindow()
+                .getFirstMessage()
+                .assertError(
+                    `Failed to update settings (key: "${testSetting}"). Check settings.json for syntax errors or insufficient permissions.`
+                )
+
+            // Message skipped for duplicate error.
+            assert.deepStrictEqual(await sut.update(testSetting, 91234), false)
+            assert.deepStrictEqual(getTestWindow().shownMessages.length, 1)
         })
     })
 
