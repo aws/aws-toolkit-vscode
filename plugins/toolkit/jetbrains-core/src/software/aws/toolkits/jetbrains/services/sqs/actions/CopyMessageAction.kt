@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.sqs.actions
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.DumbAwareAction
@@ -13,6 +14,8 @@ import software.aws.toolkits.resources.message
 import java.awt.datatransfer.StringSelection
 
 class CopyMessageAction(private val table: TableView<Message>) : DumbAwareAction(message("sqs.copy.message", 1), null, AllIcons.Actions.Copy) {
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabled = table.selectedObjects.size > 0
         e.presentation.text = message("sqs.copy.message", table.selectedObjects.size)

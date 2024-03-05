@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
 import icons.AwsIcons
@@ -15,6 +16,8 @@ class Customize : DumbAwareAction(
     { message("codewhisperer.explorer.customization.select") },
     AwsIcons.Resources.CodeWhisperer.CUSTOM
 ) {
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
     override fun update(e: AnActionEvent) {
         val project = e.project ?: return
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())

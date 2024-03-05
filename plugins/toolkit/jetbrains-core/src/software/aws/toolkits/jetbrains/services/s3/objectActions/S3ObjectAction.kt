@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.project.DumbAwareAction
@@ -16,6 +17,8 @@ abstract class S3ObjectAction(title: String, icon: Icon? = null) : DumbAwareActi
     final override fun actionPerformed(e: AnActionEvent) = performAction(e.dataContext, selected(e.dataContext).filter { it !is S3TreeContinuationNode<*> })
 
     protected abstract fun performAction(dataContext: DataContext, nodes: List<S3TreeNode>)
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     final override fun update(e: AnActionEvent) {
         val bucketViewer = e.dataContext.getData(S3EditorDataKeys.BUCKET_TABLE)

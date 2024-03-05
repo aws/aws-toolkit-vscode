@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.project.DumbAware
@@ -28,6 +29,8 @@ class TailLogsAction(private val project: Project, private val channel: () -> Ch
         private set
 
         @TestOnly get
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun isSelected(e: AnActionEvent): Boolean = isSelected
 

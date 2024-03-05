@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.ui.feedback
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.runInEdt
@@ -244,6 +245,8 @@ class FeedbackDialog(
 }
 
 class ShowFeedbackDialogAction : DumbAwareAction(message("feedback.title", "Toolkit"), message("feedback.description"), AwsIcons.Misc.SMILE_GREY) {
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
     override fun actionPerformed(e: AnActionEvent) {
         runInEdt {
             FeedbackDialog(e.getRequiredData(LangDataKeys.PROJECT)).show()

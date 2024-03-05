@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.dynamodb.editor.actions
 
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ComputableActionGroup
@@ -18,6 +19,8 @@ class ConfigureMaxResultsAction : ComputableActionGroup.Simple(/* popup */ true)
         .map { (ChangeMaxResults(it)) }.toTypedArray()
 
     private class ChangeMaxResults(private val choice: Int) : ToggleAction(choice.toString()), DumbAware {
+        override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
         override fun isSelected(e: AnActionEvent): Boolean = getEditorState(e.dataContext)?.maxResults == choice
 
         override fun setSelected(e: AnActionEvent, state: Boolean) {

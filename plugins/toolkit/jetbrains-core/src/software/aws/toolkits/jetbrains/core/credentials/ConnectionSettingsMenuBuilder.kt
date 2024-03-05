@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -202,6 +203,8 @@ class ConnectionSettingsMenuBuilder private constructor() {
         private val selected: Boolean,
         private val onSelect: (T) -> Unit
     ) : ToggleAction(title), DumbAware {
+        override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
         override fun isSelected(e: AnActionEvent): Boolean = selected
 
         override fun setSelected(e: AnActionEvent, state: Boolean) {

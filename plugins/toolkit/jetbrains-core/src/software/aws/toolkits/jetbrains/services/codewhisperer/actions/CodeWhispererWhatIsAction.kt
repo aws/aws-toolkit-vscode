@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.actions
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
@@ -20,6 +21,8 @@ class CodeWhispererWhatIsAction :
         AllIcons.Actions.Help
     ),
     DumbAware {
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
     override fun update(e: AnActionEvent) {
         e.project?.let {
             e.presentation.isEnabledAndVisible = isCodeWhispererEnabled(it)

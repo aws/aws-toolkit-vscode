@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.remoteDev.caws
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
@@ -89,6 +90,8 @@ class UpdateDevfileAction : AnAction() {
             )
         }
     }
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
         val envVar = System.getenv(CawsConstants.CAWS_ENV_ID_VAR)

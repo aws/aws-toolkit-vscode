@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
@@ -45,6 +46,8 @@ class CreateLambdaFunctionAction(
 
         CreateFunctionDialog(project = project, initialRuntime = runtime?.toSdkRuntime(), handlerName = handlerName).show()
     }
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
         super.update(e)

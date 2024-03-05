@@ -3,6 +3,7 @@
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.DataContext
 import software.aws.toolkits.jetbrains.core.utils.getRequiredData
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
@@ -11,6 +12,8 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.resources.message
 
 class ViewObjectVersionAction : SingleS3ObjectAction(message("s3.version.history.view"), AllIcons.Actions.ShowAsTree) {
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
     override fun performAction(dataContext: DataContext, node: S3TreeNode) {
         if (node is S3TreeObjectNode) {
             node.showHistory = true

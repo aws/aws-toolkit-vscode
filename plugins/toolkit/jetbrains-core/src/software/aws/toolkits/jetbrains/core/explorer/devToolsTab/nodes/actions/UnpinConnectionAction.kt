@@ -3,9 +3,9 @@
 
 package software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.UpdateInBackground
 import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
@@ -13,7 +13,9 @@ import software.aws.toolkits.jetbrains.core.explorer.ExplorerTreeToolWindowDataK
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.PinnedConnectionNode
 import software.aws.toolkits.resources.message
 
-class UnpinConnectionAction : AnAction(), DumbAware, UpdateInBackground {
+class UnpinConnectionAction : AnAction(), DumbAware {
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
     override fun update(e: AnActionEvent) {
         val project = e.project
         val feature = feature(e)

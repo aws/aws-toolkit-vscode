@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
@@ -16,6 +17,9 @@ import software.aws.toolkits.telemetry.AwsTelemetry
 class RefreshConnectionAction(text: String = message("settings.refresh.description")) :
     AnAction(text, null, AllIcons.Actions.Refresh),
     DumbAware {
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
     override fun update(e: AnActionEvent) {
         val project = e.project ?: return
         e.presentation.isEnabled = when (val state = AwsConnectionManager.getInstance(project).connectionState) {
