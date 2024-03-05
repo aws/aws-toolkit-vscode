@@ -7,10 +7,10 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 
 // Moves all dependencies into `dist`
-// There is a single, optional flag `--webpacked` that moves localization files when present
 
 const projectRoot = process.cwd()
 const outRoot = path.join(projectRoot, 'dist')
+let vueHr = false
 
 // The target file or directory must exist, otherwise we should fail the whole build.
 interface CopyTask {
@@ -40,10 +40,9 @@ const tasks: CopyTask[] = [
         return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
     }),
 
-    { target: path.join('src', 'templates') },
-    { target: path.join('src', 'test', 'shared', 'cloudformation', 'yaml') },
-    { target: path.join('src', 'test', 'codewhisperer', 'service', 'resources') },
-    { target: path.join('src', 'testFixtures') },
+    { target: path.join('../core', 'resources'), destination: path.join('..', 'resources') },
+    { target: path.join('../core', 'package.nls.json'), destination: path.join('..', 'package.nls.json') },
+    { target: path.join('../core', 'src', 'templates'), destination: path.join('src', 'templates') },
 
     // SSM
     {
@@ -59,14 +58,32 @@ const tasks: CopyTask[] = [
         destination: path.join('src', 'ssmDocument', 'ssm', 'server.js.map'),
     },
 
+    // ASL
+    {
+        target: path.join(
+            '../../node_modules',
+            'aws-core-vscode',
+            'dist',
+            'src',
+            'stepFunctions',
+            'asl',
+            'aslServer.js'
+        ),
+        destination: path.join('src', 'stepFunctions', 'asl', 'aslServer.js'),
+    },
+
     // Vue
     {
-        target: path.join('resources', 'js', 'vscode.js'),
+        target: path.join('../core', 'resources', 'js', 'vscode.js'),
         destination: path.join('libs', 'vscode.js'),
     },
     {
         target: path.join('../../node_modules', 'vue', 'dist', 'vue.global.prod.js'),
         destination: path.join('libs', 'vue.min.js'),
+    },
+    {
+        target: path.join('../../node_modules', 'aws-core-vscode', 'dist', vueHr ? 'vuehr' : 'vue'),
+        destination: 'vue/',
     },
 
     // Mynah
@@ -83,18 +100,6 @@ const tasks: CopyTask[] = [
     {
         target: path.join('../../node_modules', 'web-tree-sitter', 'tree-sitter.wasm'),
         destination: path.join('src', 'tree-sitter.wasm'),
-    },
-]
-
-// Localization files are produced relative to `src` despite `tsc` emitting a compilation relative to the root
-const webpackedTasks: CopyTask[] = [
-    {
-        target: path.join('dist', 'nls.metadata.json'),
-        destination: path.join('src', 'nls.metadata.json'),
-    },
-    {
-        target: path.join('dist', 'nls.metadata.header.json'),
-        destination: path.join('src', 'nls.metadata.header.json'),
     },
 ]
 
@@ -115,10 +120,9 @@ async function copy(task: CopyTask): Promise<void> {
 
 void (async () => {
     const args = process.argv.slice(2)
-
-    // To use this something like: "npm run copyFiles -- --webpacked"
-    if (args.includes('--webpacked')) {
-        tasks.push(...webpackedTasks)
+    if (args.includes('--vueHr')) {
+        vueHr = true
+        console.log('Using Vue Hot Reload webpacks from core/')
     }
 
     try {

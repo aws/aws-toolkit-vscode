@@ -31,11 +31,11 @@ A formatted version of the Credentials Provider Id may be surfaced to users, how
 
 When the user connects to AWS in the Toolkit, a Credentials Provider is requested, which is then used to obtain credentials. The toolkit requests a Credentials Provider by checking which credentials provider factories support the provider's credentials type. The factories of interest are queried to see which (if any) have the requested Credentials Provider.
 
-At the time this document was written, Shared Credentials are the only supported Credentials. Additional credentials providers will reside at [/src/credentials/providers](/packages/toolkit/src/credentials/providers) as they are implemented.
+At the time this document was written, Shared Credentials are the only supported Credentials. Additional credentials providers will reside at [/src/credentials/providers](/packages/core/src/credentials/providers) as they are implemented.
 
 ### Shared Credentials Profiles
 
-Profiles are retrieved from the user's shared credentials files. The profile is handled and validated differently based on which fields are present. Handling and validation logic can be found in [sharedCredentialsProvider.ts](/packages/toolkit/src/credentials/providers/sharedCredentialsProvider.ts).
+Profiles are retrieved from the user's shared credentials files. The profile is handled and validated differently based on which fields are present. Handling and validation logic can be found in [sharedCredentialsProvider.ts](/packages/core/src/credentials/providers/sharedCredentialsProvider.ts).
 
 Only profiles that are considered valid are provided to the toolkit. When validation issues are detected, they are written to the logs to help users understand why the toolkit is having difficulties with a profile. Users running the 'Connect to AWS' command will not see invalid profiles in the list of Credentials.
 

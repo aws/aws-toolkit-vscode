@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "fix(CodeTransform): Updating commands for copying dependencies"
+}
