@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Move 'Send to Amazon Q' action group after the 'Show Context Actions' action"
+}
