@@ -259,7 +259,7 @@ internal suspend fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): Ps
     projectsManager.initForTests()
 
     val poms = listOf(pomFile)
-    projectsManager.addManagedFilesWithProfilesAndUpdate(poms, MavenExplicitProfiles.NONE, null, null)
+    projectsManager.addManagedFilesWithProfiles(poms, MavenExplicitProfiles.NONE, null, null, true)
 
     runInEdtAndWait {
         project.getServiceIfCreated(MavenProgressTracker::class.java)?.waitForProgressCompletion()
