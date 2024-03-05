@@ -110,12 +110,14 @@ export class Settings {
      * `vscode.ConfigurationTarget.Workspace` target requires a workspace).
      */
     public async update(key: string, value: unknown): Promise<boolean> {
+        const config = this.getConfig()
         try {
-            await this.getConfig().update(key, value, this.updateTarget)
+            await config.update(key, value, this.updateTarget)
 
             return true
         } catch (e) {
-            showSettingsUpdateFailedMsgOnce(key)
+            const fqkey = config.inspect(key)?.key
+            showSettingsUpdateFailedMsgOnce(fqkey ?? key)
             getLogger().warn('settings: failed to update "%s": %s', key, (e as Error).message)
 
             return false

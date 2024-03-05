@@ -136,6 +136,9 @@ describe('Settings', function () {
                     // Do nothing (success).
                     // (fakeSettings as any)[key] = val
                 },
+                inspect: (key: string) => {
+                    return {}
+                },
             } as unknown as vscode.WorkspaceConfiguration
             sinon.stub(vscode.workspace, 'getConfiguration').returns(fake)
 
