@@ -39,8 +39,18 @@ export class RecommendationService {
         return this._onSuggestionActionEvent.event
     }
 
+    private _acceptedSuggestionCount: number = 0
+    get acceptedSuggestionCount() {
+        return this._acceptedSuggestionCount
+    }
+
     public static get instance() {
         return (this.#instance ??= new RecommendationService())
+    }
+
+    incrementAcceptedCount() {
+        console.log('increment acceptedSuggestionCount')
+        this._acceptedSuggestionCount++
     }
 
     async generateRecommendation(

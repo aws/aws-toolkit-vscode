@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as os from 'os'
 import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { debounce2 } from '../../../shared/utilities/functionUtils'
@@ -31,35 +32,98 @@ export function once<T>(event: vscode.Event<T>): vscode.Event<T> {
     }
 }
 
-interface AnnotationContext {
-    selections: LineSelection[]
-    triggerType: CodewhispererTriggerType
-    response: GetRecommendationsResponse
-}
-
 interface AnnotationState {
     id: string
-    text: string
+    text: () => string
 }
 
-const state1: AnnotationState = {
+const startState: AnnotationState = {
+    id: '0',
+    text: () => '',
+}
+
+/**
+ * case 1: How Cwspr triggers
+ * Trigger Criteria:
+ *  User opens an editor file &&
+ *      CW is not providing a suggestion &&
+ *      User has not accepted any suggestion
+ *
+ * Exit criteria:
+ *  User accepts 1 suggestion
+ *
+ */
+const autotriggerState: AnnotationState = {
     id: '1',
-    text: 'CodeWhisperer suggests code as you type, press [TAB] to accept',
+    text: () => 'CodeWhisperer suggests code as you type, press [TAB] to accept',
 }
 
-const state2: AnnotationState = {
+/**
+ * case 1-a: Tab to accept
+ * Trigger Criteria:
+ *  Case 1 &&
+ *      Inline suggestion is being shown
+ *
+ * Exit criteria:
+ *  User accepts 1 suggestion
+ */
+const pressTabState: AnnotationState = {
+    id: '1',
+    text: () => 'Press [TAB] to accept the suggestion',
+}
+
+/**
+ * case 2: Manual trigger
+ * Trigger Criteria:
+ *  User exists case 1 &&
+ *      User navigates to a new line
+ *
+ * Exit criteria:
+ *  User inokes manual trigger shortcut
+ */
+const manualtriggerState: AnnotationState = {
     id: '2',
-    text: '[Option] + [C] triggers CodeWhisperer manually',
+    text: () => {
+        if (os.platform() === 'win32') {
+            return '[Alt] + [C] triggers CodeWhisperer manually'
+        }
+
+        return '[Option] + [C] triggers CodeWhisperer manually'
+    },
 }
 
-const state3: AnnotationState = {
+/**
+ * case 2-a: insufficient file context
+ * Trigger Criteria:
+ *  Case 2 &&
+ *      User invokes a manual trigger &&
+ *      no suggestion is returned
+ *
+ * Exit criteria:
+ *  ??????
+ */
+const emptyResponseState: AnnotationState = {
+    id: '2',
+    text: () => 'Try CodeWhisperer on an existing file with code for best results',
+}
+
+/**
+ * case 3: Learn more
+ * Trigger Criteria:
+ *  User exists case 2 &&
+ *      User navigates to a new line
+ *
+ * Exit criteria:
+ *  User inokes manual trigger shortcut
+ */
+const tryMoreExState: AnnotationState = {
     id: '3',
-    text: 'Try CodeWhisperer on an existing file with code for best results',
+    text: () => 'Try more examples (hover)',
 }
 
-const state4: AnnotationState = {
+const endState: AnnotationState = {
     id: '4',
-    text: 'Try more examples with CodeWhisperer in the IDE',
+    text: () => '',
 }
 
 // const state5: AnnotationState = {}
@@ -72,6 +136,8 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _currentStep: '1' | '2' | '3' | '4' | undefined
 
+    private _currentState: AnnotationState = startState
+
     readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
             margin: '0 0 0 3em',
@@ -80,7 +146,7 @@ export class LineAnnotationController implements vscode.Disposable {
         rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
     })
 
-    private _inlineText: string | undefined = undefined
+    private _acceptedSuggestionCount = 0
 
     constructor(private readonly lineTracker: LineTracker, private readonly auth: AuthUtil) {
         // this._currentStep = globals.context.globalState.get<'1' | '2' | '3' | undefined>(inlinehintKey)
@@ -259,63 +325,48 @@ export class LineAnnotationController implements vscode.Disposable {
             color: '#8E8E8E',
         }
 
-        if (this._currentStep === '4') {
-            return undefined
-        }
-
-        // [1] if user manual triggers but receives an empty suggestion
-        if (
-            this._inlineText === '[Option] + [C] triggers CodeWhisperer manually' &&
-            e?.response?.recommendationCount === 0 &&
-            e.triggerType === 'OnDemand'
-        ) {
-            textOptions.contentText = 'Try CodeWhisperer on an existing file with code for best results'
-            return { after: textOptions }
-        }
-
-        // [2] unless users have a valid manual trigger, we won't show next hint
-        if (
-            this._inlineText === '[Option] + [C] triggers CodeWhisperer manually' &&
-            !RecommendationService.instance.manualTriggered
-        ) {
-            textOptions.contentText = this._inlineText
-            return { after: textOptions }
-        }
-
-        // [3] when users are typing at the same line, not move forward
-        if (
-            isSameLine &&
-            this._inlineText &&
-            !e &&
-            this._inlineText !== '[Option] + [C] triggers CodeWhisperer manually'
-        ) {
-            textOptions.contentText = this._inlineText
-            return { after: textOptions }
-        }
-
-        // [4] regular flow
-        if (!this._currentStep && isEndOfLine) {
-            textOptions.contentText = 'CodeWhisperer suggests code as you type, press [TAB] to accept'
-
-            this._currentStep = '1'
-        } else if (this._currentStep === '1') {
-            textOptions.contentText = '[Option] + [C] triggers CodeWhisperer manually'
-
-            this._currentStep = '2'
-        } else if (this._currentStep === '2') {
-            if (RecommendationHandler.instance.isSuggestionVisible()) {
-                return undefined
+        if (this._currentState.id === startState.id) {
+            if (isEndOfLine) {
+                this._currentState = autotriggerState
             }
-            textOptions.contentText = `Try more examples with CodeWhisperer in the IDE`
-
-            this._currentStep = '3'
-        } else {
-            this._currentStep = '4'
+        } else if (this._currentState.id === endState.id) {
+            this._acceptedSuggestionCount = RecommendationService.instance.acceptedSuggestionCount
             return undefined
+        } else {
+            // TODO: how to modyfy this
+            // when users are typing at the same line, not move forward
+            if (isSameLine && !e && this._currentState.id !== manualtriggerState.id) {
+                textOptions.contentText = this._currentState.text()
+                this._acceptedSuggestionCount = RecommendationService.instance.acceptedSuggestionCount
+                console.log('0000000000000000000')
+                return { after: textOptions }
+            } else if (this._currentState.id === autotriggerState.id) {
+                // if (this._acceptedSuggestionCount === RecommendationService.instance.acceptedSuggestionCount) {
+                //     console.log('1111111111111111111')
+                // } else {
+                //     console.log('2222222222222222222')
+                //     this._currentState = manualtriggerState
+                // }
+
+                this._currentState = manualtriggerState
+            } else if (this._currentState.id === manualtriggerState.id) {
+                this._currentState = manualtriggerState
+                if (e?.response && e.response.recommendationCount === 0 && e.triggerType === 'OnDemand') {
+                    // if user manual triggers but receives an empty suggestion
+                    this._currentState = emptyResponseState
+                } else if (!RecommendationService.instance.manualTriggered) {
+                    // [2] unless users have a valid manual trigger, we won't show next hint
+                    // do not do anything
+                } else {
+                    this._currentState = tryMoreExState
+                }
+            } else if (this._currentState.id === tryMoreExState.id) {
+                this._currentState = endState
+            }
         }
 
-        this._inlineText = textOptions.contentText
-
+        this._acceptedSuggestionCount = RecommendationService.instance.acceptedSuggestionCount
+        textOptions.contentText = this._currentState.text()
         return { after: textOptions }
     }
 

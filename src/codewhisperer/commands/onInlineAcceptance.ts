@@ -28,6 +28,7 @@ import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
 import { ImportAdderProvider } from '../service/importAdderProvider'
 import { session } from '../util/codeWhispererSession'
 import path from 'path'
+import { RecommendationService } from '../service/recommendationService'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
@@ -44,6 +45,8 @@ export const acceptSuggestion = Commands.declare(
             language: CodewhispererLanguage,
             references: codewhispererClient.References
         ) => {
+            console.log('acceptSuggestion')
+            RecommendationService.instance.incrementAcceptedCount()
             const editor = vscode.window.activeTextEditor
             const onAcceptanceFunc = isInlineCompletionEnabled() ? onInlineAcceptance : onAcceptance
             await onAcceptanceFunc(
