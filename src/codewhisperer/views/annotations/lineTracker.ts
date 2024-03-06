@@ -86,7 +86,6 @@ export class LineTracker {
 
     private async onContentChanged(e: vscode.TextDocumentChangeEvent) {
         if (e.document === vscode.window.activeTextEditor?.document && e.contentChanges.length > 0) {
-            // await this.notifyLinesChangedDebounced()
             this.notifyLinesChanged('content')
         }
     }
@@ -94,11 +93,8 @@ export class LineTracker {
     private notifyLinesChanged(reason: 'editor' | 'selection' | 'content') {
         const e: LinesChangeEvent = { editor: this._editor, selections: this.selections, reason: reason }
 
-        void this.fireLinesChanged(e)
-    }
-
-    private async fireLinesChanged(e: LinesChangeEvent) {
         this._onDidChangeActiveLines.fire(e)
+        console.log(`notifyLinesChanged, reason: ${reason}`)
     }
 
     subscribe(subscriber: unknown, subscription: vscode.Disposable) {

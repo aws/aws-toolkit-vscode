@@ -400,6 +400,8 @@ export enum UserGroup {
     RightContext = 'RightContext',
 }
 
+export type AnnotationChangeSource = 'codewhisperer' | 'selection' | 'editor' | 'content'
+
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 
 export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'

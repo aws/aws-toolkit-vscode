@@ -138,6 +138,8 @@ export class RecommendationService {
             let response: GetRecommendationsResponse | undefined = undefined
 
             try {
+                console.log('firing suggestion action event before triggering')
+
                 this._onSuggestionActionEvent.fire({
                     editor: editor,
                     isRunning: true,
@@ -160,6 +162,7 @@ export class RecommendationService {
                 }
             } finally {
                 this._isRunning = false
+                console.log('firing suggestion action event after triggering')
                 this._onSuggestionActionEvent.fire({
                     editor: editor,
                     isRunning: false,

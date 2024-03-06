@@ -13,7 +13,7 @@ import { CodeWhispererSource } from '../../commands/types'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { set } from '../../util/commonUtil'
-import { inlinehintKey, suggestionDetailReferenceText } from '../../models/constants'
+import { AnnotationChangeSource, inlinehintKey, suggestionDetailReferenceText } from '../../models/constants'
 import globals from '../../../shared/extensionGlobals'
 import { RecommendationHandler } from '../../service/recommendationHandler'
 import { CodewhispererTriggerType } from '../../../shared/telemetry/telemetry'
@@ -34,11 +34,13 @@ export function once<T>(event: vscode.Event<T>): vscode.Event<T> {
 
 interface AnnotationState {
     id: string
+    suppressWhileRunning: boolean
     text: () => string
 }
 
 const startState: AnnotationState = {
     id: '0',
+    suppressWhileRunning: true,
     text: () => '',
 }
 
@@ -55,6 +57,7 @@ const startState: AnnotationState = {
  */
 const autotriggerState: AnnotationState = {
     id: '1',
+    suppressWhileRunning: true,
     text: () => 'CodeWhisperer suggests code as you type, press [TAB] to accept',
 }
 
@@ -69,6 +72,7 @@ const autotriggerState: AnnotationState = {
  */
 const pressTabState: AnnotationState = {
     id: '1',
+    suppressWhileRunning: false,
     text: () => 'Press [TAB] to accept the suggestion',
 }
 
@@ -81,8 +85,9 @@ const pressTabState: AnnotationState = {
  * Exit criteria:
  *  User inokes manual trigger shortcut
  */
-const manualtriggerState: AnnotationState = {
+const manualtriggerState: AnnotationState & { hasManualTrigger: boolean; hasValidResponse: boolean } = {
     id: '2',
+    suppressWhileRunning: true,
     text: () => {
         if (os.platform() === 'win32') {
             return '[Alt] + [C] triggers CodeWhisperer manually'
@@ -90,6 +95,8 @@ const manualtriggerState: AnnotationState = {
 
         return '[Option] + [C] triggers CodeWhisperer manually'
     },
+    hasManualTrigger: false,
+    hasValidResponse: false,
 }
 
 /**
@@ -104,6 +111,7 @@ const manualtriggerState: AnnotationState = {
  */
 const emptyResponseState: AnnotationState = {
     id: '2',
+    suppressWhileRunning: true,
     text: () => 'Try CodeWhisperer on an existing file with code for best results',
 }
 
@@ -118,11 +126,13 @@ const emptyResponseState: AnnotationState = {
  */
 const tryMoreExState: AnnotationState = {
     id: '3',
+    suppressWhileRunning: true,
     text: () => 'Try more examples (hover)',
 }
 
 const endState: AnnotationState = {
     id: '4',
+    suppressWhileRunning: true,
     text: () => '',
 }
 
@@ -152,14 +162,14 @@ export class LineAnnotationController implements vscode.Disposable {
         // this._currentStep = globals.context.globalState.get<'1' | '2' | '3' | undefined>(inlinehintKey)
         this._disposable = vscode.Disposable.from(
             once(this.lineTracker.onReady)(this.onReady, this),
-            this.setCWInlineService(true),
+            this.subscribeSuggestionAction(true),
             this.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
-                    this.refreshDebounced(vscode.window.activeTextEditor)
+                    this.refreshDebounced(vscode.window.activeTextEditor, 'editor')
                 }
             }),
             this.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
-                this.refreshDebounced(vscode.window.activeTextEditor)
+                this.refreshDebounced(vscode.window.activeTextEditor, 'editor')
             })
         )
         this.setLineTracker(true)
@@ -174,7 +184,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private onReady(): void {
         this._isReady = true
-        this.refresh(vscode.window.activeTextEditor)
+        this.refresh(vscode.window.activeTextEditor, 'editor')
     }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
@@ -185,12 +195,12 @@ export class LineAnnotationController implements vscode.Disposable {
         this.clear(e.editor)
 
         if (e.reason === 'content') {
-            await this.refreshDebounced(e.editor)
+            await this.refreshDebounced(e.editor, e.reason)
             return
         }
 
         if (e.selections !== undefined) {
-            await this.refreshDebounced(e.editor)
+            await this.refreshDebounced(e.editor, e.reason)
             return
         }
     }
@@ -202,11 +212,14 @@ export class LineAnnotationController implements vscode.Disposable {
         }
     }
 
-    readonly refreshDebounced = debounce2((editor, e?) => {
-        this.refresh(editor, e)
-    }, 250)
+    readonly refreshDebounced = debounce2(
+        (editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) => {
+            this.refresh(editor, source, e)
+        },
+        250
+    )
 
-    async refresh(editor: vscode.TextEditor | undefined, option?: SuggestionActionEvent) {
+    async refresh(editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) {
         if (!this.auth.isConnectionValid(false)) {
             this.clear(this._editor)
             return
@@ -234,25 +247,33 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         // if (cancellation.isCancellationRequested) return
-        await this.updateDecorations(editor, selections, option)
+        await this.updateDecorations(editor, selections, source, e)
     }
 
-    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], option?: SuggestionActionEvent) {
+    async updateDecorations(
+        editor: vscode.TextEditor,
+        lines: LineSelection[],
+        source: AnnotationChangeSource,
+        e?: SuggestionActionEvent
+    ) {
         const range = editor.document.validateRange(
             new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
         )
 
+        const options = this.getInlineDecoration(editor, lines, source, e) as vscode.DecorationOptions | undefined
+
         const isCWRunning = RecommendationService.instance.isRunning
-        if (isCWRunning) {
+        if (isCWRunning && this._currentState.suppressWhileRunning) {
+            console.log('codewhisperer is running, suppressing inline hint')
             editor.setDecorations(this.cwLineHintDecoration, [])
             this._selections = lines
             return
         }
 
-        const options = this.getInlineDecoration(editor, lines, option) as vscode.DecorationOptions | undefined
         if (!options) {
             this.clear(this._editor)
             this._selections = lines
+            console.log('no inline hint should be rendered')
             return
         }
 
@@ -277,10 +298,12 @@ export class LineAnnotationController implements vscode.Disposable {
         this.lineTracker.unsubscribe(this)
     }
 
-    private setCWInlineService(enabled: boolean) {
+    private subscribeSuggestionAction(enabled: boolean) {
         const disposable = RecommendationService.instance.suggestionActionEvent(e => {
+            this.setMetadataForState2(e)
+
             // can't use refresh because refresh, by design, should only be triggered when there is line selection change
-            this.refreshDebounced(e.editor, e)
+            this.refreshDebounced(e.editor, 'codewhisperer', e)
         })
 
         return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
@@ -289,12 +312,14 @@ export class LineAnnotationController implements vscode.Disposable {
     getInlineDecoration(
         editor: vscode.TextEditor,
         lines: LineSelection[],
+        source: AnnotationChangeSource,
         e?: SuggestionActionEvent
     ): Partial<vscode.DecorationOptions> | undefined {
         const sameLine = this._selections ? isSameLine(this._selections[0], lines[0]) : false
         const isEndOfLine = isCursorAtEndOfLine(editor)
+        const isCWRunning = RecommendationService.instance.isRunning
 
-        const options = this.textOptions(sameLine, isEndOfLine, e)
+        const options = this.textOptions(sameLine, isEndOfLine, isCWRunning, source, e)
 
         if (!options) {
             return undefined
@@ -305,7 +330,7 @@ export class LineAnnotationController implements vscode.Disposable {
             hoverMessage: vscode.DecorationOptions['hoverMessage']
         } = {
             renderOptions: options,
-            hoverMessage: this.onHover(options.after?.contentText),
+            hoverMessage: this.onHover(),
         }
 
         return renderOptions
@@ -315,8 +340,12 @@ export class LineAnnotationController implements vscode.Disposable {
     private textOptions(
         isSameLine: boolean,
         isEndOfLine: boolean,
+        isCWRunning: boolean,
+        source: AnnotationChangeSource,
         e?: SuggestionActionEvent
     ): vscode.ThemableDecorationRenderOptions | undefined {
+        // contentChanged will also emit 'selection'
+        console.log(e)
         const textOptions = {
             contentText: '',
             fontWeight: 'normal',
@@ -324,6 +353,8 @@ export class LineAnnotationController implements vscode.Disposable {
             textDecoration: 'none',
             color: '#8E8E8E',
         }
+
+        const oldState = this._currentState
 
         if (this._currentState.id === startState.id) {
             if (isEndOfLine) {
@@ -333,32 +364,49 @@ export class LineAnnotationController implements vscode.Disposable {
             this._acceptedSuggestionCount = RecommendationService.instance.acceptedSuggestionCount
             return undefined
         } else {
+            // if content change, keep showing the same mesg and do not enter next state
+            // if (source === 'content') {
+            //     textOptions.contentText = this._currentState.text()
+            //     console.log('textOptions, content type')
+            //     return { after: textOptions }
+            // }
+
             // TODO: how to modyfy this
             // when users are typing at the same line, not move forward
-            if (isSameLine && !e && this._currentState.id !== manualtriggerState.id) {
-                textOptions.contentText = this._currentState.text()
-                this._acceptedSuggestionCount = RecommendationService.instance.acceptedSuggestionCount
-                console.log('0000000000000000000')
-                return { after: textOptions }
-            } else if (this._currentState.id === autotriggerState.id) {
-                // if (this._acceptedSuggestionCount === RecommendationService.instance.acceptedSuggestionCount) {
-                //     console.log('1111111111111111111')
-                // } else {
-                //     console.log('2222222222222222222')
-                //     this._currentState = manualtriggerState
-                // }
-
-                this._currentState = manualtriggerState
+            // else if (isSameLine && !e && this._currentState.id !== manualtriggerState.id) {
+            //     textOptions.contentText = this._currentState.text()
+            //     this._acceptedSuggestionCount = RecommendationService.instance.acceptedSuggestionCount
+            //     console.log('0000000000000000000')
+            //     return { after: textOptions }
+            // }
+            if (this._currentState.id === autotriggerState.id) {
+                this._currentState = autotriggerState
+                if (this._acceptedSuggestionCount !== RecommendationService.instance.acceptedSuggestionCount) {
+                    console.log('current state: autoTrigger, updating to manual trigger state')
+                    this._currentState = manualtriggerState
+                } else if (!isCWRunning && source === 'codewhisperer') {
+                    console.log('current state: autoTrigger, updating to press Tab State')
+                    this._currentState = pressTabState
+                }
             } else if (this._currentState.id === manualtriggerState.id) {
                 this._currentState = manualtriggerState
+                // console.log(e)
                 if (e?.response && e.response.recommendationCount === 0 && e.triggerType === 'OnDemand') {
+                    console.log('current state manual trigger state, updating to empty state')
                     // if user manual triggers but receives an empty suggestion
                     this._currentState = emptyResponseState
-                } else if (!RecommendationService.instance.manualTriggered) {
-                    // [2] unless users have a valid manual trigger, we won't show next hint
-                    // do not do anything
-                } else {
-                    this._currentState = tryMoreExState
+                } else if (
+                    'hasManualTrigger' in this._currentState &&
+                    this._currentState.hasManualTrigger &&
+                    'hasValidResponse' in this._currentState &&
+                    this._currentState.hasValidResponse
+                ) {
+                    if (source === 'selection') {
+                        console.log('current state manual state, updating to try more example')
+                        this._currentState = tryMoreExState
+                    } else {
+                        return undefined
+                    }
                 }
             } else if (this._currentState.id === tryMoreExState.id) {
                 this._currentState = endState
@@ -370,8 +418,25 @@ export class LineAnnotationController implements vscode.Disposable {
         return { after: textOptions }
     }
 
-    private onHover(str: string | undefined): vscode.MarkdownString | undefined {
-        if (str === 'Try more examples with CodeWhisperer in the IDE') {
+    private setMetadataForState2(e: SuggestionActionEvent) {
+        try {
+            if (this._currentState.id === manualtriggerState.id && 'hasManualTrigger' in this._currentState) {
+                this._currentState.hasManualTrigger = e.triggerType === 'OnDemand'
+            }
+
+            if (this._currentState.id === manualtriggerState.id && 'hasValidResponse' in this._currentState) {
+                console.log('set state2 manualtrigger = true')
+                this._currentState.hasValidResponse =
+                    e.response?.recommendationCount && e.response?.recommendationCount > 0
+            }
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    private onHover(): vscode.MarkdownString | undefined {
+        const str: string = this._currentState.text()
+        if (str === tryMoreExState.text()) {
             const source: CodeWhispererSource = 'vscodeComponent'
             const md = new vscode.MarkdownString(
                 `[Learn more CodeWhisperer examples](command:aws.codeWhisperer.gettingStarted?${encodeURI(
