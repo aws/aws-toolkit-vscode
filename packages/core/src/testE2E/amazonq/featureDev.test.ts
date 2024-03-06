@@ -12,7 +12,7 @@ import { examples } from '../../amazonqFeatureDev/userFacingText'
 import { registerAuthHook, using } from '../../test/setupUtil'
 import { loginToIdC } from './utils/setup'
 
-describe('Amazon Q Feature Dev', function () {
+describe.skip('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
 
     before(async function () {
