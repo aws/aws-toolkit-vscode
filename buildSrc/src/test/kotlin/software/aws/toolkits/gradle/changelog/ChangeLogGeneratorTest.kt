@@ -82,7 +82,7 @@ class ChangeLogGeneratorTest {
         sut.close()
 
         writer.inOrder {
-            verify().writeLine(
+            verify().writeEntry(
                 renderEntry(
                     ReleaseEntry(
                         LocalDate.of(2017, 2, 1),
@@ -91,7 +91,7 @@ class ChangeLogGeneratorTest {
                     )
                 )
             )
-            verify().writeLine(
+            verify().writeEntry(
                 renderEntry(
                     ReleaseEntry(
                         LocalDate.of(2017, 1, 3),
@@ -103,7 +103,7 @@ class ChangeLogGeneratorTest {
                     )
                 )
             )
-            verify().writeLine(
+            verify().writeEntry(
                 renderEntry(
                     ReleaseEntry(
                         LocalDate.of(2017, 1, 1),
@@ -175,9 +175,9 @@ class ChangeLogGeneratorTest {
         sut.addReleasedChanges(listOf(entry))
         sut.close()
 
-        verify(firstWriter).writeLine(anyString())
+        verify(firstWriter).writeEntry(anyString())
         verify(firstWriter).close()
-        verify(secondWriter).writeLine(anyString())
+        verify(secondWriter).writeEntry(anyString())
         verify(secondWriter).close()
     }
 
@@ -224,7 +224,7 @@ class ChangeLogGeneratorTest {
         sut.close()
 
         argumentCaptor<String>().apply {
-            verify(writer, times(2)).writeLine(capture())
+            verify(writer, times(2)).writeEntry(capture())
 
             assertThat(firstValue.trim()).isEqualTo(
                 """
@@ -271,7 +271,7 @@ class ChangeLogGeneratorTest {
         sut.close()
 
         argumentCaptor<String>().apply {
-            verify(writer).writeLine(capture())
+            verify(writer).writeEntry(capture())
 
             assertThat(firstValue.trim()).isEqualTo(
                 """
@@ -314,7 +314,7 @@ class ChangeLogGeneratorTest {
         sut.close()
 
         argumentCaptor<String>().apply {
-            verify(writer).writeLine(capture())
+            verify(writer).writeEntry(capture())
 
             assertThat(firstValue.trim()).isEqualTo(
                 """

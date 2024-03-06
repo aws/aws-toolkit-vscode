@@ -5,11 +5,11 @@ package software.aws.toolkits.gradle.changelog
 
 import java.nio.file.Path
 
-class GithubWriter(private val file: Path, issueUrl: String?) : ChangeLogWriter(issueUrl) {
+class GithubWriter(private val file: Path, repoUrl: String?) : ChangeLogWriter(repoUrl) {
     private val writer = file.toFile().bufferedWriter()
 
-    override fun append(line: String) {
-        writer.write(line)
+    override fun append(entry: String) {
+        writer.write(entry)
     }
 
     override fun close() {

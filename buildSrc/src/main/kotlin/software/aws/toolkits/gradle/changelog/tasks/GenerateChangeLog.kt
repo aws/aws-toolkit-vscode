@@ -18,7 +18,7 @@ import software.aws.toolkits.gradle.changelog.JetBrainsWriter
 abstract class GenerateChangeLog(private val shouldStage: Boolean) : ChangeLogTask() {
     @Input
     @Optional
-    val issuesUrl: Provider<String?> = project.objects.property(String::class.java).convention("https://github.com/aws/aws-toolkit-jetbrains/issues")
+    val repoUrl: Provider<String?> = project.objects.property(String::class.java).convention("https://github.com/aws/aws-toolkit-jetbrains")
 
     @Input
     val includeUnreleased: Property<Boolean> = project.objects.property(Boolean::class.java).convention(false)
@@ -54,9 +54,9 @@ abstract class GenerateChangeLog(private val shouldStage: Boolean) : ChangeLogTa
 }
 
 open class GeneratePluginChangeLog : GenerateChangeLog(false) {
-    override fun createWriter(): ChangeLogWriter = JetBrainsWriter(changeLogFile.get().asFile, issuesUrl.get())
+    override fun createWriter(): ChangeLogWriter = JetBrainsWriter(changeLogFile.get().asFile, repoUrl.get())
 }
 
 open class GenerateGithubChangeLog : GenerateChangeLog(true) {
-    override fun createWriter(): ChangeLogWriter = GithubWriter(changeLogFile.get().asFile.toPath(), issuesUrl.get())
+    override fun createWriter(): ChangeLogWriter = GithubWriter(changeLogFile.get().asFile.toPath(), repoUrl.get())
 }
