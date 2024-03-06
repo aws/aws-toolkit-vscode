@@ -137,7 +137,7 @@ class CreateFunctionIntegrationTest {
 
         executeCreateFunction {
             val dialog = runInEdtAndGet {
-                CreateFunctionDialog(projectRule.project, Runtime.JAVA8, "com.example.SomeClass").apply {
+                CreateFunctionDialog(projectRule.project, Runtime.JAVA17, "com.example.SomeClass").apply {
                     val view = getViewForTestAssertions()
                     view.name.text = lambdaName
                     view.configSettings.iamRole.selectedItem { iamRole.arn() == it.arn }
@@ -159,7 +159,7 @@ class CreateFunctionIntegrationTest {
     @Test
     fun `image based lambda can be created`() {
         assumeImageSupport()
-        val (dockerfile, _) = readProject("samProjects/image/java8/maven", "Dockerfile", projectRule)
+        val (dockerfile, _) = readProject("samProjects/image/java17/maven", "Dockerfile", projectRule)
         val ecrRepo = ecrClient.createRepository {
             it.repositoryName(RuleUtils.randomName().lowercase())
         }.repository()
