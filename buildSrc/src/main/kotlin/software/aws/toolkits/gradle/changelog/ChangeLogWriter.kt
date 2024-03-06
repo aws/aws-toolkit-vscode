@@ -3,14 +3,14 @@
 
 package software.aws.toolkits.gradle.changelog
 
-abstract class ChangeLogWriter(issueUrl: String? = null) {
-    private val issueUrl = issueUrl?.trimEnd('/')?.plus("/")
+abstract class ChangeLogWriter(protected val repoUrl: String? = null) {
+    private val issueUrl = repoUrl?.trimEnd('/')?.plus("issues/")
 
-    open fun writeLine(line: String) {
-        append(expandIssueLinks(line))
+    open fun writeEntry(entry: String) {
+        append(expandIssueLinks(entry))
     }
 
-    protected abstract fun append(line: String)
+    protected abstract fun append(entry: String)
     abstract fun close()
 
     /**
