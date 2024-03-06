@@ -396,7 +396,7 @@ export async function validateTransformationJob() {
     try {
         openProjects = await getOpenProjects()
     } catch (err) {
-        getLogger().error(`CodeTransformation: Failed to get open projects: ${err}`)
+        getLogger().error(`CodeTransformation: No open projects contain a .java file or a pom.xml file ${err}`)
         throw err
     }
 
