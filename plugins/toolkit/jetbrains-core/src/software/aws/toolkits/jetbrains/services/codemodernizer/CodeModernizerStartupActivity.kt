@@ -14,6 +14,7 @@ class CodeModernizerStartupActivity : StartupActivity.DumbAware {
      */
     override fun runActivity(project: Project) {
         if (!isCodeModernizerAvailable(project)) return
-        CodeModernizerManager.getInstance(project).tryResumeJob()
+        val codeModernizerInstance = CodeModernizerManager.getInstance(project)
+        codeModernizerInstance.tryResumeJob(true)
     }
 }
