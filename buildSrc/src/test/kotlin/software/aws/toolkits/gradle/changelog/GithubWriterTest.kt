@@ -21,7 +21,7 @@ class GithubWriterTest {
         val file = folder.newFile()
         val sut = GithubWriter(file.toPath(), null)
 
-        sut.writeLine(
+        sut.writeEntry(
             renderEntry(
                 ReleaseEntry(
                     LocalDate.of(2017, 2, 1),
@@ -30,7 +30,7 @@ class GithubWriterTest {
                 )
             )
         )
-        sut.writeLine(
+        sut.writeEntry(
             renderEntry(
                 ReleaseEntry(
                     LocalDate.of(2017, 1, 3),
@@ -59,9 +59,9 @@ class GithubWriterTest {
     @Test
     fun canHandleReplaceGithubIssueLinks() {
         val file = folder.newFile()
-        val sut = GithubWriter(file.toPath(), issueUrl = "http://github.com/org/repo/issues/")
+        val sut = GithubWriter(file.toPath(), repoUrl = "http://github.com/org/repo/issues/")
 
-        sut.writeLine(
+        sut.writeEntry(
             renderEntry(
                 ReleaseEntry(
                     LocalDate.of(2017, 2, 1),

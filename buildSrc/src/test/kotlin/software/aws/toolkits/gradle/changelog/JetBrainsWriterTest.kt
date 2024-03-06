@@ -21,7 +21,7 @@ class JetBrainsWriterTest {
         val file = folder.newFile()
         val sut = JetBrainsWriter(file)
 
-        sut.writeLine(
+        sut.writeEntry(
             renderEntry(
                 ReleaseEntry(
                     LocalDate.of(2017, 2, 1),
@@ -30,7 +30,7 @@ class JetBrainsWriterTest {
                 )
             )
         )
-        sut.writeLine(
+        sut.writeEntry(
             renderEntry(
                 ReleaseEntry(
                     LocalDate.of(2017, 1, 3),
@@ -64,7 +64,7 @@ class JetBrainsWriterTest {
         val file = folder.newFile()
         val sut = JetBrainsWriter(file)
 
-        sut.writeLine(
+        sut.writeEntry(
             renderEntry(
                 ReleaseEntry(
                     LocalDate.of(2017, 2, 1),
@@ -100,7 +100,7 @@ class JetBrainsWriterTest {
         val file = folder.newFile()
         val sut = JetBrainsWriter(file)
 
-        sut.writeLine(
+        sut.writeEntry(
             renderEntry(
                 ReleaseEntry(
                     LocalDate.of(2017, 2, 1),
@@ -133,9 +133,9 @@ class JetBrainsWriterTest {
     @Test
     fun canHandleReplaceGithubIssueLinks() {
         val file = folder.newFile()
-        val sut = JetBrainsWriter(file, issueUrl = "http://github.com/org/repo/issues/")
+        val sut = JetBrainsWriter(file, repoUrl = "http://github.com/org/repo/issues/")
 
-        sut.writeLine(
+        sut.writeEntry(
             renderEntry(
                 ReleaseEntry(
                     LocalDate.of(2017, 2, 1),
@@ -157,6 +157,43 @@ class JetBrainsWriterTest {
             <ul>
               <li><strong>(Feature)</strong> A feature with some an issue link <a href="http://github.com/org/repo/issues/45">#45</a> or (<a href="http://github.com/org/repo/issues/12">#12</a>) but not regular #hash</li>
             </ul>
+            """.trimIndent().wrappedInCData()
+        )
+    }
+
+    @Test
+    fun `handles large changelog`() {
+        val file = folder.newFile()
+        val sut = JetBrainsWriter(file, "https://github.com/org/repo")
+
+        sut.writeEntry(
+            renderEntry(
+                ReleaseEntry(
+                    LocalDate.of(2017, 2, 1),
+                    "2.0.0-preview-3",
+                    listOf(Entry(ChangeType.FEATURE, "Third feature"))
+                )
+            )
+        )
+        sut.writeEntry(
+            renderEntry(
+                ReleaseEntry(
+                    LocalDate.of(2017, 1, 3),
+                    "2.0.0-preview-2",
+                    generateSequence { Entry(ChangeType.BUGFIX, "Some bugfix") }.take(10000).toList()
+                )
+            )
+        )
+        sut.close()
+
+        assertThat(file.readText().trim()).isEqualToIgnoringWhitespace(
+            """
+            <h3><em>2.0.0-preview-3</em> (2017-02-01)</h3>
+            <ul>
+            <li><strong>(Feature)</strong> Third feature</li>
+            </ul>
+            <hr />
+            <p>Full plugin changelog available on <a href="https://github.com/org/repo/blob/main/CHANGELOG.md">GitHub</a></p>
             """.trimIndent().wrappedInCData()
         )
     }

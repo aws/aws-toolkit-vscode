@@ -7,7 +7,6 @@ import org.gradle.api.logging.Logger
 import java.nio.file.Path
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import kotlin.streams.toList
 
 /**
  * Generates a combined change log file based in Markdown syntax
@@ -45,7 +44,7 @@ class ChangeLogGenerator(private val writers: List<ChangeLogWriter>, private val
     private fun generateEntry(entry: ReleaseEntry) {
         val renderedEntry = renderEntry(entry)
         writers.forEach { writer ->
-            writer.writeLine(renderedEntry)
+            writer.writeEntry(renderedEntry)
         }
     }
 
