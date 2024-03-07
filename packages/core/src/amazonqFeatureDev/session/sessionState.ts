@@ -403,13 +403,13 @@ export class MockCodeGenState implements SessionState {
                 type: 'system-prompt',
                 followUps: [
                     {
-                        pillText: 'Accept changes',
-                        type: FollowUpTypes.AcceptCode,
+                        pillText: 'Insert code',
+                        type: FollowUpTypes.InsertCode,
                         icon: 'ok' as MynahIcons,
                         status: 'success',
                     },
                     {
-                        pillText: 'Provide feedback and regenerate',
+                        pillText: 'Provide feedback to regenerate',
                         type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
                         icon: 'refresh' as MynahIcons,
                         status: 'info',

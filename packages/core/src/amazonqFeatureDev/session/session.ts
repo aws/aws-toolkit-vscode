@@ -98,7 +98,7 @@ export class Session {
     }
 
     /**
-     * Triggered by the Write Code follow up button to move to the code generation phase
+     * Triggered by the Generate Code follow up button to move to the code generation phase
      */
     initCodegen(): void {
         this._state = new PrepareCodeGenState(
@@ -157,7 +157,7 @@ export class Session {
         return resp.interaction
     }
 
-    public async acceptChanges() {
+    public async insertChanges() {
         for (const filePath of this.state.filePaths ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
 

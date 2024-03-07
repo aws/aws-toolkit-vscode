@@ -81,7 +81,7 @@ describe.skip('Amazon Q Feature Dev', function () {
                     type: FollowUpTypes.NewTask,
                 },
                 {
-                    type: FollowUpTypes.WriteCode,
+                    type: FollowUpTypes.GenerateCode,
                     disabled: false,
                 },
             ])
@@ -123,7 +123,7 @@ describe.skip('Amazon Q Feature Dev', function () {
                     type: FollowUpTypes.NewTask,
                 },
                 {
-                    type: FollowUpTypes.WriteCode,
+                    type: FollowUpTypes.GenerateCode,
                     disabled: false,
                 },
             ])

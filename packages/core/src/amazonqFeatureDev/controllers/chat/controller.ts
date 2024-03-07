@@ -88,10 +88,10 @@ export class FeatureDevController {
         })
         this.chatControllerMessageListeners.followUpClicked.event(data => {
             switch (data.followUp.type) {
-                case FollowUpTypes.WriteCode:
-                    return this.writeCodeClicked(data)
-                case FollowUpTypes.AcceptCode:
-                    return this.acceptCode(data)
+                case FollowUpTypes.GenerateCode:
+                    return this.generateCodeClicked(data)
+                case FollowUpTypes.InsertCode:
+                    return this.insertCode(data)
                 case FollowUpTypes.ProvideFeedbackAndRegenerateCode:
                     return this.provideFeedbackAndRegenerateCode(data)
                 case FollowUpTypes.Retry:
@@ -249,10 +249,10 @@ export class FeatureDevController {
         // Ensure that the loading icon stays showing
         this.messenger.sendAsyncEventProgress(tabID, true, 'Ok, let me create a plan. This may take a few minutes.')
 
-        this.messenger.sendUpdatePlaceholder(tabID, 'Generating implementation plan ...')
+        this.messenger.sendUpdatePlaceholder(tabID, 'Generating plan ...')
 
         const interactions = await session.send(message)
-        this.messenger.sendUpdatePlaceholder(tabID, 'Add more detail to iterate on the approach')
+        this.messenger.sendUpdatePlaceholder(tabID, 'How can this plan be improved?')
 
         // Resolve the "..." with the content
         this.messenger.sendAnswer({
@@ -265,8 +265,7 @@ export class FeatureDevController {
         this.messenger.sendAnswer({
             type: 'answer',
             tabID,
-            message:
-                'Would you like me to generate a suggestion for this? You will be able to review a file diff before inserting code in your project.',
+            message: `Would you like to generate a suggestion for this? You’ll review a file diff before inserting into your project.`,
         })
 
         // Follow up with action items and complete the request stream
@@ -288,7 +287,7 @@ export class FeatureDevController {
         this.messenger.sendAsyncEventProgress(
             tabID,
             true,
-            `This may take a few minutes. I will send a notification when it's complete if you navigate away from this panel`
+            `This may take a few minutes. I will send a notification when it's complete if you navigate away from this panel, but please keep the tab open.`
         )
 
         try {
@@ -297,7 +296,7 @@ export class FeatureDevController {
                 type: 'answer-stream',
                 tabID,
             })
-            this.messenger.sendUpdatePlaceholder(tabID, 'Writing code ...')
+            this.messenger.sendUpdatePlaceholder(tabID, 'Generating code ...')
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
@@ -367,7 +366,7 @@ export class FeatureDevController {
     }
 
     // TODO add type
-    private async writeCodeClicked(message: any) {
+    private async generateCodeClicked(message: any) {
         let session
         try {
             session = await this.sessionStorage.getSession(message.tabID)
@@ -387,7 +386,7 @@ export class FeatureDevController {
     }
 
     // TODO add type
-    private async acceptCode(message: any) {
+    private async insertCode(message: any) {
         let session
         try {
             session = await this.sessionStorage.getSession(message.tabID)
@@ -396,7 +395,7 @@ export class FeatureDevController {
                 enabled: true,
                 result: 'Succeeded',
             })
-            await session.acceptChanges()
+            await session.insertChanges()
 
             this.messenger.sendAnswer({
                 type: 'answer',
@@ -426,7 +425,7 @@ export class FeatureDevController {
             this.messenger.sendUpdatePlaceholder(message.tabID, 'Provide input on additional improvements')
         } catch (err: any) {
             this.messenger.sendErrorMessage(
-                createUserFacingErrorMessage(`Failed to accept code changes: ${err.message}`),
+                createUserFacingErrorMessage(`Failed to insert code changes: ${err.message}`),
                 message.tabID,
                 this.retriesRemaining(session),
                 session?.state.phase
@@ -486,21 +485,21 @@ export class FeatureDevController {
             case 'Approach':
                 return [
                     {
-                        pillText: 'Write Code',
-                        type: FollowUpTypes.WriteCode,
+                        pillText: 'Generate code',
+                        type: FollowUpTypes.GenerateCode,
                         status: 'info',
                     },
                 ]
             case 'Codegen':
                 return [
                     {
-                        pillText: 'Accept changes',
-                        type: FollowUpTypes.AcceptCode,
+                        pillText: 'Insert code',
+                        type: FollowUpTypes.InsertCode,
                         icon: 'ok' as MynahIcons,
                         status: 'success',
                     },
                     {
-                        pillText: 'Provide feedback and regenerate',
+                        pillText: 'Provide feedback to regenerate',
                         type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
                         icon: 'refresh' as MynahIcons,
                         status: 'info',

@@ -23,8 +23,8 @@ export interface SessionStateInteraction {
 }
 
 export enum FollowUpTypes {
-    WriteCode = 'WriteCode',
-    AcceptCode = 'AcceptCode',
+    GenerateCode = 'GenerateCode',
+    InsertCode = 'InsertCode',
     ProvideFeedbackAndRegenerateCode = 'ProvideFeedbackAndRegenerateCode',
     Retry = 'Retry',
     ModifyDefaultSourceFolder = 'ModifyDefaultSourceFolder',
