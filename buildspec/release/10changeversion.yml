@@ -1,5 +1,9 @@
 version: 0.2
 
+env:
+    variables:
+        NODE_OPTIONS: '--max-old-space-size=8192'
+
 phases:
     pre_build:
         commands:
