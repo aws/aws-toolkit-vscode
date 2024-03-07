@@ -6,7 +6,7 @@
  */
 
 import { createApp } from 'vue'
-import component from './root.vue'
+import component from '../root.vue'
 
 const create = () =>
     createApp(component, {
