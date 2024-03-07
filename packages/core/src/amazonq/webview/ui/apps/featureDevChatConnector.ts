@@ -149,6 +149,7 @@ export class Connector {
                     filePaths: messageData.filePaths,
                     deletedFiles: messageData.deletedFiles,
                 },
+                body: '',
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
         }
