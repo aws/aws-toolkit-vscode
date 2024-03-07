@@ -102,8 +102,6 @@ suspend fun generatePlan(
             amazonqGenerateApproachLatency = (System.currentTimeMillis() - startTime).toDouble()
 
         )
-
-        logger.debug { "$FEATURE_NAME: Generated plan: $generatePlanResult" }
         return generatePlanResult
     } catch (e: Exception) {
         logger.error(e) { "$FEATURE_NAME: Failed to execute planning : ${e.message}" }
