@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix 'ActionUpdateThread.OLD_EDT' deprecation errors in 2024.1"
-}
