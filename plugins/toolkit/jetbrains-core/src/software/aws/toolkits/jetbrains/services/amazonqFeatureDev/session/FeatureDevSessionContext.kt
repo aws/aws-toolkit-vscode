@@ -22,6 +22,13 @@ class FeatureDevSessionContext(val project: Project) {
 
     private var _projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
     private val ignorePatterns = listOf(
+        "\\.aws-sam",
+        "\\.svn",
+        "\\.hg/",
+        "\\.rvm",
+        "\\.git/",
+        "\\.project",
+        "\\.gem",
         "/\\.idea/",
         "\\.zip$",
         "\\.bin$",
