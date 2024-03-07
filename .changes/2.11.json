@@ -1,0 +1,14 @@
+{
+  "date" : "2024-03-07",
+  "version" : "2.11",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Move 'Send to Amazon Q' action group after the 'Show Context Actions' action"
+  }, {
+    "type" : "bugfix",
+    "description" : "fix(CodeTransform): Updating commands for copying dependencies"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix 'ActionUpdateThread.OLD_EDT' deprecation errors in 2024.1"
+  } ]
+}
