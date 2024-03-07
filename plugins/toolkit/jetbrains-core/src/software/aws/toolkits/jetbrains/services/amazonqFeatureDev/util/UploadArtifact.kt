@@ -7,6 +7,7 @@ import com.intellij.util.io.HttpRequests
 import software.amazon.awssdk.utils.IoUtils
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.amazonq.APPLICATION_ZIP
 import software.aws.toolkits.jetbrains.services.amazonq.AWS_KMS
@@ -39,5 +40,11 @@ fun uploadArtifactToS3(url: String, fileToUpload: File, checksumSha256: String, 
     } catch (err: Exception) {
         logger.error(err) { "$FEATURE_NAME: Failed to upload code to S3" }
         uploadCodeError()
+    }
+}
+
+fun deleteUploadArtifact(payload: File) {
+    if (!payload.delete()) {
+        logger.warn { "Unable to delete upload artifact." }
     }
 }
