@@ -68,7 +68,7 @@ class Session(val tabID: String, val project: Project) {
     }
 
     /**
-     * Triggered by the Write Code follow-up button to move to the code generation phase
+     * Triggered by the Generate Code follow-up button to move to the code generation phase
      */
     fun initCodegen(messenger: MessagePublisher) {
         this._state = PrepareCodeGenerationState(
@@ -88,9 +88,9 @@ class Session(val tabID: String, val project: Project) {
     }
 
     /**
-     * Triggered by the Accept code follow-up button to apply code changes.
+     * Triggered by the Insert code follow-up button to apply code changes.
      */
-    fun acceptChanges(filePaths: List<NewFileZipInfo>, deletedFiles: Array<String>) {
+    fun insertChanges(filePaths: List<NewFileZipInfo>, deletedFiles: Array<String>) {
         val projectRootPath = context.projectRoot.toNioPath()
 
         filePaths.forEach {

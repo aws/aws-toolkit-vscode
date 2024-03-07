@@ -100,8 +100,8 @@ class FeatureDevController(
             FollowUpTypes.DEV_EXAMPLES -> messenger.initialExamples(message.tabId)
             FollowUpTypes.NEW_PLAN -> newPlan(message.tabId)
             FollowUpTypes.SEND_FEEDBACK -> sendFeedback()
-            FollowUpTypes.WRITE_CODE -> writeCodeClicked(message.tabId)
-            FollowUpTypes.ACCEPT_CODE -> acceptCode(message.tabId)
+            FollowUpTypes.GENERATE_CODE -> generateCodeClicked(message.tabId)
+            FollowUpTypes.INSERT_CODE -> insertCode(message.tabId)
             FollowUpTypes.PROVIDE_FEEDBACK_AND_REGENERATE_CODE -> provideFeedbackAndRegenerateCode(message.tabId)
             FollowUpTypes.NEW_TASK -> newTask(message.tabId)
             FollowUpTypes.CLOSE_SESSION -> closeSession(message.tabId)
@@ -233,7 +233,7 @@ class FeatureDevController(
         }
     }
 
-    private suspend fun writeCodeClicked(tabId: String) {
+    private suspend fun generateCodeClicked(tabId: String) {
         val session = getSessionInfo(tabId)
         try {
             session.initCodegen(messenger)
@@ -249,7 +249,7 @@ class FeatureDevController(
         }
     }
 
-    private suspend fun acceptCode(tabId: String) {
+    private suspend fun insertCode(tabId: String) {
         var session: Session? = null
         try {
             session = getSessionInfo(tabId)
@@ -266,7 +266,7 @@ class FeatureDevController(
                 }
             }
 
-            session.acceptChanges(filePaths = filePaths, deletedFiles = deletedFiles)
+            session.insertChanges(filePaths = filePaths, deletedFiles = deletedFiles)
 
             messenger.sendAnswer(
                 tabId = tabId,
@@ -297,10 +297,10 @@ class FeatureDevController(
                 newPlaceholder = message("amazonqFeatureDev.placeholder.additional_improvements")
             )
         } catch (err: Exception) {
-            val message = createUserFacingErrorMessage("Failed to accept code changes: ${err.message}")
+            val message = createUserFacingErrorMessage("Failed to insert code changes: ${err.message}")
             messenger.sendError(
                 tabId = tabId,
-                errMessage = message ?: message("amazonqFeatureDev.exception.accept_code_failed"),
+                errMessage = message ?: message("amazonqFeatureDev.exception.insert_code_failed"),
                 retries = retriesRemaining(session),
                 phase = session?.sessionState?.phase
             )
@@ -453,7 +453,7 @@ class FeatureDevController(
                 messageType = FeatureDevMessageType.AnswerStream,
             )
 
-            messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.writing_code"))
+            messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.generating_code"))
 
             session.send(message) // Trigger code generation
 
@@ -528,8 +528,8 @@ class FeatureDevController(
                 return when (interactionSucceeded) {
                     true -> listOf(
                         FollowUp(
-                            pillText = message("amazonqFeatureDev.follow_up.write_code"),
-                            type = FollowUpTypes.WRITE_CODE,
+                            pillText = message("amazonqFeatureDev.follow_up.generate_code"),
+                            type = FollowUpTypes.GENERATE_CODE,
                             status = FollowUpStatusType.Info,
                         )
                     )
@@ -540,8 +540,8 @@ class FeatureDevController(
             SessionStatePhase.CODEGEN -> {
                 return listOf(
                     FollowUp(
-                        pillText = message("amazonqFeatureDev.follow_up.accept_changes"),
-                        type = FollowUpTypes.ACCEPT_CODE,
+                        pillText = message("amazonqFeatureDev.follow_up.insert_code"),
+                        type = FollowUpTypes.INSERT_CODE,
                         icon = FollowUpIcons.Ok,
                         status = FollowUpStatusType.Success
                     ),

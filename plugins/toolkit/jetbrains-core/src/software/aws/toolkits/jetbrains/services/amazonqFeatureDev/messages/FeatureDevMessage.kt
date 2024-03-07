@@ -204,8 +204,8 @@ enum class FollowUpTypes(
     DEV_EXAMPLES("DevExamples"),
     NEW_PLAN("NewPlan"),
     SEND_FEEDBACK("SendFeedback"),
-    WRITE_CODE("WriteCode"),
-    ACCEPT_CODE("AcceptCode"),
+    GENERATE_CODE("GenerateCode"),
+    INSERT_CODE("InsertCode"),
     PROVIDE_FEEDBACK_AND_REGENERATE_CODE("ProvideFeedbackAndRegenerateCode"),
     NEW_TASK("NewTask"),
     CLOSE_SESSION("CloseSession")
