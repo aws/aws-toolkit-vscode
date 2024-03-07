@@ -39,8 +39,8 @@ import {
 } from 'vscode'
 import { registerAssetsHttpsFileSystem } from '../../amazonq/webview/assets/assetsHandler'
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
-import { AmazonQLoginWebview } from './vue/backend_amazonq'
-import { ToolkitLoginWebview } from './vue/backend_toolkit'
+import { AmazonQLoginWebview } from './vue/amazonq/backend_amazonq'
+import { ToolkitLoginWebview } from './vue/toolkit/backend_toolkit'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AmazonCommonAuth'
@@ -59,7 +59,15 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             app === 'TOOLKIT'
                 ? VueWebview.compilePanel(ToolkitLoginWebview)
                 : VueWebview.compilePanel(AmazonQLoginWebview)
-        this.source = path.join('vue', 'src', 'login', 'webview', 'vue', 'index.js') // Sent to dist/vue folder in webpack.
+        this.source = path.join(
+            'vue',
+            'src',
+            'login',
+            'webview',
+            'vue',
+            app === 'TOOLKIT' ? 'toolkit' : 'amazonq',
+            'index.js'
+        ) // Sent to dist/vue folder in webpack.
         // `context` is `ExtContext` provided on activation
         this.webView = new Panel(extensionContext, this.source)
     }
