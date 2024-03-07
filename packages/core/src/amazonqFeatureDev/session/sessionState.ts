@@ -125,7 +125,6 @@ export class RefinementState implements SessionState {
                     approach ??
                         'There has been a problem generating an approach. Please open a conversation in a new tab'
                 )
-                getLogger().debug(`Approach response: %O`, this.approach)
 
                 action.telemetry.recordUserApproachTelemetry(span, this.conversationId)
                 return {
