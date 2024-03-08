@@ -117,7 +117,7 @@ that is a net cost.
 
 ### Exceptions
 
-_See also [ARCHITECTURE.md](./ARCHITECTURE.md#exceptions)._
+_See also [arch_develop.md](./arch_develop.md#exceptions)._
 
 -   Bubble-up error conditions, do not sink them to random hidden places (such as
     logs only), expecting callers to figure out the failure mode. If a caller
