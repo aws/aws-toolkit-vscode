@@ -13,7 +13,7 @@ import { CodeWhispererSource } from '../../commands/types'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { set } from '../../util/commonUtil'
-import { AnnotationChangeSource, inlinehintKey, suggestionDetailReferenceText } from '../../models/constants'
+import { AnnotationChangeSource, inlinehintKey } from '../../models/constants'
 import globals from '../../../shared/extensionGlobals'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
@@ -262,7 +262,6 @@ export class LineAnnotationController implements vscode.Disposable {
 
         const isCWRunning = RecommendationService.instance.isRunning
         if (isCWRunning && this._currentState.suppressWhileRunning) {
-            console.log('codewhisperer is running, suppressing inline hint')
             editor.setDecorations(this.cwLineHintDecoration, [])
             this._selections = lines
             return
@@ -271,7 +270,6 @@ export class LineAnnotationController implements vscode.Disposable {
         if (!options) {
             this.clear(this._editor)
             this._selections = lines
-            console.log('no inline hint should be rendered')
             return
         }
 
@@ -361,21 +359,7 @@ export class LineAnnotationController implements vscode.Disposable {
         } else if (this._currentState.id === endState.id) {
             return undefined
         } else {
-            // if content change, keep showing the same mesg and do not enter next state
-            // if (source === 'content') {
-            //     textOptions.contentText = this._currentState.text()
-            //     console.log('textOptions, content type')
-            //     return { after: textOptions }
-            // }
-
-            // TODO: how to modyfy this
-            // when users are typing at the same line, not move forward
-            // else if (isSameLine && !e && this._currentState.id !== manualtriggerState.id) {
-            //     textOptions.contentText = this._currentState.text()
-            //     this._acceptedSuggestionCount = RecommendationService.instance.acceptedSuggestionCount
-            //     console.log('0000000000000000000')
-            //     return { after: textOptions }
-            // }
+            // TODO: how to improve readability of this
             if (this._currentState.id === autotriggerState.id) {
                 this._currentState = autotriggerState
                 if (
@@ -383,17 +367,18 @@ export class LineAnnotationController implements vscode.Disposable {
                     (this._currentState.acceptedCount as number) <
                         RecommendationService.instance.acceptedSuggestionCount
                 ) {
-                    console.log('current state: autoTrigger, updating to manual trigger state')
                     this._currentState = manualtriggerState
-                } else if (!isCWRunning && source === 'codewhisperer') {
-                    console.log('current state: autoTrigger, updating to press Tab State')
+                } else if (
+                    !isCWRunning &&
+                    source === 'codewhisperer' &&
+                    e?.response?.recommendationCount &&
+                    e?.response?.recommendationCount > 0
+                ) {
                     this._currentState = pressTabState
                 }
             } else if (this._currentState.id === manualtriggerState.id) {
                 this._currentState = manualtriggerState
-                // console.log(e)
                 if (e?.response && e.response.recommendationCount === 0 && e.triggerType === 'OnDemand') {
-                    console.log('current state manual trigger state, updating to empty state')
                     // if user manual triggers but receives an empty suggestion
                     this._currentState = emptyResponseState
                 } else if (
@@ -403,7 +388,6 @@ export class LineAnnotationController implements vscode.Disposable {
                     this._currentState.hasValidResponse
                 ) {
                     if (source === 'selection') {
-                        console.log('current state manual state, updating to try more example')
                         this._currentState = tryMoreExState
                     } else {
                         return undefined
@@ -425,7 +409,6 @@ export class LineAnnotationController implements vscode.Disposable {
             }
 
             if (this._currentState.id === manualtriggerState.id && 'hasValidResponse' in this._currentState) {
-                console.log('set state2 manualtrigger = true')
                 this._currentState.hasValidResponse =
                     e.response?.recommendationCount && e.response?.recommendationCount > 0
             }
