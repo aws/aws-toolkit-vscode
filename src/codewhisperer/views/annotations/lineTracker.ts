@@ -94,7 +94,6 @@ export class LineTracker {
         const e: LinesChangeEvent = { editor: this._editor, selections: this.selections, reason: reason }
 
         this._onDidChangeActiveLines.fire(e)
-        console.log(`notifyLinesChanged, reason: ${reason}`)
     }
 
     subscribe(subscriber: unknown, subscription: vscode.Disposable) {

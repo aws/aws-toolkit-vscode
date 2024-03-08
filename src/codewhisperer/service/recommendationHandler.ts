@@ -644,11 +644,11 @@ export class RecommendationHandler {
     }
 
     async onEditorChange() {
-        onPopupRemoved()
+        this.reportUserDecisions(-1)
     }
 
     async onFocusChange() {
-        onPopupRemoved()
+        this.reportUserDecisions(-1)
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {

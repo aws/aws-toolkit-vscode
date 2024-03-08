@@ -15,9 +15,6 @@ import { RecommendationService, SuggestionActionEvent } from '../../service/reco
 import { set } from '../../util/commonUtil'
 import { AnnotationChangeSource, inlinehintKey, suggestionDetailReferenceText } from '../../models/constants'
 import globals from '../../../shared/extensionGlobals'
-import { RecommendationHandler } from '../../service/recommendationHandler'
-import { CodewhispererTriggerType } from '../../../shared/telemetry/telemetry'
-import { GetRecommendationsResponse } from '../../models/model'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -55,10 +52,11 @@ const startState: AnnotationState = {
  *  User accepts 1 suggestion
  *
  */
-const autotriggerState: AnnotationState = {
+const autotriggerState: AnnotationState & { acceptedCount: number } = {
     id: '1',
     suppressWhileRunning: true,
     text: () => 'CodeWhisperer suggests code as you type, press [TAB] to accept',
+    acceptedCount: 0,
 }
 
 /**
@@ -345,7 +343,6 @@ export class LineAnnotationController implements vscode.Disposable {
         e?: SuggestionActionEvent
     ): vscode.ThemableDecorationRenderOptions | undefined {
         // contentChanged will also emit 'selection'
-        console.log(e)
         const textOptions = {
             contentText: '',
             fontWeight: 'normal',
@@ -359,9 +356,9 @@ export class LineAnnotationController implements vscode.Disposable {
         if (this._currentState.id === startState.id) {
             if (isEndOfLine) {
                 this._currentState = autotriggerState
+                autotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
             }
         } else if (this._currentState.id === endState.id) {
-            this._acceptedSuggestionCount = RecommendationService.instance.acceptedSuggestionCount
             return undefined
         } else {
             // if content change, keep showing the same mesg and do not enter next state
@@ -381,7 +378,11 @@ export class LineAnnotationController implements vscode.Disposable {
             // }
             if (this._currentState.id === autotriggerState.id) {
                 this._currentState = autotriggerState
-                if (this._acceptedSuggestionCount !== RecommendationService.instance.acceptedSuggestionCount) {
+                if (
+                    'acceptedCount' in this._currentState &&
+                    (this._currentState.acceptedCount as number) <
+                        RecommendationService.instance.acceptedSuggestionCount
+                ) {
                     console.log('current state: autoTrigger, updating to manual trigger state')
                     this._currentState = manualtriggerState
                 } else if (!isCWRunning && source === 'codewhisperer') {
@@ -413,7 +414,6 @@ export class LineAnnotationController implements vscode.Disposable {
             }
         }
 
-        this._acceptedSuggestionCount = RecommendationService.instance.acceptedSuggestionCount
         textOptions.contentText = this._currentState.text()
         return { after: textOptions }
     }
