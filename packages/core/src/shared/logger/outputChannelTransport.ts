@@ -67,7 +67,8 @@ export class OutputChannelTransport extends Transport {
                     // XXX: `vscode.LogOutputChannel` loglevel is currently readonly:
                     //      https://github.com/microsoft/vscode/issues/170450
                     //      https://github.com/PowerShell/vscode-powershell/issues/4441
-                    // So debug() will just drop messages unless the user has increased vscode's log-level.
+                    // So debug() will just drop messages unless the user configures vscode (via
+                    // `code --log …` or `.vscode/argv.json` https://stackoverflow.com/a/77257398/152142).
                     // Use info() until vscode adds a way to set the loglevel.
                     c.info(msg)
                 } else {
