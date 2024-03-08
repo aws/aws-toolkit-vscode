@@ -4,15 +4,18 @@
  */
 
 import * as vscode from 'vscode'
+import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
 import { FeatureDevClient } from './client/featureDev'
 import { featureDevScheme } from './constants'
 import { TelemetryHelper } from './util/telemetryHelper'
+import { CodeReference } from '../amazonq/webview/ui/connector'
 
 export type Interaction = {
     // content to be sent back to the chat UI
     content?: string
+    responseType?: LLMResponseType
 }
 
 export interface SessionStateInteraction {
@@ -21,19 +24,25 @@ export interface SessionStateInteraction {
 }
 
 export enum FollowUpTypes {
+    GenerateCode = 'GenerateCode',
+    InsertCode = 'InsertCode',
+    ProvideFeedbackAndRegenerateCode = 'ProvideFeedbackAndRegenerateCode',
     Retry = 'Retry',
     ModifyDefaultSourceFolder = 'ModifyDefaultSourceFolder',
     DevExamples = 'DevExamples',
-    NewPlan = 'NewPlan',
+    NewTask = 'NewTask',
+    CloseSession = 'CloseSession',
     SendFeedback = 'SendFeedback',
-    GenerateCode = 'GenerateCode',
 }
 
-export type SessionStatePhase = 'Init' | 'Approach'
+export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
+
+export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolder[]]
 
 export interface SessionState {
-    readonly filePaths?: string[]
-    readonly deletedFiles?: string[]
+    readonly filePaths?: NewFileInfo[]
+    readonly deletedFiles?: DeletedFileInfo[]
+    readonly references?: CodeReference[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
     approach: string
@@ -43,8 +52,8 @@ export interface SessionState {
 }
 
 export interface SessionStateConfig {
-    sourceRoot: string
-    workspaceRoot: string
+    sourceRoots: string[]
+    workspaceFolders: CurrentWsFolders
     conversationId: string
     proxyClient: FeatureDevClient
     uploadId: string
@@ -52,13 +61,23 @@ export interface SessionStateConfig {
 
 export interface SessionStateAction {
     task: string
-    files: any[] // TODO: remove any
     msg: string
     messenger: Messenger
+    fs: VirtualFileSystem
     telemetry: TelemetryHelper
 }
 
-export type NewFileContents = { filePath: string; fileContent: string }[]
+export type NewFileZipContents = { zipFilePath: string; fileContent: string }
+export type NewFileInfo = NewFileZipContents & {
+    relativePath: string
+    virtualMemoryUri: vscode.Uri
+    workspaceFolder: vscode.WorkspaceFolder
+}
+export type DeletedFileInfo = {
+    zipFilePath: string
+    relativePath: string
+    workspaceFolder: vscode.WorkspaceFolder
+}
 
 export interface SessionInfo {
     // TODO, if it had a summarized name that was better for the UI
@@ -77,3 +96,5 @@ export function createUri(filePath: string, tabID?: string) {
         ...(tabID ? { query: `tabID=${tabID}` } : {}),
     })
 }
+
+export type LLMResponseType = 'EMPTY' | 'INVALID_STATE' | 'VALID'

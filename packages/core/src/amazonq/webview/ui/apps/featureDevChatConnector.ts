@@ -135,6 +135,26 @@ export class Connector {
         }
     }
 
+    private processCodeResultMessage = async (messageData: any): Promise<void> => {
+        if (this.onChatAnswerReceived !== undefined) {
+            const answer: ChatItem = {
+                type: ChatItemType.CODE_RESULT,
+                relatedContent: undefined,
+                followUp: undefined,
+                canBeVoted: true,
+                codeReference: messageData.references,
+                // TODO get the backend to store a message id in addition to conversationID
+                messageId: messageData.messageID ?? messageData.triggerID ?? messageData.conversationID,
+                fileList: {
+                    filePaths: messageData.filePaths,
+                    deletedFiles: messageData.deletedFiles,
+                },
+                body: '',
+            }
+            this.onChatAnswerReceived(messageData.tabID, answer)
+        }
+    }
+
     private processAuthNeededException = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived === undefined) {
             return
@@ -170,6 +190,11 @@ export class Connector {
 
         if (messageData.type === 'chatMessage') {
             await this.processChatMessage(messageData)
+            return
+        }
+
+        if (messageData.type === 'codeResultMessage') {
+            await this.processCodeResultMessage(messageData)
             return
         }
 
