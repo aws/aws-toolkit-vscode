@@ -78,11 +78,11 @@ describe.skip('Amazon Q Feature Dev', function () {
             // Check that the last UI message has the two buttons
             assert.notStrictEqual(chatItems.pop()?.followUp?.options, [
                 {
-                    type: FollowUpTypes.NewPlan,
+                    type: FollowUpTypes.NewTask,
                 },
                 {
                     type: FollowUpTypes.GenerateCode,
-                    disabled: true,
+                    disabled: false,
                 },
             ])
         })
@@ -120,11 +120,11 @@ describe.skip('Amazon Q Feature Dev', function () {
             // Check that the UI has the two buttons
             assert.notStrictEqual(chatItems.pop()?.followUp?.options, [
                 {
-                    type: FollowUpTypes.NewPlan,
+                    type: FollowUpTypes.NewTask,
                 },
                 {
                     type: FollowUpTypes.GenerateCode,
-                    disabled: true,
+                    disabled: false,
                 },
             ])
         })

@@ -142,7 +142,7 @@ export async function openTextDocument(filenameGlob: vscode.GlobPattern): Promis
 }
 
 /**
- * Returns a path relative to the first workspace folder found that is a parent of the defined path.
+ * Returns a path relative to the first workspace folder found that is a parent of the defined path, along with the workspaceFolder itself
  * Returns undefined if there are no applicable workspace folders.
  * @param childPath Path to derive relative path from
  */
@@ -153,13 +153,13 @@ export function getWorkspaceRelativePath(
     } = {
         workspaceFolders: vscode.workspace.workspaceFolders,
     }
-): string | undefined {
+): { relativePath: string; workspaceFolder: vscode.WorkspaceFolder } | undefined {
     if (!override.workspaceFolders) {
         return
     }
     for (const folder of override.workspaceFolders) {
         if (isInDirectory(folder.uri.fsPath, childPath)) {
-            return path.relative(folder.uri.fsPath, childPath)
+            return { relativePath: path.relative(folder.uri.fsPath, childPath), workspaceFolder: folder }
         }
     }
 }

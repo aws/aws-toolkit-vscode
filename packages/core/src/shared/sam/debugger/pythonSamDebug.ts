@@ -123,7 +123,8 @@ export async function makePythonDebugConfig(
             // "IKP3db listening on" string (`WAIT_FOR_DEBUGGER_MESSAGES`).
             const logArg = getLogger().logLevelEnabled('debug') ? '--ikpdb-log=BEXFPG' : '--ikpdb-log=G'
             const ccwd = pathutil.normalize(
-                getWorkspaceRelativePath(config.codeRoot, { workspaceFolders: [config.workspaceFolder] }) ?? 'error'
+                getWorkspaceRelativePath(config.codeRoot, { workspaceFolders: [config.workspaceFolder] })
+                    ?.relativePath ?? 'error'
             )
 
             // NOTE: SAM CLI splits on each *single* space in `--debug-args`!

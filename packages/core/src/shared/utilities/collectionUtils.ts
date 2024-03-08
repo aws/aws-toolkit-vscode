@@ -511,3 +511,6 @@ export function createCollectionFromPages<T>(...pages: T[]): AsyncCollection<T> 
         return pages[pages.length - 1]
     })
 }
+export function isPresent<T>(value: T | undefined): value is T {
+    return value !== undefined
+}
