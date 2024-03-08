@@ -5,16 +5,16 @@
 
 import * as vscode from 'vscode'
 import * as os from 'os'
-import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
+import { LineSelection, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { debounce2 } from '../../../shared/utilities/functionUtils'
-import { AuthUtil } from '../../util/authUtil'
 import { CodeWhispererSource } from '../../commands/types'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { set } from '../../util/commonUtil'
 import { AnnotationChangeSource, inlinehintKey } from '../../models/constants'
 import globals from '../../../shared/extensionGlobals'
+import { Container } from '../../service/serviceContainer'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -144,7 +144,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _currentStep: '1' | '2' | '3' | '4' | undefined
 
-    private _currentState: AnnotationState = startState
+    _currentState: AnnotationState = startState
 
     readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
@@ -156,17 +156,17 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _acceptedSuggestionCount = 0
 
-    constructor(private readonly lineTracker: LineTracker, private readonly auth: AuthUtil) {
+    constructor(private readonly container: Container) {
         // this._currentStep = globals.context.globalState.get<'1' | '2' | '3' | undefined>(inlinehintKey)
         this._disposable = vscode.Disposable.from(
-            once(this.lineTracker.onReady)(this.onReady, this),
+            once(this.container._lineTracker.onReady)(this.onReady, this),
             this.subscribeSuggestionAction(true),
-            this.auth.auth.onDidChangeConnectionState(async e => {
+            this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
                     this.refreshDebounced(vscode.window.activeTextEditor, 'editor')
                 }
             }),
-            this.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
+            this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
                 this.refreshDebounced(vscode.window.activeTextEditor, 'editor')
             })
         )
@@ -174,7 +174,7 @@ export class LineAnnotationController implements vscode.Disposable {
     }
 
     dispose() {
-        this.lineTracker.unsubscribe(this)
+        this.container._lineTracker.unsubscribe(this)
         this._disposable.dispose()
     }
 
@@ -218,7 +218,7 @@ export class LineAnnotationController implements vscode.Disposable {
     )
 
     async refresh(editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) {
-        if (!this.auth.isConnectionValid(false)) {
+        if (!this.container.auth.isConnectionValid(false)) {
             this.clear(this._editor)
             return
         }
@@ -227,7 +227,7 @@ export class LineAnnotationController implements vscode.Disposable {
             return
         }
 
-        const selections = this.lineTracker.selections
+        const selections = this.container._lineTracker.selections
         if (editor == null || selections == null || !isTextEditor(editor)) {
             this.clear(this._editor)
             return
@@ -240,7 +240,7 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
-        if (editor.document == null || !this.lineTracker.includes(selections)) {
+        if (editor.document == null || !this.container._lineTracker.includes(selections)) {
             return
         }
 
@@ -281,17 +281,17 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private setLineTracker(enabled: boolean) {
         if (enabled) {
-            if (!this.lineTracker.subscribed(this)) {
-                this.lineTracker.subscribe(
+            if (!this.container._lineTracker.subscribed(this)) {
+                this.container._lineTracker.subscribe(
                     this,
-                    this.lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this)
+                    this.container._lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this)
                 )
             }
 
             return
         }
 
-        this.lineTracker.unsubscribe(this)
+        this.container._lineTracker.unsubscribe(this)
     }
 
     private subscribeSuggestionAction(enabled: boolean) {

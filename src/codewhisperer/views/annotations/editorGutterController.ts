@@ -4,12 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { LineSelection, LineTracker, LinesChangeEvent } from './lineTracker'
+import { LineSelection, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { getIcon } from '../../../shared/icons'
-import { AuthUtil } from '../../util/authUtil'
 import { once } from './lineAnnotationController'
+import { Container } from '../../service/serviceContainer'
+import { RecommendationHandler } from '../../service/recommendationHandler'
 
 const gutterColored = 'aws-codewhisperer-editor-gutter'
 const gutterWhite = 'aws-codewhisperer-editor-gutter-white'
@@ -28,16 +29,28 @@ export class EditorGutterController implements vscode.Disposable {
         isWholeLine: true,
     })
 
-    constructor(private readonly lineTracker: LineTracker, private readonly auth: AuthUtil) {
+    readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
+        after: {
+            margin: '0 0 0 3em',
+            contentText: 'codewhisperer is generating...',
+            textDecoration: 'none',
+            fontWeight: 'normal',
+            fontStyle: 'normal',
+            color: '#8E8E8E',
+        },
+        rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
+    })
+
+    constructor(private readonly container: Container) {
         this._disposable = vscode.Disposable.from(
             this.subscribeSuggestionAction(true),
-            once(this.lineTracker.onReady)(this.onReady, this),
-            this.auth.auth.onDidChangeConnectionState(async e => {
+            once(this.container._lineTracker.onReady)(this.onReady, this),
+            this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
                     this.refresh(vscode.window.activeTextEditor)
                 }
             }),
-            this.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
+            this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
                 this.refresh(vscode.window.activeTextEditor)
             })
         )
@@ -45,7 +58,7 @@ export class EditorGutterController implements vscode.Disposable {
     }
 
     dispose() {
-        this.lineTracker.unsubscribe(this)
+        this.container._lineTracker.unsubscribe(this)
         this._disposable.dispose()
     }
 
@@ -93,7 +106,7 @@ export class EditorGutterController implements vscode.Disposable {
     }
 
     async refresh(editor: vscode.TextEditor | undefined) {
-        if (!this.auth.isConnectionValid(false)) {
+        if (!this.container.auth.isConnectionValid(false)) {
             this.clear(this._editor)
             return
         }
@@ -102,7 +115,7 @@ export class EditorGutterController implements vscode.Disposable {
             return
         }
 
-        const selections = this.lineTracker.selections
+        const selections = this.container._lineTracker.selections
         if (editor == null || selections == null || !isTextEditor(editor)) {
             this.clear(this._editor)
             return
@@ -115,10 +128,11 @@ export class EditorGutterController implements vscode.Disposable {
         }
 
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
-        if (editor.document == null || !this.lineTracker.includes(selections)) {
+        if (editor.document == null || !this.container._lineTracker.includes(selections)) {
             return
         }
 
+        console.log('updating decoration')
         // if (cancellation.isCancellationRequested) return
         await this.updateDecorations(editor, selections)
     }
@@ -131,32 +145,46 @@ export class EditorGutterController implements vscode.Disposable {
         if (isCWRunning) {
             editor.setDecorations(this.cwlineGutterDecoration, [])
             editor.setDecorations(this.cwlineGutterDecorationColored, [range])
+
+            if (this.container._lineAnnotationController._currentState.id === '4') {
+                editor.setDecorations(this.cwLineHintDecoration, [range])
+            }
         } else {
             editor.setDecorations(this.cwlineGutterDecoration, [range])
             editor.setDecorations(this.cwlineGutterDecorationColored, [])
+
+            if (this.container._lineAnnotationController._currentState.id === '4') {
+                editor.setDecorations(this.cwLineHintDecoration, [])
+            }
         }
     }
 
     private setLineTracker(enabled: boolean) {
         if (enabled) {
-            if (!this.lineTracker.subscribed(this)) {
-                this.lineTracker.subscribe(
+            if (!this.container._lineTracker.subscribed(this)) {
+                this.container._lineTracker.subscribe(
                     this,
-                    this.lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this)
+                    this.container._lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this)
                 )
             }
 
             return
         }
 
-        this.lineTracker.unsubscribe(this)
+        this.container._lineTracker.unsubscribe(this)
     }
 
     private subscribeSuggestionAction(enabled: boolean) {
-        const disposable = RecommendationService.instance.suggestionActionEvent(e => {
-            // can't use refresh because refresh, by design, should only be triggered when there is line selection change
-            this.refresh(e.editor)
+        const disposable = RecommendationService.instance.suggestionActionEvent(async e => {
+            console.log('receive suggestion action event, about to refresh')
+            await this.refresh(e.editor)
         })
+
+        // const disposable2 = RecommendationHandler.instance.onDidReceiveRecommendation(async _ => {
+        //     if (this._editor && this._editor === vscode.window.activeTextEditor) {
+        //         await this.refresh(this._editor)
+        //     }
+        // })
 
         return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
     }

@@ -28,10 +28,10 @@ export class Container {
     readonly _lineAnnotationController: LineAnnotationController
     readonly _editorGutterController: EditorGutterController
 
-    constructor(private readonly auth: AuthUtil) {
+    constructor(readonly auth: AuthUtil) {
         this._lineTracker = new LineTracker()
-        this._lineAnnotationController = new LineAnnotationController(this._lineTracker, this.auth)
-        this._editorGutterController = new EditorGutterController(this._lineTracker, this.auth)
+        this._lineAnnotationController = new LineAnnotationController(this)
+        this._editorGutterController = new EditorGutterController(this)
     }
 
     ready() {
