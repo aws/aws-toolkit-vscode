@@ -75,7 +75,7 @@ interface AuthService {
     createConnection(profile: Profile): Promise<Connection>
 
     /**
-     * Deletes the connection, removing all associated stateful resources.
+     * Performs _server-side_ logout, and deletes the client-side connection and stateful resources.
      */
     deleteConnection(connection: Pick<Connection, 'id'>): void
 
@@ -302,6 +302,7 @@ export class Auth implements AuthService, ConnectionManager {
         // we deleted it and continue as normal
         if (profile) {
             if (connId === this.#activeConnection?.id) {
+                // Server-side invalidation.
                 await this.logout()
             } else {
                 await this.invalidateConnection(connId)
