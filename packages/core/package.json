@@ -711,13 +711,9 @@
             ],
             "aws-explorer": [
                 {
-                    "id": "aws.amazonq",
-                    "name": "%AWS.amazonq.title%",
+                    "id": "aws.amazonq.codewhisperer",
+                    "name": "%AWS.amazonq.codewhisperer.title%",
                     "when": "!isCloud9 && !aws.isSageMaker"
-                },
-                {
-                    "id": "aws.codewhisperer",
-                    "name": "%AWS.codewhisperer.explorerTitle%"
                 },
                 {
                     "id": "aws.explorer",

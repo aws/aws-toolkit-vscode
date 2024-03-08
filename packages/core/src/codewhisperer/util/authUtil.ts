@@ -30,6 +30,7 @@ import { getLogger } from '../../shared/logger'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { GlobalState } from '../../shared/globalState'
+import { vsCodeState } from '../models/model'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -97,7 +98,6 @@ export class AuthUtil {
             return
         }
         this._isCustomizationFeatureEnabled = value
-        void Commands.tryExecute('aws.codeWhisperer.refresh')
         void Commands.tryExecute('aws.amazonq.refresh')
         void Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
     }
@@ -125,10 +125,9 @@ export class AuthUtil {
             if (this.isValidEnterpriseSsoInUse()) {
                 void vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
             }
+            vsCodeState.isFreeTierLimitReached = false
             await Promise.all([
                 // onDidChangeActiveConnection may trigger before these modules are activated.
-                Commands.tryExecute('aws.codeWhisperer.refresh'),
-                Commands.tryExecute('aws.codeWhisperer.refreshRootNode'),
                 Commands.tryExecute('aws.amazonq.refresh'),
                 Commands.tryExecute('aws.amazonq.refreshRootNode'),
                 Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
@@ -337,9 +336,8 @@ export class AuthUtil {
     }
 
     public async refreshCodeWhisperer() {
+        vsCodeState.isFreeTierLimitReached = false
         await Promise.all([
-            Commands.tryExecute('aws.codeWhisperer.refresh'),
-            Commands.tryExecute('aws.codeWhisperer.refreshRootNode'),
             Commands.tryExecute('aws.amazonq.refresh'),
             Commands.tryExecute('aws.amazonq.refreshRootNode'),
             Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),

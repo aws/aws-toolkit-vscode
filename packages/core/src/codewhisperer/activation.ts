@@ -60,7 +60,7 @@ import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
-import { listCodeWhispererCommands } from './commands/statusBarCommands'
+import { listCodeWhispererCommands } from './ui/statusBar'
 import { updateUserProxyUrl } from './client/agent'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
