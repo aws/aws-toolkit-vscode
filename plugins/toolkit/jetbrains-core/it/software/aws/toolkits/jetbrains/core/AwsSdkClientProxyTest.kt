@@ -24,7 +24,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import software.amazon.awssdk.profiles.ProfileFileLocation
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 
@@ -53,9 +52,6 @@ class AwsSdkClientProxyTest {
 
     @Before
     fun setUp() {
-        println("file: ${ProfileFileLocation.configurationFilePath()}")
-        println("loca: ${ProfileFileLocation.configurationFileLocation()}")
-        println("envv: ${System.getenv("AWS_CONFIG_FILE")}")
         awsSdkClient = AwsSdkClient()
         Disposer.register(disposableRule.disposable, awsSdkClient)
 
