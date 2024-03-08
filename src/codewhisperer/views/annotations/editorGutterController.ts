@@ -54,7 +54,7 @@ export class EditorGutterController implements vscode.Disposable {
                 this.refresh(vscode.window.activeTextEditor)
             })
         )
-        this.setLineTracker(true)
+        this.subscribeLineTracker(true)
     }
 
     dispose() {
@@ -105,7 +105,7 @@ export class EditorGutterController implements vscode.Disposable {
         editor.setDecorations(this.cwlineGutterDecorationColored, [])
     }
 
-    async refresh(editor: vscode.TextEditor | undefined) {
+    async refresh(editor: vscode.TextEditor | undefined, flag?: boolean) {
         if (!this.container.auth.isConnectionValid(false)) {
             this.clear(this._editor)
             return
@@ -132,17 +132,19 @@ export class EditorGutterController implements vscode.Disposable {
             return
         }
 
-        console.log('updating decoration')
-        // if (cancellation.isCancellationRequested) return
-        await this.updateDecorations(editor, selections)
+        if (flag !== undefined) {
+            await this.updateDecorations(editor, selections, flag)
+        } else {
+            await this.updateDecorations(editor, selections, RecommendationService.instance.isRunning)
+        }
     }
 
-    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[]) {
+    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], flag: boolean) {
         const range = editor.document.validateRange(
             new vscode.Range(lines[0].active, lines[0].active, lines[0].active, lines[0].active)
         )
-        const isCWRunning = RecommendationService.instance.isRunning
-        if (isCWRunning) {
+
+        if (flag) {
             editor.setDecorations(this.cwlineGutterDecoration, [])
             editor.setDecorations(this.cwlineGutterDecorationColored, [range])
 
@@ -159,7 +161,7 @@ export class EditorGutterController implements vscode.Disposable {
         }
     }
 
-    private setLineTracker(enabled: boolean) {
+    private subscribeLineTracker(enabled: boolean) {
         if (enabled) {
             if (!this.container._lineTracker.subscribed(this)) {
                 this.container._lineTracker.subscribe(
@@ -176,17 +178,16 @@ export class EditorGutterController implements vscode.Disposable {
 
     private subscribeSuggestionAction(enabled: boolean) {
         const disposable = RecommendationService.instance.suggestionActionEvent(async e => {
-            console.log('receive suggestion action event, about to refresh')
             await this.refresh(e.editor)
         })
 
-        // const disposable2 = RecommendationHandler.instance.onDidReceiveRecommendation(async _ => {
-        //     if (this._editor && this._editor === vscode.window.activeTextEditor) {
-        //         await this.refresh(this._editor)
-        //     }
-        // })
+        const disposable2 = RecommendationHandler.instance.onDidReceiveRecommendation(async _ => {
+            if (this._editor && this._editor === vscode.window.activeTextEditor) {
+                await this.refresh(this._editor)
+            }
+        })
 
-        return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
+        return vscode.Disposable.from(disposable, disposable2) // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
     }
 }
 

@@ -29,11 +29,6 @@ export class RecommendationService {
         return this._isRunning
     }
 
-    private _manualTriggered: boolean = false
-    get manualTriggered() {
-        return this._manualTriggered
-    }
-
     private _onSuggestionActionEvent = new vscode.EventEmitter<SuggestionActionEvent>()
     get suggestionActionEvent(): vscode.Event<SuggestionActionEvent> {
         return this._onSuggestionActionEvent.event
@@ -49,7 +44,6 @@ export class RecommendationService {
     }
 
     incrementAcceptedCount() {
-        console.log('increment acceptedSuggestionCount')
         this._acceptedSuggestionCount++
     }
 
@@ -155,14 +149,8 @@ export class RecommendationService {
                     autoTriggerType,
                     event
                 )
-
-                // set a "valid" manual trigger
-                if (triggerType === 'OnDemand' && response.result === 'Succeeded' && response.recommendationCount > 0) {
-                    this._manualTriggered = true
-                }
             } finally {
                 this._isRunning = false
-                console.log('firing suggestion action event after triggering')
                 this._onSuggestionActionEvent.fire({
                     editor: editor,
                     isRunning: false,
