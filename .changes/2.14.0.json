@@ -1,0 +1,10 @@
+{
+	"date": "2024-03-08",
+	"version": "2.14.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Amazon Q Feature Dev (/dev): Ask Q to generate code based on the suggested plan"
+		}
+	]
+}
