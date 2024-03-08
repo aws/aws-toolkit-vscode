@@ -145,13 +145,16 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
             ideApi.postMessage(message)
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
-            if (item.type === ChatItemType.ANSWER_PART) {
+            if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
                     ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
                     ...(item.codeReference !== undefined ? { codeReference: item.codeReference } : {}),
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
+                    ...(item.type === ChatItemType.CODE_RESULT
+                        ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
+                        : {}),
                 })
                 return
             }

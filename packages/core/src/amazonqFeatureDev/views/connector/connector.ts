@@ -5,7 +5,8 @@
 
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
-import { featureDevChat } from '../../constants'
+import { CodeReference } from '../../../amazonq/webview/ui/connector'
+import { featureDevChat, licenseText } from '../../constants'
 import { ChatItemType } from '../../models'
 import { ChatItemAction, SourceLink } from '@aws/mynah-ui'
 
@@ -26,6 +27,43 @@ export class ErrorMessage extends UiMessage {
         super(tabID)
         this.title = title
         this.message = message
+    }
+}
+
+export class CodeResultMessage extends UiMessage {
+    readonly message!: string
+    readonly references!: {
+        information: string
+        recommendationContentSpan: {
+            start: number
+            end: number
+        }
+    }[]
+    readonly conversationID!: string
+    override type = 'codeResultMessage'
+
+    constructor(
+        readonly filePaths: string[],
+        readonly deletedFiles: string[],
+        references: CodeReference[],
+        tabID: string,
+        conversationID: string
+    ) {
+        super(tabID)
+        this.references = references
+            .filter(ref => ref.licenseName && ref.repository && ref.url)
+            .map(ref => {
+                return {
+                    information: licenseText(ref),
+
+                    // We're forced to provide these otherwise mynah ui errors somewhere down the line. Though they aren't used
+                    recommendationContentSpan: {
+                        start: 0,
+                        end: 0,
+                    },
+                }
+            })
+        this.conversationID = conversationID
     }
 }
 
@@ -127,6 +165,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendChatMessage(message: ChatMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendCodeResult(message: CodeResultMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 

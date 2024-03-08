@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemAction } from '@aws/mynah-ui'
+import { ChatItemAction, MynahIcons } from '@aws/mynah-ui'
 import { existsSync } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -25,7 +25,8 @@ import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { examples } from '../../userFacingText'
+import { getPathsFromZipFilePath, getWorkspaceFoldersByPrefixes } from '../../util/files'
+import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -40,10 +41,17 @@ export interface ChatControllerEventEmitters {
     readonly insertCodeAtPositionClicked: EventEmitter<any>
 }
 
-type OpenDiffMessage = { tabID: string; messageId: string; filePath: string; deleted: boolean }
+type OpenDiffMessage = {
+    tabID: string
+    messageId: string
+    // currently the zip file path
+    filePath: string
+    deleted: boolean
+}
 export class FeatureDevController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
+    private isAmazonQVisible: boolean
     private authController: AuthController
     private contentController: EditorContentController
 
@@ -58,6 +66,16 @@ export class FeatureDevController {
         this.authController = new AuthController()
         this.contentController = new EditorContentController()
 
+        /**
+         * defaulted to true because onDidChangeAmazonQVisibility doesn't get fire'd until after
+         * the view is opened
+         */
+        this.isAmazonQVisible = true
+
+        onDidChangeAmazonQVisibility(visible => {
+            this.isAmazonQVisible = visible
+        })
+
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
             this.processUserChatMessage(data).catch(e => {
                 getLogger().error('processUserChatMessage failed: %s', (e as Error).message)
@@ -70,6 +88,12 @@ export class FeatureDevController {
         })
         this.chatControllerMessageListeners.followUpClicked.event(data => {
             switch (data.followUp.type) {
+                case FollowUpTypes.GenerateCode:
+                    return this.generateCodeClicked(data)
+                case FollowUpTypes.InsertCode:
+                    return this.insertCode(data)
+                case FollowUpTypes.ProvideFeedbackAndRegenerateCode:
+                    return this.provideFeedbackAndRegenerateCode(data)
                 case FollowUpTypes.Retry:
                     return this.retryRequest(data)
                 case FollowUpTypes.ModifyDefaultSourceFolder:
@@ -77,8 +101,10 @@ export class FeatureDevController {
                 case FollowUpTypes.DevExamples:
                     this.initialExamples(data)
                     break
-                case FollowUpTypes.NewPlan:
-                    return this.newPlan(data)
+                case FollowUpTypes.NewTask:
+                    return this.newTask(data)
+                case FollowUpTypes.CloseSession:
+                    return this.closeSession(data)
                 case FollowUpTypes.SendFeedback:
                     this.sendFeedback()
                     break
@@ -128,13 +154,26 @@ export class FeatureDevController {
                     })
                 }
                 break
+            case 'Codegen':
+                if (vote === 'upvote') {
+                    telemetry.amazonq_codeGenerationThumbsUp.emit({
+                        amazonqConversationId: session?.conversationId,
+                        value: 1,
+                    })
+                } else if (vote === 'downvote') {
+                    telemetry.amazonq_codeGenerationThumbsDown.emit({
+                        amazonqConversationId: session?.conversationId,
+                        value: 1,
+                    })
+                }
+                break
         }
     }
 
     // TODO add type
     private async processUserChatMessage(message: any) {
         if (message.message === undefined) {
-            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0)
+            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0, undefined)
             return
         }
 
@@ -165,6 +204,9 @@ export class FeatureDevController {
                 case 'Init':
                 case 'Approach':
                     await this.onApproachGeneration(session, message.message, message.tabID)
+                    break
+                case 'Codegen':
+                    await this.onCodeGeneration(session, message.message, message.tabID)
                     break
             }
         } catch (err: any) {
@@ -204,19 +246,13 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
-        this.messenger.sendAnswer({
-            type: 'answer',
-            tabID,
-            message: 'Ok, let me create a plan. This may take a few minutes.',
-        })
-
         // Ensure that the loading icon stays showing
-        this.messenger.sendAsyncEventProgress(tabID, true, undefined)
+        this.messenger.sendAsyncEventProgress(tabID, true, 'Ok, let me create a plan. This may take a few minutes.')
 
-        this.messenger.sendUpdatePlaceholder(tabID, 'Generating implementation plan ...')
+        this.messenger.sendUpdatePlaceholder(tabID, 'Generating plan ...')
 
         const interactions = await session.send(message)
-        this.messenger.sendUpdatePlaceholder(tabID, 'Add more detail to iterate on the implementation plan')
+        this.messenger.sendUpdatePlaceholder(tabID, 'How can this plan be improved?')
 
         // Resolve the "..." with the content
         this.messenger.sendAnswer({
@@ -226,15 +262,196 @@ export class FeatureDevController {
             canBeVoted: true,
         })
 
-        // Follow up with action items and complete the request stream
-        this.messenger.sendAnswer({
-            type: 'system-prompt', // show the followups on the right side
-            followUps: this.getFollowUpOptions(session.state.phase),
-            tabID: tabID,
-        })
+        if (interactions.responseType === 'VALID') {
+            this.messenger.sendAnswer({
+                type: 'answer',
+                tabID,
+                message: `Would you like to generate a suggestion for this? You’ll review a file diff before inserting into your project.`,
+            })
+
+            // Follow up with action items and complete the request stream
+            this.messenger.sendAnswer({
+                type: 'system-prompt', // show the followups on the right side
+                followUps: this.getFollowUpOptions(session.state.phase),
+                tabID: tabID,
+            })
+        }
 
         // Unlock the prompt again so that users can iterate
         this.messenger.sendAsyncEventProgress(tabID, false, undefined)
+    }
+
+    /**
+     * Handle a regular incoming message when a user is in the code generation phase
+     */
+    private async onCodeGeneration(session: Session, message: string, tabID: string) {
+        // lock the UI/show loading bubbles
+        this.messenger.sendAsyncEventProgress(
+            tabID,
+            true,
+            `This may take a few minutes. I will send a notification when it's complete if you navigate away from this panel, but please keep the tab open.`
+        )
+
+        try {
+            this.messenger.sendAnswer({
+                message: 'Requesting changes ...',
+                type: 'answer-stream',
+                tabID,
+            })
+            this.messenger.sendUpdatePlaceholder(tabID, 'Generating code ...')
+            await session.send(message)
+            const filePaths = session.state.filePaths ?? []
+            const deletedFiles = session.state.deletedFiles ?? []
+            if (filePaths.length === 0 && deletedFiles.length === 0) {
+                this.messenger.sendAnswer({
+                    message: 'Unable to generate any file changes',
+                    type: 'answer',
+                    tabID: tabID,
+                })
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: tabID,
+                    followUps:
+                        this.retriesRemaining(session) > 0
+                            ? [
+                                  {
+                                      pillText: 'Retry',
+                                      type: FollowUpTypes.Retry,
+                                      status: 'warning',
+                                  },
+                              ]
+                            : [],
+                })
+                // Lock the chat input until they explicitly click retry
+                this.messenger.sendChatInputEnabled(tabID, false)
+                return
+            }
+
+            // Only add the follow up accept/deny buttons when the tab hasn't been closed/request hasn't been cancelled
+            if (session?.state.tokenSource.token.isCancellationRequested) {
+                return
+            }
+
+            this.messenger.sendCodeResult(
+                filePaths,
+                deletedFiles,
+                session.state.references ?? [],
+                tabID,
+                session.uploadId
+            )
+            this.messenger.sendAnswer({
+                message: undefined,
+                type: 'system-prompt',
+                followUps: this.getFollowUpOptions(session?.state.phase),
+                tabID: tabID,
+            })
+            this.messenger.sendUpdatePlaceholder(tabID, 'Select an option above to proceed')
+        } finally {
+            // Finish processing the event
+            this.messenger.sendAsyncEventProgress(tabID, false, undefined)
+
+            // Lock the chat input until they explicitly click one of the follow ups
+            this.messenger.sendChatInputEnabled(tabID, false)
+
+            if (!this.isAmazonQVisible) {
+                const open = 'Open chat'
+                const resp = await vscode.window.showInformationMessage(
+                    'Your code suggestions from Amazon Q are ready to review',
+                    open
+                )
+                if (resp === open) {
+                    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+                    // TODO add focusing on the specific tab once that's implemented
+                }
+            }
+        }
+    }
+
+    // TODO add type
+    private async generateCodeClicked(message: any) {
+        let session
+        try {
+            session = await this.sessionStorage.getSession(message.tabID)
+            session.initCodegen()
+            await this.onCodeGeneration(session, '', message.tabID)
+        } catch (err: any) {
+            const errorMessage = createUserFacingErrorMessage(
+                `${featureName} request failed: ${err.cause?.message ?? err.message}`
+            )
+            this.messenger.sendErrorMessage(
+                errorMessage,
+                message.tabID,
+                this.retriesRemaining(session),
+                session?.state.phase
+            )
+        }
+    }
+
+    // TODO add type
+    private async insertCode(message: any) {
+        let session
+        try {
+            session = await this.sessionStorage.getSession(message.tabID)
+            telemetry.amazonq_isAcceptedCodeChanges.emit({
+                amazonqConversationId: session.conversationId,
+                enabled: true,
+                result: 'Succeeded',
+            })
+            await session.insertChanges()
+
+            this.messenger.sendAnswer({
+                type: 'answer',
+                tabID: message.tabID,
+                message: 'Code has been updated. Would you like to work on another task?',
+            })
+
+            this.messenger.sendAnswer({
+                type: 'system-prompt',
+                tabID: message.tabID,
+                followUps: [
+                    {
+                        pillText: 'Work on new task',
+                        type: FollowUpTypes.NewTask,
+                        status: 'info',
+                    },
+                    {
+                        pillText: 'Close session',
+                        type: FollowUpTypes.CloseSession,
+                        status: 'info',
+                    },
+                ],
+            })
+
+            // Ensure that chat input is enabled so that they can provide additional iterations if they choose
+            this.messenger.sendChatInputEnabled(message.tabID, true)
+            this.messenger.sendUpdatePlaceholder(message.tabID, 'Provide input on additional improvements')
+        } catch (err: any) {
+            this.messenger.sendErrorMessage(
+                createUserFacingErrorMessage(`Failed to insert code changes: ${err.message}`),
+                message.tabID,
+                this.retriesRemaining(session),
+                session?.state.phase
+            )
+        }
+    }
+
+    private async provideFeedbackAndRegenerateCode(message: any) {
+        const session = await this.sessionStorage.getSession(message.tabID)
+        telemetry.amazonq_isProvideFeedbackForCodeGen.emit({
+            amazonqConversationId: session.conversationId,
+            enabled: true,
+            result: 'Succeeded',
+        })
+        // Unblock the message button
+        this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
+
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID: message.tabID,
+            message: 'How can the code be improved?',
+        })
+
+        this.messenger.sendUpdatePlaceholder(message.tabID, 'Feedback, comments ...')
     }
 
     private async retryRequest(message: any) {
@@ -262,9 +479,6 @@ export class FeatureDevController {
         } finally {
             // Finish processing the event
             this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
-
-            // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(message.tabID, false)
         }
     }
 
@@ -273,15 +487,24 @@ export class FeatureDevController {
             case 'Approach':
                 return [
                     {
-                        pillText: 'Discuss a new plan',
-                        type: FollowUpTypes.NewPlan,
+                        pillText: 'Generate code',
+                        type: FollowUpTypes.GenerateCode,
                         status: 'info',
                     },
+                ]
+            case 'Codegen':
+                return [
                     {
-                        pillText: 'Coming soon: Generate code',
-                        type: FollowUpTypes.GenerateCode,
-                        description: `Soon you'll be able to generate code based off of your plan`,
-                        disabled: true,
+                        pillText: 'Insert code',
+                        type: FollowUpTypes.InsertCode,
+                        icon: 'ok' as MynahIcons,
+                        status: 'success',
+                    },
+                    {
+                        pillText: 'Provide feedback to regenerate',
+                        type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
+                        icon: 'refresh' as MynahIcons,
+                        status: 'info',
                     },
                 ]
             default:
@@ -293,10 +516,24 @@ export class FeatureDevController {
         const session = await this.sessionStorage.getSession(message.tabID)
 
         const uri = await createSingleFileDialog({
-            defaultUri: vscode.Uri.file(session.config.workspaceRoot),
             canSelectFolders: true,
             canSelectFiles: false,
         }).prompt()
+
+        if (!(uri instanceof vscode.Uri)) {
+            this.messenger.sendAnswer({
+                tabID: message.tabID,
+                type: 'system-prompt',
+                followUps: [
+                    {
+                        pillText: 'Select files for context',
+                        type: 'ModifyDefaultSourceFolder',
+                        status: 'info',
+                    },
+                ],
+            })
+            return
+        }
 
         if (uri instanceof vscode.Uri && !vscode.workspace.getWorkspaceFolder(uri)) {
             this.messenger.sendAnswer({
@@ -319,9 +556,9 @@ export class FeatureDevController {
         }
 
         if (uri && uri instanceof vscode.Uri) {
-            session.config.sourceRoot = uri.fsPath
+            session.config.sourceRoots = [uri.fsPath]
             this.messenger.sendAnswer({
-                message: `Changed source root to: ${session.config.sourceRoot}`,
+                message: `Changed source root to: ${uri.fsPath}`,
                 type: 'answer',
                 tabID: message.tabID,
             })
@@ -329,6 +566,15 @@ export class FeatureDevController {
     }
 
     private initialExamples(message: any) {
+        const examples = `
+You can use /dev to:
+- Add a new feature or logic
+- Write tests
+- Fix a bug in your project
+- Generate a README for a file, folder, or project
+
+To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
+`
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
@@ -336,26 +582,28 @@ export class FeatureDevController {
         })
     }
 
-    private getOriginalFileUri({ filePath, tabID }: OpenDiffMessage, session: Session) {
-        const originalPath = path.join(session.config.workspaceRoot, filePath)
+    private getOriginalFileUri(fullPath: string, tabID: string) {
+        const originalPath = fullPath
         return existsSync(originalPath)
             ? vscode.Uri.file(originalPath)
             : vscode.Uri.from({ scheme: featureDevScheme, path: 'empty', query: `tabID=${tabID}` })
     }
 
-    private getFileDiffUris(message: OpenDiffMessage, session: Session) {
-        const left = this.getOriginalFileUri(message, session)
+    private getFileDiffUris(zipFilePath: string, fullFilePath: string, tabId: string, session: Session) {
+        const left = this.getOriginalFileUri(fullFilePath, tabId)
         const right = vscode.Uri.from({
             scheme: featureDevScheme,
-            path: path.join(session.uploadId, message.filePath!),
-            query: `tabID=${message.tabID}`,
+            path: path.join(session.uploadId, zipFilePath),
+            query: `tabID=${tabId}`,
         })
 
         return { left, right }
     }
 
     private async openDiff(message: OpenDiffMessage) {
-        const session = await this.sessionStorage.getSession(message.tabID)
+        const tabId: string = message.tabID
+        const zipFilePath: string = message.filePath
+        const session = await this.sessionStorage.getSession(tabId)
         telemetry.amazonq_isReviewedChanges.emit({
             amazonqConversationId: session.conversationId,
             enabled: true,
@@ -363,12 +611,15 @@ export class FeatureDevController {
             credentialStartUrl: AuthUtil.instance.startUrl,
         })
 
+        const workspacePrefixMapping = getWorkspaceFoldersByPrefixes(session.config.workspaceFolders)
+        const pathInfos = getPathsFromZipFilePath(zipFilePath, workspacePrefixMapping, session.config.workspaceFolders)
+
         if (message.deleted) {
-            const fileUri = this.getOriginalFileUri(message, session)
-            const basename = path.basename(message.filePath)
+            const fileUri = this.getOriginalFileUri(pathInfos.absolutePath, tabId)
+            const basename = path.basename(pathInfos.relativePath)
             await vscode.commands.executeCommand('vscode.open', fileUri, {}, `${basename} (Deleted)`)
         } else {
-            const { left, right } = this.getFileDiffUris(message, session)
+            const { left, right } = this.getFileDiffUris(zipFilePath, pathInfos.absolutePath, tabId, session)
             await vscode.commands.executeCommand('vscode.diff', left, right)
         }
     }
@@ -417,17 +668,9 @@ export class FeatureDevController {
         this.sessionStorage.deleteSession(message.tabID)
     }
 
-    private async newPlan(message: any) {
-        // Emit the ending of the old session before creating a new one
-        const session = await this.sessionStorage.getSession(message.tabID)
-        telemetry.amazonq_endChat.emit({
-            amazonqConversationId: session.conversationId,
-            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
-            result: 'Succeeded',
-            credentialStartUrl: AuthUtil.instance.startUrl,
-        })
-
+    private async newTask(message: any) {
         // Old session for the tab is ending, delete it so we can create a new one for the message id
+        await this.closeSession(message)
         this.sessionStorage.deleteSession(message.tabID)
 
         // Re-run the opening flow, where we check auth + create a session
@@ -436,9 +679,27 @@ export class FeatureDevController {
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: 'What change would you like to discuss?',
+            message: 'What change would you like to make?',
         })
         this.messenger.sendUpdatePlaceholder(message.tabID, 'Briefly describe a task or issue')
+    }
+
+    private async closeSession(message: any) {
+        const closedMessage = 'Your session is now closed.'
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID: message.tabID,
+            message: closedMessage,
+        })
+        this.messenger.sendUpdatePlaceholder(message.tabID, closedMessage)
+        this.messenger.sendChatInputEnabled(message.tabID, false)
+
+        const session = await this.sessionStorage.getSession(message.tabID)
+        telemetry.amazonq_endChat.emit({
+            amazonqConversationId: session.conversationId,
+            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
+            result: 'Succeeded',
+        })
     }
 
     private sendFeedback() {
