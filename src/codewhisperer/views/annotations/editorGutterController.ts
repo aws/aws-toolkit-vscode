@@ -30,7 +30,7 @@ export class EditorGutterController implements vscode.Disposable {
 
     constructor(private readonly lineTracker: LineTracker, private readonly auth: AuthUtil) {
         this._disposable = vscode.Disposable.from(
-            this.setCWInlineService(true),
+            this.subscribeSuggestionAction(true),
             once(this.lineTracker.onReady)(this.onReady, this),
             this.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
@@ -152,7 +152,7 @@ export class EditorGutterController implements vscode.Disposable {
         this.lineTracker.unsubscribe(this)
     }
 
-    private setCWInlineService(enabled: boolean) {
+    private subscribeSuggestionAction(enabled: boolean) {
         const disposable = RecommendationService.instance.suggestionActionEvent(e => {
             // can't use refresh because refresh, by design, should only be triggered when there is line selection change
             this.refresh(e.editor)
