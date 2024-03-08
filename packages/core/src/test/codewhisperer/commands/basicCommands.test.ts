@@ -42,9 +42,9 @@ import {
     createSeparator,
     createSignIn,
     createSignout,
-} from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
+} from '../../../codewhisperer/ui/codeWhispererNodes'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
-import { listCodeWhispererCommands } from '../../../codewhisperer/commands/statusBarCommands'
+import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBar'
 import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 
@@ -299,7 +299,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertItems([createSignIn('item'), createLearnMore('item')])
+                e.assertItems([createSignIn('item'), createLearnMore()])
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -311,12 +311,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertItems([
-                    createReconnect('item'),
-                    createLearnMore('item'),
-                    createSeparator(),
-                    createSignout('item'),
-                ])
+                e.assertItems([createReconnect('item'), createLearnMore(), createSeparator(), createSignout()])
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -328,12 +323,12 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
             getTestWindow().onDidShowQuickPick(e => {
                 e.assertItems([
-                    createAutoSuggestions('item', false),
-                    createSecurityScan('item'),
-                    createOpenReferenceLog('item'),
-                    createGettingStarted('item'),
+                    createAutoSuggestions(false),
+                    createSecurityScan(),
+                    createOpenReferenceLog(),
+                    createGettingStarted(),
                     createSeparator(),
-                    createSignout('item'),
+                    createSignout(),
                 ])
                 e.dispose() // skip needing to select an item to continue
             })
@@ -346,15 +341,15 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
             sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
 
-            getTestWindow().onDidShowQuickPick(e => {
+            getTestWindow().onDidShowQuickPick(async e => {
                 e.assertItems([
-                    createAutoSuggestions('item', false),
-                    createSecurityScan('item'),
-                    createSelectCustomization('item'),
-                    createOpenReferenceLog('item'),
-                    createGettingStarted('item'),
+                    createAutoSuggestions(false),
+                    createSecurityScan(),
+                    createSelectCustomization(),
+                    createOpenReferenceLog(),
+                    createGettingStarted(),
                     createSeparator(),
-                    createSignout('item'),
+                    createSignout(),
                 ])
                 e.dispose() // skip needing to select an item to continue
             })

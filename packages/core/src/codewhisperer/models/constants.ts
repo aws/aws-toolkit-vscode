@@ -278,7 +278,7 @@ export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
 export const newCustomizationMessage = 'You have access to new CodeWhisperer customizations.'
 
-export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVAILABLE'
+export const newCustomizationsAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATIONS_AVAILABLE_AMOUNT'
 
 // Amazon Q Code Transformation
 

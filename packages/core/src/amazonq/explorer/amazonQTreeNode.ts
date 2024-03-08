@@ -4,17 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import {
-    createFreeTierLimitMet,
-    createSignIn,
-    createReconnect,
-    createOpenReferenceLog,
-} from '../../codewhisperer/explorer/codewhispererChildrenNodes'
+import { createFreeTierLimitMet, createSignIn, createReconnect } from '../../codewhisperer/ui/codeWhispererNodes'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { AuthUtil, amazonQScopes, codeWhispererChatScopes } from '../../codewhisperer/util/authUtil'
-import { createLearnMoreNode, createTransformByQ, enableAmazonQNode, switchToAmazonQNode } from './amazonQChildrenNodes'
-import { Commands } from '../../shared/vscode/commands2'
+import { createLearnMoreNode, enableAmazonQNode, switchToAmazonQNode } from './amazonQChildrenNodes'
+import { Command, Commands } from '../../shared/vscode/commands2'
 import { hasScopes, isSsoConnection } from '../../auth/connection'
+import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBar'
+import { getIcon } from '../../shared/icons'
+import { vsCodeState } from '../../codewhisperer/models/model'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -25,7 +23,6 @@ export class AmazonQNode implements TreeNode {
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
     private readonly onDidChangeVisibilityEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
-    private _showFreeTierLimitReachedNode = false
 
     constructor() {}
 
@@ -64,13 +61,14 @@ export class AmazonQNode implements TreeNode {
     }
 
     public getChildren() {
-        void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionExpired()) {
             return [createReconnect('tree'), createLearnMoreNode()]
         }
+
         if (!AuthUtil.instance.isConnected()) {
             return [createSignIn('tree'), createLearnMoreNode()]
         }
+
         if (isSsoConnection(AuthUtil.instance.conn)) {
             const missingScopes =
                 (AuthUtil.instance.isEnterpriseSsoInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
@@ -80,16 +78,11 @@ export class AmazonQNode implements TreeNode {
                 return [enableAmazonQNode(), createLearnMoreNode()]
             }
         }
-        if (this._showFreeTierLimitReachedNode) {
-            return [createFreeTierLimitMet('tree'), createOpenReferenceLog('tree')]
-        } else {
-            // logged in
-            if (AuthUtil.instance.isValidCodeTransformationAuthUser()) {
-                void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
-                return [switchToAmazonQNode(), createTransformByQ(), createOpenReferenceLog('tree')] // transform only available for IdC users
-            }
-            return [switchToAmazonQNode(), createOpenReferenceLog('tree')]
-        }
+
+        return [
+            vsCodeState.isFreeTierLimitReached ? createFreeTierLimitMet('tree') : switchToAmazonQNode('tree'),
+            createNewMenuButton(),
+        ]
     }
 
     /**
@@ -103,16 +96,19 @@ export class AmazonQNode implements TreeNode {
     getParent(): TreeNode<unknown> | undefined {
         return undefined
     }
+}
 
-    public updateShowFreeTierLimitReachedNode(show: boolean) {
-        this._showFreeTierLimitReachedNode = show
-    }
+function createNewMenuButton(): TreeNode<Command> {
+    return listCodeWhispererCommands.build().asTreeNode({
+        label: 'New: Menu moved to status bar',
+        iconPath: getIcon('vscode-megaphone'),
+        description: 'Learn more',
+    })
 }
 
 export const amazonQNode = new AmazonQNode()
 export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
-    Commands.register({ id: 'aws.amazonq.refresh', logging: false }, (showFreeTierLimitNode = false) => {
-        amazonQNode.updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
+    Commands.register({ id: 'aws.amazonq.refresh', logging: false }, () => {
         amazonQNode.refresh()
         if (provider) {
             provider.refresh()

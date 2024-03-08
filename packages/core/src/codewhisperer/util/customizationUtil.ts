@@ -6,7 +6,7 @@
 import globals from '../../shared/extensionGlobals'
 import {
     customLearnMoreUri,
-    newCustomizationAvailableKey,
+    newCustomizationsAvailableKey,
     newCustomizationMessage,
     persistedCustomizationsKey,
     selectedCustomizationKey,
@@ -24,6 +24,7 @@ import { getLogger } from '../../shared/logger'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
+import { vsCodeState } from '../models/model'
 
 /**
  *
@@ -55,11 +56,11 @@ export async function notifyNewCustomizations() {
 
     const newCustomizations = getNewCustomizations(availableCustomizations)
     await setPersistedCustomizations(availableCustomizations)
+    await setNewCustomizationsAvailable(newCustomizations.length)
+
     if (newCustomizations.length === 0) {
         return
     }
-
-    await setNewCustomizationAvailable(true)
 
     const select = localize(
         'AWS.codewhisperer.customization.notification.new_customizations.select',
@@ -119,7 +120,7 @@ export const setSelectedCustomization = async (customization: Customization) => 
     getLogger().debug(`Selected customization ${customization.name} for ${AuthUtil.instance.conn.label}`)
 
     await set(selectedCustomizationKey, selectedCustomizationObj, globals.context.globalState)
-    await Commands.tryExecute('aws.codeWhisperer.refresh')
+    vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
 }
 
@@ -142,17 +143,17 @@ export const setPersistedCustomizations = async (customizations: Customization[]
     await set(persistedCustomizationsKey, persistedCustomizationsObj, globals.context.globalState)
 }
 
-export const getNewCustomizationAvailable = () => {
-    return globals.context.globalState.get<boolean>(newCustomizationAvailableKey) || false
+export const getNewCustomizationsAvailable = () => {
+    return globals.context.globalState.get<number>(newCustomizationsAvailableKey) ?? 0
 }
 
-export const setNewCustomizationAvailable = async (available: boolean) => {
-    await set(newCustomizationAvailableKey, available, globals.context.globalState)
-    await Commands.tryExecute('aws.codeWhisperer.refresh')
+export const setNewCustomizationsAvailable = async (num: number) => {
+    await set(newCustomizationsAvailableKey, num, globals.context.globalState)
+    vsCodeState.isFreeTierLimitReached = false
 }
 
 export async function showCustomizationPrompt() {
-    await setNewCustomizationAvailable(false)
+    await setNewCustomizationsAvailable(0)
     await showQuickPick(createCustomizationItems(), {
         title: localize('AWS.codewhisperer.customization.quickPick.title', 'Select a Customization'),
         placeholder: localize(
