@@ -1,3 +1,7 @@
+## 2.14.0 2024-03-08
+
+- **Feature** Amazon Q Feature Dev (/dev): Ask Q to generate code based on the suggested plan
+
 ## 2.13.0 2024-03-07
 
 - **Bug Fix** fix(CodeTransform): Updating commands for copying dependencies
