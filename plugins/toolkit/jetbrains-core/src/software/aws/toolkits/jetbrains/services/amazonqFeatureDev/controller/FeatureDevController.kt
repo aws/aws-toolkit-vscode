@@ -257,16 +257,18 @@ class FeatureDevController(
             AmazonqTelemetry.isAcceptedCodeChanges(amazonqConversationId = session.conversationId, enabled = true)
 
             var filePaths: List<NewFileZipInfo> = emptyList()
-            var deletedFiles: Array<String> = emptyArray()
+            var deletedFiles: List<String> = emptyList()
+            var references: List<CodeReference> = emptyList()
 
             when (val state = session.sessionState) {
                 is PrepareCodeGenerationState -> {
                     filePaths = state.filePaths
                     deletedFiles = state.deletedFiles
+                    references = state.references
                 }
             }
 
-            session.insertChanges(filePaths = filePaths, deletedFiles = deletedFiles)
+            session.insertChanges(filePaths = filePaths, deletedFiles = deletedFiles, references = references)
 
             messenger.sendAnswer(
                 tabId = tabId,
@@ -460,8 +462,8 @@ class FeatureDevController(
             val state = session.sessionState
 
             var filePaths: List<NewFileZipInfo> = emptyList()
-            var deletedFiles: Array<String> = emptyArray()
-            var references: Array<CodeReference> = emptyArray()
+            var deletedFiles: List<String> = emptyList()
+            var references: List<CodeReference> = emptyList()
             var uploadId = ""
 
             when (state) {

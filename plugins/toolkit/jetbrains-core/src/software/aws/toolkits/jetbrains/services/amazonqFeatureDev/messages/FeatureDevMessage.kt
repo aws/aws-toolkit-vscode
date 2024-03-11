@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonValue
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthFollowUpType
 import software.aws.toolkits.jetbrains.services.amazonq.messages.AmazonQMessage
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
-import software.aws.toolkits.jetbrains.services.cwc.messages.RecommendationContentSpan
 import java.time.Instant
 import java.util.UUID
 
@@ -214,5 +213,4 @@ enum class FollowUpTypes(
 // Util classes
 data class ReducedCodeReference(
     val information: String,
-    val recommendationContentSpan: RecommendationContentSpan
 )

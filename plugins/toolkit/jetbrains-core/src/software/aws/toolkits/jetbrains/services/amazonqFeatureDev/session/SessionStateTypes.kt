@@ -43,15 +43,15 @@ data class NewFileZipInfo(
 
 data class CodeGenerationResult(
     var newFiles: List<NewFileZipInfo>,
-    var deletedFiles: Array<String>, // The string is the path of the file to be deleted
-    var references: Array<CodeReference>,
+    var deletedFiles: List<String>, // The string is the path of the file to be deleted
+    var references: List<CodeReference>,
 )
 
 @Suppress("ConstructorParameterNaming") // Unfortunately, this is exactly how the string json is received and is needed for parsing.
 data class CodeGenerationStreamResult(
     var new_file_contents: Map<String, String>,
-    var deleted_files: Array<String>,
-    var references: Array<CodeReference>,
+    var deleted_files: List<String>,
+    var references: List<CodeReference>,
 )
 
 @Suppress("ConstructorParameterNaming") // Unfortunately, this is exactly how the string json is received and is needed for parsing.

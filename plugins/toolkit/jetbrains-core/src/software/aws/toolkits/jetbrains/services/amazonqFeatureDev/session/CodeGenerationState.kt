@@ -105,7 +105,7 @@ private suspend fun CodeGenerationState.generateCode(codeGenerationId: String): 
         }
     }
 
-    return CodeGenerationResult(emptyList(), emptyArray(), emptyArray())
+    return CodeGenerationResult(emptyList(), emptyList(), emptyList())
 }
 
 fun registerNewFiles(newFileContents: Map<String, String>): List<NewFileZipInfo> = newFileContents.map {

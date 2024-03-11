@@ -11,6 +11,8 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.Featur
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAsyncEventProgress
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createConversation
+import software.aws.toolkits.jetbrains.services.cwc.controller.ReferenceLogController
+import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteIfExists
@@ -76,8 +78,8 @@ class Session(val tabID: String, val project: Project) {
             approach = sessionState.approach,
             config = getSessionStateConfig(),
             filePaths = emptyList(),
-            deletedFiles = emptyArray(),
-            references = emptyArray(),
+            deletedFiles = emptyList(),
+            references = emptyList(),
             currentIteration = 0, // first code gen iteration
             uploadId = "", // There is no code gen uploadId so far
             messenger = messenger,
@@ -90,7 +92,7 @@ class Session(val tabID: String, val project: Project) {
     /**
      * Triggered by the Insert code follow-up button to apply code changes.
      */
-    fun insertChanges(filePaths: List<NewFileZipInfo>, deletedFiles: Array<String>) {
+    fun insertChanges(filePaths: List<NewFileZipInfo>, deletedFiles: List<String>, references: List<CodeReference>) {
         val projectRootPath = context.projectRoot.toNioPath()
 
         filePaths.forEach {
@@ -104,7 +106,7 @@ class Session(val tabID: String, val project: Project) {
             deleteFilePath.deleteIfExists()
         }
 
-        // TODO: References received from code generation should be logged.
+        ReferenceLogController.addReferenceLog(references, project)
     }
 
     suspend fun send(msg: String): Interaction {

@@ -40,4 +40,26 @@ object ReferenceLogController {
             )
         }
     }
+
+    fun addReferenceLog(codeReferences: List<CodeReference>?, project: Project) {
+        val manager = CodeWhispererCodeReferenceManager.getInstance(project)
+
+        codeReferences?.forEach { reference ->
+            val cwReferences = Reference.builder()
+                .licenseName(reference.licenseName)
+                .repository(reference.repository)
+                .url(reference.url)
+                .recommendationContentSpan(
+                    reference.recommendationContentSpan?.let { span ->
+                        Span.builder()
+                            .start(span.start)
+                            .end(span.end)
+                            .build()
+                    }
+                )
+                .build()
+
+            manager.addReferenceLogPanelEntry(reference = cwReferences, null, null, null)
+        }
+    }
 }
