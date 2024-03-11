@@ -97,7 +97,7 @@ export class QuickActionHandler {
             this.mynahUI.updateStore(affectedTabId, { chatItems: [] })
             this.mynahUI.updateStore(
                 affectedTabId,
-                this.tabDataGenerator.getTabData('featuredev', true, realPromptText === '', taskName)
+                this.tabDataGenerator.getTabData('featuredev', realPromptText === '', taskName)
             )
 
             if (realPromptText !== '') {

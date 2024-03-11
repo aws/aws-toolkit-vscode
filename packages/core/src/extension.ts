@@ -46,11 +46,10 @@ import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
-import { Experiments, Settings } from './shared/settings'
+import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
-import { showViewLogsMessage } from './shared/utilities/messages'
 import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { Timeout } from './shared/utilities/timeoutUtils'
 import { submitFeedback } from './feedback/vue/submitFeedback'
@@ -180,7 +179,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
         showWelcomeMessage(context)
 
-        const settingsValid = await checkSettingsHealth(settings)
+        const settingsValid = await settings.isReadable()
+        if (!settingsValid) {
+            void showSettingsFailedMsg('read')
+        }
         recordToolkitInitialization(activationStartedOn, settingsValid, getLogger())
 
         if (!isReleaseVersion()) {
@@ -238,35 +240,10 @@ function recordToolkitInitialization(activationStartedOn: number, settingsValid:
         if (settingsValid) {
             telemetry.toolkit_init.emit({ duration, result: 'Succeeded' })
         } else {
-            telemetry.toolkit_init.emit({ duration, result: 'Failed', reason: 'UserSettings' })
+            telemetry.toolkit_init.emit({ duration, result: 'Failed', reason: 'UserSettingsRead' })
         }
     } catch (err) {
         logger?.error(err as Error)
-    }
-}
-
-async function checkSettingsHealth(settings: Settings): Promise<boolean> {
-    const r = await settings.isValid()
-    switch (r) {
-        case 'invalid': {
-            const msg = 'Failed to access settings. Check settings.json for syntax errors.'
-            const openSettingsItem = 'Open settings.json'
-            void showViewLogsMessage(msg, 'error', [openSettingsItem]).then(async resp => {
-                if (resp === openSettingsItem) {
-                    await vscode.commands.executeCommand('workbench.action.openSettingsJson')
-                }
-            })
-            return false
-        }
-        // Don't show a message for 'nowrite' because:
-        //  - settings.json may intentionally be readonly. #4043
-        //  - vscode will show its own error if settings.json cannot be written.
-        //
-        // Note: isValid() already logged a warning.
-        case 'nowrite':
-        case 'ok':
-        default:
-            return true
     }
 }
 

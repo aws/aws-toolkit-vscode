@@ -114,13 +114,15 @@ describe('getWorkspaceRelativePath', function () {
     const childPath = path.join(nestedPath, 'level4')
 
     it('returns a path relative to the first parent path it sees', function () {
+        const workspaceFolder = {
+            index: 0,
+            name: '',
+            uri: vscode.Uri.file(nestedPath),
+        }
+
         const relativePath = getWorkspaceRelativePath(childPath, {
             workspaceFolders: [
-                {
-                    index: 0,
-                    name: '',
-                    uri: vscode.Uri.file(nestedPath),
-                },
+                workspaceFolder,
                 {
                     index: 1,
                     name: '',
@@ -129,7 +131,8 @@ describe('getWorkspaceRelativePath', function () {
             ],
         })
 
-        assert.strictEqual(relativePath, 'level4')
+        assert.strictEqual(relativePath?.relativePath, 'level4')
+        assert.strictEqual(relativePath?.workspaceFolder, workspaceFolder)
     })
 
     it('returns undefined if no workspace folders exist', function () {

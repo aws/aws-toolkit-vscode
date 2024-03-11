@@ -8,7 +8,7 @@ import { featureName } from './constants'
 
 export class ConversationIdNotFoundError extends ToolkitError {
     constructor() {
-        super('Conversation id must exist before continuing', { code: 'ConversationIdNotFound' })
+        super('Conversation id must exist before starting code generation', { code: 'ConversationIdNotFound' })
     }
 }
 

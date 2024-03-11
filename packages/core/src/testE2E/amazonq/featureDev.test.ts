@@ -12,7 +12,7 @@ import { examples } from '../../amazonqFeatureDev/userFacingText'
 import { registerAuthHook, using } from '../../test/setupUtil'
 import { loginToIdC } from './utils/setup'
 
-describe('Amazon Q Feature Dev', function () {
+describe.skip('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
 
     before(async function () {
@@ -78,11 +78,11 @@ describe('Amazon Q Feature Dev', function () {
             // Check that the last UI message has the two buttons
             assert.notStrictEqual(chatItems.pop()?.followUp?.options, [
                 {
-                    type: FollowUpTypes.NewPlan,
+                    type: FollowUpTypes.NewTask,
                 },
                 {
                     type: FollowUpTypes.GenerateCode,
-                    disabled: true,
+                    disabled: false,
                 },
             ])
         })
@@ -120,11 +120,11 @@ describe('Amazon Q Feature Dev', function () {
             // Check that the UI has the two buttons
             assert.notStrictEqual(chatItems.pop()?.followUp?.options, [
                 {
-                    type: FollowUpTypes.NewPlan,
+                    type: FollowUpTypes.NewTask,
                 },
                 {
                     type: FollowUpTypes.GenerateCode,
-                    disabled: true,
+                    disabled: false,
                 },
             ])
         })

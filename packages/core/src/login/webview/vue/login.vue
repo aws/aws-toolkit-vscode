@@ -6,8 +6,8 @@
 
             <svg
                 v-if="app === 'AMAZONQ' && stage !== 'CONNECTED'"
-                width="71"
-                height="71"
+                width="100"
+                height="100"
                 viewBox="0 0 71 71"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -47,8 +47,8 @@
             </svg>
             <svg
                 v-if="app === 'TOOLKIT' && stage !== 'CONNECTED'"
-                width="54"
-                height="54"
+                width="100"
+                height="100"
                 viewBox="0 0 54 54"
                 fill="none"
                 id="Layer_1"
@@ -159,7 +159,7 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Authenticating...</div>
+                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Connecting to IAM...</div>
                 <div v-else class="title">Authenticating in browser...</div>
                 <button class="continue-button" v-on:click="handleCancelButtom()">Cancel</button>
             </div>
@@ -366,10 +366,10 @@ export default defineComponent({
     display: flex;
     flex-direction: row;
     justify-content: left;
-    align-items: center;
-    padding-top: 25px;
-    padding-bottom: 30px;
-    padding-left: 60px;
+    align-items: flex-start;
+    padding-top: 150px;
+    padding-bottom: 10px;
+    padding-left: 10px;
     height: auto;
 }
 .hint {
@@ -381,6 +381,9 @@ export default defineComponent({
     margin-bottom: 5px;
     margin-top: 5px;
     font-size: 23px;
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
 }
 .continue-button:disabled {
     background-color: #252526;

@@ -231,9 +231,9 @@ export async function pickAddSamDebugConfiguration(
     const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
     const templateItems: vscode.QuickPickItem[] = []
     templateConfigs.forEach(templateConfig => {
-        const label = `${getWorkspaceRelativePath(templateConfig.rootUri.fsPath) ?? templateConfig.rootUri.fsPath}:${
-            templateConfig.resourceName
-        }`
+        const label = `${
+            getWorkspaceRelativePath(templateConfig.rootUri.fsPath)?.relativePath ?? templateConfig.rootUri.fsPath
+        }:${templateConfig.resourceName}`
 
         if (templateConfig.apiEvent) {
             const apiLabel = `${label} (API Event: ${templateConfig.apiEvent.name})`
