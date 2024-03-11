@@ -81,18 +81,26 @@ export class LineTracker {
             vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
         }
 
-        this.notifyLinesChanged(this._editor === e.textEditor ? 'selection' : 'editor')
+        if (this._suspended) {
+        } else {
+            this.notifyLinesChanged(this._editor === e.textEditor ? 'selection' : 'editor')
+        }
     }
 
     private async onContentChanged(e: vscode.TextDocumentChangeEvent) {
         if (e.document === vscode.window.activeTextEditor?.document && e.contentChanges.length > 0) {
-            this.notifyLinesChanged('content')
+            this._editor = vscode.window.activeTextEditor
+            this._selections = toLineSelections(this._editor?.selections)
+
+            if (this._suspended) {
+            } else {
+                this.notifyLinesChanged('content')
+            }
         }
     }
 
     private notifyLinesChanged(reason: 'editor' | 'selection' | 'content') {
         const e: LinesChangeEvent = { editor: this._editor, selections: this.selections, reason: reason }
-
         this._onDidChangeActiveLines.fire(e)
     }
 

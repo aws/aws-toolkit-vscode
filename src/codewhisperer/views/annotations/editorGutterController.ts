@@ -11,6 +11,7 @@ import { getIcon } from '../../../shared/icons'
 import { once } from './lineAnnotationController'
 import { Container } from '../../service/serviceContainer'
 import { RecommendationHandler } from '../../service/recommendationHandler'
+import { debounce2 } from '../../../shared/utilities/functionUtils'
 
 const gutterColored = 'aws-codewhisperer-editor-gutter'
 const gutterWhite = 'aws-codewhisperer-editor-gutter-white'
@@ -40,6 +41,10 @@ export class EditorGutterController implements vscode.Disposable {
         },
         rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
     })
+
+    readonly refreshDebounced = debounce2((editor: vscode.TextEditor | undefined, flag?: boolean) => {
+        this.refresh(editor, flag)
+    }, 250)
 
     constructor(private readonly container: Container) {
         this._disposable = vscode.Disposable.from(
@@ -75,7 +80,7 @@ export class EditorGutterController implements vscode.Disposable {
         }
 
         if (e.selections !== undefined) {
-            void this.refresh(e.editor)
+            void this.refreshDebounced(e.editor)
             return
         }
 
@@ -178,12 +183,12 @@ export class EditorGutterController implements vscode.Disposable {
 
     private subscribeSuggestionAction(enabled: boolean) {
         const disposable = RecommendationService.instance.suggestionActionEvent(async e => {
-            await this.refresh(e.editor)
+            await this.refreshDebounced(e.editor)
         })
 
         const disposable2 = RecommendationHandler.instance.onDidReceiveRecommendation(async _ => {
             if (this._editor && this._editor === vscode.window.activeTextEditor) {
-                await this.refresh(this._editor)
+                await this.refreshDebounced(this._editor)
             }
         })
 

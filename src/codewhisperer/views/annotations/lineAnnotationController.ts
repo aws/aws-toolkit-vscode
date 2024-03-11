@@ -55,7 +55,7 @@ const startState: AnnotationState = {
 const autotriggerState: AnnotationState & { acceptedCount: number } = {
     id: '1',
     suppressWhileRunning: true,
-    text: () => 'CodeWhisperer suggests code as you type, press [TAB] to accept',
+    text: () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions',
     acceptedCount: 0,
 }
 
@@ -71,7 +71,7 @@ const autotriggerState: AnnotationState & { acceptedCount: number } = {
 const pressTabState: AnnotationState = {
     id: '1',
     suppressWhileRunning: false,
-    text: () => 'Press [TAB] to accept the suggestion',
+    text: () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept',
 }
 
 /**
@@ -88,10 +88,10 @@ const manualtriggerState: AnnotationState & { hasManualTrigger: boolean; hasVali
     suppressWhileRunning: true,
     text: () => {
         if (os.platform() === 'win32') {
-            return '[Alt] + [C] triggers CodeWhisperer manually'
+            return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Alt] + [C]'
         }
 
-        return '[Option] + [C] triggers CodeWhisperer manually'
+        return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Option] + [C]'
     },
     hasManualTrigger: false,
     hasValidResponse: false,
@@ -125,7 +125,7 @@ const emptyResponseState: AnnotationState = {
 const tryMoreExState: AnnotationState = {
     id: '3',
     suppressWhileRunning: true,
-    text: () => 'Try more examples (hover)',
+    text: () => 'CodeWhisperer Tip 3/3: Hover over suggestions to see menu for more options',
 }
 
 const endState: AnnotationState = {
@@ -378,10 +378,12 @@ export class LineAnnotationController implements vscode.Disposable {
                 }
             } else if (this._currentState.id === manualtriggerState.id) {
                 this._currentState = manualtriggerState
-                if (e?.response && e.response.recommendationCount === 0 && e.triggerType === 'OnDemand') {
-                    // if user manual triggers but receives an empty suggestion
-                    this._currentState = emptyResponseState
-                } else if (
+                // if (e?.response && e.response.recommendationCount === 0 && e.triggerType === 'OnDemand') {
+                //     // if user manual triggers but receives an empty suggestion
+                //     this._currentState = emptyResponseState
+                // }
+
+                if (
                     'hasManualTrigger' in this._currentState &&
                     this._currentState.hasManualTrigger &&
                     'hasValidResponse' in this._currentState &&
