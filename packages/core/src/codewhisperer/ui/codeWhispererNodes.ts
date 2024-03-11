@@ -229,10 +229,10 @@ export function createDocumentationNode(): DataQuickPickItem<'viewDocumentation'
     } as DataQuickPickItem<'viewDocumentation'>
 }
 
-export function createSeparator(label?: string): DataQuickPickItem<'separator'> {
+export function createSeparator(label: string = ''): DataQuickPickItem<'separator'> {
     return {
         kind: vscode.QuickPickItemKind.Separator,
         data: 'separator',
-        label: label ?? '',
+        label,
     }
 }

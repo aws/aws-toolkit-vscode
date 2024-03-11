@@ -24,12 +24,10 @@ import {
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
 import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompter'
-import { CodeSuggestionsState } from '../models/model'
+import { CodeSuggestionsState, vsCodeState } from '../models/model'
 import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
 import { isWeb } from '../../common/webUtils'
-
-const _showFreeTierLimitReachedNode = false
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
@@ -42,7 +40,7 @@ function getAmazonQCodeWhispererNodes() {
         return [createSignIn('item'), createLearnMore()]
     }
 
-    if (_showFreeTierLimitReachedNode) {
+    if (vsCodeState.isFreeTierLimitReached) {
         if (hasVendedIamCredentials()) {
             return [createFreeTierLimitMet('item'), createOpenReferenceLog()]
         }
