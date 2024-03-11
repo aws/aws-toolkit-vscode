@@ -82,9 +82,17 @@ If ran using the Debug feature, a debugger will be auto-attached to the sandbox 
 ### Running manually
 
   ```
-  ./gradlew jetbrains-core:runIde
-  ./gradlew jetbrains-ultimate:runIde
-  ./gradlew jetbrains-rider:runIde
+  # IntelliJ IDEA Community
+  ./gradlew :plugin-toolkit:intellij:runIde -PrunIdeVariant=IC
+
+  # IntelliJ IDEA Ultimate
+  ./gradlew :plugin-toolkit:intellij:runIde -PrunIdeVariant=IU
+
+  # Rider
+  ./gradlew :plugin-toolkit:intellij:runIde -PrunIdeVariant=RD
+
+  # Gateway
+  ./gradlew :plugin-toolkit:jetbrains-gateway:runIde
   ```
   - These targets download the required IDE for testing.
 
@@ -92,7 +100,7 @@ If ran using the Debug feature, a debugger will be auto-attached to the sandbox 
 
 - To run the plugin in a **specific JetBrains IDE** (and you have it installed), specify the `ALTERNATIVE_IDE` environment variable:
   ```
-  ALTERNATIVE_IDE=/path/to/ide ./gradlew :intellij:runIde
+  ALTERNATIVE_IDE=/path/to/ide ./gradlew :plugin-toolkit:intellij:runIde
   ```
   - This is needed to run PyCharm and WebStorm.
   - See also `alternativeIdePath` option in the `runIde` tasks provided by the Gradle IntelliJ Plugin [documentation](https://github.com/JetBrains/gradle-intellij-plugin).
@@ -137,8 +145,10 @@ If the tests run too quickly, you can tell the UI tests to wait for the debugger
 
 - Log messages (`LOG.info`, `LOG.error()`, …) by default are written to:
   ```
-  jetbrains-[subModule]/build/idea-sandbox/system/log/idea.log
-  jetbrains-[subModule]/build/idea-sandbox/system-test/logs/idea.log  # Tests
+  plugins/toolkit/intellij/build/idea-sandbox/system/log/idea.log
+  plugins/toolkit/intellij/build/idea-sandbox/system-test/logs/idea.log  # Tests
+
+  plugins/toolkit/jetbrains-gateway/build/idea-sandbox/system/logs/idea.log  # Gateway
   ```
 - DEBUG-level log messages are skipped by default. To enable them, add the
   following line to the _Help_ \> _Debug Log Settings_ dialog in the IDE

@@ -1,11 +1,11 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Run AWS Toolkit - Core [2023.2]" type="GradleRunConfiguration" factoryName="Gradle" folderName="2023.2">
-    <log_file alias="idea.log" path="$PROJECT_DIR$/plugins/toolkit/jetbrains-core/build/idea-sandbox/system/log/idea.log" />
+    <log_file alias="idea.log" path="$PROJECT_DIR$/plugins/toolkit/intellij/build/idea-sandbox/system/log/idea.log" />
     <ExternalSystemSettings>
       <option name="executionName" />
-      <option name="externalProjectPath" value="$PROJECT_DIR$/plugins/toolkit/jetbrains-core" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$/plugins/toolkit/intellij" />
       <option name="externalSystemIdString" value="GRADLE" />
-      <option name="scriptParameters" value="-PideProfileName=2023.2" />
+      <option name="scriptParameters" value="-PrunIdeVariant=IC -PideProfileName=2023.2" />
       <option name="taskDescriptions">
         <list />
       </option>

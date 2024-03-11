@@ -1,12 +1,19 @@
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
+import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension
 
 plugins {
     id("org.jetbrains.intellij")
     id("toolkit-testing") // Needed so the coverage configurations are present
     id("toolkit-detekt")
+}
+
+val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intellijToolkit").apply {
+    val runIdeVariant = providers.gradleProperty("runIdeVariant")
+    ideFlavor.set(IdeFlavor.values().firstOrNull { it.name == runIdeVariant.orNull } ?: IdeFlavor.IC)
 }
 
 val ideProfile = IdeVersions.ideProfile(project)
@@ -30,8 +37,8 @@ val gatewayResources = configurations.create("gatewayResources") {
 intellij {
     pluginName.set("aws-toolkit-jetbrains")
 
-    version.set(ideProfile.community.version())
-    localPath.set(ideProfile.community.localPath())
+    localPath.set(toolkitIntelliJ.localPath())
+    version.set(toolkitIntelliJ.version())
 
     updateSinceUntilBuild.set(false)
     instrumentCode.set(false)
