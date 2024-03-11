@@ -27,7 +27,7 @@ import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompt
 import { CodeSuggestionsState } from '../models/model'
 import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
-import { createTransformByQ, switchToAmazonQNode } from '../../amazonq/explorer/amazonQChildrenNodes'
+import { isWeb } from '../../common/webUtils'
 
 const _showFreeTierLimitReachedNode = false
 
@@ -57,6 +57,12 @@ function getAmazonQCodeWhispererNodes() {
         void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
     }
 
+    // TODO: Remove when web is supported for amazonq
+    let amazonq
+    if (!isWeb()) {
+        amazonq = require('../../amazonq/explorer/amazonQChildrenNodes')
+    }
+
     return [
         // CodeWhisperer
         createSeparator('Inline Suggestions'),
@@ -69,9 +75,9 @@ function getAmazonQCodeWhispererNodes() {
 
         // Amazon Q + others
         createSeparator('Other Features'),
-        switchToAmazonQNode('item'),
+        ...(amazonq ? [amazonq.switchToAmazonQNode('item')] : []),
         createSecurityScan(),
-        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() ? [createTransformByQ()] : []),
+        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && amazonq ? [amazonq.createTransformByQ()] : []),
     ]
 }
 
