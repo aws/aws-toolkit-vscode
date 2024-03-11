@@ -23,6 +23,8 @@ export class qTestingFramework {
     private readonly mynahUIProps: MynahUIProps
     private disposables: vscode.Disposable[] = []
 
+    lastEventId: string = ''
+
     constructor(featureName: TabType, featureDevEnabled: boolean, gumbyEnabled: boolean) {
         /**
          * Instantiate the UI and override the postMessage to publish using the app message
@@ -47,6 +49,15 @@ export class qTestingFramework {
         )
         this.mynahUI = ui.mynahUI
         this.mynahUIProps = (this.mynahUI as any).props
+
+        /**
+         * In order to successfully remove tabs we need the last event id
+         */
+        const originalOnTabAdd = this.mynahUIProps.onTabAdd
+        this.mynahUIProps.onTabAdd = (tabId, eventId) => {
+            this.lastEventId = eventId ?? this.lastEventId
+            originalOnTabAdd && originalOnTabAdd(tabId)
+        }
 
         /**
          * Listen to incoming events coming from VSCode and redirect them to MynahUI
@@ -74,6 +85,10 @@ export class qTestingFramework {
             throw new Error('Could not create tab id')
         }
         return new Messenger(newTabID, this.mynahUIProps, this.mynahUI, options)
+    }
+
+    public removeTab(tabId: string) {
+        this.mynahUI.removeTab(tabId, this.lastEventId)
     }
 
     public dispose() {

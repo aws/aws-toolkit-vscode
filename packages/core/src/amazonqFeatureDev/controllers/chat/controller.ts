@@ -26,7 +26,7 @@ import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath, getWorkspaceFoldersByPrefixes } from '../../util/files'
-import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
+import { examples, newTaskChanges, sessionClosed, updateCode } from '../../userFacingText'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -246,8 +246,14 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID,
+            message: 'Ok, let me create a plan. This may take a few minutes.',
+        })
+
         // Ensure that the loading icon stays showing
-        this.messenger.sendAsyncEventProgress(tabID, true, 'Ok, let me create a plan. This may take a few minutes.')
+        this.messenger.sendAsyncEventProgress(tabID, true, undefined)
 
         this.messenger.sendUpdatePlaceholder(tabID, 'Generating plan ...')
 
@@ -402,7 +408,7 @@ export class FeatureDevController {
             this.messenger.sendAnswer({
                 type: 'answer',
                 tabID: message.tabID,
-                message: 'Code has been updated. Would you like to work on another task?',
+                message: updateCode,
             })
 
             this.messenger.sendAnswer({
@@ -566,15 +572,6 @@ export class FeatureDevController {
     }
 
     private initialExamples(message: any) {
-        const examples = `
-You can use /dev to:
-- Add a new feature or logic
-- Write tests
-- Fix a bug in your project
-- Generate a README for a file, folder, or project
-
-To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
-`
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
@@ -679,19 +676,18 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: 'What change would you like to make?',
+            message: newTaskChanges,
         })
         this.messenger.sendUpdatePlaceholder(message.tabID, 'Briefly describe a task or issue')
     }
 
     private async closeSession(message: any) {
-        const closedMessage = 'Your session is now closed.'
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: closedMessage,
+            message: sessionClosed,
         })
-        this.messenger.sendUpdatePlaceholder(message.tabID, closedMessage)
+        this.messenger.sendUpdatePlaceholder(message.tabID, sessionClosed)
         this.messenger.sendChatInputEnabled(message.tabID, false)
 
         const session = await this.sessionStorage.getSession(message.tabID)

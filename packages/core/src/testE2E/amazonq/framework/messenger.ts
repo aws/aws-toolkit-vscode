@@ -6,6 +6,7 @@
 import assert from 'assert'
 import { MynahUI, MynahUIProps, MynahUIDataModel } from '@aws/mynah-ui'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { FollowUpTypes } from '../../../amazonqFeatureDev/types'
 
 export interface MessengerOptions {
     waitIntervalInMs?: number
@@ -23,7 +24,7 @@ export class Messenger {
     private waitTimeoutInMs: number
 
     constructor(
-        private readonly tabID: string,
+        public readonly tabID: string,
         private readonly mynahUIProps: MynahUIProps,
         private readonly mynahUI: MynahUI,
         options?: MessengerOptions
@@ -73,29 +74,48 @@ export class Messenger {
         return [...(this.getStore().chatItems ?? [])]
     }
 
-    async waitForChatFinishesLoading() {
-        const isFinishedLoading = (): boolean => {
-            return this.getStore().loadingChat === false
-        }
+    getPlaceholder() {
+        return this.getStore().promptInputPlaceholder
+    }
 
+    hasButton(type: FollowUpTypes) {
+        return this.getChatItems()
+            .pop()
+            ?.followUp?.options?.map(opt => opt.type)
+            .includes(type)
+    }
+
+    async waitForChatFinishesLoading() {
+        return this.waitForEvent(
+            () => this.getStore().loadingChat === false || (this.hasButton(FollowUpTypes.Retry) ?? false)
+        )
+    }
+
+    async waitForEvent(
+        event: () => boolean,
+        waitOverrides?: {
+            waitIntervalInMs: number
+            waitTimeoutInMs: number
+        }
+    ) {
         /**
          * Wait until the chat has finished loading. This happens when a backend request
          * has finished and responded in the chat
          */
         await waitUntil(
             () => {
-                return Promise.resolve(isFinishedLoading())
+                return Promise.resolve(event())
             },
             {
-                interval: this.waitIntervalInMs,
-                timeout: this.waitTimeoutInMs,
+                interval: waitOverrides ? waitOverrides.waitIntervalInMs : this.waitIntervalInMs,
+                timeout: waitOverrides ? waitOverrides.waitTimeoutInMs : this.waitTimeoutInMs,
                 truthy: true,
             }
         )
 
         // Do another check just in case the waitUntil time'd out
-        if (!isFinishedLoading()) {
-            assert.fail(`Chat has not finished loading in: ${this.waitTimeoutInMs} ms`)
+        if (!event()) {
+            assert.fail(`Event has not finished loading in: ${this.waitTimeoutInMs} ms`)
         }
     }
 
