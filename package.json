@@ -57,6 +57,14 @@
     "main": "./dist/src/main",
     "browser": "./dist/src/extensionWeb",
     "contributes": {
+        "thecmes": [
+            {
+                "uiTheme": "vs",
+                "label": "codewhisperer inlinehint style",
+                "id": "codewhispererInlinehintStyle",
+                "path": "./src/codewhisperer/views/annotations/style.css"
+            }
+        ],
         "configuration": {
             "type": "object",
             "title": "%AWS.productName%",

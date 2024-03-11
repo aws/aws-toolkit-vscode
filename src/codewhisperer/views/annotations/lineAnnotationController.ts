@@ -149,9 +149,13 @@ export class LineAnnotationController implements vscode.Disposable {
     readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
             margin: '0 0 0 3em',
-            textDecoration: 'none',
+            textDecoration: ';border-radius:0.25rem;padding:0.05rem 0.5rem;',
+            width: 'fit-content',
+            border: '1px solid #ccc',
         },
         rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
+        borderRadius: '4px',
+        borderSpacing: '1px',
     })
 
     private _acceptedSuggestionCount = 0
@@ -346,7 +350,8 @@ export class LineAnnotationController implements vscode.Disposable {
             fontWeight: 'normal',
             fontStyle: 'normal',
             textDecoration: 'none',
-            color: '#8E8E8E',
+            // color: 'var(--vscode-editor-background)',
+            // backgroundColor: 'var(--vscode-foreground)',
         }
 
         const oldState = this._currentState
