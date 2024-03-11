@@ -182,14 +182,19 @@ export class LineAnnotationController implements vscode.Disposable {
         // this._currentStep = globals.context.globalState.get<'1' | '2' | '3' | undefined>(inlinehintKey)
         this._disposable = vscode.Disposable.from(
             once(this.container._lineTracker.onReady)(this.onReady, this),
-            this.subscribeSuggestionAction(true),
+            RecommendationService.instance.suggestionActionEvent(e => {
+                this.setMetadataForState2(e)
+
+                // can't use refresh because refresh, by design, should only be triggered when there is line selection change
+                this.refresh(e.editor, 'codewhisperer', e)
+            }),
             this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
-                    this.refreshDebounced(vscode.window.activeTextEditor, 'editor')
+                    this.refresh(vscode.window.activeTextEditor, 'editor')
                 }
             }),
             this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
-                this.refreshDebounced(vscode.window.activeTextEditor, 'editor')
+                this.refresh(vscode.window.activeTextEditor, 'editor')
             })
         )
         this.setLineTracker(true)
@@ -204,15 +209,15 @@ export class LineAnnotationController implements vscode.Disposable {
     // shouldSkip() {}
 
     isTutorialDone(): boolean {
-        // return this._currentState.id === endState.id
-        return true
+        return this._currentState.id === endState.id
+        // return true
     }
 
     private _isReady: boolean = false
 
     private onReady(): void {
         this._isReady = true
-        this.refresh(vscode.window.activeTextEditor, 'editor')
+        this._refresh(vscode.window.activeTextEditor, 'editor')
     }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
@@ -223,12 +228,12 @@ export class LineAnnotationController implements vscode.Disposable {
         this.clear(e.editor)
 
         if (e.reason === 'content') {
-            await this.refreshDebounced(e.editor, e.reason)
+            await this.refresh(e.editor, e.reason)
             return
         }
 
         if (e.selections !== undefined) {
-            await this.refreshDebounced(e.editor, e.reason)
+            await this.refresh(e.editor, e.reason)
             return
         }
     }
@@ -240,14 +245,11 @@ export class LineAnnotationController implements vscode.Disposable {
         }
     }
 
-    readonly refreshDebounced = debounce2(
-        (editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) => {
-            this.refresh(editor, source, e)
-        },
-        250
-    )
+    readonly refresh = debounce2((editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) => {
+        this._refresh(editor, source, e)
+    }, 250)
 
-    async refresh(editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) {
+    private async _refresh(editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) {
         if (this.isTutorialDone()) {
             this.clear(this._editor)
             return
@@ -282,7 +284,7 @@ export class LineAnnotationController implements vscode.Disposable {
         await this.updateDecorations(editor, selections, source, e)
     }
 
-    async updateDecorations(
+    private async updateDecorations(
         editor: vscode.TextEditor,
         lines: LineSelection[],
         source: AnnotationChangeSource,
@@ -292,7 +294,9 @@ export class LineAnnotationController implements vscode.Disposable {
             new vscode.Range(lines[0].active, maxSmallIntegerV8, lines[0].active, maxSmallIntegerV8)
         )
 
-        const options = this.getInlineDecoration(editor, lines, source, e) as vscode.DecorationOptions | undefined
+        const decorationOptions = this.getInlineDecoration(editor, lines, source, e) as
+            | vscode.DecorationOptions
+            | undefined
 
         const isCWRunning = RecommendationService.instance.isRunning
         if (isCWRunning && this._currentState.suppressWhileRunning) {
@@ -301,16 +305,16 @@ export class LineAnnotationController implements vscode.Disposable {
             return
         }
 
-        if (!options) {
+        if (!decorationOptions) {
             this.clear(this._editor)
             this._selections = lines
             return
         }
 
-        options.range = range
+        decorationOptions.range = range
         this._selections = lines
         await set(inlinehintKey, this._currentStep, globals.context.globalState)
-        editor.setDecorations(this.cwLineHintDecoration, [options])
+        editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
     }
 
     private setLineTracker(enabled: boolean) {
@@ -328,17 +332,6 @@ export class LineAnnotationController implements vscode.Disposable {
         this.container._lineTracker.unsubscribe(this)
     }
 
-    private subscribeSuggestionAction(enabled: boolean) {
-        const disposable = RecommendationService.instance.suggestionActionEvent(e => {
-            this.setMetadataForState2(e)
-
-            // can't use refresh because refresh, by design, should only be triggered when there is line selection change
-            this.refreshDebounced(e.editor, 'codewhisperer', e)
-        })
-
-        return disposable // TODO: InlineCompletionService should deal with unsubscribe/dispose otherwise there will be memory leak
-    }
-
     getInlineDecoration(
         editor: vscode.TextEditor,
         lines: LineSelection[],
@@ -349,25 +342,25 @@ export class LineAnnotationController implements vscode.Disposable {
         const isEndOfLine = isCursorAtEndOfLine(editor)
         const isCWRunning = RecommendationService.instance.isRunning
 
-        const options = this.textOptions(sameLine, isEndOfLine, isCWRunning, source, e)
+        const renderOptions = this.renderOptions(sameLine, isEndOfLine, isCWRunning, source, e)
 
-        if (!options) {
+        if (!renderOptions) {
             return undefined
         }
 
-        const renderOptions: {
+        const decoration: {
             renderOptions: vscode.ThemableDecorationRenderOptions
             hoverMessage: vscode.DecorationOptions['hoverMessage']
         } = {
-            renderOptions: options,
-            hoverMessage: this.onHover(),
+            renderOptions: renderOptions,
+            hoverMessage: this.hoverMessage(),
         }
 
-        return renderOptions
+        return decoration
     }
 
     // TODO: fix the messy logics
-    private textOptions(
+    private renderOptions(
         isSameLine: boolean,
         isEndOfLine: boolean,
         isCWRunning: boolean,
@@ -383,8 +376,6 @@ export class LineAnnotationController implements vscode.Disposable {
             color: 'var(--vscode-editor-background)',
             backgroundColor: 'var(--vscode-foreground)',
         }
-
-        const oldState = this._currentState
 
         if (this._currentState.id === startState.id) {
             if (isEndOfLine) {
@@ -442,22 +433,7 @@ export class LineAnnotationController implements vscode.Disposable {
         return { after: textOptions }
     }
 
-    private setMetadataForState2(e: SuggestionActionEvent) {
-        try {
-            if (this._currentState.id === manualtriggerState.id && 'hasManualTrigger' in this._currentState) {
-                this._currentState.hasManualTrigger = e.triggerType === 'OnDemand'
-            }
-
-            if (this._currentState.id === manualtriggerState.id && 'hasValidResponse' in this._currentState) {
-                this._currentState.hasValidResponse =
-                    e.response?.recommendationCount && e.response?.recommendationCount > 0
-            }
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    private onHover(): vscode.MarkdownString | undefined {
+    private hoverMessage(): vscode.MarkdownString | undefined {
         const str: string = this._currentState.text()
         if (str === tryMoreExState.text()) {
             const source: CodeWhispererSource = 'vscodeComponent'
@@ -473,6 +449,21 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         return undefined
+    }
+
+    private setMetadataForState2(e: SuggestionActionEvent) {
+        try {
+            if (this._currentState.id === manualtriggerState.id && 'hasManualTrigger' in this._currentState) {
+                this._currentState.hasManualTrigger = e.triggerType === 'OnDemand'
+            }
+
+            if (this._currentState.id === manualtriggerState.id && 'hasValidResponse' in this._currentState) {
+                this._currentState.hasValidResponse =
+                    e.response?.recommendationCount && e.response?.recommendationCount > 0
+            }
+        } catch (error) {
+            console.log(error)
+        }
     }
 }
 

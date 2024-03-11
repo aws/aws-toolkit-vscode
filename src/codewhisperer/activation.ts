@@ -179,7 +179,7 @@ export async function activate(context: ExtContext): Promise<void> {
             const editor = vscode.window.activeTextEditor
             if (editor) {
                 console.log('refresh inline hint from command')
-                container._lineAnnotationController.refreshDebounced(editor, 'codewhisperer')
+                container._lineAnnotationController.refresh(editor, 'codewhisperer')
             }
         }),
         // show introduction

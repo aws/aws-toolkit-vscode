@@ -90,11 +90,6 @@ export class EditorGutterController implements vscode.Disposable {
             return
         }
 
-        if (!this.container._lineAnnotationController.isTutorialDone()) {
-            this.clear(editor)
-            return
-        }
-
         if (!editor && !this._editor) {
             return
         }
