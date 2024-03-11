@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { ThreatComposerEditorProvider } from './threatComposerEditor'
+import { ThreatComposerEditorProvider } from './editorWebviewManager'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     extensionContext.subscriptions.push(ThreatComposerEditorProvider.register(extensionContext))
