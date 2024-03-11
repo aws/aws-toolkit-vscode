@@ -237,7 +237,7 @@ export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {
     return headersObj
 }
 
-// TODO: later, consider enhancing the S3 client to include this functionality
+// Consider enhancing the S3 client to include this functionality
 export async function uploadArtifactToS3(
     fileName: string,
     resp: CreateUploadUrlResponse,

@@ -284,8 +284,8 @@ export async function preTransformationUploadCode(userInputState: UserInputState
         await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
         uploadId = await uploadPayload(payloadFilePath)
     } catch (error) {
-        getLogger().error(`${error}`)
         const errorMessage = `Failed to upload code due to ${error}`
+        getLogger().error(errorMessage)
         telemetry.codeTransform_logGeneralError.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
