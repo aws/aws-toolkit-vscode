@@ -347,7 +347,8 @@ export class CodeWhispererCodeCoverageTracker {
             const multiCharInputSize = e.contentChanges[0].text.length
 
             // select 50 as the cut-off threshold for counting user input.
-            if (multiCharInputSize < 50) {
+            // ignore all white space multi char input, this usually comes from reformat.
+            if (multiCharInputSize < 50 && e.contentChanges[0].text.trim().length > 0) {
                 this.addTotalTokens(e.document.fileName, multiCharInputSize)
             }
 
