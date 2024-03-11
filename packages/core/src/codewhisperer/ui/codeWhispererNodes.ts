@@ -166,7 +166,7 @@ export function createSelectCustomization(): DataQuickPickItem<'selectCustomizat
 
 /* Opens the Learn CodeWhisperer Page */
 export function createGettingStarted(): DataQuickPickItem<'gettingStarted'> {
-    const label = localize('AWS.codewhisperer.gettingStartedNode.label', 'Learn about inline suggestions')
+    const label = localize('AWS.codewhisperer.gettingStartedNode.label', 'Try inline suggestion examples')
     const icon = getIcon('vscode-rocket')
     return {
         data: 'gettingStarted',

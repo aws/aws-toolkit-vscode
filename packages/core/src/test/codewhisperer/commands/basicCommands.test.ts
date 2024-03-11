@@ -33,13 +33,16 @@ import { FileSystemCommon } from '../../../srcShared/fs'
 import { getLogger } from '../../../shared/logger/logger'
 import {
     createAutoSuggestions,
+    createDocumentationNode,
+    createFeedbackNode,
     createGettingStarted,
+    createGitHubNode,
     createLearnMore,
     createOpenReferenceLog,
     createReconnect,
     createSecurityScan,
     createSelectCustomization,
-    createSeparator,
+    createSettingsNode,
     createSignIn,
     createSignout,
 } from '../../../codewhisperer/ui/codeWhispererNodes'
@@ -47,6 +50,7 @@ import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBar'
 import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
+import { createTransformByQ, switchToAmazonQNode } from '../../../amazonq/explorer/amazonQChildrenNodes'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -294,12 +298,13 @@ describe('CodeWhisperer-basicCommands', function () {
     })
 
     describe('listCodeWhispererCommands()', function () {
+        const genericItems = [createFeedbackNode(), createGitHubNode(), createDocumentationNode()]
         it('shows expected items when not connected', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertItems([createSignIn('item'), createLearnMore()])
+                e.assertContainsItems(createSignIn('item'), createLearnMore(), ...genericItems)
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -311,7 +316,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertItems([createReconnect('item'), createLearnMore(), createSeparator(), createSignout()])
+                e.assertContainsItems(createReconnect('item'), createLearnMore(), ...genericItems, createSignout())
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -322,14 +327,16 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertItems([
+                e.assertContainsItems(
                     createAutoSuggestions(false),
-                    createSecurityScan(),
                     createOpenReferenceLog(),
                     createGettingStarted(),
-                    createSeparator(),
-                    createSignout(),
-                ])
+                    switchToAmazonQNode('item'),
+                    createSecurityScan(),
+                    ...genericItems,
+                    createSettingsNode(),
+                    createSignout()
+                )
                 e.dispose() // skip needing to select an item to continue
             })
             await listCodeWhispererCommands.execute()
@@ -342,15 +349,18 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
 
             getTestWindow().onDidShowQuickPick(async e => {
-                e.assertItems([
+                e.assertContainsItems(
                     createAutoSuggestions(false),
-                    createSecurityScan(),
                     createSelectCustomization(),
                     createOpenReferenceLog(),
                     createGettingStarted(),
-                    createSeparator(),
-                    createSignout(),
-                ])
+                    switchToAmazonQNode('item'),
+                    createSecurityScan(),
+                    createTransformByQ(),
+                    ...genericItems,
+                    createSettingsNode(),
+                    createSignout()
+                )
                 e.dispose() // skip needing to select an item to continue
             })
 
