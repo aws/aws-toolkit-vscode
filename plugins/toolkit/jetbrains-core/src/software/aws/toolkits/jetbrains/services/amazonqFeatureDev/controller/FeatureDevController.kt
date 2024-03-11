@@ -30,10 +30,12 @@ import software.aws.toolkits.jetbrains.core.coroutines.EDT
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthController
 import software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.CodeIterationLimitError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ContentLengthError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.DEFAULT_RETRY_LIMIT
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.InboundAppMessagesHandler
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.PlanIterationLimitError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.createUserFacingErrorMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessageType
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUp
@@ -386,6 +388,37 @@ class FeatureDevController(
                             pillText = message("amazonqFeatureDev.follow_up.modify_source_folder"),
                             type = FollowUpTypes.MODIFY_DEFAULT_SOURCE_FOLDER,
                             status = FollowUpStatusType.Info,
+                        )
+                    ),
+                )
+            } else if (err is PlanIterationLimitError) {
+                messenger.sendError(tabId = tabId, errMessage = err.message, retries = retriesRemaining(session))
+                messenger.sendSystemPrompt(
+                    tabId = tabId,
+                    followUp = listOf(
+                        FollowUp(
+                            pillText = message("amazonqFeatureDev.follow_up.new_plan"),
+                            type = FollowUpTypes.NEW_PLAN,
+                            status = FollowUpStatusType.Info,
+                        ),
+                        FollowUp(
+                            pillText = message("amazonqFeatureDev.follow_up.generate_code"),
+                            type = FollowUpTypes.GENERATE_CODE,
+                            status = FollowUpStatusType.Info,
+                        )
+                    ),
+                )
+                messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.after_code_generation"))
+            } else if (err is CodeIterationLimitError) {
+                messenger.sendError(tabId = tabId, errMessage = err.message, retries = retriesRemaining(session))
+                messenger.sendSystemPrompt(
+                    tabId = tabId,
+                    followUp = listOf(
+                        FollowUp(
+                            pillText = message("amazonqFeatureDev.follow_up.insert_code"),
+                            type = FollowUpTypes.INSERT_CODE,
+                            icon = FollowUpIcons.Ok,
+                            status = FollowUpStatusType.Success,
                         )
                     ),
                 )

@@ -9,6 +9,10 @@ open class FeatureDevException(override val message: String?, override val cause
 
 class ContentLengthError(override val message: String, override val cause: Throwable?) : RuntimeException()
 
+class PlanIterationLimitError(override val message: String, override val cause: Throwable?) : RuntimeException()
+
+class CodeIterationLimitError(override val message: String, override val cause: Throwable?) : RuntimeException()
+
 internal fun codeGenerationFailedError(): Nothing =
     throw FeatureDevException(message("amazonqFeatureDev.code_generation.failed_generation"))
 

@@ -11,11 +11,14 @@ import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistC
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ValidationException
 import software.amazon.awssdk.services.codewhispererstreaming.model.CodeWhispererStreamingException
+import software.amazon.awssdk.services.codewhispererstreaming.model.ThrottlingException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.CodeIterationLimitError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ContentLengthError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.PlanIterationLimitError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.apiError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.GenerateTaskAssistPlanResult
@@ -110,6 +113,10 @@ suspend fun generatePlan(
         if (e is CodeWhispererStreamingException) {
             errMssg = e.awsErrorDetails().errorMessage()
             logger.error(e) { "Generate plan failed for request: ${e.requestId()}" }
+
+            if (e is ThrottlingException && e.message?.contains("limit for number of iterations on an implementation plan") == true) {
+                throw PlanIterationLimitError(message("amazonqFeatureDev.approach_gen.iteration_limit.error_text"), e.cause)
+            }
         }
         apiError(errMssg, e.cause)
     }
@@ -134,6 +141,13 @@ fun startTaskAssistCodeGeneration(proxyClient: FeatureDevClient, conversationId:
         if (e is CodeWhispererRuntimeException) {
             errMssg = e.awsErrorDetails().errorMessage()
             logger.error(e) { "StartTaskAssistCodeGeneration failed for request: ${e.requestId()}" }
+
+            if (e is software.amazon.awssdk.services.codewhispererruntime.model.ThrottlingException && e.message?.contains(
+                    "limit for number of iterations on a code generation"
+                ) == true
+            ) {
+                throw CodeIterationLimitError(message("amazonqFeatureDev.code_generation.iteration_limit.error_text"), e.cause)
+            }
         }
         apiError(errMssg, e.cause)
     }
