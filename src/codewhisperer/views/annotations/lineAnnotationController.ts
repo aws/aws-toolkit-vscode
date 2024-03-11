@@ -200,6 +200,14 @@ export class LineAnnotationController implements vscode.Disposable {
         this._disposable.dispose()
     }
 
+    // TODO: inline tutorial targets "NEW" Codewhisperer users only, existing users should not see it
+    // shouldSkip() {}
+
+    isTutorialDone(): boolean {
+        // return this._currentState.id === endState.id
+        return true
+    }
+
     private _isReady: boolean = false
 
     private onReady(): void {
@@ -240,6 +248,10 @@ export class LineAnnotationController implements vscode.Disposable {
     )
 
     async refresh(editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) {
+        if (this.isTutorialDone()) {
+            this.clear(this._editor)
+            return
+        }
         if (!this.container.auth.isConnectionValid(false)) {
             this.clear(this._editor)
             return
