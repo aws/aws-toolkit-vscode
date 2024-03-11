@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VfsUtil
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.APPROACH_RETRY_LIMIT
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.CODE_GENERATION_RETRY_LIMIT
@@ -107,6 +108,9 @@ class Session(val tabID: String, val project: Project) {
         }
 
         ReferenceLogController.addReferenceLog(references, project)
+
+        // Taken from https://intellij-support.jetbrains.com/hc/en-us/community/posts/206118439-Refresh-after-external-changes-to-project-structure-and-sources
+        VfsUtil.markDirtyAndRefresh(true, true, true, context.projectRoot)
     }
 
     suspend fun send(msg: String): Interaction {
