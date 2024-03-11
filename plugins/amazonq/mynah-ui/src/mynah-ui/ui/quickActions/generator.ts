@@ -13,7 +13,7 @@ export interface QuickActionGeneratorProps {
 
 export class QuickActionGenerator {
     public isFeatureDevEnabled: boolean
-    private isGumbyEnabled: boolean
+    public isGumbyEnabled: boolean
 
     constructor(props: QuickActionGeneratorProps) {
         this.isFeatureDevEnabled = props.isFeatureDevEnabled

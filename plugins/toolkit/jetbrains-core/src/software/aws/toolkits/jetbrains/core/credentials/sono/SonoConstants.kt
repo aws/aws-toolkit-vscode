@@ -18,11 +18,13 @@ val CODEWHISPERER_SCOPES = listOf(
 
 val Q_SCOPES = listOf(
     "codewhisperer:conversations",
-    "codewhisperer:transformations"
+    "codewhisperer:transformations",
+    "codewhisperer:taskassist"
 )
 
 val Q_SCOPES_UNAVAILABLE_BUILDER_ID = listOf(
-    "codewhisperer:transformations"
+    "codewhisperer:transformations",
+    "codewhisperer:taskassist"
 )
 
 val CODECATALYST_SCOPES = listOf(

@@ -105,7 +105,7 @@ class CodeWhispererCodeReferenceComponents(private val project: Project) {
         text = message("codewhisperer.toolwindow.entry.suffix", path ?: "", choice, line)
     }.asCodeReferencePanelFont()
 
-    fun codeReferenceRecordPanel(ref: Reference, relativePath: String?, lineNums: String) = JPanel(GridBagLayout()).apply {
+    fun codeReferenceRecordPanel(ref: Reference, relativePath: String?, lineNums: String?) = JPanel(GridBagLayout()).apply {
         background = EditorColorsManager.getInstance().globalScheme.defaultBackground
         border = BorderFactory.createEmptyBorder(5, 0, 0, 0)
         add(acceptRecommendationPrefixText, inlineLabelConstraints)
@@ -132,7 +132,9 @@ class CodeWhispererCodeReferenceComponents(private val project: Project) {
             add(repoNameLink(ref.repository(), ref.url()), inlineLabelConstraints)
         }
 
-        add(acceptRecommendationSuffixText(relativePath, lineNums), inlineLabelConstraints)
+        if (!lineNums.isNullOrEmpty()) {
+            add(acceptRecommendationSuffixText(relativePath, lineNums), inlineLabelConstraints)
+        }
         addHorizontalGlue()
     }
 

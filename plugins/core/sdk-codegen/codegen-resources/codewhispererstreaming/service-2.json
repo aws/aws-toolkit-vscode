@@ -149,6 +149,7 @@
                 "codeReferenceEvent":{"shape":"CodeReferenceEvent"},
                 "supplementaryWebLinksEvent":{"shape":"SupplementaryWebLinksEvent"},
                 "followupPromptEvent":{"shape":"FollowupPromptEvent"},
+                "invalidStateEvent": {"shape":  "InvalidStateEvent"},
                 "error":{"shape":"InternalServerException"}
             },
             "eventstream":true
@@ -272,7 +273,8 @@
         "ExportIntent":{
             "type":"string",
             "enum":[
-                "TRANSFORMATION"
+                "TRANSFORMATION",
+                "TASK_ASSIST"
             ]
         },
         "ExportResultArchiveRequest":{
@@ -362,6 +364,18 @@
             "exception":true,
             "fault":true,
             "retryable":{"throttling":false}
+        },
+        "InvalidStateEvent":{
+            "type":"structure",
+            "members":{
+                "reason":{"shape":"InvalidStateReason"},
+                "message":{"shape": "String"}
+            },
+            "event":true
+        },
+        "InvalidStateReason":{
+            "type":"string",
+            "enum":["INVALID_TASK_ASSIST_PLAN"]
         },
         "Long":{
             "type":"long",

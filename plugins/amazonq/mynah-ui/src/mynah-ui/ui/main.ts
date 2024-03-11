@@ -44,7 +44,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
     // used to keep track of whether or not featureDev is enabled and has an active idC
     let isFeatureDevEnabled = featureDevInitEnabled
 
-    const isGumbyEnabled = gumbyInitEnabled
+    let isGumbyEnabled = gumbyInitEnabled
 
     const tabDataGenerator = new TabDataGenerator({
         isFeatureDevEnabled,
@@ -63,11 +63,14 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
     // eslint-disable-next-line prefer-const
     connector = new Connector({
         tabsStorage,
-        onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]): void => {
+        onUpdateAuthentication: (featureDevEnabled: boolean, gumbyEnabled: boolean, authenticatingTabIDs: string[]): void => {
             isFeatureDevEnabled = featureDevEnabled
+            isGumbyEnabled = gumbyEnabled
 
             quickActionHandler.isFeatureDevEnabled = isFeatureDevEnabled
+            quickActionHandler.isGumbyEnabled = isGumbyEnabled
             tabDataGenerator.quickActionsGenerator.isFeatureDevEnabled = isFeatureDevEnabled
+            tabDataGenerator.quickActionsGenerator.isGumbyEnabled = isGumbyEnabled
 
             // Set the new defaults for the quick action commands in all tabs now that isFeatureDevEnabled was enabled/disabled
             for (const tab of tabsStorage.getTabs()) {
@@ -253,7 +256,14 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
 
     mynahUI = new MynahUI({
         onReady: connector.uiReady,
-        onTabAdd: connector.onTabAdd,
+        onTabAdd: (tabID: string) => {
+            // If featureDev or gumby has changed availability inbetween the default store settings and now
+            // make sure to show/hide it accordingly
+            mynahUI.updateStore(tabID, {
+                quickActionCommands: tabDataGenerator.quickActionsGenerator.generateForTab('unknown'),
+            })
+            connector.onTabAdd(tabID)
+        },
         onTabRemove: connector.onTabRemove,
         onTabChange: connector.onTabChange,
         onChatPrompt: (tabID: string, prompt: ChatPrompt) => {

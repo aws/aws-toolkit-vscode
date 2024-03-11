@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.codemodernizer.client
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ContentChecksumType
@@ -23,22 +22,19 @@ import software.amazon.awssdk.services.codewhispererruntime.model.StopTransforma
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationLanguage
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationType
 import software.amazon.awssdk.services.codewhispererruntime.model.UploadIntent
-import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClient
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
-import software.amazon.awssdk.services.codewhispererstreaming.model.ExportResultArchiveResponseHandler
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
+import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.calculateTotalLatency
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.telemetry.CodeTransformApiNames
 import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.time.Instant
-import java.util.concurrent.atomic.AtomicReference
 
 @Service(Service.Level.PROJECT)
 class GumbyClient(private val project: Project) {
@@ -46,7 +42,8 @@ class GumbyClient(private val project: Project) {
         ?: error("Attempted to use connection while one does not exist")
 
     private fun bearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererRuntimeClient>()
-    private fun streamingBearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererStreamingAsyncClient>()
+
+    private val amazonQStreamingClient = AmazonQStreamingClient.getInstance(project)
 
     fun createGumbyUploadUrl(sha256Checksum: String): CreateUploadUrlResponse {
         val request = CreateUploadUrlRequest.builder()
@@ -123,33 +120,11 @@ class GumbyClient(private val project: Project) {
         }
     }
 
-    suspend fun downloadExportResultArchive(jobId: JobId): MutableList<ByteArray> {
-        val startTime = Instant.now()
-        val byteBufferList = mutableListOf<ByteArray>()
-        val checksum = AtomicReference("")
-        try {
-            val result = streamingBearerClient().exportResultArchive(
-                {
-                    it.exportId(jobId.id)
-                    it.exportIntent(ExportIntent.TRANSFORMATION)
-                },
-                ExportResultArchiveResponseHandler.builder().subscriber(
-                    ExportResultArchiveResponseHandler.Visitor.builder()
-                        .onBinaryMetadataEvent {
-                            checksum.set(it.contentChecksum())
-                        }.onBinaryPayloadEvent {
-                            val payloadBytes = it.bytes().asByteArray()
-                            byteBufferList.add(payloadBytes)
-                        }.onDefault {
-                            LOG.warn { "Received unknown payload stream: $it" }
-                        }
-                        .build()
-                )
-                    .build()
-            )
-            result.await()
-            return byteBufferList
-        } catch (e: Exception) {
+    suspend fun downloadExportResultArchive(jobId: JobId): MutableList<ByteArray> = amazonQStreamingClient.exportResultArchive(
+        jobId.id,
+        ExportIntent.TRANSFORMATION,
+        {
+                e ->
             LOG.error(e) { "${CodeTransformApiNames.ExportResultArchive} failed: ${e.message}" }
             CodetransformTelemetry.logApiError(
                 codeTransformApiNames = CodeTransformApiNames.ExportResultArchive,
@@ -157,8 +132,8 @@ class GumbyClient(private val project: Project) {
                 codeTransformApiErrorMessage = e.message.toString(),
                 codeTransformJobId = jobId.id,
             )
-            throw e // pass along error to callee
-        } finally {
+        },
+        { startTime ->
             CodetransformTelemetry.logApiLatency(
                 codeTransformApiNames = CodeTransformApiNames.ExportResultArchive,
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
@@ -166,7 +141,7 @@ class GumbyClient(private val project: Project) {
                 codeTransformJobId = jobId.id,
             )
         }
-    }
+    )
 
     companion object {
         private val LOG = getLogger<GumbyClient>()

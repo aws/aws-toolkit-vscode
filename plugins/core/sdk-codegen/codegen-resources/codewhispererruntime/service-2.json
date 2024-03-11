@@ -47,6 +47,33 @@
             ],
             "idempotent":true
         },
+        "CreateTaskAssistConversation": {
+            "name": "CreateTaskAssistConversation",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "CreateTaskAssistConversationRequest"
+            },
+            "output": {
+                "shape": "CreateTaskAssistConversationResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ]
+        },
         "GenerateCompletions":{
             "name":"GenerateCompletions",
             "http":{
@@ -76,6 +103,39 @@
                 {"shape":"InternalServerException"},
                 {"shape":"ValidationException"},
                 {"shape":"AccessDeniedException"}
+            ]
+        },
+        "GetTaskAssistCodeGeneration": {
+            "name": "GetTaskAssistCodeGeneration",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetTaskAssistCodeGenerationRequest"
+            },
+            "output": {
+                "shape": "GetTaskAssistCodeGenerationResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ConflictException"
+                },
+                {
+                    "shape": "ResourceNotFoundException"
+                },
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
             ]
         },
         "GetTransformation":{
@@ -187,6 +247,23 @@
                 {"shape":"AccessDeniedException"}
             ],
             "idempotent":true
+        },
+        "StartTaskAssistCodeGeneration": {
+            "name":"StartTaskAssistCodeGeneration",
+            "http":{
+                "method":"POST",
+                "requestUri":"/"
+            },
+            "input":{"shape":"StartTaskAssistCodeGenerationRequest"},
+            "output":{"shape":"StartTaskAssistCodeGenerationResponse"},
+            "errors":[
+                {"shape":"ThrottlingException"},
+                {"shape":"ConflictException"},
+                {"shape":"ResourceNotFoundException"},
+                {"shape":"InternalServerException"},
+                {"shape":"ValidationException"},
+                {"shape":"AccessDeniedException"}
+            ]
         },
         "StartTransformation":{
             "name":"StartTransformation",
@@ -308,6 +385,25 @@
                 "acceptedCharacterCount": { "shape": "Integer" },
                 "acceptedSnippetHasReference": { "shape": "Boolean" }
             }
+        },
+        "CreateTaskAssistConversationRequest": {
+            "type": "structure",
+            "members": {}
+        },
+        "CreateTaskAssistConversationResponse": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": {
+                    "shape": "TaskAssistConversationId"
+                }
+            }
+        },
+        "TaskAssistConversationId": {
+            "type": "string",
+            "documentation": "<p>ID which represents a multi-turn conversation</p>",
+            "max": 128,
+            "min": 1
         },
         "ChatMessage":{
             "type":"structure",
@@ -799,6 +895,30 @@
                 "errorMessage":{"shape":"SensitiveString"}
             }
         },
+        "GetTaskAssistCodeGenerationRequest": {
+            "type": "structure",
+            "required": ["conversationId", "codeGenerationId"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "codeGenerationId": {
+                    "shape": "CodeGenerationId"
+                }
+            }
+        },
+        "GetTaskAssistCodeGenerationResponse": {
+            "type": "structure",
+            "required": ["conversationId", "codeGenerationStatus"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "codeGenerationStatus": {
+                    "shape": "CodeGenerationStatus"
+                }
+            }
+        },
         "GetTransformationPlanRequest":{
             "type":"structure",
             "required":["transformationJobId"],
@@ -1190,6 +1310,28 @@
             "max":256,
             "min":1
         },
+        "StartTaskAssistCodeGenerationRequest": {
+            "type":"structure",
+            "required":[
+                "conversationState",
+                "workspaceState"
+            ],
+            "members":{
+                "conversationState":{"shape":"ConversationState"},
+                "workspaceState":{"shape":"WorkspaceState"}
+            }
+        },
+        "StartTaskAssistCodeGenerationResponse": {
+            "type":"structure",
+            "required":[
+                "conversationId",
+                "codeGenerationId"
+            ],
+            "members":{
+                "conversationId":{"shape":"ConversationId"},
+                "codeGenerationId":{"shape": "CodeGenerationId"}
+            }
+        },
         "StartTransformationRequest":{
             "type":"structure",
             "required":[
@@ -1508,6 +1650,13 @@
             "type":"string",
             "enum":["LANGUAGE_UPGRADE"]
         },
+        "TaskAssistPlanningUploadContext": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" }
+            }
+        },
         "UUID":{
             "type":"string",
             "max":36,
@@ -1515,7 +1664,9 @@
         },
         "UploadContext":{
             "type":"structure",
-            "members":{},
+            "members":{
+                "taskAssistPlanningUploadContext": {"shape": "TaskAssistPlanningUploadContext"}
+            },
             "union":true
         },
         "UploadId":{
@@ -1526,7 +1677,8 @@
         "UploadIntent":{
             "type":"string",
             "enum":[
-                "TRANSFORMATION"
+                "TRANSFORMATION",
+                "TASK_ASSIST_PLANNING"
             ]
         },
         "UserContext":{
