@@ -1,13 +1,14 @@
-// Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.cwc.auth
+package software.aws.toolkits.jetbrains.services.amazonq.auth
 
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnection
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnectionType
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.BearerTokenFeatureSet
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerConnectionValidity
 import software.aws.toolkits.jetbrains.core.gettingstarted.reauthenticateWithQ
@@ -23,12 +24,25 @@ class AuthController {
      * Check the state of the Q connection. If the connection is valid then null is returned, otherwise it returns a [AuthNeededState]
      * holding a message indicating the problem and what type of authentication is needed to resolve.
      */
-    fun getAuthNeededState(project: Project): AuthNeededState? {
+    fun getAuthNeededStates(project: Project): AuthNeededStates {
         val connectionState = checkBearerConnectionValidity(project, BearerTokenFeatureSet.Q)
         val codeWhispererState = checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER)
-        return when (connectionState) {
+
+        // CW chat is enabled for Builder and IDC users, Amazon Q is only valid for IDC users
+        return AuthNeededStates(
+            chat = getAuthNeededState(connectionState, codeWhispererState),
+            amazonQ = getAuthNeededState(connectionState, codeWhispererState, true)
+        )
+    }
+
+    private fun getAuthNeededState(
+        amazonqConnectionState: ActiveConnection,
+        codeWhispereConnectionState: ActiveConnection,
+        onlyIamIdcConnection: Boolean = false
+    ): AuthNeededState? =
+        when (amazonqConnectionState) {
             ActiveConnection.NotConnected -> {
-                if (codeWhispererState == ActiveConnection.NotConnected) {
+                if (codeWhispereConnectionState == ActiveConnection.NotConnected) {
                     AuthNeededState(
                         message = message("q.connection.disconnected"),
                         authType = AuthFollowUpType.FullAuth,
@@ -42,7 +56,17 @@ class AuthController {
                 }
             }
 
-            is ActiveConnection.ValidBearer -> null
+            is ActiveConnection.ValidBearer -> {
+                if (onlyIamIdcConnection && amazonqConnectionState.connectionType != ActiveConnectionType.IAM_IDC) {
+                    AuthNeededState(
+                        message = message("q.connection.need_scopes"),
+                        authType = AuthFollowUpType.Unsupported,
+                    )
+                } else {
+                    null
+                }
+            }
+
             is ActiveConnection.ExpiredBearer -> AuthNeededState(
                 message = message("q.connection.expired"),
                 authType = AuthFollowUpType.ReAuth,
@@ -56,11 +80,11 @@ class AuthController {
                 )
             }
         }
-    }
 
     fun handleAuth(project: Project, type: AuthFollowUpType) {
         when (type) {
             AuthFollowUpType.MissingScopes,
+            AuthFollowUpType.Unsupported,
             AuthFollowUpType.FullAuth -> runInEdt {
                 UiTelemetry.click(project, "amazonq_chatAuthenticate")
                 requestCredentialsForQ(project, connectionInitiatedFromQChatPanel = true)
@@ -71,6 +95,7 @@ class AuthController {
                 reauthenticateWithQ(project)
             }
         }
+
         TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Auth, type.name, getStartUrl(project))
     }
 

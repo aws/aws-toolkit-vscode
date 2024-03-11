@@ -20,7 +20,7 @@ class Browser(parent: Disposable) {
 
     val receiveMessageQuery = JBCefJSQuery.create(jcefBrowser)
 
-    fun init(isGumbyAvailable: Boolean) {
+    fun init(isGumbyAvailable: Boolean, isFeatureDevAvailable: Boolean) {
         // register the scheme handler to route http://mynah/ URIs to the resources/assets directory on classpath
         CefApp.getInstance()
             .registerSchemeHandlerFactory(
@@ -29,7 +29,7 @@ class Browser(parent: Disposable) {
                 AssetResourceHandler.AssetResourceHandlerFactory(),
             )
 
-        loadWebView(isGumbyAvailable)
+        loadWebView(isGumbyAvailable, isFeatureDevAvailable)
     }
 
     fun component() = jcefBrowser.component
@@ -40,19 +40,19 @@ class Browser(parent: Disposable) {
             .executeJavaScript("window.postMessage(JSON.stringify($message))", jcefBrowser.cefBrowser.url, 0)
 
     // Load the chat web app into the jcefBrowser
-    private fun loadWebView(isGumbyAvailable: Boolean) {
+    private fun loadWebView(isGumbyAvailable: Boolean, isFeatureDevAvailable: Boolean) {
         // setup empty state. The message request handlers use this for storing state
         // that's persistent between page loads.
         jcefBrowser.setProperty("state", "")
         // load the web app
-        jcefBrowser.loadHTML(getWebviewHTML(isGumbyAvailable))
+        jcefBrowser.loadHTML(getWebviewHTML(isGumbyAvailable, isFeatureDevAvailable))
     }
 
     /**
      * Generate index.html for the web view
      * @return HTML source
      */
-    private fun getWebviewHTML(isGumbyAvailable: Boolean): String {
+    private fun getWebviewHTML(isGumbyAvailable: Boolean, isFeatureDevAvailable: Boolean): String {
         val postMessageToJavaJsCode = receiveMessageQuery.inject("JSON.stringify(message)")
 
         val jsScripts = """
@@ -65,7 +65,7 @@ class Browser(parent: Disposable) {
                                 $postMessageToJavaJsCode
                             }
                         },
-                        false, // change to true to enable weaverbird
+                        $isFeatureDevAvailable, // whether /dev is available
                         $isGumbyAvailable, // whether /transform is available
                     ); 
                 }

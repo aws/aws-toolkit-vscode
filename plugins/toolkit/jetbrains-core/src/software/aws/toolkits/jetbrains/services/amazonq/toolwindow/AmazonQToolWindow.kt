@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.services.amazonq.onboarding.OnboardingPag
 import software.aws.toolkits.jetbrains.services.amazonq.webview.BrowserConnector
 import software.aws.toolkits.jetbrains.services.amazonq.webview.FqnWebviewAdapter
 import software.aws.toolkits.jetbrains.services.amazonq.webview.theme.EditorThemeAdapter
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.auth.isFeatureDevAvailable
 import software.aws.toolkits.jetbrains.services.codemodernizer.isCodeModernizerAvailable
 import javax.swing.JComponent
 
@@ -98,7 +99,8 @@ class AmazonQToolWindow @NonInjectable constructor(
         val browser = panel.browser ?: return
 
         browser.init(
-            isGumbyAvailable = isCodeModernizerAvailable(project)
+            isGumbyAvailable = isCodeModernizerAvailable(project),
+            isFeatureDevAvailable = isFeatureDevAvailable(project)
         )
 
         scope.launch {

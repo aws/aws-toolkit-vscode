@@ -19,7 +19,7 @@ class CodeWhispererLicenseInfoManager {
         }
     }
 
-    fun getLicenseLink(code: String) = licenseLinks.getOrDefault(code, "")
+    fun getLicenseLink(code: String) = licenseLinks.getOrDefault(code, "https://spdx.org/licenses")
 
     companion object {
         fun getInstance(): CodeWhispererLicenseInfoManager = service()

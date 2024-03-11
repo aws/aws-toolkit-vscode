@@ -23,7 +23,7 @@ export interface ConnectorProps {
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
-    onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
+    onUpdateAuthentication: (featureDevEnabled: boolean, gumbyEnabled: boolean, authenticatingTabIDs: string[]) => void
     onNewTab: (tabType: TabType) => void
     tabsStorage: TabsStorage
 }
@@ -149,6 +149,7 @@ export class Connector {
                     filePaths: messageData.filePaths,
                     deletedFiles: messageData.deletedFiles,
                 },
+                body: '',
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
         }
@@ -213,7 +214,7 @@ export class Connector {
         }
 
         if (messageData.type === 'authenticationUpdateMessage') {
-            this.onUpdateAuthentication(messageData.featureDevEnabled, messageData.authenticatingTabIDs)
+            this.onUpdateAuthentication(messageData.featureDevEnabled, messageData.gumbyEnabled, messageData.authenticatingTabIDs)
             return
         }
 
@@ -261,6 +262,16 @@ export class Connector {
             messageId: messageId,
             vote: vote,
             command: 'chat-item-voted',
+            tabType: 'featuredev',
+        })
+    }
+
+    onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
+        this.sendMessageToExtension({
+            command: 'response-body-link-click',
+            tabID,
+            messageId,
+            link,
             tabType: 'featuredev',
         })
     }

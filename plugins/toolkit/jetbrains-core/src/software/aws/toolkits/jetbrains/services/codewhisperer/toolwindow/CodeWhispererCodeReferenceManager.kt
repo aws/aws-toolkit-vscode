@@ -81,25 +81,29 @@ class CodeWhispererCodeReferenceManager(private val project: Project) {
                 getOriginalContentLines(originalCode, reference.recommendationContentSpan())
             }
 
-            codeReferenceComponents.contentPanel.apply {
+            addReferenceLogPanelEntry(reference, relativePath, lineNums, originalContentLines)
+
+            insertHighLightContext(editor, start, end, reference)
+        }
+    }
+
+    fun addReferenceLogPanelEntry(reference: Reference, relativePath: String?, lineNums: String?, originalContentLines: List<String>?) {
+        codeReferenceComponents.contentPanel.apply {
+            add(
+                codeReferenceComponents.codeReferenceRecordPanel(reference, relativePath, lineNums),
+                horizontalPanelConstraints,
+                components.size - 1
+            )
+
+            // add each line of the original reference a JPanel to the tool window content panel
+            originalContentLines?.forEach { line ->
+                if (line.isEmpty()) return@forEach
                 add(
-                    codeReferenceComponents.codeReferenceRecordPanel(reference, relativePath, lineNums),
+                    codeReferenceComponents.codeContentPanel(line),
                     horizontalPanelConstraints,
                     components.size - 1
                 )
-
-                // add each line of the original reference a JPanel to the tool window content panel
-                originalContentLines.forEach { line ->
-                    if (line.isEmpty()) return@forEach
-                    add(
-                        codeReferenceComponents.codeContentPanel(line),
-                        horizontalPanelConstraints,
-                        components.size - 1
-                    )
-                }
             }
-
-            insertHighLightContext(editor, start, end, reference)
         }
     }
 
