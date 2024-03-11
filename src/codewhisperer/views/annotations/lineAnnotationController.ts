@@ -15,6 +15,7 @@ import { set } from '../../util/commonUtil'
 import { AnnotationChangeSource, inlinehintKey } from '../../models/constants'
 import globals from '../../../shared/extensionGlobals'
 import { Container } from '../../service/serviceContainer'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -29,14 +30,23 @@ export function once<T>(event: vscode.Event<T>): vscode.Event<T> {
     }
 }
 
+type CwsprTutorialUi =
+    | 'how_codewhisperer_triggers'
+    | 'tab_to_accept'
+    | 'manual_trigger'
+    | 'insufficient_file_context'
+    | 'learn_more'
+
 interface AnnotationState {
     id: string
+    name: '' | CwsprTutorialUi
     suppressWhileRunning: boolean
     text: () => string
 }
 
 const startState: AnnotationState = {
     id: '0',
+    name: '',
     suppressWhileRunning: true,
     text: () => '',
 }
@@ -54,6 +64,7 @@ const startState: AnnotationState = {
  */
 const autotriggerState: AnnotationState & { acceptedCount: number } = {
     id: '1',
+    name: 'how_codewhisperer_triggers',
     suppressWhileRunning: true,
     text: () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions',
     acceptedCount: 0,
@@ -70,6 +81,7 @@ const autotriggerState: AnnotationState & { acceptedCount: number } = {
  */
 const pressTabState: AnnotationState = {
     id: '1',
+    name: 'tab_to_accept',
     suppressWhileRunning: false,
     text: () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept',
 }
@@ -86,6 +98,7 @@ const pressTabState: AnnotationState = {
 const manualtriggerState: AnnotationState & { hasManualTrigger: boolean; hasValidResponse: boolean } = {
     id: '2',
     suppressWhileRunning: true,
+    name: 'manual_trigger',
     text: () => {
         if (os.platform() === 'win32') {
             return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Alt] + [C]'
@@ -109,6 +122,7 @@ const manualtriggerState: AnnotationState & { hasManualTrigger: boolean; hasVali
  */
 const emptyResponseState: AnnotationState = {
     id: '2',
+    name: 'insufficient_file_context',
     suppressWhileRunning: true,
     text: () => 'Try CodeWhisperer on an existing file with code for best results',
 }
@@ -124,12 +138,14 @@ const emptyResponseState: AnnotationState = {
  */
 const tryMoreExState: AnnotationState = {
     id: '3',
+    name: 'learn_more',
     suppressWhileRunning: true,
     text: () => 'CodeWhisperer Tip 3/3: Hover over suggestions to see menu for more options',
 }
 
 const endState: AnnotationState = {
     id: '4',
+    name: '',
     suppressWhileRunning: true,
     text: () => '',
 }
@@ -149,9 +165,11 @@ export class LineAnnotationController implements vscode.Disposable {
     readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
             margin: '0 0 0 3em',
+            // "borderRadius" and "padding" are not available on "after" type of decoration, this is a hack to inject these css prop to "after" content. Refer to https://github.com/microsoft/vscode/issues/68845
             textDecoration: ';border-radius:0.25rem;padding:0.05rem 0.5rem;',
             width: 'fit-content',
             border: '1px solid #ccc',
+            borderColor: 'var',
         },
         rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
         borderRadius: '4px',
@@ -350,8 +368,8 @@ export class LineAnnotationController implements vscode.Disposable {
             fontWeight: 'normal',
             fontStyle: 'normal',
             textDecoration: 'none',
-            // color: 'var(--vscode-editor-background)',
-            // backgroundColor: 'var(--vscode-foreground)',
+            color: 'var(--vscode-editor-background)',
+            backgroundColor: 'var(--vscode-foreground)',
         }
 
         const oldState = this._currentState
@@ -406,6 +424,9 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         textOptions.contentText = this._currentState.text()
+        if (this._currentState.name.length) {
+            telemetry.ui_click.emit({ elementId: this._currentState.name })
+        }
         return { after: textOptions }
     }
 
