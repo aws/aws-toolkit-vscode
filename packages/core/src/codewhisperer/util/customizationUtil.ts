@@ -56,11 +56,12 @@ export async function notifyNewCustomizations() {
 
     const newCustomizations = getNewCustomizations(availableCustomizations)
     await setPersistedCustomizations(availableCustomizations)
-    await setNewCustomizationsAvailable(newCustomizations.length)
 
     if (newCustomizations.length === 0) {
         return
     }
+
+    await setNewCustomizationsAvailable(newCustomizations.length)
 
     const select = localize(
         'AWS.codewhisperer.customization.notification.new_customizations.select',
