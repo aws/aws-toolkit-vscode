@@ -15,6 +15,7 @@ You can use /dev to:
 To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 `
 
+export const approachCreation = 'Ok, let me create a plan. This may take a few minutes.'
 export const updateCode = 'Code has been updated. Would you like to work on another task?'
 export const sessionClosed = 'Your session is now closed.'
 export const newTaskChanges = 'What change would you like to make?'

@@ -79,16 +79,16 @@ export class Messenger {
     }
 
     hasButton(type: FollowUpTypes) {
-        return this.getChatItems()
-            .pop()
-            ?.followUp?.options?.map(opt => opt.type)
-            .includes(type)
+        return (
+            this.getChatItems()
+                .pop()
+                ?.followUp?.options?.map(opt => opt.type)
+                .includes(type) ?? false
+        )
     }
 
     async waitForChatFinishesLoading() {
-        return this.waitForEvent(
-            () => this.getStore().loadingChat === false || (this.hasButton(FollowUpTypes.Retry) ?? false)
-        )
+        return this.waitForEvent(() => this.getStore().loadingChat === false || this.hasButton(FollowUpTypes.Retry))
     }
 
     async waitForEvent(

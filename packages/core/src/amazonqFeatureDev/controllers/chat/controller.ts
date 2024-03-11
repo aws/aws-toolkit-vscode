@@ -26,7 +26,7 @@ import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath, getWorkspaceFoldersByPrefixes } from '../../util/files'
-import { examples, newTaskChanges, sessionClosed, updateCode } from '../../userFacingText'
+import { examples, newTaskChanges, approachCreation, sessionClosed, updateCode } from '../../userFacingText'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -249,7 +249,7 @@ export class FeatureDevController {
         this.messenger.sendAnswer({
             type: 'answer',
             tabID,
-            message: 'Ok, let me create a plan. This may take a few minutes.',
+            message: approachCreation,
         })
 
         // Ensure that the loading icon stays showing
