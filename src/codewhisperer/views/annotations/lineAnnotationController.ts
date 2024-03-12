@@ -31,11 +31,11 @@ export function once<T>(event: vscode.Event<T>): vscode.Event<T> {
 }
 
 type CwsprTutorialUi =
-    | 'how_codewhisperer_triggers'
-    | 'tab_to_accept'
-    | 'manual_trigger'
-    | 'insufficient_file_context'
-    | 'learn_more'
+    | 'codewhisperer_learnmore_how_codewhisperer_triggers'
+    | 'codewhisperer_learnmore_tab_to_accept'
+    | 'codewhisperer_learnmore_manual_trigger'
+    | 'codewhisperer_learnmore_insufficient_file_context'
+    | 'codewhisperer_learnmore_learn_more'
 
 interface AnnotationState {
     id: string | CwsprTutorialUi
@@ -70,7 +70,7 @@ class StartState implements AnnotationState {
  *
  */
 class AutotriggerState implements AnnotationState {
-    id = 'how_codewhisperer_triggers'
+    id = 'codewhisperer_learnmore_how_codewhisperer_triggers'
     suppressWhileRunning = true
     text = () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions'
     static acceptedCount = 0
@@ -103,7 +103,7 @@ class AutotriggerState implements AnnotationState {
  *  User accepts 1 suggestion
  */
 class PressTabState implements AnnotationState {
-    id = 'tab_to_accept'
+    id = 'codewhisperer_learnmore_tab_to_accept'
     suppressWhileRunning = false
     text = () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept'
 
@@ -122,7 +122,7 @@ class PressTabState implements AnnotationState {
  *  User inokes manual trigger shortcut
  */
 class ManualtriggerState implements AnnotationState {
-    id = 'manual_trigger'
+    id = 'codewhisperer_learnmore_manual_trigger'
     suppressWhileRunning = true
 
     text = () => {
@@ -160,7 +160,7 @@ class ManualtriggerState implements AnnotationState {
  *  ??????
  */
 class EmptyResponseState implements AnnotationState {
-    id = 'insufficient_file_context'
+    id = 'codewhisperer_learnmore_insufficient_file_context'
 
     suppressWhileRunning = true
     text = () => 'Try CodeWhisperer on an existing file with code for best results'
@@ -179,7 +179,7 @@ class EmptyResponseState implements AnnotationState {
  *  User inokes manual trigger shortcut
  */
 class TryMoreExState implements AnnotationState {
-    id = 'learn_more'
+    id = 'codewhisperer_learnmore_learn_more'
 
     suppressWhileRunning = true
     text = () => 'CodeWhisperer Tip 3/3: Hover over suggestions to see menu for more options'
@@ -196,8 +196,6 @@ class EndState implements AnnotationState {
         return this
     }
 }
-
-// const state5: AnnotationState = {}
 
 export class LineAnnotationController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
@@ -412,8 +410,10 @@ export class LineAnnotationController implements vscode.Disposable {
         })
 
         // if state proceed, send a uiClick event for the fulfilled tutorial step
-        if (this._currentState.id !== nextState.id && this._currentState! instanceof StartState) {
-            telemetry.ui_click.emit({ elementId: this._currentState.id })
+        if (this._currentState.id !== nextState.id && !(this._currentState instanceof StartState)) {
+            try {
+                telemetry.ui_click.emit({ elementId: this._currentState.id, passive: true })
+            } catch (e) {}
         }
 
         // update state
