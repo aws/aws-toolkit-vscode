@@ -26,6 +26,7 @@ import {
 import { getLogger } from '../../shared/logger'
 import { AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemetry'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { indent } from '../../shared/utilities/textUtilities'
 
 const clientRegistrationType = 'public'
 const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
@@ -85,9 +86,11 @@ export class SsoAccessTokenProvider {
 
     public async getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
-        getLogger().info(`current client registration id=${data?.registration?.clientId}, 
+        getLogger().info(
+            indent(`current client registration id=${data?.registration?.clientId}, 
                             expires at ${data?.registration?.expiresAt}, 
                             key = ${this.tokenCacheKey}`)
+        )
         if (!data || !isExpired(data.token)) {
             return data?.token
         }
