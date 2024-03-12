@@ -1,3 +1,8 @@
+# _2.11_ (2024-03-07)
+- **(Bug Fix)** Move 'Send to Amazon Q' action group after the 'Show Context Actions' action
+- **(Bug Fix)** fix(CodeTransform): Updating commands for copying dependencies
+- **(Bug Fix)** Fix 'ActionUpdateThread.OLD_EDT' deprecation errors in 2024.1
+
 # _2.10_ (2024-02-29)
 - **(Feature)** Amazon Q CodeTransform: show link to docs in error notifications
 - **(Feature)** Security issue hover telemetry includes additional metadata

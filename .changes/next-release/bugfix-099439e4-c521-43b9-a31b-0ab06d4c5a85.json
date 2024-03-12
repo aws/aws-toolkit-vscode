@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Show better error message on upload zip errors for Q Code Transform."
-}
