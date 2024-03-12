@@ -277,7 +277,7 @@ class CodeModernizerSession(
         try {
             uploadArtifactToS3(createUploadUrlResponse.uploadUrl(), payload, sha256checksum, createUploadUrlResponse.kmsKeyArn().orEmpty())
         } catch (e: Exception) {
-            val errorMessage = "Unexpected error when uploading artifact to S3"
+            val errorMessage = "Unexpected error when uploading artifact to S3: ${e.localizedMessage}"
             LOG.error(e) { errorMessage }
             CodetransformTelemetry.logApiError(
                 codeTransformApiErrorMessage = errorMessage,
