@@ -89,6 +89,10 @@ abstract class CodeWhispererCodeCoverageTracker(
                     runReadAction {
                         // also increment total tokens because accepted tokens are part of it
                         incrementTotalTokens(rangeMarker.document, originalRecommendation.length)
+                        // avoid counting CodeWhisperer inserted suggestion twice in total tokens
+                        if (rangeMarker.textRange.length in 2..49 && originalRecommendation.trim().isNotEmpty()) {
+                            incrementTotalTokens(rangeMarker.document, -rangeMarker.textRange.length)
+                        }
                     }
                 }
             }
@@ -118,7 +122,7 @@ abstract class CodeWhispererCodeCoverageTracker(
             if (event.oldTimeStamp == 0L) return
         }
         // only count total tokens when it is a user keystroke input
-        // do not count doc changes from copy & paste of >=2 characters
+        // do not count doc changes from copy & paste of >=50 characters
         // do not count other changes from formatter, git command, etc
         // edge case: event can be from user hit enter with indentation where change is \n\t\t, count as 1 char increase in total chars
         // when event is auto closing [{(', there will be 2 separated events, both count as 1 char increase in total chars
@@ -126,6 +130,10 @@ abstract class CodeWhispererCodeCoverageTracker(
         if ((event.newLength == 1 && event.oldLength == 0) || (text.startsWith('\n') && text.trim().isEmpty())) {
             incrementTotalTokens(event.document, 1)
             return
+        } else if (event.newLength < 50 && text.trim().isNotEmpty()) {
+            // count doc changes from <50 multi character input as total user written code
+            // ignore all white space changes, this usually comes from IntelliJ formatting
+            incrementTotalTokens(event.document, event.newLength)
         }
     }
 
