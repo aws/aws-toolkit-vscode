@@ -12,7 +12,7 @@ import { placeholder } from '../shared/vscode/commands2'
 import { getLogger } from '../shared/logger'
 import { ExtensionUse } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { isInDevEnv } from '../codecatalyst/utils'
+import { isInDevEnv } from '../shared/vscode/env'
 import { showManageConnections } from './ui/vue/show'
 import { isWeb } from '../common/webUtils'
 

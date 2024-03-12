@@ -18,7 +18,7 @@ import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { Commands, placeholder } from '../shared/vscode/commands2'
-import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
+import { createClient, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { isDevenvVscode } from './utils'
 import { getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
@@ -36,6 +36,17 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const remoteSourceProvider = new CodeCatalystRemoteSourceProvider(commands, authProvider)
 
     await authProvider.restore()
+
+    // if connection is shared with CW, check if CC scopes are expired
+    // set suppressNextReauthPrompt to true to prevent notification on startup
+    const conn = authProvider.activeConnection
+    if (conn && authProvider.getConnectionState(conn).shared) {
+        try {
+            authProvider.suppressNextReauthPrompt = true
+            await createClient(conn)
+            authProvider.suppressNextReauthPrompt = false
+        } catch {}
+    }
 
     ctx.extensionContext.subscriptions.push(
         uriHandlers.register(ctx.uriHandler, CodeCatalystCommands.declared),

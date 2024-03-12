@@ -83,6 +83,13 @@ export function getCodeCatalystDevEnvId(): string | undefined {
     return process.env['__DEV_ENVIRONMENT_ID']
 }
 
+/**
+ * Returns true if we are in a dev env
+ */
+export function isInDevEnv(): boolean {
+    return !!getCodeCatalystDevEnvId()
+}
+
 export function getCodeCatalystProjectName(): string | undefined {
     return process.env['__DEV_ENVIRONMENT_PROJECT_NAME']
 }

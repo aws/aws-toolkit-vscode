@@ -445,7 +445,7 @@ export const AuthStates = {
     /**
      * The current connection exists, but needs to be reauthenticated for this feature to work
      *
-     * Look to use {@link AuthUtil.reauthenticate}
+     * Look to use {@link AuthUtil.reauthenticate()}
      */
     expired: 'expired',
     /**
