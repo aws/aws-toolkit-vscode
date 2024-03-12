@@ -302,7 +302,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
     readonly refresh = debounce2((editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) => {
         this._refresh(editor, source, e)
-    }, 250)
+    }, 250).promise
 
     private async _refresh(editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) {
         if (this.isTutorialDone()) {

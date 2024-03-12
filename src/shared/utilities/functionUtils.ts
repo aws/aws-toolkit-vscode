@@ -109,22 +109,33 @@ export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => 
 export function debounce2<T, U extends any[]>(
     cb: (...args: U) => T | Promise<T>,
     delay: number = 0
-): (...args: U) => Promise<T> {
+): { promise: (...args: U) => Promise<T>; cancel: () => void } {
     let timer: NodeJS.Timeout | undefined
     let promise: Promise<T> | undefined
 
-    return (...arg) => {
-        timer?.refresh()
+    const cancel = (): void => {
+        if (timer) {
+            clearTimeout(timer)
+            timer = undefined
+            promise = undefined
+        }
+    }
 
-        return (promise ??= new Promise<T>((resolve, reject) => {
-            timer = globals.clock.setTimeout(async () => {
-                timer = promise = undefined
-                try {
-                    resolve(await cb(...arg))
-                } catch (err) {
-                    reject(err)
-                }
-            }, delay)
-        }))
+    return {
+        promise: (...arg) => {
+            timer?.refresh()
+
+            return (promise ??= new Promise<T>((resolve, reject) => {
+                timer = globals.clock.setTimeout(async () => {
+                    timer = promise = undefined
+                    try {
+                        resolve(await cb(...arg))
+                    } catch (err) {
+                        reject(err)
+                    }
+                }, delay)
+            }))
+        },
+        cancel: cancel,
     }
 }

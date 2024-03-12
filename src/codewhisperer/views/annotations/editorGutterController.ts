@@ -10,6 +10,7 @@ import { RecommendationService, SuggestionActionEvent } from '../../service/reco
 import { once } from './lineAnnotationController'
 import { Container } from '../../service/serviceContainer'
 import { RecommendationHandler } from '../../service/recommendationHandler'
+import { debounce2 } from '../../../shared/utilities/functionUtils'
 
 export class EditorGutterController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
@@ -36,11 +37,11 @@ export class EditorGutterController implements vscode.Disposable {
             once(this.container._lineTracker.onReady)(this.onReady, this),
             this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
-                    this.refresh(vscode.window.activeTextEditor)
+                    this._refresh(vscode.window.activeTextEditor)
                 }
             }),
             this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
-                this.refresh(vscode.window.activeTextEditor)
+                this._refresh(vscode.window.activeTextEditor)
             })
         )
     }
@@ -53,7 +54,7 @@ export class EditorGutterController implements vscode.Disposable {
 
     private onReady(): void {
         this._isReady = true
-        this.refresh(vscode.window.activeTextEditor)
+        this._refresh(vscode.window.activeTextEditor)
     }
 
     private async onSuggestionActionEvent(e: SuggestionActionEvent) {
@@ -62,7 +63,7 @@ export class EditorGutterController implements vscode.Disposable {
         }
 
         this.clear(e.editor) // do we need this?
-        await this.refresh(e.editor)
+        await this.refreshDebounced.promise(e.editor)
     }
 
     private async onDidReceiveRecommendation() {
@@ -71,7 +72,7 @@ export class EditorGutterController implements vscode.Disposable {
         }
 
         if (this._editor && this._editor === vscode.window.activeTextEditor) {
-            await this.refresh(this._editor)
+            await this._refresh(this._editor)
         }
     }
 
@@ -83,7 +84,12 @@ export class EditorGutterController implements vscode.Disposable {
         editor?.setDecorations(this.cwLineHintDecoration, [])
     }
 
-    async refresh(editor: vscode.TextEditor | undefined) {
+    readonly refreshDebounced = debounce2((editor: vscode.TextEditor | undefined) => {
+        this._refresh(editor)
+    }, 500)
+
+    private async _refresh(editor: vscode.TextEditor | undefined) {
+        this.refreshDebounced.cancel()
         if (!this.container.auth.isConnectionValid(false)) {
             this.clear(this._editor)
             return
