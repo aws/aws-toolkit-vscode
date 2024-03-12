@@ -116,7 +116,11 @@ export class Session {
         )
         this._latestMessage = ''
 
-        telemetry.amazonq_isApproachAccepted.emit({ amazonqConversationId: this.conversationId, enabled: true })
+        telemetry.amazonq_isApproachAccepted.emit({
+            amazonqConversationId: this.conversationId,
+            enabled: true,
+            result: 'Succeeded',
+        })
     }
 
     async send(msg: string): Promise<Interaction> {
