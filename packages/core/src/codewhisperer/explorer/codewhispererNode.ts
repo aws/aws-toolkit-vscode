@@ -16,13 +16,14 @@ import {
     createGettingStarted,
     createSignout,
     createSeparator,
+    createAutoScans,
 } from './codewhispererChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { CodeSuggestionsState } from '../models/model'
+import { CodeScansState, CodeSuggestionsState } from '../models/model'
 
 export class CodeWhispererNode implements TreeNode {
     public readonly id = 'codewhisperer'
@@ -81,6 +82,7 @@ export class CodeWhispererNode implements TreeNode {
     public getChildren(type: 'tree' | 'item' = 'tree'): any[] {
         const _getChildren = () => {
             const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
+            const autoScansEnabled = CodeScansState.instance.isScansEnabled()
             if (AuthUtil.instance.isConnectionExpired()) {
                 return [createReconnect(type), createLearnMore(type)]
             }
@@ -91,7 +93,12 @@ export class CodeWhispererNode implements TreeNode {
                 if (hasVendedIamCredentials()) {
                     return [createFreeTierLimitMet(type), createOpenReferenceLog(type)]
                 } else {
-                    return [createFreeTierLimitMet(type), createSecurityScan(type), createOpenReferenceLog(type)]
+                    return [
+                        createFreeTierLimitMet(type),
+                        createSecurityScan(type),
+                        createAutoScans(type, autoScansEnabled),
+                        createOpenReferenceLog(type),
+                    ]
                 }
             } else {
                 if (hasVendedIamCredentials()) {
@@ -103,6 +110,7 @@ export class CodeWhispererNode implements TreeNode {
                     ) {
                         return [
                             createAutoSuggestions(type, autoTriggerEnabled),
+                            createAutoScans(type, autoScansEnabled),
                             createSecurityScan(type),
                             createSelectCustomization(type),
                             createOpenReferenceLog(type),
@@ -111,6 +119,7 @@ export class CodeWhispererNode implements TreeNode {
                     }
                     return [
                         createAutoSuggestions(type, autoTriggerEnabled),
+                        createAutoScans(type, autoScansEnabled),
                         createSecurityScan(type),
                         createOpenReferenceLog(type),
                         createGettingStarted(type), // "Learn" node : opens Learn CodeWhisperer page

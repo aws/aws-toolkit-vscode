@@ -13,7 +13,7 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
-import { autoTriggerEnabledKey } from './constants'
+import { autoScansEnabledKey, autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
 
 // unavoidable global variables
@@ -101,6 +101,44 @@ export class CodeSuggestionsState {
 
     isSuggestionsEnabled(): boolean {
         const isEnabled = get(autoTriggerEnabledKey, this.#context)
+        return isEnabled !== undefined ? isEnabled : this.#fallback
+    }
+}
+
+export class CodeScansState {
+    #context: vscode.Memento
+    /** The initial state if scan state was not defined */
+    #fallback: boolean
+    #onDidChangeState = new vscode.EventEmitter<boolean>()
+    /** Set a callback for when state of code scans changes */
+    onDidChangeState = this.#onDidChangeState.event
+
+    static #instance: CodeScansState
+    static get instance() {
+        return (this.#instance ??= new this())
+    }
+
+    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = false) {
+        this.#context = context
+        this.#fallback = fallback
+    }
+
+    async toggleScans() {
+        const autoScansEnabled = this.isScansEnabled()
+        const toSet: boolean = !autoScansEnabled
+        await set(autoScansEnabledKey, toSet, this.#context)
+        this.#onDidChangeState.fire(toSet)
+        return toSet
+    }
+
+    async setScansEnabled(isEnabled: boolean) {
+        if (this.isScansEnabled() !== isEnabled) {
+            await this.toggleScans()
+        }
+    }
+
+    isScansEnabled(): boolean {
+        const isEnabled = get(autoScansEnabledKey, this.#context)
         return isEnabled !== undefined ? isEnabled : this.#fallback
     }
 }
@@ -196,7 +234,7 @@ export class CodeScanState {
     public getIconForButton() {
         switch (this.codeScanState) {
             case CodeScanStatus.NotStarted:
-                return getIcon('vscode-debug-alt-small')
+                return getIcon('vscode-debug-all')
             case CodeScanStatus.Running:
                 return getIcon('vscode-stop-circle')
             case CodeScanStatus.Cancelling:

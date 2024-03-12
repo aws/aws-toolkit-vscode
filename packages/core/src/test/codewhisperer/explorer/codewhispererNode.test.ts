@@ -109,6 +109,7 @@ describe('codewhispererNode', function () {
             const ids = node.getChildren().map(o => o.resource.id)
             assert.deepStrictEqual(ids, [
                 'aws.codeWhisperer.toggleCodeSuggestion',
+                'aws.codeWhisperer.toggleCodeScan',
                 'aws.codeWhisperer.security.scan',
                 'aws.codeWhisperer.openReferencePanel',
                 'aws.codeWhisperer.gettingStarted',

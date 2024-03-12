@@ -30,6 +30,12 @@ export const autoSuggestionConfig = {
     deactivated: 'Deactivated',
 }
 
+export const autoScansConfig = {
+    settingId: 'codewhisperer_autoScansActivation',
+    activated: 'Activated',
+    deactivated: 'Deactivated',
+}
+
 /**
  * EditorCon context
  */
@@ -136,6 +142,8 @@ export const unsupportedLanguagesCacheTTL = 10 * 60 * 60 * 1000
 export const unsupportedLanguagesKey = 'CODEWHISPERER_UNSUPPORTED_LANGUAGES_KEY'
 
 export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
+
+export const autoScansEnabledKey = 'CODEWHISPERER_AUTO_SCANS_ENABLED'
 
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
@@ -440,3 +448,8 @@ export const utgConfig = {
 }
 
 export const transformTreeNode = 'qTreeNode'
+
+export enum SecurityScanType {
+    File = 'File',
+    Project = 'Project',
+}
