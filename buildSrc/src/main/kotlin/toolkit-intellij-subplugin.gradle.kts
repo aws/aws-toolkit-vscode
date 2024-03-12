@@ -19,7 +19,6 @@ val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intel
 
 val ideProfile = IdeVersions.ideProfile(project)
 val toolkitVersion: String by project
-val remoteRobotPort: String by project
 
 // please check changelog generation logic if this format is changed
 version = "$toolkitVersion-${ideProfile.shortName}"
@@ -29,6 +28,9 @@ plugins {
     id("toolkit-testing")
     id("org.jetbrains.intellij")
 }
+
+// TODO: https://github.com/gradle/gradle/issues/15383
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
 // Add our source sets per IDE profile version (i.e. src-211)
 sourceSets {
@@ -125,10 +127,7 @@ tasks.buildSearchableOptions {
 }
 
 // https://github.com/JetBrains/gradle-intellij-plugin/blob/829786d5d196ab942d7e6eb3e472ac0af776d3fa/src/main/kotlin/org/jetbrains/intellij/tasks/RunIdeBase.kt#L315
-val openedPackages = OpenedPackages + listOf(
-    // very noisy in UI tests
-    "--add-opens=java.desktop/javax.swing.text=ALL-UNNAMED",
-) + with(OperatingSystem.current()) {
+val openedPackages = OpenedPackages + with(OperatingSystem.current()) {
     when {
         isWindows -> listOf(
             "--add-opens=java.base/sun.nio.fs=ALL-UNNAMED",
@@ -190,59 +189,6 @@ tasks.runIde {
             ideDir.set(path)
         } else {
             throw GradleException("ALTERNATIVE_IDE path not found $value")
-        }
-    }
-}
-
-// TODO: https://github.com/gradle/gradle/issues/15383
-val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-tasks.withType<DownloadRobotServerPluginTask> {
-    version.set(versionCatalog.findVersion("intellijRemoteRobot").get().requiredVersion)
-}
-
-// Enable coverage for the UI test target IDE
-ciOnly {
-    extensions.getByType<JacocoPluginExtension>().applyTo(tasks.withType<RunIdeForUiTestTask>())
-}
-tasks.withType<RunIdeForUiTestTask>().all {
-    systemProperty("robot-server.port", remoteRobotPort)
-    // mac magic
-    systemProperty("ide.mac.message.dialogs.as.sheets", "false")
-    systemProperty("jbScreenMenuBar.enabled", "false")
-    systemProperty("apple.laf.useScreenMenuBar", "false")
-    systemProperty("ide.mac.file.chooser.native", "false")
-
-    systemProperty("jb.consents.confirmation.enabled", "false")
-    // This does some magic in EndUserAgreement.java to make it not show the privacy policy
-    systemProperty("jb.privacy.policy.text", "<!--999.999-->")
-    systemProperty("ide.show.tips.on.startup.default.value", false)
-
-    systemProperty("aws.telemetry.skip_prompt", "true")
-    systemProperty("aws.suppress_deprecation_prompt", true)
-    systemProperty("idea.trust.all.projects", "true")
-
-    // These are experiments to enable for UI tests
-    systemProperty("aws.experiment.connectedLocalTerminal", true)
-    systemProperty("aws.experiment.dynamoDb", true)
-
-    debugOptions {
-        enabled.set(true)
-        suspend.set(false)
-    }
-
-    jvmArgs(openedPackages)
-
-    ciOnly {
-        configure<JacocoTaskExtension> {
-            // sync with testing-subplugin
-            // don't instrument sdk, icons, etc.
-            includes = listOf("software.aws.toolkits.*")
-            excludes = listOf("software.aws.toolkits.telemetry.*")
-
-            // 221+ uses a custom classloader and jacoco fails to find classes
-            isIncludeNoLocationClasses = true
-
-            output = Output.TCP_CLIENT // Dump to our jacoco server instead of to a file
         }
     }
 }

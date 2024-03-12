@@ -45,7 +45,7 @@ phases:
         credential_source=EcsContainer"
         
       - chmod +x gradlew
-      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME buildPlugin --console plain --info
+      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME :plugin-toolkit:intellij:buildPlugin --console plain --info
 
       - ffmpeg -loglevel quiet -nostdin -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -i ${DISPLAY} -codec:v libx264 -pix_fmt yuv420p -vf drawtext="fontsize=48:box=1:boxcolor=black@0.75:boxborderw=5:fontcolor=white:x=0:y=h-text_h:text='%{gmtime\:%H\\\\\:%M\\\\\:%S}'" -framerate 12 -g 12 /tmp/screen_recording.mp4 &
       - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME uiTestCore coverageReport --console plain --info

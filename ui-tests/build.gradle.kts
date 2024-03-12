@@ -44,8 +44,8 @@ tasks.test {
 }
 
 tasks.register<Test>("uiTestCore") {
-    dependsOn(":plugin-toolkit:jetbrains-core:buildPlugin")
-    inputs.files(":plugin-toolkit:jetbrains-core:buildPlugin")
+    dependsOn(":plugin-toolkit:intellij:buildPlugin")
+    inputs.files(":plugin-toolkit:intellij:buildPlugin")
 
     systemProperty("ide.experimental.ui", false)
     systemProperty("org.gradle.project.ideProfileName", ideProfileName)
@@ -55,7 +55,7 @@ tasks.register<Test>("uiTestCore") {
     systemProperty("testDataPath", project.rootDir.resolve("testdata").toString())
     systemProperty("testReportPath", project.buildDir.resolve("reports").resolve("tests").resolve("testRecordings").toString())
 
-    systemProperty("GRADLE_PROJECT", "plugin-toolkit:jetbrains-core")
+    systemProperty("GRADLE_PROJECT", "plugin-toolkit:intellij")
     useJUnitPlatform {
         includeTags("core")
     }
