@@ -509,7 +509,7 @@ export class Auth implements AuthService, ConnectionManager {
                 getLogger().info(`auth: Validating SSO connection: ${id}`)
                 const provider = this.getTokenProvider(id, profile)
                 if ((await provider.getToken()) === undefined) {
-                    getLogger().info(`Connection is not valid: ${id} `)
+                    getLogger().info(`auth: Connection is not valid: ${id} `)
                     return this.updateConnectionState(id, 'invalid')
                 } else {
                     return this.updateConnectionState(id, 'valid')
