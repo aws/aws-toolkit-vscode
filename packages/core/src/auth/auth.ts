@@ -188,7 +188,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile === undefined) {
             throw new Error(`Connection does not exist: ${id}`)
         }
-
+        getLogger().info(`validation connection ${id} before using it`)
         const validated = await this.validateConnection(id, profile)
         const conn =
             validated.type === 'sso' ? this.getSsoConnection(id, validated) : this.getIamConnection(id, validated)
@@ -204,7 +204,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (this.activeConnection === undefined) {
             return
         }
-
+        getLogger().info(`auth: logout`)
         await this.store.setCurrentProfileId(undefined)
         await this.invalidateConnection(this.activeConnection.id)
         this.#activeConnection = undefined
@@ -339,6 +339,7 @@ export class Auth implements AuthService, ConnectionManager {
      * Put the SSO connection in to an expired state
      */
     public async expireConnection(conn: Pick<SsoConnection, 'id'>): Promise<void> {
+        getLogger().info(`Expiring connection ${conn.id}`)
         const profile = this.store.getProfileOrThrow(conn.id)
         if (profile.type === 'iam') {
             throw new ToolkitError('Auth: Cannot force expire an IAM connection')
@@ -374,6 +375,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     public async updateConnection(connection: Pick<SsoConnection, 'id'>, profile: SsoProfile): Promise<SsoConnection>
     public async updateConnection(connection: Pick<Connection, 'id'>, profile: Profile): Promise<Connection> {
+        getLogger().info(`Updating connection ${connection.id}`)
         if (profile.type === 'iam') {
             throw new Error('Updating IAM connections is not supported')
         }
@@ -504,7 +506,7 @@ export class Auth implements AuthService, ConnectionManager {
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
         const runCheck = async () => {
             if (profile.type === 'sso') {
-                getLogger().info(`Validating connection ${id}`)
+                getLogger().info(`Validating SSO connection ${id}`)
                 const provider = this.getTokenProvider(id, profile)
                 if ((await provider.getToken()) === undefined) {
                     getLogger().info(`Connection ${id} is not valid`)
