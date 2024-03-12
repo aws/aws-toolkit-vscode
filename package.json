@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
     "description": "Including Amazon Q, CodeWhisperer, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
-    "version": "2.6.0-test-feb-5th",
+    "version": "2.6.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -57,14 +57,6 @@
     "main": "./dist/src/main",
     "browser": "./dist/src/extensionWeb",
     "contributes": {
-        "thecmes": [
-            {
-                "uiTheme": "vs",
-                "label": "codewhisperer inlinehint style",
-                "id": "codewhispererInlinehintStyle",
-                "path": "./src/codewhisperer/views/annotations/style.css"
-            }
-        ],
         "configuration": {
             "type": "object",
             "title": "%AWS.productName%",
@@ -1536,12 +1528,6 @@
                     "submenu": "amazonqEditorContextSubmenu",
                     "group": "cw_chat",
                     "when": "editorHasSelection"
-                }
-            ],
-            "editor/lineNumber/context": [
-                {
-                    "command": "aws.codewhisperer.listCommands",
-                    "when": "aws.codewhisperer.connected && editorLineNumber in codewhisperer.activeLine"
                 }
             ],
             "view/item/context": [
@@ -4058,20 +4044,6 @@
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b4"
-                }
-            },
-            "aws-codewhisperer-editor-gutter": {
-                "description": "AWS Contributed Icon",
-                "default": {
-                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\f1b5"
-                }
-            },
-            "aws-codewhisperer-editor-gutter-white": {
-                "description": "AWS Contributed Icon",
-                "default": {
-                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\f1b6"
                 }
             },
             "aws-codewhisperer-icon-black": {
