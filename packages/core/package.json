@@ -209,6 +209,10 @@
                         "amazonQWelcomePage": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "codeCatalystConnectionExpired": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
