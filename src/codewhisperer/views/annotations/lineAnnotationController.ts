@@ -38,17 +38,24 @@ type CwsprTutorialUi =
     | 'learn_more'
 
 interface AnnotationState {
-    id: string
-    name: '' | CwsprTutorialUi
+    id: string | CwsprTutorialUi
     suppressWhileRunning: boolean
     text: () => string
+    nextState<T extends object>(data: T): AnnotationState
 }
 
-const startState: AnnotationState = {
-    id: '0',
-    name: '',
-    suppressWhileRunning: true,
-    text: () => '',
+class StartState implements AnnotationState {
+    id = 'start'
+    suppressWhileRunning = true
+    text = () => ''
+
+    nextState<T extends object>(data: T): AnnotationState {
+        if ('isEndOfLine' in data && data.isEndOfLine) {
+            return new AutotriggerState()
+        } else {
+            return this
+        }
+    }
 }
 
 /**
@@ -62,12 +69,28 @@ const startState: AnnotationState = {
  *  User accepts 1 suggestion
  *
  */
-const autotriggerState: AnnotationState & { acceptedCount: number } = {
-    id: '1',
-    name: 'how_codewhisperer_triggers',
-    suppressWhileRunning: true,
-    text: () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions',
-    acceptedCount: 0,
+class AutotriggerState implements AnnotationState {
+    id = 'how_codewhisperer_triggers'
+    suppressWhileRunning = true
+    text = () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions'
+    static acceptedCount = 0
+
+    nextState<T extends object>(data: T): AnnotationState {
+        if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
+            return new ManualtriggerState()
+        } else if (
+            'source' in data &&
+            data.source === 'codewhisperer' &&
+            'isCWRunning' in data &&
+            data.isCWRunning === false &&
+            'recommendationCount' in data &&
+            (data.recommendationCount as number) > 0
+        ) {
+            return new PressTabState()
+        } else {
+            return this
+        }
+    }
 }
 
 /**
@@ -79,11 +102,14 @@ const autotriggerState: AnnotationState & { acceptedCount: number } = {
  * Exit criteria:
  *  User accepts 1 suggestion
  */
-const pressTabState: AnnotationState = {
-    id: '1',
-    name: 'tab_to_accept',
-    suppressWhileRunning: false,
-    text: () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept',
+class PressTabState implements AnnotationState {
+    id = 'tab_to_accept'
+    suppressWhileRunning = false
+    text = () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept'
+
+    nextState(data: any): AnnotationState {
+        return new AutotriggerState().nextState(data)
+    }
 }
 
 /**
@@ -95,19 +121,32 @@ const pressTabState: AnnotationState = {
  * Exit criteria:
  *  User inokes manual trigger shortcut
  */
-const manualtriggerState: AnnotationState & { hasManualTrigger: boolean; hasValidResponse: boolean } = {
-    id: '2',
-    suppressWhileRunning: true,
-    name: 'manual_trigger',
-    text: () => {
+class ManualtriggerState implements AnnotationState {
+    id = 'manual_trigger'
+    suppressWhileRunning = true
+
+    text = () => {
         if (os.platform() === 'win32') {
             return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Alt] + [C]'
         }
 
         return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Option] + [C]'
-    },
-    hasManualTrigger: false,
-    hasValidResponse: false,
+    }
+    static hasManualTrigger: boolean = false
+    static hasValidResponse: boolean = false
+
+    nextState(data: any): AnnotationState {
+        if (
+            ManualtriggerState.hasManualTrigger &&
+            ManualtriggerState.hasValidResponse &&
+            'source' in data &&
+            data.source === 'selection'
+        ) {
+            return new TryMoreExState()
+        } else {
+            return this
+        }
+    }
 }
 
 /**
@@ -120,11 +159,14 @@ const manualtriggerState: AnnotationState & { hasManualTrigger: boolean; hasVali
  * Exit criteria:
  *  ??????
  */
-const emptyResponseState: AnnotationState = {
-    id: '2',
-    name: 'insufficient_file_context',
-    suppressWhileRunning: true,
-    text: () => 'Try CodeWhisperer on an existing file with code for best results',
+class EmptyResponseState implements AnnotationState {
+    id = 'insufficient_file_context'
+
+    suppressWhileRunning = true
+    text = () => 'Try CodeWhisperer on an existing file with code for best results'
+    nextState(data: any): AnnotationState {
+        return this
+    }
 }
 
 /**
@@ -136,18 +178,23 @@ const emptyResponseState: AnnotationState = {
  * Exit criteria:
  *  User inokes manual trigger shortcut
  */
-const tryMoreExState: AnnotationState = {
-    id: '3',
-    name: 'learn_more',
-    suppressWhileRunning: true,
-    text: () => 'CodeWhisperer Tip 3/3: Hover over suggestions to see menu for more options',
+class TryMoreExState implements AnnotationState {
+    id = 'learn_more'
+
+    suppressWhileRunning = true
+    text = () => 'CodeWhisperer Tip 3/3: Hover over suggestions to see menu for more options'
+    nextState(data: any): AnnotationState {
+        return new EndState()
+    }
 }
 
-const endState: AnnotationState = {
-    id: '4',
-    name: '',
-    suppressWhileRunning: true,
-    text: () => '',
+class EndState implements AnnotationState {
+    id = 'end'
+    suppressWhileRunning = true
+    text = () => ''
+    nextState(data: any): AnnotationState {
+        return this
+    }
 }
 
 // const state5: AnnotationState = {}
@@ -160,7 +207,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _currentStep: '1' | '2' | '3' | '4' | undefined
 
-    private _currentState: AnnotationState = startState
+    private _currentState: AnnotationState = new StartState()
 
     readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
@@ -213,7 +260,7 @@ export class LineAnnotationController implements vscode.Disposable {
     // shouldSkip() {}
 
     isTutorialDone(): boolean {
-        return this._currentState.id === endState.id
+        return this._currentState.id === new EndState().id
         // return true
     }
 
@@ -341,7 +388,6 @@ export class LineAnnotationController implements vscode.Disposable {
         return decoration
     }
 
-    // TODO: fix the messy logics
     private renderOptions(
         isSameLine: boolean,
         isEndOfLine: boolean,
@@ -349,7 +395,6 @@ export class LineAnnotationController implements vscode.Disposable {
         source: AnnotationChangeSource,
         e?: SuggestionActionEvent
     ): vscode.ThemableDecorationRenderOptions | undefined {
-        // contentChanged will also emit 'selection'
         const textOptions = {
             contentText: '',
             fontWeight: 'normal',
@@ -359,65 +404,45 @@ export class LineAnnotationController implements vscode.Disposable {
             backgroundColor: 'var(--vscode-foreground)',
         }
 
-        if (this._currentState.id === startState.id) {
-            if (isEndOfLine) {
-                this._currentState = autotriggerState
-                autotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
-            }
-        } else if (this._currentState.id === endState.id) {
-            return undefined
-        } else {
-            // TODO: how to improve readability of this
-            if (this._currentState.id === autotriggerState.id) {
-                this._currentState = autotriggerState
-                if (
-                    'acceptedCount' in this._currentState &&
-                    (this._currentState.acceptedCount as number) <
-                        RecommendationService.instance.acceptedSuggestionCount
-                ) {
-                    this._currentState = manualtriggerState
-                } else if (
-                    !isCWRunning &&
-                    source === 'codewhisperer' &&
-                    e?.response?.recommendationCount &&
-                    e?.response?.recommendationCount > 0
-                ) {
-                    this._currentState = pressTabState
-                }
-            } else if (this._currentState.id === manualtriggerState.id) {
-                this._currentState = manualtriggerState
-                // if (e?.response && e.response.recommendationCount === 0 && e.triggerType === 'OnDemand') {
-                //     // if user manual triggers but receives an empty suggestion
-                //     this._currentState = emptyResponseState
-                // }
+        const nextState = this._currentState.nextState({
+            isEndOfLine: isEndOfLine,
+            isCWRunning: isCWRunning,
+            source: source,
+            recommendationCount: e?.response?.recommendationCount ?? 0,
+        })
 
-                if (
-                    'hasManualTrigger' in this._currentState &&
-                    this._currentState.hasManualTrigger &&
-                    'hasValidResponse' in this._currentState &&
-                    this._currentState.hasValidResponse
-                ) {
-                    if (source === 'selection') {
-                        this._currentState = tryMoreExState
-                    } else {
-                        return undefined
-                    }
-                }
-            } else if (this._currentState.id === tryMoreExState.id) {
-                this._currentState = endState
-            }
+        // if state proceed, send a uiClick event for the fulfilled tutorial step
+        if (this._currentState.id !== nextState.id && this._currentState! instanceof StartState) {
+            telemetry.ui_click.emit({ elementId: this._currentState.id })
+        }
+
+        // update state
+        this._currentState = nextState
+
+        if (this._currentState instanceof AutotriggerState) {
+            AutotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
+        }
+
+        if (
+            this._currentState instanceof ManualtriggerState &&
+            ManualtriggerState.hasManualTrigger &&
+            ManualtriggerState.hasValidResponse
+        ) {
+            // when users fulfill the manual trigger step, we will not show anything new until they change to another different line
+            return undefined
+        }
+
+        if (this._currentState instanceof StartState || this._currentState instanceof EndState) {
+            return undefined
         }
 
         textOptions.contentText = this._currentState.text()
-        if (this._currentState.name.length) {
-            telemetry.ui_click.emit({ elementId: this._currentState.name })
-        }
         return { after: textOptions }
     }
 
     private hoverMessage(): vscode.MarkdownString | undefined {
         const str: string = this._currentState.text()
-        if (str === tryMoreExState.text()) {
+        if (str === new TryMoreExState().text()) {
             const source: CodeWhispererSource = 'vscodeComponent'
             const md = new vscode.MarkdownString(
                 `[Learn more CodeWhisperer examples](command:aws.codeWhisperer.gettingStarted?${encodeURI(
@@ -434,17 +459,13 @@ export class LineAnnotationController implements vscode.Disposable {
     }
 
     private setMetadataForState2(e: SuggestionActionEvent) {
-        try {
-            if (this._currentState.id === manualtriggerState.id && 'hasManualTrigger' in this._currentState) {
-                this._currentState.hasManualTrigger = e.triggerType === 'OnDemand'
-            }
+        if (this._currentState instanceof ManualtriggerState) {
+            ManualtriggerState.hasManualTrigger = e.triggerType === 'OnDemand'
+        }
 
-            if (this._currentState.id === manualtriggerState.id && 'hasValidResponse' in this._currentState) {
-                this._currentState.hasValidResponse =
-                    e.response?.recommendationCount && e.response?.recommendationCount > 0
-            }
-        } catch (error) {
-            console.log(error)
+        if (this._currentState instanceof ManualtriggerState) {
+            ManualtriggerState.hasValidResponse =
+                (e.response?.recommendationCount !== undefined && e.response?.recommendationCount > 0) ?? false
         }
     }
 }
