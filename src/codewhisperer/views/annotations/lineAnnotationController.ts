@@ -16,6 +16,7 @@ import { AnnotationChangeSource, inlinehintKey } from '../../models/constants'
 import globals from '../../../shared/extensionGlobals'
 import { Container } from '../../service/serviceContainer'
 import { telemetry } from '../../../shared/telemetry/telemetry'
+import { CodeWhispererCommandBackend } from '../../commands/gettingStartedPageCommands'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -176,7 +177,7 @@ class EmptyResponseState implements AnnotationState {
  *      User navigates to a new line
  *
  * Exit criteria:
- *  User inokes manual trigger shortcut
+ *  User accepts or rejects the suggestion
  */
 class TryMoreExState implements AnnotationState {
     id = 'codewhisperer_learnmore_learn_more'
@@ -184,8 +185,20 @@ class TryMoreExState implements AnnotationState {
     suppressWhileRunning = true
     text = () => 'CodeWhisperer Tip 3/3: Hover over suggestions to see menu for more options'
     nextState(data: any): AnnotationState {
-        return new EndState()
+        if (
+            RecommendationService.instance.totalValidTriggerCount > TryMoreExState.triggerCount ||
+            TryMoreExState.learnmoeCount < CodeWhispererCommandBackend.pageShowCount
+        ) {
+            console.log('triggerCount: ', TryMoreExState.triggerCount)
+            console.log('totalValidTriggerCount: ', RecommendationService.instance.totalValidTriggerCount)
+            return new EndState()
+        } else {
+            return this
+        }
     }
+
+    static triggerCount: number = 0
+    static learnmoeCount: number = 0
 }
 
 class EndState implements AnnotationState {
@@ -419,9 +432,12 @@ export class LineAnnotationController implements vscode.Disposable {
         // update state
         this._currentState = nextState
 
-        if (this._currentState instanceof AutotriggerState) {
-            AutotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
-        }
+        // take snapshot of accepted session so that we can compre if there is delta -> users accept 1 suggestion after seeing this state
+        AutotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
+
+        // take snapshot of total trigger count so that we can compare if there is delta -> users accept/reject suggestions after seeing this state
+        TryMoreExState.triggerCount = RecommendationService.instance.totalValidTriggerCount
+        TryMoreExState.learnmoeCount = CodeWhispererCommandBackend.pageShowCount
 
         if (
             this._currentState instanceof ManualtriggerState &&

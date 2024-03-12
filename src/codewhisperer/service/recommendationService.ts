@@ -39,6 +39,11 @@ export class RecommendationService {
         return this._acceptedSuggestionCount
     }
 
+    private _totalValidTriggerCount: number = 0
+    get totalValidTriggerCount() {
+        return this._totalValidTriggerCount
+    }
+
     public static get instance() {
         return (this.#instance ??= new RecommendationService())
     }
@@ -47,6 +52,9 @@ export class RecommendationService {
         this._acceptedSuggestionCount++
     }
 
+    incrementValidTriggerCount() {
+        this._totalValidTriggerCount++
+    }
     async generateRecommendation(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
@@ -132,8 +140,6 @@ export class RecommendationService {
             let response: GetRecommendationsResponse | undefined = undefined
 
             try {
-                console.log('firing suggestion action event before triggering')
-
                 this._onSuggestionActionEvent.fire({
                     editor: editor,
                     isRunning: true,
@@ -149,6 +155,10 @@ export class RecommendationService {
                     autoTriggerType,
                     event
                 )
+
+                if (response && response.recommendationCount > 0) {
+                    this.incrementValidTriggerCount()
+                }
             } finally {
                 this._isRunning = false
                 this._onSuggestionActionEvent.fire({
