@@ -18,7 +18,7 @@ export interface LinesChangeEvent {
     readonly reason: 'editor' | 'selection' | 'content'
 }
 
-export class LineTracker {
+export class LineTracker implements vscode.Disposable {
     private _onDidChangeActiveLines = new vscode.EventEmitter<LinesChangeEvent>()
     get onDidChangeActiveLines(): vscode.Event<LinesChangeEvent> {
         return this._onDidChangeActiveLines.event
@@ -26,7 +26,6 @@ export class LineTracker {
 
     private _editor: vscode.TextEditor | undefined
     protected _disposable: vscode.Disposable | undefined
-    private _subscriptions = new Map<unknown, vscode.Disposable[]>()
 
     private _selections: LineSelection[] | undefined
 
@@ -42,7 +41,23 @@ export class LineTracker {
 
     private _ready: boolean = false
 
-    constructor() {}
+    constructor() {
+        this._disposable = vscode.Disposable.from(
+            vscode.window.onDidChangeActiveTextEditor(async e => {
+                await this.onActiveTextEditorChanged(undefined)
+            }),
+            vscode.window.onDidChangeTextEditorSelection(async e => {
+                await this.onTextEditorSelectionChanged(e)
+            }),
+            vscode.workspace.onDidChangeTextDocument(this.onContentChanged, this)
+        )
+
+        queueMicrotask(() => this.onActiveTextEditorChanged(vscode.window.activeTextEditor))
+    }
+
+    dispose() {
+        this._disposable?.dispose()
+    }
 
     ready() {
         if (this._ready) throw new Error('Container is already ready')
@@ -102,58 +117,6 @@ export class LineTracker {
     private notifyLinesChanged(reason: 'editor' | 'selection' | 'content') {
         const e: LinesChangeEvent = { editor: this._editor, selections: this.selections, reason: reason }
         this._onDidChangeActiveLines.fire(e)
-    }
-
-    subscribe(subscriber: unknown, subscription: vscode.Disposable) {
-        const disposable = {
-            dispose: () => this.unsubscribe(subscriber),
-        }
-
-        const first = this._subscriptions.size === 0
-
-        let subs = this._subscriptions.get(subscriber)
-        if (subs == null) {
-            subs = [subscription]
-            this._subscriptions.set(subscriber, subs)
-        } else {
-            subs.push(subscription)
-        }
-
-        if (first) {
-            this._disposable = vscode.Disposable.from(
-                vscode.window.onDidChangeActiveTextEditor(async e => {
-                    await this.onActiveTextEditorChanged(undefined)
-                }),
-                vscode.window.onDidChangeTextEditorSelection(async e => {
-                    await this.onTextEditorSelectionChanged(e)
-                }),
-                vscode.workspace.onDidChangeTextDocument(this.onContentChanged, this),
-                disposable
-            )
-
-            queueMicrotask(() => this.onActiveTextEditorChanged(vscode.window.activeTextEditor))
-        }
-        return this._disposable
-        // return disposable
-    }
-
-    unsubscribe(subscriber: unknown) {
-        const subs = this._subscriptions.get(subscriber)
-        if (subs == null) return
-
-        this._subscriptions.delete(subscriber)
-        for (const sub of subs) {
-            sub.dispose()
-        }
-
-        if (this._subscriptions.size !== 0) return
-
-        this._disposable?.dispose()
-        this._disposable = undefined
-    }
-
-    subscribed(subscriber: unknown) {
-        return this._subscriptions.has(subscriber)
     }
 
     includes(selections: LineSelection[]): boolean

@@ -160,7 +160,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _currentStep: '1' | '2' | '3' | '4' | undefined
 
-    _currentState: AnnotationState = startState
+    private _currentState: AnnotationState = startState
 
     readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
@@ -176,8 +176,6 @@ export class LineAnnotationController implements vscode.Disposable {
         borderSpacing: '1px',
     })
 
-    private _acceptedSuggestionCount = 0
-
     constructor(private readonly container: Container) {
         // this._currentStep = globals.context.globalState.get<'1' | '2' | '3' | undefined>(inlinehintKey)
         this._disposable = vscode.Disposable.from(
@@ -188,6 +186,7 @@ export class LineAnnotationController implements vscode.Disposable {
                 // can't use refresh because refresh, by design, should only be triggered when there is line selection change
                 this.refresh(e.editor, 'codewhisperer', e)
             }),
+            this.container._lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
             this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
                     this.refresh(vscode.window.activeTextEditor, 'editor')
@@ -197,12 +196,17 @@ export class LineAnnotationController implements vscode.Disposable {
                 this.refresh(vscode.window.activeTextEditor, 'editor')
             })
         )
-        this.setLineTracker(true)
     }
 
     dispose() {
-        this.container._lineTracker.unsubscribe(this)
         this._disposable.dispose()
+    }
+
+    private _isReady: boolean = false
+
+    private onReady(): void {
+        this._isReady = true
+        this._refresh(vscode.window.activeTextEditor, 'editor')
     }
 
     // TODO: inline tutorial targets "NEW" Codewhisperer users only, existing users should not see it
@@ -211,13 +215,6 @@ export class LineAnnotationController implements vscode.Disposable {
     isTutorialDone(): boolean {
         return this._currentState.id === endState.id
         // return true
-    }
-
-    private _isReady: boolean = false
-
-    private onReady(): void {
-        this._isReady = true
-        this._refresh(vscode.window.activeTextEditor, 'editor')
     }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
@@ -315,21 +312,6 @@ export class LineAnnotationController implements vscode.Disposable {
         this._selections = lines
         await set(inlinehintKey, this._currentStep, globals.context.globalState)
         editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
-    }
-
-    private setLineTracker(enabled: boolean) {
-        if (enabled) {
-            if (!this.container._lineTracker.subscribed(this)) {
-                this.container._lineTracker.subscribe(
-                    this,
-                    this.container._lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this)
-                )
-            }
-
-            return
-        }
-
-        this.container._lineTracker.unsubscribe(this)
     }
 
     getInlineDecoration(
