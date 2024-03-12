@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Amazon Q: Fixed prompt input submit with enter if IME enabled (issues/4125), requires shift+enter while IME enabled"
+	"description": "Amazon Q: Fixed prompt input submit with enter if IME enabled [#4125](https://github.com/aws/aws-toolkit-vscode/issues/4125), requires shift+enter while IME enabled"
 }
