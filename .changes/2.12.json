@@ -1,0 +1,20 @@
+{
+  "date" : "2024-03-12",
+  "version" : "2.12",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add configurable auto plugin update feature"
+  }, {
+    "type" : "feature",
+    "description" : "Amazon Q: Support feature development (/dev)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Show better error message on upload zip errors for Q Code Transform."
+  }, {
+    "type" : "bugfix",
+    "description" : "CodeWhisperer: Include copied code in percentage code written metrics"
+  }, {
+    "type" : "deprecation",
+    "description" : "An upcoming release will remove support for JetBrains Gateway version 2023.3 and for for IDEs based on the 2023.1 platform"
+  } ]
+}
