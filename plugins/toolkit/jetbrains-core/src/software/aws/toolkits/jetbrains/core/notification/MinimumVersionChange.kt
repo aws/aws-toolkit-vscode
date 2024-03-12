@@ -55,8 +55,8 @@ class MinimumVersionChange @JvmOverloads constructor(isUnderTest: Boolean = fals
     }
 
     companion object {
-        const val MIN_VERSION = 231
-        const val MIN_VERSION_HUMAN = "2023.1"
+        const val MIN_VERSION = 232
+        const val MIN_VERSION_HUMAN = "2023.2"
 
         // Used by tests to make sure the prompt never shows up
         const val SKIP_PROMPT = "aws.suppress_deprecation_prompt"
