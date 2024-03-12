@@ -17,6 +17,7 @@ import {
     AuthenticationUpdateMessage,
     AuthNeededException,
     OpenNewTabMessage,
+    FileComponent,
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemAction } from '@aws/mynah-ui'
@@ -121,19 +122,15 @@ export class Messenger {
         tabID: string,
         uploadId: string
     ) {
-        this.dispatcher.sendCodeResult(
-            new CodeResultMessage(
-                filePaths.map(f => f.zipFilePath),
-                deletedFiles.map(f => f.zipFilePath),
-                references,
-                tabID,
-                uploadId
-            )
-        )
+        this.dispatcher.sendCodeResult(new CodeResultMessage(filePaths, deletedFiles, references, tabID, uploadId))
     }
 
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
         this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, inProgress, message))
+    }
+
+    public updateFileComponent(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
+        this.dispatcher.updateFileComponent(new FileComponent(tabID, filePaths, deletedFiles))
     }
 
     public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {

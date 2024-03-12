@@ -39,6 +39,7 @@ export interface ChatControllerEventEmitters {
     readonly authClicked: EventEmitter<any>
     readonly processResponseBodyLinkClick: EventEmitter<any>
     readonly insertCodeAtPositionClicked: EventEmitter<any>
+    readonly fileClicked: EventEmitter<any>
 }
 
 type OpenDiffMessage = {
@@ -47,6 +48,13 @@ type OpenDiffMessage = {
     // currently the zip file path
     filePath: string
     deleted: boolean
+}
+
+type fileClickedMessage = {
+    tabID: string
+    messageId: string
+    filePath: string
+    actionName: string
 }
 export class FeatureDevController {
     private readonly messenger: Messenger
@@ -130,6 +138,9 @@ export class FeatureDevController {
         })
         this.chatControllerMessageListeners.insertCodeAtPositionClicked.event(data => {
             this.insertCodeAtPosition(data)
+        })
+        this.chatControllerMessageListeners.fileClicked.event(async data => {
+            return await this.fileClicked(data)
         })
     }
 
@@ -394,6 +405,7 @@ export class FeatureDevController {
             session = await this.sessionStorage.getSession(message.tabID)
             telemetry.amazonq_isAcceptedCodeChanges.emit({
                 amazonqConversationId: session.conversationId,
+                amazonqNumberOfFilesAccepted: session.state.filePaths?.filter(i => !i.rejected).length ?? -1,
                 enabled: true,
                 result: 'Succeeded',
             })
@@ -598,6 +610,27 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         })
 
         return { left, right }
+    }
+
+    private async fileClicked(message: fileClickedMessage) {
+        // TODO: add Telemetry here
+        const tabId: string = message.tabID
+        const filePathToUpdate: string = message.filePath
+
+        const session = await this.sessionStorage.getSession(tabId)
+        const filePathIndex = (session.state.filePaths ?? []).findIndex(obj => obj.relativePath === filePathToUpdate)
+        if (filePathIndex !== -1 && session.state.filePaths) {
+            session.state.filePaths[filePathIndex].rejected = !session.state.filePaths[filePathIndex].rejected
+        }
+        const deletedFilePathIndex = (session.state.deletedFiles ?? []).findIndex(
+            obj => obj.relativePath === filePathToUpdate
+        )
+        if (deletedFilePathIndex !== -1 && session.state.deletedFiles) {
+            session.state.deletedFiles[deletedFilePathIndex].rejected =
+                !session.state.deletedFiles[deletedFilePathIndex].rejected
+        }
+
+        await session.updateFilesPaths(tabId, session.state.filePaths ?? [], session.state.deletedFiles ?? [])
     }
 
     private async openDiff(message: OpenDiffMessage) {

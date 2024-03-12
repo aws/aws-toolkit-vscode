@@ -6,7 +6,7 @@
 import * as path from 'path'
 
 import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementState } from './sessionState'
-import type { Interaction, SessionState, SessionStateConfig } from '../types'
+import type { DeletedFileInfo, Interaction, NewFileInfo, SessionState, SessionStateConfig } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
 import { referenceLogText } from '../constants'
 import { FileSystemCommon } from '../../srcShared/fs'
@@ -157,6 +157,10 @@ export class Session {
         return resp.interaction
     }
 
+    public async updateFilesPaths(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
+        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles)
+    }
+
     public async insertChanges() {
         for (const filePath of this.state.filePaths ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
@@ -169,7 +173,7 @@ export class Session {
             await fs.writeFile(absolutePath, decodedContent)
         }
 
-        for (const filePath of this.state.deletedFiles ?? []) {
+        for (const filePath of this.state.deletedFiles?.filter(i => !i.rejected) ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
             await fs.delete(absolutePath)
         }
