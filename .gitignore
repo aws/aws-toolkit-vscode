@@ -29,7 +29,7 @@ jetbrains-gateway/bin
 jetbrains-rider/bin
 sdk-codegen/bin
 ui-tests/bin
-
+**/bin
 #CodeWhispererChat
 node_modules
 !mynah-ui/package-lock.json
