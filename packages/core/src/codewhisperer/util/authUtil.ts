@@ -295,11 +295,11 @@ export class AuthUtil {
             this.secondaryAuth.isConnectionExpired &&
             this.conn !== undefined &&
             isValidCodeWhispererCoreConnection(this.conn)
-        getLogger().debug(`codewhisperer: Connection expired = ${connectionExpired},
+        getLogger().info(`codewhisperer: Connection expired = ${connectionExpired},
                            secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired},
                            connection is undefined = ${this.conn === undefined}`)
         if (this.conn) {
-            getLogger().debug(
+            getLogger().info(
                 `codewhisperer: isValidCodeWhispererConnection = ${isValidCodeWhispererCoreConnection(this.conn)}`
             )
         }

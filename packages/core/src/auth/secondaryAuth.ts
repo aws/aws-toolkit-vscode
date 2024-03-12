@@ -156,6 +156,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 
     public get isConnectionExpired() {
+        if (this.activeConnection) {
+            getLogger().info(`secondaryAuth connection id = ${this.activeConnection.id}`)
+            getLogger().info(`secondaryAuth connection status = ${this.auth.getConnectionState(this.activeConnection)}`)
+        }
         return !!this.activeConnection && this.auth.getConnectionState(this.activeConnection) === 'invalid'
     }
 

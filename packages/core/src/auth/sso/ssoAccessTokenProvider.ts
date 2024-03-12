@@ -76,6 +76,7 @@ export class SsoAccessTokenProvider {
 
     public async invalidate(): Promise<void> {
         // Use allSettled() instead of all() to ensure all clear() calls are resolved.
+        getLogger().info(`SsoAccessTokenProvider invalidate token and registration`)
         await Promise.allSettled([
             this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
             this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
@@ -84,7 +85,9 @@ export class SsoAccessTokenProvider {
 
     public async getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
-
+        getLogger().info(`current client registration id=${data?.registration?.clientId}, 
+                            expires at ${data?.registration?.expiresAt}, 
+                            key = ${this.tokenCacheKey}`)
         if (!data || !isExpired(data.token)) {
             return data?.token
         }

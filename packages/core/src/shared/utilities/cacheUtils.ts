@@ -112,7 +112,7 @@ export function createDiskCache<T, K>(
                     log('read failed (file not found)', key)
                     return
                 }
-
+                log(`read failed ${error}`, key)
                 throw ToolkitError.chain(error, `Failed to read from "${target}"`, {
                     code: 'FSReadFailed',
                     details: { key },

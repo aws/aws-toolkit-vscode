@@ -454,6 +454,7 @@ export class Auth implements AuthService, ConnectionManager {
      * before the local token(s) are cleared as they are needed in the request.
      */
     private async invalidateConnection(id: Connection['id'], opt?: { skipGlobalLogout?: boolean }) {
+        getLogger().info(`Invalidating connection ${id}`)
         const profile = this.store.getProfileOrThrow(id)
 
         if (profile.type === 'sso') {
@@ -479,6 +480,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async updateConnectionState(id: Connection['id'], connectionState: ProfileMetadata['connectionState']) {
+        getLogger().info(`Updating connection state of ${id} to ${connectionState}`)
         const oldProfile = this.store.getProfileOrThrow(id)
         if (oldProfile.metadata.connectionState === connectionState) {
             return oldProfile
@@ -502,8 +504,10 @@ export class Auth implements AuthService, ConnectionManager {
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
         const runCheck = async () => {
             if (profile.type === 'sso') {
+                getLogger().info(`Validating connection ${id}`)
                 const provider = this.getTokenProvider(id, profile)
                 if ((await provider.getToken()) === undefined) {
+                    getLogger().info(`Connection ${id} is not valid`)
                     return this.updateConnectionState(id, 'invalid')
                 } else {
                     return this.updateConnectionState(id, 'valid')
@@ -539,7 +543,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     private async handleValidationError(id: Connection['id'], err: unknown) {
         this.#validationErrors.set(id, UnknownError.cast(err))
-
+        getLogger().info(`Handling validation error of connection ${id}`)
         return this.updateConnectionState(id, 'invalid')
     }
 
@@ -736,6 +740,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async handleInvalidCredentials<T>(id: Connection['id'], refresh: () => Promise<T>): Promise<T> {
+        getLogger().info(`Handling invalid credentials of connection ${id}`)
         const profile = this.store.getProfile(id)
         const previousState = profile?.metadata.connectionState
         await this.updateConnectionState(id, 'invalid')
