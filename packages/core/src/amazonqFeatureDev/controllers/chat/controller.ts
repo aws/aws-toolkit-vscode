@@ -159,11 +159,13 @@ export class FeatureDevController {
                     telemetry.amazonq_codeGenerationThumbsUp.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
+                        result: 'Succeeded',
                     })
                 } else if (vote === 'downvote') {
                     telemetry.amazonq_codeGenerationThumbsDown.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
+                        result: 'Succeeded',
                     })
                 }
                 break
