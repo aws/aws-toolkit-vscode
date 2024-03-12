@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util
 
 import com.intellij.util.io.HttpRequests
 import software.amazon.awssdk.utils.IoUtils
-import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -38,7 +37,7 @@ fun uploadArtifactToS3(url: String, fileToUpload: File, checksumSha256: String, 
                 IoUtils.copy(fileToUpload.inputStream(), connection.outputStream)
             }
     } catch (err: Exception) {
-        logger.error(err) { "$FEATURE_NAME: Failed to upload code to S3" }
+        logger.warn(err) { "$FEATURE_NAME: Failed to upload code to S3" }
         uploadCodeError()
     }
 }
