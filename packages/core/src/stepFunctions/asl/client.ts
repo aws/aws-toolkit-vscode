@@ -51,6 +51,10 @@ interface Settings {
     }
 }
 
+/**
+ * Starts the ASL LSP client/server and creates related resources (vscode `OutputChannel`,
+ * `registerDocumentRangeFormattingEditProvider`, …).
+ */
 export async function activate(extensionContext: ExtensionContext) {
     const config = new StepFunctionsSettings()
     const toDispose = extensionContext.subscriptions
