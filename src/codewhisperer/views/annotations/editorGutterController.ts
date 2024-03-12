@@ -46,7 +46,6 @@ export class EditorGutterController implements vscode.Disposable {
     }
 
     dispose() {
-        this.container._lineTracker.unsubscribe(this)
         this._disposable.dispose()
     }
 
