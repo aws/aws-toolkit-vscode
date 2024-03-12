@@ -16,6 +16,8 @@ import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.selected
+import com.intellij.ui.layout.selected
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.ExecutableWithPath
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
@@ -23,6 +25,7 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AwsTelemetry
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -38,6 +41,8 @@ class AwsSettingsConfigurable : SearchableConfigurable {
     private val profilesNotification: ComboBox<ProfilesNotification> = ComboBox(ProfilesNotification.values())
 
     val enableTelemetry: JBCheckBox = JBCheckBox()
+    private val enableAutoUpdate: JBCheckBox = JBCheckBox()
+    private val enableAutoUpdateNotification: JBCheckBox = JBCheckBox()
     override fun createComponent(): JComponent = panel {
         group(message("aws.settings.serverless_label")) {
             row {
@@ -67,13 +72,30 @@ class AwsSettingsConfigurable : SearchableConfigurable {
                     BrowserUtil.open("https://docs.aws.amazon.com/sdkref/latest/guide/support-maint-idetoolkits.html")
                 }
             }
+
+            row {
+                cell(enableAutoUpdate).applyToComponent { this.isSelected = AwsSettings.getInstance().isAutoUpdateEnabled }
+                text(message("aws.settings.auto_update.text"))
+            }
+
+            indent {
+                row {
+                    cell(enableAutoUpdateNotification).applyToComponent {
+                        this.isSelected = AwsSettings.getInstance().isAutoUpdateNotificationEnabled
+                    }.enabledIf(enableAutoUpdate.selected)
+                    text(message("aws.settings.auto_update.notification_enable.text"))
+                        .comment(message("aws.settings.auto_update.notification_enable.tooltip"))
+                }
+            }
         }
     }
 
     override fun isModified(): Boolean = getSamPathWithoutSpaces() != getSavedExecutablePath(samExecutableInstance, false) ||
         defaultRegionHandling.selectedItem != AwsSettings.getInstance().useDefaultCredentialRegion ||
         profilesNotification.selectedItem != AwsSettings.getInstance().profilesNotification ||
-        enableTelemetry.isSelected != AwsSettings.getInstance().isTelemetryEnabled
+        enableTelemetry.isSelected != AwsSettings.getInstance().isTelemetryEnabled ||
+        enableAutoUpdate.isSelected != AwsSettings.getInstance().isAutoUpdateEnabled ||
+        enableAutoUpdateNotification.isSelected != AwsSettings.getInstance().isAutoUpdateNotificationEnabled
 
     override fun apply() {
         validateAndSaveCliSettings(
@@ -92,6 +114,8 @@ class AwsSettingsConfigurable : SearchableConfigurable {
         enableTelemetry.isSelected = awsSettings.isTelemetryEnabled
         defaultRegionHandling.selectedItem = awsSettings.useDefaultCredentialRegion
         profilesNotification.selectedItem = awsSettings.profilesNotification
+        enableAutoUpdate.isSelected = awsSettings.isAutoUpdateEnabled
+        enableAutoUpdateNotification.isSelected = awsSettings.isAutoUpdateNotificationEnabled
     }
 
     override fun getDisplayName(): String = message("aws.settings.title")
@@ -190,11 +214,25 @@ class AwsSettingsConfigurable : SearchableConfigurable {
         awsSettings.isTelemetryEnabled = enableTelemetry.isSelected
         awsSettings.useDefaultCredentialRegion = defaultRegionHandling.selectedItem as? UseAwsCredentialRegion ?: UseAwsCredentialRegion.Never
         awsSettings.profilesNotification = profilesNotification.selectedItem as? ProfilesNotification ?: ProfilesNotification.Always
+
+        // Send telemetry if there's a change
+        if (awsSettings.isAutoUpdateEnabled != enableAutoUpdate.isSelected) {
+            val settingState = if (enableAutoUpdate.isSelected) "OPTIN" else "OPTOUT"
+            AwsTelemetry.modifySetting(project = null, settingId = ID_AUTO_UPDATE, settingState = settingState)
+        }
+        if (awsSettings.isAutoUpdateNotificationEnabled != enableAutoUpdateNotification.isSelected) {
+            val settingsState = if (enableAutoUpdateNotification.isSelected) "OPTIN" else "OPTOUT"
+            AwsTelemetry.modifySetting(project = null, settingId = ID_AUTO_UPDATE_NOTIFY, settingState = settingsState)
+        }
+        awsSettings.isAutoUpdateEnabled = enableAutoUpdate.isSelected
+        awsSettings.isAutoUpdateNotificationEnabled = enableAutoUpdateNotification.isSelected
     }
 
     private fun getSamPathWithoutSpaces() = StringUtil.nullize(samExecutablePath.text.trim { it <= ' ' })
 
     companion object {
         private const val SAM = "sam"
+        private const val ID_AUTO_UPDATE = "autoUpdate"
+        private const val ID_AUTO_UPDATE_NOTIFY = "autoUpdateNotification"
     }
 }

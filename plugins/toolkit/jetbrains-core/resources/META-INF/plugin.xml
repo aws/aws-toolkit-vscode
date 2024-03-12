@@ -316,6 +316,8 @@
                             serviceImplementation="software.aws.toolkits.jetbrains.core.tools.DefaultToolManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.tools.MockToolManager"/>
 
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.plugins.ToolkitUpdateManager"/>
+
         <applicationService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>

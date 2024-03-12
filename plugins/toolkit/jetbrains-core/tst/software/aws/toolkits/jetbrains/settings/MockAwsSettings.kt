@@ -11,6 +11,9 @@ class MockAwsSettings : AwsSettings {
     override var promptedForTelemetry: Boolean = false
     override var useDefaultCredentialRegion: UseAwsCredentialRegion = UseAwsCredentialRegion.Prompt
     override var profilesNotification: ProfilesNotification = ProfilesNotification.Always
+    override var isAutoUpdateEnabled: Boolean = true
+    override var isAutoUpdateNotificationEnabled: Boolean = true
+    override var isAutoUpdateFeatureNotificationShownOnce: Boolean = false
     override val clientId: UUID = UUID.randomUUID()
 
     internal fun reset() {

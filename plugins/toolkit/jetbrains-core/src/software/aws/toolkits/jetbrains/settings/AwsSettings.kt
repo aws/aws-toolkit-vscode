@@ -23,6 +23,9 @@ interface AwsSettings {
     var promptedForTelemetry: Boolean
     var useDefaultCredentialRegion: UseAwsCredentialRegion
     var profilesNotification: ProfilesNotification
+    var isAutoUpdateEnabled: Boolean
+    var isAutoUpdateNotificationEnabled: Boolean
+    var isAutoUpdateFeatureNotificationShownOnce: Boolean
     val clientId: UUID
 
     companion object {
@@ -83,6 +86,24 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
             state.profilesNotification = value.name
         }
 
+    override var isAutoUpdateEnabled: Boolean
+        get() = state.isAutoUpdateEnabled ?: true
+        set(value) {
+            state.isAutoUpdateEnabled = value
+        }
+
+    override var isAutoUpdateNotificationEnabled: Boolean
+        get() = state.isAutoUpdateNotificationEnabled ?: true
+        set(value) {
+            state.isAutoUpdateNotificationEnabled = value
+        }
+
+    override var isAutoUpdateFeatureNotificationShownOnce: Boolean
+        get() = state.isAutoUpdateFeatureNotificationShownOnce ?: false
+        set(value) {
+            state.isAutoUpdateFeatureNotificationShownOnce = value
+        }
+
     override val clientId: UUID
         @Synchronized get() {
             val id = when {
@@ -107,7 +128,10 @@ data class AwsConfiguration(
     var isTelemetryEnabled: Boolean? = null,
     var promptedForTelemetry: Boolean? = null,
     var useDefaultCredentialRegion: String? = null,
-    var profilesNotification: String? = null
+    var profilesNotification: String? = null,
+    var isAutoUpdateEnabled: Boolean? = null,
+    var isAutoUpdateNotificationEnabled: Boolean? = null,
+    var isAutoUpdateFeatureNotificationShownOnce: Boolean? = null
 )
 
 class ShowSettingsAction : AnAction(message("aws.settings.show.label")), DumbAware {
