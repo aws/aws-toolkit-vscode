@@ -23,8 +23,10 @@ import {
     getVersionData,
     validateOpenProjects,
     writeLogs,
-    runMavenCommand,
     TransformationCandidateProject,
+    getDependenciesFolderInfo,
+    FolderInfo,
+    prepareProjectDependencies,
 } from '../service/transformByQHandler'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
@@ -144,8 +146,9 @@ export async function validateCanCompileProject() {
 
 export async function compileProject() {
     try {
-        await runMavenCommand(['clean', 'compile'])
-        await runMavenCommand(['install'])
+        const dependenciesFolder: FolderInfo = getDependenciesFolderInfo()
+        transformByQState.setDependencyFolderInfo(dependenciesFolder)
+        await prepareProjectDependencies(dependenciesFolder)
     } catch (err) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.installErrorMessage)
         // open build-logs.txt file to show user error logs
@@ -200,8 +203,7 @@ export async function preTransformationUploadCode() {
     let payloadFilePath = ''
     throwIfCancelled()
     try {
-        void vscode.window.showInformationMessage(CodeWhispererConstants.compilingProjectMessage)
-        payloadFilePath = await zipCode()
+        payloadFilePath = await zipCode(transformByQState.getDependencyFolderInfo()!)
         transformByQState.setPayloadFilePath(payloadFilePath)
         await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
         void vscode.window.showInformationMessage(CodeWhispererConstants.submittedProjectMessage)

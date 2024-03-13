@@ -45,11 +45,10 @@ export interface TransformationCandidateProject {
     JDKVersion?: JDKVersion
 }
 
-interface FolderInfo {
+export interface FolderInfo {
     path: string
     name: string
 }
-
 
 // log project details silently
 export async function validateAndLogProjectDetails() {
@@ -138,7 +137,10 @@ async function getMavenJavaProjects(javaProjects: TransformationCandidateProject
     return mavenJavaProjects
 }
 
-async function getProjectsValidToTransform(mavenJavaProjects: TransformationCandidateProject[], onProjectFirstOpen: boolean = true) {
+async function getProjectsValidToTransform(
+    mavenJavaProjects: TransformationCandidateProject[],
+    onProjectFirstOpen: boolean = true
+) {
     const projectsValidToTransform: TransformationCandidateProject[] = []
     for (const project of mavenJavaProjects) {
         let detectedJavaVersion = undefined
@@ -211,7 +213,10 @@ async function getProjectsValidToTransform(mavenJavaProjects: TransformationCand
  * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
  * and we allow the user to specify the Java version.
  */
-export async function validateOpenProjects(projects: TransformationCandidateProject[], onProjectFirstOpen: boolean = true) {
+export async function validateOpenProjects(
+    projects: TransformationCandidateProject[],
+    onProjectFirstOpen: boolean = true
+) {
     const javaProjects = await getJavaProjects(projects)
 
     if (javaProjects.length === 0) {
@@ -582,7 +587,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
     }
 }
 
-function getDependenciesFolderInfo(): FolderInfo {
+export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
     const dependencyFolderPath = path.join(os.tmpdir(), dependencyFolderName)
     return {
@@ -597,21 +602,12 @@ export async function writeLogs() {
     return logFilePath
 }
 
-export async function zipCode() {
-    const modulePath = transformByQState.getProjectPath()
-    throwIfCancelled()
-    const zipStartTime = Date.now()
-    const sourceFolder = modulePath
-    const sourceFiles = getFilesRecursively(sourceFolder, false)
-    const dependenciesFolder: FolderInfo = getDependenciesFolderInfo()
-
+export async function prepareProjectDependencies(dependenciesFolder: FolderInfo) {
     try {
         copyProjectDependencies(dependenciesFolder)
     } catch (err) {
         // continue in case of errors
     }
-
-    throwIfCancelled()
 
     try {
         installProjectDependencies(dependenciesFolder)
@@ -630,6 +626,14 @@ export async function zipCode() {
     }
 
     throwIfCancelled()
+}
+
+export async function zipCode(dependenciesFolder: FolderInfo) {
+    const modulePath = transformByQState.getProjectPath()
+    throwIfCancelled()
+    const zipStartTime = Date.now()
+    const sourceFolder = modulePath
+    const sourceFiles = getFilesRecursively(sourceFolder, false)
 
     const zip = new AdmZip()
     const zipManifest = new ZipManifest()
@@ -691,10 +695,7 @@ export async function zipCode() {
 
     if (exceedsLimit) {
         void vscode.window.showErrorMessage(
-            CodeWhispererConstants.projectSizeTooLargeMessage.replace(
-                'LINK_HERE',
-                CodeWhispererConstants.linkToUploadZipTooLarge
-            )
+            projectSizeTooLargeMessage.replace('LINK_HERE', CodeWhispererConstants.linkToUploadZipTooLarge)
         )
         throw new Error('Project size exceeds 1GB limit')
     }

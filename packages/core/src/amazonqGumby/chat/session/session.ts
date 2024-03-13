@@ -13,7 +13,7 @@ export class Session {
 
     public jobSubmitted: boolean = false
 
-    constructor(private messenger: Messenger, public readonly tabID: string) {}
+    constructor(messenger: Messenger, public readonly tabID: string) {}
 
     /**
      * Preload any events that have to run before a chat message can be sent
