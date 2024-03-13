@@ -34,12 +34,19 @@ export class ErrorMessage extends UiMessage {
 export class AsyncEventProgressMessage extends UiMessage {
     readonly inProgress: boolean
     readonly message: string | undefined
+    readonly messageID?: string | undefined
     override type = 'asyncEventProgressMessage'
 
-    constructor(tabID: string, inProgress: boolean, message: string | undefined) {
+    constructor(
+        tabID: string,
+        inProgress: boolean,
+        message: string | undefined = undefined,
+        messageID: string | undefined = undefined
+    ) {
         super(tabID)
         this.inProgress = inProgress
         this.message = message
+        this.messageID = messageID
     }
 }
 
@@ -103,12 +110,14 @@ export class ChatPrompt extends UiMessage {
 
 export interface ChatMessageProps {
     readonly message: string | undefined
+    readonly messageId?: string | undefined
     readonly messageType: ChatItemType
     readonly buttons?: ChatItemButton[]
 }
 
 export class ChatMessage extends UiMessage {
     readonly message: string | undefined
+    readonly messageId?: string | undefined
     readonly messageType: ChatItemType
     readonly buttons: ChatItemButton[]
     override type = 'chatMessage'
@@ -118,6 +127,7 @@ export class ChatMessage extends UiMessage {
         this.message = props.message
         this.messageType = props.messageType
         this.buttons = props.buttons || []
+        this.messageId = props.messageId || undefined
     }
 }
 

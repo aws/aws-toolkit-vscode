@@ -215,8 +215,13 @@ export class GumbyController {
         const fromJDKVersion: string = message.formSelectedValues['GumbyTransformJdkFromForm']
         const toJDKVersion: string = message.formSelectedValues['GumbyTransformJdkToForm']
 
-        this.messenger.sendAsyncEventProgress(message.tabId, true, '')
-        this.messenger.sendAsyncEventProgress(message.tabId, true, 'Compiling the module...')
+        this.messenger.sendAsyncEventProgress(message.tabId, true, undefined, 'gumbyCompilingModule')
+        this.messenger.sendAnswer({
+            type: 'answer-part',
+            tabID: message.tabId,
+            messageID: 'gumbyCompilingModule',
+            message: 'Compiling the module and checking dependencies...',
+        })
 
         await processTransformFormInput(pathToModule, fromJDKVersion, toJDKVersion)
         await this.validateBuildWithPromptOnError(message)
@@ -240,7 +245,12 @@ export class GumbyController {
 
         try {
             await compileProject()
-            this.messenger.sendUpdatePreviousAnswer('compile-succeeded', message.tabId)
+            this.messenger.sendAnswer({
+                type: 'ai-prompt',
+                tabID: message.tabId,
+                messageID: 'gumbyCompiledProject',
+                message: 'Local project build and dependency check passed.',
+            })
             this.messenger.sendJobSubmittedMessage(message.tabId)
             await startTransformByQ()
         } catch (err: any) {

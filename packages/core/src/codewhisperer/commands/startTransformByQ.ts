@@ -30,6 +30,7 @@ import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML, getStringHash } from '../../shared/utilities/textUtilities'
 import {
+    CodeTransformCancelSrcComponents,
     CodeTransformJavaSourceVersionsAllowed,
     CodeTransformJavaTargetVersionsAllowed,
     telemetry,
@@ -514,7 +515,7 @@ export async function stopTransformByQ(
             void vscode.window.showErrorMessage(CodeWhispererConstants.errorStoppingJobMessage)
         }
         telemetry.codeTransform_jobIsCancelledByUser.emit({
-            codeTransformCancelSrcComponents: cancelSrc,
+            codeTransformCancelSrcComponents: cancelSrc as CodeTransformCancelSrcComponents,
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             result: MetadataResult.Pass,
         })
