@@ -8,13 +8,9 @@ plugins {
 }
 
 intellijToolkit {
-    ideFlavor.set(IdeFlavor.IU)
+    ideFlavor.set(IdeFlavor.IC)
 }
 
 dependencies {
-    compileOnly(project(":plugin-amazonq:shared:jetbrains-community"))
-    compileOnly(project(":plugin-core:jetbrains-ultimate"))
-
-    // delete when fully split
-    compileOnly(project(":plugin-toolkit:jetbrains-ultimate"))
+    implementation(project(":plugin-core:sdk-codegen"))
 }

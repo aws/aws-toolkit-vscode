@@ -13,6 +13,8 @@ plugins {
 dependencies {
     compileOnly(project(":plugin-toolkit:jetbrains-core"))
     runtimeOnly(project(":plugin-toolkit:jetbrains-core", "instrumentedJar"))
+    compileOnly(project(":plugin-core:jetbrains-ultimate"))
+    runtimeOnly(project(":plugin-core:jetbrains-ultimate", "instrumentedJar"))
 
     testCompileOnly(project(":plugin-toolkit:jetbrains-core"))
     testRuntimeOnly(project(":plugin-toolkit:jetbrains-core", "instrumentedJar"))

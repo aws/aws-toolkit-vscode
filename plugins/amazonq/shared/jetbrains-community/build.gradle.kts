@@ -12,6 +12,8 @@ intellijToolkit {
 }
 
 dependencies {
+    compileOnly(project(":plugin-core:jetbrains-community"))
+
     // delete when fully split
     compileOnly(project(":plugin-toolkit:jetbrains-core", "instrumentedJar"))
 }
