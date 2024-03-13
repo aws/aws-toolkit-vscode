@@ -506,12 +506,12 @@ export class Auth implements AuthService, ConnectionManager {
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
         const runCheck = async () => {
             if (profile.type === 'sso') {
-                getLogger().info(`auth: Validating SSO connection: ${id}`)
                 const provider = this.getTokenProvider(id, profile)
                 if ((await provider.getToken()) === undefined) {
                     getLogger().info(`auth: Connection is not valid: ${id} `)
                     return this.updateConnectionState(id, 'invalid')
                 } else {
+                    getLogger().info(`auth: Connection is valid: ${id} `)
                     return this.updateConnectionState(id, 'valid')
                 }
             } else {
