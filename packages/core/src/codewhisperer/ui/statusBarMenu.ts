@@ -46,7 +46,12 @@ function getAmazonQCodeWhispererNodes() {
         if (hasVendedIamCredentials()) {
             return [createFreeTierLimitMet('item'), createOpenReferenceLog()]
         }
-        return [createFreeTierLimitMet('item'), createOpenReferenceLog(), createSecurityScan()]
+        return [
+            createFreeTierLimitMet('item'),
+            createOpenReferenceLog(),
+            createSeparator('Other Features'),
+            createSecurityScan(),
+        ]
     }
 
     if (hasVendedIamCredentials()) {
