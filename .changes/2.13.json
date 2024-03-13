@@ -1,0 +1,8 @@
+{
+  "date" : "2024-03-13",
+  "version" : "2.13",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeTransform: add button to submit feedback when job fails"
+  } ]
+}
