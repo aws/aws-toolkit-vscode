@@ -40,6 +40,9 @@ export class LineTracker implements vscode.Disposable {
     }
 
     private _ready: boolean = false
+    get isReady() {
+        return this._ready
+    }
 
     constructor() {
         this._disposable = vscode.Disposable.from(
@@ -66,7 +69,8 @@ export class LineTracker implements vscode.Disposable {
         queueMicrotask(() => this._onReady.fire())
     }
 
-    private async onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
+    // @VisibleForTesting
+    async onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
         if (editor === this._editor) return
 
         this._editor = editor
@@ -82,7 +86,8 @@ export class LineTracker implements vscode.Disposable {
         }
     }
 
-    private async onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
+    // @VisibleForTesting
+    async onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
         // If this isn't for our cached editor and its not a real editor -- kick out
         if (this._editor !== e.textEditor && !isTextEditor(e.textEditor)) return
 
@@ -98,11 +103,12 @@ export class LineTracker implements vscode.Disposable {
 
         if (this._suspended) {
         } else {
-            this.notifyLinesChanged(this._editor === e.textEditor ? 'selection' : 'editor')
+            this.notifyLinesChanged('selection')
         }
     }
 
-    private async onContentChanged(e: vscode.TextDocumentChangeEvent) {
+    // @VisibleForTesting
+    async onContentChanged(e: vscode.TextDocumentChangeEvent) {
         if (e.document === vscode.window.activeTextEditor?.document && e.contentChanges.length > 0) {
             this._editor = vscode.window.activeTextEditor
             this._selections = toLineSelections(this._editor?.selections)
@@ -114,7 +120,7 @@ export class LineTracker implements vscode.Disposable {
         }
     }
 
-    private notifyLinesChanged(reason: 'editor' | 'selection' | 'content') {
+    notifyLinesChanged(reason: 'editor' | 'selection' | 'content') {
         const e: LinesChangeEvent = { editor: this._editor, selections: this.selections, reason: reason }
         this._onDidChangeActiveLines.fire(e)
     }
