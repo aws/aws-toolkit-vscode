@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "UI: Move CodeWhisperer/Q items to status bar menu."
+	"description": "CodeWhisperer/Q actions are now available from the status bar menu instead of a dedicated panel."
 }
