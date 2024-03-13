@@ -13,6 +13,7 @@ import { Messenger } from './framework/messenger'
 import { FollowUpTypes } from '../../amazonqFeatureDev/types'
 import { examples, newTaskChanges, sessionClosed } from '../../amazonqFeatureDev/userFacingText'
 import { ChatItem } from '@aws/mynah-ui'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 
 describe('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
@@ -22,6 +23,7 @@ describe('Amazon Q Feature Dev', function () {
     const prompt = 'Implement fibonacci in typescript'
     const iterateApproachPrompt = prompt + ' and add tests'
     const codegenApproachPrompt = prompt + ' and add even more tests'
+    const tooManyRequestsWaitTime = 100000
 
     before(async function () {
         await using(registerAuthHook('amazonq-test-account'), async () => {
@@ -120,16 +122,25 @@ describe('Amazon Q Feature Dev', function () {
         await waitUntilReady()
 
         const findAnotherTopic = 'find another topic to discuss'
+        const tooManyRequests = 'Too many requests'
+        const failureState = (message: string) => {
+            return (
+                tab.getChatItems().pop()?.body?.includes(message) ||
+                tab.getChatItems().slice(-2).shift()?.body?.includes(message)
+            )
+        }
         while (
             tab.hasButton(FollowUpTypes.Retry) ||
-            (request &&
-                (tab.getChatItems().pop()?.body?.includes(findAnotherTopic) ||
-                    tab.getChatItems().slice(-2).shift()?.body?.includes(findAnotherTopic)))
+            (request && (failureState(findAnotherTopic) || failureState(tooManyRequests)))
         ) {
             if (tab.hasButton(FollowUpTypes.Retry)) {
                 console.log('Retrying request')
                 tab.clickButton(FollowUpTypes.Retry)
                 await waitUntilReady()
+            } else if (failureState(tooManyRequests)) {
+                // 3 versions of the e2e tests are running at the same time in the ci so we occassionally need to wait before continuing
+                request && request()
+                await sleep(tooManyRequestsWaitTime)
             } else {
                 // We've hit guardrails, re-make the request and wait again
                 request && request()
