@@ -9,6 +9,7 @@ import { CodeReference } from '../../../amazonq/webview/ui/connector'
 import { featureDevChat, licenseText } from '../../constants'
 import { ChatItemType } from '../../models'
 import { ChatItemAction, SourceLink } from '@aws/mynah-ui'
+import { DeletedFileInfo, NewFileInfo } from '../../types'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -43,8 +44,8 @@ export class CodeResultMessage extends UiMessage {
     override type = 'codeResultMessage'
 
     constructor(
-        readonly filePaths: string[],
-        readonly deletedFiles: string[],
+        readonly filePaths: NewFileInfo[],
+        readonly deletedFiles: DeletedFileInfo[],
         references: CodeReference[],
         tabID: string,
         conversationID: string
@@ -76,6 +77,17 @@ export class AsyncEventProgressMessage extends UiMessage {
         super(tabID)
         this.inProgress = inProgress
         this.message = message
+    }
+}
+export class FileComponent extends UiMessage {
+    readonly filePaths: NewFileInfo[]
+    readonly deletedFiles: DeletedFileInfo[]
+    override type = 'updateFileComponent'
+
+    constructor(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
+        super(tabID)
+        this.filePaths = filePaths
+        this.deletedFiles = deletedFiles
     }
 }
 
@@ -193,6 +205,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendOpenNewTask(message: OpenNewTabMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public updateFileComponent(message: any) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }
