@@ -224,14 +224,10 @@ export class LineAnnotationController implements vscode.Disposable {
         after: {
             margin: '0 0 0 3em',
             // "borderRadius" and "padding" are not available on "after" type of decoration, this is a hack to inject these css prop to "after" content. Refer to https://github.com/microsoft/vscode/issues/68845
-            textDecoration: ';border-radius:0.25rem;padding:0.05rem 0.5rem;',
+            textDecoration: ';border-radius:0.25rem;padding:0rem 0.5rem;',
             width: 'fit-content',
-            border: '1px solid #ccc',
-            borderColor: 'var',
         },
         rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
-        borderRadius: '4px',
-        borderSpacing: '1px',
     })
 
     constructor(private readonly container: Container) {
