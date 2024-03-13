@@ -8,6 +8,8 @@ import { ExtensionMessage } from '../commands'
 import { TabType, TabsStorage } from '../storages/tabsStorage'
 import { CodeReference } from './amazonqCommonsConnector'
 import { FollowUpGenerator } from '../followUps/generator'
+import { getActions } from '../diffTree/actions'
+import { DiffTreeFileInfo } from '../diffTree/types'
 
 interface ChatPayload {
     chatMessage: string
@@ -21,6 +23,8 @@ export interface ConnectorProps {
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
+    onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => void
+    onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
@@ -32,6 +36,7 @@ export class Connector {
     private readonly sendMessageToExtension
     private readonly onError
     private readonly onWarning
+    private readonly onFileComponentUpdate
     private readonly onChatAnswerReceived
     private readonly onAsyncEventProgress
     private readonly updatePlaceholder
@@ -44,6 +49,7 @@ export class Connector {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onChatAnswerReceived = props.onChatAnswerReceived
         this.onWarning = props.onWarning
+        this.onFileComponentUpdate = props.onFileComponentUpdate
         this.onError = props.onError
         this.onAsyncEventProgress = props.onAsyncEventProgress
         this.updatePlaceholder = props.onUpdatePlaceholder
@@ -92,6 +98,16 @@ export class Connector {
             tabType: 'featuredev',
         })
     }
+    onFileActionClick = (tabID: string, messageId: string, filePath: string, actionName: string): void => {
+        this.sendMessageToExtension({
+            command: 'file-click',
+            tabID,
+            messageId,
+            filePath,
+            actionName,
+            tabType: 'featuredev',
+        })
+    }
 
     followUpClicked = (tabID: string, followUp: ChatItemAction): void => {
         this.sendMessageToExtension({
@@ -137,6 +153,7 @@ export class Connector {
 
     private processCodeResultMessage = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived !== undefined) {
+            const actions = getActions([...messageData.filePaths, ...messageData.deletedFiles])
             const answer: ChatItem = {
                 type: ChatItemType.CODE_RESULT,
                 relatedContent: undefined,
@@ -146,8 +163,9 @@ export class Connector {
                 // TODO get the backend to store a message id in addition to conversationID
                 messageId: messageData.messageID ?? messageData.triggerID ?? messageData.conversationID,
                 fileList: {
-                    filePaths: messageData.filePaths,
-                    deletedFiles: messageData.deletedFiles,
+                    filePaths: messageData.filePaths.map((f: DiffTreeFileInfo) => f.zipFilePath),
+                    deletedFiles: messageData.deletedFiles.map((f: DiffTreeFileInfo) => f.zipFilePath),
+                    actions,
                 },
                 body: '',
             }
@@ -178,6 +196,10 @@ export class Connector {
     }
 
     handleMessageReceive = async (messageData: any): Promise<void> => {
+        if (messageData.type === 'updateFileComponent') {
+            this.onFileComponentUpdate(messageData.tabID, messageData.filePaths, messageData.deletedFiles)
+            return
+        }
         if (messageData.type === 'errorMessage') {
             this.onError(messageData.tabID, messageData.message, messageData.title)
             return
