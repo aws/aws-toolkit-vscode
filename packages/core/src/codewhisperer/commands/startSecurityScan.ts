@@ -214,7 +214,8 @@ export async function startSecurityScan(
                 error.message.includes(CodeWhispererConstants.throttlingMessage)
             ) {
                 void vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReachedCodeScan)
-                vsCodeState.isFreeTierLimitReached = true
+                // TODO: Should we set a graphical state?
+                // We shouldn't set vsCodeState.isFreeTierLimitReached here because it will hide CW and Q chat options.
             }
         }
         codeScanTelemetryEntry.reason = (error as Error).message
