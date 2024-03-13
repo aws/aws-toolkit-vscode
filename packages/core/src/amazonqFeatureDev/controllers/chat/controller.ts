@@ -26,7 +26,7 @@ import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath, getWorkspaceFoldersByPrefixes } from '../../util/files'
-import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
+import { examples, newTaskChanges, approachCreation, sessionClosed, updateCode } from '../../userFacingText'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -39,6 +39,7 @@ export interface ChatControllerEventEmitters {
     readonly authClicked: EventEmitter<any>
     readonly processResponseBodyLinkClick: EventEmitter<any>
     readonly insertCodeAtPositionClicked: EventEmitter<any>
+    readonly fileClicked: EventEmitter<any>
 }
 
 type OpenDiffMessage = {
@@ -47,6 +48,13 @@ type OpenDiffMessage = {
     // currently the zip file path
     filePath: string
     deleted: boolean
+}
+
+type fileClickedMessage = {
+    tabID: string
+    messageId: string
+    filePath: string
+    actionName: string
 }
 export class FeatureDevController {
     private readonly messenger: Messenger
@@ -131,6 +139,9 @@ export class FeatureDevController {
         this.chatControllerMessageListeners.insertCodeAtPositionClicked.event(data => {
             this.insertCodeAtPosition(data)
         })
+        this.chatControllerMessageListeners.fileClicked.event(async data => {
+            return await this.fileClicked(data)
+        })
     }
 
     private async processChatItemVotedMessage(tabId: string, messageId: string, vote: string) {
@@ -159,11 +170,13 @@ export class FeatureDevController {
                     telemetry.amazonq_codeGenerationThumbsUp.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
+                        result: 'Succeeded',
                     })
                 } else if (vote === 'downvote') {
                     telemetry.amazonq_codeGenerationThumbsDown.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
+                        result: 'Succeeded',
                     })
                 }
                 break
@@ -246,8 +259,14 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID,
+            message: approachCreation,
+        })
+
         // Ensure that the loading icon stays showing
-        this.messenger.sendAsyncEventProgress(tabID, true, 'Ok, let me create a plan. This may take a few minutes.')
+        this.messenger.sendAsyncEventProgress(tabID, true, undefined)
 
         this.messenger.sendUpdatePlaceholder(tabID, 'Generating plan ...')
 
@@ -394,6 +413,7 @@ export class FeatureDevController {
             session = await this.sessionStorage.getSession(message.tabID)
             telemetry.amazonq_isAcceptedCodeChanges.emit({
                 amazonqConversationId: session.conversationId,
+                amazonqNumberOfFilesAccepted: session.state.filePaths?.filter(i => !i.rejected).length ?? -1,
                 enabled: true,
                 result: 'Succeeded',
             })
@@ -402,7 +422,7 @@ export class FeatureDevController {
             this.messenger.sendAnswer({
                 type: 'answer',
                 tabID: message.tabID,
-                message: 'Code has been updated. Would you like to work on another task?',
+                message: updateCode,
             })
 
             this.messenger.sendAnswer({
@@ -566,15 +586,6 @@ export class FeatureDevController {
     }
 
     private initialExamples(message: any) {
-        const examples = `
-You can use /dev to:
-- Add a new feature or logic
-- Write tests
-- Fix a bug in your project
-- Generate a README for a file, folder, or project
-
-To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
-`
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
@@ -598,6 +609,27 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         })
 
         return { left, right }
+    }
+
+    private async fileClicked(message: fileClickedMessage) {
+        // TODO: add Telemetry here
+        const tabId: string = message.tabID
+        const filePathToUpdate: string = message.filePath
+
+        const session = await this.sessionStorage.getSession(tabId)
+        const filePathIndex = (session.state.filePaths ?? []).findIndex(obj => obj.relativePath === filePathToUpdate)
+        if (filePathIndex !== -1 && session.state.filePaths) {
+            session.state.filePaths[filePathIndex].rejected = !session.state.filePaths[filePathIndex].rejected
+        }
+        const deletedFilePathIndex = (session.state.deletedFiles ?? []).findIndex(
+            obj => obj.relativePath === filePathToUpdate
+        )
+        if (deletedFilePathIndex !== -1 && session.state.deletedFiles) {
+            session.state.deletedFiles[deletedFilePathIndex].rejected =
+                !session.state.deletedFiles[deletedFilePathIndex].rejected
+        }
+
+        await session.updateFilesPaths(tabId, session.state.filePaths ?? [], session.state.deletedFiles ?? [])
     }
 
     private async openDiff(message: OpenDiffMessage) {
@@ -679,19 +711,18 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: 'What change would you like to make?',
+            message: newTaskChanges,
         })
         this.messenger.sendUpdatePlaceholder(message.tabID, 'Briefly describe a task or issue')
     }
 
     private async closeSession(message: any) {
-        const closedMessage = 'Your session is now closed.'
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: closedMessage,
+            message: sessionClosed,
         })
-        this.messenger.sendUpdatePlaceholder(message.tabID, closedMessage)
+        this.messenger.sendUpdatePlaceholder(message.tabID, sessionClosed)
         this.messenger.sendChatInputEnabled(message.tabID, false)
 
         const session = await this.sessionStorage.getSession(message.tabID)

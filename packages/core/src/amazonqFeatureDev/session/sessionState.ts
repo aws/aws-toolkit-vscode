@@ -178,6 +178,7 @@ function registerNewFiles(
             virtualMemoryUri: uri,
             workspaceFolder: folder,
             relativePath: zipFilePath.substring(workspaceFolderPrefixes === undefined ? 0 : prefix.length + 1),
+            rejected: false,
         })
     }
 
@@ -202,6 +203,7 @@ function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWs
                 zipFilePath: deletedFilePath,
                 workspaceFolder: folder,
                 relativePath: deletedFilePath.substring(prefixLength),
+                rejected: false,
             }
         })
         .filter(isPresent)
@@ -384,6 +386,7 @@ export class MockCodeGenState implements SessionState {
                     zipFilePath: 'src/this-file-should-be-deleted.ts',
                     workspaceFolder: this.config.workspaceFolders[0],
                     relativePath: 'src/this-file-should-be-deleted.ts',
+                    rejected: false,
                 },
             ]
             action.messenger.sendCodeResult(

@@ -58,6 +58,9 @@ export class UIMessageListener {
             case 'insert_code_at_cursor_position':
                 this.insertCodeAtPosition(msg)
                 break
+            case 'file-click':
+                this.fileClicked(msg)
+                break
         }
     }
 
@@ -81,6 +84,15 @@ export class UIMessageListener {
         this.featureDevControllerEventsEmitters?.followUpClicked.fire({
             followUp: msg.followUp,
             tabID: msg.tabID,
+        })
+    }
+
+    private fileClicked(msg: any) {
+        this.featureDevControllerEventsEmitters?.fileClicked.fire({
+            tabID: msg.tabID,
+            filePath: msg.filePath,
+            actionName: msg.actionName,
+            messageId: msg.messageId,
         })
     }
 

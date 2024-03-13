@@ -338,7 +338,7 @@ export class CodeWhispererCodeCoverageTracker {
             this._userInputDetails.lt1.count += 1
             this._userInputDetails.lt1.total += characterIncrease
         }
-        // also include multi character input within 500 characters (not from CWSPR)
+        // also include multi character input within 50 characters (not from CWSPR)
         else if (
             e.contentChanges.length === 1 &&
             e.contentChanges[0].text.length > 1 &&
@@ -346,8 +346,9 @@ export class CodeWhispererCodeCoverageTracker {
         ) {
             const multiCharInputSize = e.contentChanges[0].text.length
 
-            // select 500 as the cut-off threshold for counting user input.
-            if (multiCharInputSize < 500) {
+            // select 50 as the cut-off threshold for counting user input.
+            // ignore all white space multi char input, this usually comes from reformat.
+            if (multiCharInputSize < 50 && e.contentChanges[0].text.trim().length > 0) {
                 this.addTotalTokens(e.document.fileName, multiCharInputSize)
             }
 
