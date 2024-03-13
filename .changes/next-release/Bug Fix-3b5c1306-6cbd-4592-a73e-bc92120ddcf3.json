@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Lower chance of project upload failures for Q CodeTransform."
+	"description": "Lower chance of project upload failures when using Q CodeTransform."
 }
