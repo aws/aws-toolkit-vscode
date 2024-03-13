@@ -37,6 +37,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.plan.CodeModerniz
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanSession
+import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformApiNames
 import software.aws.toolkits.telemetry.CodetransformTelemetry
@@ -83,6 +84,10 @@ class CodeModernizerSession(
                 return CodeModernizerStartJobResult.Disposed
             }
             val startTime = Instant.now()
+            notifyStickyInfo(
+                message("codemodernizer.notification.info.compiling_project.title"),
+                message("codemodernizer.notification.info.compiling_project.content"),
+            )
             val result = sessionContext.createZipWithModuleFiles()
 
             if (result is ZipCreationResult.Missing1P) {
@@ -121,6 +126,10 @@ class CodeModernizerSession(
                 LOG.warn { "Job was cancelled by user before upload was called" }
                 return CodeModernizerStartJobResult.Cancelled
             }
+            notifyStickyInfo(
+                message("codemodernizer.notification.info.submitted_project.title"),
+                message("codemodernizer.notification.info.submitted_project.content"),
+            )
             val uploadId = uploadPayload(payload)
             if (shouldStop.get()) {
                 LOG.warn { "Job was cancelled by user before start job was called" }
@@ -289,6 +298,7 @@ class CodeModernizerSession(
         if (!shouldStop.get()) {
             CodetransformTelemetry.logApiLatency(
                 codeTransformApiNames = CodeTransformApiNames.UploadZip,
+                codeTransformUploadId = createUploadUrlResponse.uploadId(),
                 codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformRunTimeLatency = calculateTotalLatency(uploadStartTime, Instant.now()),
                 codeTransformTotalByteSize = payload.length().toInt(),
