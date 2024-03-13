@@ -19,7 +19,7 @@ describe('Amazon Q Feature Dev', function () {
     let tab: Messenger
 
     const maxTestDuration = 600000
-    const prompt = 'Implement twosum in typescript'
+    const prompt = 'Implement fibonacci in typescript'
     const iterateApproachPrompt = prompt + ' and add tests'
     const codegenApproachPrompt = prompt + ' and add even more tests'
 
@@ -99,24 +99,42 @@ describe('Amazon Q Feature Dev', function () {
     async function iterate(prompt: string) {
         tab.addChatMessage({ prompt })
 
-        await retryIfRequired(async () => {
-            // Wait for a backend response
-            await tab.waitForChatFinishesLoading()
-        })
+        await retryIfRequired(
+            async () => {
+                // Wait for a backend response
+                await tab.waitForChatFinishesLoading()
+            },
+            () => {
+                tab.addChatMessage({ prompt })
+            }
+        )
     }
 
     /**
-     * Make the initial request and if the response has a retry button, click it until either
-     * we can no longer retry or the tests recover.
+     * Wait for the original request to finish.
+     * If the response has a retry button or encountered a guardrails error, continue retrying
      *
-     * This allows the e2e tests to recover from potential one off backend problems
+     * This allows the e2e tests to recover from potential one off backend problems/random guardrails
      */
-    async function retryIfRequired(request: () => Promise<void>) {
-        await request()
-        while (tab.hasButton(FollowUpTypes.Retry)) {
-            console.log('Retrying request')
-            tab.clickButton(FollowUpTypes.Retry)
-            await request()
+    async function retryIfRequired(waitUntilReady: () => Promise<void>, request?: () => void) {
+        await waitUntilReady()
+
+        const findAnotherTopic = 'find another topic to discuss'
+        while (
+            tab.hasButton(FollowUpTypes.Retry) ||
+            (request &&
+                (tab.getChatItems().pop()?.body?.includes(findAnotherTopic) ||
+                    tab.getChatItems().slice(-2).shift()?.body?.includes(findAnotherTopic)))
+        ) {
+            if (tab.hasButton(FollowUpTypes.Retry)) {
+                console.log('Retrying request')
+                tab.clickButton(FollowUpTypes.Retry)
+                await waitUntilReady()
+            } else {
+                // We've hit guardrails, re-make the request and wait again
+                request && request()
+                await waitUntilReady()
+            }
         }
 
         // The backend never recovered
@@ -217,9 +235,14 @@ describe('Amazon Q Feature Dev', function () {
         beforeEach(async function () {
             this.timeout(maxTestDuration)
             tab.addChatMessage({ command: '/dev', prompt })
-            await retryIfRequired(async () => {
-                await tab.waitForChatFinishesLoading()
-            })
+            await retryIfRequired(
+                async () => {
+                    await tab.waitForChatFinishesLoading()
+                },
+                () => {
+                    tab.addChatMessage({ prompt })
+                }
+            )
         })
 
         functionalTests()
@@ -230,9 +253,14 @@ describe('Amazon Q Feature Dev', function () {
             this.timeout(maxTestDuration)
             tab.addChatMessage({ command: '/dev' })
             tab.addChatMessage({ prompt })
-            await retryIfRequired(async () => {
-                await tab.waitForChatFinishesLoading()
-            })
+            await retryIfRequired(
+                async () => {
+                    await tab.waitForChatFinishesLoading()
+                },
+                () => {
+                    tab.addChatMessage({ prompt })
+                }
+            )
         })
 
         it('Clicks examples', async () => {
