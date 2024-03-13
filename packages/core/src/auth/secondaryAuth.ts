@@ -160,7 +160,8 @@ export class SecondaryAuth<T extends Connection = Connection> {
         if (this.activeConnection) {
             getLogger().info(
                 indent(`secondaryAuth connection id = ${this.activeConnection.id}
-            secondaryAuth connection status = ${this.auth.getConnectionState(this.activeConnection)}`)
+            secondaryAuth connection status = ${this.auth.getConnectionState(this.activeConnection)}`,
+            4, true)
             )
         }
         return !!this.activeConnection && this.auth.getConnectionState(this.activeConnection) === 'invalid'
