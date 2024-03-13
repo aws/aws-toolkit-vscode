@@ -73,7 +73,7 @@ class StartState implements AnnotationState {
 class AutotriggerState implements AnnotationState {
     id = 'codewhisperer_learnmore_how_codewhisperer_triggers'
     suppressWhileRunning = true
-    text = () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions'
+    text = () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions ([ESC] to exit)'
     static acceptedCount = 0
 
     nextState<T extends object>(data: T): AnnotationState {
@@ -106,7 +106,7 @@ class AutotriggerState implements AnnotationState {
 class PressTabState implements AnnotationState {
     id = 'codewhisperer_learnmore_tab_to_accept'
     suppressWhileRunning = false
-    text = () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept'
+    text = () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept ([ESC] to exit)'
 
     nextState(data: any): AnnotationState {
         return new AutotriggerState().nextState(data)
@@ -128,10 +128,10 @@ class ManualtriggerState implements AnnotationState {
 
     text = () => {
         if (os.platform() === 'win32') {
-            return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Alt] + [C]'
+            return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Alt] + [C] ([ESC] to exit)'
         }
 
-        return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Option] + [C]'
+        return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Option] + [C] ([ESC] to exit)'
     }
     static hasManualTrigger: boolean = false
     static hasValidResponse: boolean = false
@@ -183,7 +183,7 @@ class TryMoreExState implements AnnotationState {
     id = 'codewhisperer_learnmore_learn_more'
 
     suppressWhileRunning = true
-    text = () => 'CodeWhisperer Tip 3/3: Hover over suggestions to see menu for more options'
+    text = () => 'CodeWhisperer Tip 3/3: For settings, open the CodeWhisperer menu from the status bar ([ESC] to exit)'
     nextState(data: any): AnnotationState {
         if (
             RecommendationService.instance.totalValidTriggerCount > TryMoreExState.triggerCount ||
@@ -386,10 +386,8 @@ export class LineAnnotationController implements vscode.Disposable {
 
         const decoration: {
             renderOptions: vscode.ThemableDecorationRenderOptions
-            hoverMessage: vscode.DecorationOptions['hoverMessage']
         } = {
             renderOptions: renderOptions,
-            hoverMessage: this.hoverMessage(),
         }
 
         return decoration
@@ -452,6 +450,7 @@ export class LineAnnotationController implements vscode.Disposable {
         return { after: textOptions }
     }
 
+    // TODO: remove it since we likely dont need it anymore
     private hoverMessage(): vscode.MarkdownString | undefined {
         const str: string = this._currentState.text()
         if (str === new TryMoreExState().text()) {
