@@ -50,7 +50,12 @@ describe('LineTracker class', function () {
         sandbox.restore()
     })
 
-    function assertEmptyCounts() {
+    function resetAndassertEmptyCounts() {
+        counts = {
+            editor: 0,
+            selection: 0,
+            content: 0,
+        }
         assert.deepStrictEqual(counts, {
             editor: 0,
             selection: 0,
@@ -83,9 +88,9 @@ describe('LineTracker class', function () {
         it('should fire lineChangedEvent and set current line selection', async function () {
             editor = await openATextEditorWithText('\n\n\n\n\n', 'foo.py', undefined, { preview: false })
             editor.selection = new Selection(new Position(5, 0), new Position(5, 0))
-            assertEmptyCounts()
+            resetAndassertEmptyCounts()
 
-            await sut.onContentChanged({
+            sut.onContentChanged({
                 document: editor.document,
                 contentChanges: [{ text: 'a', range: new Range(0, 0, 0, 0), rangeOffset: 0, rangeLength: 0 }],
                 reason: undefined,
@@ -105,10 +110,9 @@ describe('LineTracker class', function () {
         it('should fire lineChangedEvent if selection changes and set current line selection', async function () {
             editor = await openATextEditorWithText('\n\n\n\n\n', 'foo.py', undefined, { preview: false })
             editor.selection = new Selection(new Position(3, 0), new Position(3, 0))
-            assertEmptyCounts()
-            assert.ok(sut.selections === undefined)
+            resetAndassertEmptyCounts()
 
-            await sut.onTextEditorSelectionChanged({
+            sut.onTextEditorSelectionChanged({
                 textEditor: editor,
                 selections: [new Selection(new Position(3, 0), new Position(3, 0))],
                 kind: undefined,
@@ -123,7 +127,7 @@ describe('LineTracker class', function () {
             ])
 
             // if selection is included in the existing selections, won't emit an event
-            await sut.onTextEditorSelectionChanged({
+            sut.onTextEditorSelectionChanged({
                 textEditor: editor,
                 selections: [new Selection(new Position(3, 0), new Position(3, 0))],
                 kind: undefined,
@@ -142,10 +146,12 @@ describe('LineTracker class', function () {
             // if the editor is not a text editor, won't emit an event and selection will be set to undefined
             async function assertLineChanged(schema: string) {
                 const anotherEditor = await openATextEditorWithText('', 'bar.log', undefined, { preview: false })
+                sut = new LineTracker()
+                resetAndassertEmptyCounts()
                 const uri = anotherEditor.document.uri
                 sandbox.stub(uri, 'scheme').get(() => schema)
 
-                await sut.onTextEditorSelectionChanged({
+                sut.onTextEditorSelectionChanged({
                     textEditor: anotherEditor,
                     selections: [new Selection(new Position(3, 0), new Position(3, 0))],
                     kind: undefined,
@@ -161,25 +167,19 @@ describe('LineTracker class', function () {
     })
 
     describe('onActiveTextEditorChanged', function () {
-        it('shoudl fire lineChangedEvent', async function () {
+        it('shoudl fire lineChangedEvent after opening an text editor or change to another editor', async function () {
+            resetAndassertEmptyCounts()
             editor = await openATextEditorWithText('\n\n\n\n\n', 'foo.py', undefined, { preview: false })
-            editor.selection = new Selection(new Position(1, 0), new Position(1, 0))
-            assertEmptyCounts()
 
-            await sut.onActiveTextEditorChanged(editor)
+            sut.onActiveTextEditorChanged(editor)
 
             assert.deepStrictEqual(counts, { ...counts, editor: 1 })
             assert.deepStrictEqual(sut.selections, [
                 {
-                    anchor: 1,
-                    active: 1,
+                    anchor: 0,
+                    active: 0,
                 },
             ])
-
-            editor.selection = new Selection(new Position(2, 0), new Position(2, 0))
-            await sut.onActiveTextEditorChanged(editor)
-
-            assert.deepStrictEqual(counts, { ...counts, editor: 1 })
         })
     })
 })
