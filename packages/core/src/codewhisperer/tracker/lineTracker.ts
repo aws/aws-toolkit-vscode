@@ -45,11 +45,11 @@ export class LineTracker implements vscode.Disposable {
 
     constructor() {
         this._disposable = vscode.Disposable.from(
-            vscode.window.onDidChangeActiveTextEditor(async e => {
-                await this.onActiveTextEditorChanged(undefined)
+            vscode.window.onDidChangeActiveTextEditor(e => {
+                this.onActiveTextEditorChanged(e)
             }),
-            vscode.window.onDidChangeTextEditorSelection(async e => {
-                await this.onTextEditorSelectionChanged(e)
+            vscode.window.onDidChangeTextEditorSelection(e => {
+                this.onTextEditorSelectionChanged(e)
             }),
             vscode.workspace.onDidChangeTextDocument(this.onContentChanged, this)
         )
@@ -62,15 +62,19 @@ export class LineTracker implements vscode.Disposable {
     }
 
     ready() {
-        if (this._ready) throw new Error('Container is already ready')
+        if (this._ready) {
+            throw new Error('Linetracker is already activated')
+        }
 
         this._ready = true
         queueMicrotask(() => this._onReady.fire())
     }
 
     // @VisibleForTesting
-    async onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
-        if (editor === this._editor) return
+    onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
+        if (editor === this._editor) {
+            return
+        }
 
         this._editor = editor
         this._selections = toLineSelections(editor?.selections)
@@ -83,12 +87,16 @@ export class LineTracker implements vscode.Disposable {
     }
 
     // @VisibleForTesting
-    async onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
+    onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
         // If this isn't for our cached editor and its not a real editor -- kick out
-        if (this._editor !== e.textEditor && !isTextEditor(e.textEditor)) return
+        if (this._editor !== e.textEditor && !isTextEditor(e.textEditor)) {
+            return
+        }
 
         const selections = toLineSelections(e.selections)
-        if (this._editor === e.textEditor && this.includes(selections)) return
+        if (this._editor === e.textEditor && this.includes(selections)) {
+            return
+        }
 
         this._editor = e.textEditor
         this._selections = selections
@@ -101,7 +109,7 @@ export class LineTracker implements vscode.Disposable {
     }
 
     // @VisibleForTesting
-    async onContentChanged(e: vscode.TextDocumentChangeEvent) {
+    onContentChanged(e: vscode.TextDocumentChangeEvent) {
         if (e.document === vscode.window.activeTextEditor?.document && e.contentChanges.length > 0) {
             this._editor = vscode.window.activeTextEditor
             this._selections = toLineSelections(this._editor?.selections)
@@ -122,7 +130,7 @@ export class LineTracker implements vscode.Disposable {
             return isIncluded(lineOrSelections, this._selections)
         }
 
-        if (this._selections == null || this._selections.length === 0) return false
+        if (this._selections == undefined || this._selections.length === 0) return false
 
         const line = lineOrSelections
         const activeOnly = options?.activeOnly ?? true
@@ -142,8 +150,8 @@ export class LineTracker implements vscode.Disposable {
 }
 
 function isIncluded(selections: LineSelection[] | undefined, within: LineSelection[] | undefined): boolean {
-    if (selections == null && within == null) return true
-    if (selections == null || within == null || selections.length !== within.length) return false
+    if (selections == undefined && within == undefined) return true
+    if (selections == undefined || within == undefined || selections.length !== within.length) return false
 
     return selections.every((s, i) => {
         const match = within[i]
