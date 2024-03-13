@@ -14,7 +14,7 @@ import { FollowUpTypes } from '../../amazonqFeatureDev/types'
 import { examples, newTaskChanges, sessionClosed } from '../../amazonqFeatureDev/userFacingText'
 import { ChatItem } from '@aws/mynah-ui'
 
-describe.skip('Amazon Q Feature Dev', function () {
+describe('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
     let tab: Messenger
 
