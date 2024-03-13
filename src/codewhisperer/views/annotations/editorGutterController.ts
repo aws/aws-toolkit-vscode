@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { LineSelection } from './lineTracker'
+import { LineSelection, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { once } from './lineAnnotationController'
@@ -34,6 +34,7 @@ export class EditorGutterController implements vscode.Disposable {
         this._disposable = vscode.Disposable.from(
             RecommendationService.instance.suggestionActionEvent(this.onSuggestionActionEvent, this),
             RecommendationHandler.instance.onDidReceiveRecommendation(this.onDidReceiveRecommendation, this),
+            this.container._lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
             once(this.container._lineTracker.onReady)(this.onReady, this),
             this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
@@ -72,8 +73,16 @@ export class EditorGutterController implements vscode.Disposable {
         }
 
         if (this._editor && this._editor === vscode.window.activeTextEditor) {
-            await this._refresh(this._editor)
+            await this._refresh(this._editor, false)
         }
+    }
+
+    private async onActiveLinesChanged(e: LinesChangeEvent) {
+        if (!this._isReady) {
+            return
+        }
+
+        await this.refreshDebounced.promise(e.editor)
     }
 
     clear(editor: vscode.TextEditor | undefined) {
@@ -85,11 +94,15 @@ export class EditorGutterController implements vscode.Disposable {
     }
 
     readonly refreshDebounced = debounce2((editor: vscode.TextEditor | undefined) => {
+        console.log('debounced refresh is now executed!!!!!!!!!')
         this._refresh(editor)
     }, 500)
 
-    private async _refresh(editor: vscode.TextEditor | undefined) {
-        this.refreshDebounced.cancel()
+    private async _refresh(editor: vscode.TextEditor | undefined, flag?: boolean) {
+        if (flag !== undefined) {
+            this.refreshDebounced.cancel()
+        }
+
         if (!this.container.auth.isConnectionValid(false)) {
             this.clear(this._editor)
             return
@@ -116,7 +129,11 @@ export class EditorGutterController implements vscode.Disposable {
             return
         }
 
-        await this.updateDecorations(editor, selections, RecommendationService.instance.isRunning)
+        if (flag !== undefined) {
+            await this.updateDecorations(editor, selections, flag)
+        } else {
+            await this.updateDecorations(editor, selections, RecommendationService.instance.isRunning)
+        }
     }
 
     async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], flag: boolean) {

@@ -115,6 +115,7 @@ export function debounce2<T, U extends any[]>(
 
     const cancel = (): void => {
         if (timer) {
+            console.log('canceling debounced function call ;((((((')
             clearTimeout(timer)
             timer = undefined
             promise = undefined
@@ -124,6 +125,9 @@ export function debounce2<T, U extends any[]>(
     return {
         promise: (...arg) => {
             timer?.refresh()
+            if (timer) {
+                console.log('refreshed the timer...')
+            }
 
             return (promise ??= new Promise<T>((resolve, reject) => {
                 timer = globals.clock.setTimeout(async () => {
