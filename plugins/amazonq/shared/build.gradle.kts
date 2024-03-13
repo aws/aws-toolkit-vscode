@@ -7,7 +7,5 @@ plugins {
 
 dependencies {
     implementation(project(":plugin-amazonq:shared:jetbrains-community", "instrumentedJar"))
-
-    // delete when fully split
     implementation(project(":plugin-amazonq:shared:jetbrains-ultimate", "instrumentedJar"))
 }
