@@ -11,6 +11,7 @@ import { FeatureDevClient } from './client/featureDev'
 import { featureDevScheme } from './constants'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { CodeReference } from '../amazonq/webview/ui/connector'
+import { DiffTreeFileInfo } from '../amazonq/webview/ui/diffTree/types'
 
 export type Interaction = {
     // content to be sent back to the chat UI
@@ -68,14 +69,13 @@ export interface SessionStateAction {
 }
 
 export type NewFileZipContents = { zipFilePath: string; fileContent: string }
-export type NewFileInfo = NewFileZipContents & {
-    relativePath: string
-    virtualMemoryUri: vscode.Uri
-    workspaceFolder: vscode.WorkspaceFolder
-}
-export type DeletedFileInfo = {
-    zipFilePath: string
-    relativePath: string
+export type NewFileInfo = DiffTreeFileInfo &
+    NewFileZipContents & {
+        virtualMemoryUri: vscode.Uri
+        workspaceFolder: vscode.WorkspaceFolder
+    }
+
+export type DeletedFileInfo = DiffTreeFileInfo & {
     workspaceFolder: vscode.WorkspaceFolder
 }
 
