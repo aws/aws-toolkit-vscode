@@ -91,7 +91,7 @@ export function createAutoScans(type: 'item' | 'tree', pause: boolean): any {
             return {
                 data: 'autoScans',
                 label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
-                description: pause ? 'Currently RUNNING' : 'Currently PAUSED',
+                description: pause ? 'RUNNING' : 'PAUSED',
                 onClick: () => toggleCodeScans.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'autoScans'>
     }
