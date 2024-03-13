@@ -54,9 +54,8 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.state.buildState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.getLatestJobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.toSessionContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.toolwindow.CodeModernizerBottomToolWindowFactory
-import software.aws.toolkits.jetbrains.services.codemodernizer.ui.components.BuildErrorDialog
 import software.aws.toolkits.jetbrains.services.codemodernizer.ui.components.PreCodeTransformUserDialog
-import software.aws.toolkits.jetbrains.services.codemodernizer.ui.components.ValidationErrorDialog
+import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.jetbrains.utils.notifyStickyError
 import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
@@ -72,6 +71,8 @@ import java.time.Instant
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.Icon
+
+const val AMAZON_Q_FEEDBACK_DIALOG_KEY = "Amazon Q"
 
 @State(name = "codemodernizerStates", storages = [Storage("aws.xml", roamingType = RoamingType.PER_OS)])
 class CodeModernizerManager(private val project: Project) : PersistentStateComponent<CodeModernizerState>, Disposable {
@@ -296,6 +297,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             message("codemodernizer.notification.info.modernize_failed.title"),
             message("codemodernizer.notification.info.modernize_failed.description", reason, retryablestring),
             project,
+            listOf(displayFeedbackNotificationAction())
         )
     }
 
@@ -304,6 +306,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             message("codemodernizer.notification.info.transformation_stop.title"),
             message("codemodernizer.notification.info.transformation_stop.content"),
             project,
+            listOf(displayFeedbackNotificationAction())
         )
     }
 
@@ -312,6 +315,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             message("codemodernizer.notification.info.transformation_resume.title"),
             message("codemodernizer.notification.info.transformation_resume.content"),
             project,
+            listOf(displayFeedbackNotificationAction())
         )
     }
 
@@ -328,6 +332,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             message("codemodernizer.notification.info.transformation_start_stopping.failed_title"),
             message("codemodernizer.notification.info.transformation_start_stopping.failed_as_job_not_started"),
             project,
+            listOf(displayFeedbackNotificationAction())
         )
     }
 
@@ -336,6 +341,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             message("codemodernizer.notification.info.transformation_start_stopping.failed_title"),
             message("codemodernizer.notification.info.transformation_start_stopping.failed_content", message),
             project,
+            listOf(displayFeedbackNotificationAction())
         )
     }
 
@@ -487,7 +493,11 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                         message("codemodernizer.manager.job_finished_title"),
                         message("codemodernizer.manager.job_finished_content"),
                         project,
-                        listOf(displayDiffNotificationAction(lastJobId), displaySummaryNotificationAction(lastJobId), viewTransformationHubAction())
+                        listOf(
+                            displayDiffNotificationAction(lastJobId),
+                            displaySummaryNotificationAction(lastJobId),
+                            viewTransformationHubAction()
+                        )
                     )
                     resumeJob(session, lastJobId, result)
                     setJobNotOngoing()
@@ -498,7 +508,12 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                         message("codemodernizer.notification.info.modernize_failed.title"),
                         message("codemodernizer.manager.job_failed_content", result.reason()),
                         project,
-                        listOf(displayDiffNotificationAction(lastJobId), displaySummaryNotificationAction(lastJobId), viewTransformationHubAction())
+                        listOf(
+                            displayDiffNotificationAction(lastJobId),
+                            displaySummaryNotificationAction(lastJobId),
+                            displayFeedbackNotificationAction(),
+                            viewTransformationHubAction()
+                        )
                     )
                     resumeJob(session, lastJobId, result)
                     setJobNotOngoing()
@@ -561,6 +576,11 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             artifactHandler.showTransformationSummary(jobId)
         }
 
+    private fun displayFeedbackNotificationAction() =
+        NotificationAction.createSimple(message("codemodernizer.notification.warn.submit_feedback")) {
+            FeedbackDialog(project, productName = AMAZON_Q_FEEDBACK_DIALOG_KEY).showAndGet()
+        }
+
     fun informUserOfCompletion(result: CodeModernizerJobCompletedResult) {
         CodetransformTelemetry.totalRunTime(
             codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
@@ -585,17 +605,18 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 false,
             )
 
-            is CodeModernizerJobCompletedResult.JobFailedInitialBuild -> {
-                ApplicationManager.getApplication().invokeLater {
-                    runInEdt { BuildErrorDialog.create(result.failureReason) }
-                }
-            }
+            is CodeModernizerJobCompletedResult.JobFailedInitialBuild -> notifyStickyInfo(
+                message("codemodernizer.builderrordialog.description.title"),
+                result.failureReason,
+                project,
+                listOf(displayFeedbackNotificationAction())
+            )
 
             is CodeModernizerJobCompletedResult.JobPartiallySucceeded -> notifyStickyInfo(
                 message("codemodernizer.notification.info.modernize_partial_complete.title"),
                 message("codemodernizer.notification.info.modernize_partial_complete.content", result.targetJavaVersion.description),
                 project,
-                listOf(displayDiffNotificationAction(result.jobId), displaySummaryNotificationAction(result.jobId)),
+                listOf(displayDiffNotificationAction(result.jobId), displaySummaryNotificationAction(result.jobId), displayFeedbackNotificationAction()),
             )
 
             is CodeModernizerJobCompletedResult.JobCompletedSuccessfully -> notifyStickyInfo(
@@ -611,13 +632,13 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 message("codemodernizer.notification.warn.maven_failed.title"),
                 message("codemodernizer.notification.warn.maven_failed.content"),
                 project,
-                listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_MAVEN_COMMANDS)),
+                listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_MAVEN_COMMANDS), displayFeedbackNotificationAction()),
             )
             is CodeModernizerJobCompletedResult.JobAbortedZipTooLarge -> notifyStickyInfo(
                 message("codemodernizer.notification.warn.zip_too_large.title"),
                 message("codemodernizer.notification.warn.zip_too_large.content"),
                 project,
-                listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_PREREQUISITES)),
+                listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_PREREQUISITES), displayFeedbackNotificationAction()),
             )
         }
     }
@@ -695,9 +716,6 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         addCodeModernizeUI(true)
         val maybeUnknownReason = reason ?: message("codemodernizer.notification.warn.invalid_project.description.reason.unknown")
         codeModernizerBottomWindowPanelManager.setProjectInvalidUI(maybeUnknownReason)
-        ApplicationManager.getApplication().invokeLater {
-            runInEdt { ValidationErrorDialog.create(maybeUnknownReason) }
-        }
         notifyStickyInfo(
             message("codemodernizer.validationerrordialog.description.title"),
             message("codemodernizer.validationerrordialog.description.main"),
