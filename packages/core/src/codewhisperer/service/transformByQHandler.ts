@@ -36,7 +36,7 @@ export interface TransformationCandidateProject {
     JDKVersion?: JDKVersion
 }
 
-interface FolderInfo {
+export interface FolderInfo {
     path: string
     name: string
 }
@@ -555,7 +555,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
     }
 }
 
-function getDependenciesFolderInfo(): FolderInfo {
+export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
     const dependencyFolderPath = path.join(os.tmpdir(), dependencyFolderName)
     return {
@@ -571,21 +571,12 @@ export async function writeLogs() {
     return logFilePath
 }
 
-export async function zipCode() {
-    const modulePath = transformByQState.getProjectPath()
-    throwIfCancelled()
-    const zipStartTime = Date.now()
-    const sourceFolder = modulePath
-    const sourceFiles = getFilesRecursively(sourceFolder, false)
-    const dependenciesFolder: FolderInfo = getDependenciesFolderInfo()
-
+export async function prepareProjectDependencies(dependenciesFolder: FolderInfo) {
     try {
         copyProjectDependencies(dependenciesFolder)
     } catch (err) {
         // continue in case of errors
     }
-
-    throwIfCancelled()
 
     try {
         installProjectDependencies(dependenciesFolder)
@@ -599,6 +590,14 @@ export async function zipCode() {
     }
 
     throwIfCancelled()
+}
+
+export async function zipCode(dependenciesFolder: FolderInfo) {
+    const modulePath = transformByQState.getProjectPath()
+    throwIfCancelled()
+    const zipStartTime = Date.now()
+    const sourceFolder = modulePath
+    const sourceFiles = getFilesRecursively(sourceFolder, false)
 
     const zip = new AdmZip()
     const zipManifest = new ZipManifest()
@@ -819,12 +818,13 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             status = response.transformationJob.status!
             // emit metric when job status changes
             if (status !== transformByQState.getPolledJobStatus()) {
+                /** 
                 telemetry.codeTransform_jobStatusChanged.emit({
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: jobId,
                     codeTransformStatus: status,
                     result: MetadataResult.Pass,
-                })
+                })*/
             }
             transformByQState.setPolledJobStatus(status)
             await vscode.commands.executeCommand('aws.amazonq.refresh')
