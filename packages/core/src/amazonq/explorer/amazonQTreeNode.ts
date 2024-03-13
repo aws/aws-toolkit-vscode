@@ -10,7 +10,7 @@ import { AuthUtil, amazonQScopes, codeWhispererChatScopes } from '../../codewhis
 import { createLearnMoreNode, enableAmazonQNode, switchToAmazonQNode } from './amazonQChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
 import { hasScopes, isSsoConnection } from '../../auth/connection'
-import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBar'
+import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
 import { getIcon } from '../../shared/icons'
 import { vsCodeState } from '../../codewhisperer/models/model'
 
