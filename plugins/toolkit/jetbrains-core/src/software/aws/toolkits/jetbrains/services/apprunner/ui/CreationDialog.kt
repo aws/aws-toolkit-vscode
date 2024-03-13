@@ -41,7 +41,7 @@ class CreationDialog(private val project: Project, ecrUri: String? = null) :
     override fun createCenterPanel(): JComponent = panel.component
 
     override fun doCancelAction() {
-        ApprunnerTelemetry.createService(project, Result.Cancelled, deploymentTypeFromPanel(panel))
+        ApprunnerTelemetry.createService(project = project, result = Result.Cancelled, appRunnerServiceSource = deploymentTypeFromPanel(panel))
         super.doCancelAction()
     }
 
@@ -68,7 +68,7 @@ class CreationDialog(private val project: Project, ecrUri: String? = null) :
                     close(OK_EXIT_CODE)
                     project.refreshAwsTree(AppRunnerResources.LIST_SERVICES)
                 }
-                ApprunnerTelemetry.createService(project, Result.Succeeded, deploymentTypeFromPanel(panel))
+                ApprunnerTelemetry.createService(project = project, result = Result.Succeeded, appRunnerServiceSource = deploymentTypeFromPanel(panel))
             } catch (e: Exception) {
                 if (e is AppRunnerException) {
                     setErrorText(e.awsErrorDetails()?.errorMessage() ?: message("apprunner.creation.failed"))
@@ -76,7 +76,7 @@ class CreationDialog(private val project: Project, ecrUri: String? = null) :
                     setErrorText(message("apprunner.creation.failed"))
                 }
                 LOG.error(e) { "Exception thrown while creating AppRunner Service" }
-                ApprunnerTelemetry.createService(project, Result.Failed, deploymentTypeFromPanel(panel))
+                ApprunnerTelemetry.createService(project = project, result = Result.Failed, appRunnerServiceSource = deploymentTypeFromPanel(panel))
             } finally {
                 isOKActionEnabled = true
                 setOKButtonText(message("general.create_button"))

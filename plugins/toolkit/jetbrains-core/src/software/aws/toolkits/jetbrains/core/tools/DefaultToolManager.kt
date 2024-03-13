@@ -209,10 +209,10 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
             }
 
             return performInstall(type, latestVersion, indicator).also {
-                AwsTelemetry.toolInstallation(project, type.telemetryId, Result.Succeeded)
+                AwsTelemetry.toolInstallation(project = project, toolId = type.telemetryId, result = Result.Succeeded)
             }
         } catch (e: Exception) {
-            AwsTelemetry.toolInstallation(project, type.telemetryId, Result.Failed)
+            AwsTelemetry.toolInstallation(project = project, toolId = type.telemetryId, result = Result.Failed)
             throw IllegalStateException(message("executableCommon.failed_install", type.displayName), e)
         }
     }

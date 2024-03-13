@@ -99,7 +99,7 @@ class S3TreeTable(
         val maxFileSize = getUserContentLoadLimit()
         if (objectNode.size > maxFileSize) {
             notifyError(content = message("s3.open.file_too_big", StringUtil.formatFileSize(maxFileSize.toLong())))
-            S3Telemetry.downloadObject(project, false)
+            S3Telemetry.downloadObject(project = project, success = false)
             return true
         }
         val fileWrapper = VirtualFileWrapper(File("${FileUtil.getTempDirectory()}${File.separator}${objectNode.fileName()}"))
@@ -126,12 +126,12 @@ class S3TreeTable(
                         }
                     }
                 }
-                S3Telemetry.downloadObject(project, true)
+                S3Telemetry.downloadObject(project = project, success = true)
             } catch (e: NoSuchBucketException) {
                 bucket.handleDeletedBucket()
-                S3Telemetry.downloadObject(project, Result.Failed)
+                S3Telemetry.downloadObject(project = project, result = Result.Failed)
             } catch (e: Exception) {
-                S3Telemetry.downloadObject(project, false)
+                S3Telemetry.downloadObject(project = project, success = false)
                 LOG.error(e) { "Attempting to open file threw" }
                 notifyError(project = project, content = message("s3.open.viewer.failed"))
             }

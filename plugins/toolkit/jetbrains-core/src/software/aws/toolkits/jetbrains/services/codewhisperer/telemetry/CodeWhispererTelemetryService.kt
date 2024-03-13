@@ -503,7 +503,7 @@ class CodeWhispererTelemetryService {
 
     fun sendOnboardingClickEvent(language: CodeWhispererProgrammingLanguage, taskType: CodewhispererGettingStartedTask) {
         // Project instance is not needed. We look at these metrics for each clientId.
-        CodewhispererTelemetry.onboardingClick(project = null, language.toTelemetryType(), taskType)
+        CodewhispererTelemetry.onboardingClick(project = null, codewhispererLanguage = language.toTelemetryType(), codewhispererGettingStartedTask = taskType)
     }
 
     fun recordSuggestionState(

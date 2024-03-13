@@ -178,11 +178,11 @@ class LogStreamDownloadToFileTask(
                     }
                 )
             )
-            CloudwatchlogsTelemetry.download(project, success = true, CloudWatchResourceType.LogStream)
+            CloudwatchlogsTelemetry.download(project = project, success = true, cloudWatchResourceType = CloudWatchResourceType.LogStream)
         } catch (e: Exception) {
             LOG.error(e) { "Exception thrown while downloading large log stream" }
             e.notifyError(project = project, title = message("cloudwatch.logs.saving_to_disk_failed", logStream))
-            CloudwatchlogsTelemetry.download(project, success = false, CloudWatchResourceType.LogStream)
+            CloudwatchlogsTelemetry.download(project = project, success = false, cloudWatchResourceType = CloudWatchResourceType.LogStream)
         }
     }
 
@@ -193,7 +193,7 @@ class LogStreamDownloadToFileTask(
         } else {
             Result.Failed
         }
-        CloudwatchlogsTelemetry.download(project, result, CloudWatchResourceType.LogStream)
+        CloudwatchlogsTelemetry.download(project = project, result = result, cloudWatchResourceType = CloudWatchResourceType.LogStream)
     }
 
     companion object {

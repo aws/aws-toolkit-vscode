@@ -248,10 +248,10 @@ abstract class CodeWhispererCodeCoverageTracker(
         percentage?.let { percentage ->
             CodewhispererTelemetry.codePercentage(
                 project = null,
-                acceptedTokensSize,
-                language.toTelemetryType(),
-                percentage,
-                totalTokensSize,
+                codewhispererAcceptedTokens = acceptedTokensSize,
+                codewhispererLanguage = language.toTelemetryType(),
+                codewhispererPercentage = percentage,
+                codewhispererTotalTokens = totalTokensSize,
                 successCount = myServiceInvocationCount.get(),
                 codewhispererCustomizationArn = customizationArn,
                 codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name,

@@ -210,7 +210,12 @@ class QueryEditorDialog internal constructor(
                 is QueryString.InsightsQueryString -> InsightsQueryStringType.Insights
                 is QueryString.SearchTermQueryString -> InsightsQueryStringType.SearchTerm
             }
-            CloudwatchinsightsTelemetry.executeQuery(project, result, timeType, searchStringType)
+            CloudwatchinsightsTelemetry.executeQuery(
+                project = project,
+                result = result,
+                insightsQueryTimeType = timeType,
+                insightsQueryStringType = searchStringType
+            )
         }
     }
 

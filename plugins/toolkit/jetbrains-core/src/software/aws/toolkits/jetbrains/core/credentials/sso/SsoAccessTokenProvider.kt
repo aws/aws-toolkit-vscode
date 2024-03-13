@@ -165,7 +165,7 @@ class SsoAccessTokenProvider(
                 val credentialSourceId = if (currentToken.startUrl == SONO_URL) CredentialSourceId.AwsId else CredentialSourceId.IamIdentityCenter
                 AwsTelemetry.refreshCredentials(
                     project = null,
-                    Result.Failed,
+                    result = Result.Failed,
                     sessionDuration = sessionDuration.toHours().toInt(),
                     credentialSourceId = credentialSourceId,
                     reason = "Null refresh token"

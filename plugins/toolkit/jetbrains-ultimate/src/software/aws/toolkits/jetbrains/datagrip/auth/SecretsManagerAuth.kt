@@ -84,9 +84,9 @@ class SecretsManagerAuth : DatabaseAuthProviderCompatabilityAdapter {
             } finally {
                 val engine = connection.getDatabaseEngine()
                 if (engine == "redshift") {
-                    RedshiftTelemetry.getCredentials(project, result, SecretsManager)
+                    RedshiftTelemetry.getCredentials(project = project, result = result, databaseCredentials = SecretsManager)
                 } else {
-                    RdsTelemetry.getCredentials(project, result, SecretsManager, engine)
+                    RdsTelemetry.getCredentials(project = project, result = result, databaseCredentials = SecretsManager, databaseEngine = engine)
                 }
             }
         }

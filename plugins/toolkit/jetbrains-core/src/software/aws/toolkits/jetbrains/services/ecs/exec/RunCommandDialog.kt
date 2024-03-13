@@ -94,7 +94,7 @@ class RunCommandDialog(private val project: Project, private val container: Cont
 
     override fun doCancelAction() {
         super.doCancelAction()
-        EcsTelemetry.runExecuteCommand(project, Result.Cancelled, EcsExecuteCommandType.Command)
+        EcsTelemetry.runExecuteCommand(project = project, result = Result.Cancelled, ecsExecuteCommandType = EcsExecuteCommandType.Command)
     }
 
     private suspend fun runCommand(task: String) {
@@ -109,11 +109,11 @@ class RunCommandDialog(private val project: Project, private val container: Cont
                 environment.runner.execute(environment)
             }
 
-            EcsTelemetry.runExecuteCommand(project, Result.Succeeded, EcsExecuteCommandType.Command)
+            EcsTelemetry.runExecuteCommand(project = project, result = Result.Succeeded, ecsExecuteCommandType = EcsExecuteCommandType.Command)
         } catch (e: Exception) {
             e.notifyError(message("ecs.execute_command_failed"))
             LOG.warn(e) { "Run command failed" }
-            EcsTelemetry.runExecuteCommand(project, Result.Failed, EcsExecuteCommandType.Command)
+            EcsTelemetry.runExecuteCommand(project = project, result = Result.Failed, ecsExecuteCommandType = EcsExecuteCommandType.Command)
         }
     }
 

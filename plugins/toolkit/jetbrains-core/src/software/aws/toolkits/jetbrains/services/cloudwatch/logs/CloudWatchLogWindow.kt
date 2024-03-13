@@ -40,7 +40,7 @@ class CloudWatchLogWindow(override val project: Project) : ToolkitToolWindow {
                 result = Result.Failed
                 throw e
             } finally {
-                CloudwatchlogsTelemetry.open(project, result, CloudWatchResourceType.LogGroup, source = "logGroup")
+                CloudwatchlogsTelemetry.open(project = project, result = result, cloudWatchResourceType = CloudWatchResourceType.LogGroup, source = "logGroup")
             }
         }
     }
@@ -77,7 +77,7 @@ class CloudWatchLogWindow(override val project: Project) : ToolkitToolWindow {
             result = Result.Failed
             throw e
         } finally {
-            CloudwatchlogsTelemetry.open(project, result, CloudWatchResourceType.LogStream, source = "logStream")
+            CloudwatchlogsTelemetry.open(project = project, result = result, cloudWatchResourceType = CloudWatchResourceType.LogStream, source = "logStream")
         }
     }
 

@@ -77,7 +77,7 @@ class PushToRepositoryAction : EcrDockerAction() {
         val dialog = PushToEcrDialog(project, selected.repository, scope.dockerServerRuntimeAsync(project))
         if (!dialog.showAndGet()) {
             // user cancelled; noop
-            EcrTelemetry.deployImage(project, Result.Cancelled)
+            EcrTelemetry.deployImage(project = project, result = Result.Cancelled)
             return
         }
 
@@ -108,8 +108,8 @@ class PushToRepositoryAction : EcrDockerAction() {
                     is DockerfileEcrPushRequest -> EcrDeploySource.Dockerfile
                 }
                 EcrTelemetry.deployImage(
-                    project,
-                    result,
+                    project = project,
+                    result = result,
                     ecrDeploySource = type
                 )
             }

@@ -57,7 +57,7 @@ class IamAuth : DatabaseAuthProviderCompatabilityAdapter {
                 result = Result.Failed
                 throw e
             } finally {
-                RedshiftTelemetry.getCredentials(project, result, IAM)
+                RedshiftTelemetry.getCredentials(project = project, result = result, databaseCredentials = IAM)
             }
         }
     }
