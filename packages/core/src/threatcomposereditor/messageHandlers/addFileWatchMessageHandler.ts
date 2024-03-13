@@ -15,19 +15,25 @@ export function addFileWatchMessageHandler(context: WebviewContext) {
             const fileContents = (await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))).toString()
             if (fileContents !== context.fileWatches[filePath].fileContents) {
                 console.log('DocumentChanged')
-                await broadcastFileChange(fileName, fileContents, context.panel)
+                await broadcastFileChange(fileName, filePath, fileContents, context.panel)
                 context.fileWatches[filePath] = { fileContents: fileContents }
             }
         })
     )
 }
 
-export async function broadcastFileChange(fileName: string, fileContents: string, panel: vscode.WebviewPanel) {
+export async function broadcastFileChange(
+    fileName: string,
+    filePath: string,
+    fileContents: string,
+    panel: vscode.WebviewPanel
+) {
     const fileChangedMessage: FileChangedMessage = {
         messageType: MessageType.BROADCAST,
         command: Command.FILE_CHANGED,
         fileName: fileName,
         fileContents: fileContents,
+        filePath: filePath,
     }
 
     await panel.webview.postMessage(fileChangedMessage)

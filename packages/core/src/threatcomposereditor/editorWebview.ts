@@ -35,10 +35,10 @@ export class ThreatComposer {
         this.documentUri = textDocument.uri
         this.webviewPanel = webviewPanel
         this.fileWatches = {}
-        this.setupWebviewPanel(textDocument, context)
         this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
+        this.setupWebviewPanel(textDocument, context)
     }
 
     public get onVisualizationDisposeEvent(): vscode.Event<void> {
@@ -140,7 +140,7 @@ export class ThreatComposer {
 
         const fileContents = textDocument.getText()
         this.fileWatches[this.defaultTemplatePath] = { fileContents: fileContents }
-        void broadcastFileChange(this.defaultTemplateName, fileContents, this.webviewPanel)
+        void broadcastFileChange(this.defaultTemplateName, this.defaultTemplatePath, fileContents, this.webviewPanel)
     }
 
     private initialiseVisualizationWebviewPanel(documentUri: vscode.Uri, context: vscode.ExtensionContext) {

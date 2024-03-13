@@ -63,6 +63,7 @@ export interface SaveFileResponseMessage extends Message {
 export interface FileChangedMessage extends Message {
     fileName: string
     fileContents: string
+    filePath: string
 }
 
 export interface ThemeChangedMessage extends Message {

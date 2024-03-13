@@ -11,7 +11,9 @@ const instanceMapper = {}
 var theme = 'unknown'
 
 // Handle messages sent from the extension to the webview
-window.addEventListener('message', event => {
+window.addEventListener('message', handelMessage)
+
+function handelMessage(event) {
     const message = event.data // The json data that the extension sent
     console.log('message')
     console.log(event)
@@ -19,14 +21,17 @@ window.addEventListener('message', event => {
         case 'FILE_CHANGED':
             console.log('FILE_CHANGED')
             const fileContents = message.fileContents
-            // Update our webview's content
-            updateContent(fileContents)
 
-            // Then persist state information.
+            // Persist state information.
             // This state is returned in the call to `vscode.getState` below when a webview is reloaded.
             vscode.setState({
-                data: fileContents,
+                fileName: message.fileName,
+                filePath: message.filePath,
+                fileContents: fileContents,
             })
+
+            // Update our webview's content
+            updateContent(fileContents)
             break
 
         case 'THEME_CHANGED':
@@ -34,22 +39,39 @@ window.addEventListener('message', event => {
             applyTheme(message.newTheme)
             break
     }
-})
+}
+
+window.addEventListener('beforeunload', beforeUnloadHandler)
+
+function beforeUnloadHandler(event) {
+    console.log('PANEL_DISPOSED')
+    window.removeEventListener('message', handelMessage)
+    window.removeEventListener('beforeunload', beforeUnloadHandler)
+    const state = vscode.getState()
+    window.threatcomposer.deleteWorkspace(state.workspaceId)
+}
 
 function updateContent(/** @type {string} */ text) {
     if (document.readyState === 'complete') {
-        render(text)
+        void render(text)
     } else {
         document.addEventListener('DOMContentLoaded', function () {
-            render(text)
+            void render(text)
         })
+    }
+}
+
+async function checkThreatComposerAPI() {
+    while (!window.threatcomposer.setCurrentWorkspaceData) {
+        console.debug('Waiting for window.threatcomposer.setCurrentWorkspaceData to be ready.')
+        await sleep(50)
     }
 }
 
 /**
  * Render the document in the webview.
  */
-function render(/** @type {string} */ text) {
+async function render(/** @type {string} */ text) {
     let threatModel
     try {
         if (!text) {
@@ -60,16 +82,31 @@ function render(/** @type {string} */ text) {
         return
     }
 
-    window.threatcomposer.setCurrentWorkspaceData(threatModel)
+    await checkThreatComposerAPI()
+
+    const state = vscode.getState()
+
+    if (state.workspaceId) {
+        window.threatcomposer.switchWorkspace(state.workspaceId)
+    } else {
+        const workspaceObject = await window.threatcomposer.createWorkspace(state.fileName, 'LocalStorage')
+        window.threatcomposer.setCurrentWorkspaceData(threatModel)
+        state.workspaceId = workspaceObject.id
+        state.name = workspaceObject.name
+        state.storageType = workspaceObject.storageType
+        vscode.setState(state)
+    }
+
+    // window.threatcomposer.setCurrentWorkspaceData(threatModel)
     window.threatcomposer.addEventListener('save', e => {
         vscode.postMessage({
             command: 'SAVE_FILE',
             messageType: 'REQUEST',
             fileContents: window.threatcomposer.stringifyWorkspaceData(e.detail),
         })
-        vscode.setState({
-            data: e.detail,
-        })
+        const currentState = vscode.getState()
+        currentState.fileContents = e.detail
+        vscode.setState(currentState)
     })
 }
 
@@ -88,7 +125,8 @@ function applyTheme(newTheme) {
 // State lets us save information across these re-loads
 const state = vscode.getState()
 if (state) {
-    updateContent(state.data)
+    console.log(state)
+    updateContent(state.fileContents)
 }
 
 console.log('VSCodeExtensionInterface loaded')
