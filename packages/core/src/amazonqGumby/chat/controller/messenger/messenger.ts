@@ -41,12 +41,13 @@ export type LoadingTextResponseType = 'start-compilation' | 'compile-succeeded' 
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 
-    public sendAnswer(params: { message?: string; type: ChatItemType; tabID: string }) {
+    public sendAnswer(params: { message?: string; type: ChatItemType; tabID: string; messageID?: string }) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
                     message: params.message,
                     messageType: params.type,
+                    messageId: params.messageID,
                 },
                 params.tabID
             )
@@ -207,8 +208,13 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, true, updatedMessage))
     }
 
-    public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
-        this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, inProgress, message))
+    public sendAsyncEventProgress(
+        tabID: string,
+        inProgress: boolean,
+        message: string | undefined = undefined,
+        messageID: string | undefined = undefined
+    ) {
+        this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, inProgress, message, messageID))
     }
 
     public sendJobSubmittedMessage(tabID: string, disableJobActions: boolean = false) {

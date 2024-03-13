@@ -15,7 +15,7 @@ import { ChatPrompt } from '../../../../amazonqGumby/chat/views/connector/connec
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
-    onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string) => void
+    onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string, messageId: string) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
     onError: (tabID: string, message: string, title: string) => void
@@ -87,6 +87,7 @@ export class Connector {
 
     private processChatMessage = async (messageData: any): Promise<void> => {
         console.log(`callin processChatMessage with message ${messageData.message}`)
+        console.log(`is there a messageID? ${messageData.messageId}`)
         if (this.onChatAnswerReceived === undefined) {
             return
         }
@@ -95,7 +96,7 @@ export class Connector {
             console.log(`messageType is ${messageData.messageType}`)
             const answer: ChatItem = {
                 type: messageData.messageType,
-                messageId: messageData.messageID ?? messageData.triggerID,
+                messageId: messageData.messageId ?? messageData.triggerID,
                 body: messageData.message,
                 buttons: messageData.buttons ?? [],
                 canBeVoted: false,
@@ -172,7 +173,12 @@ export class Connector {
         }
 
         if (messageData.type === 'asyncEventProgressMessage') {
-            this.onAsyncEventProgress(messageData.tabID, messageData.inProgress, messageData.message ?? '')
+            this.onAsyncEventProgress(
+                messageData.tabID,
+                messageData.inProgress,
+                messageData.message,
+                messageData.messageID
+            )
             return
         }
 

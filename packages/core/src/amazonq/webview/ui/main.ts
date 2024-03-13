@@ -133,14 +133,20 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
                 promptInputDisabledState: tabsStorage.isTabDead(tabID) || !enabled,
             })
         },
-        onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => {
+        onAsyncEventProgress: (
+            tabID: string,
+            inProgress: boolean,
+            message: string | undefined,
+            messageId: string | undefined = undefined
+        ) => {
+            console.log('onasynceventprogress!!!')
+            console.log(`is there a messageID? ${messageId}`)
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
                     promptInputDisabledState: true,
                 })
                 if (message) {
-                    console.log('gonna update last answer...')
                     mynahUI.updateLastChatAnswer(tabID, {
                         body: message,
                     })
@@ -148,6 +154,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
                     mynahUI.addChatItem(tabID, {
                         type: ChatItemType.ANSWER_STREAM,
                         body: '',
+                        messageId: messageId,
                     })
                 }
                 tabsStorage.updateTabStatus(tabID, 'busy')
@@ -165,16 +172,22 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
-                mynahUI.updateLastChatAnswer(tabID, {
-                    ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
-                    ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
-                    ...(item.codeReference !== undefined ? { codeReference: item.codeReference } : {}),
-                    ...(item.body !== undefined ? { body: item.body } : {}),
-                    ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
-                    ...(item.type === ChatItemType.CODE_RESULT
-                        ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
-                        : {}),
-                })
+                if (item.messageId !== undefined) {
+                    mynahUI.updateChatAnswerWithMessageId(tabID, item.messageId, {
+                        body: item.body,
+                    })
+                } else {
+                    mynahUI.updateLastChatAnswer(tabID, {
+                        ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
+                        ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
+                        ...(item.codeReference !== undefined ? { codeReference: item.codeReference } : {}),
+                        ...(item.body !== undefined ? { body: item.body } : {}),
+                        ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
+                        ...(item.type === ChatItemType.CODE_RESULT
+                            ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
+                            : {}),
+                    })
+                }
                 return
             }
 
