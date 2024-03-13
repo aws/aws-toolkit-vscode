@@ -89,7 +89,7 @@ export class SsoAccessTokenProvider {
         getLogger().info(
             indent(`current client registration id=${data?.registration?.clientId}, 
                             expires at ${data?.registration?.expiresAt}, 
-                            key = ${this.tokenCacheKey}`)
+                            key = ${this.tokenCacheKey}`, 4, true)
         )
         if (!data || !isExpired(data.token)) {
             return data?.token
