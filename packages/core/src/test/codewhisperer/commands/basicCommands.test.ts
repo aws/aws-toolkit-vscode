@@ -47,7 +47,7 @@ import {
     createSignout,
 } from '../../../codewhisperer/ui/codeWhispererNodes'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
-import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBar'
+import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
 import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 import { createTransformByQ, switchToAmazonQNode } from '../../../amazonq/explorer/amazonQChildrenNodes'

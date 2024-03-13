@@ -28,6 +28,8 @@ import { CodeSuggestionsState, vsCodeState } from '../models/model'
 import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
 import { isWeb } from '../../common/webUtils'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { once } from '../../shared/utilities/functionUtils'
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
@@ -100,6 +102,7 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
 
 export const listCodeWhispererCommandsId = 'aws.codewhisperer.listCommands'
 export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispererCommandsId }, () => () => {
+    once(() => telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' }))()
     return createQuickPick(getQuickPickItems(), {
         title: 'Amazon Q (Preview) + CodeWhisperer',
         buttons: [createExitButton()],

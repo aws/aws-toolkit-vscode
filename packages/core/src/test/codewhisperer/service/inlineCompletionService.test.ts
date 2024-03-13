@@ -15,7 +15,7 @@ import { CodeSuggestionsState, ConfigurationEntry } from '../../../codewhisperer
 import { CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionItemProvider'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { listCodeWhispererCommandsId } from '../../../codewhisperer/ui/statusBar'
+import { listCodeWhispererCommandsId } from '../../../codewhisperer/ui/statusBarMenu'
 
 describe('inlineCompletionService', function () {
     beforeEach(async function () {

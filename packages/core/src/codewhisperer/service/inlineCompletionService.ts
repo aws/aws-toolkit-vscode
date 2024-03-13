@@ -19,7 +19,7 @@ import { codicon, getIcon } from '../../shared/icons'
 import { session } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
 import { Commands } from '../../shared/vscode/commands2'
-import { listCodeWhispererCommandsId } from '../ui/statusBar'
+import { listCodeWhispererCommandsId } from '../ui/statusBarMenu'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
