@@ -267,6 +267,7 @@ Guidelines:
     generated changelog will say that. Example:
     -   ❌ `Fixed S3 bug which caused filenames to be uppercase`
     -   ✅ `S3 filenames are always uppercase`
+-   Include the feature that the change affects, Q, CodeWhisperer, etc.
 
 ### Commit messages
 
