@@ -21,6 +21,7 @@ import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.apache.commons.codec.digest.DigestUtils
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationJob
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationPlan
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
@@ -68,6 +69,7 @@ import software.aws.toolkits.telemetry.CodeTransformStartSrcComponents
 import software.aws.toolkits.telemetry.CodetransformTelemetry
 import software.aws.toolkits.telemetry.Result
 import java.time.Instant
+import java.util.Base64
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.Icon
 
@@ -254,13 +256,18 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         }
     }
 
+    private fun calculateProjectHash(customerSelection: CustomerSelection) = Base64
+        .getEncoder()
+        .encodeToString(DigestUtils.sha256(customerSelection.configurationFile.path))
+
     fun runModernize(validatedBuildFiles: List<VirtualFile>): Job? {
         initStopParameters()
         val customerSelection = getCustomerSelection(validatedBuildFiles) ?: return null
         CodetransformTelemetry.jobStartedCompleteFromPopupDialog(
             codeTransformJavaSourceVersionsAllowed = CodeTransformJavaSourceVersionsAllowed.from(customerSelection.sourceJavaVersion.name),
             codeTransformJavaTargetVersionsAllowed = CodeTransformJavaTargetVersionsAllowed.from(customerSelection.targetJavaVersion.name),
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId()
+            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformProjectId = calculateProjectHash(customerSelection),
         )
         initModernizationJobUI(true, project.getModuleOrProjectNameForFile(customerSelection.configurationFile))
         val session = createCodeModernizerSession(customerSelection, project)

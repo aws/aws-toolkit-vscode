@@ -30,7 +30,6 @@ import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.notifyError
-import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcsExecuteCommandType
 import software.aws.toolkits.telemetry.EcsTelemetry
@@ -97,7 +96,7 @@ class OpenShellInContainerDialog(
 
     override fun doCancelAction() {
         super.doCancelAction()
-        EcsTelemetry.runExecuteCommand(project, Result.Cancelled, EcsExecuteCommandType.Shell)
+        EcsTelemetry.runExecuteCommand(project = project, result = Result.Cancelled, ecsExecuteCommandType = EcsExecuteCommandType.Shell)
     }
 
     private fun runExecCommand(task: String) {
@@ -110,11 +109,11 @@ class OpenShellInContainerDialog(
             runInEdt(ModalityState.any()) {
                 TerminalView.getInstance(project).createNewSession(runner, TerminalTabState().also { it.myTabName = container.containerDefinition.name() })
             }
-            EcsTelemetry.runExecuteCommand(project, Result.Succeeded, EcsExecuteCommandType.Shell)
+            EcsTelemetry.runExecuteCommand(project = project, result = Result.Succeeded, ecsExecuteCommandType = EcsExecuteCommandType.Shell)
         } catch (e: Exception) {
             e.notifyError(message("ecs.execute_command_failed"))
             LOG.warn(e) { "Failed to start interactive shell" }
-            EcsTelemetry.runExecuteCommand(project, Result.Failed, EcsExecuteCommandType.Shell)
+            EcsTelemetry.runExecuteCommand(project = project, result = Result.Failed, ecsExecuteCommandType = EcsExecuteCommandType.Shell)
         }
     }
     companion object {

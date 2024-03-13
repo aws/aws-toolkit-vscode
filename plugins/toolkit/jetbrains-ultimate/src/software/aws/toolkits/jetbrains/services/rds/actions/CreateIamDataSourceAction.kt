@@ -58,10 +58,10 @@ class CreateIamDataSourceAction : SingleExplorerNodeAction<RdsNode>(message("rds
             override fun onSuccess() = recordTelemetry(Result.Succeeded)
 
             private fun recordTelemetry(result: Result) = RdsTelemetry.createConnectionConfiguration(
-                selected.nodeProject,
-                result,
-                DatabaseCredentials.IAM,
-                selected.database.engine
+                project = selected.nodeProject,
+                result = result,
+                databaseCredentials = DatabaseCredentials.IAM,
+                databaseEngine = selected.database.engine
             )
         }.queue()
     }

@@ -42,7 +42,7 @@ class DeleteObjectAction : S3ObjectAction(message("s3.delete.object.action"), Al
         )
 
         if (response != Messages.OK) {
-            S3Telemetry.deleteObject(project, Result.Cancelled)
+            S3Telemetry.deleteObject(project = project, result = Result.Cancelled)
         } else {
             val scope = projectCoroutineScope(project)
             scope.launch {
@@ -50,13 +50,13 @@ class DeleteObjectAction : S3ObjectAction(message("s3.delete.object.action"), Al
                     treeTable.bucket.deleteObjects(nodes.map { it.key })
                     nodes.forEach { treeTable.invalidateLevel(it) }
                     treeTable.refresh()
-                    S3Telemetry.deleteObject(project, Result.Succeeded)
+                    S3Telemetry.deleteObject(project = project, result = Result.Succeeded)
                 } catch (e: NoSuchBucketException) {
                     treeTable.bucket.handleDeletedBucket()
-                    S3Telemetry.deleteObject(project, Result.Failed)
+                    S3Telemetry.deleteObject(project = project, result = Result.Failed)
                 } catch (e: Exception) {
                     e.notifyError(project = project, title = message("s3.delete.object.failed"))
-                    S3Telemetry.deleteObject(project, Result.Failed)
+                    S3Telemetry.deleteObject(project = project, result = Result.Failed)
                 }
             }
         }

@@ -27,16 +27,16 @@ abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>> : SingleR
         val resourceName = selected.displayName()
         val response = DeleteResourceDialog(selected.nodeProject, resourceType, resourceName, comment).showAndGet()
         if (!response) {
-            AwsTelemetry.deleteResource(selected.project, selected.serviceId, Result.Cancelled)
+            AwsTelemetry.deleteResource(project = selected.project, serviceType = selected.serviceId, result = Result.Cancelled)
         } else {
             ApplicationManager.getApplication().executeOnPooledThread {
                 try {
                     performDelete(selected)
                     notifyInfo(project = selected.project, title = message("delete_resource.deleted", resourceType, resourceName))
-                    AwsTelemetry.deleteResource(selected.project, selected.serviceId, success = true)
+                    AwsTelemetry.deleteResource(project = selected.project, serviceType = selected.serviceId, success = true)
                 } catch (e: Exception) {
                     e.notifyError(project = selected.project, title = message("delete_resource.delete_failed", resourceType, resourceName))
-                    AwsTelemetry.deleteResource(selected.project, selected.serviceId, success = false)
+                    AwsTelemetry.deleteResource(project = selected.project, serviceType = selected.serviceId, success = false)
                 }
             }
         }

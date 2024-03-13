@@ -66,7 +66,7 @@ class ConfirmUserCodeLoginDialog(
 
     override fun doCancelAction() {
         super.doCancelAction()
-        AwsTelemetry.loginWithBrowser(project = null, Result.Cancelled, credentialType)
+        AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = credentialType)
     }
 }
 

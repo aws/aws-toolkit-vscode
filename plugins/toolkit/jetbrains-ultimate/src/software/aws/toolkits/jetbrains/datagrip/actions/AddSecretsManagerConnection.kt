@@ -66,16 +66,16 @@ class AddSecretsManagerConnection : SingleExplorerNodeAction<AwsExplorerNode<*>>
         }
         if (selected is RedshiftExplorerParentNode || selected is RedshiftExplorerNode) {
             RedshiftTelemetry.createConnectionConfiguration(
-                selected.nodeProject,
-                result,
-                DatabaseCredentials.SecretsManager
+                project = selected.nodeProject,
+                result = result,
+                databaseCredentials = DatabaseCredentials.SecretsManager
             )
         } else {
             RdsTelemetry.createConnectionConfiguration(
-                selected.nodeProject,
-                result,
-                DatabaseCredentials.SecretsManager,
-                dbEngine
+                project = selected.nodeProject,
+                result = result,
+                databaseCredentials = DatabaseCredentials.SecretsManager,
+                databaseEngine = dbEngine
             )
         }
     }

@@ -41,9 +41,9 @@ class CreateDataSourceAction : SingleExplorerNodeAction<RedshiftExplorerNode>(me
             override fun onSuccess() = recordTelemetry(Result.Succeeded)
 
             private fun recordTelemetry(result: Result) = RedshiftTelemetry.createConnectionConfiguration(
-                selected.nodeProject,
-                result,
-                IAM
+                project = selected.nodeProject,
+                result = result,
+                databaseCredentials = IAM
             )
         }.queue()
     }

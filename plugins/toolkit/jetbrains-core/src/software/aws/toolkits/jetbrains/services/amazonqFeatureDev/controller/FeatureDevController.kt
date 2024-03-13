@@ -255,8 +255,6 @@ class FeatureDevController(
         try {
             session = getSessionInfo(tabId)
 
-            AmazonqTelemetry.isAcceptedCodeChanges(amazonqConversationId = session.conversationId, enabled = true)
-
             var filePaths: List<NewFileZipInfo> = emptyList()
             var deletedFiles: List<String> = emptyList()
             var references: List<CodeReference> = emptyList()
@@ -268,7 +266,12 @@ class FeatureDevController(
                     references = state.references
                 }
             }
-
+            AmazonqTelemetry.isAcceptedCodeChanges(
+                project = null,
+                amazonqNumberOfFilesAccepted = (filePaths.size + deletedFiles.size) * 1.0,
+                amazonqConversationId = session.conversationId,
+                enabled = true
+            )
             session.insertChanges(filePaths = filePaths, deletedFiles = deletedFiles, references = references)
 
             messenger.sendAnswer(

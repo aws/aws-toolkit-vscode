@@ -55,11 +55,11 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     project
                 )
                 DynamicresourceTelemetry.mutateResource(
-                    project,
-                    Result.Failed,
-                    dynamicResourceIdentifier.resourceType,
-                    addOperationToTelemetry(Operation.DELETE),
-                    0.0
+                    project = project,
+                    result = Result.Failed,
+                    resourceType = dynamicResourceIdentifier.resourceType,
+                    dynamicResourceOperation = addOperationToTelemetry(Operation.DELETE),
+                    duration = 0.0
                 )
             }
         }
@@ -85,11 +85,11 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     project
                 )
                 DynamicresourceTelemetry.mutateResource(
-                    project,
-                    Result.Failed,
-                    dynamicResourceIdentifier.resourceType,
-                    addOperationToTelemetry(Operation.UPDATE),
-                    0.0
+                    project = project,
+                    result = Result.Failed,
+                    resourceType = dynamicResourceIdentifier.resourceType,
+                    dynamicResourceOperation = addOperationToTelemetry(Operation.UPDATE),
+                    duration = 0.0
                 )
             }
         }
@@ -111,7 +111,13 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     message("dynamic_resources.operation_status_notification_title", dynamicResourceType, message("general.create".decapitalize())),
                     project
                 )
-                DynamicresourceTelemetry.mutateResource(project, Result.Failed, dynamicResourceType, addOperationToTelemetry(Operation.CREATE), 0.0)
+                DynamicresourceTelemetry.mutateResource(
+                    project = project,
+                    result = Result.Failed,
+                    resourceType = dynamicResourceType,
+                    dynamicResourceOperation = addOperationToTelemetry(Operation.CREATE),
+                    duration = 0.0
+                )
             }
         }
     }
@@ -151,11 +157,11 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                             project
                         )
                         DynamicresourceTelemetry.mutateResource(
-                            project,
-                            Result.Failed,
-                            mutation.resourceType,
-                            addOperationToTelemetry(mutation.operation),
-                            ChronoUnit.MILLIS.between(mutation.startTime, DynamicResourceTelemetryResources.getCurrentTime()).toDouble()
+                            project = project,
+                            result = Result.Failed,
+                            resourceType = mutation.resourceType,
+                            dynamicResourceOperation = addOperationToTelemetry(mutation.operation),
+                            duration = ChronoUnit.MILLIS.between(mutation.startTime, DynamicResourceTelemetryResources.getCurrentTime()).toDouble()
                         )
                         null to true
                     }

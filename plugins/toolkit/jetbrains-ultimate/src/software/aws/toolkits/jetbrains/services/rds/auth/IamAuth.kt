@@ -65,7 +65,7 @@ class IamAuth : DatabaseAuthProviderCompatabilityAdapter {
                 result = Result.Failed
                 throw e
             } finally {
-                RdsTelemetry.getCredentials(project, result, IAM, connection.getDatabaseEngine())
+                RdsTelemetry.getCredentials(project = project, result = result, databaseCredentials = IAM, databaseEngine = connection.getDatabaseEngine())
             }
         }
     }

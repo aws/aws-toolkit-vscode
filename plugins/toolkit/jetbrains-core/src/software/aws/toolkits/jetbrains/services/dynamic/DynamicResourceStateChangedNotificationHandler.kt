@@ -35,11 +35,11 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 project
             )
             DynamicresourceTelemetry.mutateResource(
-                project,
-                Result.Succeeded,
-                state.resourceType,
-                addOperationToTelemetry(state.operation),
-                ChronoUnit.MILLIS.between(state.startTime, DynamicResourceTelemetryResources.getCurrentTime()).toDouble()
+                project = project,
+                result = Result.Succeeded,
+                resourceType = state.resourceType,
+                dynamicResourceOperation = addOperationToTelemetry(state.operation),
+                duration = ChronoUnit.MILLIS.between(state.startTime, DynamicResourceTelemetryResources.getCurrentTime()).toDouble()
             )
         } else if (state.status == OperationStatus.FAILED) {
             if (state.message.isNullOrBlank()) {
@@ -63,11 +63,11 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 )
             }
             DynamicresourceTelemetry.mutateResource(
-                project,
-                Result.Failed,
-                state.resourceType,
-                addOperationToTelemetry(state.operation),
-                ChronoUnit.MILLIS.between(state.startTime, DynamicResourceTelemetryResources.getCurrentTime()).toDouble()
+                project = project,
+                result = Result.Failed,
+                resourceType = state.resourceType,
+                dynamicResourceOperation = addOperationToTelemetry(state.operation),
+                duration = ChronoUnit.MILLIS.between(state.startTime, DynamicResourceTelemetryResources.getCurrentTime()).toDouble()
             )
         }
         AwsResourceCache.getInstance().clear(CloudControlApiResources.listResources(state.resourceType), state.connectionSettings)
