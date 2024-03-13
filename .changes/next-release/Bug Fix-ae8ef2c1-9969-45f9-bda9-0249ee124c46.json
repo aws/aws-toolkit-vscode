@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "\"Failed to access settings\" error when restarting multiple vscode instances"
-}

@@ -42,7 +42,9 @@ export async function openRemoteTerminal(options: vscode.TerminalOptions, onClos
     }).finally(() => timeout.cancel())
 }
 
-// VSC is logging args to the PTY host log file if shell integration is enabled :(
+/**
+ * VSC is logging args to the PTY host log file if shell integration is enabled :(
+ */
 async function withoutShellIntegration<T>(cb: () => T | Promise<T>): Promise<T> {
     const userValue = Settings.instance.get('terminal.integrated.shellIntegration.enabled', Boolean)
 

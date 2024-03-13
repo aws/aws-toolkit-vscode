@@ -232,7 +232,7 @@ describe('codewhispererCodecoverageTracker', function () {
             CodeWhispererCodeCoverageTracker.instances.clear()
         })
 
-        it('Should skip when content change size is more than 500', function () {
+        it('Should skip when content change size is more than 50', function () {
             if (!tracker) {
                 assert.fail()
             }
@@ -251,7 +251,7 @@ describe('codewhispererCodecoverageTracker', function () {
             assert.strictEqual(Object.keys(tracker.totalTokens).length, 0)
         })
 
-        it('Should not skip when content change size is less than 500', function () {
+        it('Should not skip when content change size is less than 50', function () {
             if (!tracker) {
                 assert.fail()
             }
@@ -260,15 +260,15 @@ describe('codewhispererCodecoverageTracker', function () {
                 document: createMockDocument(),
                 contentChanges: [
                     {
-                        range: new vscode.Range(0, 0, 0, 300),
+                        range: new vscode.Range(0, 0, 0, 49),
                         rangeOffset: 0,
-                        rangeLength: 300,
-                        text: 'def twoSum(nums, target): for '.repeat(10),
+                        rangeLength: 49,
+                        text: 'a = 123'.repeat(7),
                     },
                 ],
             })
             assert.strictEqual(Object.keys(tracker.totalTokens).length, 1)
-            assert.strictEqual(Object.values(tracker.totalTokens)[0], 300)
+            assert.strictEqual(Object.values(tracker.totalTokens)[0], 49)
         })
 
         it('Should skip when CodeWhisperer is editing', function () {

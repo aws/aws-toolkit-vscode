@@ -10,8 +10,8 @@ codebase and sending pull requests.
 
 This project is set up as a typescript monorepo. The documentation throughout this project
 is referring to the subprojects [`packages/toolkit/`](./packages/toolkit/) and [`packages/core/`](./packages/core/).
-Please see [ARCHITECTURE.md](./docs/ARCHITECTURE.md#monorepo-structure) to understand the
-structure of thispackage before contributing.
+See [arch_develop.md](./docs/arch_develop.md#monorepo-structure) to understand the
+structure of this package before contributing.
 
 ### Find things to do
 
@@ -88,6 +88,7 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 ### Guidelines
 
+-   Architecture: [arch_overview.md](./docs/arch_overview.md)
 -   Project patterns and practices: [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md)
 -   [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
     -   [Webview guidance](https://code.visualstudio.com/api/ux-guidelines/webviews)
@@ -247,27 +248,28 @@ To send a pull request:
 
 ### Changelog
 
-Pull requests that change customer-facing behavior (in any _describable_ way) should include
-a changelog item(s). Update the changelog via:
+Pull requests that change **customer-impacting behavior** must include a changelog item(s). Run this command:
 
     npm run newChange
 
+
+
 > [!TIP]
-> To update an _existing_ changelog item, just edit its `.changes/next-release/….json` file, you
-> don't need to re-run `npm run newChange`.
+>
+> -   Describe the change in a way that is _meaningful to the customer_. If you can't describe the _customer impact_ then it probably shouldn't be in the changelog.
+>     -   ❌ `Update telemetry definitions` (not customer-impacting)
+>     -   ✅ `Faster startup after VSCode restarts`
+>     -   ❌ `Remove the cache when the connection wizard is re-launched` (code internals are not relevant to customers)
+>     -   ✅ `Connection wizard sometimes shows the old (stale) connection`
+> -   "Bug Fix" changes should describe the _problem being fixed_. This tends to produce simpler,
+>     more-intuitive descriptions. It's redundant to say "Fixed" in the description, because the
+>     generated changelog will say that. Example:
+>     -   ❌ `Fixed S3 bug which caused filenames to be uppercase`
+>     -   ✅ `S3 filenames are always uppercase`
+> -   To update an _existing_ changelog item, just edit its `.changes/next-release/….json` file, you don't need to re-run `npm run newChange`.
+> -   If there are multiple unrelated changes, run `npm run newChange` for each change.
+> -   Include the feature that the change affects, Q, CodeWhisperer, etc.
 
-Guidelines:
-
--   If there are multiple unrelated changes, run `npm run newChange` for each change.
--   Describe the change in a way that is meaningful to the _customer_.
-    -   ❌ `Remove the cache when the connection wizard is re-launched`
-    -   ✅ `Connection wizard sometimes shows the old (stale) connection`
--   "Bug Fix" changes should describe the _problem being fixed_. This tends to produce simpler,
-    more-intuitive descriptions. It's redundant to say "Fixed" in the description, because the
-    generated changelog will say that. Example:
-    -   ❌ `Fixed S3 bug which caused filenames to be uppercase`
-    -   ✅ `S3 filenames are always uppercase`
--   Include the feature that the change affects, Q, CodeWhisperer, etc.
 
 ### Commit messages
 
@@ -598,6 +600,9 @@ There are several ways to make pre-production changes available on a "preview" o
     also forces the Toolkit to declare version `99.0` (since "private beta" has no semver and to
     avoid unwanted auto-updating from VSCode marketplace). Beta builds of the Toolkit automatically
     query the URL once per session per day.
+    -   Beta users may want to run the `Extensions: Disable Auto Update for All Extensions` command
+        [disable VSCode's auto-update feature](https://code.visualstudio.com/docs/editor/extension-marketplace#_extension-autoupdate),
+        to avoid ovewriting the beta Toolkit with the marketplace release.
 
 ## Code of Conduct
 

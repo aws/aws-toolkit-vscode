@@ -3,24 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { collectFiles } from '../util/files'
-import { ConversationNotStartedState, PrepareRefinementState } from './sessionState'
+import * as path from 'path'
+
+import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
+import { referenceLogText } from '../constants'
+import { FileSystemCommon } from '../../srcShared/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
-import { approachRetryLimit } from '../limits'
+import { approachRetryLimit, codeGenRetryLimit } from '../limits'
 import { SessionConfig } from './sessionConfigFactory'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
+
+const fs = FileSystemCommon.instance
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
+    private approach: string = ''
     private proxyClient: FeatureDevClient
     private _conversationId?: string
     private approachRetries: number
+    private codeGenRetries: number
     private preloaderFinished = false
     private _latestMessage: string = ''
     private _telemetry: TelemetryHelper
@@ -39,6 +47,7 @@ export class Session {
         this.proxyClient = proxyClient
 
         this.approachRetries = approachRetryLimit
+        this.codeGenRetries = codeGenRetryLimit
 
         this._telemetry = new TelemetryHelper()
         this.isAuthenticating = false
@@ -81,11 +90,37 @@ export class Session {
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
         return {
-            sourceRoot: this.config.sourceRoot,
-            workspaceRoot: this.config.workspaceRoot,
+            sourceRoots: this.config.sourceRoots,
+            workspaceFolders: this.config.workspaceFolders,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
         }
+    }
+
+    /**
+     * Triggered by the Generate Code follow up button to move to the code generation phase
+     */
+    initCodegen(): void {
+        this._state = new PrepareCodeGenState(
+            {
+                ...this.getSessionStateConfig(),
+                conversationId: this.conversationId,
+                uploadId: this.uploadId,
+            },
+            this.approach,
+            [],
+            [],
+            [],
+            this.tabID,
+            0
+        )
+        this._latestMessage = ''
+
+        telemetry.amazonq_isApproachAccepted.emit({
+            amazonqConversationId: this.conversationId,
+            enabled: true,
+            result: 'Succeeded',
+        })
     }
 
     async send(msg: string): Promise<Interaction> {
@@ -100,12 +135,10 @@ export class Session {
     }
 
     private async nextInteraction(msg: string) {
-        const files = await collectFiles(this.config.sourceRoot)
-
         const resp = await this.state.interact({
-            files,
             task: this.task,
             msg,
+            fs: this.config.fs,
             messenger: this.messenger,
             telemetry: this.telemetry,
         })
@@ -122,9 +155,32 @@ export class Session {
 
             // If approach was changed then we need to set it in the next state and this state
             this.state.approach = newApproach
+            this.approach = newApproach
         }
 
         return resp.interaction
+    }
+
+    public async insertChanges() {
+        for (const filePath of this.state.filePaths ?? []) {
+            const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
+
+            const uri = filePath.virtualMemoryUri
+            const content = await this.config.fs.readFile(uri)
+            const decodedContent = new TextDecoder().decode(content)
+
+            await fs.mkdir(path.dirname(absolutePath))
+            await fs.writeFile(absolutePath, decodedContent)
+        }
+
+        for (const filePath of this.state.deletedFiles ?? []) {
+            const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
+            await fs.delete(absolutePath)
+        }
+
+        for (const ref of this.state.references ?? []) {
+            ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
+        }
     }
 
     get state() {
@@ -145,6 +201,8 @@ export class Session {
         switch (this.state.phase) {
             case 'Approach':
                 return this.approachRetries
+            case 'Codegen':
+                return this.codeGenRetries
             default:
                 return this.approachRetries
         }
@@ -154,6 +212,9 @@ export class Session {
         switch (this.state.phase) {
             case 'Approach':
                 this.approachRetries -= 1
+                break
+            case 'Codegen':
+                this.codeGenRetries -= 1
                 break
         }
     }

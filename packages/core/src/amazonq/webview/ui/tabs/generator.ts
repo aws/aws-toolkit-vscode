@@ -46,9 +46,9 @@ export class TabDataGenerator {
             'featuredev',
             `Welcome to /dev. 
 
-I can help you create a plan or define an approach to development. I'll reference and make suggestions based on your open project.
+Here I can provide code suggestions across files in your current project.
 
-_Coming soon_: I'll provide code suggestions to help you implement the plan.
+Before I begin generating code, let's agree on an implementation plan. What change would you like to make?
 `,
         ],
     ])
@@ -61,12 +61,7 @@ _Coming soon_: I'll provide code suggestions to help you implement the plan.
         })
     }
 
-    public getTabData(
-        tabType: TabType,
-        needWelcomeMessages: boolean,
-        needFollowUp: boolean = true,
-        taskName?: string
-    ): MynahUIDataModel {
+    public getTabData(tabType: TabType, needWelcomeMessages: boolean, taskName?: string): MynahUIDataModel {
         return {
             tabTitle: taskName ?? this.tabTitle.get(tabType),
             promptInputInfo:
@@ -79,14 +74,10 @@ _Coming soon_: I'll provide code suggestions to help you implement the plan.
                           type: ChatItemType.ANSWER,
                           body: this.tabWelcomeMessage.get(tabType),
                       },
-                      ...(needFollowUp
-                          ? [
-                                {
-                                    type: ChatItemType.ANSWER,
-                                    followUp: this.followUpsGenerator.generateWelcomeBlockForTab(tabType),
-                                },
-                            ]
-                          : []),
+                      {
+                          type: ChatItemType.ANSWER,
+                          followUp: this.followUpsGenerator.generateWelcomeBlockForTab(tabType),
+                      },
                   ]
                 : [],
         }

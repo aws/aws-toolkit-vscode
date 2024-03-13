@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeWhisperer: Include copied code in percentage code written metrics"
+}

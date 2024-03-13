@@ -1,3 +1,13 @@
+## 2.14.0 2024-03-08
+
+- **Feature** Amazon Q Feature Dev (/dev): Ask Q to generate code based on the suggested plan
+
+## 2.13.0 2024-03-07
+
+- **Bug Fix** fix(CodeTransform): Updating commands for copying dependencies
+- **Bug Fix** "Failed to access settings" error when restarting multiple vscode instances
+- **Bug Fix** Amazon Q: Fix code snippet borders, action button border radius, text alignment and overlay UI issues
+
 ## 2.12.0 2024-02-29
 
 - **Bug Fix** Amazon Q: Static analysis of document symbols used as context in Amazon Q requests must filter tree-sitter "extra" CST nodes (comments) in order to avoid crashes which freeze the chat panel
