@@ -327,16 +327,6 @@ export class FeatureDevController {
                       ]
                     : [],
         })
-
-        if (retryable) {
-            // Lock the chat input until they explicitly click retry
-            this.messenger.sendChatInputEnabled(tabID, false)
-        } else {
-            // Unlock the chat input if the error is not retryable.
-            // We are waiting for user prompt in this case.
-            this.messenger.sendChatInputEnabled(tabID, true)
-            this.messenger.sendUpdatePlaceholder(tabID, 'How can this plan be improved?')
-        }
     }
 
     /**
@@ -349,6 +339,7 @@ export class FeatureDevController {
             true,
             `This may take a few minutes. I will send a notification when it's complete if you navigate away from this panel, but please keep the tab open.`
         )
+        let enableInput = false
 
         try {
             this.messenger.sendAnswer({
@@ -358,10 +349,14 @@ export class FeatureDevController {
             })
             this.messenger.sendUpdatePlaceholder(tabID, 'Generating code ...')
             await session.send(message)
+
             if (session.state.codeGenerationResult?.result === 'pending') {
                 throw new ToolkitError('Unexpected state in code generation')
             }
             if (session.state.codeGenerationResult?.result === 'failed') {
+                // enable the input if the error is not retryable.
+                // we're expecting a new prompt in this case
+                enableInput = !session.state.codeGenerationResult.retryable
                 this.printFailedCodeGenMessage(
                     session,
                     session.state.codeGenerationResult.message,
@@ -396,10 +391,15 @@ export class FeatureDevController {
                 followUps: this.getFollowUpOptions(session?.state.phase),
                 tabID: tabID,
             })
-            this.messenger.sendUpdatePlaceholder(tabID, 'Select an option above to proceed')
         } finally {
             // Finish processing the event
             this.messenger.sendAsyncEventProgress(tabID, false, undefined)
+            this.messenger.sendChatInputEnabled(tabID, enableInput)
+            if (enableInput) {
+                this.messenger.sendUpdatePlaceholder(tabID, 'How can this plan be improved?')
+            } else {
+                this.messenger.sendUpdatePlaceholder(tabID, 'Select an option above to proceed')
+            }
 
             if (!this.isAmazonQVisible) {
                 const open = 'Open chat'
