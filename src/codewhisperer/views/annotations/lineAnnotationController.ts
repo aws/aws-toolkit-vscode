@@ -11,11 +11,12 @@ import { cancellableDebounce } from '../../../shared/utilities/functionUtils'
 import { subscribeOnce } from '../../../shared/utilities/vsCodeUtils'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { set } from '../../util/commonUtil'
-import { AnnotationChangeSource, inlinehintKey } from '../../models/constants'
+import { AnnotationChangeSource, autoTriggerEnabledKey, inlinehintKey } from '../../models/constants'
 import globals from '../../../shared/extensionGlobals'
 import { Container } from '../../service/serviceContainer'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeWhispererCommandBackend } from '../../commands/gettingStartedPageCommands'
+import { getLogger } from '../../../shared/logger/logger'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -23,8 +24,26 @@ type CwsprTutorialUi =
     | 'codewhisperer_learnmore_how_codewhisperer_triggers'
     | 'codewhisperer_learnmore_tab_to_accept'
     | 'codewhisperer_learnmore_manual_trigger'
-    | 'codewhisperer_learnmore_insufficient_file_context'
     | 'codewhisperer_learnmore_learn_more'
+
+function fromId(id: string | undefined): AnnotationState | undefined {
+    switch (id) {
+        case 'codewhisperer_learnmore_start':
+            return new StartState()
+        case 'codewhisperer_learnmore_how_codewhisperer_triggers':
+            return new AutotriggerState()
+        case 'codewhisperer_learnmore_tab_to_accept':
+            return new AutotriggerState()
+        case 'codewhisperer_learnmore_manual_trigger':
+            return new ManualtriggerState()
+        case 'codewhisperer_learnmore_learn_more':
+            return new TryMoreExState()
+        case 'codewhisperer_learnmore_end':
+            return new EndState()
+        default:
+            return undefined
+    }
+}
 
 interface AnnotationState {
     id: string | CwsprTutorialUi
@@ -34,7 +53,7 @@ interface AnnotationState {
 }
 
 class StartState implements AnnotationState {
-    id = 'start'
+    id = 'codewhisperer_learnmore_start'
     suppressWhileRunning = true
     text = () => ''
 
@@ -170,7 +189,7 @@ class TryMoreExState implements AnnotationState {
 }
 
 class EndState implements AnnotationState {
-    id = 'end'
+    id = 'codewhisperer_learnmore_end'
     suppressWhileRunning = true
     text = () => ''
     nextState(data: any): AnnotationState {
@@ -178,6 +197,17 @@ class EndState implements AnnotationState {
     }
 }
 
+/**
+ * There are
+ * - existing users
+ * - new users
+ *   -- new users who has not seen tutorial
+ *   -- new users who has seen tutorial
+ *
+ * "existing users" should have the context key "autoTriggerEnabledKey"
+ * "new users who has seen tutorial" should have the context key "inlineKey" and "autoTriggerEnabledKey"
+ * the remaining grouop of users should belong to "new users who has not seen tutorial"
+ */
 export class LineAnnotationController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
     private _editor: vscode.TextEditor | undefined
@@ -186,7 +216,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _currentStep: '1' | '2' | '3' | '4' | undefined
 
-    private _currentState: AnnotationState = new StartState()
+    private _currentState: AnnotationState
 
     readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
@@ -199,10 +229,29 @@ export class LineAnnotationController implements vscode.Disposable {
     })
 
     constructor(private readonly container: Container) {
-        // this._currentStep = globals.context.globalState.get<'1' | '2' | '3' | undefined>(inlinehintKey)
+        const cachedState = fromId(globals.context.globalState.get<string>(inlinehintKey))
+        const cachedAutotriggerEnabled = globals.context.globalState.get<boolean>(autoTriggerEnabledKey)
+
+        // new users (has or has not seen tutorial)
+        if (cachedAutotriggerEnabled === undefined || cachedState !== undefined) {
+            this._currentState = cachedState ?? new StartState()
+            getLogger().debug(
+                `codewhisperer: new user login, activating inline tutorial. (autotriggerEnabled=${cachedAutotriggerEnabled}); inlineState=${cachedState}`
+            )
+        } else {
+            this._currentState = new EndState()
+            getLogger().debug(
+                `codewhisperer: existing user login, disabling inline tutorial. (autotriggerEnabled=${cachedAutotriggerEnabled}); inlineState=${cachedState}`
+            )
+        }
+
         this._disposable = vscode.Disposable.from(
             subscribeOnce(this.container._lineTracker.onReady)(this.onReady, this),
             RecommendationService.instance.suggestionActionEvent(e => {
+                if (!this._isReady) {
+                    return
+                }
+
                 if (this._currentState instanceof ManualtriggerState) {
                     ManualtriggerState.hasManualTrigger = e.triggerType === 'OnDemand'
                 }
@@ -233,12 +282,9 @@ export class LineAnnotationController implements vscode.Disposable {
     private _isReady: boolean = false
 
     private onReady(): void {
-        this._isReady = true
+        this._isReady = !(this._currentState instanceof EndState)
         this._refresh(vscode.window.activeTextEditor, 'editor')
     }
-
-    // TODO: inline tutorial targets "NEW" Codewhisperer users only, existing users should not see it
-    // shouldSkip() {}
 
     isTutorialDone(): boolean {
         return this._currentState.id === new EndState().id
@@ -341,7 +387,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
         decorationOptions.range = range
         this._selections = lines
-        await set(inlinehintKey, this._currentStep, globals.context.globalState)
+        await set(inlinehintKey, this._currentState.id, globals.context.globalState)
         editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
     }
 
