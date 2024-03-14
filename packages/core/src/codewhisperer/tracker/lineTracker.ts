@@ -18,6 +18,10 @@ export interface LinesChangeEvent {
     readonly reason: 'editor' | 'selection' | 'content'
 }
 
+/**
+ * This class providees a single entry point interface to manage and access users' "line" selections
+ * Callers could use it by subscribing onDidChangeActiveLines to do UI updates or logic needed to be executed when line selections get changed
+ */
 export class LineTracker implements vscode.Disposable {
     private _onDidChangeActiveLines = new vscode.EventEmitter<LinesChangeEvent>()
     get onDidChangeActiveLines(): vscode.Event<LinesChangeEvent> {
