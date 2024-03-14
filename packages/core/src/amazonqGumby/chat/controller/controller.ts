@@ -29,7 +29,6 @@ import { TransformationCandidateProject } from '../../../codewhisperer/service/t
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 
 // Define the chat / IDE events to listen to
-// TODO[gumby]: type safety here?
 export interface ChatControllerEventEmitters {
     readonly transformSelected: vscode.EventEmitter<any>
     readonly tabOpened: vscode.EventEmitter<any>
@@ -191,6 +190,9 @@ export class GumbyController {
             case ButtonActions.CONFIRM_JAVA_HOME_FORM:
                 await this.prepareProjectForSubmission(message)
                 break
+            case ButtonActions.CANCEL_JAVA_HOME_FORM:
+                this.messenger.sendJobFinishedMessage(message.tabId, true, undefined)
+                break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB)
                 this.messenger.sendJobSubmittedMessage(message.tabId)
@@ -269,7 +271,6 @@ export class GumbyController {
     }
 
     private async transformationFinished(message: { tabID: string; jobStatus: string }) {
-        console.log(`transformationFinished called with ${message.jobStatus}`)
         this.messenger.sendJobSubmittedMessage(message.tabID, true)
         this.messenger.sendJobFinishedMessage(message.tabID, false, message.jobStatus)
     }

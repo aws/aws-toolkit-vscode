@@ -454,8 +454,6 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
     }
 
     const argString = args.join(' ')
-    console.log(`installProjectDependencies: running maven ${argString}`)
-
     const spawnResult = spawnSync(baseCommand, args, {
         cwd: modulePath,
         shell: true,

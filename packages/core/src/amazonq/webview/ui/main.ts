@@ -94,31 +94,30 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                         type: ChatItemType.ANSWER,
                         body: 'Authentication successful. Connected to Amazon Q.',
                     })
-                    //todo(gumby): IF gumby tab -- don't update
-                    mynahUI.updateStore(tabID, {
-                        promptInputDisabledState: false,
-                    })
+
+                    if (tabsStorage.getTab(tabID)?.type === 'gumby') {
+                        mynahUI.updateStore(tabID, {
+                            promptInputDisabledState: false,
+                        })
+                    }
                 }
             }
         },
         onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
+        onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => {
+            console.log(`onQuickHandlerCommandMessage!! command: ${command} tabID: ${tabID}`)
+            if (command === 'aws.awsq.transform') {
+                quickActionHandler.handle({ command: '/transform' }, tabID, eventId)
+            } else if (command === 'aws.awsq.clearchat') {
+                quickActionHandler.handle({ command: '/clear' }, tabID)
+            }
+        },
         onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
             return messageController.sendMessageToTab(message, 'cwc')
         },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
-            console.log(`onCWCContextCommandMessage: ${command}`)
             if (command === 'aws.amazonq.sendToPrompt') {
                 return messageController.sendSelectedCodeToTab(message)
-            } else if (command === 'aws.awsq.transform') {
-                const tabID = tabsStorage.getSelectedTab()?.id
-                console.log(`attempting to start transformation from side node - tabID: ${tabID}`)
-                //todo[gumby]: this needs to be its own command, and eventID needs to be set for the tab to be changed
-                quickActionHandler.handle({ command: '/transform' }, tabID!, '')
-                //return messageController.sendMessageToTab(message, 'gumby')
-            } else if (command === 'aws.awsq.clearchat') {
-                const tabID = tabsStorage.getSelectedTab()?.id
-                console.log(`attempting to start transformation from side node - tabID: ${tabID}`)
-                quickActionHandler.handle({ command: '/clear' }, tabID!)
             } else {
                 return messageController.sendMessageToTab(message, 'cwc')
             }
@@ -137,7 +136,6 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             message: string | undefined,
             messageId: string | undefined = undefined
         ) => {
-            console.log(`onasynceventprogress!!! is there a messageID? ${messageId}`)
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,

@@ -14,6 +14,7 @@ import { CancelActionPositions, logCodeTransformInitiatedMetric } from './teleme
 import { ChatControllerEventEmitters } from './chat/controller/controller'
 import { focusAmazonQPanel } from '../auth/ui/vue/show'
 import { sleep } from '../shared/utilities/timeoutUtils'
+import { randomUUID } from 'crypto'
 
 export const showTransformByQ = Commands.declare(
     { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
@@ -31,6 +32,8 @@ export const showTransformByQ = Commands.declare(
                 await sleep(100)
                 controllerEventEmitters.commandSentFromIDE.fire({
                     command: 'aws.awsq.transform',
+                    tabId: transformByQState.getGumbyChatTabID() ?? '',
+                    eventId: randomUUID,
                 })
             })
         } else if (transformByQState.isCancelled()) {

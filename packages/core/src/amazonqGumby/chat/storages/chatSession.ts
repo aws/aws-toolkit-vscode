@@ -2,14 +2,11 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
- * TODO[Gumby]: this needs to track only a single session
  */
 
 import { Messenger } from '../controller/messenger/messenger'
 import { Session } from '../session/session'
 
-// TODO[gumby] this needs to track only a single session
-// https://stackoverflow.com/questions/30174078/how-to-define-singleton-in-typescript
 export class ChatSessionStorage {
     private sessions: Map<string, Session> = new Map()
 

@@ -20,6 +20,7 @@ export enum ButtonActions {
     CONFIRM_TRANSFORMATION_FORM = 'gumbyTransformFormConfirm',
     CANCEL_TRANSFORMATION_FORM = 'gumbyTransformFormCancel',
     CONFIRM_JAVA_HOME_FORM = 'gumbyJavaHomeFormConfirm',
+    CANCEL_JAVA_HOME_FORM = 'gumbyJavaHomeFormCancel',
     CONFIRM_START_TRANSFORMATION_FLOW = 'gumbyStartTransformation',
 }
 

@@ -18,7 +18,7 @@ export interface ConnectorProps {
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string, messageId: string) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
-    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
+    onQuickHandlerCommand: (tabID: string, command: string, eventId?: string) => void
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
@@ -33,7 +33,7 @@ export class Connector {
     private readonly onChatAnswerUpdated
     private readonly chatInputEnabled
     private readonly onAsyncEventProgress
-    private readonly onCWCContextCommandMessage
+    private readonly onQuickHandlerCommand
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -42,7 +42,7 @@ export class Connector {
         this.onError = props.onError
         this.chatInputEnabled = props.onChatInputEnabled
         this.onAsyncEventProgress = props.onAsyncEventProgress
-        this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
+        this.onQuickHandlerCommand = props.onQuickHandlerCommand
     }
 
     onTabAdd = (tabID: string, tabOpenInteractionType?: TabOpenType): void => {
@@ -87,10 +87,6 @@ export class Connector {
             return
         }
 
-        console.log(
-            `calling processChatMessage with message ${messageData.message} and messageId ${messageData.messageId}`
-        )
-
         if (messageData.message !== undefined) {
             const answer: ChatItem = {
                 type: messageData.messageType,
@@ -101,7 +97,6 @@ export class Connector {
             }
 
             if (messageData.messageId !== undefined) {
-                console.log('gumbyChatconnector: calling onChatAnswerUpdated')
                 this.onChatAnswerUpdated(messageData.tabID, answer)
                 return
             }
@@ -128,8 +123,6 @@ export class Connector {
             type: ChatItemType.SYSTEM_PROMPT,
             body: messageData.message,
         })
-
-        return
     }
 
     // This handles messages received from the extension, to be forwarded to the webview
@@ -187,29 +180,16 @@ export class Connector {
             return
         }
 
-        switch (action.id) {
-            //todo[gumby]: forward this
-            case 'gumbyJavaHomeFormCancel':
-                break
-            default:
-                this.sendMessageToExtension({
-                    command: 'form-action-click',
-                    action: action.id,
-                    formSelectedValues: action.formItemValues,
-                    tabType: 'gumby',
-                    tabId: tabId,
-                })
-                break
-        }
+        this.sendMessageToExtension({
+            command: 'form-action-click',
+            action: action.id,
+            formSelectedValues: action.formItemValues,
+            tabType: 'gumby',
+            tabId: tabId,
+        })
     }
 
     private processExecuteCommand = async (messageData: any): Promise<void> => {
-        this.onCWCContextCommandMessage(
-            {
-                body: messageData.message,
-                type: ChatItemType.PROMPT,
-            },
-            messageData.command
-        )
+        this.onQuickHandlerCommand(messageData.tabID, messageData.command, messageData.eventId)
     }
 }
