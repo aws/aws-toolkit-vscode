@@ -171,6 +171,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 if (item.messageId !== undefined) {
+                    console.log('updating old answer...')
                     mynahUI.updateChatAnswerWithMessageId(tabID, item.messageId, {
                         body: item.body,
                     })
