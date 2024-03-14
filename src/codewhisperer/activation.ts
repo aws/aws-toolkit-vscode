@@ -229,7 +229,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * On recommendation acceptance
          */
-        acceptSuggestion.register(context),
+        acceptSuggestion.register(context, container),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
             if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {

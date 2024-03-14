@@ -29,10 +29,14 @@ import { ImportAdderProvider } from '../service/importAdderProvider'
 import { session } from '../util/codeWhispererSession'
 import path from 'path'
 import { RecommendationService } from '../service/recommendationService'
+import { Container } from '../service/serviceContainer'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
-    (context: ExtContext) =>
+    (
+            context: ExtContext,
+            container: Container // is it fine to do add another arg? this command is used completionProvider, inlineCOmpletionItemProvider
+        ) =>
         async (
             range: vscode.Range,
             effectiveRange: vscode.Range,
@@ -45,9 +49,9 @@ export const acceptSuggestion = Commands.declare(
             language: CodewhispererLanguage,
             references: codewhispererClient.References
         ) => {
-            console.log('acceptSuggestion')
-            RecommendationService.instance.incrementAcceptedCount()
             const editor = vscode.window.activeTextEditor
+            RecommendationService.instance.incrementAcceptedCount()
+            container._lineAnnotationController.refresh(editor, 'codewhisperer')
             const onAcceptanceFunc = isInlineCompletionEnabled() ? onInlineAcceptance : onAcceptance
             await onAcceptanceFunc(
                 {

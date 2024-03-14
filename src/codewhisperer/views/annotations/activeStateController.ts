@@ -94,7 +94,6 @@ export class activeStateController implements vscode.Disposable {
     }
 
     readonly refreshDebounced = cancellableDebounce((editor: vscode.TextEditor | undefined) => {
-        console.log('debounced refresh is now executed!!!!!!!!!')
         this._refresh(editor)
     }, 500)
 

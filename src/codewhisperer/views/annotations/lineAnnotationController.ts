@@ -52,7 +52,9 @@ interface AnnotationState {
 }
 
 class StartState implements AnnotationState {
-    id = 'codewhisperer_learnmore_start'
+    static #id = 'codewhisperer_learnmore_start'
+    id = StartState.#id
+
     suppressWhileRunning = true
     text = () => ''
 
@@ -77,12 +79,15 @@ class StartState implements AnnotationState {
  *
  */
 class AutotriggerState implements AnnotationState {
-    id = 'codewhisperer_learnmore_how_codewhisperer_triggers'
+    static #id = 'codewhisperer_learnmore_how_codewhisperer_triggers'
+    id = AutotriggerState.#id
     suppressWhileRunning = true
     text = () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions ([ESC] to exit)'
     static acceptedCount = 0
 
     nextState<T extends object>(data: T): AnnotationState {
+        console.log('State.acceptedCnt=', AutotriggerState.acceptedCount)
+        console.log('RecommendationService.acceptedCnt=', RecommendationService.instance.acceptedSuggestionCount)
         if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
             return new ManualtriggerState()
         } else if (
@@ -110,7 +115,8 @@ class AutotriggerState implements AnnotationState {
  *  User accepts 1 suggestion
  */
 class PressTabState implements AnnotationState {
-    id = 'codewhisperer_learnmore_tab_to_accept'
+    static #id = 'codewhisperer_learnmore_tab_to_accept'
+    id = PressTabState.#id
     suppressWhileRunning = false
     text = () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept ([ESC] to exit)'
 
@@ -129,15 +135,16 @@ class PressTabState implements AnnotationState {
  *  User inokes manual trigger shortcut
  */
 class ManualtriggerState implements AnnotationState {
-    id = 'codewhisperer_learnmore_manual_trigger'
+    static #id = 'codewhisperer_learnmore_manual_trigger'
+    id = ManualtriggerState.#id
     suppressWhileRunning = true
 
     text = () => {
         if (os.platform() === 'win32') {
-            return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Alt] + [C] ([ESC] to exit)'
+            return 'CodeWhisperer Tip 2/3: Invoke suggestions with [Alt] + [C] ([ESC] to exit)'
         }
 
-        return 'CodeWhisperer Tip 2/3: Trigger suggestions with [Option] + [C] ([ESC] to exit)'
+        return 'CodeWhisperer Tip 2/3: Invoke suggestions with [Option] + [C] ([ESC] to exit)'
     }
     static hasManualTrigger: boolean = false
     static hasValidResponse: boolean = false
@@ -166,18 +173,13 @@ class ManualtriggerState implements AnnotationState {
  *  User accepts or rejects the suggestion
  */
 class TryMoreExState implements AnnotationState {
-    id = 'codewhisperer_learnmore_learn_more'
+    static #id = 'codewhisperer_learnmore_learn_more'
+    id = TryMoreExState.#id
 
     suppressWhileRunning = true
     text = () => 'CodeWhisperer Tip 3/3: For settings, open the CodeWhisperer menu from the status bar ([ESC] to exit)'
     nextState(data: any): AnnotationState {
-        if (RecommendationService.instance.totalValidTriggerCount > TryMoreExState.triggerCount) {
-            console.log('triggerCount: ', TryMoreExState.triggerCount)
-            console.log('totalValidTriggerCount: ', RecommendationService.instance.totalValidTriggerCount)
-            return new EndState()
-        } else {
-            return this
-        }
+        return this
     }
 
     static triggerCount: number = 0
@@ -185,7 +187,8 @@ class TryMoreExState implements AnnotationState {
 }
 
 class EndState implements AnnotationState {
-    id = 'codewhisperer_learnmore_end'
+    static #id = 'codewhisperer_learnmore_end'
+    id = EndState.#id
     suppressWhileRunning = true
     text = () => ''
     nextState(data: any): AnnotationState {
@@ -209,8 +212,6 @@ export class LineAnnotationController implements vscode.Disposable {
     private _editor: vscode.TextEditor | undefined
 
     private _selections: LineSelection[] | undefined
-
-    private _currentStep: '1' | '2' | '3' | '4' | undefined
 
     private _currentState: AnnotationState
 
@@ -240,6 +241,9 @@ export class LineAnnotationController implements vscode.Disposable {
                 `codewhisperer: existing user login, disabling inline tutorial. (autotriggerEnabled=${cachedAutotriggerEnabled}); inlineState=${cachedState}`
             )
         }
+
+        // todo: remove
+        this._currentState = new StartState()
 
         this._disposable = vscode.Disposable.from(
             subscribeOnce(this.container._lineTracker.onReady)(this.onReady, this),
@@ -379,6 +383,12 @@ export class LineAnnotationController implements vscode.Disposable {
             this.clear(this._editor)
             this._selections = lines
             return
+        } else if (decorationOptions.renderOptions?.after?.contentText === new TryMoreExState().text()) {
+            // case 3 exit criteria is to show 30s
+            setTimeout(async () => {
+                this._currentState = new EndState()
+                await this.refresh(editor, source, e)
+            }, 30000)
         }
 
         decorationOptions.range = range
