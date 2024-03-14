@@ -4,13 +4,8 @@
  */
 
 import { AuthUtil } from '../util/authUtil'
-
-// TODO: uncomment
-// import { ActiveStateController } from '../views/activeStateController'
-
-// TODO: uncomment
-// import { LineAnnotationController } from '../views/annotations/lineAnnotationController'
-// import { LineTracker } from '../views/annotations/lineTracker'
+import { ActiveStateController } from '../views/activeStateController'
+import { LineTracker } from '../tracker/lineTracker'
 
 export class Container {
     static #instance: Container | undefined
@@ -28,20 +23,11 @@ export class Container {
         return Container.#instance ?? Container.create(AuthUtil.instance)
     }
 
-    // TODO: uncomment
-    // readonly lineTracker: LineTracker
-    // readonly lineAnnotationController: LineAnnotationController
-    // readonly activeStateController: ActiveStateController
+    readonly lineTracker: LineTracker
+    readonly activeStateController: ActiveStateController
 
     constructor(readonly auth: AuthUtil) {
-        // TODO: uncomment
-        // this.lineTracker = new LineTracker()
-        // this.lineAnnotationController = new LineAnnotationController(this)
-        // this.activeStateController = new ActiveStateController(this)
-    }
-
-    ready() {
-        // TODO: uncomment
-        // this.lineTracker.ready()
+        this.lineTracker = new LineTracker()
+        this.activeStateController = new ActiveStateController(this)
     }
 }

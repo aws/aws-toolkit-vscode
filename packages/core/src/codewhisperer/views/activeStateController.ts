@@ -7,12 +7,10 @@ import * as vscode from 'vscode'
 import { Container } from '../service/serviceContainer'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { cancellableDebounce } from '../../shared/utilities/functionUtils'
-
-// TODO: uncomment
-// import { LineSelection, LinesChangeEvent } from './lineTracker'
-// import { isTextEditor } from '../../shared/utilities/editorUtilities'
-// import { RecommendationService } from '../service/recommendationService'
-// import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
+import { LineSelection, LinesChangeEvent } from '../tracker/lineTracker'
+import { isTextEditor } from '../../shared/utilities/editorUtilities'
+import { RecommendationService } from '../service/recommendationService'
+import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
 
 export class ActiveStateController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
@@ -37,10 +35,8 @@ export class ActiveStateController implements vscode.Disposable {
             // TODO: uncomment
             // RecommendationService.instance.suggestionActionEvent(this.onSuggestionActionEvent, this),
             RecommendationHandler.instance.onDidReceiveRecommendation(this.onDidReceiveRecommendation, this),
-            // TODO: uncomment
-            // this.container._lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
-            // TODO: uncomment
-            // subscribeOnce(this.container._lineTracker.onReady)(this.onReady, this),
+            this.container.lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
+            subscribeOnce(this.container.lineTracker.onReady)(this.onReady, this),
             this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
                     this._refresh(vscode.window.activeTextEditor)
@@ -83,14 +79,13 @@ export class ActiveStateController implements vscode.Disposable {
         }
     }
 
-    // TODO: uncomment
-    // private async onActiveLinesChanged(e: LinesChangeEvent) {
-    //     if (!this._isReady) {
-    //         return
-    //     }
+    private async onActiveLinesChanged(e: LinesChangeEvent) {
+        if (!this._isReady) {
+            return
+        }
 
-    //     await this.refreshDebounced.promise(e.editor)
-    // }
+        await this.refreshDebounced.promise(e.editor)
+    }
 
     clear(editor: vscode.TextEditor | undefined) {
         if (this._editor && this._editor !== editor) {
@@ -104,49 +99,47 @@ export class ActiveStateController implements vscode.Disposable {
         this._refresh(editor)
     }, 500)
 
-    // TODO: uncomment
     private async _refresh(editor: vscode.TextEditor | undefined, flag?: boolean) {
-        // if (flag !== undefined) {
-        //     this.refreshDebounced.cancel()
-        // }
-        // if (!this.container.auth.isConnectionValid(false)) {
-        //     this.clear(this._editor)
-        //     return
-        // }
-        // if (!editor && !this._editor) {
-        //     return
-        // }
-        // const selections = this.container._lineTracker.selections
-        // if (!editor || !selections || !isTextEditor(editor)) {
-        //     this.clear(this._editor)
-        //     return
-        // }
-        // if (this._editor !== editor) {
-        //     // Clear any annotations on the previously active editor
-        //     this.clear(this._editor)
-        //     this._editor = editor
-        // }
-        // // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
-        // if (!editor.document || !this.container._lineTracker.includes(selections)) {
-        //     return
-        // }
-        // if (flag !== undefined) {
-        //     await this.updateDecorations(editor, selections, flag)
-        // } else {
-        //     await this.updateDecorations(editor, selections, RecommendationService.instance.isRunning)
-        // }
+        if (flag !== undefined) {
+            this.refreshDebounced.cancel()
+        }
+        if (!this.container.auth.isConnectionValid()) {
+            this.clear(this._editor)
+            return
+        }
+        if (!editor && !this._editor) {
+            return
+        }
+        const selections = this.container.lineTracker.selections
+        if (!editor || !selections || !isTextEditor(editor)) {
+            this.clear(this._editor)
+            return
+        }
+        if (this._editor !== editor) {
+            // Clear any annotations on the previously active editor
+            this.clear(this._editor)
+            this._editor = editor
+        }
+        // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
+        if (!editor.document || !this.container.lineTracker.includes(selections)) {
+            return
+        }
+        if (flag !== undefined) {
+            await this.updateDecorations(editor, selections, flag)
+        } else {
+            await this.updateDecorations(editor, selections, RecommendationService.instance.isRunning)
+        }
     }
 
-    // TODO: unncomment
-    // async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], flag: boolean) {
-    //     const range = editor.document.validateRange(
-    //         new vscode.Range(lines[0].active, lines[0].active, lines[0].active, lines[0].active)
-    //     )
+    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], flag: boolean) {
+        const range = editor.document.validateRange(
+            new vscode.Range(lines[0].active, lines[0].active, lines[0].active, lines[0].active)
+        )
 
-    //     if (flag) {
-    //         editor.setDecorations(this.cwLineHintDecoration, [range])
-    //     } else {
-    //         editor.setDecorations(this.cwLineHintDecoration, [])
-    //     }
-    // }
+        if (flag) {
+            editor.setDecorations(this.cwLineHintDecoration, [range])
+        } else {
+            editor.setDecorations(this.cwLineHintDecoration, [])
+        }
+    }
 }
