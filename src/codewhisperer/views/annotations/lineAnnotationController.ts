@@ -9,8 +9,6 @@ import { LineSelection, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { cancellableDebounce } from '../../../shared/utilities/functionUtils'
 import { subscribeOnce } from '../../../shared/utilities/vsCodeUtils'
-import { CodeWhispererSource } from '../../commands/types'
-import { placeholder } from '../../../shared/vscode/commands2'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { set } from '../../util/commonUtil'
 import { AnnotationChangeSource, inlinehintKey } from '../../models/constants'
@@ -141,26 +139,6 @@ class ManualtriggerState implements AnnotationState {
 }
 
 /**
- * case 2-a: insufficient file context
- * Trigger Criteria:
- *  Case 2 &&
- *      User invokes a manual trigger &&
- *      no suggestion is returned
- *
- * Exit criteria:
- *  ??????
- */
-class EmptyResponseState implements AnnotationState {
-    id = 'codewhisperer_learnmore_insufficient_file_context'
-
-    suppressWhileRunning = true
-    text = () => 'Try CodeWhisperer on an existing file with code for best results'
-    nextState(data: any): AnnotationState {
-        return this
-    }
-}
-
-/**
  * case 3: Learn more
  * Trigger Criteria:
  *  User exists case 2 &&
@@ -225,9 +203,15 @@ export class LineAnnotationController implements vscode.Disposable {
         this._disposable = vscode.Disposable.from(
             subscribeOnce(this.container._lineTracker.onReady)(this.onReady, this),
             RecommendationService.instance.suggestionActionEvent(e => {
-                this.setMetadataForState2(e)
+                if (this._currentState instanceof ManualtriggerState) {
+                    ManualtriggerState.hasManualTrigger = e.triggerType === 'OnDemand'
+                }
 
-                // can't use refresh because refresh, by design, should only be triggered when there is line selection change
+                if (this._currentState instanceof ManualtriggerState) {
+                    ManualtriggerState.hasValidResponse =
+                        (e.response?.recommendationCount !== undefined && e.response?.recommendationCount > 0) ?? false
+                }
+
                 this.refresh(e.editor, 'codewhisperer', e)
             }),
             this.container._lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
@@ -441,36 +425,6 @@ export class LineAnnotationController implements vscode.Disposable {
 
         textOptions.contentText = this._currentState.text()
         return { after: textOptions }
-    }
-
-    // TODO: remove it since we likely dont need it anymore
-    private hoverMessage(): vscode.MarkdownString | undefined {
-        const str: string = this._currentState.text()
-        if (str === new TryMoreExState().text()) {
-            const source: CodeWhispererSource = 'vscodeComponent'
-            const md = new vscode.MarkdownString(
-                `[Learn more CodeWhisperer examples](command:aws.codeWhisperer.gettingStarted?${encodeURI(
-                    JSON.stringify([placeholder, source])
-                )})`
-            )
-            // to enable link to a declared command, need to set isTrusted = true
-            md.isTrusted = true
-
-            return md
-        }
-
-        return undefined
-    }
-
-    private setMetadataForState2(e: SuggestionActionEvent) {
-        if (this._currentState instanceof ManualtriggerState) {
-            ManualtriggerState.hasManualTrigger = e.triggerType === 'OnDemand'
-        }
-
-        if (this._currentState instanceof ManualtriggerState) {
-            ManualtriggerState.hasValidResponse =
-                (e.response?.recommendationCount !== undefined && e.response?.recommendationCount > 0) ?? false
-        }
     }
 }
 
