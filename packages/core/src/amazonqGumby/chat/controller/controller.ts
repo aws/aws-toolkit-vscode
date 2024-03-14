@@ -6,7 +6,7 @@
  * the Gumby extension.
  */
 
-import { Messenger } from './messenger/messenger'
+import { GumbyNamedMessages, Messenger } from './messenger/messenger'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatSessionStorage } from '../storages/chatSession'
 import * as vscode from 'vscode'
@@ -102,7 +102,6 @@ export class GumbyController {
     }
 
     private async tabClosed(data: any) {
-        console.log('gumby tab closed')
         transformByQState.setGumbyChatTabID(undefined)
     }
 
@@ -181,7 +180,6 @@ export class GumbyController {
     }
 
     private async formActionClicked(message: any) {
-        console.log(`Form action clicked: ${message.action}`)
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, message.action as any)
         switch (typedAction) {
             case ButtonActions.CONFIRM_TRANSFORMATION_FORM:
@@ -215,13 +213,7 @@ export class GumbyController {
         const fromJDKVersion: string = message.formSelectedValues['GumbyTransformJdkFromForm']
         const toJDKVersion: string = message.formSelectedValues['GumbyTransformJdkToForm']
 
-        this.messenger.sendAsyncEventProgress(message.tabId, true, undefined, 'gumbyCompilingModule')
-        this.messenger.sendAnswer({
-            type: 'answer-part',
-            tabID: message.tabId,
-            messageID: 'gumbyCompilingModule',
-            message: 'Compiling the module and checking dependencies...',
-        })
+        this.messenger.sendCompilationInProgress(message.tabId, true)
 
         await processTransformFormInput(pathToModule, fromJDKVersion, toJDKVersion)
         await this.validateBuildWithPromptOnError(message)
@@ -244,13 +236,16 @@ export class GumbyController {
         }
 
         try {
+            this.messenger.sendCompilationInProgress(message.tabId, false)
             await compileProject()
-            this.messenger.sendAnswer({
-                type: 'ai-prompt',
-                tabID: message.tabId,
-                messageID: 'gumbyCompiledProject',
-                message: 'Local project build and dependency check passed.',
-            })
+
+            this.messenger.sendCompilationFinished(message.tabId)
+            this.messenger.sendAsyncEventProgress(
+                message.tabId,
+                true,
+                undefined,
+                GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
+            )
             this.messenger.sendJobSubmittedMessage(message.tabId)
             await startTransformByQ()
         } catch (err: any) {

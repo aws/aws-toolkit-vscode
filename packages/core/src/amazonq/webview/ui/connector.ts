@@ -32,6 +32,7 @@ export interface ChatPayload {
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
+    onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
@@ -176,7 +177,6 @@ export class Connector {
                 this.cwChatConnector.onTabAdd(tabID, tab.openInteractionType)
                 break
             case 'gumby':
-                console.log('ui connector onUpdateTabType')
                 this.gumbyChatConnector.onTabAdd(tabID)
                 break
         }
@@ -192,7 +192,6 @@ export class Connector {
 
     onTabChange = (tabId: string): void => {
         const prevTabID = this.tabsStorage.setSelectedTab(tabId)
-        console.log(`onTabChange: to ${tabId} from ${prevTabID}`)
         this.cwChatConnector.onTabChange(tabId, prevTabID)
     }
 
@@ -368,9 +367,6 @@ export class Connector {
         action: any,
         eventId: string | undefined = undefined
     ): void | undefined => {
-        console.log(
-            `onCustomFormAction: tabID is ${tabId}, messageID is ${messageId}, action is ${action}, eventID is ${eventId}`
-        )
         switch (this.tabsStorage.getTab(tabId)?.type) {
             case 'gumby':
                 this.gumbyChatConnector.onCustomFormAction(tabId, action)

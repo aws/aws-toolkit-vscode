@@ -17,6 +17,7 @@ export interface ConnectorProps {
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string, messageId: string) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
+    onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
     onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
@@ -29,6 +30,7 @@ export class Connector {
     private readonly sendMessageToExtension
     private readonly onError
     private readonly onChatAnswerReceived
+    private readonly onChatAnswerUpdated
     private readonly chatInputEnabled
     private readonly onAsyncEventProgress
     private readonly onCWCContextCommandMessage
@@ -36,6 +38,7 @@ export class Connector {
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onChatAnswerReceived = props.onChatAnswerReceived
+        this.onChatAnswerUpdated = props.onChatAnswerUpdated
         this.onError = props.onError
         this.chatInputEnabled = props.onChatInputEnabled
         this.onAsyncEventProgress = props.onAsyncEventProgress
@@ -43,8 +46,6 @@ export class Connector {
     }
 
     onTabAdd = (tabID: string, tabOpenInteractionType?: TabOpenType): void => {
-        console.log('calling onTabAdd in gumbyChatConnector')
-
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'new-tab-was-created',
@@ -54,8 +55,6 @@ export class Connector {
     }
 
     onTabRemove(tabID: string) {
-        console.log('calling onTabRemove in gumbyChatConnector')
-
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'tab-was-removed',
@@ -64,9 +63,7 @@ export class Connector {
     }
 
     private processChatPrompt = async (messageData: ChatPrompt, tabID: string): Promise<void> => {
-        console.log(`callin processChatPrompt with ${tabID}`)
         if (this.onChatAnswerReceived === undefined) {
-            console.log('onChatAnswerReceived is undefined')
             return
         }
 
@@ -86,14 +83,15 @@ export class Connector {
     }
 
     private processChatMessage = async (messageData: any): Promise<void> => {
-        console.log(`callin processChatMessage with message ${messageData.message}`)
-        console.log(`is there a messageID? ${messageData.messageId}`)
-        if (this.onChatAnswerReceived === undefined) {
+        if (this.onChatAnswerReceived === undefined || this.onChatAnswerUpdated === undefined) {
             return
         }
 
+        console.log(
+            `calling processChatMessage with message ${messageData.message} and messageId ${messageData.messageId}`
+        )
+
         if (messageData.message !== undefined) {
-            console.log(`messageType is ${messageData.messageType}`)
             const answer: ChatItem = {
                 type: messageData.messageType,
                 messageId: messageData.messageId ?? messageData.triggerID,
@@ -102,23 +100,13 @@ export class Connector {
                 canBeVoted: false,
             }
 
-            this.onChatAnswerReceived(messageData.tabID, answer)
-
-            return
-        }
-
-        if (messageData.messageType === ChatItemType.ANSWER) {
-            const answer: ChatItem = {
-                type: messageData.messageType,
-                body: undefined,
-                relatedContent: undefined,
-                messageId: messageData.messageID,
-                codeReference: undefined,
-                followUp: messageData.followUps,
+            if (messageData.messageId !== undefined) {
+                console.log('gumbyChatconnector: calling onChatAnswerUpdated')
+                this.onChatAnswerUpdated(messageData.tabID, answer)
+                return
             }
-            this.onChatAnswerReceived(messageData.tabID, answer)
 
-            return
+            this.onChatAnswerReceived(messageData.tabID, answer)
         }
     }
 
@@ -144,9 +132,8 @@ export class Connector {
         return
     }
 
-    // This handles messages received from the extension, to be published in the webview
+    // This handles messages received from the extension, to be forwarded to the webview
     handleMessageReceive = async (messageData: any): Promise<void> => {
-        console.log(`GumbyChatConnector handling message ${messageData.type}`)
         if (messageData.type === 'errorMessage') {
             this.onError(messageData.tabID, messageData.message, messageData.title)
             return
@@ -177,13 +164,12 @@ export class Connector {
                 messageData.tabID,
                 messageData.inProgress,
                 messageData.message,
-                messageData.messageID
+                messageData.messageId
             )
             return
         }
 
         if (messageData.type === 'sendCommandMessage') {
-            console.log('GumbyChatConnector sendCommandMessage')
             await this.processExecuteCommand(messageData)
             return
         }
@@ -198,18 +184,14 @@ export class Connector {
         }
     ) {
         if (action === undefined) {
-            console.log('onCustomFormAction: action is undefined...')
             return
         }
 
-        console.log(`onCustomFormAction: action.id ${action.id}, action.text ${action.text}`)
         switch (action.id) {
+            //todo[gumby]: forward this
             case 'gumbyJavaHomeFormCancel':
-                console.log('cancelled java home')
                 break
             default:
-                console.log('gumbyChatConnector: onCustomFormAction')
-
                 this.sendMessageToExtension({
                     command: 'form-action-click',
                     action: action.id,

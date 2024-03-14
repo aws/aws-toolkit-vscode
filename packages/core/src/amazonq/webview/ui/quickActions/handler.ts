@@ -93,7 +93,6 @@ export class QuickActionHandler {
             })
             return
         } else {
-            console.log('starting new gumby tab from unknown tab')
             this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'gumby')
             this.connector.onKnownTabOpen(affectedTabId)
             this.connector.onUpdateTabType(affectedTabId)

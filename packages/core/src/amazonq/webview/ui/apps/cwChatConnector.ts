@@ -313,7 +313,6 @@ export class Connector {
     }
 
     handleMessageReceive = async (messageData: any): Promise<void> => {
-        console.log(`cwChatconnector message handle ${messageData.type}`)
         if (messageData.type === 'errorMessage') {
             this.onError(messageData.tabID, messageData.message, messageData.title)
             return
