@@ -27,7 +27,6 @@ export class UIMessageListener {
     }
 
     private handleMessage(msg: ExtensionMessage) {
-        console.log(`gumby UI Message listener: ${msg.command}`)
         switch (msg.command) {
             case 'transform':
                 this.transform(msg)

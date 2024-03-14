@@ -18,7 +18,6 @@ import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
 
 export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumbyInitEnabled: boolean) => {
-    console.log('createMynahUI called')
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
@@ -138,14 +137,18 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
             message: string | undefined,
             messageId: string | undefined = undefined
         ) => {
-            console.log('onasynceventprogress!!!')
-            console.log(`is there a messageID? ${messageId}`)
+            console.log(`onasynceventprogress!!! is there a messageID? ${messageId}`)
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
                     promptInputDisabledState: true,
                 })
-                if (message) {
+
+                if (message && messageId) {
+                    mynahUI.updateChatAnswerWithMessageId(tabID, messageId, {
+                        body: message,
+                    })
+                } else if (message) {
                     mynahUI.updateLastChatAnswer(tabID, {
                         body: message,
                     })
@@ -169,25 +172,31 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
         sendMessageToExtension: message => {
             ideApi.postMessage(message)
         },
+        onChatAnswerUpdated: (tabID: string, item: ChatItem) => {
+            if (item.messageId !== undefined) {
+                mynahUI.updateChatAnswerWithMessageId(tabID, item.messageId, {
+                    ...(item.body !== undefined ? { body: item.body } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                })
+            } else {
+                mynahUI.updateLastChatAnswer(tabID, {
+                    ...(item.body !== undefined ? { body: item.body } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                } as ChatItem)
+            }
+        },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
-                if (item.messageId !== undefined) {
-                    console.log('updating old answer...')
-                    mynahUI.updateChatAnswerWithMessageId(tabID, item.messageId, {
-                        body: item.body,
-                    })
-                } else {
-                    mynahUI.updateLastChatAnswer(tabID, {
-                        ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
-                        ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
-                        ...(item.codeReference !== undefined ? { codeReference: item.codeReference } : {}),
-                        ...(item.body !== undefined ? { body: item.body } : {}),
-                        ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
-                        ...(item.type === ChatItemType.CODE_RESULT
-                            ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
-                            : {}),
-                    })
-                }
+                mynahUI.updateLastChatAnswer(tabID, {
+                    ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
+                    ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
+                    ...(item.codeReference !== undefined ? { codeReference: item.codeReference } : {}),
+                    ...(item.body !== undefined ? { body: item.body } : {}),
+                    ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
+                    ...(item.type === ChatItemType.CODE_RESULT
+                        ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
+                        : {}),
+                })
                 return
             }
 
