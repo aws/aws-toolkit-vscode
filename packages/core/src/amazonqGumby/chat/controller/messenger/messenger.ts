@@ -243,7 +243,8 @@ export class Messenger {
         const jobSubmittedMessage = new ChatMessage(
             {
                 message,
-                messageType: 'ai-prompt',
+                messageType: 'answer-part',
+                messageId: 'gumbyJobSubmittedMessage',
                 buttons,
             },
             tabID

@@ -31,22 +31,26 @@ export class ErrorMessage extends UiMessage {
     }
 }
 
+export interface AsyncEventProgressMessageProps {
+    readonly inProgress: boolean
+    readonly message: string | undefined
+    readonly messageId?: string | undefined
+    readonly buttons?: ChatItemButton[]
+}
+
 export class AsyncEventProgressMessage extends UiMessage {
     readonly inProgress: boolean
     readonly message: string | undefined
-    readonly messageID?: string | undefined
+    readonly messageId?: string | undefined
+    readonly buttons?: ChatItemButton[]
     override type = 'asyncEventProgressMessage'
 
-    constructor(
-        tabID: string,
-        inProgress: boolean,
-        message: string | undefined = undefined,
-        messageID: string | undefined = undefined
-    ) {
+    constructor(tabID: string, props: AsyncEventProgressMessageProps) {
         super(tabID)
-        this.inProgress = inProgress
-        this.message = message
-        this.messageID = messageID
+        this.inProgress = props.inProgress
+        this.message = props.message
+        this.messageId = props.messageId
+        this.buttons = props.buttons ?? []
     }
 }
 
