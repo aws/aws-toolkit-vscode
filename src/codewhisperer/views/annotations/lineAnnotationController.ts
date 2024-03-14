@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import * as os from 'os'
 import { LineSelection, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
-import { debounce2 } from '../../../shared/utilities/functionUtils'
+import { cancellableDebounce } from '../../../shared/utilities/functionUtils'
+import { subscribeOnce } from '../../../shared/utilities/vsCodeUtils'
 import { CodeWhispererSource } from '../../commands/types'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
@@ -19,17 +20,6 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeWhispererCommandBackend } from '../../commands/gettingStartedPageCommands'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
-
-export function once<T>(event: vscode.Event<T>): vscode.Event<T> {
-    return (listener: (e: T) => unknown, thisArgs?: unknown) => {
-        const result = event(e => {
-            result.dispose()
-            return listener.call(thisArgs, e)
-        })
-
-        return result
-    }
-}
 
 type CwsprTutorialUi =
     | 'codewhisperer_learnmore_how_codewhisperer_triggers'
@@ -233,7 +223,7 @@ export class LineAnnotationController implements vscode.Disposable {
     constructor(private readonly container: Container) {
         // this._currentStep = globals.context.globalState.get<'1' | '2' | '3' | undefined>(inlinehintKey)
         this._disposable = vscode.Disposable.from(
-            once(this.container._lineTracker.onReady)(this.onReady, this),
+            subscribeOnce(this.container._lineTracker.onReady)(this.onReady, this),
             RecommendationService.instance.suggestionActionEvent(e => {
                 this.setMetadataForState2(e)
 
@@ -296,9 +286,12 @@ export class LineAnnotationController implements vscode.Disposable {
         }
     }
 
-    readonly refresh = debounce2((editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) => {
-        this._refresh(editor, source, e)
-    }, 250).promise
+    readonly refresh = cancellableDebounce(
+        (editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) => {
+            this._refresh(editor, source, e)
+        },
+        250
+    ).promise
 
     private async _refresh(editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) {
         if (this.isTutorialDone()) {

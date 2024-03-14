@@ -106,7 +106,7 @@ export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => 
     }
 }
 
-export function debounce2<T, U extends any[]>(
+export function cancellableDebounce<T, U extends any[]>(
     cb: (...args: U) => T | Promise<T>,
     delay: number = 0
 ): { promise: (...args: U) => Promise<T>; cancel: () => void } {

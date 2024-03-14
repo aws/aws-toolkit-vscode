@@ -7,10 +7,10 @@ import * as vscode from 'vscode'
 import { LineSelection, LinesChangeEvent } from './lineTracker'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
-import { once } from './lineAnnotationController'
+import { subscribeOnce } from '../../../shared/utilities/vsCodeUtils'
 import { Container } from '../../service/serviceContainer'
 import { RecommendationHandler } from '../../service/recommendationHandler'
-import { debounce2 } from '../../../shared/utilities/functionUtils'
+import { cancellableDebounce } from '../../../shared/utilities/functionUtils'
 
 export class activeStateController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
@@ -35,7 +35,7 @@ export class activeStateController implements vscode.Disposable {
             RecommendationService.instance.suggestionActionEvent(this.onSuggestionActionEvent, this),
             RecommendationHandler.instance.onDidReceiveRecommendation(this.onDidReceiveRecommendation, this),
             this.container._lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
-            once(this.container._lineTracker.onReady)(this.onReady, this),
+            subscribeOnce(this.container._lineTracker.onReady)(this.onReady, this),
             this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
                     this._refresh(vscode.window.activeTextEditor)
@@ -93,7 +93,7 @@ export class activeStateController implements vscode.Disposable {
         editor?.setDecorations(this.cwLineHintDecoration, [])
     }
 
-    readonly refreshDebounced = debounce2((editor: vscode.TextEditor | undefined) => {
+    readonly refreshDebounced = cancellableDebounce((editor: vscode.TextEditor | undefined) => {
         console.log('debounced refresh is now executed!!!!!!!!!')
         this._refresh(editor)
     }, 500)
