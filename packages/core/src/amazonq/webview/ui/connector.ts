@@ -11,6 +11,7 @@ import { ExtensionMessage } from './commands'
 import { TabType, TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { AuthFollowUpType } from './followUps/generator'
+import { DiffTreeFileInfo } from './diffTree/types'
 
 export interface CodeReference {
     licenseName?: string
@@ -37,10 +38,12 @@ export interface ConnectorProps {
     onCWCOnboardingPageInteractionMessage: (message: ChatItem) => string | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
+    onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
     onNewTab: (tabType: TabType) => void
+    onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
     tabsStorage: TabsStorage
 }
 
@@ -293,6 +296,14 @@ export class Connector {
                 break
             default:
                 this.cwChatConnector.followUpClicked(tabID, messageId, followUp)
+                break
+        }
+    }
+
+    onFileActionClick = (tabID: string, messageId: string, filePath: string, actionName: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'featuredev':
+                this.featureDevChatConnector.onFileActionClick(tabID, messageId, filePath, actionName)
                 break
         }
     }
