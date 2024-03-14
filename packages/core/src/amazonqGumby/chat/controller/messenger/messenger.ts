@@ -24,7 +24,7 @@ import {
     SendCommandMessage,
 } from '../../views/connector/connector'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
-import { ButtonActions, GumbyCommands } from './messengerUtils'
+import { ButtonActions } from './messengerUtils'
 import { TransformationCandidateProject } from '../../../../codewhisperer/service/transformByQHandler'
 
 export type StaticTextResponseType =
@@ -200,7 +200,6 @@ export class Messenger {
         const message = 'Compiling the module and checking dependencies...'
 
         if (addNewMessage) {
-            console.log(`attempting to send compilation status - first with empty message!!`)
             this.dispatcher.sendAsyncEventProgress(
                 new AsyncEventProgressMessage(tabID, {
                     inProgress: true,
@@ -221,8 +220,6 @@ export class Messenger {
 
     public sendCompilationFinished(tabID: string) {
         const message = 'Local project build and dependency check passed.'
-
-        console.log(`now sending compilation status with actual status...`)
 
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -304,8 +301,8 @@ export class Messenger {
         )
     }
 
-    public sendCommandMessage(message: { command: GumbyCommands }) {
-        this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command))
+    public sendCommandMessage(message: any) {
+        this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabId, message.eventId))
     }
 
     public sendJobFinishedMessage(tabID: string, cancelled: boolean = false, jobStatus: string = '') {

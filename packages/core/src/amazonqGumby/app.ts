@@ -18,7 +18,6 @@ import { showTransformByQ, showTransformationHub } from './commands'
 import { transformByQState } from '../codewhisperer/models/model'
 
 export function init(appContext: AmazonQAppInitContext) {
-    //todo[GUMBY]: type safety on messages
     const gumbyChatControllerEventEmitters: ChatControllerEventEmitters = {
         transformSelected: new vscode.EventEmitter<any>(),
         authClicked: new vscode.EventEmitter<any>(),

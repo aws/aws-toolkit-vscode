@@ -36,6 +36,7 @@ export interface ConnectorProps {
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
+    onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => void
     onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
     onCWCOnboardingPageInteractionMessage: (message: ChatItem) => string | undefined
     onError: (tabID: string, message: string, title: string) => void

@@ -424,8 +424,6 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
     }
 
     const argString = args.join(' ')
-    console.log(`installProjectDependencies: running maven ${argString}`)
-
     const spawnResult = spawnSync(baseCommand, args, {
         cwd: modulePath,
         shell: true,
@@ -818,13 +816,12 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             status = response.transformationJob.status!
             // emit metric when job status changes
             if (status !== transformByQState.getPolledJobStatus()) {
-                /** 
                 telemetry.codeTransform_jobStatusChanged.emit({
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: jobId,
                     codeTransformStatus: status,
                     result: MetadataResult.Pass,
-                })*/
+                })
             }
             transformByQState.setPolledJobStatus(status)
             await vscode.commands.executeCommand('aws.amazonq.refresh')

@@ -80,9 +80,6 @@ export class QuickActionHandler {
             affectedTabId = this.mynahUI.updateStore('', {
                 loadingChat: true,
                 promptInputDisabledState: true,
-                tabCloseConfirmationMessage: 'Are you sure you want to close this tab?', //todo[gumby]: check string
-                tabCloseConfirmationKeepButton: 'Cancel',
-                tabCloseConfirmationCloseButton: 'Close',
             })
         }
 
@@ -97,37 +94,20 @@ export class QuickActionHandler {
             this.connector.onKnownTabOpen(affectedTabId)
             this.connector.onUpdateTabType(affectedTabId)
 
-            // reset chat history, disable chat prompt
+            // reset chat history
             this.mynahUI.updateStore(affectedTabId, {
                 chatItems: [],
-                loadingChat: true,
-                promptInputDisabledState: true,
-                tabCloseConfirmationMessage: 'Are you sure you want to close this tab?', //todo[gumby]: check string
-                tabCloseConfirmationKeepButton: 'Cancel',
-                tabCloseConfirmationCloseButton: 'Close',
             })
-            //todo(gumby): replace this updateStore call with a gumbyTabDataGenerator
+
             this.mynahUI.updateStore(
                 affectedTabId,
                 this.tabDataGenerator.getTabData('gumby', true, false, undefined, true)
             )
-            this.mynahUI.updateStore(affectedTabId, {
-                loadingChat: true,
-                promptInputDisabledState: true,
-                tabCloseConfirmationMessage: 'Are you sure you want to close this tab?', //todo[gumby]: check string
-                tabCloseConfirmationKeepButton: 'Cancel',
-                tabCloseConfirmationCloseButton: 'Close',
-            })
 
-            // todo(gumby): move this out of the quickaction handler and into
-            // the gumby controller
-            // populate the chat with the user-selected command `/transform`
+            // disable chat prompt
             this.mynahUI.updateStore(affectedTabId, {
                 loadingChat: true,
                 promptInputDisabledState: true,
-                tabCloseConfirmationMessage: 'Are you sure you want to close this tab?', //todo[gumby]: check string
-                tabCloseConfirmationKeepButton: 'Cancel',
-                tabCloseConfirmationCloseButton: 'Close',
             })
 
             this.connector.transform(affectedTabId)

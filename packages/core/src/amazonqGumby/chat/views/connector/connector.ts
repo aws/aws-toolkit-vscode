@@ -146,12 +146,14 @@ export class ChatInputEnabledMessage extends UiMessage {
 }
 
 export class SendCommandMessage extends UiMessage {
-    readonly command?: GumbyCommands
+    readonly command: GumbyCommands
+    readonly eventId: string
     override type = 'sendCommandMessage'
 
-    constructor(command: GumbyCommands) {
-        super('')
+    constructor(command: GumbyCommands, tabID: string, eventId: string) {
+        super(tabID)
         this.command = command
+        this.eventId = eventId
     }
 }
 
@@ -187,7 +189,6 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendCommandMessage(message: SendCommandMessage) {
-        console.log('AppToWebViewMessageDispatcher: sendCommandMessage!')
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }
