@@ -26,6 +26,15 @@ describe('Amazon Q Feature Dev', function () {
     const tooManyRequestsWaitTime = 100000
 
     before(async function () {
+        /**
+         * The tests are getting throttled, only run them on stable for now
+         *
+         * TODO: Re-enable for all versions once the backend can handle them
+         */
+        if (process.env['VSCODE_TEST_VERSION'] !== 'stable') {
+            this.skip()
+        }
+
         await using(registerAuthHook('amazonq-test-account'), async () => {
             await loginToIdC()
         })
