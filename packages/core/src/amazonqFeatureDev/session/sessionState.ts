@@ -16,6 +16,7 @@ import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { featureDevScheme } from '../constants'
 import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
 import {
+    CodeGenerationResult,
     CurrentWsFolders,
     DeletedFileInfo,
     FollowUpTypes,
@@ -30,7 +31,6 @@ import {
 import { collectFiles, getWorkspaceFoldersByPrefixes, prepareRepoData } from '../util/files'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { uploadCode } from '../util/upload'
-import { CodeReference } from '../../amazonq/webview/ui/connector'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
@@ -233,11 +233,7 @@ abstract class CodeGenBase {
         codeGenerationId: string
         telemetry: TelemetryHelper
         workspaceFolders: CurrentWsFolders
-    }): Promise<{
-        newFiles: NewFileInfo[]
-        deletedFiles: DeletedFileInfo[]
-        references: CodeReference[]
-    }> {
+    }): Promise<CodeGenerationResult> {
         for (
             let pollingIteration = 0;
             pollingIteration < this.pollCount && !this.tokenSource.token.isCancellationRequested;
@@ -253,9 +249,12 @@ abstract class CodeGenBase {
                     const newFileInfo = registerNewFiles(fs, newFileContents, this.uploadId, workspaceFolders)
                     telemetry.setNumberOfFilesGenerated(newFileInfo.length)
                     return {
-                        newFiles: newFileInfo,
-                        deletedFiles: getDeletedFileInfos(deletedFiles, workspaceFolders),
-                        references,
+                        result: 'success',
+                        artifacts: {
+                            filePaths: newFileInfo,
+                            deletedFiles: getDeletedFileInfos(deletedFiles, workspaceFolders),
+                            references,
+                        },
                     }
                 }
                 case 'predict-ready':
@@ -266,6 +265,15 @@ abstract class CodeGenBase {
                 case 'predict-failed':
                 case 'debate-failed':
                 case 'Failed': {
+                    // canned errors are not retryable
+                    if (codegenResult.codeGenerationStatusDetail) {
+                        return {
+                            result: 'failed',
+                            message: codegenResult.codeGenerationStatusDetail,
+                            retryable: false,
+                        }
+                    }
+
                     throw new ToolkitError('Code generation failed', { code: 'CodeGenFailed' })
                 }
                 default: {
@@ -279,10 +287,11 @@ abstract class CodeGenBase {
             const errorMessage = 'Code generation did not finish withing the expected time'
             throw new ToolkitError(errorMessage, { code: 'CodeGenTimeout' })
         }
+
         return {
-            newFiles: [],
-            deletedFiles: [],
-            references: [],
+            result: 'failed',
+            message: 'Code Generation cancellation has been requested',
+            retryable: false,
         }
     }
 }
@@ -291,9 +300,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     constructor(
         config: SessionStateConfig,
         public approach: string,
-        public filePaths: NewFileInfo[],
-        public deletedFiles: DeletedFileInfo[],
-        public references: CodeReference[],
+        public codeGenerationResult: CodeGenerationResult,
         tabID: string,
         private currentIteration: number
     ) {
@@ -325,17 +332,15 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     telemetry: action.telemetry,
                     workspaceFolders: this.config.workspaceFolders,
                 })
-                this.filePaths = codeGeneration.newFiles
-                this.deletedFiles = codeGeneration.deletedFiles
-                this.references = codeGeneration.references
-                action.telemetry.setAmazonqNumberOfReferences(this.references.length)
-                action.telemetry.recordUserCodeGenerationTelemetry(span, this.conversationId)
+                this.codeGenerationResult = codeGeneration
+                if (this.codeGenerationResult.result === 'success') {
+                    action.telemetry.setAmazonqNumberOfReferences(this.codeGenerationResult.artifacts.references.length)
+                    action.telemetry.recordUserCodeGenerationTelemetry(span, this.conversationId)
+                }
                 const nextState = new PrepareCodeGenState(
                     this.config,
                     this.approach,
-                    this.filePaths,
-                    this.deletedFiles,
-                    this.references,
+                    this.codeGenerationResult,
                     this.tabID,
                     this.currentIteration + 1
                 )
@@ -442,9 +447,7 @@ export class PrepareCodeGenState implements SessionState {
     constructor(
         private config: SessionStateConfig,
         public approach: string,
-        public filePaths: NewFileInfo[],
-        public deletedFiles: DeletedFileInfo[],
-        public references: CodeReference[],
+        public codeGenerationResult: CodeGenerationResult,
         public tabID: string,
         private currentIteration: number
     ) {
@@ -480,9 +483,7 @@ export class PrepareCodeGenState implements SessionState {
         const nextState = new CodeGenState(
             { ...this.config, uploadId },
             '',
-            this.filePaths,
-            this.deletedFiles,
-            this.references,
+            this.codeGenerationResult,
             this.tabID,
             this.currentIteration
         )

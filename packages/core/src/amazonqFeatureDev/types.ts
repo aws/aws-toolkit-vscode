@@ -24,6 +24,22 @@ export interface SessionStateInteraction {
     interaction: Interaction
 }
 
+export type CodeGenerationResult =
+    | { result: 'pending' }
+    | {
+          result: 'success'
+          artifacts: {
+              filePaths: NewFileInfo[]
+              deletedFiles: DeletedFileInfo[]
+              references: CodeReference[]
+          }
+      }
+    | {
+          result: 'failed'
+          message: string
+          retryable: boolean
+      }
+
 export enum FollowUpTypes {
     GenerateCode = 'GenerateCode',
     InsertCode = 'InsertCode',
@@ -41,9 +57,7 @@ export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
 export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolder[]]
 
 export interface SessionState {
-    readonly filePaths?: NewFileInfo[]
-    readonly deletedFiles?: DeletedFileInfo[]
-    readonly references?: CodeReference[]
+    readonly codeGenerationResult?: CodeGenerationResult
     readonly phase?: SessionStatePhase
     readonly uploadId: string
     approach: string

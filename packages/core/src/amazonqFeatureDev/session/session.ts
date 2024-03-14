@@ -18,6 +18,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { ToolkitError } from '../../shared/errors'
 
 const fs = FileSystemCommon.instance
 
@@ -108,9 +109,7 @@ export class Session {
                 uploadId: this.uploadId,
             },
             this.approach,
-            [],
-            [],
-            [],
+            { result: 'pending' },
             this.tabID,
             0
         )
@@ -166,7 +165,11 @@ export class Session {
     }
 
     public async insertChanges() {
-        for (const filePath of this.state.filePaths ?? []) {
+        if (this.state.codeGenerationResult?.result !== 'success') {
+            throw new ToolkitError('Unexpected state of code generation')
+        }
+
+        for (const filePath of this.state.codeGenerationResult.artifacts.filePaths ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
 
             const uri = filePath.virtualMemoryUri
@@ -177,12 +180,12 @@ export class Session {
             await fs.writeFile(absolutePath, decodedContent)
         }
 
-        for (const filePath of this.state.deletedFiles?.filter(i => !i.rejected) ?? []) {
+        for (const filePath of this.state.codeGenerationResult.artifacts.deletedFiles?.filter(i => !i.rejected) ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
             await fs.delete(absolutePath)
         }
 
-        for (const ref of this.state.references ?? []) {
+        for (const ref of this.state.codeGenerationResult.artifacts.references ?? []) {
             ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
         }
     }

@@ -246,6 +246,9 @@
                     "shape": "ThrottlingException"
                 },
                 {
+                    "shape": "ResourceNotFoundException"
+                },
+                {
                     "shape": "InternalServerException"
                 },
                 {
@@ -272,6 +275,9 @@
             "errors": [
                 {
                     "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ResourceNotFoundException"
                 },
                 {
                     "shape": "InternalServerException"
@@ -514,6 +520,9 @@
                     "shape": "ThrottlingException"
                 },
                 {
+                    "shape": "ResourceNotFoundException"
+                },
+                {
                     "shape": "InternalServerException"
                 },
                 {
@@ -533,10 +542,18 @@
             "members": {
                 "message": {
                     "shape": "String"
+                },
+                "reason": {
+                    "shape": "AccessDeniedExceptionReason"
                 }
             },
             "documentation": "<p>This exception is thrown when the user does not have sufficient access to perform this action.</p>",
             "exception": true
+        },
+        "AccessDeniedExceptionReason": {
+            "type": "string",
+            "documentation": "<p>Reason for AccessDeniedException</p>",
+            "enum": ["UNAUTHORIZED_CUSTOMIZATION_RESOURCE_ACCESS"]
         },
         "ArtifactMap": {
             "type": "map",
@@ -558,8 +575,7 @@
             "required": ["content"],
             "members": {
                 "messageId": {
-                    "shape": "AssistantResponseMessageMessageIdString",
-                    "documentation": "<p>Unique identifier for the chat message</p>"
+                    "shape": "MessageId"
                 },
                 "content": {
                     "shape": "AssistantResponseMessageContentString",
@@ -586,11 +602,6 @@
             "min": 0,
             "sensitive": true
         },
-        "AssistantResponseMessageMessageIdString": {
-            "type": "string",
-            "max": 128,
-            "min": 0
-        },
         "Base64EncodedPaginationToken": {
             "type": "string",
             "max": 2048,
@@ -601,6 +612,45 @@
             "type": "boolean",
             "box": true
         },
+        "ChatAddMessageEvent": {
+            "type": "structure",
+            "required": ["conversationId", "messageId"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "messageId": {
+                    "shape": "MessageId"
+                },
+                "userIntent": {
+                    "shape": "UserIntent"
+                },
+                "hasCodeSnippet": {
+                    "shape": "Boolean"
+                },
+                "programmingLanguage": {
+                    "shape": "ProgrammingLanguage"
+                },
+                "activeEditorTotalCharacters": {
+                    "shape": "Integer"
+                },
+                "timeToFirstChunkMilliseconds": {
+                    "shape": "Double"
+                },
+                "timeBetweenChunks": {
+                    "shape": "timeBetweenChunks"
+                },
+                "fullResponselatency": {
+                    "shape": "Double"
+                },
+                "requestLength": {
+                    "shape": "Integer"
+                },
+                "responseLength": {
+                    "shape": "Integer"
+                }
+            }
+        },
         "ChatHistory": {
             "type": "list",
             "member": {
@@ -609,6 +659,35 @@
             "documentation": "<p>Indicates Participant in Chat conversation</p>",
             "max": 10,
             "min": 0
+        },
+        "ChatInteractWithMessageEvent": {
+            "type": "structure",
+            "required": ["conversationId", "messageId"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "messageId": {
+                    "shape": "MessageId"
+                },
+                "interactionType": {
+                    "shape": "ChatMessageInteractionType"
+                },
+                "interactionTarget": {
+                    "shape": "ChatInteractWithMessageEventInteractionTargetString"
+                },
+                "acceptedCharacterCount": {
+                    "shape": "Integer"
+                },
+                "acceptedSnippetHasReference": {
+                    "shape": "Boolean"
+                }
+            }
+        },
+        "ChatInteractWithMessageEventInteractionTargetString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
         },
         "ChatMessage": {
             "type": "structure",
@@ -622,14 +701,51 @@
             },
             "union": true
         },
+        "ChatMessageInteractionType": {
+            "type": "string",
+            "documentation": "<p>Chat Message Interaction Type</p>",
+            "enum": [
+                "INSERT_AT_CURSOR",
+                "COPY_SNIPPET",
+                "COPY",
+                "CLICK_LINK",
+                "CLICK_BODY_LINK",
+                "CLICK_FOLLOW_UP",
+                "HOVER_REFERENCE",
+                "UPVOTE",
+                "DOWNVOTE"
+            ]
+        },
         "ChatTriggerType": {
             "type": "string",
             "documentation": "<p>Trigger Reason for Chat</p>",
             "enum": ["MANUAL", "DIAGNOSTIC"]
         },
+        "ChatUserModificationEvent": {
+            "type": "structure",
+            "required": ["conversationId", "messageId", "modificationPercentage"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "messageId": {
+                    "shape": "MessageId"
+                },
+                "programmingLanguage": {
+                    "shape": "ProgrammingLanguage"
+                },
+                "modificationPercentage": {
+                    "shape": "Double"
+                }
+            }
+        },
         "CodeAnalysisFindingsSchema": {
             "type": "string",
             "enum": ["codeanalysis/findings/1.0"]
+        },
+        "CodeAnalysisScope": {
+            "type": "string",
+            "enum": ["FILE", "PROJECT"]
         },
         "CodeAnalysisStatus": {
             "type": "string",
@@ -653,6 +769,9 @@
                 },
                 "timestamp": {
                     "shape": "Timestamp"
+                },
+                "unmodifiedAcceptedCharacterCount": {
+                    "shape": "PrimitiveInteger"
                 }
             }
         },
@@ -673,6 +792,11 @@
                     "shape": "CodeGenerationWorkflowStage"
                 }
             }
+        },
+        "CodeGenerationStatusDetail": {
+            "type": "string",
+            "documentation": "<p>Detailed message about the code generation status</p>",
+            "sensitive": true
         },
         "CodeGenerationWorkflowStage": {
             "type": "string",
@@ -701,6 +825,40 @@
             "type": "string",
             "max": 128,
             "min": 1
+        },
+        "CodeScanRemediationsEvent": {
+            "type": "structure",
+            "members": {
+                "CodeScanRemediationsEventTyoe": {
+                    "shape": "CodeScanRemediationsEventType"
+                },
+                "detectorId": {
+                    "shape": "String"
+                },
+                "findingId": {
+                    "shape": "String"
+                },
+                "ruleId": {
+                    "shape": "String"
+                },
+                "component": {
+                    "shape": "String"
+                },
+                "reason": {
+                    "shape": "String"
+                },
+                "result": {
+                    "shape": "String"
+                },
+                "includesFix": {
+                    "shape": "Boolean"
+                }
+            }
+        },
+        "CodeScanRemediationsEventType": {
+            "type": "string",
+            "documentation": "<p>Code Scan Remediations Interaction Type</p>",
+            "enum": ["CODESCAN_ISSUE_HOVER", "CODESCAN_ISSUE_APPLY_FIX", "CODESCAN_ISSUE_VIEW_DETAILS"]
         },
         "Completion": {
             "type": "structure",
@@ -891,7 +1049,7 @@
             "type": "string",
             "max": 950,
             "min": 0,
-            "pattern": "$|^arn:[-.a-z0-9]{1,63}:codewhisperer:([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
+            "pattern": "arn:[-.a-z0-9]{1,63}:codewhisperer:([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
         },
         "CustomizationName": {
             "type": "string",
@@ -1035,6 +1193,71 @@
                 }
             },
             "documentation": "<p>Represents the state of an Editor</p>"
+        },
+        "EnvState": {
+            "type": "structure",
+            "members": {
+                "operatingSystem": {
+                    "shape": "EnvStateOperatingSystemString",
+                    "documentation": "<p>The name of the operating system in use</p>"
+                },
+                "currentWorkingDirectory": {
+                    "shape": "EnvStateCurrentWorkingDirectoryString",
+                    "documentation": "<p>The current working directory of the environment</p>"
+                },
+                "environmentVariables": {
+                    "shape": "EnvironmentVariables",
+                    "documentation": "<p>The environment variables set in the current environment</p>"
+                }
+            },
+            "documentation": "<p>State related to the user's environment</p>"
+        },
+        "EnvStateCurrentWorkingDirectoryString": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "sensitive": true
+        },
+        "EnvStateOperatingSystemString": {
+            "type": "string",
+            "max": 32,
+            "min": 1,
+            "pattern": "(macos|linux|windows)"
+        },
+        "EnvironmentVariable": {
+            "type": "structure",
+            "members": {
+                "key": {
+                    "shape": "EnvironmentVariableKeyString",
+                    "documentation": "<p>The key of an environment variable</p>"
+                },
+                "value": {
+                    "shape": "EnvironmentVariableValueString",
+                    "documentation": "<p>The value of an environment variable</p>"
+                }
+            },
+            "documentation": "<p>An environment variable</p>"
+        },
+        "EnvironmentVariableKeyString": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "sensitive": true
+        },
+        "EnvironmentVariableValueString": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "sensitive": true
+        },
+        "EnvironmentVariables": {
+            "type": "list",
+            "member": {
+                "shape": "EnvironmentVariable"
+            },
+            "documentation": "<p>A list of environment variables</p>",
+            "max": 100,
+            "min": 0
         },
         "FeatureEvaluation": {
             "type": "structure",
@@ -1253,6 +1476,9 @@
                 },
                 "codeGenerationStatus": {
                     "shape": "CodeGenerationStatus"
+                },
+                "codeGenerationStatusDetail": {
+                    "shape": "CodeGenerationStatusDetail"
                 }
             },
             "documentation": "<p>Response for getting task assist code generation status.</p>"
@@ -1297,9 +1523,25 @@
             },
             "documentation": "<p>Structure to represent get code transformation response.</p>"
         },
+        "GitState": {
+            "type": "structure",
+            "members": {
+                "status": {
+                    "shape": "GitStateStatusString",
+                    "documentation": "<p>The output of the command <code>git status --porcelain=v1 -b</code></p>"
+                }
+            },
+            "documentation": "<p>State related to the Git VSC</p>"
+        },
+        "GitStateStatusString": {
+            "type": "string",
+            "max": 4096,
+            "min": 0,
+            "sensitive": true
+        },
         "IdeCategory": {
             "type": "string",
-            "enum": ["JETBRAINS", "VSCODE"],
+            "enum": ["JETBRAINS", "VSCODE", "CLI"],
             "max": 64,
             "min": 1
         },
@@ -1432,9 +1674,15 @@
             "type": "long",
             "box": true
         },
+        "MessageId": {
+            "type": "string",
+            "documentation": "<p>Unique identifier for the chat message</p>",
+            "max": 128,
+            "min": 0
+        },
         "MetricData": {
             "type": "structure",
-            "required": ["metricName", "metricValue", "timestamp"],
+            "required": ["metricName", "metricValue", "timestamp", "product"],
             "members": {
                 "metricName": {
                     "shape": "MetricDataMetricNameString"
@@ -1445,6 +1693,9 @@
                 "timestamp": {
                     "shape": "Timestamp"
                 },
+                "product": {
+                    "shape": "MetricDataProductString"
+                },
                 "dimensions": {
                     "shape": "DimensionList"
                 }
@@ -1453,6 +1704,12 @@
         "MetricDataMetricNameString": {
             "type": "string",
             "max": 1024,
+            "min": 1,
+            "pattern": "[-a-zA-Z0-9._]*"
+        },
+        "MetricDataProductString": {
+            "type": "string",
+            "max": 128,
             "min": 1,
             "pattern": "[-a-zA-Z0-9._]*"
         },
@@ -1510,7 +1767,7 @@
             "type": "string",
             "max": 128,
             "min": 1,
-            "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql|json|yaml|vue|tf)"
+            "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql|json|yaml|vue|tf|tsx|jsx)"
         },
         "ProgressUpdates": {
             "type": "list",
@@ -1667,6 +1924,87 @@
             "type": "string",
             "sensitive": true
         },
+        "ShellHistory": {
+            "type": "list",
+            "member": {
+                "shape": "ShellHistoryEntry"
+            },
+            "documentation": "<p>A list of shell history entries</p>",
+            "max": 20,
+            "min": 0
+        },
+        "ShellHistoryEntry": {
+            "type": "structure",
+            "required": ["command"],
+            "members": {
+                "command": {
+                    "shape": "ShellHistoryEntryCommandString",
+                    "documentation": "<p>The shell command that was run</p>"
+                },
+                "directory": {
+                    "shape": "ShellHistoryEntryDirectoryString",
+                    "documentation": "<p>The directory the command was ran in</p>"
+                },
+                "exitCode": {
+                    "shape": "Integer",
+                    "documentation": "<p>The exit code of the command after it finished</p>"
+                },
+                "stdout": {
+                    "shape": "ShellHistoryEntryStdoutString",
+                    "documentation": "<p>The stdout from the command</p>"
+                },
+                "stderr": {
+                    "shape": "ShellHistoryEntryStderrString",
+                    "documentation": "<p>The stderr from the command</p>"
+                }
+            },
+            "documentation": "<p>An single entry in the shell history</p>"
+        },
+        "ShellHistoryEntryCommandString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "ShellHistoryEntryDirectoryString": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "sensitive": true
+        },
+        "ShellHistoryEntryStderrString": {
+            "type": "string",
+            "max": 4096,
+            "min": 0,
+            "sensitive": true
+        },
+        "ShellHistoryEntryStdoutString": {
+            "type": "string",
+            "max": 4096,
+            "min": 0,
+            "sensitive": true
+        },
+        "ShellState": {
+            "type": "structure",
+            "required": ["shellName"],
+            "members": {
+                "shellName": {
+                    "shape": "ShellStateShellNameString",
+                    "documentation": "<p>The name of the current shell</p>"
+                },
+                "shellHistory": {
+                    "shape": "ShellHistory",
+                    "documentation": "<p>The history previous shell commands for the current shell</p>"
+                }
+            },
+            "documentation": "<p>Represents the state of a shell</p>"
+        },
+        "ShellStateShellNameString": {
+            "type": "string",
+            "max": 32,
+            "min": 1,
+            "pattern": "(zsh|bash|fish|pwsh|nu)"
+        },
         "Span": {
             "type": "structure",
             "members": {
@@ -1702,6 +2040,9 @@
                 "clientToken": {
                     "shape": "StartCodeAnalysisRequestClientTokenString",
                     "idempotencyToken": true
+                },
+                "scope": {
+                    "shape": "CodeAnalysisScope"
                 }
             }
         },
@@ -1916,8 +2257,20 @@
                 "codeScanEvent": {
                     "shape": "CodeScanEvent"
                 },
+                "codeScanRemediationsEvent": {
+                    "shape": "CodeScanRemediationsEvent"
+                },
                 "metricData": {
                     "shape": "MetricData"
+                },
+                "chatAddMessageEvent": {
+                    "shape": "ChatAddMessageEvent"
+                },
+                "chatInteractWithMessageEvent": {
+                    "shape": "ChatInteractWithMessageEvent"
+                },
+                "chatUserModificationEvent": {
+                    "shape": "ChatUserModificationEvent"
                 }
             },
             "union": true
@@ -2042,7 +2395,38 @@
         },
         "TransformationLanguage": {
             "type": "string",
-            "enum": ["JAVA_8", "JAVA_11", "JAVA_17"]
+            "enum": [
+                "JAVA_8",
+                "JAVA_11",
+                "JAVA_17",
+                "NET_FRAMEWORK_V_3_5",
+                "NET_FRAMEWORK_V_4_0",
+                "NET_FRAMEWORK_V_4_5",
+                "NET_FRAMEWORK_V_4_5_1",
+                "NET_FRAMEWORK_V_4_5_2",
+                "NET_FRAMEWORK_V_4_6",
+                "NET_FRAMEWORK_V_4_6_1",
+                "NET_FRAMEWORK_V_4_6_2",
+                "NET_FRAMEWORK_V_4_7",
+                "NET_FRAMEWORK_V_4_7_1",
+                "NET_FRAMEWORK_V_4_7_2",
+                "NET_FRAMEWORK_V_4_8",
+                "NET_CORE_APP_1_0",
+                "NET_CORE_APP_1_1",
+                "NET_CORE_APP_2_0",
+                "NET_CORE_APP_2_1",
+                "NET_CORE_APP_2_2",
+                "NET_CORE_APP_3_0",
+                "NET_CORE_APP_3_1",
+                "NET_5_0",
+                "NET_6_0",
+                "NET_7_0",
+                "NET_8_0"
+            ]
+        },
+        "TransformationOperatingSystemFamily": {
+            "type": "string",
+            "enum": ["WINDOWS", "LINUX"]
         },
         "TransformationPlan": {
             "type": "structure",
@@ -2050,6 +2434,14 @@
             "members": {
                 "transformationSteps": {
                     "shape": "TransformationSteps"
+                }
+            }
+        },
+        "TransformationPlatformConfig": {
+            "type": "structure",
+            "members": {
+                "operatingSystemFamily": {
+                    "shape": "TransformationOperatingSystemFamily"
                 }
             }
         },
@@ -2083,6 +2475,9 @@
             "members": {
                 "language": {
                     "shape": "TransformationLanguage"
+                },
+                "platformConfig": {
+                    "shape": "TransformationPlatformConfig"
                 }
             }
         },
@@ -2198,6 +2593,12 @@
                 },
                 "product": {
                     "shape": "UserContextProductString"
+                },
+                "clientId": {
+                    "shape": "UUID"
+                },
+                "ideVersion": {
+                    "shape": "String"
                 }
             }
         },
@@ -2238,6 +2639,18 @@
                 "editorState": {
                     "shape": "EditorState",
                     "documentation": "<p>Editor state chat message context.</p>"
+                },
+                "shellState": {
+                    "shape": "ShellState",
+                    "documentation": "<p>Shell state chat message context.</p>"
+                },
+                "gitState": {
+                    "shape": "GitState",
+                    "documentation": "<p>Git state chat message context.</p>"
+                },
+                "envState": {
+                    "shape": "EnvState",
+                    "documentation": "<p>Environment state chat messaage context.</p>"
                 },
                 "diagnostic": {
                     "shape": "Diagnostic",
@@ -2319,10 +2732,16 @@
                 "timestamp": {
                     "shape": "Timestamp"
                 },
+                "triggerToResponseLatencyMilliseconds": {
+                    "shape": "Double"
+                },
                 "suggestionReferenceCount": {
                     "shape": "PrimitiveInteger"
                 },
                 "generatedLine": {
+                    "shape": "PrimitiveInteger"
+                },
+                "numberOfRecommendations": {
                     "shape": "PrimitiveInteger"
                 }
             }
@@ -2344,7 +2763,7 @@
         "ValidationExceptionReason": {
             "type": "string",
             "documentation": "<p>Reason for ValidationException</p>",
-            "enum": ["INVALID_CONVERSATION_ID"]
+            "enum": ["INVALID_CONVERSATION_ID", "CONTENT_LENGTH_EXCEEDS_THRESHOLD"]
         },
         "WorkspaceState": {
             "type": "structure",
@@ -2364,6 +2783,14 @@
                 }
             },
             "documentation": "<p>Represents a Workspace state uploaded to S3 for Async Code Actions</p>"
+        },
+        "timeBetweenChunks": {
+            "type": "list",
+            "member": {
+                "shape": "Double"
+            },
+            "max": 100,
+            "min": 0
         }
     }
 }
