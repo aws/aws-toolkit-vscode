@@ -15,7 +15,6 @@ import { AnnotationChangeSource, autoTriggerEnabledKey, inlinehintKey } from '..
 import globals from '../../../shared/extensionGlobals'
 import { Container } from '../../service/serviceContainer'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { CodeWhispererCommandBackend } from '../../commands/gettingStartedPageCommands'
 import { getLogger } from '../../../shared/logger/logger'
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
@@ -172,10 +171,7 @@ class TryMoreExState implements AnnotationState {
     suppressWhileRunning = true
     text = () => 'CodeWhisperer Tip 3/3: For settings, open the CodeWhisperer menu from the status bar ([ESC] to exit)'
     nextState(data: any): AnnotationState {
-        if (
-            RecommendationService.instance.totalValidTriggerCount > TryMoreExState.triggerCount ||
-            TryMoreExState.learnmoeCount < CodeWhispererCommandBackend.pageShowCount
-        ) {
+        if (RecommendationService.instance.totalValidTriggerCount > TryMoreExState.triggerCount) {
             console.log('triggerCount: ', TryMoreExState.triggerCount)
             console.log('totalValidTriggerCount: ', RecommendationService.instance.totalValidTriggerCount)
             return new EndState()
@@ -454,7 +450,6 @@ export class LineAnnotationController implements vscode.Disposable {
 
         // take snapshot of total trigger count so that we can compare if there is delta -> users accept/reject suggestions after seeing this state
         TryMoreExState.triggerCount = RecommendationService.instance.totalValidTriggerCount
-        TryMoreExState.learnmoeCount = CodeWhispererCommandBackend.pageShowCount
 
         if (
             this._currentState instanceof ManualtriggerState &&

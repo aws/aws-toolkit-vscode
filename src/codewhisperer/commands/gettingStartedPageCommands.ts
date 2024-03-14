@@ -12,8 +12,6 @@ import { CodeWhispererSource } from './types'
  * The methods with backend logic for the Codewhisperer Getting Started Page commands.
  */
 export class CodeWhispererCommandBackend {
-    static pageShowCount: number = 0
-
     constructor(private readonly extContext: vscode.ExtensionContext) {}
     public async showGettingStartedPage(_: VsCodeCommandArg, source: CodeWhispererSource) {
         if (_ !== undefined) {
@@ -25,7 +23,6 @@ export class CodeWhispererCommandBackend {
         if (!(await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage'))) {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_ButtonClick', passive: true })
         }
-        CodeWhispererCommandBackend.pageShowCount++
         return showCodeWhispererWebview(this.extContext, source)
     }
 }
