@@ -11,7 +11,12 @@ import { EventEmitter } from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 import { featureDevScheme } from '../../constants'
-import { ContentLengthError, SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
+import {
+    ContentLengthError,
+    InvalidCodeGenStateError,
+    SelectedFolderNotInWorkspaceFolderError,
+    createUserFacingErrorMessage,
+} from '../../errors'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureName } from '../../constants'
@@ -436,7 +441,7 @@ export class FeatureDevController {
         try {
             session = await this.sessionStorage.getSession(message.tabID)
             if (session.state.codeGenerationResult?.result !== 'success') {
-                throw new ToolkitError('Invalid state in code generation')
+                throw new InvalidCodeGenStateError()
             }
             telemetry.amazonq_isAcceptedCodeChanges.emit({
                 amazonqConversationId: session.conversationId,
@@ -646,7 +651,7 @@ export class FeatureDevController {
 
         const session = await this.sessionStorage.getSession(tabId)
         if (session.state.codeGenerationResult?.result !== 'success') {
-            throw new ToolkitError('Invalid state in code generation')
+            throw new InvalidCodeGenStateError()
         }
         const filePathIndex = (session.state.codeGenerationResult.artifacts.filePaths ?? []).findIndex(
             obj => obj.relativePath === filePathToUpdate

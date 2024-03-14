@@ -88,6 +88,12 @@ export class ApiError extends ToolkitError {
     }
 }
 
+export class InvalidCodeGenStateError extends ToolkitError {
+    constructor() {
+        super('Code Generation reached an invalid state', { code: 'CodeGenInvalidState' })
+    }
+}
+
 const denyListedErrors: string[] = ['Deserialization error', 'Inaccessible host']
 
 export function createUserFacingErrorMessage(message: string) {
