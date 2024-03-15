@@ -112,7 +112,7 @@ export class Messenger {
         const jdkFormOptions: { value: string; label: string }[] = []
         uniqueJavaOptions.forEach(jdkVersion => {
             jdkFormOptions.push({
-                value: jdkVersion.toString(),
+                value: jdkVersion,
                 label: jdkVersion.toString(),
             })
         })

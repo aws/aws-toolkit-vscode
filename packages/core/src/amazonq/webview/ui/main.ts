@@ -105,7 +105,6 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
         },
         onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
         onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => {
-            console.log(`onQuickHandlerCommandMessage!! command: ${command} tabID: ${tabID}`)
             if (command === 'aws.awsq.transform') {
                 quickActionHandler.handle({ command: '/transform' }, tabID, eventId)
             } else if (command === 'aws.awsq.clearchat') {
@@ -349,7 +348,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
         },
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
-            connector.onCustomFormAction(tabId, messageId, action, undefined)
+            connector.onCustomFormAction(tabId, messageId, action, eventId)
         },
         onCustomFormAction: (tabId, action, eventId) => {
             connector.onCustomFormAction(tabId, undefined, action, eventId)
