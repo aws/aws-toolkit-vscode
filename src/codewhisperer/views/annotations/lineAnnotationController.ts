@@ -18,6 +18,8 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { getLogger } from '../../../shared/logger/logger'
 import { Commands } from '../../../shared/vscode/commands2'
 import { session } from '../../util/codeWhispererSession'
+import { InlineCompletionService } from '../../service/inlineCompletionService'
+import { RecommendationHandler } from '../../service/recommendationHandler'
 
 const case3TimeWindow = 30000 // 30 seconds
 
@@ -77,7 +79,7 @@ class AutotriggerState implements AnnotationState {
         console.log('RecommendationService.acceptedCnt=', RecommendationService.instance.acceptedSuggestionCount)
         if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
             return new ManualtriggerState()
-        } else if (session.recommendations.length > 0 && 'source' in data && data.source === 'content') {
+        } else if (session.recommendations.length > 0 && RecommendationHandler.instance.isSuggestionVisible()) {
             return new PressTabState()
         } else {
             return this
