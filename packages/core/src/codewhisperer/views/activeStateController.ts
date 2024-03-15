@@ -12,7 +12,18 @@ import { isTextEditor } from '../../shared/utilities/editorUtilities'
 import { RecommendationService } from '../service/recommendationService'
 import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
 
-export class ActiveStateController implements vscode.Disposable {
+/**
+ * This class is responsible for updating the UI while the following events are fired
+ * (1) RecommendationService.suggestionActionEvent
+ *      (a) when users just start CodeWhisperer invocation
+ *      (b) when users receive their first service response within a CodeWhisperer session (paginated call)
+ *      (c) when users receive all service responses within a CodeWhisperer session
+ * (2) Lintracker.onDidChangeActiveLines
+ * (3) Auth.onDidChangeConnectionState
+ *
+ * Any UI components which are interested in the above events should be placed in this component, for example, (1.) status spinner widget (2) inline hint 'codewhisperer is generating...'
+ */
+export class ActiveStateUIController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
     private _editor: vscode.TextEditor | undefined
 

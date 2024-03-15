@@ -4,30 +4,33 @@
  */
 
 import { AuthUtil } from '../util/authUtil'
-import { ActiveStateController } from '../views/activeStateController'
+import { ActiveStateUIController } from '../views/activeStateController'
 import { LineTracker } from '../tracker/lineTracker'
 
+/**
+ * Please utilize this container class as the bridge to access other components to avoid creating too many singleton objects when not needed.
+ * Example:
+ * class SubComponent {
+ *      constructor(private readonly container: Container) {}
+ *
+ *      public doSomething() {
+ *          const isConnected = this.container.authProvider.isConnected()
+ *          this.anotherComponent.update(isConnected)
+ *      }
+ * }
+ */
 export class Container {
     static #instance: Container | undefined
 
-    static create(authProvider: AuthUtil): Container {
-        if (Container.#instance) {
-            throw new Error('Container already exists')
-        }
-
-        Container.#instance = new Container(authProvider)
-        return Container.#instance
-    }
-
     static get instance(): Container {
-        return Container.#instance ?? Container.create(AuthUtil.instance)
+        return (Container.#instance ??= new Container(AuthUtil.instance))
     }
 
     readonly lineTracker: LineTracker
-    readonly activeStateController: ActiveStateController
+    readonly activeStateController: ActiveStateUIController
 
-    constructor(readonly auth: AuthUtil) {
+    protected constructor(readonly auth: AuthUtil) {
         this.lineTracker = new LineTracker()
-        this.activeStateController = new ActiveStateController(this)
+        this.activeStateController = new ActiveStateUIController(this)
     }
 }
