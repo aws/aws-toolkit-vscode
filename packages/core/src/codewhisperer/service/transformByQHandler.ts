@@ -17,13 +17,59 @@ import * as vscode from 'vscode'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
 import AdmZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
-import { CodeTransformMavenBuildCommand, telemetry } from '../../shared/telemetry/telemetry'
+import {
+    CodeTransformJavaSourceVersionsAllowed,
+    CodeTransformMavenBuildCommand,
+    telemetry,
+} from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import {
+    calculateTotalLatency,
+    javapOutputToTelemetryValue,
+    JDKToTelemetryValue,
+} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
 
+/**
+ * @description A function to help validate and log project
+ * details.
+ */
+export async function validateAndLogProjectDetails() {
+    // Try to validate project silently
+    let reason,
+        result,
+        codeTransformLocalJavaVersion,
+        codeTransformPreValidationError = undefined
+    try {
+        const openProjects = await getOpenProjects()
+        const validProjects = await validateOpenProjects(openProjects, true)
+        if (validProjects.size > 0) {
+            const firstKey = validProjects.keys().next().value
+            const firstModuleEntry = validProjects.get(firstKey)
+            codeTransformLocalJavaVersion = JDKToTelemetryValue(
+                firstModuleEntry
+            ) as CodeTransformJavaSourceVersionsAllowed
+        }
+    } catch (err: any) {
+        result = MetadataResult.Fail
+        reason = err?.code
+        codeTransformPreValidationError = err?.name
+    } finally {
+        if (result || reason || codeTransformLocalJavaVersion || codeTransformPreValidationError) {
+            telemetry.codeTransform_projectDetails.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformLocalJavaVersion,
+                codeTransformPreValidationError,
+                result,
+                reason,
+            })
+        }
+    }
+}
+
+/* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat: */
 interface FolderInfo {
     path: string
     name: string
@@ -109,7 +155,7 @@ async function getMavenJavaProjects(javaProjects: vscode.QuickPickItem[]) {
     return mavenJavaProjects
 }
 
-async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[]) {
+async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[], onProjectFirstOpen: boolean) {
     const projectsValidToTransform = new Map<vscode.QuickPickItem, JDKVersion | undefined>()
     for (const project of mavenJavaProjects) {
         let detectedJavaVersion = undefined
@@ -143,13 +189,15 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                     const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
                     errorReason += `-${errorCode}`
                 }
-                telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                    codeTransformPreValidationError: 'NoJavaProject',
-                    codeTransformRuntimeError: errorReason,
-                    result: MetadataResult.Fail,
-                    reason: 'CannotDetermineJavaVersion',
-                })
+                if (!onProjectFirstOpen) {
+                    telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                        codeTransformPreValidationError: 'NoJavaProject',
+                        codeTransformRuntimeError: errorReason,
+                        result: MetadataResult.Fail,
+                        reason: 'CannotDetermineJavaVersion',
+                    })
+                }
             } else {
                 const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
                 const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
@@ -159,12 +207,14 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                     detectedJavaVersion = JDKVersion.JDK11
                 } else {
                     detectedJavaVersion = JDKVersion.UNSUPPORTED
-                    telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                        codeTransformPreValidationError: 'UnsupportedJavaVersion',
-                        result: MetadataResult.Fail,
-                        reason: javapOutputToTelemetryValue(javaVersion),
-                    })
+                    if (!onProjectFirstOpen) {
+                        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                            codeTransformPreValidationError: 'UnsupportedJavaVersion',
+                            result: MetadataResult.Fail,
+                            reason: javapOutputToTelemetryValue(javaVersion),
+                        })
+                    }
                 }
             }
         }
@@ -180,36 +230,41 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
  * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
  * and we allow the user to specify the Java version.
  */
-export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
+export async function validateOpenProjects(projects: vscode.QuickPickItem[], onProjectFirstOpen = false) {
     const javaProjects = await getJavaProjects(projects)
     if (javaProjects.length === 0) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NoJavaProject',
-            result: MetadataResult.Fail,
-            reason: 'CouldNotFindJavaProject',
-        })
-        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject' })
+        if (!onProjectFirstOpen) {
+            void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformPreValidationError: 'NoJavaProject',
+                result: MetadataResult.Fail,
+                reason: 'CouldNotFindJavaProject',
+            })
+        }
+        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject', name: 'NoJavaProject' })
     }
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NonMavenProject',
-            result: MetadataResult.Fail,
-            reason: 'NoPomFileFound',
-        })
-        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
+        if (!onProjectFirstOpen) {
+            void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
+            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformPreValidationError: 'NonMavenProject',
+                result: MetadataResult.Fail,
+                reason: 'NoPomFileFound',
+            })
+        }
+        throw new ToolkitError('No valid Maven build file found', { code: 'NoPomFileFound', name: 'NonMavenProject' })
     }
 
     /*
-     * these projects we know must contain a pom.xml and a .java file
+     * These projects we know must contain a pom.xml and a .java file
      * here we try to get the Java version of each project so that we
-     * can pre-select a default version in the QuickPick for them
+     * can pre-select a default version in the QuickPick for them.
      */
-    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects)
+    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects, onProjectFirstOpen)
+
     return projectsValidToTransform
 }
 
