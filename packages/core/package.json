@@ -30,7 +30,8 @@
     "browser": "./dist/src/extensionWeb",
     "exports": {
         ".": "./dist/src/index.js",
-        "./web": "./dist/src/indexWeb.js"
+        "./web": "./dist/src/indexWeb.js",
+        "./auth": "./dist/src/auth/index.js"
     },
     "contributes": {
         "configuration": {
