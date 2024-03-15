@@ -72,25 +72,13 @@ export async function startTransformByQWithProgress() {
 
 export async function processTransformFormInput(
     pathToModule: string,
-    fromJDKVersionString: string,
-    toJDKVersionString: string
+    fromJDKVersion: JDKVersion,
+    toJDKVersion: JDKVersion
 ) {
     transformByQState.setProjectName(path.basename(pathToModule))
     transformByQState.setProjectPath(pathToModule)
-    transformByQState.setSourceJDKVersion(toJDKVersion(fromJDKVersionString))
-    transformByQState.setTargetJDKVersion(toJDKVersion(toJDKVersionString))
-}
-
-function toJDKVersion(jdkVersionAsString: string): JDKVersion {
-    if (jdkVersionAsString === '8') {
-        return JDKVersion.JDK8
-    } else if (jdkVersionAsString === '11') {
-        return JDKVersion.JDK11
-    } else if (jdkVersionAsString === '17') {
-        return JDKVersion.JDK17
-    } else {
-        return JDKVersion.UNSUPPORTED
-    }
+    transformByQState.setSourceJDKVersion(fromJDKVersion)
+    transformByQState.setTargetJDKVersion(toJDKVersion)
 }
 
 async function setMaven() {

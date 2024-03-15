@@ -22,7 +22,7 @@ import {
     stopTransformByQ,
     validateCanCompileProject,
 } from '../../../codewhisperer/commands/startTransformByQ'
-import { transformByQState } from '../../../codewhisperer/models/model'
+import { JDKVersion, transformByQState } from '../../../codewhisperer/models/model'
 import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
 import { TransformationCandidateProject } from '../../../codewhisperer/service/transformByQHandler'
@@ -218,8 +218,8 @@ export class GumbyController {
     // The user gets prompted to pick a specific one
     private async initiateTransformationOnModule(message: any) {
         const pathToModule: string = message.formSelectedValues['GumbyTransformModuleForm']
-        const fromJDKVersion: string = message.formSelectedValues['GumbyTransformJdkFromForm']
-        const toJDKVersion: string = message.formSelectedValues['GumbyTransformJdkToForm']
+        const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
+        const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
 
         this.messenger.sendCompilationInProgress(message.tabId, true)
 
