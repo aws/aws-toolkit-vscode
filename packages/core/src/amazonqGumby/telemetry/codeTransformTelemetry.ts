@@ -12,7 +12,6 @@ import {
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { JDKVersion } from '../../codewhisperer/models/model'
-import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { codeTransformTelemetryState } from './codeTransformTelemetryState'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
@@ -33,13 +32,7 @@ export const logCodeTransformInitiatedMetric = (source: string): void => {
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
     }
 
-    if (source === CodeWhispererConstants.transformTreeNode) {
-        telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
-            codeTransformStartSrcComponents: StartActionPositions.DevToolsSidePanel,
-            ...commonMetrics,
-            result: MetadataResult.Pass,
-        })
-    } else if (source === StartActionPositions.BottomHubPanel) {
+    if (source === StartActionPositions.BottomHubPanel) {
         telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
             codeTransformStartSrcComponents: StartActionPositions.BottomHubPanel,
             ...commonMetrics,
