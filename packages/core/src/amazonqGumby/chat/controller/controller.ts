@@ -145,6 +145,12 @@ export class GumbyController {
 
             // check to see if a transformation is already in progress
             if (transformByQState.isRunning()) {
+                this.messenger.sendAsyncEventProgress(
+                    message.tabID,
+                    true,
+                    undefined,
+                    GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
+                )
                 this.messenger.sendJobSubmittedMessage(message.tabID)
                 return
             }
