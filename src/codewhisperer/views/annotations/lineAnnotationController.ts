@@ -11,11 +11,14 @@ import { cancellableDebounce } from '../../../shared/utilities/functionUtils'
 import { subscribeOnce } from '../../../shared/utilities/vsCodeUtils'
 import { RecommendationService, SuggestionActionEvent } from '../../service/recommendationService'
 import { set } from '../../util/commonUtil'
-import { AnnotationChangeSource, autoTriggerEnabledKey, inlinehintKey } from '../../models/constants'
+import { AnnotationChangeSource, autoTriggerEnabledKey, inlinehintKey, inlinehintWipKey } from '../../models/constants'
 import globals from '../../../shared/extensionGlobals'
 import { Container } from '../../service/serviceContainer'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { getLogger } from '../../../shared/logger/logger'
+import { Commands } from '../../../shared/vscode/commands2'
+
+const case3TimeWindow = 30000 // 30 seconds
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
@@ -27,8 +30,6 @@ type CwsprTutorialUi =
 
 function fromId(id: string | undefined): AnnotationState | undefined {
     switch (id) {
-        case 'codewhisperer_learnmore_start':
-            return new StartState()
         case 'codewhisperer_learnmore_how_codewhisperer_triggers':
             return new AutotriggerState()
         case 'codewhisperer_learnmore_tab_to_accept':
@@ -48,23 +49,7 @@ interface AnnotationState {
     id: string | CwsprTutorialUi
     suppressWhileRunning: boolean
     text: () => string
-    nextState<T extends object>(data: T): AnnotationState
-}
-
-class StartState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_start'
-    id = StartState.#id
-
-    suppressWhileRunning = true
-    text = () => ''
-
-    nextState<T extends object>(data: T): AnnotationState {
-        if ('isEndOfLine' in data && data.isEndOfLine) {
-            return new AutotriggerState()
-        } else {
-            return this
-        }
-    }
+    nextState<T extends object>(data: T): AnnotationState | undefined
 }
 
 /**
@@ -81,11 +66,12 @@ class StartState implements AnnotationState {
 class AutotriggerState implements AnnotationState {
     static #id = 'codewhisperer_learnmore_how_codewhisperer_triggers'
     id = AutotriggerState.#id
+
     suppressWhileRunning = true
     text = () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions ([ESC] to exit)'
     static acceptedCount = 0
 
-    nextState<T extends object>(data: T): AnnotationState {
+    nextState<T extends object>(data: T): AnnotationState | undefined {
         console.log('State.acceptedCnt=', AutotriggerState.acceptedCount)
         console.log('RecommendationService.acceptedCnt=', RecommendationService.instance.acceptedSuggestionCount)
         if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
@@ -117,10 +103,11 @@ class AutotriggerState implements AnnotationState {
 class PressTabState implements AnnotationState {
     static #id = 'codewhisperer_learnmore_tab_to_accept'
     id = PressTabState.#id
+
     suppressWhileRunning = false
     text = () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept ([ESC] to exit)'
 
-    nextState(data: any): AnnotationState {
+    nextState(data: any): AnnotationState | undefined {
         return new AutotriggerState().nextState(data)
     }
 }
@@ -137,6 +124,7 @@ class PressTabState implements AnnotationState {
 class ManualtriggerState implements AnnotationState {
     static #id = 'codewhisperer_learnmore_manual_trigger'
     id = ManualtriggerState.#id
+
     suppressWhileRunning = true
 
     text = () => {
@@ -146,17 +134,16 @@ class ManualtriggerState implements AnnotationState {
 
         return 'CodeWhisperer Tip 2/3: Invoke suggestions with [Option] + [C] ([ESC] to exit)'
     }
-    static hasManualTrigger: boolean = false
-    static hasValidResponse: boolean = false
+    hasManualTrigger: boolean = false
+    hasValidResponse: boolean = false
 
-    nextState(data: any): AnnotationState {
-        if (
-            ManualtriggerState.hasManualTrigger &&
-            ManualtriggerState.hasValidResponse &&
-            'source' in data &&
-            data.source === 'selection'
-        ) {
-            return new TryMoreExState()
+    nextState(data: any): AnnotationState | undefined {
+        if (this.hasManualTrigger && this.hasValidResponse) {
+            if ('source' in data && data.source !== 'codewhisperer') {
+                return new TryMoreExState()
+            } else {
+                return undefined
+            }
         } else {
             return this
         }
@@ -177,6 +164,7 @@ class TryMoreExState implements AnnotationState {
     id = TryMoreExState.#id
 
     suppressWhileRunning = true
+
     text = () => 'CodeWhisperer Tip 3/3: For settings, open the CodeWhisperer menu from the status bar ([ESC] to exit)'
     nextState(data: any): AnnotationState {
         return this
@@ -189,6 +177,7 @@ class TryMoreExState implements AnnotationState {
 class EndState implements AnnotationState {
     static #id = 'codewhisperer_learnmore_end'
     id = EndState.#id
+
     suppressWhileRunning = true
     text = () => ''
     nextState(data: any): AnnotationState {
@@ -211,19 +200,18 @@ export class LineAnnotationController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
     private _editor: vscode.TextEditor | undefined
 
-    private _selections: LineSelection[] | undefined
-
     private _currentState: AnnotationState
 
-    readonly cwLineHintDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-        after: {
-            margin: '0 0 0 3em',
-            // "borderRadius" and "padding" are not available on "after" type of decoration, this is a hack to inject these css prop to "after" content. Refer to https://github.com/microsoft/vscode/issues/68845
-            textDecoration: ';border-radius:0.25rem;padding:0rem 0.5rem;',
-            width: 'fit-content',
-        },
-        rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
-    })
+    private readonly cwLineHintDecoration: vscode.TextEditorDecorationType =
+        vscode.window.createTextEditorDecorationType({
+            after: {
+                margin: '0 0 0 3em',
+                // "borderRadius" and "padding" are not available on "after" type of decoration, this is a hack to inject these css prop to "after" content. Refer to https://github.com/microsoft/vscode/issues/68845
+                textDecoration: ';border-radius:0.25rem;padding:0rem 0.5rem;',
+                width: 'fit-content',
+            },
+            rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
+        })
 
     constructor(private readonly container: Container) {
         const cachedState = fromId(globals.context.globalState.get<string>(inlinehintKey))
@@ -231,7 +219,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
         // new users (has or has not seen tutorial)
         if (cachedAutotriggerEnabled === undefined || cachedState !== undefined) {
-            this._currentState = cachedState ?? new StartState()
+            this._currentState = cachedState ?? new AutotriggerState()
             getLogger().debug(
                 `codewhisperer: new user login, activating inline tutorial. (autotriggerEnabled=${cachedAutotriggerEnabled}); inlineState=${cachedState}`
             )
@@ -243,7 +231,7 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         // todo: remove
-        this._currentState = new StartState()
+        this._currentState = new AutotriggerState()
 
         this._disposable = vscode.Disposable.from(
             subscribeOnce(this.container._lineTracker.onReady)(this.onReady, this),
@@ -253,12 +241,16 @@ export class LineAnnotationController implements vscode.Disposable {
                 }
 
                 if (this._currentState instanceof ManualtriggerState) {
-                    ManualtriggerState.hasManualTrigger = e.triggerType === 'OnDemand'
-                }
-
-                if (this._currentState instanceof ManualtriggerState) {
-                    ManualtriggerState.hasValidResponse =
-                        (e.response?.recommendationCount !== undefined && e.response?.recommendationCount > 0) ?? false
+                    if (e.triggerType === 'OnDemand' && this._currentState.hasManualTrigger === false) {
+                        this._currentState.hasManualTrigger = true
+                    }
+                    if (
+                        e.response?.recommendationCount !== undefined &&
+                        e.response?.recommendationCount > 0 &&
+                        this._currentState.hasValidResponse === false
+                    ) {
+                        this._currentState.hasValidResponse = true
+                    }
                 }
 
                 this.refresh(e.editor, 'codewhisperer', e)
@@ -271,6 +263,15 @@ export class LineAnnotationController implements vscode.Disposable {
             }),
             this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
                 this.refresh(vscode.window.activeTextEditor, 'editor')
+            }),
+            Commands.register('aws.codeWhisperer.dismissTutorial', async () => {
+                const editor = vscode.window.activeTextEditor
+                if (editor) {
+                    this.clear()
+                    this._currentState = new EndState()
+                    await vscode.commands.executeCommand('setContext', inlinehintWipKey, false)
+                    getLogger().debug(`codewhisperer: user dismiss tutorial.`)
+                }
             })
         )
     }
@@ -291,12 +292,17 @@ export class LineAnnotationController implements vscode.Disposable {
         // return true
     }
 
+    async markTutorialDone() {
+        await vscode.commands.executeCommand('setContext', inlinehintWipKey, false)
+        this._currentState = new EndState()
+    }
+
     private async onActiveLinesChanged(e: LinesChangeEvent) {
         if (!this._isReady) {
             return
         }
 
-        this.clear(e.editor)
+        this.clear()
 
         if (e.reason === 'content') {
             await this.refresh(e.editor, e.reason)
@@ -309,11 +315,8 @@ export class LineAnnotationController implements vscode.Disposable {
         }
     }
 
-    clear(editor: vscode.TextEditor | undefined) {
+    clear() {
         this._editor?.setDecorations(this.cwLineHintDecoration, [])
-        if (editor) {
-            editor.setDecorations(this.cwLineHintDecoration, [])
-        }
     }
 
     readonly refresh = cancellableDebounce(
@@ -324,37 +327,39 @@ export class LineAnnotationController implements vscode.Disposable {
     ).promise
 
     private async _refresh(editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) {
-        if (this.isTutorialDone()) {
-            this.clear(this._editor)
-            return
-        }
-        if (!this.container.auth.isConnectionValid(false)) {
-            this.clear(this._editor)
+        if (!this._isReady) {
+            this.clear()
             return
         }
 
-        if (editor == null && this._editor == null) {
+        if (this.isTutorialDone()) {
+            this.clear()
+            return
+        }
+
+        if (editor === undefined && this._editor === undefined) {
+            this.clear()
             return
         }
 
         const selections = this.container._lineTracker.selections
-        if (editor == null || selections == null || !isTextEditor(editor)) {
-            this.clear(this._editor)
+        if (editor === undefined || selections === undefined || !isTextEditor(editor)) {
+            this.clear()
             return
         }
 
         if (this._editor !== editor) {
             // Clear any annotations on the previously active editor
-            this.clear(this._editor)
+            this.clear()
             this._editor = editor
         }
 
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
-        if (editor.document == null || !this.container._lineTracker.includes(selections)) {
+        if (editor.document === undefined || !this.container._lineTracker.includes(selections)) {
+            this.clear()
             return
         }
 
-        // if (cancellation.isCancellationRequested) return
         await this.updateDecorations(editor, selections, source, e)
     }
 
@@ -372,28 +377,29 @@ export class LineAnnotationController implements vscode.Disposable {
             | vscode.DecorationOptions
             | undefined
 
-        const isCWRunning = RecommendationService.instance.isRunning
-        if (isCWRunning && this._currentState.suppressWhileRunning) {
-            editor.setDecorations(this.cwLineHintDecoration, [])
-            this._selections = lines
+        if (decorationOptions === undefined) {
+            this.clear()
+            await vscode.commands.executeCommand('setContext', inlinehintWipKey, false)
             return
-        }
-
-        if (!decorationOptions) {
-            this.clear(this._editor)
-            this._selections = lines
+        } else if (this.isTutorialDone()) {
+            // special case
+            // Endstate is meaningless and doesnt need to be rendered
+            this.clear()
+            this.markTutorialDone()
             return
         } else if (decorationOptions.renderOptions?.after?.contentText === new TryMoreExState().text()) {
-            // case 3 exit criteria is to show 30s
+            // special case
+            // case 3 exit criteria is to fade away in 30s
             setTimeout(async () => {
                 this._currentState = new EndState()
                 await this.refresh(editor, source, e)
-            }, 30000)
+            }, case3TimeWindow)
         }
 
         decorationOptions.range = range
-        this._selections = lines
+
         await set(inlinehintKey, this._currentState.id, globals.context.globalState)
+        vscode.commands.executeCommand('setContext', inlinehintWipKey, true)
         editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
     }
 
@@ -403,32 +409,8 @@ export class LineAnnotationController implements vscode.Disposable {
         source: AnnotationChangeSource,
         e?: SuggestionActionEvent
     ): Partial<vscode.DecorationOptions> | undefined {
-        const sameLine = this._selections ? isSameLine(this._selections[0], lines[0]) : false
-        const isEndOfLine = isCursorAtEndOfLine(editor)
         const isCWRunning = RecommendationService.instance.isRunning
 
-        const renderOptions = this.renderOptions(sameLine, isEndOfLine, isCWRunning, source, e)
-
-        if (!renderOptions) {
-            return undefined
-        }
-
-        const decoration: {
-            renderOptions: vscode.ThemableDecorationRenderOptions
-        } = {
-            renderOptions: renderOptions,
-        }
-
-        return decoration
-    }
-
-    private renderOptions(
-        isSameLine: boolean,
-        isEndOfLine: boolean,
-        isCWRunning: boolean,
-        source: AnnotationChangeSource,
-        e?: SuggestionActionEvent
-    ): vscode.ThemableDecorationRenderOptions | undefined {
         const textOptions = {
             contentText: '',
             fontWeight: 'normal',
@@ -438,15 +420,22 @@ export class LineAnnotationController implements vscode.Disposable {
             backgroundColor: 'var(--vscode-foreground)',
         }
 
+        if (isCWRunning && this._currentState.suppressWhileRunning) {
+            return undefined
+        }
+
         const nextState = this._currentState.nextState({
-            isEndOfLine: isEndOfLine,
             isCWRunning: isCWRunning,
             source: source,
             recommendationCount: e?.response?.recommendationCount ?? 0,
         })
 
+        if (nextState === undefined) {
+            return undefined
+        }
+
         // if state proceed, send a uiClick event for the fulfilled tutorial step
-        if (this._currentState.id !== nextState.id && !(this._currentState instanceof StartState)) {
+        if (this._currentState.id !== nextState.id) {
             try {
                 telemetry.ui_click.emit({ elementId: this._currentState.id, passive: true })
             } catch (e) {}
@@ -454,37 +443,15 @@ export class LineAnnotationController implements vscode.Disposable {
 
         // update state
         this._currentState = nextState
-
         // take snapshot of accepted session so that we can compre if there is delta -> users accept 1 suggestion after seeing this state
         AutotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
-
         // take snapshot of total trigger count so that we can compare if there is delta -> users accept/reject suggestions after seeing this state
         TryMoreExState.triggerCount = RecommendationService.instance.totalValidTriggerCount
 
-        if (
-            this._currentState instanceof ManualtriggerState &&
-            ManualtriggerState.hasManualTrigger &&
-            ManualtriggerState.hasValidResponse
-        ) {
-            // when users fulfill the manual trigger step, we will not show anything new until they change to another different line
-            return undefined
-        }
-
-        if (this._currentState instanceof StartState || this._currentState instanceof EndState) {
-            return undefined
-        }
-
         textOptions.contentText = this._currentState.text()
-        return { after: textOptions }
+
+        return {
+            renderOptions: { after: textOptions },
+        }
     }
-}
-
-function isSameLine(s1: LineSelection, s2: LineSelection) {
-    return s1.active === s2.active && s2.anchor === s2.anchor
-}
-
-function isCursorAtEndOfLine(editor: vscode.TextEditor): boolean {
-    const cursorPosition = editor.selection.active
-    const endOfLine = editor.document.lineAt(cursorPosition.line).range.end
-    return cursorPosition.isEqual(endOfLine)
 }
