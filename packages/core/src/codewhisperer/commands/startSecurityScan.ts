@@ -22,7 +22,7 @@ import {
     throwIfCancelled,
 } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { codeScanState, CodeScanTelemetryEntry, vsCodeState } from '../models/model'
+import { codeScanState, CodeScanTelemetryEntry } from '../models/model'
 import { openSettings } from '../../shared/settings'
 import { cancel, ok, viewSettings } from '../../shared/localizedText'
 import { statSync } from 'fs'
@@ -91,7 +91,6 @@ export async function startSecurityScan(
     }
     try {
         getLogger().verbose(`Starting security scan `)
-        vsCodeState.isFreeTierLimitReached = false
         /**
          * Step 1: Generate context truncations
          */
