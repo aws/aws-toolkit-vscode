@@ -28,7 +28,7 @@ import { QuickPickItem } from 'vscode'
 import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
-import { encodeHTML } from '../../shared/utilities/textUtilities'
+import { encodeHTML, getStringHash } from '../../shared/utilities/textUtilities'
 import {
     CodeTransformJavaSourceVersionsAllowed,
     CodeTransformJavaTargetVersionsAllowed,
@@ -93,6 +93,7 @@ async function collectInput(validProjects: Map<vscode.QuickPickItem, JDKVersion 
                 transformByQState.getTargetJDKVersion()
             ) as CodeTransformJavaTargetVersionsAllowed,
             result: MetadataResult.Fail,
+            codeTransformProjectId: getStringHash(state.project.label),
         })
         await vscode.window.showErrorMessage(CodeWhispererConstants.unsupportedJavaVersionSelectedMessage, {
             modal: true,
@@ -441,6 +442,12 @@ export async function setTransformationToRunningState(userInputState: UserInputS
 
     codeTransformTelemetryState.setStartTime()
 
+    const projectPath = userInputState.project?.label
+    let projectId = 'undefined'
+    if (projectPath !== undefined) {
+        projectId = getStringHash(projectPath)
+    }
+
     telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
         codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
@@ -449,6 +456,7 @@ export async function setTransformationToRunningState(userInputState: UserInputS
         codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
+        codeTransformProjectId: projectId,
         result: MetadataResult.Pass,
     })
 
