@@ -18,14 +18,13 @@ import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } f
 import { getIdeProperties, aboutToolkit, isCloud9 } from './shared/extensionUtilities'
 import { telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
-import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
 import { activateViewsShared } from './awsexplorer/activationShared'
 
 import { activate as activateLogger } from './shared/logger/activation'
 import { initializeComputeRegion } from './shared/extensionUtilities'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { DefaultAwsContext } from './shared/awsContext'
-import { Settings } from './shared/settings'
+import { DevSettings, Settings } from './shared/settings'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { initialize as initializeAuth } from './auth/activation'
 import { LoginManager } from './auth/deprecated/loginManager'
@@ -138,7 +137,12 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
 
     await activateViewsShared(extContext.extensionContext)
 
-    await activateCodeWhisperer(extContext)
+    if (!DevSettings.instance.get('forceStandaloneExt', false)) {
+        await vscode.commands.executeCommand('setContext', 'aws.toolkit.codewhispererQEnabled', true)
+        await require('./codewhisperer/activation').activate(extContext)
+    } else {
+        await vscode.commands.executeCommand('setContext', 'aws.toolkit.codewhispererQEnabled', false)
+    }
 
     return extContext
 }
@@ -146,7 +150,9 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
 /** Deactivation code that is shared between nodejs and web implementations */
 export async function deactivateShared() {
     await globals.telemetry.shutdown()
-    await codewhispererShutdown()
+    if (!DevSettings.instance.get('forceStandaloneExt', false)) {
+        await require('./codewhisperer/activation').shutdown()
+    }
 }
 /**
  * Registers generic commands used by both web and node versions of the toolkit.
