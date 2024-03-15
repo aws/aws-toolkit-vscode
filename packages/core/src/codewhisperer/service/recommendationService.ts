@@ -14,6 +14,13 @@ import { InlineCompletionService } from '../service/inlineCompletionService'
 import { ClassifierTrigger } from './classifierTrigger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 
+export interface SuggestionActionEvent {
+    readonly editor: vscode.TextEditor | undefined
+    readonly isRunning: boolean
+    readonly triggerType: CodewhispererTriggerType
+    readonly response: GetRecommendationsResponse | undefined
+}
+
 export class RecommendationService {
     static #instance: RecommendationService
 
@@ -22,8 +29,31 @@ export class RecommendationService {
         return this._isRunning
     }
 
+    private _onSuggestionActionEvent = new vscode.EventEmitter<SuggestionActionEvent>()
+    get suggestionActionEvent(): vscode.Event<SuggestionActionEvent> {
+        return this._onSuggestionActionEvent.event
+    }
+
+    private _acceptedSuggestionCount: number = 0
+    get acceptedSuggestionCount() {
+        return this._acceptedSuggestionCount
+    }
+
+    private _totalValidTriggerCount: number = 0
+    get totalValidTriggerCount() {
+        return this._totalValidTriggerCount
+    }
+
     public static get instance() {
         return (this.#instance ??= new RecommendationService())
+    }
+
+    incrementAcceptedCount() {
+        this._acceptedSuggestionCount++
+    }
+
+    incrementValidTriggerCount() {
+        this._totalValidTriggerCount++
     }
 
     async generateRecommendation(
@@ -48,12 +78,19 @@ export class RecommendationService {
             RecommendationHandler.instance.checkAndResetCancellationTokens()
             vsCodeState.isIntelliSenseActive = false
             this._isRunning = true
+            let response: GetRecommendationsResponse = {
+                result: 'Failed',
+                errorMessage: undefined,
+                recommendationCount: 0,
+            }
 
             try {
-                let response: GetRecommendationsResponse = {
-                    result: 'Failed',
-                    errorMessage: undefined,
-                }
+                this._onSuggestionActionEvent.fire({
+                    editor: editor,
+                    isRunning: true,
+                    triggerType: triggerType,
+                    response: undefined,
+                })
 
                 if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
                     response = await RecommendationHandler.instance.getRecommendations(
@@ -84,6 +121,12 @@ export class RecommendationService {
                 }
             } finally {
                 this._isRunning = false
+                this._onSuggestionActionEvent.fire({
+                    editor: editor,
+                    isRunning: false,
+                    triggerType: triggerType,
+                    response: response,
+                })
             }
         } else if (isInlineCompletionEnabled()) {
             if (triggerType === 'OnDemand') {
@@ -91,9 +134,17 @@ export class RecommendationService {
             }
 
             this._isRunning = true
+            let response: GetRecommendationsResponse | undefined = undefined
 
             try {
-                await InlineCompletionService.instance.getPaginatedRecommendation(
+                this._onSuggestionActionEvent.fire({
+                    editor: editor,
+                    isRunning: true,
+                    triggerType: triggerType,
+                    response: undefined,
+                })
+
+                response = await InlineCompletionService.instance.getPaginatedRecommendation(
                     client,
                     editor,
                     triggerType,
@@ -103,6 +154,12 @@ export class RecommendationService {
                 )
             } finally {
                 this._isRunning = false
+                this._onSuggestionActionEvent.fire({
+                    editor: editor,
+                    isRunning: false,
+                    triggerType: triggerType,
+                    response: response,
+                })
             }
         }
     }
