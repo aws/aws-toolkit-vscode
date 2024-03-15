@@ -51,6 +51,9 @@ async function getLanguageServerDebuggerPort(extensionContext: ExtensionContext)
     return getPortPromise({ port: port })
 }
 
+/**
+ * Starts the SSM Documents LSP client/server and creates related resources (vscode `OutputChannel`).
+ */
 export async function activate(extensionContext: ExtensionContext) {
     const toDispose = extensionContext.subscriptions
 
