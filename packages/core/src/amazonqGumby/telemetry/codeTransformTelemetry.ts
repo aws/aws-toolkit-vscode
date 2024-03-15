@@ -26,6 +26,7 @@ export enum CancelActionPositions {
 export enum StartActionPositions {
     DevToolsSidePanel = 'devToolsStartButton',
     BottomHubPanel = 'bottomPanelSideNavButton',
+    ChatPrompt = 'chatPrompt',
 }
 
 export const logCodeTransformInitiatedMetric = (source: string): void => {
@@ -49,7 +50,7 @@ export const logCodeTransformInitiatedMetric = (source: string): void => {
 }
 
 export const JDKToTelemetryValue = (
-    source: JDKVersion
+    source?: JDKVersion
 ): CodeTransformJavaSourceVersionsAllowed | CodeTransformJavaTargetVersionsAllowed | undefined => {
     switch (source) {
         case JDKVersion.JDK8:
