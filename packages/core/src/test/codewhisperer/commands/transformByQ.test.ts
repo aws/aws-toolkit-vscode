@@ -83,7 +83,7 @@ describe('transformByQ', function () {
                 await validateOpenProjects(dummyQuickPickItems)
             },
             {
-                name: 'Error',
+                name: 'NoJavaProject',
                 message: 'No Java projects found',
             }
         )
@@ -107,7 +107,7 @@ describe('transformByQ', function () {
                 await validateOpenProjects(dummyQuickPickItems)
             },
             {
-                name: 'Error',
+                name: 'NonMavenProject',
                 message: 'No valid Maven build file found',
             }
         )

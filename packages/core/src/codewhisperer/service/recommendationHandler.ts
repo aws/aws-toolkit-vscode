@@ -165,6 +165,7 @@ export class RecommendationHandler {
             return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
+                recommendationCount: 0,
             })
         }
         let recommendations: RecommendationsList = []
@@ -226,6 +227,7 @@ export class RecommendationHandler {
                 return Promise.resolve<GetRecommendationsResponse>({
                     result: invocationResult,
                     errorMessage: errorMessage,
+                    recommendationCount: 0,
                 })
             }
         }
@@ -357,6 +359,7 @@ export class RecommendationHandler {
             return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
+                recommendationCount: session.recommendations.length,
             })
         }
 
@@ -410,6 +413,7 @@ export class RecommendationHandler {
         return Promise.resolve<GetRecommendationsResponse>({
             result: invocationResult,
             errorMessage: errorMessage,
+            recommendationCount: session.recommendations.length,
         })
     }
 
