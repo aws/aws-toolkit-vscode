@@ -213,9 +213,9 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
     return projectsValidToTransform
 }
 
-export function getSha256(fileName: string) {
+export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
-    hasher.update(fs.readFileSync(fileName))
+    hasher.update(buffer)
     return hasher.digest('base64')
 }
 
@@ -238,16 +238,18 @@ export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {
 }
 
 // Consider enhancing the S3 client to include this functionality
-export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
-    const sha256 = getSha256(fileName)
-    const headersObj = getHeadersObj(sha256, resp.kmsKeyArn)
-
+export async function uploadArtifactToS3(
+    fileName: string,
+    resp: CreateUploadUrlResponse,
+    sha256: string,
+    buffer: Buffer
+) {
     throwIfCancelled()
     try {
         const apiStartTime = Date.now()
         const response = await request.fetch('PUT', resp.uploadUrl, {
-            body: fs.readFileSync(fileName),
-            headers: headersObj,
+            body: buffer,
+            headers: getHeadersObj(sha256, resp.kmsKeyArn),
         }).response
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'UploadZip',
@@ -313,7 +315,9 @@ export async function stopJob(jobId: string) {
 }
 
 export async function uploadPayload(payloadFileName: string) {
-    const sha256 = getSha256(payloadFileName)
+    const buffer = fs.readFileSync(payloadFileName)
+    const sha256 = getSha256(buffer)
+
     throwIfCancelled()
     let response = undefined
     try {
@@ -349,7 +353,7 @@ export async function uploadPayload(payloadFileName: string) {
         throw new ToolkitError(errorMessage, { cause: e as Error })
     }
     try {
-        await uploadArtifactToS3(payloadFileName, response)
+        await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
         const errorMessage = (e as Error).message ?? 'Error in uploadArtifactToS3 call'
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
