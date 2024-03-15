@@ -278,15 +278,19 @@ export class Messenger {
                 break
             case 'no-project-found':
             case 'no-java-project-found':
-                message =
-                    'None of your open projects are supported by Amazon Q Code Transformation. Currently, Amazon Q can only upgrade Java projects built on Maven. \n For more information, see the Amazon Q documentation.'
+                message = `None of your open projects are supported by Amazon Q Code Transformation. Currently, Amazon Q can only upgrade Java projects built on Maven.
+
+For more information, see the Amazon Q documentation.`
                 break
             case 'no-maven-java-project-found':
-                message =
-                    'None of your open Java projects are supported by Amazon Q Code Transformation. Currently, Amazon Q can only upgrade Java projects built on Maven. A pom.xml must be present in the root of your project to upgrade it. \n For more information, see the Amazon Q documentation.'
+                message = `None of your open Java projects are supported by Amazon Q Code Transformation. Currently, Amazon Q can only upgrade Java projects built on Maven. A pom.xml must be present in the root of your project to upgrade it.
+                    
+For more information, see the Amazon Q documentation.`
                 break
             case 'could-not-compile-project':
-                message = `Amazon Q couldn't execute the Maven install or Maven copy-dependencies commands. To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)`
+                message = `Amazon Q couldn't execute the Maven install or Maven copy-dependencies commands. 
+                
+To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)`
                 break
         }
 

@@ -143,7 +143,7 @@ export class GumbyController {
                 return
             }
 
-            // check to see if a transformation is already progress
+            // check to see if a transformation is already in progress
             if (transformByQState.isRunning()) {
                 this.messenger.sendJobSubmittedMessage(message.tabID)
                 return
@@ -165,7 +165,7 @@ export class GumbyController {
 
     private async validateProjectsWithReplyOnError(message: any): Promise<TransformationCandidateProject[]> {
         try {
-            return getValidCandidateProjects()
+            return await getValidCandidateProjects()
         } catch (err: any) {
             if (err instanceof NoJavaProjectsFoundError) {
                 this.messenger.sendStaticTextResponse('no-java-project-found', message.tabID)
