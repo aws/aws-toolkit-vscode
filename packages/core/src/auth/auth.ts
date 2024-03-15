@@ -188,7 +188,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile === undefined) {
             throw new Error(`Connection does not exist: ${id}`)
         }
-
+        getLogger().info(`auth: validating connection before using it: ${id}`)
         const validated = await this.validateConnection(id, profile)
         const conn =
             validated.type === 'sso' ? this.getSsoConnection(id, validated) : this.getIamConnection(id, validated)
@@ -204,7 +204,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (this.activeConnection === undefined) {
             return
         }
-
+        getLogger().info(`auth: logout`)
         await this.store.setCurrentProfileId(undefined)
         await this.invalidateConnection(this.activeConnection.id)
         this.#activeConnection = undefined
@@ -339,6 +339,7 @@ export class Auth implements AuthService, ConnectionManager {
      * Put the SSO connection in to an expired state
      */
     public async expireConnection(conn: Pick<SsoConnection, 'id'>): Promise<void> {
+        getLogger().info(`auth: Expiring connection ${conn.id}`)
         const profile = this.store.getProfileOrThrow(conn.id)
         if (profile.type === 'iam') {
             throw new ToolkitError('Auth: Cannot force expire an IAM connection')
@@ -374,6 +375,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     public async updateConnection(connection: Pick<SsoConnection, 'id'>, profile: SsoProfile): Promise<SsoConnection>
     public async updateConnection(connection: Pick<Connection, 'id'>, profile: Profile): Promise<Connection> {
+        getLogger().info(`auth: Updating connection ${connection.id}`)
         if (profile.type === 'iam') {
             throw new Error('Updating IAM connections is not supported')
         }
@@ -454,6 +456,7 @@ export class Auth implements AuthService, ConnectionManager {
      * before the local token(s) are cleared as they are needed in the request.
      */
     private async invalidateConnection(id: Connection['id'], opt?: { skipGlobalLogout?: boolean }) {
+        getLogger().info(`auth: Invalidating connection: ${id}`)
         const profile = this.store.getProfileOrThrow(id)
 
         if (profile.type === 'sso') {
@@ -479,6 +482,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async updateConnectionState(id: Connection['id'], connectionState: ProfileMetadata['connectionState']) {
+        getLogger().info(`auth: Updating connection state of ${id} to ${connectionState}`)
         const oldProfile = this.store.getProfileOrThrow(id)
         if (oldProfile.metadata.connectionState === connectionState) {
             return oldProfile
@@ -504,8 +508,10 @@ export class Auth implements AuthService, ConnectionManager {
             if (profile.type === 'sso') {
                 const provider = this.getTokenProvider(id, profile)
                 if ((await provider.getToken()) === undefined) {
+                    getLogger().info(`auth: Connection is not valid: ${id} `)
                     return this.updateConnectionState(id, 'invalid')
                 } else {
+                    getLogger().info(`auth: Connection is valid: ${id} `)
                     return this.updateConnectionState(id, 'valid')
                 }
             } else {
@@ -539,7 +545,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     private async handleValidationError(id: Connection['id'], err: unknown) {
         this.#validationErrors.set(id, UnknownError.cast(err))
-
+        getLogger().info(`auth: Handling validation error of connection: ${id}`)
         return this.updateConnectionState(id, 'invalid')
     }
 
@@ -736,6 +742,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async handleInvalidCredentials<T>(id: Connection['id'], refresh: () => Promise<T>): Promise<T> {
+        getLogger().info(`auth: Handling invalid credentials of connection: ${id}`)
         const profile = this.store.getProfile(id)
         const previousState = profile?.metadata.connectionState
         await this.updateConnectionState(id, 'invalid')

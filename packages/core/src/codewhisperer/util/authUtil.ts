@@ -112,6 +112,7 @@ export class AuthUtil {
 
     public constructor(public readonly auth = Auth.instance) {
         this.auth.onDidChangeConnectionState(async e => {
+            getLogger().info(`codewhisperer: connection changed to ${e.state}: ${e.id}`)
             if (e.state !== 'authenticating') {
                 await this.refreshCodeWhisperer()
             }
@@ -120,6 +121,7 @@ export class AuthUtil {
         })
 
         this.secondaryAuth.onDidChangeActiveConnection(async () => {
+            getLogger().info(`codewhisperer: active connection changed`)
             if (this.isValidEnterpriseSsoInUse()) {
                 void vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
             }
@@ -295,11 +297,11 @@ export class AuthUtil {
             this.secondaryAuth.isConnectionExpired &&
             this.conn !== undefined &&
             isValidCodeWhispererCoreConnection(this.conn)
-        getLogger().debug(`codewhisperer: Connection expired = ${connectionExpired},
+        getLogger().info(`codewhisperer: Connection expired = ${connectionExpired},
                            secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired},
                            connection is undefined = ${this.conn === undefined}`)
         if (this.conn) {
-            getLogger().debug(
+            getLogger().info(
                 `codewhisperer: isValidCodeWhispererConnection = ${isValidCodeWhispererCoreConnection(this.conn)}`
             )
         }
@@ -372,6 +374,10 @@ export class AuthUtil {
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         void this.showReauthenticatePrompt(isAutoTrigger)
         await this.setVscodeContextProps()
+    }
+
+    public isValidCodeTransformationAuthUser(): boolean {
+        return this.isEnterpriseSsoInUse() && this.isConnectionValid()
     }
 }
 

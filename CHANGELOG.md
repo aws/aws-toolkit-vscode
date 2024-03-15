@@ -1,3 +1,8 @@
+## 2.15.0 2024-03-14
+
+- **Bug Fix** CodeWhisperer: Include copied code in percentage code written metrics
+- **Bug Fix** Amazon Q: Fixed prompt input submit with enter if IME enabled [#4125](https://github.com/aws/aws-toolkit-vscode/issues/4125), requires shift+enter while IME enabled
+
 ## 2.14.0 2024-03-08
 
 - **Feature** Amazon Q Feature Dev (/dev): Ask Q to generate code based on the suggested plan
