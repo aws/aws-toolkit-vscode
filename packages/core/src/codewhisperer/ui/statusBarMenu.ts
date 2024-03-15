@@ -82,7 +82,6 @@ function getAmazonQCodeWhispererNodes() {
         createSeparator('Other Features'),
         ...(amazonq ? [amazonq.switchToAmazonQNode('item')] : []),
         createSecurityScan(),
-        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && amazonq ? [amazonq.createTransformByQ()] : []),
     ]
 }
 
