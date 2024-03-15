@@ -77,7 +77,7 @@ class AutotriggerState implements AnnotationState {
         console.log('RecommendationService.acceptedCnt=', RecommendationService.instance.acceptedSuggestionCount)
         if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
             return new ManualtriggerState()
-        } else if (session.recommendations.length > 0) {
+        } else if (session.recommendations.length > 0 && 'source' in data && data.source === 'content') {
             return new PressTabState()
         } else {
             return this
