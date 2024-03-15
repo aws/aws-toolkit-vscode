@@ -84,7 +84,7 @@ export class AmazonQNode implements TreeNode {
             return [createFreeTierLimitMet('tree'), createOpenReferenceLog('tree')]
         } else {
             // logged in
-            if (AuthUtil.instance.isConnectionValid() && AuthUtil.instance.isEnterpriseSsoInUse()) {
+            if (AuthUtil.instance.isValidCodeTransformationAuthUser()) {
                 void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
                 return [switchToAmazonQNode(), createTransformByQ(), createOpenReferenceLog('tree')] // transform only available for IdC users
             }
