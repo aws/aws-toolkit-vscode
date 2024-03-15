@@ -28,6 +28,7 @@ export enum Command {
     LOG = 'LOG',
     EMIT_TELEMETRY = 'EMIT_TELEMETRY',
     OPEN_FEEDBACK = 'OPEN_FEEDBACK',
+    INIT = 'INIT',
 
     FILE_CHANGED = 'FILE_CHANGED',
     THEME_CHANGED = 'THEME_CHANGED',
@@ -70,10 +71,6 @@ export interface ThemeChangedMessage extends Message {
     newTheme: string
 }
 
-export interface InitRequestMessage extends Message {
-    eventId?: string
-}
-
 export interface SaveFileRequestMessage extends Message {
     fileContents: string
 }
@@ -93,6 +90,7 @@ export interface LogMessage extends Message {
     eventId?: string
     logMessage: string
     logType: 'INFO' | 'WARNING' | 'ERROR'
+    showNotification: boolean
 }
 
 export interface EmitTelemetryMessage extends Message {

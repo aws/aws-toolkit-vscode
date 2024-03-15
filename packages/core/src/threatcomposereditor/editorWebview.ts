@@ -9,7 +9,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
 import { FileWatchInfo } from './types'
-import { addFileWatchMessageHandler, broadcastFileChange } from './messageHandlers/addFileWatchMessageHandler'
+import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
 import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
 
 export class ThreatComposer {
@@ -73,9 +73,6 @@ export class ThreatComposer {
         // Initialise the panel panel
         this.initialiseVisualizationWebviewPanel(documentUri, context)
 
-        // Set the initial html for the webpage
-        this.webviewPanel.webview.html = this.getWebviewContent()
-
         // Hook up event handlers so that we can synchronize the webview with the text document.
         //
         // The text document acts as our model, so we have to sync change in the document to our
@@ -138,9 +135,8 @@ export class ThreatComposer {
             })
         )
 
-        const fileContents = textDocument.getText()
-        this.fileWatches[this.defaultTemplatePath] = { fileContents: fileContents }
-        void broadcastFileChange(this.defaultTemplateName, this.defaultTemplatePath, fileContents, this.webviewPanel)
+        // Set the initial html for the webpage
+        this.webviewPanel.webview.html = this.getWebviewContent()
     }
 
     private initialiseVisualizationWebviewPanel(documentUri: vscode.Uri, context: vscode.ExtensionContext) {

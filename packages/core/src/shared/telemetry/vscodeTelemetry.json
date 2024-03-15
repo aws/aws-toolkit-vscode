@@ -1035,6 +1035,18 @@
                 }
             ],
             "passive": true
+        },
+        {
+            "name": "threatcomposer_opened",
+            "description": "Called after opening a threat composer file"
+        },
+        {
+            "name": "threatcomposer_fileSaved",
+            "description": "Called after a threat composer file has been saved"
+        },
+        {
+            "name": "threatcomposer_error",
+            "description": "Called after an error is thrown"
         }
     ]
 }

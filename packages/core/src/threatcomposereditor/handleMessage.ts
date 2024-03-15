@@ -3,19 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    Command,
-    EmitTelemetryMessage,
-    LogMessage,
-    Message,
-    WebviewContext,
-    SaveFileRequestMessage,
-    MessageType,
-} from './types'
+import { Command, LogMessage, Message, WebviewContext, SaveFileRequestMessage, MessageType } from './types'
 import { saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler'
 import { logMessageHandler } from './messageHandlers/logMessageHandler'
-import { emitTelemetryMessageHandler } from './messageHandlers/emitTelemetryMessageHandler'
 import { openFeedbackMessageHandler } from './messageHandlers/openFeedbackMessageHandler'
+import { initMessageHandler } from './messageHandlers/initMessageHandler'
 
 export async function handleMessage(message: unknown, context: WebviewContext) {
     const composerMessage = message as Message
@@ -27,14 +19,13 @@ export async function handleMessage(message: unknown, context: WebviewContext) {
             case Command.SAVE_FILE:
                 void saveFileMessageHandler(message as SaveFileRequestMessage, context)
                 break
+            case Command.INIT:
+                void initMessageHandler(context)
         }
     } else if (messageType === MessageType.BROADCAST) {
         switch (command) {
             case Command.LOG:
-                logMessageHandler(message as LogMessage)
-                break
-            case Command.EMIT_TELEMETRY:
-                emitTelemetryMessageHandler(message as EmitTelemetryMessage)
+                void logMessageHandler(message as LogMessage)
                 break
             case Command.OPEN_FEEDBACK:
                 openFeedbackMessageHandler()

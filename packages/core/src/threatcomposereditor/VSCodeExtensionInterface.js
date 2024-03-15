@@ -41,16 +41,6 @@ function handelMessage(event) {
     }
 }
 
-window.addEventListener('beforeunload', beforeUnloadHandler)
-
-function beforeUnloadHandler(event) {
-    console.log('PANEL_DISPOSED')
-    window.removeEventListener('message', handelMessage)
-    window.removeEventListener('beforeunload', beforeUnloadHandler)
-    const state = vscode.getState()
-    window.threatcomposer.deleteWorkspace(state.workspaceId)
-}
-
 function updateContent(/** @type {string} */ text) {
     if (document.readyState === 'complete') {
         void render(text)
@@ -86,18 +76,35 @@ async function render(/** @type {string} */ text) {
 
     const state = vscode.getState()
 
-    if (state.workspaceId) {
-        window.threatcomposer.switchWorkspace(state.workspaceId)
-    } else {
-        const workspaceObject = await window.threatcomposer.createWorkspace(state.fileName, 'LocalStorage')
-        window.threatcomposer.setCurrentWorkspaceData(threatModel)
+    if (!state.workspaceId) {
+        const currentWorkspaces = window.threatcomposer.getWorkspaceList()
+        const workspaceWithSameFile = currentWorkspaces.filter(x => x.name === state.filePath)
+        workspaceWithSameFile.forEach(async x => await window.threatcomposer.deleteWorkspace(x.id))
+
+        const workspaceObject = await window.threatcomposer.createWorkspace(state.filePath, 'LocalStorage')
+
+        if (Object.keys(threatModel).length !== 0) {
+            try {
+                await window.threatcomposer.setCurrentWorkspaceData(threatModel)
+            } catch (e) {
+                console.log(e.message)
+                vscode.postMessage({
+                    command: 'LOG',
+                    messageType: 'BROADCAST',
+                    logMessage: e.message,
+                    logType: 'ERROR',
+                    showNotification: true,
+                })
+            }
+        }
+
         state.workspaceId = workspaceObject.id
         state.name = workspaceObject.name
         state.storageType = workspaceObject.storageType
         vscode.setState(state)
     }
 
-    // window.threatcomposer.setCurrentWorkspaceData(threatModel)
+    window.threatcomposer.switchWorkspace(state.workspaceId)
     window.threatcomposer.addEventListener('save', e => {
         vscode.postMessage({
             command: 'SAVE_FILE',
@@ -127,6 +134,11 @@ const state = vscode.getState()
 if (state) {
     console.log(state)
     updateContent(state.fileContents)
+} else {
+    vscode.postMessage({
+        command: 'INIT',
+        messageType: 'REQUEST',
+    })
 }
 
 console.log('VSCodeExtensionInterface loaded')

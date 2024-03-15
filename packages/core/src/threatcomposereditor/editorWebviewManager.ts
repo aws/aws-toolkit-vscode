@@ -10,6 +10,8 @@ import * as fs from 'fs'
 import request from '../common/request'
 import { getLogger } from '../shared/logger'
 import { ThreatComposer } from './editorWebview'
+import { ToolkitError } from '../shared/errors'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -118,24 +120,27 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
-        // Attempt to retrieve existing visualization if it exists.
-        const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
-        if (existingVisualization) {
-            existingVisualization.showPanel()
-        }
+        await telemetry.threatcomposer_opened.run(async span => {
+            // Attempt to retrieve existing visualization if it exists.
+            const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
+            if (existingVisualization) {
+                existingVisualization.showPanel()
+            }
 
-        // Existing visualization does not exist, construct new visualization
-        try {
-            const newVisualization = new ThreatComposer(
-                document,
-                webviewPanel,
-                this.extensionContext,
-                this.getWebviewContent
-            )
-            this.handleNewVisualization(document.uri.fsPath, newVisualization)
-        } catch (err) {
-            this.handleErr(err as Error)
-        }
+            // Existing visualization does not exist, construct new visualization
+            try {
+                const newVisualization = new ThreatComposer(
+                    document,
+                    webviewPanel,
+                    this.extensionContext,
+                    this.getWebviewContent
+                )
+                this.handleNewVisualization(document.uri.fsPath, newVisualization)
+            } catch (err) {
+                this.handleErr(err as Error)
+                throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })
+            }
+        })
     }
 
     protected handleErr(err: Error): void {
