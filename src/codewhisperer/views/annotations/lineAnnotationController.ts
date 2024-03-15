@@ -17,6 +17,7 @@ import { Container } from '../../service/serviceContainer'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { getLogger } from '../../../shared/logger/logger'
 import { Commands } from '../../../shared/vscode/commands2'
+import { session } from '../../util/codeWhispererSession'
 
 const case3TimeWindow = 30000 // 30 seconds
 
@@ -76,14 +77,7 @@ class AutotriggerState implements AnnotationState {
         console.log('RecommendationService.acceptedCnt=', RecommendationService.instance.acceptedSuggestionCount)
         if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
             return new ManualtriggerState()
-        } else if (
-            'source' in data &&
-            data.source === 'codewhisperer' &&
-            'isCWRunning' in data &&
-            data.isCWRunning === false &&
-            'recommendationCount' in data &&
-            (data.recommendationCount as number) > 0
-        ) {
+        } else if (session.recommendations.length > 0) {
             return new PressTabState()
         } else {
             return this

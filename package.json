@@ -3917,7 +3917,7 @@
                 "command": "aws.codeWhisperer.dismissTutorial",
                 "key": "escape",
                 "mac": "escape",
-                "when": "aws.codewhisperer.tutorial.workInProgress && !inlineSuggestionVisible"
+                "when": "aws.codewhisperer.tutorial.workInProgress && !inlineSuggestionVisible && !suggestWidgetVisible"
             },
             {
                 "key": "right",
