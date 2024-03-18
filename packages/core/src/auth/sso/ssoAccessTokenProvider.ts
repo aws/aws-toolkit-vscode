@@ -87,9 +87,13 @@ export class SsoAccessTokenProvider {
     public async getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
         getLogger().info(
-            indent(`current client registration id=${data?.registration?.clientId}, 
+            indent(
+                `current client registration id=${data?.registration?.clientId}, 
                             expires at ${data?.registration?.expiresAt}, 
-                            key = ${this.tokenCacheKey}`, 4, true)
+                            key = ${this.tokenCacheKey}`,
+                4,
+                true
+            )
         )
         if (!data || !isExpired(data.token)) {
             return data?.token
