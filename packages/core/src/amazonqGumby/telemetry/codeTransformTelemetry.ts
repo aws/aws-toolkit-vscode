@@ -16,6 +16,8 @@ import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { codeTransformTelemetryState } from './codeTransformTelemetryState'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
+export const telemetryUndefined = 'undefined'
+
 export enum CancelActionPositions {
     ApiError = 'apiError',
     LoadingPanel = 'loadingPanelStopButton',

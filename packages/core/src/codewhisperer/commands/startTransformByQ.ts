@@ -41,6 +41,7 @@ import {
     CancelActionPositions,
     JDKToTelemetryValue,
     calculateTotalLatency,
+    telemetryUndefined,
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
@@ -443,7 +444,7 @@ export async function setTransformationToRunningState(userInputState: UserInputS
     codeTransformTelemetryState.setStartTime()
 
     const projectPath = userInputState.project?.label
-    let projectId = 'undefined'
+    let projectId = telemetryUndefined
     if (projectPath !== undefined) {
         projectId = getStringHash(projectPath)
     }
