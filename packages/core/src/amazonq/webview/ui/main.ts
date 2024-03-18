@@ -17,7 +17,7 @@ import { MessageController } from './messages/controller'
 import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
 
-export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumbyInitEnabled: boolean) => {
+export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
@@ -43,9 +43,9 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
     })
 
     // used to keep track of whether or not featureDev is enabled and has an active idC
-    let isFeatureDevEnabled = featureDevInitEnabled
+    let isFeatureDevEnabled = amazonQEnabled
 
-    let isGumbyEnabled = gumbyInitEnabled
+    let isGumbyEnabled = amazonQEnabled
 
     let tabDataGenerator = new TabDataGenerator({
         isFeatureDevEnabled,
