@@ -25,7 +25,7 @@ export class qTestingFramework {
 
     lastEventId: string = ''
 
-    constructor(featureName: TabType, featureDevEnabled: boolean, gumbyEnabled: boolean) {
+    constructor(featureName: TabType, amazonQEnabled: boolean) {
         /**
          * Instantiate the UI and override the postMessage to publish using the app message
          * publishers directly.
@@ -44,8 +44,7 @@ export class qTestingFramework {
                     appMessagePublisher.publish(message)
                 },
             },
-            featureDevEnabled,
-            gumbyEnabled
+            amazonQEnabled
         )
         this.mynahUI = ui.mynahUI
         this.mynahUIProps = (this.mynahUI as any).props
