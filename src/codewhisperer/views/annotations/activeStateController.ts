@@ -64,7 +64,13 @@ export class activeStateController implements vscode.Disposable {
         }
 
         this.clear(e.editor) // do we need this?
-        await this.refreshDebounced.promise(e.editor)
+        if (e.triggerType === 'OnDemand' && e.isRunning) {
+            // if user triggers on demand, imeediately update the UI and cancel the previous debounced update if any
+            this.refreshDebounced.cancel()
+            await this._refresh(this._editor)
+        } else {
+            await this.refreshDebounced.promise(e.editor)
+        }
     }
 
     private async onDidReceiveRecommendation() {
@@ -73,6 +79,8 @@ export class activeStateController implements vscode.Disposable {
         }
 
         if (this._editor && this._editor === vscode.window.activeTextEditor) {
+            // receives recommendation, imeediately update the UI and cacnel the debounced update
+            this.refreshDebounced.cancel()
             await this._refresh(this._editor, false)
         }
     }
@@ -98,10 +106,6 @@ export class activeStateController implements vscode.Disposable {
     }, 1000)
 
     private async _refresh(editor: vscode.TextEditor | undefined, flag?: boolean) {
-        if (flag !== undefined) {
-            this.refreshDebounced.cancel()
-        }
-
         if (!this.container.auth.isConnectionValid(false)) {
             this.clear(this._editor)
             return
