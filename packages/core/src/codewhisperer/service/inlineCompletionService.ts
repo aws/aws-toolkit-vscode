@@ -84,9 +84,13 @@ export class InlineCompletionService {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         event?: vscode.TextDocumentChangeEvent
-    ) {
+    ): Promise<GetRecommendationsResponse> {
         if (vsCodeState.isCodeWhispererEditing || RecommendationHandler.instance.isSuggestionVisible()) {
-            return
+            return {
+                result: 'Failed',
+                errorMessage: 'codewhisperer already is running',
+                recommendationCount: 0,
+            }
         }
 
         // Call report user decisions once to report recommendations leftover from last invocation.
@@ -101,7 +105,11 @@ export class InlineCompletionService {
         const isAutoTrigger = triggerType === 'AutoTrigger'
         if (AuthUtil.instance.isConnectionExpired()) {
             await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
-            return
+            return {
+                result: 'Failed',
+                errorMessage: 'auth',
+                recommendationCount: 0,
+            }
         }
 
         await this.setState('loading')
@@ -112,6 +120,7 @@ export class InlineCompletionService {
         let response: GetRecommendationsResponse = {
             result: 'Failed',
             errorMessage: undefined,
+            recommendationCount: 0,
         }
         try {
             let page = 0
@@ -128,7 +137,11 @@ export class InlineCompletionService {
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
                     RecommendationHandler.instance.reportUserDecisions(-1)
                     await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
-                    return
+                    return {
+                        result: 'Failed',
+                        errorMessage: 'cancelled',
+                        recommendationCount: 0,
+                    }
                 }
                 if (!RecommendationHandler.instance.hasNextToken()) {
                     break
@@ -143,6 +156,12 @@ export class InlineCompletionService {
             void showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
         }
         TelemetryHelper.instance.tryRecordClientComponentLatency()
+
+        return {
+            result: 'Succeeded',
+            errorMessage: undefined,
+            recommendationCount: session.recommendations.length,
+        }
     }
 
     /** Updates the status bar to represent the latest CW state */

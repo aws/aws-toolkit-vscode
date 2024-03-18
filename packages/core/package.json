@@ -4211,6 +4211,7 @@
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run copyFiles",
         "compile": "npm run clean && npm run buildScripts && tsc -p ./ && webpack --mode development",
+        "compileLite": "tsc -p ./",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "testCompile": "npm run clean && npm run buildScripts && tsc -p ./",
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
@@ -4229,7 +4230,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.192",
+        "@aws-toolkits/telemetry": "^1.0.196",
         "@aws/fully-qualified-names": "^2.1.4",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
