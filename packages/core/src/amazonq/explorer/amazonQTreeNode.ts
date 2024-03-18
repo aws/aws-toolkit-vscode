@@ -6,13 +6,22 @@
 import * as vscode from 'vscode'
 import { createFreeTierLimitMet, createSignIn, createReconnect } from '../../codewhisperer/ui/codeWhispererNodes'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
-import { AuthUtil, amazonQScopes, codeWhispererChatScopes } from '../../codewhisperer/util/authUtil'
-import { createLearnMoreNode, enableAmazonQNode, switchToAmazonQNode } from './amazonQChildrenNodes'
+import { AuthUtil, amazonQScopes, codeWhispererChatScopes, isPreviousQUser } from '../../codewhisperer/util/authUtil'
+import {
+    createLearnMoreNode,
+    enableAmazonQNode,
+    switchToAmazonQNode,
+    createInstallQNode,
+    createDismissNode,
+} from './amazonQChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
 import { hasScopes, isSsoConnection } from '../../auth/connection'
 import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
 import { getIcon } from '../../shared/icons'
 import { vsCodeState } from '../../codewhisperer/models/model'
+import { DevSettings } from '../../shared/settings'
+import { isExtensionActive } from '../../shared/utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -61,28 +70,36 @@ export class AmazonQNode implements TreeNode {
     }
 
     public getChildren() {
-        if (AuthUtil.instance.isConnectionExpired()) {
-            return [createReconnect('tree'), createLearnMoreNode()]
-        }
-
-        if (!AuthUtil.instance.isConnected()) {
-            return [createSignIn('tree'), createLearnMoreNode()]
-        }
-
-        if (isSsoConnection(AuthUtil.instance.conn)) {
-            const missingScopes =
-                (AuthUtil.instance.isEnterpriseSsoInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
-                !hasScopes(AuthUtil.instance.conn, codeWhispererChatScopes)
-
-            if (missingScopes) {
-                return [enableAmazonQNode(), createLearnMoreNode()]
+        if (DevSettings.instance.get('forceStandaloneExt', false) && !isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
+            const children = [createInstallQNode(), createLearnMoreNode()]
+            if (!isPreviousQUser()) {
+                children.push(createDismissNode())
             }
-        }
+            return children
+        } else {
+            if (AuthUtil.instance.isConnectionExpired()) {
+                return [createReconnect('tree'), createLearnMoreNode()]
+            }
 
-        return [
-            vsCodeState.isFreeTierLimitReached ? createFreeTierLimitMet('tree') : switchToAmazonQNode('tree'),
-            createNewMenuButton(),
-        ]
+            if (!AuthUtil.instance.isConnected()) {
+                return [createSignIn('tree'), createLearnMoreNode()]
+            }
+
+            if (isSsoConnection(AuthUtil.instance.conn)) {
+                const missingScopes =
+                    (AuthUtil.instance.isEnterpriseSsoInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
+                    !hasScopes(AuthUtil.instance.conn, codeWhispererChatScopes)
+
+                if (missingScopes) {
+                    return [enableAmazonQNode(), createLearnMoreNode()]
+                }
+            }
+
+            return [
+                vsCodeState.isFreeTierLimitReached ? createFreeTierLimitMet('tree') : switchToAmazonQNode('tree'),
+                createNewMenuButton(),
+            ]
+        }
     }
 
     /**

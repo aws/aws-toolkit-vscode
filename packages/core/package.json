@@ -716,7 +716,7 @@
                 {
                     "id": "aws.amazonq.codewhisperer",
                     "name": "%AWS.amazonq.codewhisperer.title%",
-                    "when": "!isCloud9 && !aws.isSageMaker && !aws.toolkit.codewhispererQDismissed"
+                    "when": "!isCloud9 && !aws.isSageMaker && !aws.toolkit.amazonq.dismissed"
                 },
                 {
                     "id": "aws.codewhisperer",
@@ -1239,6 +1239,14 @@
                 },
                 {
                     "command": "aws.amazonq.learnMore",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.toolkit.amazonq.extensionpage",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.toolkit.amazonq.dismiss",
                     "when": "false"
                 }
             ],
@@ -3733,8 +3741,19 @@
             {
                 "command": "aws.amazonq.learnMore",
                 "title": "%AWS.amazonq.learnMore%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.toolkit.amazonq.extensionpage",
+                "title": "Open Amazon Q Extension",
                 "category": "%AWS.title%",
-                "enablement": "aws.toolkit.codewhispererQEnabled"
+                "enablement": "!aws.toolkit.codewhispererQEnabled"
+            },
+            {
+                "command": "aws.toolkit.amazonq.dismiss",
+                "title": "Dismiss Q Notification",
+                "category": "%AWS.title%",
+                "enablement": "!aws.toolkit.codewhispererQEnabled"
             },
             {
                 "command": "aws.amazonq.welcome",

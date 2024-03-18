@@ -50,6 +50,11 @@ import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
 import { submitFeedback } from './feedback/vue/submitFeedback'
 import { activateShared, deactivateShared } from './extensionShared'
+import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
+import { AuthUtil, isPreviousQUser } from './codewhisperer/util/authUtil'
+import { isExtensionActive } from './shared/utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID } from './shared/extensions'
+import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
 
 let localize: nls.LocalizeFunc
 
@@ -117,6 +122,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
+        if (useStandaloneExt) {
+            // MUST restore CW/Q auth so that we can see if this user is already a Q user.
+            await AuthUtil.instance.restore()
+        }
+
         await activateAwsExplorer({
             context: extContext,
             regionProvider: globals.regionProvider,
@@ -154,9 +164,33 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSchemas(extContext)
 
         if (!isCloud9()) {
-            if (!isSageMaker() && !useStandaloneExt) {
-                await require('./amazonq/activation').activate(extContext.extensionContext)
-                await require('./amazonqGumby/activation').activate(extContext)
+            if (!isSageMaker()) {
+                learnMoreAmazonQCommand.register()
+                qExtensionPageCommand.register()
+                dismissQTree.register()
+                installAmazonQExtension.register()
+                if (!useStandaloneExt) {
+                    await require('./amazonq/activation').activate(extContext.extensionContext)
+                    await require('./amazonqGumby/activation').activate(extContext)
+                } else if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
+                    void dismissQTree.execute()
+                } else if (isPreviousQUser()) {
+                    void vscode.window
+                        .showInformationMessage(
+                            'Amazon Q has moved to its own VSCode extension.' +
+                                '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
+                            'Install',
+                            'Learn More',
+                            'Dismiss'
+                        )
+                        .then(async resp => {
+                            if (resp === 'Learn More') {
+                                void learnMoreAmazonQCommand.execute()
+                            } else if (resp === 'Install') {
+                                void installAmazonQExtension.execute()
+                            }
+                        })
+                }
             }
             await activateApplicationComposer(context)
         }

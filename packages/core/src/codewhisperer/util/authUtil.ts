@@ -424,6 +424,23 @@ export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<Feat
     return state
 }
 
+export function isPreviousQUser() {
+    const auth = AuthUtil.instance
+
+    if (!auth.isConnected() || !isSsoConnection(auth.conn)) {
+        return false
+    }
+    const missingScopes =
+        (auth.isEnterpriseSsoInUse() && !hasScopes(auth.conn, amazonQScopes)) ||
+        !hasScopes(auth.conn, codeWhispererChatScopes)
+
+    if (missingScopes) {
+        return false
+    }
+
+    return true
+}
+
 export type FeatureAuthState = { [feature in Feature]: AuthState }
 export type Feature = (typeof Features)[keyof typeof Features]
 export type AuthState = (typeof AuthStates)[keyof typeof AuthStates]

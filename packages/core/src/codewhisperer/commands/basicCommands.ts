@@ -243,6 +243,22 @@ export const fetchFeatureConfigsCmd = Commands.declare(
     }
 )
 
+export const installAmazonQExtension = Commands.declare(
+    { id: 'aws.toolkit.installAmazonQExtension', logging: true },
+    () => async () => {
+        void vscode.window.withProgress(
+            {
+                title: 'Installing Amazon Q... (placeholder)',
+                cancellable: true,
+                location: vscode.ProgressLocation.Notification,
+            },
+            async () => {
+                await new Promise(r => setTimeout(r, 3000))
+            }
+        )
+    }
+)
+
 export const applySecurityFix = Commands.declare(
     'aws.codeWhisperer.applySecurityFix',
     () => async (issue: CodeScanIssue, filePath: string, source: Component) => {

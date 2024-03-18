@@ -14,11 +14,20 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 
 const localize = nls.loadMessageBundle()
 
 export const learnMoreAmazonQCommand = Commands.declare('aws.amazonq.learnMore', () => () => {
     void vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
+})
+
+export const qExtensionPageCommand = Commands.declare('aws.toolkit.amazonq.extensionpage', () => () => {
+    void vscode.env.openExternal(vscode.Uri.parse(`vscode:extension/${VSCODE_EXTENSION_ID.awstoolkit}`))
+})
+
+export const dismissQTree = Commands.declare('aws.toolkit.amazonq.dismiss', () => () => {
+    void vscode.commands.executeCommand('setContext', 'aws.toolkit.amazonq.dismissed', true)
 })
 
 export const createLearnMoreNode = () =>
@@ -55,6 +64,20 @@ export function switchToAmazonQNode(type: 'item' | 'tree'): any {
                 onClick: () => switchToAmazonQCommand.execute(),
             } as DataQuickPickItem<'openChatPanel'>
     }
+}
+
+export function createInstallQNode() {
+    return qExtensionPageCommand.build().asTreeNode({
+        label: 'Install the Amazon Q Extension', // TODO: localize
+        iconPath: getIcon('vscode-extensions'),
+    })
+}
+
+export function createDismissNode() {
+    return dismissQTree.build().asTreeNode({
+        label: 'Dismiss', // TODO: localize
+        iconPath: getIcon('vscode-close'),
+    })
 }
 
 /*
