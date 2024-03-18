@@ -212,7 +212,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
                 reason: 'CouldNotFindJavaProject',
             })
         }
-        throw new Error('Could not find java project')
+        throw new Error('Could not find Java project')
     }
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
@@ -230,7 +230,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
                 reason: 'NoPomFileFound',
             })
         }
-        throw new Error('No pom file found')
+        throw new Error('No pom.xml file found')
     }
 
     /*

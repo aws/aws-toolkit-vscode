@@ -82,8 +82,8 @@ describe('transformByQ', function () {
                 await validateOpenProjects(dummyQuickPickItems)
             },
             {
-                name: 'NoJavaProject',
-                message: '',
+                name: 'Error',
+                message: 'Could not find Java project',
             }
         )
     })
@@ -106,8 +106,8 @@ describe('transformByQ', function () {
                 await validateOpenProjects(dummyQuickPickItems)
             },
             {
-                name: 'NonMavenProject',
-                message: '',
+                name: 'Error',
+                message: 'No pom.xml file found',
             }
         )
     })
@@ -130,7 +130,7 @@ describe('transformByQ', function () {
             },
             {
                 name: 'Error',
-                message: '',
+                message: 'No open projects',
             }
         )
     })

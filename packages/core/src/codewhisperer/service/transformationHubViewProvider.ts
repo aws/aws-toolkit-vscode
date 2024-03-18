@@ -218,7 +218,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     }
                 }
 
-                // copied from transformByQHandler.ts
+                // copied from textUtilities.ts
                 function convertToTimeString(durationInMs) {
                     const time = new Date(durationInMs);
                     const hours = time.getUTCHours();
