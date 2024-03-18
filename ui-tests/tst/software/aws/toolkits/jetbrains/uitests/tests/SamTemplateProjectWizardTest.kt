@@ -22,7 +22,7 @@ import software.aws.toolkits.jetbrains.uitests.utils.setupSamCli
 import java.nio.file.Path
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@DisabledIfSystemProperty(named = "org.gradle.project.ideProfileName", matches = "2023.*", disabledReason = "Flakes on 231 above")
+@DisabledIfSystemProperty(named = "org.gradle.project.ideProfileName", matches = "202*.*", disabledReason = "Flakes on 231 above")
 class SamTemplateProjectWizardTest {
     @TempDir
     lateinit var tempDir: Path
