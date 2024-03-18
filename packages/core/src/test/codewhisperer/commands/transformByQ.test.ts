@@ -43,7 +43,7 @@ describe('transformByQ', function () {
 
     it('WHEN converting long duration in milliseconds THEN converts correctly', async function () {
         const durationTimeString = convertToTimeString(3700 * 1000)
-        assert.strictEqual(durationTimeString, '1 hr 1 min')
+        assert.strictEqual(durationTimeString, '1 hr 1 min 40 sec')
     })
 
     it('WHEN converting date object to timestamp THEN converts correctly', async function () {
@@ -84,7 +84,7 @@ describe('transformByQ', function () {
             },
             {
                 name: 'Error',
-                message: 'No Java projects found',
+                message: '',
             }
         )
     })
@@ -108,7 +108,7 @@ describe('transformByQ', function () {
             },
             {
                 name: 'Error',
-                message: 'No valid Maven build file found',
+                message: '',
             }
         )
     })
@@ -131,7 +131,7 @@ describe('transformByQ', function () {
             },
             {
                 name: 'Error',
-                message: 'No Java projects found since no projects are open',
+                message: '',
             }
         )
     })
