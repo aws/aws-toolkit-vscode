@@ -5,7 +5,6 @@
 
 import path from 'path'
 import { Uri, Webview } from 'vscode'
-import { featureDevEnabled, gumbyEnabled } from '../../../amazonqFeatureDev/config'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 
 export class WebViewContentGenerator {
@@ -53,9 +52,7 @@ export class WebViewContentGenerator {
         <script type="text/javascript" src="${entrypoint.toString()}" defer onload="init()"></script>
         <script type="text/javascript">
             const init = () => {
-                createMynahUI(acquireVsCodeApi(), ${
-                    featureDevEnabled && (await getChatAuthState()).amazonQ === 'connected'
-                }, ${gumbyEnabled && (await getChatAuthState()).amazonQ === 'connected'});
+                createMynahUI(acquireVsCodeApi(), ${(await getChatAuthState()).amazonQ === 'connected'});
             }
     </script>
         `
