@@ -18,7 +18,6 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { getLogger } from '../../../shared/logger/logger'
 import { Commands } from '../../../shared/vscode/commands2'
 import { session } from '../../util/codeWhispererSession'
-import { InlineCompletionService } from '../../service/inlineCompletionService'
 import { RecommendationHandler } from '../../service/recommendationHandler'
 
 const case3TimeWindow = 30000 // 30 seconds
@@ -160,9 +159,13 @@ class TryMoreExState implements AnnotationState {
     id = TryMoreExState.#id
 
     suppressWhileRunning = true
+    hasUserClickStatusbar: boolean = false
 
     text = () => 'CodeWhisperer Tip 3/3: For settings, open the CodeWhisperer menu from the status bar ([ESC] to exit)'
     nextState(data: any): AnnotationState {
+        if (this.hasUserClickStatusbar) {
+            return new EndState()
+        }
         return this
     }
 
@@ -286,6 +289,14 @@ export class LineAnnotationController implements vscode.Disposable {
     isTutorialDone(): boolean {
         return this._currentState.id === new EndState().id
         // return true
+    }
+
+    clickStatusBar() {
+        if (this._currentState instanceof TryMoreExState) {
+            this._currentState.hasUserClickStatusbar = true
+
+            this.refresh(vscode.window.activeTextEditor, 'editor')
+        }
     }
 
     async markTutorialDone() {
