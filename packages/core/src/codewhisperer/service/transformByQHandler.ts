@@ -253,7 +253,10 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
     if (mavenJavaProjects.length === 0) {
         if (!onProjectFirstOpen) {
             void vscode.window.showErrorMessage(
-                CodeWhispererConstants.noPomXmlFoundMessage.replace('LINK_HERE', CodeWhispererConstants.linkToPrerequisites)
+                CodeWhispererConstants.noPomXmlFoundMessage.replace(
+                    'LINK_HERE',
+                    CodeWhispererConstants.linkToPrerequisites
+                )
             )
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
