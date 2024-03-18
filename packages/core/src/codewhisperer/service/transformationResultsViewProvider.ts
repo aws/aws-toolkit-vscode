@@ -321,7 +321,12 @@ export class ProposedTransformationExplorer {
                 )
             } catch (e: any) {
                 // This allows the customer to retry the download
-                void vscode.window.showErrorMessage(CodeWhispererConstants.errorDownloadingDiffMessage)
+                void vscode.window.showErrorMessage(
+                    CodeWhispererConstants.errorDownloadingDiffMessage.replace(
+                        'LINK_HERE',
+                        CodeWhispererConstants.linkToDownloadZipTooLarge
+                    )
+                )
                 await vscode.commands.executeCommand(
                     'setContext',
                     'gumby.reviewState',
@@ -420,6 +425,7 @@ export class ProposedTransformationExplorer {
             transformDataProvider.refresh()
             // delete result archive after changes rejected
             fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
+            fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
             telemetry.codeTransform_vcsViewerCanceled.emit({
                 // eslint-disable-next-line id-length
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',

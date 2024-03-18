@@ -3762,18 +3762,6 @@
                 }
             },
             {
-                "command": "aws.amazonq.startTransformationInHub",
-                "title": "Start Transformation",
-                "icon": "$(play)",
-                "enablement": "gumby.isTransformAvailable"
-            },
-            {
-                "command": "aws.amazonq.stopTransformationInHub",
-                "title": "Stop Transformation",
-                "icon": "$(stop)",
-                "enablement": "gumby.isStopButtonAvailable"
-            },
-            {
                 "command": "aws.amazonq.showPlanProgressInHub",
                 "title": "Show Transformation Status",
                 "icon": "$(checklist)"
