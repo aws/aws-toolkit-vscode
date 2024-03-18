@@ -8,14 +8,10 @@ import { Commands } from '../shared/vscode/commands2'
 import { TransformationHubViewProvider } from '../codewhisperer/service/transformationHubViewProvider'
 import { showTransformByQ, showTransformationHub } from './commands'
 import { ExtContext } from '../shared/extensions'
-import { startTransformByQWithProgress, confirmStopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'
-import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformationResultsViewProvider'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { CancelActionPositions, logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
-import { CodeTransformConstants } from './models/constants'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { validateAndLogProjectDetails } from '../codewhisperer/service/transformByQHandler'
 
@@ -53,19 +49,6 @@ export async function activate(context: ExtContext) {
             showTransformationHub.register(),
 
             vscode.window.registerWebviewViewProvider('aws.amazonq.transformationHub', transformationHubViewProvider),
-
-            Commands.register('aws.amazonq.startTransformationInHub', async () => {
-                logCodeTransformInitiatedMetric(CodeTransformConstants.HubStartButton)
-                await startTransformByQWithProgress()
-            }),
-
-            Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
-                if (transformByQState.isRunning()) {
-                    void confirmStopTransformByQ(transformByQState.getJobId(), cancelSrc)
-                } else {
-                    void vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
-                }
-            }),
 
             Commands.register('aws.amazonq.showHistoryInHub', async () => {
                 transformationHubViewProvider.updateContent('job history', 0) // 0 is dummy value for startTime - not used

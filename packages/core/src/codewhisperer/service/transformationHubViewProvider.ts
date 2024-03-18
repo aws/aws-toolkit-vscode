@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import { getJobHistory, getPlanProgress } from '../commands/startTransformByQ'
 import { StepProgress, transformByQState } from '../models/model'
-import { convertToTimeString, getTransformationSteps } from './transformByQHandler'
+import { getTransformationSteps } from './transformByQHandler'
+import { convertToTimeString } from '../../shared/utilities/textUtilities'
 import { getLogger } from '../../shared/logger'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {

@@ -333,6 +333,9 @@ export const errorStoppingJobMessage = "Amazon Q couldn't stop the transformatio
 export const errorDownloadingDiffMessage =
     "Amazon Q couldn't download the diff with your upgraded code. Try downloading it again. For more information, see the [Amazon Q documentation](LINK_HERE)."
 
+export const emptyDiffMessage =
+    "Amazon Q didn't make any changes to upgrade your code. Try restarting the transformation."
+
 export const errorDeserializingDiffMessage =
     "Amazon Q couldn't parse the diff with your upgraded code. Try restarting the transformation."
 
@@ -396,7 +399,7 @@ export const numMillisecondsPerSecond = 1000
 
 export const uploadZipSizeLimitInBytes = 1000000000 // 1GB
 
-export const maxBufferSize = 1024 * 1024 // this is 1MB, the default max buffer size for stdout for spawnSync
+export const maxBufferSize = 1024 * 1024 * 8 // this is 8MB; the default max buffer size for stdout for spawnSync is 1MB
 
 export const transformByQStateRunningMessage = 'running'
 
@@ -412,7 +415,7 @@ export const transformByQStoppedState = 'STOPPED'
 
 export const transformationJobPollingIntervalSeconds = 10
 
-export const transformationJobTimeoutSeconds = 72000
+export const transformationJobTimeoutSeconds = 60 * 60 // 1 hour, to match backend
 
 export const progressIntervalMs = 1000
 

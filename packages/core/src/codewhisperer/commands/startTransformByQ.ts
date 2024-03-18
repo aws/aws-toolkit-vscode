@@ -10,6 +10,7 @@ import * as os from 'os'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { transformByQState, StepProgress, TransformByQReviewStatus, JDKVersion, DropdownStep } from '../models/model'
+import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     throwIfCancelled,
     startJob,
@@ -18,8 +19,6 @@ import {
     getTransformationPlan,
     zipCode,
     pollTransformationJob,
-    convertToTimeString,
-    convertDateToTimestamp,
     getOpenProjects,
     getVersionData,
     validateOpenProjects,
@@ -35,7 +34,6 @@ import {
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { ToolkitError } from '../../shared/errors'
 import {
     CancelActionPositions,
     JDKToTelemetryValue,
@@ -77,7 +75,7 @@ async function collectInput(validProjects: Map<vscode.QuickPickItem, JDKVersion 
     transformByQState.setTargetJDKVersion(JDKVersion.JDK17)
     await MultiStepInputFlowController.run(input => pickProject(input, state, validProjects))
     if (!state.project) {
-        throw new ToolkitError('', { code: 'NoProjectSelected' })
+        throw new Error('No project selected')
     }
     const versionsArray = [JDKVersion.JDK8, JDKVersion.JDK11]
     const validSourceVersions: vscode.QuickPickItem[] = versionsArray.map(version => ({
@@ -86,7 +84,7 @@ async function collectInput(validProjects: Map<vscode.QuickPickItem, JDKVersion 
     validSourceVersions.push({ label: 'Other' }) // if user selects 'Other', terminate execution
     await MultiStepInputFlowController.run(input => pickSourceVersion(input, state, validSourceVersions))
     if (!state.sourceJavaVersion) {
-        throw new ToolkitError('', { code: 'NoVersionSelected' })
+        throw new Error('No version selected')
     } else if (state.sourceJavaVersion.label === 'Other') {
         telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -103,7 +101,7 @@ async function collectInput(validProjects: Map<vscode.QuickPickItem, JDKVersion 
                 CodeWhispererConstants.linkToDocsHome
             )
         )
-        throw new ToolkitError('', { code: 'OtherVersionSelected' })
+        throw new Error('Other version selected')
     }
     return state as UserInputState
 }
@@ -224,7 +222,7 @@ async function validateJavaHome() {
             ignoreFocusOut: true,
         })
         if (!javaHome || !javaHome.trim()) {
-            throw new ToolkitError('', { code: 'NoJavaHomePath' })
+            throw new Error('No java home path provided')
         }
         transformByQState.setJavaHome(javaHome.trim())
         getLogger().info(
@@ -291,8 +289,8 @@ export async function preTransformationUploadCode(userInputState: UserInputState
         await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
         void vscode.window.showInformationMessage(CodeWhispererConstants.submittedProjectMessage)
         uploadId = await uploadPayload(payloadFilePath)
-    } catch (error) {
-        const errorMessage = `Failed to upload code due to ${(error as Error).message}`
+    } catch (err) {
+        const errorMessage = `Failed to upload code due to ${(err as Error).message}`
         getLogger().error(errorMessage)
         telemetry.codeTransform_logGeneralError.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -300,7 +298,7 @@ export async function preTransformationUploadCode(userInputState: UserInputState
             result: MetadataResult.Fail,
             reason: 'UploadArchiveFailed',
         })
-        throw new ToolkitError('', { code: 'Failed to zip or upload code' })
+        throw err
     }
     sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
     await vscode.commands.executeCommand('aws.amazonq.refresh')
@@ -324,7 +322,7 @@ export async function startTransformationJob(uploadId: string) {
             reason: 'StartJobFailed',
         })
         transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new ToolkitError('', { cause: error as Error })
+        throw new Error('Start job failed')
     }
     transformByQState.setJobId(encodeHTML(jobId))
     await vscode.commands.executeCommand('aws.amazonq.refresh')
@@ -342,7 +340,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
         getLogger().error(`CodeTransformation: ${errorMessage}`, error)
         transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new ToolkitError('', { cause: error as Error })
+        throw new Error('Poll job failed')
     }
     let plan = undefined
     try {
@@ -351,7 +349,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
         getLogger().error(`CodeTransformation: ${errorMessage}`, error)
         transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new ToolkitError('', { cause: error as Error })
+        throw new Error('Get plan failed')
     }
     sessionPlanProgress['buildCode'] = StepProgress.Succeeded
     const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
@@ -370,7 +368,7 @@ export async function pollTransformationStatusUntilComplete(jobId: string) {
         const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
         getLogger().error(`CodeTransformation: ${errorMessage}`, error)
         transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new ToolkitError('', { cause: error as Error })
+        throw new Error('Poll job failed')
     }
 
     return status
@@ -382,7 +380,7 @@ export async function finalizeTransformationJob(status: string) {
         getLogger().error(`CodeTransformation: ${errorMessage}`)
         sessionPlanProgress['transformCode'] = StepProgress.Failed
         transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new ToolkitError('', { code: 'JobDidNotSucceed' })
+        throw new Error('Job was not successful nor partially successful')
     }
 
     sessionPlanProgress['transformCode'] = StepProgress.Succeeded
@@ -429,7 +427,7 @@ export async function validateTransformationJob() {
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             result: MetadataResult.Pass,
         })
-        throw new ToolkitError('', { code: 'DidNotConfirmDisclaimer', cancelled: true })
+        throw new Error('Did not confirm disclaimer')
     } else {
         telemetry.codeTransform_jobIsStartedFromUserPopupClick.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),

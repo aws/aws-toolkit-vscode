@@ -14,7 +14,6 @@ import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { TransformByQReviewStatus, transformByQState } from '../models/model'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../shared/utilities/download'
-import { ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
@@ -141,7 +140,8 @@ export class DiffModel {
     public parseDiff(pathToDiff: string, pathToWorkspace: string): ProposedChangeNode[] {
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
         if (!diffContents) {
-            throw new ToolkitError('diff.patch file is empty', { code: 'EmptyDiffPatch' })
+            void vscode.window.showErrorMessage(CodeWhispererConstants.emptyDiffMessage)
+            throw new Error('diff.patch file is empty')
         }
         const changedFiles = parsePatch(diffContents)
         // path to the directory containing copy of the changed files in the transformed project
@@ -343,7 +343,7 @@ export class ProposedTransformationExplorer {
                     result: MetadataResult.Fail,
                     reason: 'ExportResultArchiveFailed',
                 })
-                throw new ToolkitError(errorMessage)
+                throw new Error('Error downloading diff')
             }
 
             const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size

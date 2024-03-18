@@ -13,9 +13,8 @@ import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { getTestWindow } from '../../shared/vscode/window'
 import { stopTransformByQMessage } from '../../../codewhisperer/models/constants'
+import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import {
-    convertDateToTimestamp,
-    convertToTimeString,
     throwIfCancelled,
     stopJob,
     pollTransformationJob,

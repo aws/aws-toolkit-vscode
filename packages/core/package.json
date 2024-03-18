@@ -1298,16 +1298,6 @@
             ],
             "view/title": [
                 {
-                    "command": "aws.amazonq.startTransformationInHub",
-                    "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@1"
-                },
-                {
-                    "command": "aws.amazonq.stopTransformationInHub",
-                    "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@2"
-                },
-                {
                     "command": "aws.amazonq.showPlanProgressInHub",
                     "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@3"

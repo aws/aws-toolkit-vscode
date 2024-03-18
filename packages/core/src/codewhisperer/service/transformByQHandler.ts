@@ -22,7 +22,6 @@ import {
     CodeTransformMavenBuildCommand,
     telemetry,
 } from '../../shared/telemetry/telemetry'
-import { ToolkitError } from '../../shared/errors'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import {
     calculateTotalLatency,
@@ -32,12 +31,8 @@ import {
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
 
-/**
- * @description A function to help validate and log project
- * details.
- */
+// log project details silently
 export async function validateAndLogProjectDetails() {
-    // Try to validate project silently
     let reason,
         result,
         codeTransformLocalJavaVersion,
@@ -62,7 +57,7 @@ export async function validateAndLogProjectDetails() {
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformLocalJavaVersion,
                 codeTransformPreValidationError,
-                result,
+                result: result ?? MetadataResult.Pass,
                 reason,
             })
         }
@@ -72,32 +67,6 @@ export async function validateAndLogProjectDetails() {
 interface FolderInfo {
     path: string
     name: string
-}
-
-// Given number of milliseconds elapsed (ex. 4,500,000) return hr / min / sec it represents (ex. 1 hr 15 min)
-export function convertToTimeString(durationInMs: number) {
-    const time = new Date(durationInMs)
-    const hours = time.getUTCHours()
-    const minutes = time.getUTCMinutes()
-    const seconds = time.getUTCSeconds()
-    let timeString = `${seconds} sec`
-    if (minutes > 0) {
-        timeString = `${minutes} min ${timeString}`
-    }
-    if (hours > 0) {
-        timeString = `${hours} hr ${timeString}`
-    }
-    return timeString
-}
-
-export function convertDateToTimestamp(date: Date) {
-    return date.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-    })
 }
 
 export function throwIfCancelled() {
@@ -115,7 +84,7 @@ export async function getOpenProjects() {
                 CodeWhispererConstants.linkToPrerequisites
             )
         )
-        throw new ToolkitError('', { code: 'NoOpenProjects' })
+        throw new Error('No open projects')
     }
     const openProjects: vscode.QuickPickItem[] = []
     for (const folder of folders) {
@@ -178,10 +147,6 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                 let errorReason = ''
                 if (spawnResult.stdout) {
                     errorReason = 'JavapExecutionError'
-                    // should never happen -- stdout from javap has always been much, much smaller than the default buffer limit of 1MB
-                    if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
-                        errorReason += '-BufferOverflow'
-                    }
                 } else {
                     errorReason = 'JavapSpawnError'
                 }
@@ -247,7 +212,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
                 reason: 'CouldNotFindJavaProject',
             })
         }
-        throw new ToolkitError('', { code: 'CouldNotFindJavaProject', name: 'NoJavaProject' })
+        throw new Error('Could not find java project')
     }
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
@@ -265,7 +230,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
                 reason: 'NoPomFileFound',
             })
         }
-        throw new ToolkitError('', { code: 'NoPomFileFound', name: 'NonMavenProject' })
+        throw new Error('No pom file found')
     }
 
     /*
@@ -336,8 +301,7 @@ export async function uploadArtifactToS3(
             result: MetadataResult.Fail,
             reason: 'UploadToS3Failed',
         })
-        // Pass along error to callee function
-        throw new ToolkitError('', { cause: e as Error })
+        throw new Error('Upload PUT request failed')
     }
 }
 
@@ -374,7 +338,7 @@ export async function stopJob(jobId: string) {
                 result: MetadataResult.Fail,
                 reason: 'StopTransformationFailed',
             })
-            throw new ToolkitError('', { cause: e as Error })
+            throw new Error('Stop job failed')
         }
     }
 }
@@ -414,15 +378,14 @@ export async function uploadPayload(payloadFileName: string) {
             result: MetadataResult.Fail,
             reason: 'CreateUploadUrlFailed',
         })
-        // Pass along error to callee function
-        throw new ToolkitError('', { cause: e as Error })
+        throw new Error('Create upload URL failed')
     }
     try {
         await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
         const errorMessage = (e as Error).message ?? 'Error in uploadArtifactToS3 call'
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
-        throw new ToolkitError('', { cause: e as Error })
+        throw new Error('S3 upload failed')
     }
     return response.uploadId
 }
@@ -476,7 +439,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
         shell: true,
         encoding: 'utf-8',
         env: environment,
-        maxBuffer: CodeWhispererConstants.maxBufferSize * 8,
+        maxBuffer: CodeWhispererConstants.maxBufferSize,
     })
     if (spawnResult.status !== 0) {
         let errorLog = ''
@@ -515,7 +478,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
             result: MetadataResult.Fail,
             reason: errorReason,
         })
-        throw new ToolkitError('', { code: 'MavenInstallError' })
+        throw new Error('Maven install error')
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} clean install succeeded`)
     }
@@ -546,7 +509,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
         shell: true,
         encoding: 'utf-8',
         env: environment,
-        maxBuffer: CodeWhispererConstants.maxBufferSize * 8,
+        maxBuffer: CodeWhispererConstants.maxBufferSize,
     })
     if (spawnResult.status !== 0) {
         let errorLog = ''
@@ -582,7 +545,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
             result: MetadataResult.Fail,
             reason: errorReason,
         })
-        throw new ToolkitError('', { code: 'MavenCopyDependenciesError' })
+        throw new Error('Maven copy-deps error')
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies succeeded`)
     }
@@ -747,8 +710,7 @@ export async function startJob(uploadId: string) {
             result: MetadataResult.Fail,
             reason: 'StartTransformationFailed',
         })
-        // Pass along error to callee function
-        throw new ToolkitError('', { cause: e as Error })
+        throw new Error('Start job failed')
     }
 }
 
@@ -802,8 +764,7 @@ export async function getTransformationPlan(jobId: string) {
             result: MetadataResult.Fail,
             reason: 'GetTransformationPlanFailed',
         })
-        // Pass along error to callee function
-        throw new ToolkitError('', { cause: e as Error })
+        throw new Error('Get plan failed')
     }
 }
 
@@ -884,12 +845,12 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 transformByQState.setJobFailureMetadata(
                     `${response.transformationJob.reason} (request ID: ${response.$response.requestId})`
                 )
-                throw new ToolkitError('')
+                throw new Error('Job was rejected, stopped, or failed')
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
             timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds
             if (timer > CodeWhispererConstants.transformationJobTimeoutSeconds) {
-                throw new ToolkitError('Transformation job timed out')
+                throw new Error('Job timed out')
             }
         } catch (e: any) {
             const errorMessage = (e as Error).message ?? 'Error in GetTransformation API call'
@@ -903,8 +864,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Fail,
                 reason: 'GetTransformationFailed',
             })
-            // Pass along error to callee function
-            throw new ToolkitError('', { cause: e as Error })
+            throw new Error('Error while polling job status')
         }
     }
     return status
