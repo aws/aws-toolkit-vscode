@@ -105,7 +105,7 @@ export async function activate(extensionContext: ExtensionContext) {
     // Create the language client and start the client.
     const client = new LanguageClient(
         'asl',
-        localize('asl.server.name', 'Amazon States Language Server'),
+        localize('asl.server.name', 'AWS: Amazon States Language Server'),
         serverOptions,
         clientOptions
     )
