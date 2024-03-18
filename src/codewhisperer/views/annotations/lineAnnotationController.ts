@@ -66,7 +66,7 @@ interface AnnotationState {
  *
  */
 class AutotriggerState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_how_codewhisperer_triggers'
+    static #id = 'codewhisperer_learnmore_case_1'
     id = AutotriggerState.#id
 
     suppressWhileRunning = true
@@ -96,7 +96,7 @@ class AutotriggerState implements AnnotationState {
  *  User accepts 1 suggestion
  */
 class PressTabState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_tab_to_accept'
+    static #id = 'codewhisperer_learnmore_case_1_a'
     id = PressTabState.#id
 
     suppressWhileRunning = false
@@ -117,7 +117,7 @@ class PressTabState implements AnnotationState {
  *  User inokes manual trigger shortcut
  */
 class ManualtriggerState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_manual_trigger'
+    static #id = 'codewhisperer_learnmore_case_2'
     id = ManualtriggerState.#id
 
     suppressWhileRunning = true
@@ -155,7 +155,7 @@ class ManualtriggerState implements AnnotationState {
  *  User accepts or rejects the suggestion
  */
 class TryMoreExState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_learn_more'
+    static #id = 'codewhisperer_learnmore_case_3'
     id = TryMoreExState.#id
 
     suppressWhileRunning = true
