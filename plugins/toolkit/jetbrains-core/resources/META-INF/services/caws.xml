@@ -20,5 +20,10 @@
             <action class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.SonoLogin" id="aws.caws.devtools.actions.login"/>
             <action class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.CawsLearnMore" id="aws.caws.devtools.actions.learnMore"/>
         </group>
+
+        <group id="aws.caws.devtools.actions.expired">
+            <action class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.SonoLogin" id="aws.caws.devtools.actions.reauthenticate"/>
+            <action class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.CawsLearnMore" id="aws.caws.devtools.actions.learnMoreReAuth"/>
+        </group>
     </actions>
 </idea-plugin>
