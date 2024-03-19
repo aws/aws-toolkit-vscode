@@ -240,7 +240,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         // New projectDetails metric should always be fired whether the project was valid or invalid
         CodetransformTelemetry.projectDetails(
             codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            result = if (!validationResult.valid) Result.Failed else Result.Unknown,
+            result = if (!validationResult.valid) Result.Failed else Result.Succeeded,
             reason = if (!validationResult.valid) validationResult.invalidTelemetryReason.additonalInfo else null,
             codeTransformPreValidationError = validationResult.invalidTelemetryReason.category ?: CodeTransformPreValidationError.Unknown,
             codeTransformLocalJavaVersion = project.tryGetJdk().toString()
@@ -582,13 +582,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         }
 
     fun informUserOfCompletion(result: CodeModernizerJobCompletedResult) {
-        CodetransformTelemetry.totalRunTime(
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformResultStatusMessage = result.toString(),
-            codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
-            codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
-            codeTransformLocalMavenVersion = getMavenVersion(project),
-        )
+        var jobId: JobId? = null
         when (result) {
             is CodeModernizerJobCompletedResult.UnableToCreateJob -> notifyJobFailure(
                 result.failureReason,
@@ -612,19 +606,25 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 listOf(displayFeedbackNotificationAction())
             )
 
-            is CodeModernizerJobCompletedResult.JobPartiallySucceeded -> notifyStickyInfo(
-                message("codemodernizer.notification.info.modernize_partial_complete.title"),
-                message("codemodernizer.notification.info.modernize_partial_complete.content", result.targetJavaVersion.description),
-                project,
-                listOf(displayDiffNotificationAction(result.jobId), displaySummaryNotificationAction(result.jobId), displayFeedbackNotificationAction()),
-            )
+            is CodeModernizerJobCompletedResult.JobPartiallySucceeded -> {
+                notifyStickyInfo(
+                    message("codemodernizer.notification.info.modernize_partial_complete.title"),
+                    message("codemodernizer.notification.info.modernize_partial_complete.content", result.targetJavaVersion.description),
+                    project,
+                    listOf(displayDiffNotificationAction(result.jobId), displaySummaryNotificationAction(result.jobId), displayFeedbackNotificationAction()),
+                )
+                jobId = result.jobId
+            }
 
-            is CodeModernizerJobCompletedResult.JobCompletedSuccessfully -> notifyStickyInfo(
-                message("codemodernizer.notification.info.modernize_complete.title"),
-                message("codemodernizer.notification.info.modernize_complete.content"),
-                project,
-                listOf(displayDiffNotificationAction(result.jobId), displaySummaryNotificationAction(result.jobId)),
-            )
+            is CodeModernizerJobCompletedResult.JobCompletedSuccessfully -> {
+                notifyStickyInfo(
+                    message("codemodernizer.notification.info.modernize_complete.title"),
+                    message("codemodernizer.notification.info.modernize_complete.content"),
+                    project,
+                    listOf(displayDiffNotificationAction(result.jobId), displaySummaryNotificationAction(result.jobId)),
+                )
+                jobId = result.jobId
+            }
 
             is CodeModernizerJobCompletedResult.ManagerDisposed -> LOG.warn { "Manager disposed" }
             is CodeModernizerJobCompletedResult.JobAbortedBeforeStarting -> LOG.warn { "Job was aborted" }
@@ -641,6 +641,14 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_PREREQUISITES), displayFeedbackNotificationAction()),
             )
         }
+        CodetransformTelemetry.totalRunTime(
+            codeTransformJobId = jobId?.toString(),
+            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformResultStatusMessage = result.toString(),
+            codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
+            codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
+            codeTransformLocalMavenVersion = getMavenVersion(project),
+        )
     }
 
     fun createCodeModernizerSession(customerSelection: CustomerSelection, project: Project) = CodeModernizerSession(
