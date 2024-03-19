@@ -12,6 +12,7 @@ import { Auth } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { isNonNullable } from '../shared/utilities/tsUtils'
 import { Connection, SsoConnection, StatefulConnection } from './connection'
+import { indent } from '../shared/utilities/textUtilities'
 
 let currentConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()
@@ -156,6 +157,16 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 
     public get isConnectionExpired() {
+        if (this.activeConnection) {
+            getLogger().info(
+                indent(
+                    `secondaryAuth connection id = ${this.activeConnection.id}
+            secondaryAuth connection status = ${this.auth.getConnectionState(this.activeConnection)}`,
+                    4,
+                    true
+                )
+            )
+        }
         return !!this.activeConnection && this.auth.getConnectionState(this.activeConnection) === 'invalid'
     }
 

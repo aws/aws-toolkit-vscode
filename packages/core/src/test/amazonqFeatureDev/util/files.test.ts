@@ -229,15 +229,23 @@ describe('file utils', () => {
             const ws2 = await createTestWorkspace(1, {
                 fileNamePrefix: 'ws2',
                 workspaceName: 'cdk',
-                subDir: ws1.uri.fsPath,
+                subDir: ws1.uri.fsPath.replace(':', '_'),
             })
             const result = getWorkspaceFoldersByPrefixes([ws1, ws2])
             const keys = Object.keys(result ?? {})
             assert.strictEqual(keys.length, 2)
             const keyForWs1 = result?.[keys[0]] === ws1 ? keys[0] : keys[1]
             const keyForWs2 = keyForWs1 === keys[0] ? keys[1] : keys[0]
-            assert.strictEqual(keyForWs2.includes(keyForWs1), true)
-            assert.strictEqual(keyForWs2.length > keyForWs1.length, true)
+            assert.strictEqual(
+                keyForWs2.includes(keyForWs1),
+                true,
+                `Expected [${keyForWs1}] to be a prefix of [${keyForWs2}]`
+            )
+            assert.strictEqual(
+                keyForWs2.length > keyForWs1.length,
+                true,
+                `Expected [${keyForWs1}] to be a prefix of [${keyForWs2}]`
+            )
         })
 
         it('when 2 folders collide, they will get suffixed', async () => {
@@ -266,14 +274,22 @@ describe('file utils', () => {
             })
             const result = getWorkspaceFoldersByPrefixes([ws1, ws2, ws3, ws4])
             const keys = Object.keys(result ?? {})
-            assert.strictEqual(keys.length, 4)
+            assert.strictEqual(keys.length, 4, `Incorrect number of entries in result [${JSON.stringify(result)}]`)
             const orderedKeys = keys.sort()
-            assert.strictEqual(orderedKeys[0].length, orderedKeys[1].length)
-            assert.strictEqual(orderedKeys[0].substring(orderedKeys[0].length - 2), '_1')
-            assert.strictEqual(orderedKeys[1].substring(orderedKeys[1].length - 2), '_2')
             assert.strictEqual(
                 orderedKeys[0].substring(0, orderedKeys[0].length - 2),
-                orderedKeys[1].substring(0, orderedKeys[1].length - 2)
+                orderedKeys[1].substring(0, orderedKeys[1].length - 2),
+                `Incorrect prefixes for colliding workspaces [${orderedKeys[0]}, ${orderedKeys[1]}]`
+            )
+            assert.strictEqual(
+                orderedKeys[0].substring(orderedKeys[0].length - 2),
+                '_1',
+                `Incorrect prefix for first workspace [${orderedKeys[0]}]`
+            )
+            assert.strictEqual(
+                orderedKeys[1].substring(orderedKeys[1].length - 2),
+                '_2',
+                `Incorrect prefix for second workspace [${orderedKeys[1]}]`
             )
         })
     })

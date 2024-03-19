@@ -51,6 +51,9 @@ async function getLanguageServerDebuggerPort(extensionContext: ExtensionContext)
     return getPortPromise({ port: port })
 }
 
+/**
+ * Starts the SSM Documents LSP client/server and creates related resources (vscode `OutputChannel`).
+ */
 export async function activate(extensionContext: ExtensionContext) {
     const toDispose = extensionContext.subscriptions
 
@@ -99,7 +102,7 @@ export async function activate(extensionContext: ExtensionContext) {
     // Create the language client and start the client.
     const client = new LanguageClient(
         'ssm',
-        localize('ssm.server.name', 'SSM Document Language Server'),
+        localize('ssm.server.name', 'AWS: SSM Document Language Server'),
         serverOptions,
         clientOptions
     )

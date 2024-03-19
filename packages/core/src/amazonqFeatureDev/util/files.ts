@@ -200,7 +200,7 @@ export function getWorkspaceFoldersByPrefixes(
     }
     let remainingWorkspaceFoldersToMap = folders.map(f => ({
         folder: f,
-        preferredPrefixQueue: f.uri.path
+        preferredPrefixQueue: f.uri.fsPath
             .split(path.sep)
             .reverse()
             .slice(0, workspaceFolderPrefixGuards.maximumFolderDepthConsidered)
@@ -226,7 +226,7 @@ export function getWorkspaceFoldersByPrefixes(
             // this should never happen, as last candidates should be handled below, and the array starts non empty
             if (prefix === undefined) {
                 throw new ToolkitError(
-                    `Envcountered a folder with invalid prefix candidates (workspace folder ${wsFolder.folder.name})`
+                    `Encountered a folder with invalid prefix candidates (workspace folder ${wsFolder.folder.name})`
                 )
             }
             acc[prefix] = acc[prefix] ?? []

@@ -14,6 +14,7 @@ import globals from '../extensionGlobals'
 import { ToolkitError } from '../errors'
 import crypto from 'crypto'
 import { keysAsInt } from '../utilities/tsUtils'
+import { partialClone } from '../utilities/collectionUtils'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -622,13 +623,15 @@ export const defaultTelemetryThrottleMs = 300_000 // 5 minutes
 async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | void> {
     const { id, args, label, logging, compositeKey } = { logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
-    const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
     const threshold = info.telemetryThrottleMs ?? defaultTelemetryThrottleMs
     const instrumenter = logging
         ? getInstrumenter({ id, args, compositeKey: compositeKey ?? {} }, threshold || 0, info.telemetryName)
         : undefined
 
-    logger.debug(`command: running ${label}${withArgs}`)
+    logger.debug(
+        `command: running ${label} with arguments: %O`,
+        partialClone(args, 3, ['clientSecret', 'accessToken', 'refreshToken'], '[omitted]')
+    )
 
     try {
         if (info.autoconnect === true) {

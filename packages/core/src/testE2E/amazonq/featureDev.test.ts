@@ -13,17 +13,28 @@ import { Messenger } from './framework/messenger'
 import { FollowUpTypes } from '../../amazonqFeatureDev/types'
 import { examples, newTaskChanges, sessionClosed } from '../../amazonqFeatureDev/userFacingText'
 import { ChatItem } from '@aws/mynah-ui'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 
-describe.skip('Amazon Q Feature Dev', function () {
+describe('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
     let tab: Messenger
 
     const maxTestDuration = 600000
-    const prompt = 'Implement twosum in typescript'
+    const prompt = 'Implement fibonacci in typescript'
     const iterateApproachPrompt = prompt + ' and add tests'
     const codegenApproachPrompt = prompt + ' and add even more tests'
+    const tooManyRequestsWaitTime = 100000
 
     before(async function () {
+        /**
+         * The tests are getting throttled, only run them on stable for now
+         *
+         * TODO: Re-enable for all versions once the backend can handle them
+         */
+        if (process.env['VSCODE_TEST_VERSION'] !== 'stable') {
+            this.skip()
+        }
+
         await using(registerAuthHook('amazonq-test-account'), async () => {
             await loginToIdC()
         })
@@ -31,7 +42,7 @@ describe.skip('Amazon Q Feature Dev', function () {
 
     beforeEach(() => {
         registerAuthHook('amazonq-test-account')
-        framework = new qTestingFramework('featuredev', true, true)
+        framework = new qTestingFramework('featuredev', true)
         tab = framework.createTab()
     })
 
@@ -56,7 +67,7 @@ describe.skip('Amazon Q Feature Dev', function () {
         it('Does NOT show /dev when feature dev is NOT enabled', () => {
             // The beforeEach registers a framework which accepts requests. If we don't dispose before building a new one we have duplicate messages
             framework.dispose()
-            framework = new qTestingFramework('featuredev', false, true)
+            framework = new qTestingFramework('featuredev', false)
             const tab = framework.createTab()
             const command = tab.findCommand('/dev')
             if (command.length > 0) {
@@ -99,24 +110,51 @@ describe.skip('Amazon Q Feature Dev', function () {
     async function iterate(prompt: string) {
         tab.addChatMessage({ prompt })
 
-        await retryIfRequired(async () => {
-            // Wait for a backend response
-            await tab.waitForChatFinishesLoading()
-        })
+        await retryIfRequired(
+            async () => {
+                // Wait for a backend response
+                await tab.waitForChatFinishesLoading()
+            },
+            () => {
+                tab.addChatMessage({ prompt })
+            }
+        )
     }
 
     /**
-     * Make the initial request and if the response has a retry button, click it until either
-     * we can no longer retry or the tests recover.
+     * Wait for the original request to finish.
+     * If the response has a retry button or encountered a guardrails error, continue retrying
      *
-     * This allows the e2e tests to recover from potential one off backend problems
+     * This allows the e2e tests to recover from potential one off backend problems/random guardrails
      */
-    async function retryIfRequired(request: () => Promise<void>) {
-        await request()
-        while (tab.hasButton(FollowUpTypes.Retry)) {
-            console.log('Retrying request')
-            tab.clickButton(FollowUpTypes.Retry)
-            await request()
+    async function retryIfRequired(waitUntilReady: () => Promise<void>, request?: () => void) {
+        await waitUntilReady()
+
+        const findAnotherTopic = 'find another topic to discuss'
+        const tooManyRequests = 'Too many requests'
+        const failureState = (message: string) => {
+            return (
+                tab.getChatItems().pop()?.body?.includes(message) ||
+                tab.getChatItems().slice(-2).shift()?.body?.includes(message)
+            )
+        }
+        while (
+            tab.hasButton(FollowUpTypes.Retry) ||
+            (request && (failureState(findAnotherTopic) || failureState(tooManyRequests)))
+        ) {
+            if (tab.hasButton(FollowUpTypes.Retry)) {
+                console.log('Retrying request')
+                tab.clickButton(FollowUpTypes.Retry)
+                await waitUntilReady()
+            } else if (failureState(tooManyRequests)) {
+                // 3 versions of the e2e tests are running at the same time in the ci so we occassionally need to wait before continuing
+                request && request()
+                await sleep(tooManyRequestsWaitTime)
+            } else {
+                // We've hit guardrails, re-make the request and wait again
+                request && request()
+                await waitUntilReady()
+            }
         }
 
         // The backend never recovered
@@ -217,9 +255,14 @@ describe.skip('Amazon Q Feature Dev', function () {
         beforeEach(async function () {
             this.timeout(maxTestDuration)
             tab.addChatMessage({ command: '/dev', prompt })
-            await retryIfRequired(async () => {
-                await tab.waitForChatFinishesLoading()
-            })
+            await retryIfRequired(
+                async () => {
+                    await tab.waitForChatFinishesLoading()
+                },
+                () => {
+                    tab.addChatMessage({ prompt })
+                }
+            )
         })
 
         functionalTests()
@@ -230,9 +273,14 @@ describe.skip('Amazon Q Feature Dev', function () {
             this.timeout(maxTestDuration)
             tab.addChatMessage({ command: '/dev' })
             tab.addChatMessage({ prompt })
-            await retryIfRequired(async () => {
-                await tab.waitForChatFinishesLoading()
-            })
+            await retryIfRequired(
+                async () => {
+                    await tab.waitForChatFinishesLoading()
+                },
+                () => {
+                    tab.addChatMessage({ prompt })
+                }
+            )
         })
 
         it('Clicks examples', async () => {

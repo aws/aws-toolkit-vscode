@@ -54,7 +54,7 @@ export class FeatureConfigProvider {
                 )
             })
         } catch (e) {
-            getLogger().debug('CodeWhisperer: Error when fetching feature configs', e)
+            getLogger().error(`CodeWhisperer: Error when fetching feature configs ${e}`, e)
         }
         getLogger().debug(`CodeWhisperer: Current feature configs: ${this.getFeatureConfigsTelemetry()}`)
     }

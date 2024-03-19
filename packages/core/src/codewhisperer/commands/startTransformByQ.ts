@@ -28,7 +28,7 @@ import { QuickPickItem } from 'vscode'
 import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
-import { encodeHTML } from '../../shared/utilities/textUtilities'
+import { encodeHTML, getStringHash } from '../../shared/utilities/textUtilities'
 import {
     CodeTransformJavaSourceVersionsAllowed,
     CodeTransformJavaTargetVersionsAllowed,
@@ -41,6 +41,7 @@ import {
     CancelActionPositions,
     JDKToTelemetryValue,
     calculateTotalLatency,
+    telemetryUndefined,
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
@@ -93,6 +94,7 @@ async function collectInput(validProjects: Map<vscode.QuickPickItem, JDKVersion 
                 transformByQState.getTargetJDKVersion()
             ) as CodeTransformJavaTargetVersionsAllowed,
             result: MetadataResult.Fail,
+            codeTransformProjectId: getStringHash(state.project.label),
         })
         await vscode.window.showErrorMessage(CodeWhispererConstants.unsupportedJavaVersionSelectedMessage, {
             modal: true,
@@ -284,7 +286,8 @@ export async function preTransformationUploadCode(userInputState: UserInputState
         await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
         uploadId = await uploadPayload(payloadFilePath)
     } catch (error) {
-        const errorMessage = 'Failed to upload code'
+        const errorMessage = `Failed to upload code due to ${(error as Error).message}`
+        getLogger().error(errorMessage)
         telemetry.codeTransform_logGeneralError.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
@@ -441,6 +444,12 @@ export async function setTransformationToRunningState(userInputState: UserInputS
 
     codeTransformTelemetryState.setStartTime()
 
+    const projectPath = userInputState.project?.label
+    let projectId = telemetryUndefined
+    if (projectPath !== undefined) {
+        projectId = getStringHash(projectPath)
+    }
+
     telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
         codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
@@ -449,6 +458,7 @@ export async function setTransformationToRunningState(userInputState: UserInputS
         codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
+        codeTransformProjectId: projectId,
         result: MetadataResult.Pass,
     })
 
