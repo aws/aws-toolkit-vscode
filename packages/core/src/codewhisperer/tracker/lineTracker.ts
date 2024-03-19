@@ -132,7 +132,7 @@ export class LineTracker implements vscode.Disposable {
             return isIncluded(lineOrSelections, this._selections)
         }
 
-        if (this._selections == null || this._selections.length === 0) return false
+        if (this._selections === undefined || this._selections.length === 0) return false
 
         const line = lineOrSelections
         const activeOnly = options?.activeOnly ?? true
@@ -152,8 +152,8 @@ export class LineTracker implements vscode.Disposable {
 }
 
 function isIncluded(selections: LineSelection[] | undefined, within: LineSelection[] | undefined): boolean {
-    if (selections == null && within == null) return true
-    if (selections == null || within == null || selections.length !== within.length) return false
+    if (selections === undefined && within === undefined) return true
+    if (selections === undefined || within === undefined || selections.length !== within.length) return false
 
     return selections.every((s, i) => {
         const match = within[i]
