@@ -221,9 +221,6 @@ export class LineAnnotationController implements vscode.Disposable {
             getLogger().debug(`codewhisperer: existing user login, disabling inline tutorial.`)
         }
 
-        // todo: remove this line, it's for dev purpose (not use cache)
-        this._currentState = new AutotriggerState()
-
         this._disposable = vscode.Disposable.from(
             subscribeOnce(this.container._lineTracker.onReady)(this.onReady, this),
             RecommendationService.instance.suggestionActionEvent(e => {
@@ -330,6 +327,11 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private async _refresh(editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) {
         if (!this._isReady) {
+            this.clear()
+            return
+        }
+
+        if (!this.container.auth.isConnectionValid()) {
             this.clear()
             return
         }
