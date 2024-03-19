@@ -31,7 +31,7 @@ import {
 } from '../service/transformByQHandler'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
-import { encodeHTML, getStringHash } from '../../shared/utilities/textUtilities'
+import { encodeHTML } from '../../shared/utilities/textUtilities'
 import {
     CodeTransformCancelSrcComponents,
     CodeTransformJavaSourceVersionsAllowed,

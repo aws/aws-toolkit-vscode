@@ -51,9 +51,8 @@ export async function validateAndLogProjectDetails() {
     try {
         const openProjects = await getOpenProjects()
         const validProjects = await validateOpenProjects(openProjects, true)
-        if (validProjects.size > 0) {
-            const firstKey = validProjects.keys().next().value
-            const firstModuleEntry = validProjects.get(firstKey)
+        if (validProjects.length > 0) {
+            const firstModuleEntry = validProjects[0].JDKVersion
             codeTransformLocalJavaVersion = JDKToTelemetryValue(
                 firstModuleEntry
             ) as CodeTransformJavaSourceVersionsAllowed
@@ -82,7 +81,7 @@ export interface TransformationCandidateProject {
 }
 
 /* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat: */
-interface FolderInfo {
+export interface FolderInfo {
     path: string
     name: string
 }
@@ -171,7 +170,10 @@ async function getMavenJavaProjects(javaProjects: TransformationCandidateProject
     return mavenJavaProjects
 }
 
-async function getProjectsValidToTransform(mavenJavaProjects: TransformationCandidateProject[]) {
+async function getProjectsValidToTransform(
+    mavenJavaProjects: TransformationCandidateProject[],
+    onProjectFirstOpen = false
+) {
     const projectsValidToTransform: TransformationCandidateProject[] = []
     for (const project of mavenJavaProjects) {
         let detectedJavaVersion = undefined
@@ -248,7 +250,7 @@ async function getProjectsValidToTransform(mavenJavaProjects: TransformationCand
  * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
  * and we allow the user to specify the Java version.
  */
-export async function validateOpenProjects(projects: vscode.QuickPickItem[], onProjectFirstOpen = false) {
+export async function validateOpenProjects(projects: TransformationCandidateProject[], onProjectFirstOpen = false) {
     const javaProjects = await getJavaProjects(projects)
 
     if (javaProjects.length === 0) {
