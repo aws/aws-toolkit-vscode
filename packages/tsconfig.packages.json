@@ -5,7 +5,7 @@
             "@sinonjs/fake-timers": ["node_modules/@types/sinonjs__fake-timers"]
         },
         "incremental": true,
-        "module": "commonjs",
+        "module": "node16",
         "target": "es2021",
         "sourceMap": true,
         "moduleResolution": "node16",

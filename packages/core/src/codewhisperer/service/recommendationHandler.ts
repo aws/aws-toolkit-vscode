@@ -165,6 +165,7 @@ export class RecommendationHandler {
             return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
+                recommendationCount: 0,
             })
         }
         let recommendations: RecommendationsList = []
@@ -181,7 +182,7 @@ export class RecommendationHandler {
         ).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
-        if (pagination) {
+        if (pagination && !isSM) {
             if (page === 0) {
                 session.requestContext = await EditorContext.buildListRecommendationRequest(
                     editor as vscode.TextEditor,
@@ -198,7 +199,7 @@ export class RecommendationHandler {
                     supplementalMetadata: session.requestContext.supplementalMetadata,
                 }
             }
-        } else if (!pagination) {
+        } else {
             session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
         const request = session.requestContext.request
@@ -226,6 +227,7 @@ export class RecommendationHandler {
                 return Promise.resolve<GetRecommendationsResponse>({
                     result: invocationResult,
                     errorMessage: errorMessage,
+                    recommendationCount: 0,
                 })
             }
         }
@@ -357,6 +359,7 @@ export class RecommendationHandler {
             return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
+                recommendationCount: session.recommendations.length,
             })
         }
 
@@ -410,6 +413,7 @@ export class RecommendationHandler {
         return Promise.resolve<GetRecommendationsResponse>({
             result: invocationResult,
             errorMessage: errorMessage,
+            recommendationCount: session.recommendations.length,
         })
     }
 

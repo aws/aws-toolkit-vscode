@@ -48,6 +48,7 @@
             "debugWebWorkerHost": true,
             "request": "launch",
             "args": [
+                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionDevelopmentKind=web",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/testWeb/testRunner",
@@ -63,6 +64,7 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
+                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
                 "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/testInteg/index.js"
@@ -80,6 +82,7 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
+                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
                 "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/testInteg/index.js"
@@ -98,6 +101,7 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
+                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
                 "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/testE2E/index.js"
