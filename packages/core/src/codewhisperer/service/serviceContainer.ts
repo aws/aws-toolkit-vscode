@@ -4,11 +4,11 @@
  */
 
 import { AuthUtil } from '../util/authUtil'
-import { ActiveStateUIController } from '../views/activeStateController'
 import { LineTracker } from '../tracker/lineTracker'
 
 /**
- * Please utilize this container class as the bridge to access other components to avoid creating too many singleton objects when not needed.
+ * Container for CodeWhisperer sub-components
+ * Please utilize this container class as the bridge to access other components to avoid create singleton objects when it's not necessary.
  * Example:
  * class SubComponent {
  *      constructor(private readonly container: Container) {}
@@ -27,10 +27,8 @@ export class Container {
     }
 
     readonly lineTracker: LineTracker
-    readonly activeStateController: ActiveStateUIController
 
     protected constructor(readonly auth: AuthUtil) {
         this.lineTracker = new LineTracker()
-        this.activeStateController = new ActiveStateUIController(this)
     }
 }
