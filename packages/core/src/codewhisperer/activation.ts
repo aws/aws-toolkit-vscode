@@ -62,6 +62,7 @@ import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
 import { listCodeWhispererCommands } from './commands/statusBarCommands'
 import { updateUserProxyUrl } from './client/agent'
+import { Container } from './service/serviceContainer'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -94,6 +95,7 @@ export async function activate(context: ExtContext): Promise<void> {
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
     // Service initialization
+    const container = Container.create(auth)
     ReferenceInlineProvider.instance
     ImportAdderProvider.instance
 
@@ -171,6 +173,13 @@ export async function activate(context: ExtContext): Promise<void> {
                 await vscode.commands.executeCommand('workbench.action.openSettings', `aws.codeWhisperer`)
             }
         }),
+        Commands.register('aws.codewhisperer.refreshAnnotation', async () => {
+            const editor = vscode.window.activeTextEditor
+            if (editor) {
+                console.log('refresh inline hint from command')
+                container._lineAnnotationController.refresh(editor, 'codewhisperer')
+            }
+        }),
         // show introduction
         showIntroduction.register(),
         // direct CodeWhisperer connection setup with customization
@@ -198,7 +207,7 @@ export async function activate(context: ExtContext): Promise<void> {
         // apply suggested fix
         applySecurityFix.register(),
         // quick pick with codewhisperer options
-        listCodeWhispererCommands.register(),
+        listCodeWhispererCommands.register(container),
         // manual trigger
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(
@@ -218,7 +227,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * On recommendation acceptance
          */
-        acceptSuggestion.register(context),
+        acceptSuggestion.register(context, container),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
             if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
@@ -444,6 +453,8 @@ export async function activate(context: ExtContext): Promise<void> {
             })
         )
     }
+
+    container.ready()
 }
 
 export async function shutdown() {

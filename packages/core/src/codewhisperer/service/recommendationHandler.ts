@@ -62,6 +62,8 @@ const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () 
 
 const rejectCommand = Commands.declare('aws.codeWhisperer.rejectCodeSuggestion', () => async () => {
     RecommendationHandler.instance.reportUserDecisions(-1)
+
+    Commands.tryExecute('aws.codewhisperer.refreshAnnotation')
 })
 
 const lock = new AsyncLock({ maxPending: 1 })
