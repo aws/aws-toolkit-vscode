@@ -25,11 +25,10 @@ export class LineTracker implements vscode.Disposable {
     }
 
     private _editor: vscode.TextEditor | undefined
-    protected _disposable: vscode.Disposable | undefined
+    private _disposable: vscode.Disposable | undefined
 
     private _selections: LineSelection[] | undefined
 
-    private _suspended: boolean = false
     get selections(): LineSelection[] | undefined {
         return this._selections
     }
@@ -70,7 +69,7 @@ export class LineTracker implements vscode.Disposable {
     }
 
     // @VisibleForTesting
-    async onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
+    onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
         if (editor === this._editor) return
 
         this._editor = editor
@@ -80,14 +79,11 @@ export class LineTracker implements vscode.Disposable {
             vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
         }
 
-        if (this._suspended) {
-        } else {
-            this.notifyLinesChanged('editor')
-        }
+        this.notifyLinesChanged('editor')
     }
 
     // @VisibleForTesting
-    async onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
+    onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
         // If this isn't for our cached editor and its not a real editor -- kick out
         if (this._editor !== e.textEditor && !isTextEditor(e.textEditor)) return
 
@@ -101,22 +97,16 @@ export class LineTracker implements vscode.Disposable {
             vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
         }
 
-        if (this._suspended) {
-        } else {
-            this.notifyLinesChanged('selection')
-        }
+        this.notifyLinesChanged('selection')
     }
 
     // @VisibleForTesting
-    async onContentChanged(e: vscode.TextDocumentChangeEvent) {
+    onContentChanged(e: vscode.TextDocumentChangeEvent) {
         if (e.document === vscode.window.activeTextEditor?.document && e.contentChanges.length > 0) {
             this._editor = vscode.window.activeTextEditor
             this._selections = toLineSelections(this._editor?.selections)
 
-            if (this._suspended) {
-            } else {
-                this.notifyLinesChanged('content')
-            }
+            this.notifyLinesChanged('content')
         }
     }
 
