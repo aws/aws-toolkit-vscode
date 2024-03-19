@@ -9,7 +9,7 @@ import { ArtifactMap, DefaultCodeWhispererClient } from '../client/codewhisperer
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { initSecurityScanRender } from '../service/diagnosticsProvider'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { getLogger } from '../../shared/logger'
+import { Logger, getLogger } from '../../shared/logger'
 import { makeLogger } from '../../shared/logger/activation'
 import * as CodeWhispererConstants from '../models/constants'
 import { DependencyGraphFactory } from '../util/dependencyGraph/dependencyGraphFactory'
@@ -34,14 +34,25 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import { DependencyGraphConstants } from '../util/dependencyGraph/dependencyGraph'
 import path from 'path'
+import { once } from '../../shared/utilities/functionUtils'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
-const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
-const codeScanLogger = makeLogger({
-    outputChannels: [securityScanOutputChannel],
-})
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
+let codeScanLogger: Logger
+let securityScanOutputChannel: vscode.OutputChannel
+
+/**
+ * Create the vscode Output channel and Toolkit logger used by Security Scan.
+ *
+ * To avoid cluttering the user's Output channels list, do not call this until it's actually needed.
+ */
+const createLogOutputChanOnce = once(() => {
+    securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
+    codeScanLogger = makeLogger({
+        outputChannels: [securityScanOutputChannel],
+    })
+})
 
 export function startSecurityScanWithProgress(
     securityPanelViewProvider: SecurityPanelViewProvider,
@@ -263,6 +274,8 @@ export function errorPromptHelper(error: Error) {
 }
 
 function populateCodeScanLogStream(scannedFiles: Set<string>) {
+    createLogOutputChanOnce()
+
     // Clear log
     securityScanOutputChannel.clear()
     const numScannedFiles = scannedFiles.size
