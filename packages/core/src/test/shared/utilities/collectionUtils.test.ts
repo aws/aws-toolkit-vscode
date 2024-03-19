@@ -30,6 +30,7 @@ import {
     toStream,
     joinAll,
     isPresent,
+    partialClone,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
@@ -672,6 +673,76 @@ describe('CollectionUtils', async function () {
         })
         it('returns false for undefined', function () {
             assert.strictEqual(isPresent<string>(undefined), false)
+        })
+    })
+
+    describe('partialClone', function () {
+        it('omits properties by depth', function () {
+            const testObj = {
+                a: 34234234234,
+                b: '123456789',
+                c: new Date(2023, 1, 1),
+                d: { d1: { d2: { d3: 'deep' } } },
+                e: {
+                    e1: [4, 3, 7],
+                    e2: 'loooooooooo \n nnnnnnnnnnn \n gggggggg \n string',
+                },
+                f: () => {
+                    throw Error()
+                },
+            }
+
+            assert.deepStrictEqual(partialClone(testObj, 1), {
+                ...testObj,
+                d: {},
+                e: {},
+            })
+            assert.deepStrictEqual(partialClone(testObj, 0, [], '[replaced]'), '[replaced]')
+            assert.deepStrictEqual(partialClone(testObj, 1, [], '[replaced]'), {
+                ...testObj,
+                d: '[replaced]',
+                e: '[replaced]',
+            })
+            assert.deepStrictEqual(partialClone(testObj, 3), {
+                ...testObj,
+                d: { d1: { d2: {} } },
+            })
+            assert.deepStrictEqual(partialClone(testObj, 4), testObj)
+        })
+
+        it('omits properties by name', function () {
+            const testObj = {
+                a: 34234234234,
+                b: '123456789',
+                c: new Date(2023, 1, 1),
+                d: { d1: { d2: { d3: 'deep' } } },
+                e: {
+                    e1: [4, 3, 7],
+                    e2: 'loooooooooo \n nnnnnnnnnnn \n gggggggg \n string',
+                },
+                f: () => {
+                    throw Error()
+                },
+            }
+
+            assert.deepStrictEqual(partialClone(testObj, 2, ['c', 'e2'], '[omitted]'), {
+                ...testObj,
+                c: '[omitted]',
+                d: { d1: '[omitted]' },
+                e: {
+                    e1: '[omitted]',
+                    e2: '[omitted]',
+                },
+            })
+            assert.deepStrictEqual(partialClone(testObj, 3, ['c', 'e2'], '[omitted]'), {
+                ...testObj,
+                c: '[omitted]',
+                d: { d1: { d2: '[omitted]' } },
+                e: {
+                    e1: [4, 3, 7],
+                    e2: '[omitted]',
+                },
+            })
         })
     })
 })
