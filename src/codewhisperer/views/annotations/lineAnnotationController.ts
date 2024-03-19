@@ -96,7 +96,7 @@ class AutotriggerState implements AnnotationState {
  *  User accepts 1 suggestion
  */
 class PressTabState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_case_1_a'
+    static #id = 'codewhisperer_learnmore_case_1a'
     id = PressTabState.#id
 
     suppressWhileRunning = false
@@ -200,6 +200,8 @@ export class LineAnnotationController implements vscode.Disposable {
     private _editor: vscode.TextEditor | undefined
 
     private _currentState: AnnotationState
+
+    private _seen: Set<string> = new Set()
 
     private readonly cwLineHintDecoration: vscode.TextEditorDecorationType =
         vscode.window.createTextEditorDecorationType({
@@ -441,8 +443,7 @@ export class LineAnnotationController implements vscode.Disposable {
             return undefined
         }
 
-        // if state proceed, send a uiClick event for the fulfilled tutorial step
-        if (this._currentState.id !== nextState.id) {
+        if (!this._seen.has(nextState.id)) {
             try {
                 telemetry.ui_click.emit({ elementId: this._currentState.id, passive: true })
             } catch (e) {}
@@ -450,6 +451,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
         // update state
         this._currentState = nextState
+        this._seen.add(this._currentState.id)
         // take snapshot of accepted session so that we can compre if there is delta -> users accept 1 suggestion after seeing this state
         AutotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
         // take snapshot of total trigger count so that we can compare if there is delta -> users accept/reject suggestions after seeing this state
