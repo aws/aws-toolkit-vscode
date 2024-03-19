@@ -17,3 +17,18 @@ This command supports the following arguments:
 -   startUrl and region. If both arguments are provided they will be used, otherwise the command prompts for them interactively.
 -   customizationArn: select customization by ARN. If provided, `customizationNamePrefix` is ignored.
 -   customizationNamePrefix: select customization by prefix, if `customizationArn` is `undefined`.
+
+### Extension API
+
+#### `listSsoConnections`
+
+**Signature**: _async () => Promise<AwsToolkitSsoConnection>_
+
+This is an API that exposes the metadata of SSO connections of AWS Toolkit. It returns a list of `AwsToolkitSsoConnection` which contains below fields:
+
+-   id: string that presents the id of the connection
+-   label: label of the connection
+-   type: type of the connection, can only be 'sso'
+-   ssoRegion: region of the connection, e.g: us-west-2
+-   startUrl: start url of the connection
+-   scopes?: list of the scopes of the connection
