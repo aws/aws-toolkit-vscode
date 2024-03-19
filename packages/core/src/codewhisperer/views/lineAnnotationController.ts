@@ -24,12 +24,6 @@ const case3TimeWindow = 30000 // 30 seconds
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
-type CwsprTutorialUi =
-    | 'codewhisperer_learnmore_how_codewhisperer_triggers'
-    | 'codewhisperer_learnmore_tab_to_accept'
-    | 'codewhisperer_learnmore_manual_trigger'
-    | 'codewhisperer_learnmore_learn_more'
-
 function fromId(id: string | undefined): AnnotationState | undefined {
     switch (id) {
         case AutotriggerState.id:
@@ -48,7 +42,7 @@ function fromId(id: string | undefined): AnnotationState | undefined {
 }
 
 interface AnnotationState {
-    id: string | CwsprTutorialUi
+    id: string
     suppressWhileRunning: boolean
     text: () => string
     nextState<T extends object>(data: T): AnnotationState | undefined
