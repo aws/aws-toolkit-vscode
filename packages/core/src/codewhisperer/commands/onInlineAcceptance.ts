@@ -48,7 +48,7 @@ export const acceptSuggestion = Commands.declare(
         ) => {
             RecommendationService.instance.incrementAcceptedCount()
             const editor = vscode.window.activeTextEditor
-            container._lineAnnotationController.refresh(editor, 'codewhisperer')
+            await container._lineAnnotationController.refresh(editor, 'codewhisperer')
             const onAcceptanceFunc = isInlineCompletionEnabled() ? onInlineAcceptance : onAcceptance
             await onAcceptanceFunc(
                 {

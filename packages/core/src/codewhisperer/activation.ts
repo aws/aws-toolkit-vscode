@@ -176,8 +176,7 @@ export async function activate(context: ExtContext): Promise<void> {
         Commands.register('aws.codewhisperer.refreshAnnotation', async () => {
             const editor = vscode.window.activeTextEditor
             if (editor) {
-                console.log('refresh inline hint from command')
-                container._lineAnnotationController.refresh(editor, 'codewhisperer')
+                await container._lineAnnotationController.refresh(editor, 'codewhisperer')
             }
         }),
         // show introduction

@@ -74,8 +74,6 @@ class AutotriggerState implements AnnotationState {
     static acceptedCount = 0
 
     nextState<T extends object>(data: T): AnnotationState | undefined {
-        console.log('State.acceptedCnt=', AutotriggerState.acceptedCount)
-        console.log('RecommendationService.acceptedCnt=', RecommendationService.instance.acceptedSuggestionCount)
         if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
             return new ManualtriggerState()
         } else if (session.recommendations.length > 0 && RecommendationHandler.instance.isSuggestionVisible()) {
