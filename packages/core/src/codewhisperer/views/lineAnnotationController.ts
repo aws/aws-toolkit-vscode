@@ -220,16 +220,14 @@ export class LineAnnotationController implements vscode.Disposable {
         if (cachedAutotriggerEnabled === undefined || cachedState !== undefined) {
             this._currentState = cachedState ?? new AutotriggerState()
             getLogger().debug(
-                `codewhisperer: new user login, activating inline tutorial. (autotriggerEnabled=${cachedAutotriggerEnabled}); inlineState=${cachedState}`
+                `codewhisperer: new user login, activating inline tutorial. (autotriggerEnabled=${cachedAutotriggerEnabled}; inlineState=${cachedState?.id})`
             )
         } else {
             this._currentState = new EndState()
-            getLogger().debug(
-                `codewhisperer: existing user login, disabling inline tutorial. (autotriggerEnabled=${cachedAutotriggerEnabled}); inlineState=${cachedState}`
-            )
+            getLogger().debug(`codewhisperer: existing user login, disabling inline tutorial.`)
         }
 
-        // todo: remove
+        // todo: remove this line, it's for dev purpose (not use cache)
         this._currentState = new AutotriggerState()
 
         this._disposable = vscode.Disposable.from(
@@ -267,6 +265,9 @@ export class LineAnnotationController implements vscode.Disposable {
                 const editor = vscode.window.activeTextEditor
                 if (editor) {
                     this.clear()
+                    try {
+                        telemetry.ui_click.emit({ elementId: `dismiss_${this._currentState.id}` })
+                    } catch (_) {}
                     this._currentState = new EndState()
                     await vscode.commands.executeCommand('setContext', inlinehintWipKey, false)
                     getLogger().debug(`codewhisperer: user dismiss tutorial.`)
