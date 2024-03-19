@@ -24,7 +24,7 @@ import {
     StartDeviceAuthorizationRequest,
 } from '@aws-sdk/client-sso-oidc'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
-import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import { pageableToCollection, partialClone } from '../../shared/utilities/collectionUtils'
 import { assertHasProps, isNonNullable, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
@@ -199,27 +199,17 @@ export class SsoClient {
     }
 }
 
-function omitIfPresent<T extends Record<string, unknown>>(obj: T, ...keys: string[]): T {
-    const objCopy = { ...obj }
-    for (const key of keys) {
-        if (key in objCopy) {
-            ;(objCopy as any)[key] = '[omitted]'
-        }
-    }
-    return objCopy
-}
-
 function addLoggingMiddleware(client: SSOOIDCClient) {
     client.middlewareStack.add(
         (next, context) => args => {
             if (HttpRequest.isInstance(args.request)) {
                 const { hostname, path } = args.request
-                const input = omitIfPresent(
+                const input = partialClone(
                     // TODO: Fix
                     args.input as unknown as Record<string, unknown>,
-                    'clientSecret',
-                    'accessToken',
-                    'refreshToken'
+                    3,
+                    ['clientSecret', 'accessToken', 'refreshToken'],
+                    '[omitted]'
                 )
                 getLogger().debug('API request (%s %s): %O', hostname, path, input)
             }
@@ -244,12 +234,12 @@ function addLoggingMiddleware(client: SSOOIDCClient) {
                 throw e
             })
             if (HttpResponse.isInstance(result.response)) {
-                const output = omitIfPresent(
+                const output = partialClone(
                     // TODO: Fix
                     result.output as unknown as Record<string, unknown>,
-                    'clientSecret',
-                    'accessToken',
-                    'refreshToken'
+                    3,
+                    ['clientSecret', 'accessToken', 'refreshToken'],
+                    '[omitted]'
                 )
                 getLogger().debug('API response (%s %s): %O', hostname, path, output)
             }
