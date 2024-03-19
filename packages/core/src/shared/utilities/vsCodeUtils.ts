@@ -239,3 +239,18 @@ export function replaceVscodeVars(val: string, workspaceFolder?: string): string
     }
     return val.replace('${workspaceFolder}', workspaceFolder)
 }
+
+/**
+ *
+ * Subscribe an given event and will dispose it once subscribe receives one event
+ */
+export function subscribeOnce<T>(event: vscode.Event<T>): vscode.Event<T> {
+    return (listener: (e: T) => unknown, thisArgs?: unknown) => {
+        const result = event(e => {
+            result.dispose()
+            return listener.call(thisArgs, e)
+        })
+
+        return result
+    }
+}
