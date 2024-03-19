@@ -32,15 +32,15 @@ type CwsprTutorialUi =
 
 function fromId(id: string | undefined): AnnotationState | undefined {
     switch (id) {
-        case 'codewhisperer_learnmore_how_codewhisperer_triggers':
+        case AutotriggerState.id:
             return new AutotriggerState()
-        case 'codewhisperer_learnmore_tab_to_accept':
+        case PressTabState.id:
             return new AutotriggerState()
-        case 'codewhisperer_learnmore_manual_trigger':
+        case ManualtriggerState.id:
             return new ManualtriggerState()
-        case 'codewhisperer_learnmore_learn_more':
+        case TryMoreExState.id:
             return new TryMoreExState()
-        case 'codewhisperer_learnmore_end':
+        case EndState.id:
             return new EndState()
         default:
             return undefined
@@ -66,8 +66,8 @@ interface AnnotationState {
  *
  */
 class AutotriggerState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_case_1'
-    id = AutotriggerState.#id
+    static id = 'codewhisperer_learnmore_case_1'
+    id = AutotriggerState.id
 
     suppressWhileRunning = true
     text = () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions ([ESC] to exit)'
@@ -94,8 +94,8 @@ class AutotriggerState implements AnnotationState {
  *  User accepts 1 suggestion
  */
 class PressTabState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_case_1a'
-    id = PressTabState.#id
+    static id = 'codewhisperer_learnmore_case_1a'
+    id = PressTabState.id
 
     suppressWhileRunning = false
     text = () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept ([ESC] to exit)'
@@ -115,8 +115,8 @@ class PressTabState implements AnnotationState {
  *  User inokes manual trigger shortcut
  */
 class ManualtriggerState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_case_2'
-    id = ManualtriggerState.#id
+    static id = 'codewhisperer_learnmore_case_2'
+    id = ManualtriggerState.id
 
     suppressWhileRunning = true
 
@@ -153,8 +153,8 @@ class ManualtriggerState implements AnnotationState {
  *  User accepts or rejects the suggestion
  */
 class TryMoreExState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_case_3'
-    id = TryMoreExState.#id
+    static id = 'codewhisperer_learnmore_case_3'
+    id = TryMoreExState.id
 
     suppressWhileRunning = true
     hasUserClickStatusbar: boolean = false
@@ -172,8 +172,8 @@ class TryMoreExState implements AnnotationState {
 }
 
 class EndState implements AnnotationState {
-    static #id = 'codewhisperer_learnmore_end'
-    id = EndState.#id
+    static id = 'codewhisperer_learnmore_end'
+    id = EndState.id
 
     suppressWhileRunning = true
     text = () => ''
