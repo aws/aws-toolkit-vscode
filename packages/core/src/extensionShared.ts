@@ -249,7 +249,7 @@ function logAndShowWebviewError(err: unknown, webviewId: string, command: string
  *
  * https://docs.aws.amazon.com/general/latest/gr/rande.html
  */
-function makeEndpointsProvider() {
+export function makeEndpointsProvider() {
     let localManifestFetcher: ResourceFetcher
     let remoteManifestFetcher: ResourceFetcher
     if (isWeb()) {

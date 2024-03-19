@@ -50,7 +50,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
 
     constructor(
         private readonly extensionContext: ExtensionContext,
-        private readonly onDidChangeVisibility: EventEmitter<boolean>,
+        private readonly onDidChangeVisibility: EventEmitter<boolean> | undefined,
         readonly app: string
     ) {
         registerAssetsHttpsFileSystem(extensionContext)
@@ -70,7 +70,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
         _token: CancellationToken
     ) {
         webviewView.onDidChangeVisibility(() => {
-            this.onDidChangeVisibility.fire(webviewView.visible)
+            this.onDidChangeVisibility?.fire(webviewView.visible)
         })
 
         const dist = Uri.joinPath(this.extensionContext.extensionUri, 'dist')
@@ -105,9 +105,12 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
 				</head>
 				<body>
                      
+                    <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.3.4/vue.global.js"></script>
 					<script>
 						const vscode = acquireVsCodeApi();
+                        
 					</script>
+
 
                     <div id="vue-app"></div>
 

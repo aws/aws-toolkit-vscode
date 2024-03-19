@@ -30,7 +30,13 @@
     "browser": "./dist/src/extensionWeb",
     "exports": {
         ".": "./dist/src/index.js",
-        "./web": "./dist/src/indexWeb.js"
+        "./web": "./dist/src/indexWeb.js",
+        "./amazonq": "./dist/src/amazonq/index.js",
+        "./codewhisperer": "./dist/src/codewhisperer/index.js",
+        "./shared": "./dist/src/shared/index.js",
+        "./auth": "./dist/src/auth/index.js",
+        "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
+        "./login": "./dist/src/login/webview/index.js"
     },
     "contributes": {
         "configuration": {

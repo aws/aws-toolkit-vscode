@@ -11,18 +11,22 @@
             "request": "launch",
             "debugWebviews": true,
             "rendererDebugOptions": {
-                "urlFilter": "*amazonwebservices.aws-toolkit-vscode*",
+                "urlFilter": "*amazonwebservices.amazon-q-vscode*",
                 "webRoot": "${workspaceFolder}"
             },
             "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--disable-extension=amazonwebservices.aws-toolkit-vscode"
+            ],
             "env": {
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
             },
             "envFile": "${workspaceFolder}/.local.env",
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "watch"
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "watch",
+            "postDebugTask": "terminate"
         }
     ]
 }

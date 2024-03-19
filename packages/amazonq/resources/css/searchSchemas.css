@@ -1,0 +1,67 @@
+body {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+#search_input input,
+#searchList,
+textarea,
+#versionList {
+    color: var(--vscode-tab-activeForground);
+    background-color: var(--vscode-tab-activeBackground);
+}
+
+option:disabled {
+    background-color: var(--vscode-tab-activeForground);
+    color: grey;
+}
+#search_input input {
+    width: 100%;
+    padding: 10px 5px;
+    -webkit-appearance: textfield;
+}
+
+#result_content {
+    margin: 15px 0;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#result_content > select {
+    width: 50%;
+    padding: 10px;
+}
+
+#result_content > #schemaContent_versionDropdown {
+    box-sizing: border-box;
+    width: 50%;
+}
+
+#searchList {
+    height: calc(100vh - 200px);
+    min-height: 140px;
+}
+
+#versionList {
+    height: 24px;
+    width: 100%;
+}
+
+textarea {
+    resize: none;
+    box-sizing: border-box;
+    width: 100%;
+    height: calc(100% - 24px);
+}
+
+input[type='submit'] {
+    background-color: var(--vscode-button-background);
+    border: none;
+    color: var(--vscode-button-foreground);
+    padding: 10px 20px;
+    cursor: pointer;
+    float: right;
+}
+
+input[type='submit']:disabled {
+    cursor: default;
+}

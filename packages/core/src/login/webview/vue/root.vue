@@ -6,7 +6,7 @@ configure app to AMAZONQ if for Amazon Q login
         <!-- Body -->
         <div class="body">
             <!-- Functionality -->
-            <Login :disabled="false" :app="'TOOLKIT'"></Login>
+            <Login :disabled="false" :app="'AMAZONQ'"></Login>
         </div>
     </div>
 </template>

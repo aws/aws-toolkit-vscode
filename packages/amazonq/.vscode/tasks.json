@@ -13,7 +13,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": ["serve"]
+            "dependsOn": ["copyPackageJson", "serve"]
         },
         {
             "label": "serve",
@@ -32,14 +32,52 @@
                 "background": {
                     "activeOnStart": true,
                     "beginsPattern": "Project is running at",
-                    "endsPattern": "compiled successfully"
+                    "endsPattern": "compiled"
                 }
             }
         },
         {
+            "label": "copyPackageJson",
+            "type": "npm",
+            "script": "copyPackageJson",
+            "problemMatcher": [],
+            "isBackground": false,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "restorePackageJson",
+            "type": "npm",
+            "script": "restorePackageJson",
+            "problemMatcher": [],
+            "isBackground": false,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "terminate",
+            "command": "echo run terminate",
+            "type": "shell",
+            "dependsOn": ["restorePackageJson"]
+        },
+        {
+            "type": "npm",
+            "script": "lint",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "type": "npm",
+            "script": "lintfix",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
             "type": "npm",
             "script": "compile",
-            "dependsOn": ["Kill Tasks"],
+            "dependsOn": ["Kill Tasks", "copyPackageJson"],
             "problemMatcher": "$tsc"
         },
         {
