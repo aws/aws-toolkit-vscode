@@ -49,9 +49,6 @@
     <actions>
         <group id="aws.toolkit.codemodernizer.toolbar">
             <action
-                id="codemodernizer.toolbar.startmodernizer"
-                class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerStartModernizerAction"/>
-            <action
                 id="codemodernizer.toolbar.stopmodernizer"
                 class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerStopModernizerAction"/>
             <separator/>
