@@ -20,6 +20,7 @@ import {
     selectCustomizationPrompt,
     signoutCodeWhisperer,
     showManageCwConnections,
+    toggleCodeScans,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { codeScanState } from '../models/model'
@@ -58,6 +59,41 @@ export function createAutoSuggestions(type: 'item' | 'tree', pause: boolean): an
                 description: pause ? 'Currently RUNNING' : 'Currently PAUSED',
                 onClick: () => toggleCodeSuggestions.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'autoSuggestions'>
+    }
+}
+
+export function createAutoScans(type: 'item', pause: boolean): DataQuickPickItem<'autoScans'>
+export function createAutoScans(type: 'tree', pause: boolean): TreeNode<Command>
+export function createAutoScans(
+    type: 'item' | 'tree',
+    pause: boolean
+): DataQuickPickItem<'autoScans'> | TreeNode<Command>
+export function createAutoScans(type: 'item' | 'tree', pause: boolean): any {
+    const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Scans')
+    const iconResume = getIcon('vscode-debug-alt')
+    const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Auto-Scans')
+    const iconPause = getIcon('vscode-debug-pause')
+
+    switch (type) {
+        case 'tree':
+            return toggleCodeScans.build(placeholder, cwTreeNodeSource).asTreeNode(
+                pause
+                    ? {
+                          label: labelPause,
+                          iconPath: iconPause,
+                      }
+                    : {
+                          label: labelResume,
+                          iconPath: iconResume,
+                      }
+            )
+        case 'item':
+            return {
+                data: 'autoScans',
+                label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
+                description: pause ? 'RUNNING' : 'PAUSED',
+                onClick: () => toggleCodeScans.execute(placeholder, cwQuickPickSource),
+            } as DataQuickPickItem<'autoScans'>
     }
 }
 

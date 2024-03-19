@@ -9,7 +9,7 @@ import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
-import { vsCodeState, ConfigurationEntry, CodeSuggestionsState } from './models/model'
+import { vsCodeState, ConfigurationEntry, CodeSuggestionsState, CodeScansState } from './models/model'
 import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
@@ -40,6 +40,7 @@ import {
     signoutCodeWhisperer,
     showManageCwConnections,
     fetchFeatureConfigsCmd,
+    toggleCodeScans,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -177,6 +178,8 @@ export async function activate(context: ExtContext): Promise<void> {
         connectWithCustomization.register(),
         // toggle code suggestions
         toggleCodeSuggestions.register(CodeSuggestionsState.instance),
+        // toggle code scans
+        toggleCodeScans.register(CodeScansState.instance),
         // enable code suggestions
         enableCodeSuggestions.register(context),
         // code scan

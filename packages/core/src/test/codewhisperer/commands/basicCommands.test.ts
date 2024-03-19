@@ -32,6 +32,7 @@ import { MockDocument } from '../../fake/fakeDocument'
 import { FileSystemCommon } from '../../../srcShared/fs'
 import { getLogger } from '../../../shared/logger/logger'
 import {
+    createAutoScans,
     createAutoSuggestions,
     createGettingStarted,
     createLearnMore,
@@ -329,6 +330,7 @@ describe('CodeWhisperer-basicCommands', function () {
             getTestWindow().onDidShowQuickPick(e => {
                 e.assertItems([
                     createAutoSuggestions('item', false),
+                    createAutoScans('item', false),
                     createSecurityScan('item'),
                     createOpenReferenceLog('item'),
                     createGettingStarted('item'),
@@ -349,6 +351,7 @@ describe('CodeWhisperer-basicCommands', function () {
             getTestWindow().onDidShowQuickPick(e => {
                 e.assertItems([
                     createAutoSuggestions('item', false),
+                    createAutoScans('item', false),
                     createSecurityScan('item'),
                     createSelectCustomization('item'),
                     createOpenReferenceLog('item'),
