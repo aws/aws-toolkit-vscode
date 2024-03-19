@@ -29,5 +29,6 @@ type MessageCommand =
     | 'transform'
     | 'footer-info-link-click'
     | 'file-click'
+    | 'form-action-click'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

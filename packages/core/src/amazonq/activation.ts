@@ -7,7 +7,9 @@ import { ExtensionContext, window } from 'vscode'
 import { AmazonQChatViewProvider } from './webview/webView'
 import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
+import { init as gumbyChatAppInit } from '../amazonqGumby/app'
 import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
+import { featureDevEnabled, gumbyEnabled } from '../amazonqFeatureDev/config'
 import { Commands, VsCodeCommandArg } from '../shared/vscode/commands2'
 import { MessagePublisher } from './messages/messagePublisher'
 import { welcome } from './onboardingPage'
@@ -47,7 +49,12 @@ export async function activate(context: ExtensionContext) {
 
 function registerApps(appInitContext: AmazonQAppInitContext) {
     cwChatAppInit(appInitContext)
-    featureDevChatAppInit(appInitContext)
+    if (featureDevEnabled) {
+        featureDevChatAppInit(appInitContext)
+    }
+    if (gumbyEnabled) {
+        gumbyChatAppInit(appInitContext)
+    }
 }
 
 export const amazonQWelcomeCommand = Commands.declare(

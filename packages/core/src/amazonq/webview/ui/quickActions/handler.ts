@@ -23,6 +23,7 @@ export class QuickActionHandler {
     private tabsStorage: TabsStorage
     private tabDataGenerator: TabDataGenerator
     private isFeatureDevEnabled: boolean
+    private isGumbyEnabled: boolean
 
     constructor(props: QuickActionsHandlerProps) {
         this.mynahUI = props.mynahUI
@@ -33,9 +34,10 @@ export class QuickActionHandler {
             isGumbyEnabled: props.isGumbyEnabled,
         })
         this.isFeatureDevEnabled = props.isFeatureDevEnabled
+        this.isGumbyEnabled = props.isGumbyEnabled
     }
 
-    public handle(chatPrompt: ChatPrompt, tabID: string) {
+    public handle(chatPrompt: ChatPrompt, tabID: string, eventId?: string) {
         this.tabsStorage.resetTabTimer(tabID)
         switch (chatPrompt.command) {
             case '/dev':
@@ -45,7 +47,7 @@ export class QuickActionHandler {
                 this.handleHelpCommand(tabID)
                 break
             case '/transform':
-                this.handleGumbyCommand(tabID)
+                this.handleGumbyCommand(tabID, eventId)
                 break
             case '/clear':
                 this.handleClearCommand(tabID)
@@ -53,8 +55,63 @@ export class QuickActionHandler {
         }
     }
 
-    private handleGumbyCommand(tabID: string) {
-        this.connector.transform(tabID)
+    private handleGumbyCommand(tabID: string, eventId: string | undefined) {
+        if (!this.isGumbyEnabled) {
+            return
+        }
+
+        let gumbyTabId: string | undefined = undefined
+
+        this.tabsStorage.getTabs().forEach(tab => {
+            if (tab.type === 'gumby') {
+                gumbyTabId = tab.id
+            }
+        })
+
+        if (gumbyTabId !== undefined) {
+            this.mynahUI.selectTab(gumbyTabId, eventId || '')
+            this.connector.onTabChange(gumbyTabId)
+            return
+        }
+
+        let affectedTabId: string | undefined = tabID
+        // if there is no gumby tab, open a new one
+        if (this.tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
+            affectedTabId = this.mynahUI.updateStore('', {
+                loadingChat: true,
+                promptInputDisabledState: true,
+            })
+        }
+
+        if (affectedTabId === undefined) {
+            this.mynahUI.notify({
+                content: uiComponentsTexts.noMoreTabsTooltip,
+                type: NotificationType.WARNING,
+            })
+            return
+        } else {
+            this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'gumby')
+            this.connector.onKnownTabOpen(affectedTabId)
+            this.connector.onUpdateTabType(affectedTabId)
+
+            // reset chat history
+            this.mynahUI.updateStore(affectedTabId, {
+                chatItems: [],
+            })
+
+            this.mynahUI.updateStore(
+                affectedTabId,
+                this.tabDataGenerator.getTabData('gumby', true, false, undefined, true)
+            )
+
+            // disable chat prompt
+            this.mynahUI.updateStore(affectedTabId, {
+                loadingChat: true,
+                promptInputDisabledState: true,
+            })
+
+            this.connector.transform(affectedTabId)
+        }
     }
 
     private handleClearCommand(tabID: string) {
@@ -97,7 +154,7 @@ export class QuickActionHandler {
             this.mynahUI.updateStore(affectedTabId, { chatItems: [] })
             this.mynahUI.updateStore(
                 affectedTabId,
-                this.tabDataGenerator.getTabData('featuredev', realPromptText === '', taskName)
+                this.tabDataGenerator.getTabData('featuredev', realPromptText === '', false, taskName)
             )
 
             if (realPromptText !== '') {

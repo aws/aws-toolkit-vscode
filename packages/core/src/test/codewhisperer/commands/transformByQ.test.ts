@@ -22,6 +22,7 @@ import {
     validateOpenProjects,
     getOpenProjects,
     getHeadersObj,
+    TransformationCandidateProject,
 } from '../../../codewhisperer/service/transformByQHandler'
 import path from 'path'
 import { createTestWorkspaceFolder, toFile } from '../../testUtil'
@@ -67,20 +68,20 @@ describe('transformByQ', function () {
             }
         })
         model.transformByQState.setToRunning()
-        await startTransformByQ.confirmStopTransformByQ('abc-123')
+        await startTransformByQ.stopTransformByQ('abc-123')
         assert.strictEqual(model.transformByQState.getStatus(), 'Cancelled')
     })
 
     it('WHEN validateProjectSelection called on non-Java project THEN throws error', async function () {
-        const dummyQuickPickItems: vscode.QuickPickItem[] = [
+        const dummyCandidateProjects: TransformationCandidateProject[] = [
             {
-                label: 'SampleProject',
-                description: '/dummy/path/here',
+                name: 'SampleProject',
+                path: '/dummy/path/here',
             },
         ]
         await assert.rejects(
             async () => {
-                await validateOpenProjects(dummyQuickPickItems)
+                await validateOpenProjects(dummyCandidateProjects)
             },
             {
                 name: 'NoJavaProject',
@@ -95,16 +96,16 @@ describe('transformByQ', function () {
         await toFile('', dummyPath)
         const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
         findFilesStub.onFirstCall().resolves([folder.uri])
-        const dummyQuickPickItems: vscode.QuickPickItem[] = [
+        const dummyCandidateProjects: TransformationCandidateProject[] = [
             {
-                label: 'SampleProject',
-                description: folder.uri.fsPath,
+                name: 'SampleProject',
+                path: folder.uri.fsPath,
             },
         ]
 
         await assert.rejects(
             async () => {
-                await validateOpenProjects(dummyQuickPickItems)
+                await validateOpenProjects(dummyCandidateProjects)
             },
             {
                 name: 'NonMavenProject',
@@ -119,7 +120,7 @@ describe('transformByQ', function () {
             .get(() => [{ uri: vscode.Uri.file('/user/test/project/'), name: 'TestProject', index: 0 }])
 
         const openProjects = await getOpenProjects()
-        assert.strictEqual(openProjects[0].label, 'TestProject')
+        assert.strictEqual(openProjects[0].name, 'TestProject')
     })
 
     it('WHEN getOpenProjects called on empty workspace THEN throws error', async function () {

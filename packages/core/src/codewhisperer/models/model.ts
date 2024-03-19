@@ -15,6 +15,8 @@ import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
 import { autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
+import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
+import { FolderInfo } from '../service/transformByQHandler'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -294,6 +296,12 @@ export class TransformByQState {
 
     private javaHome: string | undefined = undefined
 
+    private chatControllers: ChatControllerEventEmitters | undefined = undefined
+
+    private gumbyChatTabID: string | undefined = undefined
+
+    private dependencyFolderInfo: FolderInfo | undefined = undefined
+
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
     }
@@ -386,6 +394,18 @@ export class TransformByQState {
         return this.javaHome
     }
 
+    public getChatControllers() {
+        return this.chatControllers
+    }
+
+    public getGumbyChatTabID(): string | undefined {
+        return this.gumbyChatTabID
+    }
+
+    public getDependencyFolderInfo(): FolderInfo | undefined {
+        return this.dependencyFolderInfo
+    }
+
     public appendToErrorLog(message: string) {
         this.errorLog += `${message}\n\n`
     }
@@ -472,6 +492,18 @@ export class TransformByQState {
 
     public setJavaHome(javaHome: string) {
         this.javaHome = javaHome
+    }
+
+    public setChatControllers(controllers: ChatControllerEventEmitters) {
+        this.chatControllers = controllers
+    }
+
+    public setGumbyChatTabID(tabID: string | undefined) {
+        this.gumbyChatTabID = tabID
+    }
+
+    public setDependencyFolderInfo(folderInfo: FolderInfo) {
+        this.dependencyFolderInfo = folderInfo
     }
 
     public getPrefixTextForButton() {

@@ -21,12 +21,14 @@ export class TabDataGenerator {
         ['unknown', 'Chat'],
         ['cwc', 'Chat'],
         ['featuredev', 'Q - Dev'],
+        ['gumby', 'Q - Code Transformation'],
     ])
 
     private tabInputPlaceholder: Map<TabType, string> = new Map([
         ['unknown', 'Ask a question or enter "/" for quick actions'],
         ['cwc', 'Ask a question or enter "/" for quick actions'],
         ['featuredev', 'Briefly describe a task or issue'],
+        ['gumby', 'Chat input disabled. Please make a selection to continue.'],
     ])
 
     private tabWelcomeMessage: Map<TabType, string> = new Map([
@@ -51,6 +53,12 @@ Here I can provide code suggestions across files in your current project.
 Before I begin generating code, let's agree on an implementation plan. What change would you like to make?
 `,
         ],
+        [
+            'gumby',
+            `Welcome to Code Transformation!
+
+I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
+        ],
     ])
 
     constructor(props: TabDataGeneratorProps) {
@@ -61,8 +69,14 @@ Before I begin generating code, let's agree on an implementation plan. What chan
         })
     }
 
-    public getTabData(tabType: TabType, needWelcomeMessages: boolean, taskName?: string): MynahUIDataModel {
-        return {
+    public getTabData(
+        tabType: TabType,
+        needWelcomeMessages: boolean,
+        needFollowUp: boolean = true,
+        taskName?: string,
+        needConfirmationClose: boolean = false
+    ): MynahUIDataModel {
+        const tabData: MynahUIDataModel = {
             tabTitle: taskName ?? this.tabTitle.get(tabType),
             promptInputInfo:
                 'Use of Amazon Q is subject to the [AWS Responsible AI Policy](https://aws.amazon.com/machine-learning/responsible-ai/policy/).',
@@ -81,5 +95,14 @@ Before I begin generating code, let's agree on an implementation plan. What chan
                   ]
                 : [],
         }
+
+        if (needConfirmationClose) {
+            tabData.tabCloseConfirmationMessage =
+                'Are you sure want to close the tab? Closing the tab would mean that your running job will stop.'
+            tabData.tabCloseConfirmationCloseButton = 'Close tab'
+            tabData.tabCloseConfirmationKeepButton = 'Keep tab'
+        }
+
+        return tabData
     }
 }

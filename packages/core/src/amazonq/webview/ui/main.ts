@@ -94,13 +94,23 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                         type: ChatItemType.ANSWER,
                         body: 'Authentication successful. Connected to Amazon Q.',
                     })
-                    mynahUI.updateStore(tabID, {
-                        promptInputDisabledState: false,
-                    })
+
+                    if (tabsStorage.getTab(tabID)?.type === 'gumby') {
+                        mynahUI.updateStore(tabID, {
+                            promptInputDisabledState: false,
+                        })
+                    }
                 }
             }
         },
         onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
+        onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => {
+            if (command === 'aws.awsq.transform') {
+                quickActionHandler.handle({ command: '/transform' }, tabID, eventId)
+            } else if (command === 'aws.awsq.clearchat') {
+                quickActionHandler.handle({ command: '/clear' }, tabID)
+            }
+        },
         onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
             return messageController.sendMessageToTab(message, 'cwc')
         },
@@ -119,21 +129,33 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 promptInputDisabledState: tabsStorage.isTabDead(tabID) || !enabled,
             })
         },
-        onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => {
+        onAsyncEventProgress: (
+            tabID: string,
+            inProgress: boolean,
+            message: string | undefined,
+            messageId: string | undefined = undefined
+        ) => {
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
                     promptInputDisabledState: true,
                 })
-                if (message) {
+
+                if (message && messageId) {
+                    mynahUI.updateChatAnswerWithMessageId(tabID, messageId, {
+                        body: message,
+                    })
+                } else if (message) {
                     mynahUI.updateLastChatAnswer(tabID, {
                         body: message,
                     })
+                } else {
+                    mynahUI.addChatItem(tabID, {
+                        type: ChatItemType.ANSWER_STREAM,
+                        body: '',
+                        messageId: messageId,
+                    })
                 }
-                mynahUI.addChatItem(tabID, {
-                    type: ChatItemType.ANSWER_STREAM,
-                    body: '',
-                })
                 tabsStorage.updateTabStatus(tabID, 'busy')
                 return
             }
@@ -146,6 +168,19 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         },
         sendMessageToExtension: message => {
             ideApi.postMessage(message)
+        },
+        onChatAnswerUpdated: (tabID: string, item: ChatItem) => {
+            if (item.messageId !== undefined) {
+                mynahUI.updateChatAnswerWithMessageId(tabID, item.messageId, {
+                    ...(item.body !== undefined ? { body: item.body } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                })
+            } else {
+                mynahUI.updateLastChatAnswer(tabID, {
+                    ...(item.body !== undefined ? { body: item.body } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                } as ChatItem)
+            }
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
@@ -162,7 +197,13 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 return
             }
 
-            if (item.body !== undefined || item.relatedContent !== undefined || item.followUp !== undefined) {
+            if (
+                item.body !== undefined ||
+                item.relatedContent !== undefined ||
+                item.followUp !== undefined ||
+                item.formItems !== undefined ||
+                item.buttons !== undefined
+            ) {
                 mynahUI.addChatItem(tabID, item)
             }
 
@@ -287,7 +328,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         },
         onTabRemove: connector.onTabRemove,
         onTabChange: connector.onTabChange,
-        onChatPrompt: (tabID: string, prompt: ChatPrompt) => {
+        onChatPrompt: (tabID: string, prompt: ChatPrompt, eventId: string | undefined) => {
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
             }
@@ -299,13 +340,19 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             }
 
             if (prompt.command !== undefined && prompt.command.trim() !== '') {
-                quickActionHandler.handle(prompt, tabID)
+                quickActionHandler.handle(prompt, tabID, eventId)
                 return
             }
 
             textMessageHandler.handle(prompt, tabID)
         },
         onVote: connector.onChatItemVoted,
+        onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
+            connector.onCustomFormAction(tabId, messageId, action, eventId)
+        },
+        onCustomFormAction: (tabId, action, eventId) => {
+            connector.onCustomFormAction(tabId, undefined, action, eventId)
+        },
         onSendFeedback: (tabId, feedbackPayload) => {
             connector.sendFeedback(tabId, feedbackPayload)
             mynahUI.notify({
