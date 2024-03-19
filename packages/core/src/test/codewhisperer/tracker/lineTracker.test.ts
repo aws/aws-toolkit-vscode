@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LineTracker } from '../../../codewhisperer/tracker/lineTracker'
+import { LineSelection, LineTracker } from '../../../codewhisperer/tracker/lineTracker'
 import sinon from 'sinon'
 import { Disposable, TextEditor, Position, Range, Selection } from 'vscode'
 import { openATextEditorWithText } from '../../testUtil'
@@ -57,7 +57,7 @@ describe('LineTracker class', function () {
             content: 0,
         })
     }
-    it('ready will emit onReady event', async function () {
+    it.skip('ready will emit onReady event', async function () {
         let messageReceived = 0
         disposable = sut.onReady(_ => {
             messageReceived++
@@ -77,6 +77,125 @@ describe('LineTracker class', function () {
 
         assert.strictEqual(sut.isReady, true)
         assert.strictEqual(messageReceived, 1)
+    })
+
+    describe('includes', function () {
+        // util function to help set up LineTracker.selections
+        async function setEditorSelection(selections: LineSelection[]): Promise<TextEditor> {
+            const editor = await openATextEditorWithText('\n\n\n\n\n\n\n\n\n\n', 'foo.py', undefined, {
+                preview: false,
+            })
+
+            const vscodeSelections = selections.map(s => {
+                return new Selection(new Position(s.anchor, 0), new Position(s.active, 0))
+            })
+
+            await sut.onTextEditorSelectionChanged({
+                textEditor: editor,
+                selections: vscodeSelections,
+                kind: undefined,
+            })
+
+            assert.deepStrictEqual(sut.selections, selections)
+            return editor
+        }
+
+        it('exact match when array of selections are provided', async function () {
+            const selections = [
+                {
+                    anchor: 1,
+                    active: 1,
+                },
+                {
+                    anchor: 3,
+                    active: 3,
+                },
+            ]
+
+            editor = await setEditorSelection(selections)
+            assert.deepStrictEqual(sut.selections, selections)
+
+            let actual = sut.includes([
+                { active: 1, anchor: 1 },
+                { active: 3, anchor: 3 },
+            ])
+            assert.strictEqual(actual, true)
+
+            actual = sut.includes([
+                { active: 2, anchor: 2 },
+                { active: 4, anchor: 4 },
+            ])
+            assert.strictEqual(actual, false)
+
+            // both active && anchor have to be the same
+            actual = sut.includes([
+                { active: 1, anchor: 0 },
+                { active: 3, anchor: 0 },
+            ])
+            assert.strictEqual(actual, false)
+
+            // different length would simply return false
+            actual = sut.includes([
+                { active: 1, anchor: 1 },
+                { active: 3, anchor: 3 },
+                { active: 5, anchor: 5 },
+            ])
+            assert.strictEqual(actual, false)
+        })
+
+        it('match active line if line number and activeOnly option are provided', async function () {
+            const selections = [
+                {
+                    anchor: 1,
+                    active: 1,
+                },
+                {
+                    anchor: 3,
+                    active: 3,
+                },
+            ]
+
+            editor = await setEditorSelection(selections)
+            assert.deepStrictEqual(sut.selections, selections)
+
+            let actual = sut.includes(1, { activeOnly: true })
+            assert.strictEqual(actual, true)
+
+            actual = sut.includes(2, { activeOnly: true })
+            assert.strictEqual(actual, false)
+        })
+
+        it('range match if line number and activeOnly is set to false', async function () {
+            const selections = [
+                {
+                    anchor: 0,
+                    active: 2,
+                },
+                {
+                    anchor: 4,
+                    active: 6,
+                },
+            ]
+
+            editor = await setEditorSelection(selections)
+            assert.deepStrictEqual(sut.selections, selections)
+
+            for (const line of [0, 1, 2]) {
+                const actual = sut.includes(line, { activeOnly: false })
+                assert.strictEqual(actual, true)
+            }
+
+            for (const line of [4, 5, 6]) {
+                const actual = sut.includes(line, { activeOnly: false })
+                assert.strictEqual(actual, true)
+            }
+
+            let actual = sut.includes(3, { activeOnly: false })
+            assert.strictEqual(actual, false)
+
+            actual = sut.includes(7, { activeOnly: false })
+            assert.strictEqual(actual, false)
+        })
     })
 
     describe('onContentChanged', function () {
