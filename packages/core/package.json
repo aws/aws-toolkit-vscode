@@ -1298,14 +1298,19 @@
             ],
             "view/title": [
                 {
+                    "command": "aws.amazonq.stopTransformationInHub",
+                    "when": "view == aws.amazonq.transformationHub",
+                    "group": "navigation@1"
+                },
+                {
                     "command": "aws.amazonq.showPlanProgressInHub",
                     "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@3"
+                    "group": "navigation@2"
                 },
                 {
                     "command": "aws.amazonq.showHistoryInHub",
                     "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@4"
+                    "group": "navigation@3"
                 },
                 {
                     "command": "aws.amazonq.transformationHub.summary.reveal",
@@ -3750,6 +3755,12 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.amazonq.stopTransformationInHub",
+                "title": "Stop Transformation",
+                "icon": "$(stop)",
+                "enablement": "gumby.isStopButtonAvailable"
             },
             {
                 "command": "aws.amazonq.showPlanProgressInHub",
