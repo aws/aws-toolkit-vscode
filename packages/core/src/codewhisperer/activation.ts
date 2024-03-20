@@ -63,6 +63,7 @@ import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
 import { listCodeWhispererCommands } from './commands/statusBarCommands'
 import { updateUserProxyUrl } from './client/agent'
+import { Container } from './service/serviceContainer'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -95,6 +96,7 @@ export async function activate(context: ExtContext): Promise<void> {
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
     // Service initialization
+    const container = Container.instance
     ReferenceInlineProvider.instance
     ImportAdderProvider.instance
 
@@ -447,6 +449,8 @@ export async function activate(context: ExtContext): Promise<void> {
             })
         )
     }
+
+    container.ready()
 }
 
 export async function shutdown() {
