@@ -298,8 +298,9 @@ export class LineAnnotationController implements vscode.Disposable {
     }
 
     async markTutorialDone() {
-        await vscode.commands.executeCommand('setContext', inlinehintWipKey, false)
         this._currentState = new EndState()
+        await vscode.commands.executeCommand('setContext', inlinehintWipKey, false)
+        await set(inlinehintKey, this._currentState.id, globals.context.globalState)
     }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
