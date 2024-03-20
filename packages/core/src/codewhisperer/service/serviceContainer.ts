@@ -4,6 +4,7 @@
  */
 
 import { AuthUtil } from '../util/authUtil'
+import { ActiveStateController } from '../views/activeStateController'
 import { LineTracker } from '../tracker/lineTracker'
 
 /**
@@ -27,8 +28,14 @@ export class Container {
     }
 
     readonly lineTracker: LineTracker
+    readonly activeStateController: ActiveStateController
 
     protected constructor(readonly auth: AuthUtil) {
         this.lineTracker = new LineTracker()
+        this.activeStateController = new ActiveStateController(this)
+    }
+
+    ready() {
+        this.lineTracker.ready()
     }
 }
