@@ -107,13 +107,12 @@ export class RecommendationHandler {
     async getServerResponse(
         triggerType: CodewhispererTriggerType,
         isManualTriggerOn: boolean,
-        isFirstPaginationCall: boolean,
         promise: Promise<any>
     ): Promise<any> {
         const timeoutMessage = hasVendedIamCredentials()
             ? 'Generate recommendation timeout.'
             : 'List recommendation timeout'
-        if (isManualTriggerOn && triggerType === 'OnDemand' && (hasVendedIamCredentials() || isFirstPaginationCall)) {
+        if (isManualTriggerOn && triggerType === 'OnDemand' && hasVendedIamCredentials()) {
             return vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
@@ -240,12 +239,7 @@ export class RecommendationHandler {
             const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
             const codewhispererPromise =
                 pagination && !isSM ? client.listRecommendations(mappedReq) : client.generateRecommendations(mappedReq)
-            const resp = await this.getServerResponse(
-                triggerType,
-                config.isManualTriggerEnabled,
-                page === 0 && !retry,
-                codewhispererPromise
-            )
+            const resp = await this.getServerResponse(triggerType, config.isManualTriggerEnabled, codewhispererPromise)
             TelemetryHelper.instance.setSdkApiCallEndTime()
             latency = startTime !== 0 ? performance.now() - startTime : 0
             if ('recommendations' in resp) {
@@ -564,8 +558,8 @@ export class RecommendationHandler {
             if (triggerType === 'OnDemand') {
                 void vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReached)
             }
-            await vscode.commands.executeCommand('aws.codeWhisperer.refresh', true)
-            await Commands.tryExecute('aws.amazonq.refresh', true)
+            vsCodeState.isFreeTierLimitReached = true
+            await Commands.tryExecute('aws.amazonq.refresh')
         }
     }
 

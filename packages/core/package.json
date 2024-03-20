@@ -712,13 +712,9 @@
             ],
             "aws-explorer": [
                 {
-                    "id": "aws.amazonq",
-                    "name": "%AWS.amazonq.title%",
+                    "id": "aws.amazonq.codewhisperer",
+                    "name": "%AWS.amazonq.codewhisperer.title%",
                     "when": "!isCloud9 && !aws.isSageMaker"
-                },
-                {
-                    "id": "aws.codewhisperer",
-                    "name": "%AWS.codewhisperer.explorerTitle%"
                 },
                 {
                     "id": "aws.explorer",
@@ -1299,24 +1295,19 @@
             ],
             "view/title": [
                 {
-                    "command": "aws.amazonq.startTransformationInHub",
+                    "command": "aws.amazonq.stopTransformationInHub",
                     "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "aws.amazonq.stopTransformationInHub",
+                    "command": "aws.amazonq.showPlanProgressInHub",
                     "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "aws.amazonq.showPlanProgressInHub",
-                    "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@3"
-                },
-                {
                     "command": "aws.amazonq.showHistoryInHub",
                     "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@4"
+                    "group": "navigation@3"
                 },
                 {
                     "command": "aws.amazonq.transformationHub.summary.reveal",

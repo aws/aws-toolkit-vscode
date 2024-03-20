@@ -310,3 +310,30 @@ export function sanitizeFilename(input: string, replaceString = '_'): string {
             )
     )
 }
+
+// Given number of milliseconds elapsed (ex. 4,500,000) return hr / min / sec it represents (ex. "1 hr 15 min")
+export function convertToTimeString(durationInMs: number) {
+    const time = new Date(durationInMs)
+    const hours = time.getUTCHours()
+    const minutes = time.getUTCMinutes()
+    const seconds = time.getUTCSeconds()
+    let timeString = `${seconds} sec`
+    if (minutes > 0) {
+        timeString = `${minutes} min ${timeString}`
+    }
+    if (hours > 0) {
+        timeString = `${hours} hr ${timeString}`
+    }
+    return timeString
+}
+
+// Given Date object, return timestamp it represents (ex. "01/01/23, 12:00 AM")
+export function convertDateToTimestamp(date: Date) {
+    return date.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+}

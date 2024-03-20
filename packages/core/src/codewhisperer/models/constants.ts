@@ -284,34 +284,49 @@ export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
 export const newCustomizationMessage = 'You have access to new CodeWhisperer customizations.'
 
-export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVAILABLE'
+export const newCustomizationsAvailableKey = 'aws.amazonq.codewhisperer.newCustomizations'
 
-// Amazon Q CodeTransformation
+// Amazon Q Code Transformation
+
+export const amazonQFeedbackKey = 'Amazon Q'
+
+export const amazonQFeedbackText = 'Submit feedback'
 
 export const selectProjectPrompt = 'Select the project you want to transform'
 
+export const compilingProjectMessage = 'Amazon Q is compiling your project. This can take up to 10 minutes.'
+
+export const submittedProjectMessage =
+    'Your project has been submitted for transformation. The code transformation process may take 10-30 mins depending on the size of your project.'
+
 export const unsupportedJavaVersionSelectedMessage =
-    'Thank you for trying our product. We currently only support Java 8 and 11. We appreciate you taking the time to use the product, and hope to expand support to more Java versions in the future. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
+    'None of your open projects are supported by Amazon Q Code Transformation. For more information, see the [Amazon Q documentation](LINK_HERE).'
 
 export const transformByQWindowTitle = 'Amazon Q Code Transformation'
+
+export const failedToStartJobMessage =
+    "Amazon Q couldn't begin the transformation. Try starting the transformation again."
+
+export const failedToCompleteJobMessage =
+    "Amazon Q couldn't complete the transformation. Try starting the transformation again."
 
 export const stopTransformByQMessage = 'Stop transformation?'
 
 export const stoppingTransformByQMessage = 'Stopping transformation...'
 
-export const transformByQFailedMessage = 'Transformation failed'
+export const transformByQCancelledMessage = 'You cancelled the transformation.'
 
-export const transformByQCancelledMessage = 'Transformation cancelled'
+export const transformByQCompletedMessage =
+    'Amazon Q successfully transformed your code. You can download a summary of the transformation and a diff with proposed changes in the Transformation Hub.'
 
-export const transformByQCompletedMessage = 'Transformation completed'
-
-export const transformByQPartiallyCompletedMessage = 'Transformation partially completed'
+export const transformByQPartiallyCompletedMessage =
+    'Amazon Q partially transformed your code. You can download a summary of the transformation and a diff with proposed changes in the Transformation Hub.'
 
 export const noPomXmlFoundMessage =
-    'None of your open Java projects are supported by Amazon Q Code Transformation. We were unable to find a pom.xml in any of your Java projects. We only support Java projects built on Maven at the moment. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
+    'None of your open Java projects are supported by Amazon Q Code Transformation. Currently, Amazon Q can only upgrade Java projects built on Maven. A pom.xml must be present in the root of your project to upgrade it. For more information, see the [Amazon Q documentation](LINK_HERE).'
 
 export const noActiveIdCMessage =
-    'Amazon Q Code Transformation requires an active IAM Identity Center connection. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
+    'Amazon Q Code Transformation requires an active IAM Identity Center connection. For more information, see the [Code Transformation documentation](LINK_HERE).'
 
 export const noOngoingJobMessage = 'No job is in-progress at the moment'
 
@@ -319,33 +334,49 @@ export const jobInProgressMessage = 'Job is already in-progress'
 
 export const cancellationInProgressMessage = 'Cancellation is in-progress'
 
-export const errorStoppingJobMessage = 'Error stopping job'
+export const errorStoppingJobMessage = "Amazon Q couldn't stop the transformation."
 
 export const errorDownloadingDiffMessage =
-    'Amazon Q Code Transformation experienced an error when downloading the diff. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19c11'
+    "Amazon Q couldn't download the diff with your upgraded code. Try downloading it again. For more information, see the [Amazon Q documentation](LINK_HERE)."
+
+export const emptyDiffMessage =
+    "Amazon Q didn't make any changes to upgrade your code. Try restarting the transformation."
 
 export const errorDeserializingDiffMessage =
-    'Amazon Q Code Transformation experienced an error during the deserialization of the downloaded result archive. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19c11'
-
-export const buildLogsDocumentationMessage =
-    'Please also see https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19b7'
+    "Amazon Q couldn't parse the diff with your upgraded code. Try restarting the transformation."
 
 export const viewProposedChangesMessage =
-    'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.'
+    'Download complete. You can view a summary of the transformation and accept or reject the proposed changes in the Transformation Hub.'
 
-export const changesAppliedMessage = 'Changes applied'
+export const changesAppliedMessage = 'Amazon Q applied the changes to your project.'
 
 export const noSupportedJavaProjectsFoundMessage =
-    'None of your open projects are supported by Amazon Q Code Transformation. We were unable to find a Java project. We only support Java projects built on Maven at the moment. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
+    'None of your open projects are supported by Amazon Q Code Transformation. Currently, Amazon Q can only upgrade Java projects built on Maven. For more information, see the [Amazon Q documentation](LINK_HERE).'
+
+export const linkToDocsHome = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
+
+export const linkToPrerequisites =
+    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
+
+export const linkToMavenTroubleshooting =
+    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19b7'
+
+export const linkToUploadZipTooLarge =
+    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19b5'
+
+export const linkToDownloadZipTooLarge =
+    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19c11'
 
 export const dependencyDisclaimer =
-    'Please confirm you are ready to proceed with the transformation. Amazon Q Code Transformation will upload the application code and its dependency binaries from your machine to start the upgrade. If you have not yet compiled the application on your local machine, please do so once before starting the upgrade. Install Maven to ensure all module dependencies are picked for Transformation.'
+    'Please confirm you are ready to proceed with the transformation. Amazon Q Code Transformation will upload the application code and its dependency binaries from your machine to start the upgrade. If you have not yet compiled the application on your local machine, please do so once before starting the upgrade.'
 
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
-export const installErrorMessage = 'Failed to execute Maven install.'
+export const installErrorMessage =
+    "Amazon Q couldn't execute the Maven install command. To troubleshoot, see the [Amazon Q Code Transformation documentation](LINK_HERE)."
 
-export const dependencyErrorMessage = 'Failed to execute Maven copy-dependencies.'
+export const dependencyErrorMessage =
+    "Amazon Q couldn't execute the Maven copy-dependencies command. To troubleshoot, see the [Amazon Q Code Transformation documentation](LINK_HERE)."
 
 export const planIntroductionMessage =
     'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'
@@ -355,16 +386,16 @@ export const planDisclaimerMessage = '**Proposed transformation changes** \n\n\n
 export const enterJavaHomeMessage = 'Enter the path to JDK'
 
 export const windowsJavaHomeHelpMessage =
-    'In a terminal, try running "cd C:\\Program Files\\Java" and then "dir" to see a list of installed JDKs. Then "cd" into JDK JAVA_VERSION_HERE (if present) and run "cd" once more to get the path we need. It should look something like "C:\\Program Files\\Java\\jdk-11.0.1"'
+    'To find your JDK JAVA_VERSION_HERE path, run "cd C:\\Program Files\\Java" and then "dir" in a new IDE terminal. If you see JDK JAVA_VERSION_HERE, "cd" into that directory and run "cd" once more to show the path. The path should look similar to this: "C:\\Program Files\\Java\\jdk-11.0.1".'
 
 export const nonWindowsJava8HomeHelpMessage =
-    'Try running "/usr/libexec/java_home -v 1.8" in a terminal to find this. It should look something like "/Library/Java/JavaVirtualMachines/jdk-8.jdk/Contents/Home"'
+    'To find your JDK 8 path, run this command in a new IDE terminal: "/usr/libexec/java_home -v 1.8". The JDK 8 path should look like this: "/Library/Java/JavaVirtualMachines/jdk-8.jdk/Contents/Home".'
 
 export const nonWindowsJava11HomeHelpMessage =
-    'Try running "/usr/libexec/java_home -v 11" in a terminal to find this. It should look something like "/Library/Java/JavaVirtualMachines/jdk-11.jdk/Contents/Home"'
+    'To find your JDK 11 path, run this command in a new IDE terminal: "/usr/libexec/java_home -v 11". The JDK 11 path should look like this: "/Library/Java/JavaVirtualMachines/jdk-11.jdk/Contents/Home".'
 
 export const projectSizeTooLargeMessage =
-    'Your project size exceeds the Amazon Q Code Transformation upload limit of 1GB. Please see: https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
+    'Your project size exceeds the Amazon Q Code Transformation upload limit of 1GB. For more information, see the [Code Transformation documentation](LINK_HERE).'
 
 export const JDK8VersionNumber = '52'
 
@@ -374,7 +405,7 @@ export const numMillisecondsPerSecond = 1000
 
 export const uploadZipSizeLimitInBytes = 1000000000 // 1GB
 
-export const maxBufferSize = 1024 * 1024 // this is 1MB, the default max buffer size for stdout for spawnSync
+export const maxBufferSize = 1024 * 1024 * 8 // this is 8MB; the default max buffer size for stdout for spawnSync is 1MB
 
 export const transformByQStateRunningMessage = 'running'
 
@@ -390,7 +421,7 @@ export const transformByQStoppedState = 'STOPPED'
 
 export const transformationJobPollingIntervalSeconds = 10
 
-export const transformationJobTimeoutSeconds = 72000
+export const transformationJobTimeoutSeconds = 60 * 60 // 1 hour, to match backend
 
 export const progressIntervalMs = 1000
 
