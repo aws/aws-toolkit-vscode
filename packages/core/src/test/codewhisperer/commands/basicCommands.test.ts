@@ -50,7 +50,7 @@ import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
 import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
-import { switchToAmazonQNode } from '../../../amazonq/explorer/amazonQChildrenNodes'
+import { createTransformByQ, switchToAmazonQNode } from '../../../amazonq/explorer/amazonQChildrenNodes'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -356,6 +356,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     createGettingStarted(),
                     switchToAmazonQNode('item'),
                     createSecurityScan(),
+                    createTransformByQ(),
                     ...genericItems,
                     createSettingsNode(),
                     createSignout()

@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { telemetry } from '../shared/telemetry/telemetry'
 import { ExtContext } from '../shared/extensions'
 import { Commands } from '../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
@@ -26,6 +27,13 @@ export const showTransformByQ = Commands.declare(
             void vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
         } else if (transformByQState.isRunning()) {
             await confirmStopTransformByQ(transformByQState.getJobId(), CancelActionPositions.DevToolsSidePanel)
+        }
+        // emit telemetry if clicked from tree node
+        if (source === CodeWhispererConstants.transformTreeNode) {
+            telemetry.ui_click.emit({
+                elementId: 'amazonq_transform',
+                passive: false,
+            })
         }
     }
 )
