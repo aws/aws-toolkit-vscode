@@ -8,6 +8,19 @@ import { activeStateController } from '../views/activeStateController'
 import { LineAnnotationController } from '../views/lineAnnotationController'
 import { LineTracker } from '../tracker/lineTracker'
 
+/**
+ * Container for CodeWhisperer sub-components
+ * Please utilize this container class as the bridge to access other components to avoid create singleton objects when it's not necessary.
+ * Example:
+ * class SubComponent {
+ *      constructor(private readonly container: Container) {}
+ *
+ *      public doSomething() {
+ *          const isConnected = this.container.authProvider.isConnected()
+ *          this.anotherComponent.update(isConnected)
+ *      }
+ * }
+ */
 export class Container {
     static #instance: Container | undefined
 
