@@ -280,7 +280,6 @@ export class LineAnnotationController implements vscode.Disposable {
 
     isTutorialDone(): boolean {
         return this._currentState.id === new EndState().id
-        // return true
     }
 
     /**
@@ -398,7 +397,7 @@ export class LineAnnotationController implements vscode.Disposable {
             // special case
             // case 3 exit criteria is to fade away in 30s
             setTimeout(async () => {
-                this._currentState = new EndState()
+                this.markTutorialDone()
                 await this.refresh(editor, source, e)
             }, case3TimeWindow)
         }
