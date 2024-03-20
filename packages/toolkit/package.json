@@ -1,0 +1,82 @@
+{
+    "name": "aws-toolkit-vscode",
+    "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
+    "description": "Including Amazon Q, CodeWhisperer, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
+    "version": "2.16.0-SNAPSHOT",
+    "extensionKind": [
+        "workspace"
+    ],
+    "publisher": "amazonwebservices",
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/aws/aws-toolkit-vscode"
+    },
+    "icon": "resources/marketplace/aws-icon-256x256.png",
+    "bugs": {
+        "url": "https://github.com/aws/aws-toolkit-vscode/issues"
+    },
+    "galleryBanner": {
+        "color": "#FF9900",
+        "theme": "light"
+    },
+    "categories": [
+        "Debuggers",
+        "Linters",
+        "Visualization",
+        "Other"
+    ],
+    "keywords": [
+        "Lambda",
+        "CodeCatalyst",
+        "CodeWhisperer",
+        "Code",
+        "Whisperer"
+    ],
+    "preview": false,
+    "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
+    "activationEvents": [
+        "onStartupFinished",
+        "onUri",
+        "onDebugResolve:aws-sam",
+        "onView:aws.codeWhisperer.securityPanel",
+        "onDebugInitialConfigurations",
+        "onLanguage:javascript",
+        "onLanguage:java",
+        "onLanguage:python",
+        "onLanguage:csharp",
+        "onLanguage:yaml",
+        "onFileSystem:s3",
+        "onFileSystem:s3-readonly",
+        "onCommand:aws.codeWhisperer.accept"
+    ],
+    "main": "./dist/src/main",
+    "browser": "./dist/src/mainWeb",
+    "engines": "This field will be autopopulated from the core module during debugging and packaging.",
+    "contributes": "This field will be autopopulated from the core module during debugging and packaging.",
+    "scripts": {
+        "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
+        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles",
+        "generateNonCodeFiles": "ts-node ./scripts/build/generateNonCodeFiles.ts",
+        "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
+        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* README* CHANGELOG.md",
+        "compile": "npm run clean && npm run buildScripts && webpack --mode development",
+        "webWatch": "npm run clean && npm run copyFiles --vueHr && webpack --config-name web --watch",
+        "webCompile": "npm run clean && npm run buildScripts -- --vueHr && webpack --config-name web",
+        "webRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
+        "package": "npm run copyPackageJson && ts-node ../../scripts/package.ts && npm run restorePackageJson",
+        "install-plugin": "vsce package --ignoreFile '../.vscodeignore.packages' -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
+        "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
+        "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
+        "lint": "echo 'Nothing to lint yet!'",
+        "createRelease": "ts-node ./scripts/build/createRelease.ts",
+        "watch": "npm run clean && npm run buildScripts -- --vueHr && tsc -watch -p ./",
+        "serve": "webpack serve --config-name mainServe --mode development",
+        "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
+        "restorePackageJson": "ts-node ./scripts/build/handlePackageJson --restore"
+    },
+    "devDependencies": {},
+    "dependencies": {
+        "aws-core-vscode": "file:../core/"
+    }
+}
