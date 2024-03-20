@@ -222,8 +222,10 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         this._disposable = vscode.Disposable.from(
-            subscribeOnce(this.container.lineTracker.onReady)(this.onReady, this),
-            RecommendationService.instance.suggestionActionEvent(e => {
+            subscribeOnce(this.container.lineTracker.onReady)(async _ => {
+                await this.onReady()
+            }),
+            RecommendationService.instance.suggestionActionEvent(async e => {
                 if (!this._isReady) {
                     return
                 }
@@ -241,16 +243,18 @@ export class LineAnnotationController implements vscode.Disposable {
                     }
                 }
 
-                this.refresh(e.editor, 'codewhisperer', e)
+                await this.refresh(e.editor, 'codewhisperer', e)
             }),
-            this.container.lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
+            this.container.lineTracker.onDidChangeActiveLines(async e => {
+                await this.onActiveLinesChanged(e)
+            }),
             this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
-                    this.refresh(vscode.window.activeTextEditor, 'editor')
+                    await this.refresh(vscode.window.activeTextEditor, 'editor')
                 }
             }),
             this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
-                this.refresh(vscode.window.activeTextEditor, 'editor')
+                await this.refresh(vscode.window.activeTextEditor, 'editor')
             }),
             Commands.register('aws.codeWhisperer.dismissTutorial', async () => {
                 const editor = vscode.window.activeTextEditor
@@ -273,9 +277,9 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _isReady: boolean = false
 
-    private onReady(): void {
+    private async onReady(): Promise<void> {
         this._isReady = !(this._currentState instanceof EndState)
-        this._refresh(vscode.window.activeTextEditor, 'editor')
+        await this._refresh(vscode.window.activeTextEditor, 'editor')
     }
 
     isTutorialDone(): boolean {
@@ -285,11 +289,11 @@ export class LineAnnotationController implements vscode.Disposable {
     /**
      * Since case 3's exit criteria is either 30 sec timeout or user clicks status bar, this function will be called within status bar command {@link listCodeWhispererCommands} to update inline decoration state if user is at case 3 and they press status bar.
      */
-    clickStatusBar() {
+    async clickStatusBar() {
         if (this._currentState instanceof TryMoreExState) {
             this._currentState.hasUserClickStatusbar = true
 
-            this.refresh(vscode.window.activeTextEditor, 'editor')
+            await this.refresh(vscode.window.activeTextEditor, 'editor')
         }
     }
 
@@ -321,8 +325,8 @@ export class LineAnnotationController implements vscode.Disposable {
     }
 
     readonly refresh = cancellableDebounce(
-        (editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) => {
-            this._refresh(editor, source, e)
+        async (editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, e?: any) => {
+            await this._refresh(editor, source, e)
         },
         250
     ).promise
@@ -391,13 +395,13 @@ export class LineAnnotationController implements vscode.Disposable {
             // special case
             // Endstate is meaningless and doesnt need to be rendered
             this.clear()
-            this.markTutorialDone()
+            await this.markTutorialDone()
             return
         } else if (decorationOptions.renderOptions?.after?.contentText === new TryMoreExState().text()) {
             // special case
             // case 3 exit criteria is to fade away in 30s
             setTimeout(async () => {
-                this.markTutorialDone()
+                await this.markTutorialDone()
                 await this.refresh(editor, source, e)
             }, case3TimeWindow)
         }
@@ -405,7 +409,7 @@ export class LineAnnotationController implements vscode.Disposable {
         decorationOptions.range = range
 
         await set(inlinehintKey, this._currentState.id, globals.context.globalState)
-        vscode.commands.executeCommand('setContext', inlinehintWipKey, true)
+        await vscode.commands.executeCommand('setContext', inlinehintWipKey, true)
         editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
     }
 
