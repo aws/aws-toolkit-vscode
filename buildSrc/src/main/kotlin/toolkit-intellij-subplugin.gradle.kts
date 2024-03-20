@@ -50,14 +50,6 @@ configurations {
         exclude(group = "org.slf4j")
         exclude(group = "org.jetbrains.kotlin")
         exclude(group = "org.jetbrains.kotlinx")
-
-        // Exclude dependencies we don't use to make plugin smaller
-        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
-    }
-
-    testRuntimeClasspath {
-        // Conflicts with CRT in test classpath
-        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
     }
 
     all {

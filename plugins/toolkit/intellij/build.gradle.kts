@@ -93,7 +93,6 @@ configurations {
         exclude(group = "org.slf4j")
         exclude(group = "org.jetbrains.kotlin")
         exclude(group = "org.jetbrains.kotlinx")
-        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
     }
 }
 

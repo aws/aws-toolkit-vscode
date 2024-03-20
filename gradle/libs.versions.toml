@@ -50,6 +50,7 @@ aws-ecs = { module = "software.amazon.awssdk:ecs", version.ref = "awsSdk" }
 aws-iam = { module = "software.amazon.awssdk:iam", version.ref = "awsSdk" }
 aws-jsonProtocol = { module = "software.amazon.awssdk:aws-json-protocol", version.ref = "awsSdk" }
 aws-lambda = { module = "software.amazon.awssdk:lambda", version.ref = "awsSdk" }
+aws-nettyClient = { module = "software.amazon.awssdk:netty-nio-client", version.ref = "awsSdk" }
 aws-queryProtocol = { module = "software.amazon.awssdk:aws-query-protocol", version.ref = "awsSdk" }
 aws-rds = { module = "software.amazon.awssdk:rds", version.ref = "awsSdk" }
 aws-redshift = { module = "software.amazon.awssdk:redshift", version.ref = "awsSdk" }

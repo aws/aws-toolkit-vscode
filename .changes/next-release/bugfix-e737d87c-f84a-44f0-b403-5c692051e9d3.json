@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Respect IDE HTTP proxy server settings when using Amazon Q"
+}
