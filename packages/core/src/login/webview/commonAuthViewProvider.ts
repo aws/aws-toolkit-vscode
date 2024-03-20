@@ -59,11 +59,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             app === 'TOOLKIT'
                 ? VueWebview.compilePanel(ToolkitLoginWebview)
                 : VueWebview.compilePanel(AmazonQLoginWebview)
-        this.source = path.join(
-            'vue/src/login/webview/vue',
-            app === 'TOOLKIT' ? 'toolkit' : 'amazonq',
-            'index.js'
-        ) // Sent to dist/vue folder in webpack.
+        this.source = path.join('vue/src/login/webview/vue', app === 'TOOLKIT' ? 'toolkit' : 'amazonq', 'index.js') // Sent to dist/vue folder in webpack.
         // `context` is `ExtContext` provided on activation
         this.webView = new Panel(extensionContext, this.source)
     }

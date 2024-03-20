@@ -31,12 +31,15 @@ interface VsCodeState {
      * Timestamp of previous user edit
      */
     lastUserModificationTime: number
+
+    isFreeTierLimitReached: boolean
 }
 
 export const vsCodeState: VsCodeState = {
     isIntelliSenseActive: false,
     isCodeWhispererEditing: false,
     lastUserModificationTime: 0,
+    isFreeTierLimitReached: false,
 }
 
 export type UtgStrategy = 'ByName' | 'ByContent'
