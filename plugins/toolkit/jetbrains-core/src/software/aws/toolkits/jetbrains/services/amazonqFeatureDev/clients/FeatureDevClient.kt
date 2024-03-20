@@ -48,7 +48,8 @@ class FeatureDevClient(private val project: Project) {
 
     private fun streamingBearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererStreamingAsyncClient>()
 
-    private val amazonQStreamingClient = AmazonQStreamingClient.getInstance(project)
+    private val amazonQStreamingClient
+        get() = AmazonQStreamingClient.getInstance(project)
 
     fun createTaskAssistConversation(): CreateTaskAssistConversationResponse = bearerClient().createTaskAssistConversation(
         CreateTaskAssistConversationRequest.builder().build()

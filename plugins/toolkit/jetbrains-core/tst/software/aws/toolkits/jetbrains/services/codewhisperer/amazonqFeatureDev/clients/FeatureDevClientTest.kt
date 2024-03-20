@@ -5,20 +5,21 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.amazonqFeatureDev
 
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.replaceService
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.ArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssistConversationRequest
@@ -31,13 +32,14 @@ import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssis
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClient
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
+import software.amazon.awssdk.services.codewhispererstreaming.model.ExportResultArchiveRequest
+import software.amazon.awssdk.services.codewhispererstreaming.model.ExportResultArchiveResponseHandler
 import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanRequest
 import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanResponseHandler
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ManagedSsoProfile
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
@@ -81,10 +83,17 @@ class FeatureDevClientTest : FeatureDevTestBase() {
         }
 
         streamingBearerClient = mockClientManagerRule.create<CodeWhispererStreamingAsyncClient>().stub {
-            on { generateTaskAssistPlan(any<GenerateTaskAssistPlanRequest>(), any<GenerateTaskAssistPlanResponseHandler>()) } doReturn CompletableFuture()
+            on {
+                generateTaskAssistPlan(any<GenerateTaskAssistPlanRequest>(), any<GenerateTaskAssistPlanResponseHandler>())
+            } doReturn CompletableFuture.completedFuture(mock()) // void type can't be instantiated
+
+            on {
+                exportResultArchive(any<ExportResultArchiveRequest>(), any<ExportResultArchiveResponseHandler>())
+            } doReturn CompletableFuture.completedFuture(mock()) // void type can't be instantiated
         }
 
         amazonQStreamingClient = mock<AmazonQStreamingClient>()
+        projectRule.project.replaceService(AmazonQStreamingClient::class.java, amazonQStreamingClient, disposableRule.disposable)
 
         val mockConnection = mock<AwsBearerTokenConnection>()
         whenever(mockConnection.getConnectionSettings()) doReturn mock<TokenConnectionSettings>()
@@ -132,31 +141,28 @@ class FeatureDevClientTest : FeatureDevTestBase() {
     }
 
     @Test
-    fun `check generateTaskAssistPlan`() {
-        val requestCaptor = ArgumentCaptor.forClass(GenerateTaskAssistPlanRequest::class.java)
-        val handlerCaptor = ArgumentCaptor.forClass(GenerateTaskAssistPlanResponseHandler::class.java)
+    fun `check generateTaskAssistPlan`() = runTest {
+        val requestCaptor = argumentCaptor<GenerateTaskAssistPlanRequest>()
+        val handlerCaptor = argumentCaptor<GenerateTaskAssistPlanResponseHandler>()
 
-        projectCoroutineScope(project).launch {
-            featureDevClient.generateTaskAssistPlan(testConversationId, "test-upload-id", "test-user-message")
-            argumentCaptor<GenerateTaskAssistPlanRequest, GenerateTaskAssistPlanResponseHandler>().apply {
-                verify(streamingBearerClient).generateTaskAssistPlan(requestCaptor.capture(), handlerCaptor.capture())
-                verifyNoInteractions(bearerClient)
-            }
+        featureDevClient.generateTaskAssistPlan(testConversationId, "test-upload-id", "test-user-message")
+        argumentCaptor<GenerateTaskAssistPlanRequest, GenerateTaskAssistPlanResponseHandler>().apply {
+            verify(streamingBearerClient).generateTaskAssistPlan(requestCaptor.capture(), handlerCaptor.capture())
+            verifyNoInteractions(bearerClient)
         }
     }
 
     @Test
-    fun `check exportTaskAssistResultArchive`() {
-        projectCoroutineScope(project).launch {
-            whenever(amazonQStreamingClient.exportResultArchive(any<String>(), any<ExportIntent>(), any(), any())) doReturn exampleExportResultArchiveResponse
+    fun `check exportTaskAssistResultArchive`() = runTest {
+        whenever(amazonQStreamingClient.exportResultArchive(any<String>(), any<ExportIntent>(), any(), any())) doReturn exampleExportResultArchiveResponse
 
-            val actual = featureDevClient.exportTaskAssistResultArchive("1234")
+        val actual = featureDevClient.exportTaskAssistResultArchive("1234")
 
-            verifyNoInteractions(bearerClient)
-            verifyNoInteractions(streamingBearerClient)
-            assertThat(actual).isInstanceOf(ByteArray::class.java)
-            assertThat(actual).usingRecursiveComparison().isEqualTo(exampleExportResultArchiveResponse)
-        }
+        verify(amazonQStreamingClient).exportResultArchive(eq("1234"), eq(ExportIntent.TASK_ASSIST), any(), any())
+        verifyNoInteractions(bearerClient)
+        verifyNoInteractions(streamingBearerClient)
+        verifyNoMoreInteractions(amazonQStreamingClient)
+        assertThat(actual).usingRecursiveComparison().isEqualTo(exampleExportResultArchiveResponse)
     }
 
     @Test
