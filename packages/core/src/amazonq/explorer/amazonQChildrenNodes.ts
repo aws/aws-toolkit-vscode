@@ -93,11 +93,10 @@ export const createTransformByQ = () => {
     } else if (transformByQState.isNotStarted()) {
         status = ''
     }
-
-    return {
-        data: 'transformByQ',
+    return showTransformByQ.build(CodeWhispererConstants.transformTreeNode).asTreeNode({
         label: status !== '' ? `${prefix} Transform [Job status: ` + status + `]` : `Transform`,
         iconPath: transformByQState.getIconForButton(),
-        onClick: () => showTransformByQ.execute(placeholder),
-    }
+        tooltip: `${prefix} Transform`,
+        contextValue: `${prefix}TransformByQ`,
+    })
 }

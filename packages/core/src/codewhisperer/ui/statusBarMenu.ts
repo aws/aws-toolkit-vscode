@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import {
     createAutoSuggestions,
     createOpenReferenceLog,
@@ -33,7 +32,6 @@ import { once } from '../../shared/utilities/functionUtils'
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
-    void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
     if (AuthUtil.instance.isConnectionExpired()) {
         return [createReconnect('item'), createLearnMore()]
     }
@@ -58,10 +56,6 @@ function getAmazonQCodeWhispererNodes() {
         return [createAutoSuggestions(autoTriggerEnabled), createOpenReferenceLog()]
     }
 
-    if (AuthUtil.instance.isValidEnterpriseSsoInUse()) {
-        void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
-    }
-
     // TODO: Remove when web is supported for amazonq
     let amazonq
     if (!isWeb()) {
@@ -82,7 +76,6 @@ function getAmazonQCodeWhispererNodes() {
         createSeparator('Other Features'),
         ...(amazonq ? [amazonq.switchToAmazonQNode('item')] : []),
         createSecurityScan(),
-        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && amazonq ? [amazonq.createTransformByQ()] : []),
     ]
 }
 
