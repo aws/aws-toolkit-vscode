@@ -100,12 +100,15 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
 }
 
 export const listCodeWhispererCommandsId = 'aws.codewhisperer.listCommands'
-export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispererCommandsId }, () => async () => {
-    once(() => telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' }))()
-    await Container.instance.lineAnnotationController.clickStatusBar()
-    return createQuickPick(getQuickPickItems(), {
-        title: 'Amazon Q (Preview) + CodeWhisperer',
-        buttons: [createExitButton()],
-        ignoreFocusOut: false,
-    }).prompt()
-})
+export const listCodeWhispererCommands = Commands.declare(
+    { id: listCodeWhispererCommandsId },
+    (container: Container) => async () => {
+        once(() => telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' }))()
+        await container.lineAnnotationController.clickStatusBar()
+        return createQuickPick(getQuickPickItems(), {
+            title: 'Amazon Q (Preview) + CodeWhisperer',
+            buttons: [createExitButton()],
+            ignoreFocusOut: false,
+        }).prompt()
+    }
+)

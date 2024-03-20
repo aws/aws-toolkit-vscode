@@ -206,7 +206,7 @@ export async function activate(context: ExtContext): Promise<void> {
         // apply suggested fix
         applySecurityFix.register(),
         // quick pick with codewhisperer options
-        listCodeWhispererCommands.register(),
+        listCodeWhispererCommands.register(container),
         // manual trigger
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(
@@ -226,7 +226,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * On recommendation acceptance
          */
-        acceptSuggestion.register(context),
+        acceptSuggestion.register(context, container),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
             if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
