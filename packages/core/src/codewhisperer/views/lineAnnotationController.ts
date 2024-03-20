@@ -283,6 +283,9 @@ export class LineAnnotationController implements vscode.Disposable {
         // return true
     }
 
+    /**
+     * Since case 3's exit criteria is either 30 sec timeout or user clicks status bar, this function will be called within status bar command {@link listCodeWhispererCommands} to update inline decoration state if user is at case 3 and they press status bar.
+     */
     clickStatusBar() {
         if (this._currentState instanceof TryMoreExState) {
             this._currentState.hasUserClickStatusbar = true
