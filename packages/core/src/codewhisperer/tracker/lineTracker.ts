@@ -18,6 +18,10 @@ export interface LinesChangeEvent {
     readonly reason: 'editor' | 'selection' | 'content'
 }
 
+/**
+ * This class providees a single interface to manage and access users' "line" selections
+ * Callers could use it by subscribing onDidChangeActiveLines to do UI updates or logic needed to be executed when line selections get changed
+ */
 export class LineTracker implements vscode.Disposable {
     private _onDidChangeActiveLines = new vscode.EventEmitter<LinesChangeEvent>()
     get onDidChangeActiveLines(): vscode.Event<LinesChangeEvent> {
@@ -45,11 +49,11 @@ export class LineTracker implements vscode.Disposable {
 
     constructor() {
         this._disposable = vscode.Disposable.from(
-            vscode.window.onDidChangeActiveTextEditor(async e => {
-                await this.onActiveTextEditorChanged(undefined)
+            vscode.window.onDidChangeActiveTextEditor(e => {
+                this.onActiveTextEditorChanged(undefined)
             }),
-            vscode.window.onDidChangeTextEditorSelection(async e => {
-                await this.onTextEditorSelectionChanged(e)
+            vscode.window.onDidChangeTextEditorSelection(e => {
+                this.onTextEditorSelectionChanged(e)
             }),
             vscode.workspace.onDidChangeTextDocument(this.onContentChanged, this)
         )
@@ -62,7 +66,9 @@ export class LineTracker implements vscode.Disposable {
     }
 
     ready() {
-        if (this._ready) throw new Error('Container is already ready')
+        if (this._ready) {
+            throw new Error('Linetracker is already activated')
+        }
 
         this._ready = true
         queueMicrotask(() => this._onReady.fire())

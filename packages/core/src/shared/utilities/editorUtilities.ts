@@ -9,6 +9,11 @@ import { Settings } from '../settings'
 
 const defaultTabSize = 4
 
+export function isTextEditor(editor: vscode.TextEditor): boolean {
+    const scheme = editor.document.uri.scheme
+    return scheme !== 'debug' && scheme !== 'output' && scheme !== 'vscode-terminal'
+}
+
 export function getTabSizeSetting(): number {
     return Settings.instance.getSection('editor').get('tabSize', defaultTabSize)
 }

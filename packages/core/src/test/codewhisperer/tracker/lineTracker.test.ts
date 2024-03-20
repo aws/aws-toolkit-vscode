@@ -57,7 +57,8 @@ describe('LineTracker class', function () {
             content: 0,
         })
     }
-    it.skip('ready will emit onReady event', async function () {
+
+    it('ready will emit onReady event', async function () {
         let messageReceived = 0
         disposable = sut.onReady(_ => {
             messageReceived++

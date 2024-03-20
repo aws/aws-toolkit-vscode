@@ -21,14 +21,14 @@ export class Container {
     }
 
     static get instance(): Container {
-        return Container.#instance ?? Container.create(AuthUtil.instance)
+        return (Container.#instance ??= new Container(AuthUtil.instance))
     }
 
     readonly _lineTracker: LineTracker
     readonly _lineAnnotationController: LineAnnotationController
     readonly _editorGutterController: activeStateController
 
-    constructor(readonly auth: AuthUtil) {
+    protected constructor(readonly auth: AuthUtil) {
         this._lineTracker = new LineTracker()
         this._lineAnnotationController = new LineAnnotationController(this)
         this._editorGutterController = new activeStateController(this)

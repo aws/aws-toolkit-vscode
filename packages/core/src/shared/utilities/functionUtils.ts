@@ -106,6 +106,10 @@ export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => 
     }
 }
 
+/**
+ *
+ * Similar to {@link debounce}, but allows the function to be cancelled and allow callbacks to pass function parameters.
+ */
 export function cancellableDebounce<T, U extends any[]>(
     cb: (...args: U) => T | Promise<T>,
     delay: number = 0
