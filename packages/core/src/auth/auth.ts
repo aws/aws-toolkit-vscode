@@ -754,6 +754,9 @@ export class Auth implements AuthService, ConnectionManager {
             })
         }
         if (previousState === 'valid') {
+            // Non-token expiration errors can happen. We must log it here, otherwise they are lost.
+            getLogger().warn(`auth: valid connection became invalid. Last error: %s`, this.#validationErrors.get(id))
+
             const timeout = new Timeout(60000)
             this.#invalidCredentialsTimeouts.set(id, timeout)
 
