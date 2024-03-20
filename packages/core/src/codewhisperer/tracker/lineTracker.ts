@@ -48,16 +48,18 @@ export class LineTracker implements vscode.Disposable {
 
     constructor() {
         this._disposable = vscode.Disposable.from(
-            vscode.window.onDidChangeActiveTextEditor(e => {
-                this.onActiveTextEditorChanged(undefined)
+            vscode.window.onDidChangeActiveTextEditor(async e => {
+                await this.onActiveTextEditorChanged(undefined)
             }),
-            vscode.window.onDidChangeTextEditorSelection(e => {
-                this.onTextEditorSelectionChanged(e)
+            vscode.window.onDidChangeTextEditorSelection(async e => {
+                await this.onTextEditorSelectionChanged(e)
             }),
-            vscode.workspace.onDidChangeTextDocument(this.onContentChanged, this)
+            vscode.workspace.onDidChangeTextDocument(e => {
+                this.onContentChanged(e)
+            })
         )
 
-        queueMicrotask(() => this.onActiveTextEditorChanged(vscode.window.activeTextEditor))
+        queueMicrotask(async () => await this.onActiveTextEditorChanged(vscode.window.activeTextEditor))
     }
 
     dispose() {
@@ -74,32 +76,38 @@ export class LineTracker implements vscode.Disposable {
     }
 
     // @VisibleForTesting
-    onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
-        if (editor === this._editor) return
+    async onActiveTextEditorChanged(editor: vscode.TextEditor | undefined) {
+        if (editor === this._editor) {
+            return
+        }
 
         this._editor = editor
         this._selections = toLineSelections(editor?.selections)
         if (this._selections && this._selections[0]) {
             const s = this._selections.map(item => item.active + 1)
-            vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
+            await vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
         }
 
         this.notifyLinesChanged('editor')
     }
 
     // @VisibleForTesting
-    onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
+    async onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
         // If this isn't for our cached editor and its not a real editor -- kick out
-        if (this._editor !== e.textEditor && !isTextEditor(e.textEditor)) return
+        if (this._editor !== e.textEditor && !isTextEditor(e.textEditor)) {
+            return
+        }
 
         const selections = toLineSelections(e.selections)
-        if (this._editor === e.textEditor && this.includes(selections)) return
+        if (this._editor === e.textEditor && this.includes(selections)) {
+            return
+        }
 
         this._editor = e.textEditor
         this._selections = selections
         if (this._selections && this._selections[0]) {
             const s = this._selections.map(item => item.active + 1)
-            vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
+            await vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
         }
 
         this.notifyLinesChanged('selection')
@@ -127,7 +135,9 @@ export class LineTracker implements vscode.Disposable {
             return isIncluded(lineOrSelections, this._selections)
         }
 
-        if (this._selections === undefined || this._selections.length === 0) return false
+        if (this._selections === undefined || this._selections.length === 0) {
+            return false
+        }
 
         const line = lineOrSelections
         const activeOnly = options?.activeOnly ?? true
@@ -147,8 +157,12 @@ export class LineTracker implements vscode.Disposable {
 }
 
 function isIncluded(selections: LineSelection[] | undefined, within: LineSelection[] | undefined): boolean {
-    if (selections === undefined && within === undefined) return true
-    if (selections === undefined || within === undefined || selections.length !== within.length) return false
+    if (selections === undefined && within === undefined) {
+        return true
+    }
+    if (selections === undefined || within === undefined || selections.length !== within.length) {
+        return false
+    }
 
     return selections.every((s, i) => {
         const match = within[i]
