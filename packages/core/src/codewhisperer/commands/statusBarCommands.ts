@@ -13,7 +13,7 @@ export const listCodeWhispererCommandsId = 'aws.codewhisperer.listCommands'
 export const listCodeWhispererCommands = Commands.declare(
     { id: listCodeWhispererCommandsId },
     (container: Container) => () => {
-        container._lineAnnotationController.clickStatusBar()
+        container.lineAnnotationController.clickStatusBar()
         return createQuickPick(getCodewhispererNode().getChildren('item'), {
             title: 'CodeWhisperer',
             buttons: [createExitButton()],

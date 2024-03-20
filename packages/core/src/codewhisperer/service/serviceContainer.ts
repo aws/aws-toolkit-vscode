@@ -37,17 +37,17 @@ export class Container {
         return (Container.#instance ??= new Container(AuthUtil.instance))
     }
 
-    readonly _lineTracker: LineTracker
-    readonly _lineAnnotationController: LineAnnotationController
-    readonly _editorGutterController: activeStateController
+    readonly lineTracker: LineTracker
+    readonly lineAnnotationController: LineAnnotationController
+    readonly activeStateController: activeStateController
 
     protected constructor(readonly auth: AuthUtil) {
-        this._lineTracker = new LineTracker()
-        this._lineAnnotationController = new LineAnnotationController(this)
-        this._editorGutterController = new activeStateController(this)
+        this.lineTracker = new LineTracker()
+        this.lineAnnotationController = new LineAnnotationController(this)
+        this.activeStateController = new activeStateController(this)
     }
 
     ready() {
-        this._lineTracker.ready()
+        this.lineTracker.ready()
     }
 }

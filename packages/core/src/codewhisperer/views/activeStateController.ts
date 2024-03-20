@@ -34,8 +34,8 @@ export class activeStateController implements vscode.Disposable {
         this._disposable = vscode.Disposable.from(
             RecommendationService.instance.suggestionActionEvent(this.onSuggestionActionEvent, this),
             RecommendationHandler.instance.onDidReceiveRecommendation(this.onDidReceiveRecommendation, this),
-            this.container._lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
-            subscribeOnce(this.container._lineTracker.onReady)(this.onReady, this),
+            this.container.lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
+            subscribeOnce(this.container.lineTracker.onReady)(this.onReady, this),
             this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
                     this._refresh(vscode.window.activeTextEditor)
@@ -115,7 +115,7 @@ export class activeStateController implements vscode.Disposable {
             return
         }
 
-        const selections = this.container._lineTracker.selections
+        const selections = this.container.lineTracker.selections
         if (!editor || !selections || !isTextEditor(editor)) {
             this.clear(this._editor)
             return
@@ -128,7 +128,7 @@ export class activeStateController implements vscode.Disposable {
         }
 
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
-        if (!editor.document || !this.container._lineTracker.includes(selections)) {
+        if (!editor.document || !this.container.lineTracker.includes(selections)) {
             return
         }
 

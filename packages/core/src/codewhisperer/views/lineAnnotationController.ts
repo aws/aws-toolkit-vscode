@@ -222,7 +222,7 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         this._disposable = vscode.Disposable.from(
-            subscribeOnce(this.container._lineTracker.onReady)(this.onReady, this),
+            subscribeOnce(this.container.lineTracker.onReady)(this.onReady, this),
             RecommendationService.instance.suggestionActionEvent(e => {
                 if (!this._isReady) {
                     return
@@ -243,7 +243,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
                 this.refresh(e.editor, 'codewhisperer', e)
             }),
-            this.container._lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
+            this.container.lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
             this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
                     this.refresh(vscode.window.activeTextEditor, 'editor')
@@ -346,7 +346,7 @@ export class LineAnnotationController implements vscode.Disposable {
             return
         }
 
-        const selections = this.container._lineTracker.selections
+        const selections = this.container.lineTracker.selections
         if (editor === undefined || selections === undefined || !isTextEditor(editor)) {
             this.clear()
             return
@@ -359,7 +359,7 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
-        if (editor.document === undefined || !this.container._lineTracker.includes(selections)) {
+        if (editor.document === undefined || !this.container.lineTracker.includes(selections)) {
             this.clear()
             return
         }
