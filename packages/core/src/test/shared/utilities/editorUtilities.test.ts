@@ -5,8 +5,9 @@
 
 import assert from 'assert'
 import * as path from 'path'
+import sinon from 'sinon'
 import { closeAllEditors, assertTabCount, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
-import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
+import { getOpenFilesInWindow, isTextEditor } from '../../../shared/utilities/editorUtilities'
 
 describe('supplementalContextUtil', function () {
     let tempFolder: string
@@ -23,6 +24,20 @@ describe('supplementalContextUtil', function () {
 
         afterEach(async function () {
             await closeAllEditors()
+        })
+
+        it('isTextEditor returns false if scheme is debug, output or vscode-terminal', async function () {
+            let editor = await openATextEditorWithText('content', 'file.java', tempFolder, { preview: false })
+            const uri = editor.document.uri
+
+            sinon.stub(uri, 'scheme').get(() => 'debug')
+            assert.strictEqual(isTextEditor(editor), false)
+
+            sinon.stub(uri, 'scheme').get(() => 'output')
+            assert.strictEqual(isTextEditor(editor), false)
+
+            sinon.stub(uri, 'scheme').get(() => 'vscode-terminal')
+            assert.strictEqual(isTextEditor(editor), false)
         })
 
         it('no filter provided as argument, should return all files opened', async function () {
