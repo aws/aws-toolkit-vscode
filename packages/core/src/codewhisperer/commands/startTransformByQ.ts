@@ -477,7 +477,6 @@ export async function setTransformationToRunningState(userInputState: UserInputS
 }
 
 export async function postTransformationJob(userInputState: UserInputState) {
-    await vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
     const durationInMs = calculateTotalLatency(codeTransformTelemetryState.getStartTime())
     const resultStatusMessage = codeTransformTelemetryState.getResultStatus()
 
@@ -644,7 +643,6 @@ export async function confirmStopTransformByQ(
 
 async function setContextVariables() {
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
-    await vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
     await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
     await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', false)
     await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)

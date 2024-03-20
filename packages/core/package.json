@@ -742,8 +742,7 @@
                 {
                     "type": "webview",
                     "id": "aws.amazonq.transformationHub",
-                    "name": "Status",
-                    "when": "gumby.isTransformAvailable || gumby.isStopButtonAvailable"
+                    "name": "Status"
                 },
                 {
                     "id": "aws.amazonq.transformationProposedChangesTree",
