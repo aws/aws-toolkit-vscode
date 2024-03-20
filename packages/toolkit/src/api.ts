@@ -5,7 +5,7 @@
 
 import { Auth, Connection } from 'aws-core-vscode/auth'
 
-export interface AwsToolkitSsoConnection {
+export interface AwsConnection {
     readonly id: string
     readonly label: string
     readonly type: string
@@ -19,9 +19,9 @@ export interface AwsToolkitSsoConnection {
  * the available connections in aws toolkit.
  */
 export const awsToolkitApi = {
-    async listSsoConnections(): Promise<AwsToolkitSsoConnection[]> {
+    async listConnections(): Promise<AwsConnection[]> {
         const connections = await Auth.instance.listConnections()
-        const exposedConnections: AwsToolkitSsoConnection[] = []
+        const exposedConnections: AwsConnection[] = []
         connections.forEach((x: Connection) => {
             if ('ssoRegion' in x) {
                 exposedConnections.push({

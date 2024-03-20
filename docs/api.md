@@ -20,15 +20,15 @@ This command supports the following arguments:
 
 ### Extension API
 
-#### `listSsoConnections`
+#### `listConnections`
 
-**Signature**: _async () => Promise<AwsToolkitSsoConnection>_
+**Signature**: _async () => Promise<AwsConnection>_
 
-This is an API that exposes the metadata of SSO connections of AWS Toolkit. It returns a list of `AwsToolkitSsoConnection` which contains below fields:
+This is an API that exposes the metadata of SSO connections of AWS Toolkit. It returns a list of `AwsConnection` which contains below fields:
 
 -   id: string that presents the id of the connection
 -   label: label of the connection
--   type: type of the connection, can only be 'sso'
+-   type: type of the connection, currently only 'sso' is returned
 -   ssoRegion: region of the connection, e.g: us-west-2
 -   startUrl: start url of the connection
 -   scopes?: list of the scopes of the connection
