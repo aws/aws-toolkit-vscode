@@ -60,8 +60,3 @@ export async function getOpenFilesInWindow(
         return filesOpenedInEditor
     }
 }
-
-export function isTextEditor(editor: vscode.TextEditor): boolean {
-    const scheme = editor.document.uri.scheme
-    return scheme !== 'debug' && scheme !== 'output' && scheme !== 'vscode-terminal'
-}
