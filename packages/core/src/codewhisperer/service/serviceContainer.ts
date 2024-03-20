@@ -24,15 +24,6 @@ import { LineTracker } from '../tracker/lineTracker'
 export class Container {
     static #instance: Container | undefined
 
-    static create(authProvider: AuthUtil): Container {
-        if (Container.#instance) {
-            throw new Error('Container already exists')
-        }
-
-        Container.#instance = new Container(authProvider)
-        return Container.#instance
-    }
-
     static get instance(): Container {
         return (Container.#instance ??= new Container(AuthUtil.instance))
     }

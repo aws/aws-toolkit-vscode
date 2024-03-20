@@ -32,7 +32,6 @@ export class LineTracker implements vscode.Disposable {
     private _disposable: vscode.Disposable | undefined
 
     private _selections: LineSelection[] | undefined
-
     get selections(): LineSelection[] | undefined {
         return this._selections
     }

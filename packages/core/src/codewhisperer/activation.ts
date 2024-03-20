@@ -96,7 +96,6 @@ export async function activate(context: ExtContext): Promise<void> {
 
     // Service initialization
     const container = Container.instance
-
     ReferenceInlineProvider.instance
     ImportAdderProvider.instance
 
