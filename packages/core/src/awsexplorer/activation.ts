@@ -27,7 +27,7 @@ import { cdkNode, refreshCdkExplorer } from '../cdk/explorer/rootNode'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
-import { amazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQNode'
+import { amazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQTreeNode'
 import { GlobalState } from '../shared/globalState'
 import { activateViewsShared, registerToolView } from './activationShared'
 
@@ -108,7 +108,7 @@ export async function activate(args: {
     if (!isCloud9()) {
         amazonQViewNode.push({
             nodes: [amazonQNode],
-            view: 'aws.amazonq',
+            view: 'aws.amazonq.codewhisperer',
             refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
         })
     }
