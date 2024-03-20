@@ -9,6 +9,7 @@ import { getLogger } from '../logger/logger'
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../utilities/messages'
 import { URL, URLSearchParams } from 'whatwg-url'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 
 const localize = nls.loadMessageBundle()
 
@@ -96,6 +97,10 @@ export class UriHandler implements vscode.UriHandler {
 
         this.handlers.set(path, { handler, parser })
         return { dispose: () => this.handlers.delete(path) }
+    }
+
+    static buildUri(path: string) {
+        return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/${path}`)
     }
 }
 

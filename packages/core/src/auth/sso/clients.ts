@@ -15,14 +15,7 @@ import {
     SSO,
     SSOServiceException,
 } from '@aws-sdk/client-sso'
-import {
-    AuthorizationPendingException,
-    CreateTokenRequest,
-    RegisterClientRequest,
-    SSOOIDC,
-    SSOOIDCClient,
-    StartDeviceAuthorizationRequest,
-} from '@aws-sdk/client-sso-oidc'
+import { AuthorizationPendingException, SSOOIDC, SSOOIDCClient } from '@aws-sdk/client-sso-oidc'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { pageableToCollection, partialClone } from '../../shared/utilities/collectionUtils'
 import { assertHasProps, isNonNullable, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
@@ -33,12 +26,13 @@ import { DevSettings } from '../../shared/settings'
 import { SdkError } from '@aws-sdk/types'
 import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
 import { StandardRetryStrategy, defaultRetryDecider } from '@aws-sdk/middleware-retry'
+import OidcClientPKCE from './oidcclientpkce'
 
 export class OidcClient {
-    public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
+    public constructor(private readonly client: OidcClientPKCE, private readonly clock: { Date: typeof Date }) {}
 
-    public async registerClient(request: RegisterClientRequest) {
-        const response = await this.client.registerClient(request)
+    public async registerClient(request: OidcClientPKCE.RegisterClientRequest) {
+        const response = await this.client.registerClient(request).promise()
         assertHasProps(response, 'clientId', 'clientSecret', 'clientSecretExpiresAt')
 
         return {
@@ -49,8 +43,8 @@ export class OidcClient {
         }
     }
 
-    public async startDeviceAuthorization(request: StartDeviceAuthorizationRequest) {
-        const response = await this.client.startDeviceAuthorization(request)
+    public async startDeviceAuthorization(request: OidcClientPKCE.StartDeviceAuthorizationRequest) {
+        const response = await this.client.startDeviceAuthorization(request).promise()
         assertHasProps(response, 'expiresIn', 'deviceCode', 'userCode', 'verificationUri')
 
         return {
@@ -60,8 +54,8 @@ export class OidcClient {
         }
     }
 
-    public async createToken(request: CreateTokenRequest) {
-        const response = await this.client.createToken(request as CreateTokenRequest)
+    public async createToken(request: OidcClientPKCE.CreateTokenRequest) {
+        const response = await this.client.createToken(request).promise()
         assertHasProps(response, 'accessToken', 'expiresIn')
 
         return {
@@ -87,9 +81,9 @@ export class OidcClient {
                 () => Promise.resolve(3), // Maximum number of retries
                 { retryDecider: updatedRetryDecider }
             ),
-        })
+        }) as unknown as OidcClientPKCE
 
-        addLoggingMiddleware(client)
+        addLoggingMiddleware(client as unknown as SSOOIDCClient)
         return new this(client, globals.clock)
     }
 }
