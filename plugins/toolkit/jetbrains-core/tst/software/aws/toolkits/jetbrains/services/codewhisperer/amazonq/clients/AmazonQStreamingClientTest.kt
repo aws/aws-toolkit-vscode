@@ -5,11 +5,10 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.amazonq.clients
 
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.replaceService
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.ArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -25,7 +24,6 @@ import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ManagedSsoProfile
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
@@ -57,7 +55,9 @@ class AmazonQStreamingClientTest : AmazonQTestBase() {
         ssoClient = mockClientManagerRule.create()
 
         streamingBearerClient = mockClientManagerRule.create<CodeWhispererStreamingAsyncClient>().stub {
-            on { exportResultArchive(any<ExportResultArchiveRequest>(), any<ExportResultArchiveResponseHandler>()) } doReturn CompletableFuture()
+            on {
+                exportResultArchive(any<ExportResultArchiveRequest>(), any<ExportResultArchiveResponseHandler>())
+            } doReturn CompletableFuture.completedFuture(mock()) // void type can't be instantiated
         }
 
         val mockConnection = mock<AwsBearerTokenConnection>()
@@ -73,15 +73,13 @@ class AmazonQStreamingClientTest : AmazonQTestBase() {
     }
 
     @Test
-    fun `check exportResultArchive`() {
-        val requestCaptor = ArgumentCaptor.forClass(ExportResultArchiveRequest::class.java)
-        val handlerCaptor = ArgumentCaptor.forClass(ExportResultArchiveResponseHandler::class.java)
+    fun `check exportResultArchive`() = runTest {
+        val requestCaptor = argumentCaptor<ExportResultArchiveRequest>()
+        val handlerCaptor = argumentCaptor<ExportResultArchiveResponseHandler>()
 
-        projectCoroutineScope(project).launch {
-            amazonQStreamingClient.exportResultArchive("test-id", ExportIntent.TRANSFORMATION, {}, {})
-            argumentCaptor<ExportResultArchiveRequest, ExportResultArchiveResponseHandler>().apply {
-                verify(streamingBearerClient).exportResultArchive(requestCaptor.capture(), handlerCaptor.capture())
-            }
+        amazonQStreamingClient.exportResultArchive("test-id", ExportIntent.TRANSFORMATION, {}, {})
+        argumentCaptor<ExportResultArchiveRequest, ExportResultArchiveResponseHandler>().apply {
+            verify(streamingBearerClient).exportResultArchive(requestCaptor.capture(), handlerCaptor.capture())
         }
     }
 }

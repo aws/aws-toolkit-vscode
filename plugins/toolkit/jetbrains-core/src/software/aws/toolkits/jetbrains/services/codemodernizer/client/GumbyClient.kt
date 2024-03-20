@@ -43,7 +43,8 @@ class GumbyClient(private val project: Project) {
 
     private fun bearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererRuntimeClient>()
 
-    private val amazonQStreamingClient = AmazonQStreamingClient.getInstance(project)
+    private val amazonQStreamingClient
+        get() = AmazonQStreamingClient.getInstance(project)
 
     fun createGumbyUploadUrl(sha256Checksum: String): CreateUploadUrlResponse {
         val request = CreateUploadUrlRequest.builder()
@@ -123,8 +124,7 @@ class GumbyClient(private val project: Project) {
     suspend fun downloadExportResultArchive(jobId: JobId): MutableList<ByteArray> = amazonQStreamingClient.exportResultArchive(
         jobId.id,
         ExportIntent.TRANSFORMATION,
-        {
-                e ->
+        { e ->
             LOG.error(e) { "${CodeTransformApiNames.ExportResultArchive} failed: ${e.message}" }
             CodetransformTelemetry.logApiError(
                 codeTransformApiNames = CodeTransformApiNames.ExportResultArchive,
