@@ -95,7 +95,8 @@ export async function activate(context: ExtContext): Promise<void> {
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
     // Service initialization
-    const container = Container.create(auth)
+    const container = Container.instance
+
     ReferenceInlineProvider.instance
     ImportAdderProvider.instance
 
