@@ -6,12 +6,11 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { Command, Commands, placeholder } from '../../shared/vscode/commands2'
-import { getIcon } from '../../shared/icons'
+import { codicon, getIcon } from '../../shared/icons'
 import { reconnect } from '../../codewhisperer/commands/basicCommands'
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
@@ -37,12 +36,13 @@ export const createLearnMoreNode = () =>
         contextValue: 'awsAmazonQLearnMoreNode',
     })
 
-export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => () => {
+export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => async () => {
     telemetry.ui_click.emit({
         elementId: 'amazonq_switchToQChat',
         passive: false,
     })
-    void focusAmazonQPanel()
+    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+    await vscode.commands.executeCommand('aws.AmazonCommonAuth.focus')
 })
 
 export function switchToAmazonQNode(type: 'item'): DataQuickPickItem<'openChatPanel'>
@@ -63,6 +63,28 @@ export function switchToAmazonQNode(type: 'item' | 'tree'): any {
                 iconPath: getIcon('vscode-comment'),
                 onClick: () => switchToAmazonQCommand.execute(),
             } as DataQuickPickItem<'openChatPanel'>
+    }
+}
+
+export function createSignIn(type: 'item'): DataQuickPickItem<'signIn'>
+export function createSignIn(type: 'tree'): TreeNode<Command>
+export function createSignIn(type: 'item' | 'tree'): DataQuickPickItem<'signIn'> | TreeNode<Command>
+export function createSignIn(type: 'item' | 'tree'): any {
+    const label = localize('AWS.codewhisperer.signInNode.label', 'Sign in to get started')
+    const icon = getIcon('vscode-account')
+
+    switch (type) {
+        case 'tree':
+            return switchToAmazonQCommand.build().asTreeNode({
+                label: label,
+                iconPath: icon,
+            })
+        case 'item':
+            return {
+                data: 'signIn',
+                label: codicon`${icon} ${label}`,
+                onClick: () => switchToAmazonQCommand.execute(),
+            } as DataQuickPickItem<'signIn'>
     }
 }
 

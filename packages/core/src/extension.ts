@@ -44,17 +44,21 @@ import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
-import { DevSettings, Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
+import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
 import { submitFeedback } from './feedback/vue/submitFeedback'
 import { activateShared, deactivateShared } from './extensionShared'
-import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
+import {
+    learnMoreAmazonQCommand,
+    qExtensionPageCommand,
+    dismissQTree,
+    switchToAmazonQCommand,
+} from './amazonq/explorer/amazonQChildrenNodes'
 import { AuthUtil, isPreviousQUser } from './codewhisperer/util/authUtil'
-import { isExtensionActive } from './shared/utilities/vsCodeUtils'
-import { VSCODE_EXTENSION_ID } from './shared/extensions'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
+import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
 
 let localize: nls.LocalizeFunc
 
@@ -65,7 +69,6 @@ let localize: nls.LocalizeFunc
  * {@link activateShared} if appropriate
  */
 export async function activate(context: vscode.ExtensionContext) {
-    const useStandaloneExt = DevSettings.instance.get('forceStandaloneExt', false)
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
 
@@ -73,9 +76,6 @@ export async function activate(context: vscode.ExtensionContext) {
         // IMPORTANT: If you are doing setup that should also work in web mode (browser), it should be done in the function below
         const extContext = await activateShared(context)
 
-        if (!useStandaloneExt) {
-            require('./codewhisperer/client/agent').initializeNetworkAgent()
-        }
         initializeCredentialsProviderManager()
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
@@ -122,10 +122,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
-        if (useStandaloneExt) {
-            // MUST restore CW/Q auth so that we can see if this user is already a Q user.
-            await AuthUtil.instance.restore()
-        }
+        // MUST restore CW/Q auth so that we can see if this user is already a Q user.
+        await AuthUtil.instance.restore()
 
         await activateAwsExplorer({
             context: extContext,
@@ -168,13 +166,9 @@ export async function activate(context: vscode.ExtensionContext) {
                 learnMoreAmazonQCommand.register()
                 qExtensionPageCommand.register()
                 dismissQTree.register()
+                switchToAmazonQCommand.register()
                 installAmazonQExtension.register()
-                if (!useStandaloneExt) {
-                    await require('./amazonq/activation').activate(extContext.extensionContext)
-                    await require('./amazonqGumby/activation').activate(extContext)
-                } else if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
-                    void dismissQTree.execute()
-                } else if (isPreviousQUser()) {
+                if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) && isPreviousQUser()) {
                     void vscode.window
                         .showInformationMessage(
                             'Amazon Q has moved to its own VSCode extension.' +

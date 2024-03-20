@@ -30,7 +30,7 @@ import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/se
 import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
-import { showManageConnections } from '../../auth/ui/vue/show'
+import { getShowManageConnections } from '../../auth/ui/vue/show'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
 
 export const toggleCodeSuggestions = Commands.declare(
@@ -130,7 +130,7 @@ export const reconnect = Commands.declare(
 export const showManageCwConnections = Commands.declare(
     { id: 'aws.codewhisperer.manageConnections', compositeKey: { 1: 'source' } },
     () => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        return showManageConnections.execute(_, source, 'codewhisperer')
+        return getShowManageConnections().execute(_, source, 'codewhisperer')
     }
 )
 

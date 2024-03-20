@@ -9,7 +9,6 @@ import {
     createOpenReferenceLog,
     createSecurityScan,
     createLearnMore,
-    createSignIn,
     createFreeTierLimitMet,
     createSelectCustomization,
     createReconnect,
@@ -32,6 +31,12 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { once } from '../../shared/utilities/functionUtils'
 
 function getAmazonQCodeWhispererNodes() {
+    // TODO: Remove when web is supported for amazonq
+    let amazonq
+    if (!isWeb()) {
+        amazonq = require('../../amazonq/explorer/amazonQChildrenNodes')
+    }
+
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
     void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
     if (AuthUtil.instance.isConnectionExpired()) {
@@ -39,7 +44,7 @@ function getAmazonQCodeWhispererNodes() {
     }
 
     if (!AuthUtil.instance.isConnected()) {
-        return [createSignIn('item'), createLearnMore()]
+        return [amazonq.createSignIn('item'), createLearnMore()]
     }
 
     if (vsCodeState.isFreeTierLimitReached) {
@@ -60,12 +65,6 @@ function getAmazonQCodeWhispererNodes() {
 
     if (AuthUtil.instance.isValidEnterpriseSsoInUse()) {
         void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
-    }
-
-    // TODO: Remove when web is supported for amazonq
-    let amazonq
-    if (!isWeb()) {
-        amazonq = require('../../amazonq/explorer/amazonQChildrenNodes')
     }
 
     return [

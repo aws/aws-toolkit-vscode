@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { createFreeTierLimitMet, createSignIn, createReconnect } from '../../codewhisperer/ui/codeWhispererNodes'
+import { createFreeTierLimitMet, createReconnect } from '../../codewhisperer/ui/codeWhispererNodes'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { AuthUtil, amazonQScopes, codeWhispererChatScopes, isPreviousQUser } from '../../codewhisperer/util/authUtil'
 import {
@@ -13,14 +13,14 @@ import {
     switchToAmazonQNode,
     createInstallQNode,
     createDismissNode,
+    createSignIn,
 } from './amazonQChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
 import { hasScopes, isSsoConnection } from '../../auth/connection'
 import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
 import { getIcon } from '../../shared/icons'
 import { vsCodeState } from '../../codewhisperer/models/model'
-import { DevSettings } from '../../shared/settings'
-import { isExtensionActive } from '../../shared/utilities/vsCodeUtils'
+import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 
 export class AmazonQNode implements TreeNode {
@@ -70,7 +70,7 @@ export class AmazonQNode implements TreeNode {
     }
 
     public getChildren() {
-        if (DevSettings.instance.get('forceStandaloneExt', false) && !isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
+        if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
             const children = [createInstallQNode(), createLearnMoreNode()]
             if (!isPreviousQUser()) {
                 children.push(createDismissNode())

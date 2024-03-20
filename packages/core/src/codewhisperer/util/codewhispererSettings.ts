@@ -11,10 +11,10 @@ const description = {
 }
 export class CodeWhispererSettings extends fromExtensionManifest('aws.codeWhisperer', description) {
     public isSuggestionsWithCodeReferencesEnabled(): boolean {
-        return this.get(`includeSuggestionsWithCodeReferences`, false)
+        return this.get(`includeSuggestionsWithCodeReferences`, false) as any
     }
     public isImportRecommendationEnabled(): boolean {
-        return this.get(`importRecommendation`, false)
+        return this.get(`importRecommendation`, false) as any
     }
 
     public isOptoutEnabled(): boolean {

@@ -10,16 +10,17 @@ import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
 import { placeholder } from '../shared/vscode/commands2'
 import { getLogger } from '../shared/logger'
-import { ExtensionUse } from './utils'
+import { ExtensionUse, initAuthCommands } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../codecatalyst/utils'
-import { showManageConnections } from './ui/vue/show'
+import { registerCommands, getShowManageConnections } from './ui/vue/show'
 import { isWeb } from '../common/webUtils'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
-    loginManager: LoginManager
+    loginManager: LoginManager,
+    contextPrefix: string
 ): Promise<void> {
     Auth.instance.onDidChangeActiveConnection(async conn => {
         // This logic needs to be moved to `Auth.useConnection` to correctly record `passive`
@@ -30,7 +31,10 @@ export async function initialize(
         }
     })
 
-    extensionContext.subscriptions.push(showManageConnections.register(extensionContext))
+    initAuthCommands(contextPrefix)
+    registerCommands(extensionContext, contextPrefix)
+
+    extensionContext.subscriptions.push(getShowManageConnections())
 
     await showManageConnectionsOnStartup()
 }
@@ -57,5 +61,5 @@ async function showManageConnectionsOnStartup() {
     }
 
     // Show connection management to user
-    await showManageConnections.execute(placeholder, 'firstStartup')
+    await getShowManageConnections().execute(placeholder, 'firstStartup')
 }

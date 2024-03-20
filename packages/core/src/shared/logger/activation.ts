@@ -27,7 +27,8 @@ const defaultLogLevel: LogLevel = 'info'
  */
 export async function activate(
     extensionContext: vscode.ExtensionContext,
-    outputChannel: vscode.LogOutputChannel
+    outputChannel: vscode.LogOutputChannel,
+    contextPrefix: string
 ): Promise<void> {
     const chan = logOutputChannel
     const settings = Settings.instance.getSection('aws')
@@ -77,8 +78,8 @@ export async function activate(
 
     getLogger().debug(`Logging started: ${logUri}`)
 
-    const commands = new Logging(logUri, mainLogger)
-    extensionContext.subscriptions.push(...Object.values(Logging.declared).map(c => c.register(commands)))
+    Logging.init(logUri, mainLogger, contextPrefix)
+    extensionContext.subscriptions.push(Logging.instance.viewLogs, Logging.instance.viewLogsAtMessage)
 
     createLogWatcher(logUri)
         .then(sub => {

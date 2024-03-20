@@ -270,12 +270,12 @@ export async function openDevEnv(
 // Recording metrics like this is a lot more involved so for now we'll
 // assume that if the first step succeeds, the user probably succeeded
 // in connecting to the devenv
-export const codeCatalystConnectCommand = Commands.register(
+export const codeCatalystConnectCommand = Commands.tryDeclare(
     {
         id: '_aws.codecatalyst.connect',
         telemetryName: 'codecatalyst_connect',
     },
-    openDevEnv
+    () => (client, devenv, targetPath) => openDevEnv(client, devenv, targetPath)
 )
 
 export async function getDevfileLocation(client: DevEnvClient, root?: vscode.Uri) {

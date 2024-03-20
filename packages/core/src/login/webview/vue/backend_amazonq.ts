@@ -8,6 +8,8 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthError, CommonAuthWebview } from './backend'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
+import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
+import { isExtensionActive } from '../../../shared/utilities/vsCodeUtils'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
     fetchConnection(): SsoConnection | undefined {
@@ -21,6 +23,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
             await awsIdSignIn()
             AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
+            this.notifyToolkit()
             await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
         })
     }
@@ -29,8 +32,15 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             await connectToEnterpriseSso(startUrl, region)
             AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
+            this.notifyToolkit()
             void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
         })
+    }
+
+    notifyToolkit() {
+        if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
+            void vscode.commands.executeCommand('aws.amazonq.refresh')
+        }
     }
 
     async errorNotification(e: AuthError) {

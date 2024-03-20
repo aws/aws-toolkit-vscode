@@ -18,16 +18,18 @@ import {
     globals,
     RegionProvider,
 } from 'aws-core-vscode/shared'
-import { initializeAuth, initializeAwsCredentialsStatusBarItem } from 'aws-core-vscode/auth'
+import { initializeAuth } from 'aws-core-vscode/auth'
 import { makeEndpointsProvider } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
+import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 
 export async function activateShared(context: vscode.ExtensionContext) {
-    void vscode.window.showInformationMessage(
-        'Amazon Q + CodeWhisperer: This extension is under development and offers no features at this time.'
-    )
+    const contextPrefix = 'amazonq'
+    // void vscode.window.showInformationMessage(
+    //     'Amazon Q + CodeWhisperer: This extension is under development and offers no features at this time.'
+    // )
 
     await initializeComputeRegion()
     initialize(context)
@@ -39,12 +41,11 @@ export async function activateShared(context: vscode.ExtensionContext) {
     globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
     globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
 
-    const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
-    await activateLogger(context, toolkitOutputChannel)
+    const toolkitOutputChannel = vscode.window.createOutputChannel('Amazon Q', { log: true })
+    await activateLogger(context, toolkitOutputChannel, contextPrefix)
     await activateTelemetry(context, globals.awsContext, Settings.instance)
 
-    await initializeAuth(context, globals.awsContext, globals.loginManager)
-    await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
+    await initializeAuth(context, globals.awsContext, globals.loginManager, contextPrefix)
 
     await activateCodeWhisperer(extContext as ExtContext)
     await activateCWChat(context)
@@ -59,7 +60,12 @@ export async function activateShared(context: vscode.ExtensionContext) {
         })
     )
 
-    await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', false)
+    if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
+        void vscode.commands.executeCommand('aws.amazonq.refresh')
+    }
+
+    // forces login page even if we are connected? 🤨
+    // await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', false)
 }
 
 export async function deactivateShared() {

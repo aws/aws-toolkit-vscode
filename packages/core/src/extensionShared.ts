@@ -24,7 +24,7 @@ import { activate as activateLogger } from './shared/logger/activation'
 import { initializeComputeRegion } from './shared/extensionUtilities'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { DefaultAwsContext } from './shared/awsContext'
-import { DevSettings, Settings } from './shared/settings'
+import { Settings } from './shared/settings'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { initialize as initializeAuth } from './auth/activation'
 import { LoginManager } from './auth/deprecated/loginManager'
@@ -61,6 +61,7 @@ let localize: nls.LocalizeFunc
  */
 export async function activateShared(context: vscode.ExtensionContext): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
+    const contextPrefix = 'toolkit'
 
     // some "initialize" functions
     await initializeComputeRegion()
@@ -77,7 +78,7 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
 
     // Setup the logger
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
-    await activateLogger(context, toolkitOutputChannel)
+    await activateLogger(context, toolkitOutputChannel, contextPrefix)
     globals.outputChannel = toolkitOutputChannel
 
     if (isCloud9()) {
@@ -114,7 +115,7 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
     await activateTelemetry(context, globals.awsContext, Settings.instance)
 
     // auth
-    await initializeAuth(context, globals.awsContext, globals.loginManager)
+    await initializeAuth(context, globals.awsContext, globals.loginManager, contextPrefix)
     await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 
     // Create this now, but don't call vscode.window.registerUriHandler() until after all
@@ -137,22 +138,12 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
 
     await activateViewsShared(extContext.extensionContext)
 
-    if (!DevSettings.instance.get('forceStandaloneExt', false)) {
-        await vscode.commands.executeCommand('setContext', 'aws.toolkit.codewhispererQEnabled', true)
-        await require('./codewhisperer/activation').activate(extContext)
-    } else {
-        await vscode.commands.executeCommand('setContext', 'aws.toolkit.codewhispererQEnabled', false)
-    }
-
     return extContext
 }
 
 /** Deactivation code that is shared between nodejs and web implementations */
 export async function deactivateShared() {
     await globals.telemetry.shutdown()
-    if (!DevSettings.instance.get('forceStandaloneExt', false)) {
-        await require('./codewhisperer/activation').shutdown()
-    }
 }
 /**
  * Registers generic commands used by both web and node versions of the toolkit.
@@ -220,7 +211,7 @@ async function logAndShowError(error: unknown, topic: string, defaultMessage: st
     } else {
         await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
             if (resp === logsItem) {
-                await Logging.declared.viewLogsAtMessage.execute(logId)
+                await Logging.instance.viewLogsAtMessage.execute(logId)
             }
         })
     }

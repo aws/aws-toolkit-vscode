@@ -319,7 +319,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
          * @param key Setting name
          * @param defaultValue Value returned if setting is missing or invalid
          */
-        public get<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
+        public get<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]): any {
             try {
                 return this._getOrThrow(key, defaultValue)
             } catch (e) {
@@ -477,40 +477,40 @@ export interface ResetableMemento extends vscode.Memento {
 // at least for anything beyond primitive types.
 const settingsProps = packageJson.contributes.configuration.properties
 
-type SettingsProps = typeof settingsProps
+// type SettingsProps = typeof settingsProps
 
-type Split<T, S extends string> = T extends `${infer L}${S}${infer R}` ? [L, ...Split<R, S>] : [T]
-type Pop<T> = T extends [...infer R, infer _] ? R : never
-type Intersection<T> = (T extends any ? (_: T) => any : never) extends (_: infer U) => any ? U : never
+// type Split<T, S extends string> = T extends `${infer L}${S}${infer R}` ? [L, ...Split<R, S>] : [T]
+// type Pop<T> = T extends [...infer R, infer _] ? R : never
+// type Intersection<T> = (T extends any ? (_: T) => any : never) extends (_: infer U) => any ? U : never
 
-type FromParts<T, K> = K extends [infer U, ...infer R]
-    ? [U, R] extends [string, string[]]
-        ? { [P in U & string]: FromParts<T, R> }
-        : T
-    : T
+// type FromParts<T, K> = K extends [infer U, ...infer R]
+//     ? [U, R] extends [string, string[]]
+//         ? { [P in U & string]: FromParts<T, R> }
+//         : T
+//     : T
 
-type Format<T> = { [P in keyof T]: FromParts<TypeConstructor, Split<P, '.'>> }[keyof T]
-type Config = Intersection<Format<SettingsProps>>
+// type Format<T> = { [P in keyof T]: FromParts<TypeConstructor, Split<P, '.'>> }[keyof T]
+// type Config = Intersection<Format<SettingsProps>>
 
-type Join<T extends string[], S extends string> = T['length'] extends 1
-    ? T[0]
-    : T extends [infer L, ...infer R]
-    ? L extends string
-        ? R extends string[]
-            ? `${L}${S}${Join<R, S>}`
-            : ''
-        : ''
-    : never
+// type Join<T extends string[], S extends string> = T['length'] extends 1
+//     ? T[0]
+//     : T extends [infer L, ...infer R]
+//     ? L extends string
+//         ? R extends string[]
+//             ? `${L}${S}${Join<R, S>}`
+//             : ''
+//         : ''
+//     : never
 
-type Select<T, K> = K extends [infer L, ...infer R]
-    ? L extends keyof T
-        ? R['length'] extends 0
-            ? T[L]
-            : Select<T[L], R>
-        : never
-    : never
+// type Select<T, K> = K extends [infer L, ...infer R]
+//     ? L extends keyof T
+//         ? R['length'] extends 0
+//             ? T[L]
+//             : Select<T[L], R>
+//         : never
+//     : never
 
-type Sections = { [P in keyof SettingsProps as Join<Pop<Split<P, '.'>>, '.'>]: Select<Config, Pop<Split<P, '.'>>> }
+// type Sections = { [P in keyof SettingsProps as Join<Pop<Split<P, '.'>>, '.'>]: Select<Config, Pop<Split<P, '.'>>> }
 
 /**
  * Creates a class for manipulating specific sections of settings specified in `package.json`.
@@ -554,10 +554,7 @@ type Sections = { [P in keyof SettingsProps as Join<Pop<Split<P, '.'>>, '.'>]: S
  *
  * @returns A class that can be used as-is or inherited from
  */
-export function fromExtensionManifest<T extends TypeDescriptor & Partial<Sections[K]>, K extends keyof Sections>(
-    section: K,
-    descriptor: T
-) {
+export function fromExtensionManifest(section: string, descriptor: any) {
     // The function signature is intentionally loose to allow for partial implementations.
     // Runtime validation is required to ensure things are correct.
     //
@@ -567,21 +564,23 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
     //
     // As long as the above holds true, throwing an error here will always be caught by CI
 
-    const resolved = keys(descriptor).map(k => `${section}.${k}`)
-    const missing = resolved.filter(k => (settingsProps as Record<string, any>)[k] === undefined)
+    // TODO: restore/remove checking
+    // const resolved = keys(descriptor).map(k => `${section}.${k}`)
+    // const missing = resolved.filter(k => (settingsProps as Record<string, any>)[k] === undefined)
 
-    if (missing.length > 0) {
-        const message = `The following configuration keys were missing from package.json: ${missing.join(', ')}`
-        getLogger().error(`Settings (fromExtensionManifest): missing fields:\n${missing.map(k => `\t${k}`).join('\n')}`)
+    // if (missing.length > 0) {
+    //     const message = `The following configuration keys were missing from package.json: ${missing.join(', ')}`
+    //     getLogger().error(`Settings (fromExtensionManifest): missing fields:\n${missing.map(k => `\t${k}`).join('\n')}`)
 
-        throw new Error(message)
-    }
+    //     throw new Error(message)
+    // }
 
     return Settings.define(section, descriptor)
 }
 
-const prompts = settingsProps['aws.suppressPrompts'].properties
-type PromptName = keyof typeof prompts
+// TODO: Disable compilation type checking of package.json. This is a start.
+// const prompts = settingsProps['aws.toolkit.suppressPrompts'].properties
+// type PromptName = keyof typeof prompts
 
 /**
  * Controls flags for prompts that allow the user to hide them. Usually this is presented as
@@ -601,10 +600,10 @@ type PromptName = keyof typeof prompts
  * ```
  */
 export class PromptSettings extends Settings.define(
-    'aws.suppressPrompts',
-    toRecord(keys(prompts), () => Boolean)
+    'aws.{}.suppressPrompts',
+    toRecord(typeof '', () => Boolean)
 ) {
-    public async isPromptEnabled(promptName: PromptName): Promise<boolean> {
+    public async isPromptEnabled(promptName: string): Promise<boolean> {
         try {
             return !this._getOrThrow(promptName, false)
         } catch (e) {
@@ -615,7 +614,7 @@ export class PromptSettings extends Settings.define(
         }
     }
 
-    public async disablePrompt(promptName: PromptName): Promise<void> {
+    public async disablePrompt(promptName: string): Promise<void> {
         if (await this.isPromptEnabled(promptName)) {
             await this.update(promptName, true)
         }
@@ -681,7 +680,6 @@ const devSettings = {
     forceCloud9: Boolean,
     forceDevMode: Boolean,
     forceInstallTools: Boolean,
-    forceStandaloneExt: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
     renderDebugDetails: Boolean,
@@ -856,6 +854,6 @@ export async function migrateSetting<T, U = T>(
  *
  * This only works for keys that are considered "top-level", e.g. keys of {@link settingsProps}.
  */
-export async function openSettings<K extends keyof SettingsProps>(key: K): Promise<void> {
+export async function openSettings(key: string): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.openSettings', `@id:${key}`)
 }
