@@ -116,7 +116,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         const planProgress = getPlanProgress()
         let planSteps = undefined
         if (planProgress['buildCode'] === StepProgress.Succeeded) {
-            planSteps = await getTransformationSteps(transformByQState.getJobId())
+            planSteps = await getTransformationSteps(transformByQState.getJobId(), true)
         }
         let progressHtml = `<p><b>Transformation Status</b></p><p>No job is in-progress at the moment</p>`
         if (planProgress['returnCode'] !== StepProgress.NotStarted) {

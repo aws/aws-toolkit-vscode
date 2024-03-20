@@ -3,7 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BuildSystem, JDKVersion, transformByQState, TransformByQStoppedError, ZipManifest } from '../models/model'
+import {
+    BuildSystem,
+    JDKVersion,
+    transformByQState,
+    TransformByQStatus,
+    TransformByQStoppedError,
+    ZipManifest,
+} from '../models/model'
 import * as codeWhisperer from '../client/codewhisperer'
 import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger'
@@ -821,9 +828,11 @@ export async function getTransformationPlan(jobId: string) {
     }
 }
 
-export async function getTransformationSteps(jobId: string) {
+export async function getTransformationSteps(jobId: string, handleThrottleFlag: boolean) {
     try {
-        await sleep(2000) // prevent ThrottlingException
+        if (handleThrottleFlag) {
+            await sleep(2000)
+        } // prevent ThrottlingException
         const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
@@ -896,6 +905,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 )
                 throw new ToolkitError('Transformation job failed')
             }
+            if (status === TransformByQStatus.WaitingUserInput) {
+                // break here
+                transformByQState.setPolledJobStatus(TransformByQStatus.WaitingUserInput)
+                // TODO: Either extract artifactId and artifactType here or in parent function
+                // If extracted in parent function it will be 1 extra call to codeModernizerGetCodeTransformation
+                break
+            }
+
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
             timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds
             if (timer > CodeWhispererConstants.transformationJobTimeoutSeconds) {

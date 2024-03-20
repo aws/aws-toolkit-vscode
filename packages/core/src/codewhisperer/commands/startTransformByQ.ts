@@ -9,7 +9,13 @@ import * as fs from 'fs'
 import * as os from 'os'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
-import { transformByQState, StepProgress, TransformByQReviewStatus, JDKVersion } from '../models/model'
+import {
+    transformByQState,
+    StepProgress,
+    TransformByQReviewStatus,
+    JDKVersion,
+    TransformByQStatus,
+} from '../models/model'
 import {
     throwIfCancelled,
     startJob,
@@ -28,6 +34,7 @@ import {
     getDependenciesFolderInfo,
     FolderInfo,
     prepareProjectDependencies,
+    getTransformationSteps,
 } from '../service/transformByQHandler'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
@@ -45,10 +52,11 @@ import {
     CancelActionPositions,
     JDKToTelemetryValue,
     calculateTotalLatency,
-    telemetryUndefined,
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
+import { getArtifactIdentifiers } from '../service/transformByQHumanInTheLoopHandler'
+import { downloadResultArchive } from '../service/amazonQGumby/transformByQApiHandler'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -172,7 +180,7 @@ export async function startTransformByQ() {
         await pollTransformationStatusUntilPlanReady(jobId)
 
         // step 4: poll until artifacts are ready to download
-        const status = await pollTransformationStatusUntilComplete(jobId)
+        const status = await pollTransformationStatusUntilComplete(jobId, 0)
 
         // Set the result state variables for our store and the UI
         await finalizeTransformationJob(status)
@@ -268,7 +276,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     throwIfCancelled()
 }
 
-export async function pollTransformationStatusUntilComplete(jobId: string) {
+export async function pollTransformationStatusUntilComplete(jobId: string, userInputRetryCount: number) {
     let status = ''
     try {
         status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
@@ -279,7 +287,49 @@ export async function pollTransformationStatusUntilComplete(jobId: string) {
         throw new ToolkitError(errorMessage, { cause: error as Error })
     }
 
+    // Use recursion here to get user input
+    if (
+        status === TransformByQStatus.WaitingUserInput &&
+        userInputRetryCount > CodeWhispererConstants.maxHumanInTheLoopAttempts
+    ) {
+        try {
+            userInputRetryCount++
+
+            // 8) Once all this is successful we need to re-initiate pollTransformationStatusUntilComplete
+            await completeHumanInTheLoopWork(jobId, userInputRetryCount)
+            status = await pollTransformationStatusUntilComplete(jobId, userInputRetryCount)
+        } catch (e) {
+            // do nothing for now. If a recursive call failed, need to set status appropriately?
+            // or throw error
+        }
+    }
+
     return status
+}
+
+export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCount: number) {
+    try {
+        // 1) We need to call GetTransformationPlan to get artifactId
+        const transformationSteps = await getTransformationSteps(jobId, false)
+        const { artifactId, artifactType } = getArtifactIdentifiers(transformationSteps)
+
+        // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
+        const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadResultArchive(
+            jobId,
+            artifactId,
+            artifactType
+        )
+
+        // 3) We need to replace version in pom.xml
+
+        // 4) We need to run maven commands on that pom.xml to get available versions
+        // 5) We need to wait for user input
+        // 6) We need to add user input to that pom.xml, original pom.xml is intact somewhere, and run maven compile
+        // 7) We need to take that output of maven and use CreateUploadUrl
+    } catch (e) {
+        // Will probably emit different TYPES of errors from the Human in the loop engagement
+        // catch them here and determine what to do with in parent function
+    }
 }
 
 export async function finalizeTransformationJob(status: string) {
@@ -333,6 +383,7 @@ export async function setTransformationToRunningState() {
         codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
+        codeTransformProjectId: '',
         result: MetadataResult.Pass,
     })
 
