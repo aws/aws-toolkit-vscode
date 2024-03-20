@@ -65,7 +65,7 @@ export class ActiveStateController implements vscode.Disposable {
 
         this.clear(e.editor) // do we need this?
         if (e.triggerType === 'OnDemand' && e.isRunning) {
-            // if user triggers on demand, imeediately update the UI and cancel the previous debounced update if any
+            // if user triggers on demand, immediately update the UI and cancel the previous debounced update if there is one
             this.refreshDebounced.cancel()
             await this._refresh(this._editor)
         } else {
@@ -79,7 +79,7 @@ export class ActiveStateController implements vscode.Disposable {
         }
 
         if (this._editor && this._editor === vscode.window.activeTextEditor) {
-            // receives recommendation, imeediately update the UI and cacnel the debounced update
+            // receives recommendation, immediately update the UI and cacnel the debounced update if there is one
             this.refreshDebounced.cancel()
             await this._refresh(this._editor, false)
         }
@@ -105,7 +105,7 @@ export class ActiveStateController implements vscode.Disposable {
         this._refresh(editor)
     }, 1000)
 
-    private async _refresh(editor: vscode.TextEditor | undefined, flag?: boolean) {
+    private async _refresh(editor: vscode.TextEditor | undefined, shouldDisplay?: boolean) {
         if (!this.container.auth.isConnectionValid()) {
             this.clear(this._editor)
             return
@@ -132,19 +132,19 @@ export class ActiveStateController implements vscode.Disposable {
             return
         }
 
-        if (flag !== undefined) {
-            await this.updateDecorations(editor, selections, flag)
+        if (shouldDisplay !== undefined) {
+            await this.updateDecorations(editor, selections, shouldDisplay)
         } else {
             await this.updateDecorations(editor, selections, RecommendationService.instance.isRunning)
         }
     }
 
-    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], flag: boolean) {
+    async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], shouldDisplay: boolean) {
         const range = editor.document.validateRange(
             new vscode.Range(lines[0].active, lines[0].active, lines[0].active, lines[0].active)
         )
 
-        if (flag) {
+        if (shouldDisplay) {
             editor.setDecorations(this.cwLineHintDecoration, [range])
         } else {
             editor.setDecorations(this.cwLineHintDecoration, [])
