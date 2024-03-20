@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "UI notifiaction \"no suggestion from CodeWhisperer\" not being shown correctly"
+	"description": "CodeWhisperer: UI notification \"no suggestion\" not shown correctly"
 }
