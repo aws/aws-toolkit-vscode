@@ -19,11 +19,33 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         super(AmazonQLoginWebview.sourcePath)
     }
 
-    fetchConnection(): SsoConnection | undefined {
-        if (AuthUtil.instance.isConnected() && AuthUtil.instance.conn?.type === 'sso') {
-            return AuthUtil.instance.conn
+    async fetchConnections(): Promise<SsoConnection[] | undefined> {
+        const toolkitExt = vscode.extensions.getExtension('amazonwebservices.aws-toolkit-vscode')
+        const importedApi = toolkitExt?.exports
+        const connections: SsoConnection[] = []
+        const toolkitConnections = await importedApi?.listConnections()
+        toolkitConnections.forEach((connection: SsoConnection) => {
+            if (connection.scopes?.includes('codewhisperer:completions')) {
+                connections.push(connection)
+            }
+        })
+        return connections
+    }
+
+    async useConnection(connectionId: string): Promise<AuthError | undefined> {
+        try {
+            const toolkitExt = vscode.extensions.getExtension('amazonwebservices.aws-toolkit-vscode')
+            const importedApi = toolkitExt?.exports
+            const connections: SsoConnection[] = await importedApi?.listConnections()
+            connections.forEach(async (connection: SsoConnection) => {
+                if (connection.id === connectionId) {
+                    await AuthUtil.instance.secondaryAuth.useNewConnection(connection)
+                    return undefined
+                }
+            })
+        } catch (error) {
+            return { id: '', text: error as string }
         }
-        return undefined
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {

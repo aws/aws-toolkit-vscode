@@ -64,8 +64,12 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         await vscode.window.showInformationMessage(`${e.text}`)
     }
 
-    fetchConnection(): SsoConnection | undefined {
+    async fetchConnections(): Promise<SsoConnection[] | undefined> {
         //This does not need to be implement in aws toolkit vue backend
+        return undefined
+    }
+
+    async useConnection(connectionId: string): Promise<AuthError | undefined> {
         return undefined
     }
 }
