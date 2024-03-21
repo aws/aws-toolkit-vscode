@@ -39,7 +39,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
     notifyToolkit() {
         if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
-            void vscode.commands.executeCommand('aws.amazonq.refresh')
+            void vscode.commands.executeCommand('_aws.toolkit.auth.restore')
         }
     }
 

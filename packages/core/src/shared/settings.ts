@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import * as codecatalyst from './clients/codecatalystClient'
 import * as codewhisperer from '../codewhisperer/client/codewhisperer'
-import { getLogger, showLogOutputChannel } from './logger'
+import { getLogger } from './logger'
 import { cast, FromDescriptor, Record, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
 import { assertHasProps, ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
@@ -15,6 +15,7 @@ import { isNameMangled } from './vscode/env'
 import { once, onceChanged } from './utilities/functionUtils'
 import { ToolkitError } from './errors'
 import { telemetry } from './telemetry/telemetry'
+import globals from './extensionGlobals'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -31,7 +32,7 @@ export async function showSettingsFailedMsg(kind: 'read' | 'update', key?: strin
     const p = vscode.window.showErrorMessage(msg, {}, ...items)
     return p.then<string | undefined>(async selection => {
         if (selection === logsItem) {
-            showLogOutputChannel()
+            globals.logOutputChannel.show(true)
         } else if (selection === openSettingsItem) {
             await vscode.commands.executeCommand('workbench.action.openSettingsJson')
         }

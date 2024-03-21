@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { Logger, LogLevel, getLogger } from '.'
 import { setLogger } from './logger'
-import { logOutputChannel } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import { waitUntil } from '../utilities/timeoutUtils'
 import { cleanLogFiles } from './util'
@@ -17,6 +16,7 @@ import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
 import { isWeb } from '../../common/webUtils'
 import { fsCommon } from '../../srcShared/fs'
+import globals from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -27,10 +27,10 @@ const defaultLogLevel: LogLevel = 'info'
  */
 export async function activate(
     extensionContext: vscode.ExtensionContext,
+    contextPrefix: string,
     outputChannel: vscode.LogOutputChannel,
-    contextPrefix: string
+    logChannel: vscode.LogOutputChannel
 ): Promise<void> {
-    const chan = logOutputChannel
     const settings = Settings.instance.getSection('aws')
     const devLogfile = settings.get('dev.logfile', '')
     const logUri = devLogfile
@@ -42,7 +42,7 @@ export async function activate(
     const mainLogger = makeLogger(
         {
             logPaths: [logUri],
-            outputChannels: [chan],
+            outputChannels: [logChannel],
             useConsoleLog: isWeb(),
         },
         extensionContext.subscriptions
@@ -56,7 +56,7 @@ export async function activate(
         makeLogger(
             {
                 logPaths: [logUri],
-                outputChannels: [outputChannel, chan],
+                outputChannels: [outputChannel, logChannel],
             },
             extensionContext.subscriptions
         ),
@@ -68,7 +68,7 @@ export async function activate(
         makeLogger(
             {
                 staticLogLevel: 'debug',
-                outputChannels: [outputChannel, chan],
+                outputChannels: [outputChannel, logChannel],
                 useDebugConsole: true,
             },
             extensionContext.subscriptions
@@ -148,7 +148,7 @@ export function makeLogger(
 
 function getLogLevel(): LogLevel {
     const configuration = Settings.instance.getSection('aws')
-    return configuration.get('logLevel', defaultLogLevel)
+    return configuration.get(`${globals.contextPrefix}logLevel`, defaultLogLevel)
 }
 
 /**

@@ -62,6 +62,7 @@ let localize: nls.LocalizeFunc
 export async function activateShared(context: vscode.ExtensionContext): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
     const contextPrefix = 'toolkit'
+    globals.contextPrefix = '' //todo: disconnect from above line
 
     // some "initialize" functions
     await initializeComputeRegion()
@@ -78,8 +79,10 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
 
     // Setup the logger
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
-    await activateLogger(context, toolkitOutputChannel, contextPrefix)
+    const toolkitLogChannel = vscode.window.createOutputChannel('AWS Toolkit Logs', { log: true })
+    await activateLogger(context, contextPrefix, toolkitOutputChannel, toolkitLogChannel)
     globals.outputChannel = toolkitOutputChannel
+    globals.logOutputChannel = toolkitLogChannel
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)

@@ -27,6 +27,7 @@ import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 
 export async function activateShared(context: vscode.ExtensionContext) {
     const contextPrefix = 'amazonq'
+    globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
     // void vscode.window.showInformationMessage(
     //     'Amazon Q + CodeWhisperer: This extension is under development and offers no features at this time.'
     // )
@@ -41,8 +42,12 @@ export async function activateShared(context: vscode.ExtensionContext) {
     globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
     globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
 
-    const toolkitOutputChannel = vscode.window.createOutputChannel('Amazon Q', { log: true })
-    await activateLogger(context, toolkitOutputChannel, contextPrefix)
+    const qOutputChannel = vscode.window.createOutputChannel('Amazon Q', { log: true })
+    const qLogChannel = vscode.window.createOutputChannel('Amazon Q Logs', { log: true })
+    await activateLogger(context, contextPrefix, qOutputChannel, qLogChannel)
+    globals.outputChannel = qOutputChannel
+    globals.logOutputChannel = qLogChannel
+
     await activateTelemetry(context, globals.awsContext, Settings.instance)
 
     await initializeAuth(context, globals.awsContext, globals.loginManager, contextPrefix)

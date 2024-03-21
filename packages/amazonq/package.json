@@ -72,7 +72,7 @@
                     "deprecationMessage": "The current profile is now stored internally by the Toolkit.",
                     "description": "%AWS.configuration.profileDescription%"
                 },
-                "aws.logLevel": {
+                "aws.amazonq.logLevel": {
                     "type": "string",
                     "default": "info",
                     "enum": [
@@ -96,7 +96,7 @@
                         }
                     }
                 },
-                "aws.telemetry": {
+                "aws.amazonq.telemetry": {
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "%AWS.configuration.description.telemetry%",
@@ -247,14 +247,6 @@
             {
                 "label": "%AWS.submenu.amazonqEditorContextSubmenu.title%",
                 "id": "amazonqEditorContextSubmenu"
-            },
-            {
-                "label": "%AWS.generic.feedback%",
-                "id": "aws.submenu.feedback"
-            },
-            {
-                "label": "%AWS.generic.help%",
-                "id": "aws.submenu.help"
             }
         ],
         "menus": {
@@ -345,16 +337,6 @@
                     "command": "aws.amazonq.transformationHub.reviewChanges.rejectChanges",
                     "when": "view == aws.amazonq.transformationProposedChangesTree && gumby.reviewState == InReview",
                     "group": "navigation@2"
-                },
-                {
-                    "submenu": "aws.submenu.feedback",
-                    "when": "view =~ /^aws\\./ && view != aws.AmazonQChatView",
-                    "group": "y_toolkitMeta@1"
-                },
-                {
-                    "submenu": "aws.submenu.help",
-                    "when": "view =~ /^aws\\./ && view != aws.AmazonQChatView",
-                    "group": "y_toolkitMeta@2"
                 },
                 {
                     "command": "aws.codeWhisperer.openReferencePanel",
