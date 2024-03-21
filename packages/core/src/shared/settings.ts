@@ -758,7 +758,7 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
             vscode.commands.executeCommand('setContext', 'aws.dev.newLoginUxEnabled', enabled)
         )
         void setContext()
-        return enabled
+        return false
     }
 
     public getServiceConfig<T extends ServiceClients>(

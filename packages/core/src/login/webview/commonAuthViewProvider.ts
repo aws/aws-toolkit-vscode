@@ -59,9 +59,11 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             const Panel = VueWebview.compilePanel(ToolkitLoginWebview)
             // `context` is `ExtContext` provided on activation
             this.webView = new Panel(extensionContext, CodeCatalystAuthenticationProvider.fromContext(extensionContext))
+            this.source = ToolkitLoginWebview.sourcePath
         } else {
             const Panel = VueWebview.compilePanel(AmazonQLoginWebview)
             this.webView = new Panel(extensionContext)
+            this.source = AmazonQLoginWebview.sourcePath
         }
     }
 
