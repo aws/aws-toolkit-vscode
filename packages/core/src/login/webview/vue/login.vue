@@ -244,6 +244,10 @@ interface ExistingLogin {
     connectionId: string
 }
 
+function sleep(duration: number = 0): Promise<void> {
+    return new Promise(r => setTimeout(r, Math.max(duration, 0)))
+}
+
 export default defineComponent({
     name: 'Login',
     components: { SelectableItem },
@@ -276,21 +280,12 @@ export default defineComponent({
     },
     async created() {
         await this.emitUpdate('created')
-        const connections = await client.fetchConnections()
-        connections?.forEach((connection, index) => {
-            this.existingLogins.push({
-                id: LoginOption.EXISTING_LOGINS + index,
-                text: 'Used by another AWS Extension',
-                title: isBuilderId(connection.startUrl) ? 'AWS Builder ID' : 'AWS IAM Identity Center',
-                connectionId: connection.id,
-            })
-        })
     },
 
     mounted() {
         this.fetchRegions()
+        void this.updateExistingConnections()
     },
-
     methods: {
         toggleItemSelection(itemId: number) {
             this.selectedLoginOption = itemId
@@ -375,6 +370,37 @@ export default defineComponent({
             this.regions = regions
         },
         async emitUpdate(cause?: string) {},
+        async updateExistingConnections() {
+            const connections = await client.fetchConnections()
+            connections?.forEach((connection, index) => {
+                this.existingLogins.push({
+                    id: LoginOption.EXISTING_LOGINS + index,
+                    text: 'Used by AWS Toolkit',
+                    title: isBuilderId(connection.startUrl)
+                        ? 'AWS Builder ID'
+                        : `AWS IAM Identity Center ${connection.startUrl}`,
+                    connectionId: connection.id,
+                })
+            })
+            this.$forceUpdate()
+            // in case toolkit activation is slow.
+            // Todo:
+            if (this.existingLogins.length === 0) {
+                await sleep(3000)
+                const connections = await client.fetchConnections()
+                connections?.forEach((connection, index) => {
+                    this.existingLogins.push({
+                        id: LoginOption.EXISTING_LOGINS + index,
+                        text: 'Used by AWS Toolkit',
+                        title: isBuilderId(connection.startUrl)
+                            ? 'AWS Builder ID'
+                            : `AWS IAM Identity Center ${connection.startUrl}`,
+                        connectionId: connection.id,
+                    })
+                })
+                this.$forceUpdate()
+            }
+        },
     },
 })
 </script>
