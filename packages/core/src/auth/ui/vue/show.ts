@@ -54,7 +54,6 @@ import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { isWeb } from '../../../common/webUtils'
-import { DevSettings } from '../../../shared/settings'
 
 export class AuthWebview extends VueWebview {
     public static readonly sourcePath: string = 'src/auth/ui/vue/index.js'

@@ -23,6 +23,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             const ssoProfile = createSsoProfile(startUrl, region)
             const conn = await Auth.instance.createConnection(ssoProfile)
             await Auth.instance.useConnection(conn)
+            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
             void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
             void this.showResourceExplorer()
         })
@@ -41,6 +42,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         }
         try {
             await tryAddCredentials(profileName, data, true)
+            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
             await this.showResourceExplorer()
             return
         } catch (e) {
@@ -52,6 +54,8 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
         return this.ssoSetup('startCodeCatalystBuilderIdSetup', async () => {
             await this.codeCatalystAuth.connectToAwsBuilderId()
+            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+            await this.showResourceExplorer()
         })
     }
 
