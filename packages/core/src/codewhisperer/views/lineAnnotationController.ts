@@ -220,8 +220,6 @@ export class LineAnnotationController implements vscode.Disposable {
             getLogger().debug(`codewhisperer: existing user login, disabling inline tutorial.`)
         }
 
-        this._currentState = new AutotriggerState() // remove it
-
         this._disposable = vscode.Disposable.from(
             subscribeOnce(this.container.lineTracker.onReady)(async _ => {
                 await this.onReady()
