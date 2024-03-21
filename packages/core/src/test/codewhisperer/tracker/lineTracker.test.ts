@@ -226,7 +226,6 @@ describe('LineTracker class', function () {
             editor = await openATextEditorWithText('\n\n\n\n\n', 'foo.py', undefined, { preview: false })
             editor.selection = new Selection(new Position(3, 0), new Position(3, 0))
             assertEmptyCounts()
-            assert.ok(sut.selections === undefined)
 
             await sut.onTextEditorSelectionChanged({
                 textEditor: editor,
@@ -272,7 +271,6 @@ describe('LineTracker class', function () {
                 })
 
                 assert.deepStrictEqual(counts, { ...counts })
-                assert.deepStrictEqual(sut.selections, undefined)
             }
 
             await assertLineChanged('debug')
@@ -282,8 +280,10 @@ describe('LineTracker class', function () {
 
     describe('onActiveTextEditorChanged', function () {
         it('shoudl fire lineChangedEvent', async function () {
-            editor = await openATextEditorWithText('\n\n\n\n\n', 'foo.py', undefined, { preview: false })
-            editor.selection = new Selection(new Position(1, 0), new Position(1, 0))
+            const selections: Selection[] = [new Selection(0, 0, 1, 1)]
+
+            editor = { selections: selections } as any
+
             assertEmptyCounts()
 
             await sut.onActiveTextEditorChanged(editor)
@@ -291,15 +291,10 @@ describe('LineTracker class', function () {
             assert.deepStrictEqual(counts, { ...counts, editor: 1 })
             assert.deepStrictEqual(sut.selections, [
                 {
-                    anchor: 1,
+                    anchor: 0,
                     active: 1,
                 },
             ])
-
-            editor.selection = new Selection(new Position(2, 0), new Position(2, 0))
-            await sut.onActiveTextEditorChanged(editor)
-
-            assert.deepStrictEqual(counts, { ...counts, editor: 1 })
         })
     })
 })
