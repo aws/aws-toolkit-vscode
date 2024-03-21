@@ -300,7 +300,7 @@ export async function preTransformationUploadCode(userInputState: UserInputState
         })
         throw err
     }
-    sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
+
     await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     await sleep(2000) // sleep before starting job to prevent ThrottlingException
@@ -329,6 +329,7 @@ export async function startTransformationJob(uploadId: string) {
 
     await sleep(2000) // sleep before polling job to prevent ThrottlingException
     throwIfCancelled()
+    sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
 
     return jobId
 }

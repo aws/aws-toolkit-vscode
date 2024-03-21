@@ -172,6 +172,9 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         if (step.progressUpdates) {
                             for (const subStep of step.progressUpdates) {
                                 progressHtml += `<p style="margin-left: 40px">- ${subStep.name}</p>`
+                                if (subStep.description) {
+                                    progressHtml += `<p style="margin-left: 60px">- ${subStep.description}</p>`
+                                }
                             }
                         }
                     }
