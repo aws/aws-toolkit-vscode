@@ -30,6 +30,7 @@ import {
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
+import { ToolkitError } from '../../shared/errors'
 
 // log project details silently
 export async function validateAndLogProjectDetails() {
@@ -54,6 +55,7 @@ export async function validateAndLogProjectDetails() {
     } finally {
         if (result || reason || codeTransformLocalJavaVersion || codeTransformPreValidationError) {
             telemetry.codeTransform_projectDetails.emit({
+                passive: true,
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformLocalJavaVersion,
                 codeTransformPreValidationError,
@@ -84,7 +86,7 @@ export async function getOpenProjects() {
                 CodeWhispererConstants.linkToPrerequisites
             )
         )
-        throw new Error('No open projects')
+        throw new ToolkitError('No Java projects found since no projects are open', { code: 'NoOpenProjects' })
     }
     const openProjects: vscode.QuickPickItem[] = []
     for (const folder of folders) {
@@ -212,7 +214,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
                 reason: 'CouldNotFindJavaProject',
             })
         }
-        throw new Error('Could not find Java project')
+        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject', name: 'NoJavaProject' })
     }
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
@@ -230,7 +232,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
                 reason: 'NoPomFileFound',
             })
         }
-        throw new Error('No pom.xml file found')
+        throw new ToolkitError('No valid Maven build file found', { code: 'NoPomFileFound', name: 'NonMavenProject' })
     }
 
     /*
