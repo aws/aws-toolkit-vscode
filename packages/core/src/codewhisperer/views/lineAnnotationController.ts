@@ -424,13 +424,7 @@ export class LineAnnotationController implements vscode.Disposable {
             return undefined
         }
 
-        let nextState: AnnotationState | undefined
-
-        if (force) {
-            nextState = this._currentState.nextState(source, true)
-        } else {
-            nextState = this._currentState.nextState(source, false)
-        }
+        const nextState: AnnotationState | undefined = this._currentState.nextState(source, force ?? false)
 
         if (nextState === undefined) {
             return undefined
