@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix CodeWhisperer API call failure in SageMaker Code Editor"
+}

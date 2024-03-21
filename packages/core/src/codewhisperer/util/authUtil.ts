@@ -285,9 +285,12 @@ export class AuthUtil {
 
     public isConnectionValid(): boolean {
         const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
-        getLogger().debug(`codewhisperer: Connection is valid = ${connectionValid}, 
+        if (connectionValid === false) {
+            getLogger().debug(`codewhisperer: Connection is valid = ${connectionValid}, 
                             connection is undefined = ${this.conn === undefined},
                             secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired}`)
+        }
+
         return connectionValid
     }
 
@@ -372,6 +375,10 @@ export class AuthUtil {
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         void this.showReauthenticatePrompt(isAutoTrigger)
         await this.setVscodeContextProps()
+    }
+
+    public isValidCodeTransformationAuthUser(): boolean {
+        return this.isEnterpriseSsoInUse() && this.isConnectionValid()
     }
 }
 

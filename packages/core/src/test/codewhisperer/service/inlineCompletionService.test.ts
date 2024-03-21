@@ -46,6 +46,7 @@ describe('inlineCompletionService', function () {
             sinon.stub(RecommendationHandler.instance, 'getRecommendations').resolves({
                 result: 'Succeeded',
                 errorMessage: undefined,
+                recommendationCount: 1,
             })
             const checkAndResetCancellationTokensStub = sinon.stub(
                 RecommendationHandler.instance,

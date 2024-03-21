@@ -6,7 +6,7 @@ configure app to AMAZONQ if for Amazon Q login
         <!-- Body -->
         <div class="body">
             <!-- Functionality -->
-            <Login :disabled="false" :app="'AMAZONQ'"></Login>
+            <Login :disabled="false" :app="app"></Login>
         </div>
     </div>
 </template>
@@ -21,6 +21,12 @@ export default defineComponent({
     },
     data() {
         return {}
+    },
+    props: {
+        app: {
+            type: String,
+            required: true,
+        },
     },
     mounted() {},
     methods: {},

@@ -3,15 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { SsoConnection } from '../../../auth/connection'
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { AuthError, CommonAuthWebview } from './backend'
-import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
-import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
-import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
-import { isExtensionActive } from '../../../shared/utilities/vsCodeUtils'
+import { SsoConnection } from '../../../../auth/connection'
+import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
+import { AuthError, CommonAuthWebview } from '../backend'
+import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
+import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
+import { isExtensionActive } from '../../../../shared/utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
+    public override source: string = 'src/login/webview/vue/amazonq/index.js'
+
     fetchConnection(): SsoConnection | undefined {
         if (AuthUtil.instance.isConnected() && AuthUtil.instance.conn?.type === 'sso') {
             return AuthUtil.instance.conn

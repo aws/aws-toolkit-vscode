@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import {
     createAutoSuggestions,
     createOpenReferenceLog,
@@ -38,7 +37,7 @@ function getAmazonQCodeWhispererNodes() {
     }
 
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
-    void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
+
     if (AuthUtil.instance.isConnectionExpired()) {
         return [createReconnect('item'), createLearnMore()]
     }
@@ -61,10 +60,6 @@ function getAmazonQCodeWhispererNodes() {
 
     if (hasVendedIamCredentials()) {
         return [createAutoSuggestions(autoTriggerEnabled), createOpenReferenceLog()]
-    }
-
-    if (AuthUtil.instance.isValidEnterpriseSsoInUse()) {
-        void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
     }
 
     return [

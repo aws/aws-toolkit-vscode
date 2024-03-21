@@ -15,6 +15,8 @@ import { JDKVersion } from '../../codewhisperer/models/model'
 import { codeTransformTelemetryState } from './codeTransformTelemetryState'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 
+export const telemetryUndefined = 'undefined'
+
 export enum CancelActionPositions {
     ApiError = 'apiError',
     LoadingPanel = 'loadingPanelStopButton',
@@ -25,6 +27,7 @@ export enum CancelActionPositions {
 export enum StartActionPositions {
     DevToolsSidePanel = 'devToolsStartButton',
     BottomHubPanel = 'bottomPanelSideNavButton',
+    ChatPrompt = 'chatPrompt',
 }
 
 export const logCodeTransformInitiatedMetric = (source: string): void => {
@@ -42,7 +45,7 @@ export const logCodeTransformInitiatedMetric = (source: string): void => {
 }
 
 export const JDKToTelemetryValue = (
-    source: JDKVersion
+    source?: JDKVersion
 ): CodeTransformJavaSourceVersionsAllowed | CodeTransformJavaTargetVersionsAllowed | undefined => {
     switch (source) {
         case JDKVersion.JDK8:

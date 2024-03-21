@@ -17,46 +17,58 @@ import * as vscode from 'vscode'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
 import AdmZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
-import { CodeTransformMavenBuildCommand, telemetry } from '../../shared/telemetry/telemetry'
-import { ToolkitError } from '../../shared/errors'
+import {
+    CodeTransformJavaSourceVersionsAllowed,
+    CodeTransformMavenBuildCommand,
+    telemetry,
+} from '../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import {
+    calculateTotalLatency,
+    javapOutputToTelemetryValue,
+    JDKToTelemetryValue,
+} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
+import { ToolkitError } from '../../shared/errors'
+
+// log project details silently
+export async function validateAndLogProjectDetails() {
+    let reason,
+        result,
+        codeTransformLocalJavaVersion,
+        codeTransformPreValidationError = undefined
+    try {
+        const openProjects = await getOpenProjects()
+        const validProjects = await validateOpenProjects(openProjects, true)
+        if (validProjects.size > 0) {
+            const firstKey = validProjects.keys().next().value
+            const firstModuleEntry = validProjects.get(firstKey)
+            codeTransformLocalJavaVersion = JDKToTelemetryValue(
+                firstModuleEntry
+            ) as CodeTransformJavaSourceVersionsAllowed
+        }
+    } catch (err: any) {
+        result = MetadataResult.Fail
+        reason = err?.code
+        codeTransformPreValidationError = err?.name
+    } finally {
+        if (result || reason || codeTransformLocalJavaVersion || codeTransformPreValidationError) {
+            telemetry.codeTransform_projectDetails.emit({
+                passive: true,
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformLocalJavaVersion,
+                codeTransformPreValidationError,
+                result: result ?? MetadataResult.Pass,
+                reason,
+            })
+        }
+    }
+}
 
 interface FolderInfo {
     path: string
     name: string
-}
-
-/* Once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
- * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
- * Current functionality: given number of milliseconds elapsed (ex. 4,500,000) return hr / min / sec it represents (ex. 1 hr 15 min)
- */
-export function convertToTimeString(durationInMs: number) {
-    const duration = durationInMs / CodeWhispererConstants.numMillisecondsPerSecond // convert to seconds
-    if (duration < 60) {
-        const numSeconds = Math.floor(duration)
-        return `${numSeconds} sec`
-    } else if (duration < 3600) {
-        const numMinutes = Math.floor(duration / 60)
-        const numSeconds = Math.floor(duration % 60)
-        return `${numMinutes} min ${numSeconds} sec`
-    } else {
-        const numHours = Math.floor(duration / 3600)
-        const numMinutes = Math.floor((duration % 3600) / 60)
-        return `${numHours} hr ${numMinutes} min`
-    }
-}
-
-export function convertDateToTimestamp(date: Date) {
-    return date.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-    })
 }
 
 export function throwIfCancelled() {
@@ -68,7 +80,12 @@ export function throwIfCancelled() {
 export async function getOpenProjects() {
     const folders = vscode.workspace.workspaceFolders
     if (folders === undefined) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        void vscode.window.showErrorMessage(
+            CodeWhispererConstants.noSupportedJavaProjectsFoundMessage.replace(
+                'LINK_HERE',
+                CodeWhispererConstants.linkToPrerequisites
+            )
+        )
         throw new ToolkitError('No Java projects found since no projects are open', { code: 'NoOpenProjects' })
     }
     const openProjects: vscode.QuickPickItem[] = []
@@ -109,7 +126,7 @@ async function getMavenJavaProjects(javaProjects: vscode.QuickPickItem[]) {
     return mavenJavaProjects
 }
 
-async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[]) {
+async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[], onProjectFirstOpen: boolean) {
     const projectsValidToTransform = new Map<vscode.QuickPickItem, JDKVersion | undefined>()
     for (const project of mavenJavaProjects) {
         let detectedJavaVersion = undefined
@@ -132,10 +149,6 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                 let errorReason = ''
                 if (spawnResult.stdout) {
                     errorReason = 'JavapExecutionError'
-                    // should never happen -- stdout from javap has always been much, much smaller than the default buffer limit of 1MB
-                    if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
-                        errorReason += '-BufferOverflow'
-                    }
                 } else {
                     errorReason = 'JavapSpawnError'
                 }
@@ -143,13 +156,15 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                     const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
                     errorReason += `-${errorCode}`
                 }
-                telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                    codeTransformPreValidationError: 'NoJavaProject',
-                    codeTransformRuntimeError: errorReason,
-                    result: MetadataResult.Fail,
-                    reason: 'CannotDetermineJavaVersion',
-                })
+                if (!onProjectFirstOpen) {
+                    telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                        codeTransformPreValidationError: 'NoJavaProject',
+                        codeTransformRuntimeError: errorReason,
+                        result: MetadataResult.Fail,
+                        reason: 'CannotDetermineJavaVersion',
+                    })
+                }
             } else {
                 const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
                 const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
@@ -159,12 +174,14 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                     detectedJavaVersion = JDKVersion.JDK11
                 } else {
                     detectedJavaVersion = JDKVersion.UNSUPPORTED
-                    telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                        codeTransformPreValidationError: 'UnsupportedJavaVersion',
-                        result: MetadataResult.Fail,
-                        reason: javapOutputToTelemetryValue(javaVersion),
-                    })
+                    if (!onProjectFirstOpen) {
+                        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                            codeTransformPreValidationError: 'UnsupportedJavaVersion',
+                            result: MetadataResult.Fail,
+                            reason: javapOutputToTelemetryValue(javaVersion),
+                        })
+                    }
                 }
             }
         }
@@ -180,42 +197,57 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
  * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
  * and we allow the user to specify the Java version.
  */
-export async function validateOpenProjects(projects: vscode.QuickPickItem[]) {
+export async function validateOpenProjects(projects: vscode.QuickPickItem[], onProjectFirstOpen = false) {
     const javaProjects = await getJavaProjects(projects)
     if (javaProjects.length === 0) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NoJavaProject',
-            result: MetadataResult.Fail,
-            reason: 'CouldNotFindJavaProject',
-        })
-        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject' })
+        if (!onProjectFirstOpen) {
+            void vscode.window.showErrorMessage(
+                CodeWhispererConstants.noSupportedJavaProjectsFoundMessage.replace(
+                    'LINK_HERE',
+                    CodeWhispererConstants.linkToPrerequisites
+                )
+            )
+            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformPreValidationError: 'NoJavaProject',
+                result: MetadataResult.Fail,
+                reason: 'CouldNotFindJavaProject',
+            })
+        }
+        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject', name: 'NoJavaProject' })
     }
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformPreValidationError: 'NonMavenProject',
-            result: MetadataResult.Fail,
-            reason: 'NoPomFileFound',
-        })
-        throw new ToolkitError('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
+        if (!onProjectFirstOpen) {
+            void vscode.window.showErrorMessage(
+                CodeWhispererConstants.noPomXmlFoundMessage.replace(
+                    'LINK_HERE',
+                    CodeWhispererConstants.linkToPrerequisites
+                )
+            )
+            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformPreValidationError: 'NonMavenProject',
+                result: MetadataResult.Fail,
+                reason: 'NoPomFileFound',
+            })
+        }
+        throw new ToolkitError('No valid Maven build file found', { code: 'NoPomFileFound', name: 'NonMavenProject' })
     }
 
     /*
-     * these projects we know must contain a pom.xml and a .java file
+     * These projects we know must contain a pom.xml and a .java file
      * here we try to get the Java version of each project so that we
-     * can pre-select a default version in the QuickPick for them
+     * can pre-select a default version in the QuickPick for them.
      */
-    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects)
+    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects, onProjectFirstOpen)
+
     return projectsValidToTransform
 }
 
-export function getSha256(fileName: string) {
+export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
-    hasher.update(fs.readFileSync(fileName))
+    hasher.update(buffer)
     return hasher.digest('base64')
 }
 
@@ -238,16 +270,18 @@ export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {
 }
 
 // Consider enhancing the S3 client to include this functionality
-export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
-    const sha256 = getSha256(fileName)
-    const headersObj = getHeadersObj(sha256, resp.kmsKeyArn)
-
+export async function uploadArtifactToS3(
+    fileName: string,
+    resp: CreateUploadUrlResponse,
+    sha256: string,
+    buffer: Buffer
+) {
     throwIfCancelled()
     try {
         const apiStartTime = Date.now()
         const response = await request.fetch('PUT', resp.uploadUrl, {
-            body: fs.readFileSync(fileName),
-            headers: headersObj,
+            body: buffer,
+            headers: getHeadersObj(sha256, resp.kmsKeyArn),
         }).response
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'UploadZip',
@@ -269,8 +303,7 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             result: MetadataResult.Fail,
             reason: 'UploadToS3Failed',
         })
-        // Pass along error to callee function
-        throw new ToolkitError(errorMessage, { cause: e as Error })
+        throw new Error('Upload PUT request failed')
     }
 }
 
@@ -292,7 +325,7 @@ export async function stopJob(jobId: string) {
                 })
                 // always store request ID, but it will only show up in a notification if an error occurs
                 if (response.$response.requestId) {
-                    transformByQState.setJobFailureMetadata(`(request ID: ${response.$response.requestId})`)
+                    transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
                 }
             }
         } catch (e: any) {
@@ -307,13 +340,15 @@ export async function stopJob(jobId: string) {
                 result: MetadataResult.Fail,
                 reason: 'StopTransformationFailed',
             })
-            throw new ToolkitError(errorMessage, { cause: e as Error })
+            throw new Error('Stop job failed')
         }
     }
 }
 
 export async function uploadPayload(payloadFileName: string) {
-    const sha256 = getSha256(payloadFileName)
+    const buffer = fs.readFileSync(payloadFileName)
+    const sha256 = getSha256(buffer)
+
     throwIfCancelled()
     let response = undefined
     try {
@@ -324,7 +359,7 @@ export async function uploadPayload(payloadFileName: string) {
             uploadIntent: CodeWhispererConstants.uploadIntent,
         })
         if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(`(request ID: ${response.$response.requestId})`)
+            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'CreateUploadUrl',
@@ -345,15 +380,14 @@ export async function uploadPayload(payloadFileName: string) {
             result: MetadataResult.Fail,
             reason: 'CreateUploadUrlFailed',
         })
-        // Pass along error to callee function
-        throw new ToolkitError(errorMessage, { cause: e as Error })
+        throw new Error('Create upload URL failed')
     }
     try {
-        await uploadArtifactToS3(payloadFileName, response)
+        await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
         const errorMessage = (e as Error).message ?? 'Error in uploadArtifactToS3 call'
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
-        throw new ToolkitError(errorMessage, { cause: e as Error })
+        throw new Error('S3 upload failed')
     }
     return response.uploadId
 }
@@ -407,6 +441,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
         shell: true,
         encoding: 'utf-8',
         env: environment,
+        maxBuffer: CodeWhispererConstants.maxBufferSize,
     })
     if (spawnResult.status !== 0) {
         let errorLog = ''
@@ -445,7 +480,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
             result: MetadataResult.Fail,
             reason: errorReason,
         })
-        throw new ToolkitError('Maven install error', { code: 'MavenInstallError' })
+        throw new Error('Maven install error')
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} clean install succeeded`)
     }
@@ -476,6 +511,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
         shell: true,
         encoding: 'utf-8',
         env: environment,
+        maxBuffer: CodeWhispererConstants.maxBufferSize,
     })
     if (spawnResult.status !== 0) {
         let errorLog = ''
@@ -511,7 +547,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
             result: MetadataResult.Fail,
             reason: errorReason,
         })
-        throw new ToolkitError('Maven copy dependencies error', { code: 'MavenCopyDependenciesError' })
+        throw new Error('Maven copy-deps error')
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies succeeded`)
     }
@@ -528,8 +564,7 @@ function getDependenciesFolderInfo(): FolderInfo {
 
 export async function writeLogs() {
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
-    const content = `${CodeWhispererConstants.buildLogsDocumentationMessage}\n\n${transformByQState.getErrorLog()}`
-    fs.writeFileSync(logFilePath, content)
+    fs.writeFileSync(logFilePath, transformByQState.getErrorLog())
     return logFilePath
 }
 
@@ -552,7 +587,12 @@ export async function zipCode() {
     try {
         installProjectDependencies(dependenciesFolder)
     } catch (err) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.installErrorMessage)
+        void vscode.window.showErrorMessage(
+            CodeWhispererConstants.installErrorMessage.replace(
+                'LINK_HERE',
+                CodeWhispererConstants.linkToMavenTroubleshooting
+            )
+        )
         // open build-logs.txt file to show user error logs
         const logFilePath = await writeLogs()
         const doc = await vscode.workspace.openTextDocument(logFilePath)
@@ -610,16 +650,23 @@ export async function zipCode() {
 
     const zipSize = (await fs.promises.stat(tempFilePath)).size
 
+    const exceedsLimit = zipSize > CodeWhispererConstants.uploadZipSizeLimitInBytes
+
     // Later, consider adding field for number of source lines of code
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
         codeTransformTotalByteSize: zipSize,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
-        result: MetadataResult.Pass,
+        result: exceedsLimit ? MetadataResult.Fail : MetadataResult.Pass,
     })
 
-    if (zipSize > CodeWhispererConstants.uploadZipSizeLimitInBytes) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.projectSizeTooLargeMessage)
+    if (exceedsLimit) {
+        void vscode.window.showErrorMessage(
+            CodeWhispererConstants.projectSizeTooLargeMessage.replace(
+                'LINK_HERE',
+                CodeWhispererConstants.linkToUploadZipTooLarge
+            )
+        )
         throw new Error('Project size exceeds 1GB limit')
     }
 
@@ -643,7 +690,7 @@ export async function startJob(uploadId: string) {
             },
         })
         if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(`(request ID: ${response.$response.requestId})`)
+            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'StartTransformation',
@@ -665,8 +712,7 @@ export async function startJob(uploadId: string) {
             result: MetadataResult.Fail,
             reason: 'StartTransformationFailed',
         })
-        // Pass along error to callee function
-        throw new ToolkitError(errorMessage, { cause: e as Error })
+        throw new Error('Start job failed')
     }
 }
 
@@ -682,7 +728,7 @@ export async function getTransformationPlan(jobId: string) {
             transformationJobId: jobId,
         })
         if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(`(request ID: ${response.$response.requestId})`)
+            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'GetTransformationPlan',
@@ -720,8 +766,7 @@ export async function getTransformationPlan(jobId: string) {
             result: MetadataResult.Fail,
             reason: 'GetTransformationPlanFailed',
         })
-        // Pass along error to callee function
-        throw new ToolkitError(errorMessage, { cause: e as Error })
+        throw new Error('Get plan failed')
     }
 }
 
@@ -733,7 +778,7 @@ export async function getTransformationSteps(jobId: string) {
             transformationJobId: jobId,
         })
         if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(`(request ID: ${response.$response.requestId})`)
+            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'GetTransformationPlan',
@@ -786,6 +831,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     codeTransformJobId: jobId,
                     codeTransformStatus: status,
                     result: MetadataResult.Pass,
+                    codeTransformPreviousStatus: transformByQState.getPolledJobStatus(),
                 })
             }
             transformByQState.setPolledJobStatus(status)
@@ -793,16 +839,20 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             if (validStates.includes(status)) {
                 break
             }
+            /*
+             * Below IF is only relevant for pollTransformationStatusUntilPlanReady, when pollTransformationStatusUntilComplete
+             * is called, we break above on validStatesForCheckingDownloadUrl and check final status in finalizeTransformationJob
+             */
             if (CodeWhispererConstants.failureStates.includes(status)) {
                 transformByQState.setJobFailureMetadata(
                     `${response.transformationJob.reason} (request ID: ${response.$response.requestId})`
                 )
-                throw new ToolkitError('Transformation job failed')
+                throw new Error('Job was rejected, stopped, or failed')
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
             timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds
             if (timer > CodeWhispererConstants.transformationJobTimeoutSeconds) {
-                throw new ToolkitError('Transformation job timed out')
+                throw new Error('Job timed out')
             }
         } catch (e: any) {
             const errorMessage = (e as Error).message ?? 'Error in GetTransformation API call'
@@ -816,8 +866,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Fail,
                 reason: 'GetTransformationFailed',
             })
-            // Pass along error to callee function
-            throw new ToolkitError(errorMessage, { cause: e as Error })
+            throw new Error('Error while polling job status')
         }
     }
     return status

@@ -266,6 +266,7 @@ Pull requests that change **customer-impacting behavior** must include a changel
 >     -   ✅ `S3 filenames are always uppercase`
 > -   To update an _existing_ changelog item, just edit its `.changes/next-release/….json` file, you don't need to re-run `npm run newChange`.
 > -   If there are multiple unrelated changes, run `npm run newChange` for each change.
+> -   Include the feature that the change affects, Q, CodeWhisperer, etc.
 
 ### Commit messages
 
