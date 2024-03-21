@@ -753,12 +753,12 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
     }
 
     public isNewLoginUxEnabled(): boolean {
-        const enabled = true
+        const enabled = false
         const setContext = once(() =>
             vscode.commands.executeCommand('setContext', 'aws.dev.newLoginUxEnabled', enabled)
         )
         void setContext()
-        return false
+        return enabled
     }
 
     public getServiceConfig<T extends ServiceClients>(
