@@ -55,7 +55,7 @@ const refreshGrantType = 'refresh_token'
  *         - Interval               : Minimum time (seconds) the client SHOULD wait between polling intervals.
  *    3. Poll for the access token.
  *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
- *          - Calls {@link OidcClient.pollForToken}
+ *          - Calls {@link pollForTokenWithProgress}
  *       - RETURNS:
  *         - AccessToken
  *         - ExpiresIn
