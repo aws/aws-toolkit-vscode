@@ -46,6 +46,7 @@ export const acceptSuggestion = Commands.declare(
             references: codewhispererClient.References
         ) => {
             RecommendationService.instance.incrementAcceptedCount()
+            console.log()
             const editor = vscode.window.activeTextEditor
             const onAcceptanceFunc = isInlineCompletionEnabled() ? onInlineAcceptance : onAcceptance
             await onAcceptanceFunc(
