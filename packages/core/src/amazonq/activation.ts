@@ -11,7 +11,12 @@ import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/init
 import { Commands, VsCodeCommandArg } from '../shared/vscode/commands2'
 import { MessagePublisher } from './messages/messagePublisher'
 import { welcome } from './onboardingPage'
-import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
+import {
+    dismissCommand,
+    installAmazonQCommand,
+    learnMoreAmazonQCommand,
+    switchToAmazonQCommand,
+} from './explorer/amazonQChildrenNodes'
 import { activateBadge } from './util/viewBadgeHandler'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../auth/ui/vue/show'
@@ -41,6 +46,8 @@ export async function activate(context: ExtensionContext) {
     amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
     learnMoreAmazonQCommand.register()
     switchToAmazonQCommand.register()
+    dismissCommand.register()
+    installAmazonQCommand.register()
 
     await activateBadge()
 }

@@ -752,6 +752,15 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         return Object.keys(this.activeSettings).length > 0
     }
 
+    public isNewLoginUxEnabled(): boolean {
+        const enabled = true
+        const setContext = once(() =>
+            vscode.commands.executeCommand('setContext', 'aws.dev.newLoginUxEnabled', enabled)
+        )
+        void setContext()
+        return enabled
+    }
+
     public getServiceConfig<T extends ServiceClients>(
         devSetting: T,
         defaultConfig: ServiceTypeMap[T]

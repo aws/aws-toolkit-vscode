@@ -27,7 +27,6 @@
  */
 
 import * as vscode from 'vscode'
-import path from 'path'
 import {
     WebviewViewProvider,
     ExtensionContext,
@@ -41,6 +40,7 @@ import { registerAssetsHttpsFileSystem } from '../../amazonq/webview/assets/asse
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
 import { AmazonQLoginWebview } from './vue/amazonq/backend_amazonq'
 import { ToolkitLoginWebview } from './vue/toolkit/backend_toolkit'
+import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AmazonCommonAuth'
@@ -50,18 +50,19 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
 
     constructor(
         private readonly extensionContext: ExtensionContext,
-        private readonly onDidChangeVisibility: EventEmitter<boolean>,
-        readonly app: string
+        readonly app: string,
+        private readonly onDidChangeVisibility?: EventEmitter<boolean>
     ) {
         registerAssetsHttpsFileSystem(extensionContext)
-        // Create panel bindings using our class
-        const Panel =
-            app === 'TOOLKIT'
-                ? VueWebview.compilePanel(ToolkitLoginWebview)
-                : VueWebview.compilePanel(AmazonQLoginWebview)
-        this.source = path.join('vue/src/login/webview/vue', app === 'TOOLKIT' ? 'toolkit' : 'amazonq', 'index.js') // Sent to dist/vue folder in webpack.
-        // `context` is `ExtContext` provided on activation
-        this.webView = new Panel(extensionContext, this.source)
+        if (app === 'TOOLKIT') {
+            // Create panel bindings using our class
+            const Panel = VueWebview.compilePanel(ToolkitLoginWebview)
+            // `context` is `ExtContext` provided on activation
+            this.webView = new Panel(extensionContext, CodeCatalystAuthenticationProvider.fromContext(extensionContext))
+        } else {
+            const Panel = VueWebview.compilePanel(AmazonQLoginWebview)
+            this.webView = new Panel(extensionContext)
+        }
     }
 
     public async resolveWebviewView(
@@ -70,7 +71,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
         _token: CancellationToken
     ) {
         webviewView.onDidChangeVisibility(() => {
-            this.onDidChangeVisibility.fire(webviewView.visible)
+            this.onDidChangeVisibility?.fire(webviewView.visible)
         })
 
         const dist = Uri.joinPath(this.extensionContext.extensionUri, 'dist')
@@ -104,7 +105,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
 					<title>Base View Extension</title>
 				</head>
 				<body>
-                     
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.4/vue.global.prod.min.js"></script>  
 					<script>
 						const vscode = acquireVsCodeApi();
 					</script>

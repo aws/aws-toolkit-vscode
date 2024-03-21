@@ -7,12 +7,20 @@ import * as vscode from 'vscode'
 import { createFreeTierLimitMet, createSignIn, createReconnect } from '../../codewhisperer/ui/codeWhispererNodes'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { AuthUtil, amazonQScopes, codeWhispererChatScopes } from '../../codewhisperer/util/authUtil'
-import { createLearnMoreNode, createTransformByQ, enableAmazonQNode, switchToAmazonQNode } from './amazonQChildrenNodes'
+import {
+    createDismissNode,
+    createInstallQNode,
+    createLearnMoreNode,
+    createTransformByQ,
+    enableAmazonQNode,
+    switchToAmazonQNode,
+} from './amazonQChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
 import { hasScopes, isSsoConnection } from '../../auth/connection'
 import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
 import { getIcon } from '../../shared/icons'
 import { vsCodeState } from '../../codewhisperer/models/model'
+import { DevSettings } from '../../shared/settings'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -60,7 +68,17 @@ export class AmazonQNode implements TreeNode {
         return ''
     }
 
+    public isAmazonQInstalled(): boolean {
+        const extensions = vscode.extensions.all
+        const q = extensions.find(x => x.id === 'amazonwebservices.amazon-q-vscode')
+        return q !== undefined
+    }
+
     public getChildren() {
+        if (!this.isAmazonQInstalled() && DevSettings.instance.isNewLoginUxEnabled()) {
+            return [createInstallQNode(), createLearnMoreNode(), createDismissNode()]
+        }
+
         void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionExpired()) {
             return [createReconnect('tree'), createLearnMoreNode()]
