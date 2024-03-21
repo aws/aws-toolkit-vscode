@@ -78,6 +78,17 @@ export async function startTransformByQWithProgress() {
     await startTransformByQ()
 }
 
+export async function processTransformFormInput(
+    pathToModule: string,
+    fromJDKVersion: JDKVersion,
+    toJDKVersion: JDKVersion
+) {
+    transformByQState.setProjectName(path.basename(pathToModule))
+    transformByQState.setProjectPath(pathToModule)
+    transformByQState.setSourceJDKVersion(fromJDKVersion)
+    transformByQState.setTargetJDKVersion(toJDKVersion)
+}
+
 async function setMaven() {
     let mavenWrapperExecutableName = os.platform() === 'win32' ? 'mvnw.cmd' : 'mvnw'
     const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
@@ -140,6 +151,22 @@ export async function compileProject() {
         const logFilePath = await writeLogs()
         const doc = await vscode.workspace.openTextDocument(logFilePath)
         await vscode.window.showTextDocument(doc)
+        let javaHomePrompt = `${
+            CodeWhispererConstants.enterJavaHomeMessage
+        } ${transformByQState.getSourceJDKVersion()}. `
+        if (os.platform() === 'win32') {
+            javaHomePrompt += CodeWhispererConstants.windowsJavaHomeHelpMessage.replace(
+                'JAVA_VERSION_HERE',
+                transformByQState.getSourceJDKVersion()!
+            )
+        } else {
+            const jdkVersion = transformByQState.getSourceJDKVersion()
+            if (jdkVersion === JDKVersion.JDK8) {
+                javaHomePrompt += CodeWhispererConstants.nonWindowsJava8HomeHelpMessage
+            } else if (jdkVersion === JDKVersion.JDK11) {
+                javaHomePrompt += CodeWhispererConstants.nonWindowsJava11HomeHelpMessage
+            }
+        }
         const javaHome = await vscode.window.showInputBox({
             title: CodeWhispererConstants.transformByQWindowTitle,
             prompt: javaHomePrompt,
@@ -319,7 +346,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
             artifactId,
             artifactType
         )
-
+        console.log(pomFileVirtualFileReference, manifestFileVirtualFileReference)
         // 3) We need to replace version in pom.xml
 
         // 4) We need to run maven commands on that pom.xml to get available versions

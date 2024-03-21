@@ -26,7 +26,7 @@ export async function processTransformByQ() {
             result: MetadataResult.Pass,
         })
         telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
-            codeTransformStartSrcComponents: StartActionPositions.ChatPrompt,
+            codeTransformStartSrcComponents: 'chatPrompt',
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             result: MetadataResult.Pass,
         })
