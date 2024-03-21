@@ -56,9 +56,9 @@ export async function activateShared(context: vscode.ExtensionContext) {
     await activateCWChat(context)
     await activateQGumby(extContext as ExtContext)
 
-    const authProvider = new CommonAuthViewProvider(context, undefined, 'AMAZONQ')
+    const authProvider = new CommonAuthViewProvider(context, contextPrefix)
     context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(CommonAuthViewProvider.viewType, authProvider, {
+        vscode.window.registerWebviewViewProvider(authProvider.viewType, authProvider, {
             webviewOptions: {
                 retainContextWhenHidden: true,
             },

@@ -737,7 +737,10 @@ export function registerCommands(context: vscode.ExtensionContext, prefix: strin
                 serviceToShow = undefined
             }
 
-            return vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
+            // TODO: hack
+            if (prefix === 'toolkit') {
+                void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
+            }
         }
     )
 }
@@ -859,5 +862,5 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
  */
 export async function focusAmazonQPanel(): Promise<void> {
     await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-    await vscode.commands.executeCommand('aws.AmazonCommonAuth.focus')
+    await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
 }

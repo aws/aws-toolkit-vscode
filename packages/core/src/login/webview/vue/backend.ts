@@ -20,8 +20,6 @@ export type AuthError = { id: string; text: string }
 export const userCancelled = 'userCancelled'
 
 export abstract class CommonAuthWebview extends VueWebview {
-    public override id: string = 'aws.AmazonCommonAuth'
-
     public getRegions(): Region[] {
         return globals.regionProvider.getRegions().reverse()
     }

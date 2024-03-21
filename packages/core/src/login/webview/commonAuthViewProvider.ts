@@ -43,7 +43,7 @@ import { ToolkitLoginWebview } from './vue/toolkit/backend_toolkit'
 import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
-    public static readonly viewType = 'aws.AmazonCommonAuth'
+    public readonly viewType: string
 
     webView: VueWebviewPanel<ToolkitLoginWebview | AmazonQLoginWebview> | undefined
     source: string = ''
@@ -53,17 +53,21 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
         readonly app: string,
         private readonly onDidChangeVisibility?: EventEmitter<boolean>
     ) {
+        this.viewType = `aws.${app}.AmazonCommonAuth`
+
         registerAssetsHttpsFileSystem(extensionContext)
-        if (app === 'TOOLKIT') {
+        if (app === 'toolkit') {
             // Create panel bindings using our class
             const Panel = VueWebview.compilePanel(ToolkitLoginWebview)
             // `context` is `ExtContext` provided on activation
             this.webView = new Panel(extensionContext, CodeCatalystAuthenticationProvider.fromContext(extensionContext))
             this.source = ToolkitLoginWebview.sourcePath
-        } else {
+        } else if (app === 'amazonq') {
             const Panel = VueWebview.compilePanel(AmazonQLoginWebview)
             this.webView = new Panel(extensionContext)
             this.source = AmazonQLoginWebview.sourcePath
+        } else {
+            throw new Error(`invalid app provided to common auth view: ${app}`)
         }
     }
 

@@ -42,7 +42,7 @@ export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView',
         passive: false,
     })
     await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-    await vscode.commands.executeCommand('aws.AmazonCommonAuth.focus')
+    await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
 })
 
 export function switchToAmazonQNode(type: 'item'): DataQuickPickItem<'openChatPanel'>

@@ -154,9 +154,9 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         ctx.subscriptions.push(watchBetaVSIX(config.betaUrl))
     }
 
-    const toolkitAuthProvider = new CommonAuthViewProvider(ctx, 'TOOLKIT')
+    const toolkitAuthProvider = new CommonAuthViewProvider(ctx, 'toolkit')
     ctx.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(CommonAuthViewProvider.viewType, toolkitAuthProvider, {
+        vscode.window.registerWebviewViewProvider(toolkitAuthProvider.viewType, toolkitAuthProvider, {
             webviewOptions: {
                 retainContextWhenHidden: true,
             },

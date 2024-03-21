@@ -676,7 +676,7 @@
                 },
                 {
                     "type": "webview",
-                    "id": "aws.AmazonCommonAuth",
+                    "id": "aws.toolkit.AmazonCommonAuth",
                     "name": "%AWS.amazonq.login%",
                     "when": "!isCloud9 && !aws.isSageMaker && aws.explorer.showAuthView"
                 }

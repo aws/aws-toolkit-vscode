@@ -12,6 +12,7 @@ import { isExtensionActive } from '../../../../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
+    public override id: string = 'aws.amazonq.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/amazonq/index.js'
 
     constructor() {

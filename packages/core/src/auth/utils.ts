@@ -468,23 +468,18 @@ export class AuthNode implements TreeNode<Auth> {
     public getTreeItem() {
         // Calling this here is robust but `TreeShim` must be instantiated lazily to stop side-effects
         // TODO: this is a race!
-        this.resource.tryAutoConnect().catch(e => {
-            getLogger().error('tryAutoConnect failed: %s', (e as Error).message)
-        })
-
-        if (!this.resource.hasConnections) {
-            const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
-            const source: AuthSource = 'authNode'
-            item.command = {
-                title: 'Add Connection',
-                command: getShowConnectPageCommand(),
-                arguments: [placeholder, source],
-            }
-            void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
-            return item
-        }
-
-        void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+        this.resource
+            .tryAutoConnect()
+            .then(() => {
+                void vscode.commands.executeCommand(
+                    'setContext',
+                    'aws.explorer.showAuthView',
+                    !this.resource.hasConnections
+                )
+            })
+            .catch(e => {
+                getLogger().error('tryAutoConnect failed: %s', (e as Error).message)
+            })
 
         const conn = this.resource.activeConnection
         const itemLabel =

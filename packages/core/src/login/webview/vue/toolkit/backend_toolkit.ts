@@ -12,6 +12,7 @@ import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
+    public override id: string = 'aws.toolkit.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/toolkit/index.js'
 
     constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider) {

@@ -59,7 +59,4 @@ async function showManageConnectionsOnStartup() {
         getLogger().debug(`firstStartup: ${reason}. Skipped showing Add Connections page.`)
         return
     }
-
-    // Show connection management to user
-    await getShowManageConnections().execute(placeholder, 'firstStartup')
 }

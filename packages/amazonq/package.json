@@ -178,7 +178,7 @@
             "amazonq": [
                 {
                     "type": "webview",
-                    "id": "aws.AmazonCommonAuth",
+                    "id": "aws.amazonq.AmazonCommonAuth",
                     "name": "%AWS.amazonq.login%",
                     "when": "!isCloud9 && !aws.isSageMaker && !aws.codewhisperer.connected"
                 },
