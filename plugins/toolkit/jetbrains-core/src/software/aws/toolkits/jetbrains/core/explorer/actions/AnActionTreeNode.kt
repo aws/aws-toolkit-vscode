@@ -10,7 +10,7 @@ import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.AbstractActionTreeNode
 import java.awt.event.MouseEvent
 
-class AnActionTreeNode(
+open class AnActionTreeNode(
     project: Project,
     private val place: String,
     private val action: AnAction

@@ -50,6 +50,7 @@ object CodeWhispererConstants {
     const val CODEWHISPERER_SUPPORTED_LANG_URI = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/language-ide-support.html"
     const val CODEWHISPERER_CODE_SCAN_LEARN_MORE_URI = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html"
     const val CODEWHISPERER_ONBOARDING_DOCUMENTATION_URI = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/features.html"
+    const val CODEWHISPERER_GITHUB_URI = "https://github.com/aws/aws-toolkit-jetbrains/issues"
 
     const val THROTTLING_MESSAGE = "Maximum recommendation count reached for this month."
 

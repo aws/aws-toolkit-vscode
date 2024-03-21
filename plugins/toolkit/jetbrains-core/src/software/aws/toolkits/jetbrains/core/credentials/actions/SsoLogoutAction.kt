@@ -4,10 +4,12 @@
 package software.aws.toolkits.jetbrains.core.credentials.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.MessageDialogBuilder
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ProfileSsoManagedBearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.logoutFromSsoConnection
 import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.core.gettingstarted.deleteSsoConnectionCW
@@ -25,6 +27,9 @@ class SsoLogoutAction(private val value: AwsBearerTokenConnection) : DumbAwareAc
             }
         }
         logoutFromSsoConnection(e.project, value)
+        ApplicationManager.getApplication().messageBus.syncPublisher(
+            ToolkitConnectionManagerListener.TOPIC
+        ).activeConnectionChanged(null)
         e.project?.refreshDevToolTree()
     }
 }

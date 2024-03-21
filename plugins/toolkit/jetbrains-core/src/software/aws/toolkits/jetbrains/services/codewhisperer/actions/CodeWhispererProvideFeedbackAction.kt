@@ -13,7 +13,7 @@ import software.aws.toolkits.resources.message
 
 class CodeWhispererProvideFeedbackAction :
     AnAction(
-        message("codewhisperer.feedback"),
+        message("codewhisperer.actions.send_feedback.title"),
         null,
         AwsIcons.Misc.SMILE_GREY
     ),

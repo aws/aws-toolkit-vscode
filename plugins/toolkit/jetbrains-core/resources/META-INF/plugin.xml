@@ -230,7 +230,6 @@
         <extensionPoint name="tool" interface="software.aws.toolkits.jetbrains.core.tools.ToolType" dynamic="true"/>
         <extensionPoint name="devTools.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.DevToolsServiceNode" dynamic="true"/>
         <extensionPoint name="devTools.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsTreeStructureProvider" dynamic="true"/>
-        <extensionPoint name="cwq.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.cwqTab.nodes.CwQServiceNode" dynamic="true"/>
         <extensionPoint name="cwq.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQTreeStructureProvider" dynamic="true"/>
         <extensionPoint name="codewhisperer.programmingLanguage" interface="software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage" dynamic="true"/>
         <extensionPoint name="codewhisperer.classResolver" interface="software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispererClassResolver" dynamic="true"/>
@@ -363,7 +362,6 @@
         <projectService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor"
                         serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptorImpl"
                         testServiceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.MockCodeWhispererClientAdaptor"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarManager"/>
         <projectService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider"
                         serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.util.DefaultCodeWhispererFileContextProvider"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererManager"/>
@@ -521,7 +519,6 @@
 
         <!-- Explorer nodes -->
         <explorer.treeStructure implementation="software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceTreeStructureProvider"/>
-        <devTools.treeStructure implementation="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerTreeStructureProvider"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.AppRunnerExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudFormationExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudWatchRootNode"/>
@@ -537,9 +534,6 @@
         <!-- DevTools nodes-->
         <devTools.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.CawsServiceNode"/>
 
-        <!-- CodeWhisperer +Q nodes-->
-        <cwq.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.nodes.QServiceNode"/>
-        <cwq.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.nodes.CodeWhispererExplorerRootNode"/>
         <!-- Experiments -->
         <experiment implementation="software.aws.toolkits.jetbrains.services.ecs.EcsExecExperiment"/>
         <experiment implementation="software.aws.toolkits.jetbrains.services.dynamic.JsonResourceModificationExperiment"/>
@@ -870,17 +864,17 @@
                 class="software.aws.toolkits.jetbrains.services.codewhisperer.codescan.actions.CodeWhispererStopCodeScanAction"/>
         </group>
 
-        <group id="q.not.supported">
-            <action class="software.aws.toolkits.jetbrains.core.explorer.cwqTab.nodes.QNotSupportedNode"/>
-        </group>
         <group id="aws.toolkit.q.idc.signed.in">
             <action
                 id="q.openchat"
-                class="software.aws.toolkits.jetbrains.services.amazonq.CwQChatAction"/>
+                class="software.aws.toolkits.jetbrains.services.amazonq.QOpenPanelAction"/>
+            <action
+                id="q.migrate"
+                class="software.aws.toolkits.jetbrains.services.amazonq.QMigrationNotificationAction"/>
         </group>
 
         <group id="aws.toolkit.q.sign.in">
-            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.SignInToQAction"/>
+            <action id="q.sign.in" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.SignInToQAction"/>
             <action id="q.learn.more" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.QLearnMoreAction"/>
         </group>
 
@@ -935,7 +929,7 @@
         </group>
 
         <group id="aws.toolkit.jetbrains.core.services.codewhisperer.suggestions"
-               class="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererNodeActionGroup" />
+               class="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.QStatusBarLoggedInActionGroup" />
 
     </actions>
 

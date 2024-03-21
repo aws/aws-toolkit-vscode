@@ -123,7 +123,7 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
             ).isNotNull
             assertThat(problemsWindow.contentManager.contentCount).isEqualTo(0)
             assertThat(codeReferenceWindow.isAvailable).isFalse
-            assertThat(statusBarWidgetFactory.isAvailable(projectRule.project)).isFalse
+            assertThat(statusBarWidgetFactory.isAvailable(projectRule.project)).isTrue
             assertThat(settingsManager.isIncludeCodeWithReference()).isFalse
         }
     }

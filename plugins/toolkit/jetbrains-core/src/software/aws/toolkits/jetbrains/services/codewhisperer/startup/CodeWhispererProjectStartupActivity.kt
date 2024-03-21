@@ -17,18 +17,19 @@ import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.core.plugins.ToolkitUpdateManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
 import software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererImportAdderListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupManager.Companion.CODEWHISPERER_USER_ACTION_PERFORMED
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererFeatureConfigService
-import software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.FEATURE_CONFIG_POLL_INTERVAL_IN_MS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyErrorAccountless
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyWarnAccountless
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.calculateIfIamIdentityCenterConnection
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -53,10 +54,6 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
      * (2) existing users open the IDE (automatically triggered)
      */
     override fun runActivity(project: Project) {
-        if (!ApplicationManager.getApplication().isUnitTestMode) {
-            CodeWhispererStatusBarManager.getInstance(project).updateWidget()
-        }
-
         // We want the auto-update feature to be triggered only once per running application
         if (!autoUpdateRunOnce.getAndSet(true)) {
             ToolkitUpdateManager.getInstance()
@@ -75,6 +72,12 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
 
         // Init featureConfig job
         initFeatureConfigPollingJob(project)
+
+        calculateIfIamIdentityCenterConnection(project) {
+            ApplicationManager.getApplication().executeOnPooledThread {
+                CodeWhispererModelConfigurator.getInstance().listCustomizations(project, passive = true)
+            }
+        }
 
         // install intellsense autotrigger listener, this only need to be executed once
         project.messageBus.connect().subscribe(LookupManagerListener.TOPIC, CodeWhispererIntelliSenseAutoTriggerListener)

@@ -9,10 +9,13 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.wm.ToolWindowManager
 import icons.AwsIcons
 import software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory
+import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
+import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.UiTelemetry
 
-class CwQChatAction : AnAction(AwsIcons.Logos.AWS_Q) {
+class QOpenPanelAction : AnAction(message("action.q.openchat.text"), null, AwsIcons.Logos.AWS_Q) {
     override fun actionPerformed(e: AnActionEvent) {
+        if (isRunningOnRemoteBackend() || !isQSupportedInThisVersion()) return
         val project = e.getRequiredData(CommonDataKeys.PROJECT)
         UiTelemetry.click(project, "q_openChat")
         ToolWindowManager.getInstance(project).getToolWindow(AmazonQToolWindowFactory.WINDOW_ID)?.activate(null, true)

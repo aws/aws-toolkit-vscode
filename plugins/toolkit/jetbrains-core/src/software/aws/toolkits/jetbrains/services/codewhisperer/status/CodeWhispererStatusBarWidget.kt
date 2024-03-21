@@ -5,6 +5,8 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.status
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.DataManager
+import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -17,9 +19,11 @@ import com.intellij.util.Consumer
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
+import software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQTreeRootNode.Companion.Q_SIGNED_OUT_ACTION_GROUP
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererNodeActionGroup
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.QStatusBarLoggedInActionGroup
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStateChangeListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
@@ -81,10 +85,18 @@ class CodeWhispererStatusBarWidget(project: Project) :
     override fun getPopupStep(): ListPopup? =
         if (isCodeWhispererExpired(project)) {
             JBPopupFactory.getInstance().createConfirmation(message("codewhisperer.statusbar.popup.title"), { reconnectCodeWhisperer(project) }, 0)
+        } else if (!isCodeWhispererEnabled(project)) {
+            JBPopupFactory.getInstance().createActionGroupPopup(
+                "Amazon Q",
+                ActionManager.getInstance().getAction(Q_SIGNED_OUT_ACTION_GROUP) as ActionGroup,
+                DataManager.getInstance().getDataContext(myStatusBar?.component),
+                JBPopupFactory.ActionSelectionAid.MNEMONICS,
+                false
+            )
         } else {
             JBPopupFactory.getInstance().createActionGroupPopup(
-                "CodeWhisperer",
-                CodeWhispererNodeActionGroup(),
+                "Amazon Q",
+                QStatusBarLoggedInActionGroup(),
                 DataManager.getInstance().getDataContext(myStatusBar?.component),
                 JBPopupFactory.ActionSelectionAid.MNEMONICS,
                 false

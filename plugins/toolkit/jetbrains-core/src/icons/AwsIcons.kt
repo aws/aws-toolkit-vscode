@@ -52,6 +52,8 @@ object AwsIcons {
         @JvmField val TYPESCRIPT = load("/icons/misc/typeScript.svg") // 16x16
 
         @JvmField val CSHARP = load("/icons/misc/csharp.svg") // 16x16
+
+        @JvmField val NEW = load("/icons/misc/new.svg") // 16x16
     }
 
     object Resources {
