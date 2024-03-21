@@ -15,10 +15,7 @@
                 "webRoot": "${workspaceFolder}"
             },
             "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--disable-extension=amazonwebservices.aws-toolkit-vscode"
-            ],
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"

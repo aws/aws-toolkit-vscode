@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { SsoConnection } from '../../../../auth/connection'
-import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
+import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
@@ -27,6 +27,16 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         toolkitConnections.forEach((connection: SsoConnection) => {
             if (connection.scopes?.includes('codewhisperer:completions')) {
                 connections.push(connection)
+            } else {
+                connections.push({
+                    id: connection.id,
+                    label: connection.label,
+                    scopes: amazonQScopes,
+                    ssoRegion: connection.ssoRegion,
+                    type: connection.type,
+                    startUrl: connection.startUrl,
+                    getToken: () => connection.getToken(),
+                })
             }
         })
         return connections
