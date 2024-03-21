@@ -83,7 +83,7 @@ describe('transformByQ', function () {
             },
             {
                 name: 'NoJavaProject',
-                message: 'No Java projects found',
+                message: '',
             }
         )
     })
@@ -107,7 +107,7 @@ describe('transformByQ', function () {
             },
             {
                 name: 'NonMavenProject',
-                message: 'No valid Maven build file found',
+                message: '',
             }
         )
     })
@@ -129,8 +129,8 @@ describe('transformByQ', function () {
                 await getOpenProjects()
             },
             {
-                name: 'Error',
-                message: 'No Java projects found since no projects are open',
+                name: 'NoProjectsOpen',
+                message: '',
             }
         )
     })
