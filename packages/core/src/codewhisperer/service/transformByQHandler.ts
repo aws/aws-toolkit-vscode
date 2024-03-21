@@ -39,7 +39,7 @@ export async function validateAndLogProjectDetails() {
         codeTransformLocalJavaVersion,
         codeTransformPreValidationError = undefined
     try {
-        const openProjects = await getOpenProjects()
+        const openProjects = await getOpenProjects(true)
         const validProjects = await validateOpenProjects(openProjects, true)
         if (validProjects.size > 0) {
             const firstKey = validProjects.keys().next().value
@@ -77,16 +77,19 @@ export function throwIfCancelled() {
     }
 }
 
-export async function getOpenProjects() {
+export async function getOpenProjects(onProjectFirstOpen = false) {
     const folders = vscode.workspace.workspaceFolders
     if (folders === undefined) {
-        void vscode.window.showErrorMessage(
-            CodeWhispererConstants.noSupportedJavaProjectsFoundMessage.replace(
-                'LINK_HERE',
-                CodeWhispererConstants.linkToPrerequisites
+        if (!onProjectFirstOpen) {
+            // only show notification when user invokes Transform, not when validating projects silently
+            void vscode.window.showErrorMessage(
+                CodeWhispererConstants.noSupportedJavaProjectsFoundMessage.replace(
+                    'LINK_HERE',
+                    CodeWhispererConstants.linkToPrerequisites
+                )
             )
-        )
-        throw new ToolkitError('No Java projects found since no projects are open', { code: 'NoOpenProjects' })
+        }
+        throw new ToolkitError('', { name: 'NoProjectsOpen' })
     }
     const openProjects: vscode.QuickPickItem[] = []
     for (const folder of folders) {
@@ -214,7 +217,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
                 reason: 'CouldNotFindJavaProject',
             })
         }
-        throw new ToolkitError('No Java projects found', { code: 'CouldNotFindJavaProject', name: 'NoJavaProject' })
+        throw new ToolkitError('', { name: 'NoJavaProject' })
     }
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
@@ -232,7 +235,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
                 reason: 'NoPomFileFound',
             })
         }
-        throw new ToolkitError('No valid Maven build file found', { code: 'NoPomFileFound', name: 'NonMavenProject' })
+        throw new ToolkitError('', { name: 'NonMavenProject' })
     }
 
     /*
