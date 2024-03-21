@@ -480,9 +480,11 @@ export class AuthNode implements TreeNode<Auth> {
                 command: getShowConnectPageCommand(),
                 arguments: [placeholder, source],
             }
-
+            void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
             return item
         }
+
+        void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
 
         const conn = this.resource.activeConnection
         const itemLabel =

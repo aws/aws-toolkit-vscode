@@ -175,6 +175,12 @@
                     />
                 </svg>
             </button>
+            <div class="title">IAM Credentials:</div>
+            <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
+            <div class="p">
+                Using CodeCatalyst with AWS Builder ID?
+                <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
+            </div>
             <div class="p">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
             <input class="iamInput" type="text" id="profileName" name="profileName" v-model="profileName" />
@@ -323,6 +329,16 @@ export default defineComponent({
                 } else {
                     this.stage = 'CONNECTED'
                 }
+            }
+        },
+        async handleCodeCatalystSignin() {
+            this.stage = 'AUTHENTICATING'
+            const error = await client.startBuilderIdSetup(this.app)
+            if (error) {
+                this.stage = 'START'
+                void client.errorNotification(error)
+            } else {
+                this.stage = 'CONNECTED'
             }
         },
         handleUrlInput() {

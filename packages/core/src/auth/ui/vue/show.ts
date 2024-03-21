@@ -54,6 +54,7 @@ import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { isWeb } from '../../../common/webUtils'
+import { DevSettings } from '../../../shared/settings'
 
 export class AuthWebview extends VueWebview {
     public static readonly sourcePath: string = 'src/auth/ui/vue/index.js'
@@ -718,7 +719,7 @@ export function getShowManageConnections(): RegisteredCommand<any> {
 export function registerCommands(context: vscode.ExtensionContext, prefix: string) {
     showManageConnections = Commands.register(
         { id: `aws.${prefix}.auth.manageConnections`, compositeKey: { 1: 'source' } },
-        () => (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
+        (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
             if (_ !== placeholder) {
                 source = 'vscodeComponent'
             }
@@ -736,12 +737,14 @@ export function registerCommands(context: vscode.ExtensionContext, prefix: strin
             if (!isServiceItemId(serviceToShow)) {
                 serviceToShow = undefined
             }
-            return showAuthWebview(context, source, serviceToShow)
+
+            return vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
         }
     )
 }
 
-async function showAuthWebview(
+//todo: delete?
+export async function showAuthWebview(
     ctx: vscode.ExtensionContext,
     source: AuthSource,
     serviceToShow?: ServiceItemId
