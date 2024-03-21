@@ -1,3 +1,6 @@
+# _2.13_ (2024-03-13)
+- **(Feature)** CodeTransform: add button to submit feedback when job fails
+
 # _2.12_ (2024-03-12)
 - **(Feature)** Add configurable auto plugin update feature
 - **(Feature)** Amazon Q: Support feature development (/dev)
