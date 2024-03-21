@@ -7,13 +7,12 @@ import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
 import { TransformationHubViewProvider } from '../codewhisperer/service/transformationHubViewProvider'
 import { ExtContext } from '../shared/extensions'
-import { stopTransformByQ, startTransformByQWithProgress } from '../codewhisperer/commands/startTransformByQ'
+import { stopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformationResultsViewProvider'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { CancelActionPositions, logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
-import { CodeTransformConstants } from './models/constants'
+import { CancelActionPositions } from './telemetry/codeTransformTelemetry'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { validateAndLogProjectDetails } from '../codewhisperer/service/transformByQHandler'
 
@@ -41,11 +40,6 @@ export async function activate(context: ExtContext) {
 
         context.extensionContext.subscriptions.push(
             vscode.window.registerWebviewViewProvider('aws.amazonq.transformationHub', transformationHubViewProvider),
-
-            Commands.register('aws.amazonq.startTransformationInHub', async () => {
-                logCodeTransformInitiatedMetric(CodeTransformConstants.HubStartButton)
-                await startTransformByQWithProgress()
-            }),
 
             Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
                 if (transformByQState.isRunning()) {

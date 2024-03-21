@@ -60,8 +60,9 @@ import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
-import { listCodeWhispererCommands } from './commands/statusBarCommands'
+import { listCodeWhispererCommands } from './ui/statusBarMenu'
 import { updateUserProxyUrl } from './client/agent'
+import { Container } from './service/serviceContainer'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -94,6 +95,7 @@ export async function activate(context: ExtContext): Promise<void> {
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
     // Service initialization
+    const container = Container.instance
     ReferenceInlineProvider.instance
     ImportAdderProvider.instance
 
@@ -169,6 +171,16 @@ export async function activate(context: ExtContext): Promise<void> {
                 )
             } else {
                 await vscode.commands.executeCommand('workbench.action.openSettings', `aws.codeWhisperer`)
+            }
+        }),
+        Commands.register('aws.codewhisperer.refreshAnnotation', async (forceProceed: boolean = false) => {
+            const editor = vscode.window.activeTextEditor
+            if (editor) {
+                if (forceProceed) {
+                    await container.lineAnnotationController.refresh(editor, 'codewhisperer', true)
+                } else {
+                    await container.lineAnnotationController.refresh(editor, 'codewhisperer')
+                }
             }
         }),
         // show introduction
@@ -444,6 +456,8 @@ export async function activate(context: ExtContext): Promise<void> {
             })
         )
     }
+
+    container.ready()
 }
 
 export async function shutdown() {

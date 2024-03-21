@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import { getJobHistory, getPlanProgress } from '../commands/startTransformByQ'
 import { StepProgress, transformByQState } from '../models/model'
-import { convertToTimeString, getTransformationSteps } from './transformByQHandler'
+import { getTransformationSteps } from './transformByQHandler'
+import { convertToTimeString } from '../../shared/utilities/textUtilities'
 import { getLogger } from '../../shared/logger'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
@@ -78,7 +79,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </head>
             <body>
             <p><b>Job Status</b></p>
-            ${history.length === 0 ? '<p>No job to display</p>' : this.getTableMarkup(history)}
+            ${history.length === 0 ? '<p>Nothing to show</p>' : this.getTableMarkup(history)}
             </body>
             </html>`
     }
@@ -118,16 +119,14 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         if (planProgress['buildCode'] === StepProgress.Succeeded) {
             planSteps = await getTransformationSteps(transformByQState.getJobId(), true)
         }
-        let progressHtml = `<p><b>Transformation Status</b></p><p>No job is in-progress at the moment</p>`
+        let progressHtml = `<p><b>Transformation Status</b></p><p>No job ongoing</p>`
         if (planProgress['returnCode'] !== StepProgress.NotStarted) {
             progressHtml = `<p><b>Transformation Status</b></p>`
-            progressHtml += `<p> ${this.getProgressIconMarkup(
-                planProgress['uploadCode']
-            )} Zip code and upload to secure build environment</p>`
+            progressHtml += `<p> ${this.getProgressIconMarkup(planProgress['uploadCode'])} Waiting for job to start</p>`
             if (planProgress['uploadCode'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['buildCode']
-                )} Generate transformation plan</p>`
+                )} Build uploaded code in secure build environment and generate transformation plan</p>`
             }
             if (planProgress['buildCode'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
@@ -178,11 +177,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     }
                 }
             }
-            if (planProgress['transformCode'] === StepProgress.Succeeded) {
-                progressHtml += `<p> ${this.getProgressIconMarkup(
-                    planProgress['returnCode']
-                )} Validate and prepare proposed changes</p>`
-            }
         }
         const isJobInProgress = transformByQState.isRunning()
         return `<!DOCTYPE html>
@@ -224,21 +218,20 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     }
                 }
 
-                // copied from transformByQHandler.ts
+                // copied from textUtilities.ts
                 function convertToTimeString(durationInMs) {
-                    const duration = durationInMs / 1000;
-                    if (duration < 60) {
-                        const numSeconds = Math.floor(duration);
-                        return numSeconds + " sec";
-                    } else if (duration < 3600) {
-                        const numMinutes = Math.floor(duration / 60);
-                        const numSeconds = Math.floor(duration % 60);
-                        return numMinutes + " min " + numSeconds + " sec";
-                    } else {
-                        const numHours = Math.floor(duration / 3600);
-                        const numMinutes = Math.floor((duration % 3600) / 60);
-                        return numHours + " hr " + numMinutes + " min";
+                    const time = new Date(durationInMs);
+                    const hours = time.getUTCHours();
+                    const minutes = time.getUTCMinutes();
+                    const seconds = time.getUTCSeconds();
+                    let timeString = seconds + " sec"
+                    if (minutes > 0) {
+                        timeString = minutes + " min " + timeString
                     }
+                    if (hours > 0) {
+                        timeString = hours + " hr " + timeString
+                    }
+                    return timeString
                 }
                 intervalId = setInterval(updateTimer, 1000);
             </script>
@@ -246,7 +239,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </html>`
     }
 
-    // TODO: replace these pasted icons with codicons
     private getProgressIconMarkup(stepStatus: StepProgress) {
         if (stepStatus === StepProgress.Succeeded) {
             return `<span style="color: green"> ✓ </span>`
