@@ -308,9 +308,9 @@ export class LineAnnotationController implements vscode.Disposable {
     async refresh(editor: vscode.TextEditor | undefined, source: AnnotationChangeSource, force?: boolean) {
         if (force) {
             this.refreshDebounced.cancel()
-            this._refresh(editor, source, true)
+            await this._refresh(editor, source, true)
         } else {
-            this.refreshDebounced.promise(editor, source)
+            await this.refreshDebounced.promise(editor, source)
         }
     }
 

@@ -49,7 +49,7 @@ export class LineTracker implements vscode.Disposable {
     constructor() {
         this._disposable = vscode.Disposable.from(
             vscode.window.onDidChangeActiveTextEditor(async e => {
-                await this.onActiveTextEditorChanged(undefined)
+                await this.onActiveTextEditorChanged(e)
             }),
             vscode.window.onDidChangeTextEditorSelection(async e => {
                 await this.onTextEditorSelectionChanged(e)
