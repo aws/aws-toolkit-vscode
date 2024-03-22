@@ -73,19 +73,21 @@
         </div>
         <template v-if="stage === 'START'">
             <div class="auth-container-section">
-                <div class="existing-logins" v-if="existingLogin.id !== -1 && app === 'AMAZONQ'">
+                <div class="existing-logins" v-if="existingLogins.length > 0 && app === 'AMAZONQ'">
                     <div class="title">Connect with an existing account:</div>
-                    <SelectableItem
-                        @toggle="toggleItemSelection"
-                        :isSelected="selectedLoginOption === LoginOption.EXISTING_LOGINS"
-                        :itemId="LoginOption.EXISTING_LOGINS"
-                        :itemText="existingLogin.text"
-                        :itemTitle="existingLogin.title"
-                        class="selectable-item"
-                    ></SelectableItem>
+                    <div v-for="(existingLogin, index) in existingLogins" :key="index">
+                        <SelectableItem
+                            @toggle="toggleItemSelection"
+                            :isSelected="selectedLoginOption === LoginOption.EXISTING_LOGINS + index"
+                            :itemId="LoginOption.EXISTING_LOGINS + index"
+                            :itemText="existingLogin.text"
+                            :itemTitle="existingLogin.title"
+                            class="selectable-item"
+                        ></SelectableItem>
+                    </div>
                     <div class="title">Or, choose a sign-in option:</div>
                 </div>
-                <div class="title" v-if="existingLogin.id === -1">Choose a sign-in option:</div>
+                <div class="title" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
@@ -235,6 +237,13 @@ function isBuilderId(url: string) {
     return url === 'https://view.awsapps.com/start'
 }
 
+interface ExistingLogin {
+    id: number
+    text: string
+    title: string
+    connectionId: string
+}
+
 export default defineComponent({
     name: 'Login',
     components: { SelectableItem },
@@ -251,7 +260,7 @@ export default defineComponent({
     },
     data() {
         return {
-            existingLogin: { id: -1, text: '', title: '' },
+            existingLogins: [] as ExistingLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
             regions: [] as Region[],
@@ -267,21 +276,12 @@ export default defineComponent({
     },
     async created() {
         await this.emitUpdate('created')
-
-        const connection = await client.fetchConnection()
-        if (connection) {
-            this.existingLogin = {
-                id: LoginOption.EXISTING_LOGINS,
-                text: 'Used by another AWS Extension',
-                title: isBuilderId(connection.startUrl) ? 'AWS Builder ID' : 'AWS IAM Identity Center',
-            }
-        }
     },
 
     mounted() {
         this.fetchRegions()
+        void this.updateExistingConnections()
     },
-
     methods: {
         toggleItemSelection(itemId: number) {
             this.selectedLoginOption = itemId
@@ -308,9 +308,16 @@ export default defineComponent({
                     }
                 } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                     this.stage = 'SSO_FORM'
-                } else if (this.selectedLoginOption === LoginOption.EXISTING_LOGINS) {
-                    // TODO:
-                    this.stage = 'START'
+                } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
+                    const selectedConnection =
+                        this.existingLogins[this.selectedLoginOption - LoginOption.EXISTING_LOGINS]
+                    const error = await client.useConnection(selectedConnection.connectionId)
+                    if (error) {
+                        this.stage = 'START'
+                        void client.errorNotification(error)
+                    } else {
+                        this.stage = 'CONNECTED'
+                    }
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
                     this.stage = 'AWS_PROFILE'
                 }
@@ -359,6 +366,20 @@ export default defineComponent({
             this.regions = regions
         },
         async emitUpdate(cause?: string) {},
+        async updateExistingConnections() {
+            const connections = await client.fetchConnections()
+            connections?.forEach((connection, index) => {
+                this.existingLogins.push({
+                    id: LoginOption.EXISTING_LOGINS + index,
+                    text: 'Used by AWS Toolkit',
+                    title: isBuilderId(connection.startUrl)
+                        ? 'AWS Builder ID'
+                        : `IAM Identity Center ${connection.startUrl}`,
+                    connectionId: connection.id,
+                })
+            })
+            this.$forceUpdate()
+        },
     },
 })
 </script>

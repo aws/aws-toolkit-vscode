@@ -105,7 +105,9 @@ export abstract class CommonAuthWebview extends VueWebview {
         await vscode.commands.executeCommand('aws.explorer.focus')
     }
 
-    abstract fetchConnection(): SsoConnection | undefined
+    abstract fetchConnections(): Promise<SsoConnection[] | undefined>
+
+    abstract useConnection(connectionId: string): Promise<AuthError | undefined>
 
     abstract errorNotification(e: AuthError): void
 }
