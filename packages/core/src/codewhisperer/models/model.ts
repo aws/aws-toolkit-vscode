@@ -265,6 +265,18 @@ export enum DropdownStep {
     STEP_2 = 2,
 }
 
+export const sessionPlanProgress: {
+    startJob: StepProgress
+    buildCode: StepProgress
+    generatePlan: StepProgress
+    transformCode: StepProgress
+} = {
+    startJob: StepProgress.NotStarted,
+    buildCode: StepProgress.NotStarted,
+    generatePlan: StepProgress.NotStarted,
+    transformCode: StepProgress.NotStarted,
+}
+
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
 

@@ -9,7 +9,14 @@ import * as fs from 'fs'
 import * as os from 'os'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
-import { transformByQState, StepProgress, TransformByQReviewStatus, JDKVersion, DropdownStep } from '../models/model'
+import {
+    transformByQState,
+    StepProgress,
+    TransformByQReviewStatus,
+    JDKVersion,
+    DropdownStep,
+    sessionPlanProgress,
+} from '../models/model'
 import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     throwIfCancelled,
@@ -48,18 +55,6 @@ const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
 
 let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
-
-const sessionPlanProgress: {
-    uploadCode: StepProgress
-    buildCode: StepProgress
-    transformCode: StepProgress
-    returnCode: StepProgress
-} = {
-    uploadCode: StepProgress.NotStarted,
-    buildCode: StepProgress.NotStarted,
-    transformCode: StepProgress.NotStarted,
-    returnCode: StepProgress.NotStarted,
-}
 
 export async function startTransformByQWithProgress() {
     await startTransformByQ()
@@ -329,14 +324,13 @@ export async function startTransformationJob(uploadId: string) {
 
     await sleep(2000) // sleep before polling job to prevent ThrottlingException
     throwIfCancelled()
-    sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
 
     return jobId
 }
 
 export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     try {
-        await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForGettingPlan)
+        await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForPlanGenerated)
     } catch (error) {
         const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
         getLogger().error(`CodeTransformation: ${errorMessage}`, error)
@@ -352,7 +346,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         transformByQState.setJobFailureErrorMessage(errorMessage)
         throw new Error('Get plan failed')
     }
-    sessionPlanProgress['buildCode'] = StepProgress.Succeeded
+
     const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
     fs.writeFileSync(planFilePath, plan)
     await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
@@ -395,7 +389,6 @@ export async function finalizeTransformationJob(status: string) {
 
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
     await vscode.commands.executeCommand('aws.amazonq.refresh')
-    sessionPlanProgress['returnCode'] = StepProgress.Succeeded
 }
 
 export async function validateTransformationJob() {
@@ -441,10 +434,10 @@ export async function validateTransformationJob() {
 
 export async function setTransformationToRunningState(userInputState: UserInputState) {
     transformByQState.setToRunning()
-    sessionPlanProgress['uploadCode'] = StepProgress.Pending
+    sessionPlanProgress['startJob'] = StepProgress.Pending
     sessionPlanProgress['buildCode'] = StepProgress.Pending
+    sessionPlanProgress['generatePlan'] = StepProgress.Pending
     sessionPlanProgress['transformCode'] = StepProgress.Pending
-    sessionPlanProgress['returnCode'] = StepProgress.Pending
 
     codeTransformTelemetryState.setStartTime()
 
@@ -571,17 +564,17 @@ export async function transformationJobErrorHandler(error: any) {
                 }
             })
     }
-    if (sessionPlanProgress['uploadCode'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['uploadCode'] = StepProgress.Failed
+    if (sessionPlanProgress['startJob'] !== StepProgress.Succeeded) {
+        sessionPlanProgress['startJob'] = StepProgress.Failed
     }
     if (sessionPlanProgress['buildCode'] !== StepProgress.Succeeded) {
         sessionPlanProgress['buildCode'] = StepProgress.Failed
     }
+    if (sessionPlanProgress['generatePlan'] !== StepProgress.Succeeded) {
+        sessionPlanProgress['generatePlan'] = StepProgress.Failed
+    }
     if (sessionPlanProgress['transformCode'] !== StepProgress.Succeeded) {
         sessionPlanProgress['transformCode'] = StepProgress.Failed
-    }
-    if (sessionPlanProgress['returnCode'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['returnCode'] = StepProgress.Failed
     }
     getLogger().error(`CodeTransformation: ${error.message}`)
 }

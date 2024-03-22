@@ -3,7 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BuildSystem, JDKVersion, transformByQState, TransformByQStoppedError, ZipManifest } from '../models/model'
+import {
+    BuildSystem,
+    JDKVersion,
+    sessionPlanProgress,
+    StepProgress,
+    transformByQState,
+    TransformByQStoppedError,
+    ZipManifest,
+} from '../models/model'
 import * as codeWhisperer from '../client/codewhisperer'
 import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger'
@@ -827,6 +835,18 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Pass,
             })
             status = response.transformationJob.status!
+            console.log('STATUS = ', status)
+            // must be series of ifs, not else ifs
+            if (CodeWhispererConstants.validStatesForJobStarted.includes(status)) {
+                sessionPlanProgress['startJob'] = StepProgress.Succeeded
+            }
+            if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
+                sessionPlanProgress['buildCode'] = StepProgress.Succeeded
+            }
+            if (CodeWhispererConstants.validStatesForPlanGenerated.includes(status)) {
+                sessionPlanProgress['generatePlan'] = StepProgress.Succeeded
+            }
+
             // emit metric when job status changes
             if (status !== transformByQState.getPolledJobStatus()) {
                 telemetry.codeTransform_jobStatusChanged.emit({
