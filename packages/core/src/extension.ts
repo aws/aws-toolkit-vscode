@@ -126,7 +126,6 @@ export async function activate(context: vscode.ExtensionContext) {
         // MUST restore CW/Q auth so that we can see if this user is already a Q user.
         await AuthUtil.instance.restore()
         Commands.register('_aws.toolkit.auth.restore', async () => {
-            await AuthUtil.instance.restore()
             void vscode.commands.executeCommand('aws.amazonq.refresh')
         })
 
