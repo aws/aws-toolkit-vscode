@@ -8,7 +8,9 @@ import * as _ from 'lodash'
 import { StateWithCache, WizardState } from './wizard'
 import { ExpandWithObject } from '../utilities/tsUtils'
 
-export type PrompterProvider<TState, TProp> = (state: StateWithCache<WizardState<TState>, TProp>) => Prompter<TProp>
+export type PrompterProvider<TState, TProp> = (
+    state: StateWithCache<WizardState<TState>, TProp>
+) => Prompter<TProp> | Promise<Prompter<TProp>>
 
 type DefaultFunction<TState, TProp> = (state: WizardState<TState>) => TProp | undefined
 
@@ -41,8 +43,8 @@ interface ContextOptions<TState, TProp> {
 }
 export interface FormElement<TProp, TState> {
     /**
-     * Binds a Prompter-provider to the specified property. The provider is called with the current Wizard
-     * state whenever the property is ready for input, and should return a Prompter object.
+     * Binds a property to a function (may be async), which is invoked with the current Wizard state
+     * when the property is presented for input. Must return a {@link Prompter} object.
      */
     bindPrompter(provider: PrompterProvider<TState, TProp>, options?: ContextOptions<TState, TProp>): void
     // TODO: potentially add options to this, or rethink how defaults should work
