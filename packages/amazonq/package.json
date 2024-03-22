@@ -405,31 +405,6 @@
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.amazonq.auth.addConnection",
-                    "when": "viewItem == awsAuthNode",
-                    "group": "0@1"
-                },
-                {
-                    "command": "aws.amazonq.auth.switchConnections",
-                    "when": "viewItem == awsAuthNode",
-                    "group": "0@2"
-                },
-                {
-                    "command": "aws.amazonq.auth.signout",
-                    "when": "viewItem == awsAuthNode && !isCloud9",
-                    "group": "0@3"
-                },
-                {
-                    "command": "aws.amazonq.auth.help",
-                    "when": "viewItem == awsAuthNode",
-                    "group": "inline@1"
-                },
-                {
-                    "submenu": "aws.amazonq.auth",
-                    "when": "viewItem == awsAuthNode",
-                    "group": "inline@2"
-                },
-                {
                     "submenu": "aws.amazonq.submenu",
                     "when": "viewItem =~ /^awsAmazonQNode/",
                     "group": "inline@1"
