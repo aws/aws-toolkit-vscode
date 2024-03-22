@@ -123,13 +123,6 @@ export async function activate(args: {
     for (const viewNode of viewNodes) {
         registerToolView(viewNode, args.context.extensionContext)
     }
-
-    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
-        await activateExtension(VSCODE_EXTENSION_ID.amazonq)
-        const amazonq = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.amazonq)?.exports
-        amazonq.registerStateChangeCallback((e: AuthState) => vscode.commands.executeCommand('aws.amazonq.refresh', e))
-        void vscode.commands.executeCommand('aws.amazonq.refresh', await amazonq.getConnectionState())
-    }
 }
 
 async function registerAwsExplorerCommands(

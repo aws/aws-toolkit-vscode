@@ -18,8 +18,9 @@ import { Command, Commands } from '../../shared/vscode/commands2'
 import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
 import { getIcon } from '../../shared/icons'
 import { vsCodeState } from '../../codewhisperer/models/model'
-import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
+import { activateExtension, isExtensionActive, isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { once } from '../../shared/utilities/functionUtils'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -124,6 +125,10 @@ export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
     Commands.register({ id: 'aws.amazonq.refresh', logging: false }, (state?: AuthState) => {
         if (state) {
             AmazonQNode.amazonQState = state
+        } else {
+            if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
+                void registerQHook()
+            }
         }
         amazonQNode.refresh()
         if (provider) {
@@ -138,3 +143,10 @@ export const refreshAmazonQRootNode = (provider?: ResourceTreeDataProvider) =>
             provider.refresh()
         }
     })
+
+const registerQHook = once(async () => {
+    await activateExtension(VSCODE_EXTENSION_ID.amazonq)
+    const amazonq = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.amazonq)?.exports
+    amazonq.registerStateChangeCallback((e: any) => vscode.commands.executeCommand('aws.amazonq.refresh', e))
+    void vscode.commands.executeCommand('aws.amazonq.refresh', await amazonq.getConnectionState())
+})
