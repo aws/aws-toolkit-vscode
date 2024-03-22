@@ -47,21 +47,14 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 const connections: SsoConnection[] = await importedApi?.listConnections()
                 connections.forEach(async (connection: SsoConnection) => {
                     if (connection.id === connectionId) {
-                        if (connection.scopes?.includes('codewhisperer:completions')) {
-                            getLogger().info(`auth: re-use connection ${connectionId} from aws toolkit`)
-                            await AuthUtil.instance.secondaryAuth.useNewConnection(connection)
-                            await AuthUtil.instance.restore()
-                        } else {
-                            getLogger().info(`auth: re-authenticate for adding new AmazonQ scopes`)
-                            // create new connection with amazon q scopes
-                            const conn = await Auth.instance.createConnection({
-                                type: connection.type,
-                                ssoRegion: connection.ssoRegion,
-                                startUrl: connection.startUrl,
-                                scopes: amazonQScopes,
-                            })
-                            await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
-                        }
+                        getLogger().info(`auth: create connection from existing connection id ${connectionId}`)
+                        const conn = await Auth.instance.createConnection({
+                            type: connection.type,
+                            ssoRegion: connection.ssoRegion,
+                            startUrl: connection.startUrl,
+                            scopes: amazonQScopes,
+                        })
+                        await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
                     }
                 })
             }

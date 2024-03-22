@@ -167,6 +167,11 @@ export class AuthUtil {
                 'aws.codewhisperer.connectionExpired',
                 this.isConnectionExpired()
             )
+            await vscode.commands.executeCommand(
+                'setContext',
+                'aws.amazonq.hasConnections',
+                Auth.instance.hasConnections
+            )
         }
     }
 
