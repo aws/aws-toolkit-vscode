@@ -244,10 +244,6 @@ interface ExistingLogin {
     connectionId: string
 }
 
-function sleep(duration: number = 0): Promise<void> {
-    return new Promise(r => setTimeout(r, Math.max(duration, 0)))
-}
-
 export default defineComponent({
     name: 'Login',
     components: { SelectableItem },
