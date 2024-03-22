@@ -4,4 +4,4 @@
  */
 
 export { activate, shutdown } from './activation'
-export { AuthUtil } from './util/authUtil'
+export { AuthUtil, getChatAuthState, AuthState } from './util/authUtil'

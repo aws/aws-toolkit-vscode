@@ -5,9 +5,11 @@
 
 import * as vscode from 'vscode'
 import { activateShared, deactivateShared } from './extensionShared'
+import { amazonQApi } from './api'
 
 export async function activate(context: vscode.ExtensionContext) {
     await activateShared(context)
+    return amazonQApi
 }
 
 export async function deactivate() {

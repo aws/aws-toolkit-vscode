@@ -8,7 +8,7 @@ import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
 import { isCloud9, isSageMaker } from '../shared/extensionUtilities'
-import { ExtContext } from '../shared/extensions'
+import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
@@ -30,6 +30,9 @@ import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { amazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQTreeNode'
 import { GlobalState } from '../shared/globalState'
 import { activateViewsShared, registerToolView } from './activationShared'
+import { isExtensionInstalled } from '../shared/utilities'
+import { activateExtension } from '../shared/utilities/vsCodeUtils'
+import { AuthState } from '../codewhisperer'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -119,6 +122,13 @@ export async function activate(args: {
     ]
     for (const viewNode of viewNodes) {
         registerToolView(viewNode, args.context.extensionContext)
+    }
+
+    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
+        await activateExtension(VSCODE_EXTENSION_ID.amazonq)
+        const amazonq = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.amazonq)?.exports
+        amazonq.registerStateChangeCallback((e: AuthState) => vscode.commands.executeCommand('aws.amazonq.refresh', e))
+        void vscode.commands.executeCommand('aws.amazonq.refresh', await amazonq.getConnectionState())
     }
 }
 
