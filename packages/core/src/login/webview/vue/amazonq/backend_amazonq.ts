@@ -8,7 +8,7 @@ import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
-import { isExtensionActive } from '../../../../shared/utilities/vsCodeUtils'
+import { activateExtension, isExtensionActive } from '../../../../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
@@ -19,40 +19,61 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         super(AmazonQLoginWebview.sourcePath)
     }
 
+    public isAwsToolkitInstalled(): boolean {
+        const extensions = vscode.extensions.all
+        const q = extensions.find(x => x.id === VSCODE_EXTENSION_ID.awstoolkit)
+        return q !== undefined
+    }
+
     async fetchConnections(): Promise<SsoConnection[] | undefined> {
-        const toolkitExt = vscode.extensions.getExtension('amazonwebservices.aws-toolkit-vscode')
+        if (!this.isAwsToolkitInstalled()) {
+            return undefined
+        }
+        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+        const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
         const importedApi = toolkitExt?.exports
         const connections: SsoConnection[] = []
-        const toolkitConnections = await importedApi?.listConnections()
-        toolkitConnections.forEach((connection: SsoConnection) => {
-            if (connection.scopes?.includes('codewhisperer:completions')) {
-                connections.push(connection)
-            } else {
-                connections.push({
-                    id: connection.id,
-                    label: connection.label,
-                    scopes: amazonQScopes,
-                    ssoRegion: connection.ssoRegion,
-                    type: connection.type,
-                    startUrl: connection.startUrl,
-                    getToken: () => connection.getToken(),
-                })
-            }
-        })
+        if (importedApi && 'listConnections' in importedApi) {
+            const toolkitConnections = await importedApi?.listConnections()
+            toolkitConnections.forEach((connection: SsoConnection) => {
+                if (connection.scopes?.includes('codewhisperer:completions')) {
+                    connections.push(connection)
+                } else {
+                    // adding scopes to the connection
+                    // user will be asked to re-authorize in browser
+                    // once the connection is in use
+                    connections.push({
+                        id: connection.id,
+                        label: connection.label,
+                        scopes: amazonQScopes,
+                        ssoRegion: connection.ssoRegion,
+                        type: connection.type,
+                        startUrl: connection.startUrl,
+                        getToken: () => connection.getToken(),
+                    })
+                }
+            })
+        }
         return connections
     }
 
     async useConnection(connectionId: string): Promise<AuthError | undefined> {
+        if (!this.isAwsToolkitInstalled()) {
+            return undefined
+        }
         try {
-            const toolkitExt = vscode.extensions.getExtension('amazonwebservices.aws-toolkit-vscode')
+            await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+            const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
             const importedApi = toolkitExt?.exports
-            const connections: SsoConnection[] = await importedApi?.listConnections()
-            connections.forEach(async (connection: SsoConnection) => {
-                if (connection.id === connectionId) {
-                    await AuthUtil.instance.secondaryAuth.useNewConnection(connection)
-                    return undefined
-                }
-            })
+            if (importedApi && 'listConnections' in importedApi) {
+                const connections: SsoConnection[] = await importedApi?.listConnections()
+                connections.forEach(async (connection: SsoConnection) => {
+                    if (connection.id === connectionId) {
+                        await AuthUtil.instance.secondaryAuth.useNewConnection(connection)
+                        return undefined
+                    }
+                })
+            }
         } catch (error) {
             return { id: '', text: error as string }
         }

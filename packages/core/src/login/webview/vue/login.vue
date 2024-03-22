@@ -378,28 +378,11 @@ export default defineComponent({
                     text: 'Used by AWS Toolkit',
                     title: isBuilderId(connection.startUrl)
                         ? 'AWS Builder ID'
-                        : `AWS IAM Identity Center ${connection.startUrl}`,
+                        : `IAM Identity Center ${connection.startUrl}`,
                     connectionId: connection.id,
                 })
             })
             this.$forceUpdate()
-            // in case toolkit activation is slow.
-            // Todo:
-            if (this.existingLogins.length === 0) {
-                await sleep(3000)
-                const connections = await client.fetchConnections()
-                connections?.forEach((connection, index) => {
-                    this.existingLogins.push({
-                        id: LoginOption.EXISTING_LOGINS + index,
-                        text: 'Used by AWS Toolkit',
-                        title: isBuilderId(connection.startUrl)
-                            ? 'AWS Builder ID'
-                            : `AWS IAM Identity Center ${connection.startUrl}`,
-                        connectionId: connection.id,
-                    })
-                })
-                this.$forceUpdate()
-            }
         },
     },
 })

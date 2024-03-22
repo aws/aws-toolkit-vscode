@@ -69,9 +69,6 @@ export async function activateShared(context: vscode.ExtensionContext) {
         void vscode.commands.executeCommand('aws.amazonq.refresh')
     }
 
-    // forces login page even if we are connected? 🤨
-    // await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', false)
-
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
 }
