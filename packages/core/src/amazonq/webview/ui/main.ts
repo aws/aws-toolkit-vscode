@@ -337,6 +337,11 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 mynahUI.addChatItem(tabID, {
                     type: ChatItemType.ANSWER_STREAM,
                 })
+            } else if (tabsStorage.getTab(tabID)?.type === 'gumby') {
+                connector.requestAnswer(tabID, {
+                    chatMessage: prompt.prompt ?? '',
+                })
+                return
             }
 
             if (prompt.command !== undefined && prompt.command.trim() !== '') {

@@ -11,6 +11,7 @@ import { ChatItem, ChatItemType } from '@aws/mynah-ui'
 import { ExtensionMessage } from '../commands'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
 import { ChatPrompt } from '../../../../amazonqGumby/chat/views/connector/connector'
+import { ChatPayload } from '../connector'
 
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
@@ -23,6 +24,7 @@ export interface ConnectorProps {
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
+    onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     tabsStorage: TabsStorage
 }
 
@@ -34,6 +36,8 @@ export class Connector {
     private readonly chatInputEnabled
     private readonly onAsyncEventProgress
     private readonly onQuickHandlerCommand
+    private readonly updatePlaceholder
+    private readonly tabStorage
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -42,7 +46,9 @@ export class Connector {
         this.onError = props.onError
         this.chatInputEnabled = props.onChatInputEnabled
         this.onAsyncEventProgress = props.onAsyncEventProgress
+        this.updatePlaceholder = props.onUpdatePlaceholder
         this.onQuickHandlerCommand = props.onQuickHandlerCommand
+        this.tabStorage = props.tabsStorage
     }
 
     onTabAdd = (tabID: string, tabOpenInteractionType?: TabOpenType): void => {
@@ -114,6 +120,17 @@ export class Connector {
         })
     }
 
+    requestAnswer = (tabID: string, payload: ChatPayload) => {
+        this.tabStorage.updateTabStatus(tabID, 'busy')
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'chat-prompt',
+            chatMessage: payload.chatMessage,
+            chatCommand: payload.chatCommand,
+            tabType: 'gumby',
+        })
+    }
+
     private processAuthNeededException = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived === undefined) {
             return
@@ -159,6 +176,11 @@ export class Connector {
                 messageData.message,
                 messageData.messageId
             )
+            return
+        }
+
+        if (messageData.type === 'updatePlaceholderMessage') {
+            this.updatePlaceholder(messageData.tabID, messageData.newPlaceholder)
             return
         }
 

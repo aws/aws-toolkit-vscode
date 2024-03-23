@@ -22,21 +22,22 @@ import {
     ChatPrompt,
     ErrorMessage,
     SendCommandMessage,
+    UpdatePlaceholderMessage,
 } from '../../views/connector/connector'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
-import { ButtonActions } from './messengerUtils'
+import MessengerUtils, { ButtonActions } from './messengerUtils'
 import { TransformationCandidateProject } from '../../../../codewhisperer/service/transformByQHandler'
 
 export type StaticTextResponseType =
     | 'no-project-found'
     | 'transform'
+    | 'java-home-not-set'
     | 'start-transformation-confirmed'
     | 'job-transmitted'
     | 'no-workspace-open'
     | 'no-java-project-found'
     | 'no-maven-java-project-found'
     | 'could-not-compile-project'
-export type LoadingTextResponseType = 'start-compilation' | 'compile-succeeded' | 'job-submitted'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -67,6 +68,10 @@ export class Messenger {
 
     public sendChatInputEnabled(tabID: string, enabled: boolean) {
         this.dispatcher.sendChatInputEnabled(new ChatInputEnabledMessage(tabID, enabled))
+    }
+
+    public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {
+        this.dispatcher.sendUpdatePlaceholder(new UpdatePlaceholderMessage(tabID, newPlaceholder))
     }
 
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
@@ -154,6 +159,13 @@ export class Messenger {
             })
         )
 
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: false,
+                message: undefined,
+            })
+        )
+
         this.dispatcher.sendChatPrompt(
             new ChatPrompt(
                 {
@@ -196,24 +208,17 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, { inProgress, message, messageId }))
     }
 
-    public sendCompilationInProgress(tabID: string, addNewMessage: boolean) {
+    public sendCompilationInProgress(tabID: string) {
         const message = 'Compiling the module and checking dependencies...'
 
-        if (addNewMessage) {
-            this.dispatcher.sendAsyncEventProgress(
-                new AsyncEventProgressMessage(tabID, {
-                    inProgress: true,
-                    message: undefined,
-                    messageId: GumbyNamedMessages.COMPILATION_PROGRESS_MESSAGE,
-                })
-            )
-        }
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, { inProgress: true, message: undefined })
+        )
 
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
                 message,
-                messageId: GumbyNamedMessages.COMPILATION_PROGRESS_MESSAGE,
             })
         )
     }
@@ -221,15 +226,11 @@ export class Messenger {
     public sendCompilationFinished(tabID: string) {
         const message = 'Local project build and dependency check passed.'
 
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message,
-                    messageType: 'ai-prompt',
-                    messageId: GumbyNamedMessages.COMPILATION_PROGRESS_MESSAGE,
-                },
-                tabID
-            )
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: false,
+                message,
+            })
         )
     }
 
@@ -269,12 +270,27 @@ export class Messenger {
         this.dispatcher.sendChatMessage(jobSubmittedMessage)
     }
 
+    public sendUserPrompt(prompt: string, tabID: string) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: prompt,
+                    messageType: 'prompt',
+                },
+                tabID
+            )
+        )
+    }
+
     public sendStaticTextResponse(type: StaticTextResponseType, tabID: string) {
         let message = '...'
 
         switch (type) {
             case 'no-workspace-open':
                 message = 'To begin, please open a workspace.'
+                break
+            case 'java-home-not-set':
+                message = MessengerUtils.createJavaHomePrompt()
                 break
             case 'no-project-found':
             case 'no-java-project-found':
@@ -325,16 +341,16 @@ To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/a
             id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
         })
 
-        const jobFinishedMessage = new ChatMessage(
-            {
-                message,
-                messageType: 'ai-prompt',
-                buttons,
-            },
-            tabID
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
+                    buttons,
+                },
+                tabID
+            )
         )
-
-        this.dispatcher.sendChatMessage(jobFinishedMessage)
     }
 
     public sendTransformationIntroduction(tabID: string) {

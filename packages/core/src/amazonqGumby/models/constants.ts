@@ -11,4 +11,4 @@ export enum CodeTransformConstants {
 export const gumbyChat = 'gumbyChat'
 
 // This sets the tab name
-export const featureName = 'Amazon Q Transform'
+export const featureName = 'Q - Code Transform'

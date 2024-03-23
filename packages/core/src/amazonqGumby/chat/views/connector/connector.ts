@@ -20,14 +20,10 @@ class UiMessage {
 }
 
 export class ErrorMessage extends UiMessage {
-    readonly title!: string
-    readonly message!: string
     override type = 'errorMessage'
 
-    constructor(title: string, message: string, tabID: string) {
+    constructor(readonly title: string, readonly message: string, tabID: string) {
         super(tabID)
-        this.title = title
-        this.message = message
     }
 }
 
@@ -43,6 +39,7 @@ export class AsyncEventProgressMessage extends UiMessage {
     readonly message: string | undefined
     readonly messageId?: string | undefined
     readonly buttons?: ChatItemButton[]
+    readonly messageType = 'answer-part'
     override type = 'asyncEventProgressMessage'
 
     constructor(tabID: string, props: AsyncEventProgressMessageProps) {
@@ -57,25 +54,16 @@ export class AsyncEventProgressMessage extends UiMessage {
 export class AuthenticationUpdateMessage {
     readonly time: number = Date.now()
     readonly sender: string = gumbyChat
-    readonly featureDevEnabled: boolean
-    readonly authenticatingTabIDs: string[]
     readonly type = 'authenticationUpdateMessage'
 
-    constructor(featureDevEnabled: boolean, authenticatingTabIDs: string[]) {
-        this.featureDevEnabled = featureDevEnabled
-        this.authenticatingTabIDs = authenticatingTabIDs
-    }
+    constructor(readonly featureDevEnabled: boolean, readonly authenticatingTabIDs: string[]) {}
 }
 
 export class AuthNeededException extends UiMessage {
-    readonly message: string
-    readonly authType: AuthFollowUpType
     override type = 'authNeededException'
 
-    constructor(message: string, authType: AuthFollowUpType, tabID: string) {
+    constructor(readonly message: string, readonly authType: AuthFollowUpType, tabID: string) {
         super(tabID)
-        this.message = message
-        this.authType = authType
     }
 }
 
@@ -136,24 +124,28 @@ export class ChatMessage extends UiMessage {
 }
 
 export class ChatInputEnabledMessage extends UiMessage {
-    readonly enabled: boolean
     override type = 'chatInputEnabledMessage'
 
-    constructor(tabID: string, enabled: boolean) {
+    constructor(tabID: string, readonly enabled: boolean) {
         super(tabID)
-        this.enabled = enabled
     }
 }
 
 export class SendCommandMessage extends UiMessage {
-    readonly command: GumbyCommands
-    readonly eventId: string
     override type = 'sendCommandMessage'
 
-    constructor(command: GumbyCommands, tabID: string, eventId: string) {
+    constructor(readonly command: GumbyCommands, tabID: string, readonly eventId: string) {
         super(tabID)
-        this.command = command
-        this.eventId = eventId
+    }
+}
+
+export class UpdatePlaceholderMessage extends UiMessage {
+    readonly newPlaceholder: string
+    override type = 'updatePlaceholderMessage'
+
+    constructor(tabID: string, newPlaceholder: string) {
+        super(tabID)
+        this.newPlaceholder = newPlaceholder
     }
 }
 
@@ -173,6 +165,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendAsyncEventProgress(message: AsyncEventProgressMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendUpdatePlaceholder(message: UpdatePlaceholderMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 

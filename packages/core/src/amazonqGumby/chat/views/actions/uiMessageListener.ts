@@ -43,7 +43,16 @@ export class UIMessageListener {
             case 'form-action-click':
                 this.formActionClicked(msg)
                 break
+            case 'chat-prompt':
+                this.processChatPrompt(msg)
         }
+    }
+
+    private processChatPrompt(msg: any) {
+        this.gumbyControllerEventsEmitters?.processHumanChatMessage.fire({
+            message: msg.chatMessage,
+            tabID: msg.tabID,
+        })
     }
 
     private transform(msg: any) {

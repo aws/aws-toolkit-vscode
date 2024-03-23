@@ -448,7 +448,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
     // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
     const args = [`-Dmaven.repo.local=${dependenciesFolder.path}`, 'clean', 'install', '-q']
     let environment = process.env
-    // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
+
     if (transformByQState.getJavaHome() !== undefined) {
         environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
     }

@@ -28,7 +28,7 @@ export class TabDataGenerator {
         ['unknown', 'Ask a question or enter "/" for quick actions'],
         ['cwc', 'Ask a question or enter "/" for quick actions'],
         ['featuredev', 'Briefly describe a task or issue'],
-        ['gumby', 'Chat input disabled. Please make a selection to continue.'],
+        ['gumby', 'Chat input disabled.'],
     ])
 
     private tabWelcomeMessage: Map<TabType, string> = new Map([
@@ -69,13 +69,7 @@ I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
         })
     }
 
-    public getTabData(
-        tabType: TabType,
-        needWelcomeMessages: boolean,
-        needFollowUp: boolean = true,
-        taskName?: string,
-        needConfirmationClose: boolean = false
-    ): MynahUIDataModel {
+    public getTabData(tabType: TabType, needWelcomeMessages: boolean, taskName?: string): MynahUIDataModel {
         const tabData: MynahUIDataModel = {
             tabTitle: taskName ?? this.tabTitle.get(tabType),
             promptInputInfo:
@@ -95,14 +89,6 @@ I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
                   ]
                 : [],
         }
-
-        if (needConfirmationClose) {
-            tabData.tabCloseConfirmationMessage =
-                'Are you sure want to close the tab? Closing the tab would mean that your running job will stop.'
-            tabData.tabCloseConfirmationCloseButton = 'Close tab'
-            tabData.tabCloseConfirmationKeepButton = 'Keep tab'
-        }
-
         return tabData
     }
 }

@@ -101,6 +101,13 @@ export class Connector {
         }
     }
 
+    requestAnswer = (tabID: string, payload: ChatPayload) => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'gumby':
+                return this.gumbyChatConnector.requestAnswer(tabID, payload)
+        }
+    }
+
     requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
         new Promise((resolve, reject) => {
             if (this.isUIReady) {

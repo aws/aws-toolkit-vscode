@@ -27,8 +27,10 @@ import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFound
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
 import { TransformationCandidateProject } from '../../../codewhisperer/service/transformByQHandler'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
+import fs from 'fs'
 
-// Define the chat / IDE events to listen to
+// These events can be interactions within the chat,
+// or elsewhere in the IDE
 export interface ChatControllerEventEmitters {
     readonly transformSelected: vscode.EventEmitter<any>
     readonly tabOpened: vscode.EventEmitter<any>
@@ -37,6 +39,7 @@ export interface ChatControllerEventEmitters {
     readonly formActionClicked: vscode.EventEmitter<any>
     readonly commandSentFromIDE: vscode.EventEmitter<any>
     readonly transformationFinished: vscode.EventEmitter<any>
+    readonly processHumanChatMessage: vscode.EventEmitter<any>
 }
 
 export class GumbyController {
@@ -81,6 +84,10 @@ export class GumbyController {
         this.chatControllerMessageListeners.transformationFinished.event(data => {
             return this.transformationFinished(data)
         })
+
+        this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
+            return this.processHumanChatMessage(data)
+        })
     }
 
     private async tabOpened(message: any) {
@@ -102,6 +109,7 @@ export class GumbyController {
 
     private async tabClosed(data: any) {
         transformByQState.setGumbyChatTabID(undefined)
+        // session?
     }
 
     private authClicked(message: any) {
@@ -134,6 +142,7 @@ export class GumbyController {
         // check that the session is authenticated
         let session
         try {
+            //todo[gumby]: set tabID in sesion
             session = await this.sessionStorage.getSession(message.tabID)
 
             const authState = await getChatAuthState()
@@ -193,12 +202,6 @@ export class GumbyController {
             case ButtonActions.CANCEL_TRANSFORMATION_FORM:
                 this.messenger.sendJobFinishedMessage(message.tabId, true, undefined)
                 break
-            case ButtonActions.CONFIRM_JAVA_HOME_FORM:
-                await this.prepareProjectForSubmission(message)
-                break
-            case ButtonActions.CANCEL_JAVA_HOME_FORM:
-                this.messenger.sendJobFinishedMessage(message.tabId, true, undefined)
-                break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB)
                 this.messenger.sendJobSubmittedMessage(message.tabId)
@@ -221,43 +224,34 @@ export class GumbyController {
         const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
         const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
 
-        this.messenger.sendCompilationInProgress(message.tabId, true)
-
         await processTransformFormInput(pathToModule, fromJDKVersion, toJDKVersion)
         await this.validateBuildWithPromptOnError(message)
     }
 
-    private async prepareProjectForSubmission(message: any | undefined = undefined): Promise<void> {
-        if (message !== undefined && message.formSelectedValues !== undefined) {
-            const javaHome: string = message.formSelectedValues['JavaHomeFormInput'].trim()
-
-            if (!javaHome) {
-                const errorMessage = 'No JDK path provided'
-                this.messenger.sendErrorMessage(errorMessage, message.tabID)
-                throw new JavaHomeNotSetError()
-            }
-
-            transformByQState.setJavaHome(javaHome)
+    private async prepareProjectForSubmission(message: { pathToJavaHome: string; tabID: string }): Promise<void> {
+        if (message.pathToJavaHome) {
+            transformByQState.setJavaHome(message.pathToJavaHome)
             getLogger().info(
                 `CodeTransformation: using JAVA_HOME = ${transformByQState.getJavaHome()} since source JDK does not match Maven JDK`
             )
         }
 
         try {
-            this.messenger.sendCompilationInProgress(message.tabId, false)
+            this.messenger.sendCompilationInProgress(message.tabID)
             await compileProject()
 
-            this.messenger.sendCompilationFinished(message.tabId)
+            this.messenger.sendCompilationFinished(message.tabID)
+
             this.messenger.sendAsyncEventProgress(
-                message.tabId,
+                message.tabID,
                 true,
                 undefined,
                 GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
             )
-            this.messenger.sendJobSubmittedMessage(message.tabId)
+            this.messenger.sendJobSubmittedMessage(message.tabID)
             await startTransformByQ()
         } catch (err: any) {
-            this.messenger.sendStaticTextResponse('could-not-compile-project', message.tabId)
+            this.messenger.sendStaticTextResponse('could-not-compile-project', message.tabID)
         }
     }
 
@@ -266,18 +260,56 @@ export class GumbyController {
             await validateCanCompileProject()
         } catch (err: any) {
             if (err instanceof JavaHomeNotSetError) {
-                const prompt = MessengerUtils.createJavaHomePrompt()
-                this.messenger.sendTextInputPrompt(prompt, 'JavaHomeForm', message.tabId)
+                this.messenger.sendStaticTextResponse('java-home-not-set', message.tabId)
+                this.messenger.sendChatInputEnabled(message.tabId, true)
+                this.messenger.sendUpdatePlaceholder(message.tabId, 'Enter the path to your Java installation.')
                 return
             }
             throw err
         }
 
-        await this.prepareProjectForSubmission()
+        await this.prepareProjectForSubmission(message)
     }
 
     private async transformationFinished(message: { tabID: string; jobStatus: string }) {
         this.messenger.sendJobSubmittedMessage(message.tabID, true)
         this.messenger.sendJobFinishedMessage(message.tabID, false, message.jobStatus)
     }
+
+    private async processHumanChatMessage(data: { message: string; tabID: string }) {
+        this.messenger.sendUserPrompt(data.message, data.tabID)
+        this.messenger.sendChatInputEnabled(data.tabID, false)
+        this.messenger.sendUpdatePlaceholder(data.tabID, 'Chat is disabled.')
+        /**const session = await this.sessionStorage.getSession(data.tabID)
+
+         
+                   switch (session.state.phase) {
+                       case 'Init':
+                       case 'Approach':
+                           await this.onApproachGeneration(session, data.message, message.tabID)
+                           break
+        */
+        // if state is "asking for project info", parse message for a path
+
+        const pathToJavaHome = extractPath(data.message)
+
+        if (pathToJavaHome) {
+            await this.prepareProjectForSubmission({
+                pathToJavaHome,
+                tabID: data.tabID,
+            })
+        } else {
+            this.messenger.sendErrorMessage("I'm sorry, I could not find ... java ... something", data.tabID)
+            this.messenger.sendJobFinishedMessage(data.tabID, true, undefined)
+        }
+    }
+}
+
+function extractPath(text: string): string | undefined {
+    const words = text.split(/\s+/) // Split text into words by whitespace
+
+    // Filter words that look like paths using path.isAbsolute
+    const paths = words.find(word => fs.existsSync(word) && fs.lstatSync(word).isDirectory())
+
+    return paths
 }

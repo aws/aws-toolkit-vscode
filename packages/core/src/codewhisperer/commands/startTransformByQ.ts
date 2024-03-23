@@ -127,7 +127,6 @@ export async function validateCanCompileProject() {
     await setMaven()
     const javaHomeFound = await validateJavaHome()
     if (!javaHomeFound) {
-        //todo[GUMBY] this needs to be renamed to have 'error' on the end
         throw new JavaHomeNotSetError()
     }
 }
@@ -193,8 +192,6 @@ export async function preTransformationUploadCode() {
     try {
         payloadFilePath = await zipCode(transformByQState.getDependencyFolderInfo()!)
         transformByQState.setPayloadFilePath(payloadFilePath)
-        await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
-        void vscode.window.showInformationMessage(CodeWhispererConstants.submittedProjectMessage)
         uploadId = await uploadPayload(payloadFilePath)
     } catch (err) {
         const errorMessage = `Failed to upload code due to ${(err as Error).message}`
@@ -208,7 +205,6 @@ export async function preTransformationUploadCode() {
         throw err
     }
     sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     await sleep(2000) // sleep before starting job to prevent ThrottlingException
     throwIfCancelled()
