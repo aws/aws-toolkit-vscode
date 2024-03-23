@@ -170,7 +170,7 @@ export class AuthUtil {
             await vscode.commands.executeCommand(
                 'setContext',
                 'aws.amazonq.hasConnections',
-                Auth.instance.hasConnections
+                AuthUtil.instance.isConnected()
             )
         }
     }

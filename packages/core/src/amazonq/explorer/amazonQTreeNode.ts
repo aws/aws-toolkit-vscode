@@ -70,12 +70,6 @@ export class AmazonQNode implements TreeNode {
         return ''
     }
 
-    public isAmazonQInstalled(): boolean {
-        const extensions = vscode.extensions.all
-        const q = extensions.find(x => x.id === 'amazonwebservices.amazon-q-vscode')
-        return q !== undefined
-    }
-
     public getChildren() {
         if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
             const children = [createInstallQNode(), createLearnMoreNode()]
@@ -84,6 +78,11 @@ export class AmazonQNode implements TreeNode {
             }
             return children
         } else {
+            // todo: hack
+            if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
+                void registerQHook()
+            }
+
             if (AmazonQNode.amazonQState === 'expired') {
                 return [createReconnect('tree'), createLearnMoreNode()]
             }
@@ -144,7 +143,7 @@ export const refreshAmazonQRootNode = (provider?: ResourceTreeDataProvider) =>
         }
     })
 
-const registerQHook = once(async () => {
+export const registerQHook = once(async () => {
     await activateExtension(VSCODE_EXTENSION_ID.amazonq)
     const amazonq = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.amazonq)?.exports
     amazonq.registerStateChangeCallback((e: any) => vscode.commands.executeCommand('aws.amazonq.refresh', e))
