@@ -36,14 +36,21 @@ export const createLearnMoreNode = () =>
         contextValue: 'awsAmazonQLearnMoreNode',
     })
 
-export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => async () => {
-    telemetry.ui_click.emit({
-        elementId: 'amazonq_switchToQChat',
-        passive: false,
-    })
-    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-    await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
-})
+export const switchToAmazonQCommand = Commands.declare(
+    '_aws.amazonq.focusView',
+    () =>
+        async (signIn: boolean = false) => {
+            telemetry.ui_click.emit({
+                elementId: 'amazonq_switchToQChat',
+                passive: false,
+            })
+            if (signIn) {
+                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', true)
+            }
+            await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+            await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
+        }
+)
 
 export function switchToAmazonQNode(type: 'item'): DataQuickPickItem<'openChatPanel'>
 export function switchToAmazonQNode(type: 'tree'): TreeNode<Command>
@@ -75,7 +82,7 @@ export function createSignIn(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return switchToAmazonQCommand.build().asTreeNode({
+            return switchToAmazonQCommand.build(true).asTreeNode({
                 label: label,
                 iconPath: icon,
             })
@@ -83,7 +90,7 @@ export function createSignIn(type: 'item' | 'tree'): any {
             return {
                 data: 'signIn',
                 label: codicon`${icon} ${label}`,
-                onClick: () => switchToAmazonQCommand.execute(),
+                onClick: () => switchToAmazonQCommand.execute(true),
             } as DataQuickPickItem<'signIn'>
     }
 }
