@@ -252,7 +252,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         provider: PrompterProvider<TState, TProp>,
         impliedResponse?: TProp
     ): Promise<PromptResult<TProp>> {
-        const prompter = provider(state as StateWithCache<WizardState<TState>, TProp>)
+        const prompter = await provider(state as StateWithCache<WizardState<TState>, TProp>)
 
         this._stepOffset = state.stepCache.stepOffset ?? this._stepOffset
         state.stepCache.stepOffset = this._stepOffset
