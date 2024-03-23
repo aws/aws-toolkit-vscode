@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { SsoConnection } from '../../../../auth/connection'
-import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
+import { SsoConnection, scopesCodeWhispererChat } from '../../../../auth/connection'
+import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
@@ -47,14 +47,19 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 const connections: SsoConnection[] = await importedApi?.listConnections()
                 connections.forEach(async (connection: SsoConnection) => {
                     if (connection.id === connectionId) {
-                        getLogger().info(`auth: create connection from existing connection id ${connectionId}`)
-                        const conn = await Auth.instance.createConnection({
-                            type: connection.type,
-                            ssoRegion: connection.ssoRegion,
-                            startUrl: connection.startUrl,
-                            scopes: amazonQScopes,
-                        })
-                        await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
+                        if (connection.scopes?.includes(scopesCodeWhispererChat[0])) {
+                            getLogger().info(`auth: re-use connection from existing connection id ${connectionId}`)
+                            const conn = await Auth.instance.createConnectionFromProfile(connection, {
+                                type: connection.type,
+                                ssoRegion: connection.ssoRegion,
+                                scopes: connection.scopes,
+                                startUrl: connection.startUrl,
+                            })
+                            await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
+                        } else {
+                            getLogger().info(`auth: create connection from existing connection id ${connectionId}`)
+                            return this.startEnterpriseSetup(connection.startUrl, connection.ssoRegion)
+                        }
                     }
                 })
             }
@@ -70,21 +75,21 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
             try {
                 await awsIdSignIn()
-                AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
                 await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
+                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', false)
             } finally {
                 this.notifyToolkit()
             }
         })
     }
 
-    startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
+    async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
         return this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             try {
                 await connectToEnterpriseSso(startUrl, region)
-                AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
                 this.notifyToolkit()
                 void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
+                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', false)
             } finally {
                 this.notifyToolkit()
             }

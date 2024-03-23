@@ -180,13 +180,13 @@
                     "type": "webview",
                     "id": "aws.amazonq.AmazonCommonAuth",
                     "name": "%AWS.amazonq.login%",
-                    "when": "!isCloud9 && !aws.isSageMaker && !aws.amazonq.hasConnections"
+                    "when": "!isCloud9 && !aws.isSageMaker && aws.amazonq.showLoginView"
                 },
                 {
                     "type": "webview",
                     "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
-                    "when": "!isCloud9 && !aws.isSageMaker && aws.amazonq.hasConnections"
+                    "when": "!isCloud9 && !aws.isSageMaker && !aws.amazonq.showLoginView"
                 },
                 {
                     "id": "aws.AmazonQNeverShowBadge",
