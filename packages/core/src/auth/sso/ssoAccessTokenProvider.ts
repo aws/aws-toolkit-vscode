@@ -26,6 +26,7 @@ import {
 import { getLogger } from '../../shared/logger'
 import { AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemetry'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { indent } from '../../shared/utilities/textUtilities'
 
 const clientRegistrationType = 'public'
 const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
@@ -54,7 +55,7 @@ const refreshGrantType = 'refresh_token'
  *         - Interval               : Minimum time (seconds) the client SHOULD wait between polling intervals.
  *    3. Poll for the access token.
  *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
- *          - Calls {@link OidcClient.pollForToken}
+ *          - Calls {@link pollForTokenWithProgress}
  *       - RETURNS:
  *         - AccessToken
  *         - ExpiresIn
@@ -76,6 +77,7 @@ export class SsoAccessTokenProvider {
 
     public async invalidate(): Promise<void> {
         // Use allSettled() instead of all() to ensure all clear() calls are resolved.
+        getLogger().info(`SsoAccessTokenProvider invalidate token and registration`)
         await Promise.allSettled([
             this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
             this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
@@ -84,7 +86,15 @@ export class SsoAccessTokenProvider {
 
     public async getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
-
+        getLogger().info(
+            indent(
+                `current client registration id=${data?.registration?.clientId}, 
+                            expires at ${data?.registration?.expiresAt}, 
+                            key = ${this.tokenCacheKey}`,
+                4,
+                true
+            )
+        )
         if (!data || !isExpired(data.token)) {
             return data?.token
         }

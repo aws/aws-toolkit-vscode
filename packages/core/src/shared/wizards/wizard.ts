@@ -145,8 +145,8 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     }
 
     /**
-     * Optional, one-time, asynchronous setup for subclasses that need an "async constructor". The
-     * subclass must put all of its constructor logic here, instead of its normal constructor.
+     * Optional, one-time, asynchronous setup for subclasses that need an "async constructor".
+     * Subclass setup logic must live in either init() _or_ a normal constructor, not both.
      * Called by `run()` exactly once.
      */
     public async init?(): Promise<this>
@@ -252,7 +252,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         provider: PrompterProvider<TState, TProp>,
         impliedResponse?: TProp
     ): Promise<PromptResult<TProp>> {
-        const prompter = provider(state as StateWithCache<WizardState<TState>, TProp>)
+        const prompter = await provider(state as StateWithCache<WizardState<TState>, TProp>)
 
         this._stepOffset = state.stepCache.stepOffset ?? this._stepOffset
         state.stepCache.stepOffset = this._stepOffset

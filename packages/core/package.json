@@ -30,7 +30,8 @@
     "browser": "./dist/src/extensionWeb",
     "exports": {
         ".": "./dist/src/index.js",
-        "./web": "./dist/src/indexWeb.js"
+        "./web": "./dist/src/indexWeb.js",
+        "./auth": "./dist/src/auth/index.js"
     },
     "contributes": {
         "configuration": {
@@ -711,13 +712,9 @@
             ],
             "aws-explorer": [
                 {
-                    "id": "aws.amazonq",
-                    "name": "%AWS.amazonq.title%",
+                    "id": "aws.amazonq.codewhisperer",
+                    "name": "%AWS.amazonq.codewhisperer.title%",
                     "when": "!isCloud9 && !aws.isSageMaker"
-                },
-                {
-                    "id": "aws.codewhisperer",
-                    "name": "%AWS.codewhisperer.explorerTitle%"
                 },
                 {
                     "id": "aws.explorer",
@@ -1298,24 +1295,19 @@
             ],
             "view/title": [
                 {
-                    "command": "aws.amazonq.startTransformationInHub",
+                    "command": "aws.amazonq.stopTransformationInHub",
                     "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "aws.amazonq.stopTransformationInHub",
+                    "command": "aws.amazonq.showPlanProgressInHub",
                     "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "aws.amazonq.showPlanProgressInHub",
-                    "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@3"
-                },
-                {
                     "command": "aws.amazonq.showHistoryInHub",
                     "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@4"
+                    "group": "navigation@3"
                 },
                 {
                     "command": "aws.amazonq.transformationHub.summary.reveal",
@@ -3894,6 +3886,12 @@
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected || isCloud9 && suggestWidgetVisible && !editorReadonly"
             },
             {
+                "command": "aws.codeWhisperer.dismissTutorial",
+                "key": "escape",
+                "mac": "escape",
+                "when": "aws.codewhisperer.tutorial.workInProgress && !inlineSuggestionVisible && !suggestWidgetVisible"
+            },
+            {
                 "key": "right",
                 "command": "editor.action.inlineSuggest.showNext",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
@@ -4240,6 +4238,7 @@
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run copyFiles",
         "compile": "npm run clean && npm run buildScripts && tsc -p ./ && webpack --mode development",
+        "compileLite": "tsc -p ./",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "testCompile": "npm run clean && npm run buildScripts && tsc -p ./",
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
@@ -4258,7 +4257,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.192",
+        "@aws-toolkits/telemetry": "^1.0.196",
         "@aws/fully-qualified-names": "^2.1.4",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
@@ -4326,7 +4325,7 @@
         "@aws-sdk/property-provider": "3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "4.3.0",
+        "@aws/mynah-ui": "4.4.3",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@smithy/shared-ini-file-loader": "^2.2.8",

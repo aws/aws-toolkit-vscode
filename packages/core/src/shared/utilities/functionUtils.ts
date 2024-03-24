@@ -105,3 +105,41 @@ export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => 
         }))
     }
 }
+
+/**
+ *
+ * Similar to {@link debounce}, but allows the function to be cancelled and allow callbacks to pass function parameters.
+ */
+export function cancellableDebounce<T, U extends any[]>(
+    cb: (...args: U) => T | Promise<T>,
+    delay: number = 0
+): { promise: (...args: U) => Promise<T>; cancel: () => void } {
+    let timer: NodeJS.Timeout | undefined
+    let promise: Promise<T> | undefined
+
+    const cancel = (): void => {
+        if (timer) {
+            clearTimeout(timer)
+            timer = undefined
+            promise = undefined
+        }
+    }
+
+    return {
+        promise: (...arg) => {
+            timer?.refresh()
+
+            return (promise ??= new Promise<T>((resolve, reject) => {
+                timer = globals.clock.setTimeout(async () => {
+                    timer = promise = undefined
+                    try {
+                        resolve(await cb(...arg))
+                    } catch (err) {
+                        reject(err)
+                    }
+                }, delay)
+            }))
+        },
+        cancel: cancel,
+    }
+}

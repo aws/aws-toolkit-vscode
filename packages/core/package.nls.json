@@ -258,5 +258,6 @@
     "AWS.amazonq.title": "Amazon Q (Preview)",
     "AWS.amazonq.chat": "Chat",
     "AWS.amazonq.login": "Login",
-    "AWS.amazonq.learnMore": "Learn More About Amazon Q (Preview)"
+    "AWS.amazonq.learnMore": "Learn More About Amazon Q (Preview)",
+    "AWS.amazonq.codewhisperer.title": "Amazon Q (Preview) + CodeWhisperer"
 }

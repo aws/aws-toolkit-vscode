@@ -51,7 +51,7 @@ export function setRunnableTimeout(test: Mocha.Runnable, maxTestDuration: number
         test.fn = fn
     }
 
-    Object.assign(test.fn!, { [runnableTimeout]: maxTestDuration })
+    Object.assign(test.fn!, { [runnableTimeout]: Math.max(maxTestDuration, test.timeout()) })
 
     return test
 }

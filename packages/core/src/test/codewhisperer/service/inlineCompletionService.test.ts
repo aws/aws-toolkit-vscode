@@ -15,7 +15,7 @@ import { CodeSuggestionsState, ConfigurationEntry } from '../../../codewhisperer
 import { CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionItemProvider'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { listCodeWhispererCommandsId } from '../../../codewhisperer/commands/statusBarCommands'
+import { listCodeWhispererCommandsId } from '../../../codewhisperer/ui/statusBarMenu'
 
 describe('inlineCompletionService', function () {
     beforeEach(async function () {
@@ -46,6 +46,7 @@ describe('inlineCompletionService', function () {
             sinon.stub(RecommendationHandler.instance, 'getRecommendations').resolves({
                 result: 'Succeeded',
                 errorMessage: undefined,
+                recommendationCount: 1,
             })
             const checkAndResetCancellationTokensStub = sinon.stub(
                 RecommendationHandler.instance,

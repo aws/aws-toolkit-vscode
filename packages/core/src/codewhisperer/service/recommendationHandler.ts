@@ -62,6 +62,8 @@ const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () 
 
 const rejectCommand = Commands.declare('aws.codeWhisperer.rejectCodeSuggestion', () => async () => {
     RecommendationHandler.instance.reportUserDecisions(-1)
+
+    await Commands.tryExecute('aws.codewhisperer.refreshAnnotation')
 })
 
 const lock = new AsyncLock({ maxPending: 1 })
@@ -105,13 +107,12 @@ export class RecommendationHandler {
     async getServerResponse(
         triggerType: CodewhispererTriggerType,
         isManualTriggerOn: boolean,
-        isFirstPaginationCall: boolean,
         promise: Promise<any>
     ): Promise<any> {
         const timeoutMessage = hasVendedIamCredentials()
             ? 'Generate recommendation timeout.'
             : 'List recommendation timeout'
-        if (isManualTriggerOn && triggerType === 'OnDemand' && (hasVendedIamCredentials() || isFirstPaginationCall)) {
+        if (isManualTriggerOn && triggerType === 'OnDemand' && hasVendedIamCredentials()) {
             return vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
@@ -165,6 +166,7 @@ export class RecommendationHandler {
             return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
+                recommendationCount: 0,
             })
         }
         let recommendations: RecommendationsList = []
@@ -181,7 +183,7 @@ export class RecommendationHandler {
         ).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
-        if (pagination) {
+        if (pagination && !isSM) {
             if (page === 0) {
                 session.requestContext = await EditorContext.buildListRecommendationRequest(
                     editor as vscode.TextEditor,
@@ -198,7 +200,7 @@ export class RecommendationHandler {
                     supplementalMetadata: session.requestContext.supplementalMetadata,
                 }
             }
-        } else if (!pagination) {
+        } else {
             session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
         const request = session.requestContext.request
@@ -226,6 +228,7 @@ export class RecommendationHandler {
                 return Promise.resolve<GetRecommendationsResponse>({
                     result: invocationResult,
                     errorMessage: errorMessage,
+                    recommendationCount: 0,
                 })
             }
         }
@@ -236,12 +239,7 @@ export class RecommendationHandler {
             const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
             const codewhispererPromise =
                 pagination && !isSM ? client.listRecommendations(mappedReq) : client.generateRecommendations(mappedReq)
-            const resp = await this.getServerResponse(
-                triggerType,
-                config.isManualTriggerEnabled,
-                page === 0 && !retry,
-                codewhispererPromise
-            )
+            const resp = await this.getServerResponse(triggerType, config.isManualTriggerEnabled, codewhispererPromise)
             TelemetryHelper.instance.setSdkApiCallEndTime()
             latency = startTime !== 0 ? performance.now() - startTime : 0
             if ('recommendations' in resp) {
@@ -357,6 +355,7 @@ export class RecommendationHandler {
             return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
+                recommendationCount: session.recommendations.length,
             })
         }
 
@@ -410,6 +409,7 @@ export class RecommendationHandler {
         return Promise.resolve<GetRecommendationsResponse>({
             result: invocationResult,
             errorMessage: errorMessage,
+            recommendationCount: session.recommendations.length,
         })
     }
 
@@ -558,8 +558,8 @@ export class RecommendationHandler {
             if (triggerType === 'OnDemand') {
                 void vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReached)
             }
-            await vscode.commands.executeCommand('aws.codeWhisperer.refresh', true)
-            await Commands.tryExecute('aws.amazonq.refresh', true)
+            vsCodeState.isFreeTierLimitReached = true
+            await Commands.tryExecute('aws.amazonq.refresh')
         }
     }
 

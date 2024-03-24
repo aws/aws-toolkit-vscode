@@ -13,9 +13,8 @@ import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { getTestWindow } from '../../shared/vscode/window'
 import { stopTransformByQMessage } from '../../../codewhisperer/models/constants'
+import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import {
-    convertDateToTimestamp,
-    convertToTimeString,
     throwIfCancelled,
     stopJob,
     pollTransformationJob,
@@ -43,7 +42,7 @@ describe('transformByQ', function () {
 
     it('WHEN converting long duration in milliseconds THEN converts correctly', async function () {
         const durationTimeString = convertToTimeString(3700 * 1000)
-        assert.strictEqual(durationTimeString, '1 hr 1 min')
+        assert.strictEqual(durationTimeString, '1 hr 1 min 40 sec')
     })
 
     it('WHEN converting date object to timestamp THEN converts correctly', async function () {
@@ -83,8 +82,8 @@ describe('transformByQ', function () {
                 await validateOpenProjects(dummyQuickPickItems)
             },
             {
-                name: 'Error',
-                message: 'No Java projects found',
+                name: 'NoJavaProject',
+                message: '',
             }
         )
     })
@@ -107,8 +106,8 @@ describe('transformByQ', function () {
                 await validateOpenProjects(dummyQuickPickItems)
             },
             {
-                name: 'Error',
-                message: 'No valid Maven build file found',
+                name: 'NonMavenProject',
+                message: '',
             }
         )
     })
@@ -130,8 +129,8 @@ describe('transformByQ', function () {
                 await getOpenProjects()
             },
             {
-                name: 'Error',
-                message: 'No Java projects found since no projects are open',
+                name: 'NoProjectsOpen',
+                message: '',
             }
         )
     })

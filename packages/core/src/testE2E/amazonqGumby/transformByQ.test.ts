@@ -43,7 +43,8 @@ describe('transformByQ', async function () {
     })
 
     it('WHEN upload payload with missing sha256 in headers THEN fails to upload', async function () {
-        const sha256 = getSha256(zippedCodePath)
+        const buffer = fs.readFileSync(zippedCodePath)
+        const sha256 = getSha256(buffer)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
@@ -62,15 +63,21 @@ describe('transformByQ', async function () {
 
     it('WHEN upload artifact to S3 with unsigned upload URL THEN fails to upload', async function () {
         await assert.rejects(() =>
-            uploadArtifactToS3(zippedCodePath, {
-                uploadId: 'dummyId',
-                uploadUrl: 'https://aws-transform-artifacts-us-east-1.s3.amazonaws.com',
-            })
+            uploadArtifactToS3(
+                zippedCodePath,
+                {
+                    uploadId: 'dummyId',
+                    uploadUrl: 'https://aws-transform-artifacts-us-east-1.s3.amazonaws.com',
+                },
+                'dummy',
+                Buffer.from('', 'utf-8')
+            )
         )
     })
 
     it('WHEN createUploadUrl THEN URL uses HTTPS and sets 60 second expiration', async function () {
-        const sha256 = getSha256(zippedCodePath)
+        const buffer = fs.readFileSync(zippedCodePath)
+        const sha256 = getSha256(buffer)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,

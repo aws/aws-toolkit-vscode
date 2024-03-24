@@ -30,6 +30,7 @@ import { getLogger } from '../../shared/logger'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { GlobalState } from '../../shared/globalState'
+import { vsCodeState } from '../models/model'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -97,7 +98,6 @@ export class AuthUtil {
             return
         }
         this._isCustomizationFeatureEnabled = value
-        void Commands.tryExecute('aws.codeWhisperer.refresh')
         void Commands.tryExecute('aws.amazonq.refresh')
         void Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
     }
@@ -112,6 +112,7 @@ export class AuthUtil {
 
     public constructor(public readonly auth = Auth.instance) {
         this.auth.onDidChangeConnectionState(async e => {
+            getLogger().info(`codewhisperer: connection changed to ${e.state}: ${e.id}`)
             if (e.state !== 'authenticating') {
                 await this.refreshCodeWhisperer()
             }
@@ -120,13 +121,13 @@ export class AuthUtil {
         })
 
         this.secondaryAuth.onDidChangeActiveConnection(async () => {
+            getLogger().info(`codewhisperer: active connection changed`)
             if (this.isValidEnterpriseSsoInUse()) {
                 void vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
             }
+            vsCodeState.isFreeTierLimitReached = false
             await Promise.all([
                 // onDidChangeActiveConnection may trigger before these modules are activated.
-                Commands.tryExecute('aws.codeWhisperer.refresh'),
-                Commands.tryExecute('aws.codeWhisperer.refreshRootNode'),
                 Commands.tryExecute('aws.amazonq.refresh'),
                 Commands.tryExecute('aws.amazonq.refreshRootNode'),
                 Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
@@ -284,9 +285,12 @@ export class AuthUtil {
 
     public isConnectionValid(): boolean {
         const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
-        getLogger().debug(`codewhisperer: Connection is valid = ${connectionValid}, 
+        if (connectionValid === false) {
+            getLogger().debug(`codewhisperer: Connection is valid = ${connectionValid}, 
                             connection is undefined = ${this.conn === undefined},
                             secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired}`)
+        }
+
         return connectionValid
     }
 
@@ -295,11 +299,11 @@ export class AuthUtil {
             this.secondaryAuth.isConnectionExpired &&
             this.conn !== undefined &&
             isValidCodeWhispererCoreConnection(this.conn)
-        getLogger().debug(`codewhisperer: Connection expired = ${connectionExpired},
+        getLogger().info(`codewhisperer: Connection expired = ${connectionExpired},
                            secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired},
                            connection is undefined = ${this.conn === undefined}`)
         if (this.conn) {
-            getLogger().debug(
+            getLogger().info(
                 `codewhisperer: isValidCodeWhispererConnection = ${isValidCodeWhispererCoreConnection(this.conn)}`
             )
         }
@@ -335,9 +339,8 @@ export class AuthUtil {
     }
 
     public async refreshCodeWhisperer() {
+        vsCodeState.isFreeTierLimitReached = false
         await Promise.all([
-            Commands.tryExecute('aws.codeWhisperer.refresh'),
-            Commands.tryExecute('aws.codeWhisperer.refreshRootNode'),
             Commands.tryExecute('aws.amazonq.refresh'),
             Commands.tryExecute('aws.amazonq.refreshRootNode'),
             Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
@@ -372,6 +375,10 @@ export class AuthUtil {
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         void this.showReauthenticatePrompt(isAutoTrigger)
         await this.setVscodeContextProps()
+    }
+
+    public isValidCodeTransformationAuthUser(): boolean {
+        return this.isEnterpriseSsoInUse() && this.isConnectionValid()
     }
 }
 

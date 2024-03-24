@@ -101,6 +101,13 @@ const baseConfig = {
         minimizer: [
             new ESBuildMinifyPlugin({
                 target: 'es2021',
+                // Are these enabled by default?
+                // minify: true,
+                // treeShaking: true,
+
+                // De-duplicate license headers and list them at end of file.
+                legalComments: 'eof',
+                // sourcemap: 'external',
             }),
         ],
     },

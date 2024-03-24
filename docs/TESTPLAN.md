@@ -46,7 +46,7 @@ The test suite has the following categories of tests:
 ## Test files
 
 Currently, most if not all testing code lives in the subproject `packages/core/`.
-For more information, see [ARCHITECTURE.md](./docs/ARCHITECTURE.md#monorepo-structure)
+For more information, see [arch_develop.md](./arch_develop.md#monorepo-structure)
 
 -   `src/test/` : unit tests
     -   `src/test/globalSetup.test.ts` :

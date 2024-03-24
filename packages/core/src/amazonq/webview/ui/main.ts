@@ -14,8 +14,10 @@ import { FollowUpInteractionHandler } from './followUps/handler'
 import { QuickActionHandler } from './quickActions/handler'
 import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
+import { getActions, getDetails } from './diffTree/actions'
+import { DiffTreeFileInfo } from './diffTree/types'
 
-export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumbyInitEnabled: boolean) => {
+export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
@@ -41,9 +43,9 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
     })
 
     // used to keep track of whether or not featureDev is enabled and has an active idC
-    let isFeatureDevEnabled = featureDevInitEnabled
+    let isFeatureDevEnabled = amazonQEnabled
 
-    let isGumbyEnabled = gumbyInitEnabled
+    let isGumbyEnabled = amazonQEnabled
 
     let tabDataGenerator = new TabDataGenerator({
         isFeatureDevEnabled,
@@ -98,6 +100,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
                 }
             }
         },
+        onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
         onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
             return messageController.sendMessageToTab(message, 'cwc')
         },
@@ -145,13 +148,16 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
             ideApi.postMessage(message)
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
-            if (item.type === ChatItemType.ANSWER_PART) {
+            if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
                     ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
                     ...(item.codeReference !== undefined ? { codeReference: item.codeReference } : {}),
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
+                    ...(item.type === ChatItemType.CODE_RESULT
+                        ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
+                        : {}),
                 })
                 return
             }
@@ -184,6 +190,18 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
         },
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
             mynahUI.updateStore(tabID, messageData)
+        },
+        onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => {
+            const updateWith: Partial<ChatItem> = {
+                type: ChatItemType.CODE_RESULT,
+                fileList: {
+                    filePaths: filePaths.map(i => i.relativePath),
+                    deletedFiles: deletedFiles.map(i => i.relativePath),
+                    details: getDetails(filePaths),
+                    actions: getActions([...filePaths, ...deletedFiles]),
+                },
+            }
+            mynahUI.updateLastChatAnswer(tabID, updateWith)
         },
         onWarning: (tabID: string, message: string, title: string) => {
             mynahUI.notify({
@@ -326,6 +344,9 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
         onResetStore: () => {},
         onFollowUpClicked: (tabID, messageId, followUp) => {
             followUpsInteractionHandler.onFollowUpClicked(tabID, messageId, followUp)
+        },
+        onFileActionClick: async (tabID: string, messageId: string, filePath: string, actionName: string) => {
+            connector.onFileActionClick(tabID, messageId, filePath, actionName)
         },
         onOpenDiff: connector.onOpenDiff,
         tabs: {

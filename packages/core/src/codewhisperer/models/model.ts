@@ -31,12 +31,15 @@ interface VsCodeState {
      * Timestamp of previous user edit
      */
     lastUserModificationTime: number
+
+    isFreeTierLimitReached: boolean
 }
 
 export const vsCodeState: VsCodeState = {
     isIntelliSenseActive: false,
     isCodeWhispererEditing: false,
     lastUserModificationTime: 0,
+    isFreeTierLimitReached: false,
 }
 
 export type UtgStrategy = 'ByName' | 'ByContent'
@@ -63,6 +66,7 @@ export interface CodeWhispererSupplementalContextItem {
 // This response struct can contain more info as needed
 export interface GetRecommendationsResponse {
     readonly result: 'Succeeded' | 'Failed'
+    readonly recommendationCount: number
     readonly errorMessage: string | undefined
 }
 

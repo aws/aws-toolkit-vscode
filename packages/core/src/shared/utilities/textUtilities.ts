@@ -290,3 +290,50 @@ export function formatDateTimestamp(forceUTC: boolean, d: Date = new Date()): st
 export function encodeHTML(str: string) {
     return str.replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
+
+/**
+ * cleans up a filename of invalid characters, whitespaces and emojis
+ * "foo🤷bar/zu b.txt" => "foo_bar_zu_b.txt"
+ * @param input filename
+ * @param replaceString optionally override default substitution
+ * @returns a cleaned name you can safely use as a file or directory name
+ */
+export function sanitizeFilename(input: string, replaceString = '_'): string {
+    return (
+        input
+            // replace invalid chars
+            .replace(/[\/|\\:*?"<>\s]/g, replaceString)
+            // replace emojis https://edvins.io/how-to-strip-emojis-from-string-in-java-script
+            .replace(
+                /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g,
+                replaceString
+            )
+    )
+}
+
+// Given number of milliseconds elapsed (ex. 4,500,000) return hr / min / sec it represents (ex. "1 hr 15 min")
+export function convertToTimeString(durationInMs: number) {
+    const time = new Date(durationInMs)
+    const hours = time.getUTCHours()
+    const minutes = time.getUTCMinutes()
+    const seconds = time.getUTCSeconds()
+    let timeString = `${seconds} sec`
+    if (minutes > 0) {
+        timeString = `${minutes} min ${timeString}`
+    }
+    if (hours > 0) {
+        timeString = `${hours} hr ${timeString}`
+    }
+    return timeString
+}
+
+// Given Date object, return timestamp it represents (ex. "01/01/23, 12:00 AM")
+export function convertDateToTimestamp(date: Date) {
+    return date.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+}

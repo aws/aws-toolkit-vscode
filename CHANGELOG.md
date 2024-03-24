@@ -1,3 +1,31 @@
+## 2.16.0 2024-03-21
+
+- **Bug Fix** CodeWhisperer: UI notification "no suggestion" not shown correctly
+- **Bug Fix** Lower chance of project upload failures when using Q CodeTransform.
+- **Bug Fix** FeatureDev: Rejected files are excluded when generated code is accepted by the customer
+- **Bug Fix** Fix CodeWhisperer API call failure in SageMaker Code Editor
+- **Feature** CodeWhisperer: Improve UI to indicate CodeWhisperer is generating suggestions
+- **Feature** Q CodeTransformation: show prompt to submit feedback at end of job
+- **Feature** Improved performance: SSM Documents and Step Functions LSP clients/servers are now started only when they are needed.
+- **Feature** CodeWhisperer: Improve UI to walk through new CodeWhisperer users how-to
+- **Feature** CodeWhisperer/Q actions are now available from the status bar menu instead of a dedicated panel.
+- **Feature** Expose listConnections API in AWS Toolkit
+
+## 2.15.0 2024-03-14
+
+- **Bug Fix** CodeWhisperer: Include copied code in percentage code written metrics
+- **Bug Fix** Amazon Q: Fixed prompt input submit with enter if IME enabled [#4125](https://github.com/aws/aws-toolkit-vscode/issues/4125), requires shift+enter while IME enabled
+
+## 2.14.0 2024-03-08
+
+- **Feature** Amazon Q Feature Dev (/dev): Ask Q to generate code based on the suggested plan
+
+## 2.13.0 2024-03-07
+
+- **Bug Fix** fix(CodeTransform): Updating commands for copying dependencies
+- **Bug Fix** "Failed to access settings" error when restarting multiple vscode instances
+- **Bug Fix** Amazon Q: Fix code snippet borders, action button border radius, text alignment and overlay UI issues
+
 ## 2.12.0 2024-02-29
 
 - **Bug Fix** Amazon Q: Static analysis of document symbols used as context in Amazon Q requests must filter tree-sitter "extra" CST nodes (comments) in order to avoid crashes which freeze the chat panel

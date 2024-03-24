@@ -51,6 +51,10 @@ interface Settings {
     }
 }
 
+/**
+ * Starts the ASL LSP client/server and creates related resources (vscode `OutputChannel`,
+ * `registerDocumentRangeFormattingEditProvider`, …).
+ */
 export async function activate(extensionContext: ExtensionContext) {
     const config = new StepFunctionsSettings()
     const toDispose = extensionContext.subscriptions
@@ -101,7 +105,7 @@ export async function activate(extensionContext: ExtensionContext) {
     // Create the language client and start the client.
     const client = new LanguageClient(
         'asl',
-        localize('asl.server.name', 'Amazon States Language Server'),
+        localize('asl.server.name', 'AWS: Amazon States Language Server'),
         serverOptions,
         clientOptions
     )

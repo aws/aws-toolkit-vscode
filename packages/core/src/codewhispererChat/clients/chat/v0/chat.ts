@@ -6,11 +6,10 @@
 import { GenerateAssistantResponseCommandOutput, GenerateAssistantResponseRequest } from '@amzn/codewhisperer-streaming'
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
-import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
+import { createCodeWhispererChatStreamingClient } from '../../../../shared/clients/codewhispererChatClient'
 
 export class ChatSession {
     private sessionId?: string
-    private featureDevClient: FeatureDevClient
 
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
@@ -19,7 +18,6 @@ export class ChatSession {
     public tokenSource!: vscode.CancellationTokenSource
 
     constructor() {
-        this.featureDevClient = new FeatureDevClient()
         this.createNewTokenSource()
     }
 
@@ -32,7 +30,7 @@ export class ChatSession {
     }
 
     async chat(chatRequest: GenerateAssistantResponseRequest): Promise<GenerateAssistantResponseCommandOutput> {
-        const client = await this.featureDevClient.getStreamingClient()
+        const client = await createCodeWhispererChatStreamingClient()
 
         if (this.sessionId !== undefined && chatRequest.conversationState !== undefined) {
             chatRequest.conversationState.conversationId = this.sessionId

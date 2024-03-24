@@ -6,7 +6,10 @@
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
-// Moves all dependencies into `dist`
+// Copies various dependencies into "dist/".
+//
+// Options:
+//  `--vueHr`: controls whether files are copied from "node_modules/aws-core-vscode/dist/vuehr/" (Vue Hot Reload) or "…/vue/"
 
 const projectRoot = process.cwd()
 const outRoot = path.join(projectRoot, 'dist')
@@ -82,7 +85,7 @@ const tasks: CopyTask[] = [
         destination: path.join('libs', 'vue.min.js'),
     },
     {
-        target: path.join('../../node_modules', 'aws-core-vscode', 'dist', vueHr ? 'vuehr' : 'vue'),
+        target: path.join('../../node_modules/aws-core-vscode/dist', vueHr ? 'vuehr' : 'vue'),
         destination: 'vue/',
     },
 

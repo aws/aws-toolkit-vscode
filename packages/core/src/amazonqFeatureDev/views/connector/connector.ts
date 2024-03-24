@@ -5,9 +5,11 @@
 
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
-import { featureDevChat } from '../../constants'
+import { CodeReference } from '../../../amazonq/webview/ui/connector'
+import { featureDevChat, licenseText } from '../../constants'
 import { ChatItemType } from '../../models'
 import { ChatItemAction, SourceLink } from '@aws/mynah-ui'
+import { DeletedFileInfo, NewFileInfo } from '../../types'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -29,6 +31,43 @@ export class ErrorMessage extends UiMessage {
     }
 }
 
+export class CodeResultMessage extends UiMessage {
+    readonly message!: string
+    readonly references!: {
+        information: string
+        recommendationContentSpan: {
+            start: number
+            end: number
+        }
+    }[]
+    readonly conversationID!: string
+    override type = 'codeResultMessage'
+
+    constructor(
+        readonly filePaths: NewFileInfo[],
+        readonly deletedFiles: DeletedFileInfo[],
+        references: CodeReference[],
+        tabID: string,
+        conversationID: string
+    ) {
+        super(tabID)
+        this.references = references
+            .filter(ref => ref.licenseName && ref.repository && ref.url)
+            .map(ref => {
+                return {
+                    information: licenseText(ref),
+
+                    // We're forced to provide these otherwise mynah ui errors somewhere down the line. Though they aren't used
+                    recommendationContentSpan: {
+                        start: 0,
+                        end: 0,
+                    },
+                }
+            })
+        this.conversationID = conversationID
+    }
+}
+
 export class AsyncEventProgressMessage extends UiMessage {
     readonly inProgress: boolean
     readonly message: string | undefined
@@ -38,6 +77,17 @@ export class AsyncEventProgressMessage extends UiMessage {
         super(tabID)
         this.inProgress = inProgress
         this.message = message
+    }
+}
+export class FileComponent extends UiMessage {
+    readonly filePaths: NewFileInfo[]
+    readonly deletedFiles: DeletedFileInfo[]
+    override type = 'updateFileComponent'
+
+    constructor(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
+        super(tabID)
+        this.filePaths = filePaths
+        this.deletedFiles = deletedFiles
     }
 }
 
@@ -130,6 +180,10 @@ export class AppToWebViewMessageDispatcher {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
+    public sendCodeResult(message: CodeResultMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
     public sendAsyncEventProgress(message: AsyncEventProgressMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
@@ -151,6 +205,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendOpenNewTask(message: OpenNewTabMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public updateFileComponent(message: any) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

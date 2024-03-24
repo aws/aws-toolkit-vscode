@@ -22,6 +22,7 @@ import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/asl
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { PerfLog } from '../shared/logger/logger'
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -33,9 +34,21 @@ export async function activate(
 ): Promise<void> {
     globals.visualizationResourcePaths = initalizeWebviewPaths(extensionContext)
 
-    setImmediate(() => activateASL(extensionContext))
     await registerStepFunctionCommands(extensionContext, awsContext, outputChannel)
     initializeCodeLens(extensionContext)
+
+    let onDidOpenAslDoc: vscode.Disposable // eslint-disable-line prefer-const
+    // PERFORMANCE: Start the LSP client/server _only_ when the first ASL document is opened.
+    // eslint-disable-next-line prefer-const
+    onDidOpenAslDoc = vscode.window.onDidChangeActiveTextEditor(async e => {
+        if (e?.document && ASL_FORMATS.includes(e.document.languageId)) {
+            const perflog = new PerfLog('stepFunctions: start LSP client/server')
+            await activateASL(extensionContext)
+            perflog.done()
+            onDidOpenAslDoc?.dispose() // Handler should only run once.
+        }
+    }, undefined)
+    extensionContext.subscriptions.push(onDidOpenAslDoc)
 }
 
 /*
