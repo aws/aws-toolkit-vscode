@@ -179,7 +179,7 @@ export class Messenger {
 
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
-                inProgress: true,
+                inProgress: false,
                 message,
             })
         )
