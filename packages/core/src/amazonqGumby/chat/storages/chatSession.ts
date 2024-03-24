@@ -4,35 +4,51 @@
  *
  */
 
-import { Messenger } from '../controller/messenger/messenger'
 import { Session } from '../session/session'
 
-export class ChatSessionStorage {
-    private sessions: Map<string, Session> = new Map()
+export class SessionNotFoundError extends Error {}
 
-    constructor(private readonly messenger: Messenger) {}
+export class ChatSessionManager {
+    private static _instance: ChatSessionManager
+    private activeSession: Session | undefined
 
-    private async createSession(tabID: string): Promise<Session> {
-        const session = new Session(this.messenger, tabID)
-        this.sessions.set(tabID, session)
-        return session
+    constructor() {}
+
+    public static get Instance() {
+        return this._instance || (this._instance = new this())
     }
 
-    public async getSession(tabID: string): Promise<Session> {
-        const currentSession = this.sessions.get(tabID)
-        if (currentSession === undefined) {
-            // If a session doesn't already exist just create it
-            return this.createSession(tabID)
+    private createSession(): Session {
+        this.activeSession = new Session()
+        return this.activeSession
+    }
+
+    public getSession(): Session {
+        if (this.activeSession === undefined) {
+            return this.createSession()
         }
-        return currentSession
+
+        return this.activeSession
     }
 
-    // Find all sessions that are currently waiting to be authenticated
-    public getAuthenticatingSessions(): Session[] {
-        return Array.from(this.sessions.values()).filter(session => session.isAuthenticating)
+    public setActiveTab(tabID: string): string {
+        if (this.activeSession !== undefined) {
+            if (!this.activeSession.isTabOpen()) {
+                this.activeSession.tabID = tabID
+                return tabID
+            }
+            return this.activeSession.tabID!
+        }
+
+        throw new SessionNotFoundError()
     }
 
-    public deleteSession(tabID: string) {
-        this.sessions.delete(tabID)
+    public removeActiveTab(): void {
+        if (this.activeSession !== undefined) {
+            if (this.activeSession.isTabOpen()) {
+                this.activeSession.tabID = undefined
+                return
+            }
+        }
     }
 }

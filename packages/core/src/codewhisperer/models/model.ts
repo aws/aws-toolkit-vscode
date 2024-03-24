@@ -301,8 +301,6 @@ export class TransformByQState {
 
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
 
-    private gumbyChatTabID: string | undefined = undefined
-
     private dependencyFolderInfo: FolderInfo | undefined = undefined
 
     public isNotStarted() {
@@ -401,10 +399,6 @@ export class TransformByQState {
         return this.chatControllers
     }
 
-    public getGumbyChatTabID(): string | undefined {
-        return this.gumbyChatTabID
-    }
-
     public getDependencyFolderInfo(): FolderInfo | undefined {
         return this.dependencyFolderInfo
     }
@@ -499,10 +493,6 @@ export class TransformByQState {
 
     public setChatControllers(controllers: ChatControllerEventEmitters) {
         this.chatControllers = controllers
-    }
-
-    public setGumbyChatTabID(tabID: string | undefined) {
-        this.gumbyChatTabID = tabID
     }
 
     public setDependencyFolderInfo(folderInfo: FolderInfo) {

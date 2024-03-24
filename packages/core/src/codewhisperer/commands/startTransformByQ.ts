@@ -48,6 +48,7 @@ import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
+import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -300,7 +301,7 @@ export async function finalizeTransformationJob(status: string) {
 
     transformByQState.getChatControllers()?.transformationFinished.fire({
         jobStatus: status,
-        tabID: transformByQState.getGumbyChatTabID(),
+        tabID: ChatSessionManager.Instance.getSession().tabID,
     })
     sessionPlanProgress['returnCode'] = StepProgress.Succeeded
 }

@@ -8,7 +8,7 @@
 
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
 import { AuthController } from '../../../amazonq/auth/controller'
-import { ChatSessionStorage } from '../storages/chatSession'
+import { ChatSessionManager } from '../storages/chatSession'
 import * as vscode from 'vscode'
 import { Session } from '../session/session'
 import { getLogger } from '../../../shared/logger'
@@ -44,17 +44,16 @@ export interface ChatControllerEventEmitters {
 
 export class GumbyController {
     private readonly messenger: Messenger
-    private readonly sessionStorage: ChatSessionStorage
+    private readonly sessionStorage: ChatSessionManager
     private authController: AuthController
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
-        sessionStorage: ChatSessionStorage,
         onDidChangeAmazonQVisibility: vscode.Event<boolean>
     ) {
         this.messenger = messenger
-        this.sessionStorage = sessionStorage
+        this.sessionStorage = ChatSessionManager.Instance
         this.authController = new AuthController()
 
         this.chatControllerMessageListeners.transformSelected.event(data => {
@@ -91,14 +90,16 @@ export class GumbyController {
     }
 
     private async tabOpened(message: any) {
-        let session: Session | undefined
+        const session: Session = this.sessionStorage.getSession()
+        const tabID = this.sessionStorage.setActiveTab(message.tabID)
+
+        // check if authentication has expired
         try {
-            session = await this.sessionStorage.getSession(message.tabID)
             getLogger().debug(`${featureName}: Session created with id: ${session.tabID}`)
 
             const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
-                void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                void this.messenger.sendAuthNeededExceptionMessage(authState, tabID)
                 session.isAuthenticating = true
                 return
             }
@@ -108,8 +109,7 @@ export class GumbyController {
     }
 
     private async tabClosed(data: any) {
-        transformByQState.setGumbyChatTabID(undefined)
-        // session?
+        this.sessionStorage.removeActiveTab()
     }
 
     private authClicked(message: any) {
@@ -130,8 +130,6 @@ export class GumbyController {
     }
 
     private async transformInitiated(message: any) {
-        transformByQState.setGumbyChatTabID(message.tabID)
-
         // check that a project is open
         const workspaceFolders = vscode.workspace.workspaceFolders
         if (workspaceFolders === undefined || workspaceFolders.length === 0) {
@@ -140,14 +138,11 @@ export class GumbyController {
         }
 
         // check that the session is authenticated
-        let session
+        const session: Session = this.sessionStorage.getSession()
         try {
-            //todo[gumby]: set tabID in sesion
-            session = await this.sessionStorage.getSession(message.tabID)
-
             const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
-                await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
                 return
             }
@@ -169,6 +164,7 @@ export class GumbyController {
             // start /transform chat flow
             const validProjects = await this.validateProjectsWithReplyOnError(message)
             if (validProjects.length > 0) {
+                this.sessionStorage.getSession().updateCandidateProjects(validProjects)
                 await this.messenger.sendProjectPrompt(validProjects, message.tabID)
             }
         } catch (err: any) {
@@ -197,7 +193,7 @@ export class GumbyController {
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, message.action as any)
         switch (typedAction) {
             case ButtonActions.CONFIRM_TRANSFORMATION_FORM:
-                await this.initiateTransformationOnModule(message)
+                await this.initiateTransformationOnProject(message)
                 break
             case ButtonActions.CANCEL_TRANSFORMATION_FORM:
                 this.messenger.sendJobFinishedMessage(message.tabId, true, undefined)
@@ -219,10 +215,17 @@ export class GumbyController {
 
     // Any given project could have multiple candidate modules to transform --
     // The user gets prompted to pick a specific one
-    private async initiateTransformationOnModule(message: any) {
+    private async initiateTransformationOnProject(message: any) {
         const pathToModule: string = message.formSelectedValues['GumbyTransformModuleForm']
-        const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
         const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
+        let fromJDKVersion: JDKVersion | undefined = this.sessionStorage
+            .getSession()
+            .candidateProjects.get(pathToModule)?.JDKVersion
+
+        // If we couldn't detect the JDK version, set 8 as the default
+        if (fromJDKVersion === undefined) {
+            fromJDKVersion = JDKVersion.JDK8
+        }
 
         await processTransformFormInput(pathToModule, fromJDKVersion, toJDKVersion)
         await this.validateBuildWithPromptOnError(message)
@@ -299,7 +302,7 @@ export class GumbyController {
                 tabID: data.tabID,
             })
         } else {
-            this.messenger.sendErrorMessage("I'm sorry, I could not find ... java ... something", data.tabID)
+            this.messenger.sendErrorMessage("I'm sorry, I could not locate your Java installation.", data.tabID)
             this.messenger.sendJobFinishedMessage(data.tabID, true, undefined)
         }
     }

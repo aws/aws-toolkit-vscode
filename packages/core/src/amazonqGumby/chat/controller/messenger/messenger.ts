@@ -100,25 +100,12 @@ export class Messenger {
     }
 
     public async sendProjectPrompt(modules: TransformationCandidateProject[], tabID: string) {
-        const moduleFormOptions: { value: string; label: string }[] = []
-        const uniqueJavaOptions = new Set<JDKVersion>()
+        const moduleFormOptions: { value: any; label: string }[] = []
 
         modules.forEach(candidateModule => {
             moduleFormOptions.push({
                 value: candidateModule.path,
                 label: candidateModule.name,
-            })
-
-            if (candidateModule.JDKVersion !== undefined) {
-                uniqueJavaOptions.add(candidateModule.JDKVersion)
-            }
-        })
-
-        const jdkFormOptions: { value: string; label: string }[] = []
-        uniqueJavaOptions.forEach(jdkVersion => {
-            jdkFormOptions.push({
-                value: jdkVersion,
-                label: jdkVersion.toString(),
             })
         })
 
@@ -129,14 +116,6 @@ export class Messenger {
             title: 'Choose a module to transform',
             mandatory: true,
             options: moduleFormOptions,
-        })
-
-        formItems.push({
-            id: 'GumbyTransformJdkFromForm',
-            type: 'select',
-            title: 'Choose the source code version',
-            mandatory: true,
-            options: jdkFormOptions,
         })
 
         formItems.push({
@@ -155,14 +134,7 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: `I can upgrade your Java ${jdkFormOptions[0].label} project. To start the transformation, I need some information from you. Choose the module you want to upgrade and the target code version to upgrade to, and then choose Transform. It can take 10-30 minutes to upgrade your code, depending on the size of your module.`,
-            })
-        )
-
-        this.dispatcher.sendAsyncEventProgress(
-            new AsyncEventProgressMessage(tabID, {
-                inProgress: false,
-                message: undefined,
+                message: `I can upgrade your Java ${modules[0].JDKVersion} project. To start the transformation, I need some information from you. Choose the module you want to upgrade and the target code version to upgrade to, and then choose Transform. It can take 10-30 minutes to upgrade your code, depending on the size of your module.`,
             })
         )
 
@@ -174,27 +146,6 @@ export class Messenger {
                 },
                 `TransformForm`,
                 tabID
-            )
-        )
-    }
-
-    sendTextInputPrompt(prompt: string, formID: string, tabID: string) {
-        const formItems: ChatItemFormItem[] = []
-        formItems.push({
-            id: `${formID}Input`,
-            type: 'textinput',
-            mandatory: true,
-        })
-
-        this.dispatcher.sendChatPrompt(
-            new ChatPrompt(
-                {
-                    message: prompt,
-                    formItems: formItems,
-                },
-                formID,
-                tabID,
-                false
             )
         )
     }
