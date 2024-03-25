@@ -139,7 +139,7 @@ export class Auth implements AuthService, ConnectionManager {
         private readonly store: ProfileStore,
         private readonly iamProfileProvider = CredentialsProviderManager.getInstance(),
         private readonly createSsoClient = SsoClient.create.bind(SsoClient),
-        private readonly createTokenProvider = createFactoryFunction(SsoAccessTokenProvider)
+        private readonly createSsoTokenProvider = createFactoryFunction(SsoAccessTokenProvider)
     ) {}
 
     #activeConnection: Mutable<StatefulConnection> | undefined
@@ -169,7 +169,7 @@ export class Auth implements AuthService, ConnectionManager {
     public async reauthenticate({ id }: Pick<Connection, 'id'>): Promise<Connection> {
         const profile = this.store.getProfileOrThrow(id)
         if (profile.type === 'sso') {
-            const provider = this.getTokenProvider(id, profile)
+            const provider = this.getSsoTokenProvider(id, profile)
             await this.authenticate(id, () => provider.createToken())
 
             return this.getSsoConnection(id, profile)
@@ -253,7 +253,7 @@ export class Auth implements AuthService, ConnectionManager {
                             this.store,
                             id,
                             profile,
-                            this.createSsoClient(profile.ssoRegion, this.getTokenProvider(id, profile))
+                            this.createSsoClient(profile.ssoRegion, this.getSsoTokenProvider(id, profile))
                         )
                     )
                         .catch(err => {
@@ -276,7 +276,7 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         const id = uuid.v4()
-        const tokenProvider = this.getTokenProvider(id, {
+        const tokenProvider = this.getSsoTokenProvider(id, {
             ...profile,
             metadata: { connectionState: 'unauthenticated' },
         })
@@ -344,7 +344,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile.type === 'iam') {
             throw new ToolkitError('Auth: Cannot force expire an IAM connection')
         }
-        const provider = this.getTokenProvider(conn.id, profile)
+        const provider = this.getSsoTokenProvider(conn.id, profile)
         await provider.invalidate()
         // updates the state of the connection
         await this.validateConnection(conn.id, profile)
@@ -460,7 +460,7 @@ export class Auth implements AuthService, ConnectionManager {
         const profile = this.store.getProfileOrThrow(id)
 
         if (profile.type === 'sso') {
-            const provider = this.getTokenProvider(id, profile)
+            const provider = this.getSsoTokenProvider(id, profile)
             const client = this.createSsoClient(profile.ssoRegion, provider)
 
             if (opt?.skipGlobalLogout !== true) {
@@ -506,7 +506,7 @@ export class Auth implements AuthService, ConnectionManager {
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
         const runCheck = async () => {
             if (profile.type === 'sso') {
-                const provider = this.getTokenProvider(id, profile)
+                const provider = this.getSsoTokenProvider(id, profile)
                 if ((await provider.getToken()) === undefined) {
                     getLogger().info(`auth: Connection is not valid: ${id} `)
                     return this.updateConnectionState(id, 'invalid')
@@ -582,7 +582,7 @@ export class Auth implements AuthService, ConnectionManager {
             throw new Error(`Source profile for "${id}" is not an SSO profile`)
         }
 
-        const tokenProvider = this.getTokenProvider(profile.ssoSession, sourceProfile)
+        const tokenProvider = this.getSsoTokenProvider(profile.ssoSession, sourceProfile)
         const credentialsProvider = new SsoCredentialsProvider(
             fromString(id),
             this.createSsoClient(sourceProfile.ssoRegion, tokenProvider),
@@ -633,7 +633,7 @@ export class Auth implements AuthService, ConnectionManager {
             : [identifier, createSsoProfile(region, startUrl, scopesCodeCatalyst)]
     }
 
-    private getTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
+    private getSsoTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
         // XXX: Use the token created by Dev Environments if and only if the profile is strictly
         // for CodeCatalyst, as indicated by its set of scopes. A consequence of these semantics is
         // that any profile will be coerced to use this token if that profile exclusively contains
@@ -645,7 +645,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         const tokenIdentifier = shouldUseSoftwareStatement ? this.detectSsoSessionNameForCodeCatalyst() : id
 
-        return this.createTokenProvider(
+        return this.createSsoTokenProvider(
             {
                 identifier: tokenIdentifier,
                 startUrl: profile.startUrl,
@@ -674,7 +674,7 @@ export class Auth implements AuthService, ConnectionManager {
         id: Connection['id'],
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
-        const provider = this.getTokenProvider(id, profile)
+        const provider = this.getSsoTokenProvider(id, profile)
 
         return {
             id,
