@@ -42,35 +42,6 @@ const tasks: CopyTask[] = [
 
     { target: path.join('../core', 'resources'), destination: path.join('..', 'resources') },
     { target: path.join('../core', 'package.nls.json'), destination: path.join('..', 'package.nls.json') },
-    { target: path.join('../core', 'src', 'templates'), destination: path.join('src', 'templates') },
-
-    // SSM
-    {
-        target: path.join('../../node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js'),
-        destination: path.join('src', 'ssmDocument', 'ssm', 'ssmServer.js'),
-    },
-    {
-        target: path.join('../../node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js.LICENSE.txt'),
-        destination: path.join('src', 'ssmDocument', 'ssm', 'ssmServer.js.LICENSE.txt'),
-    },
-    {
-        target: path.join('../../node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js.map'),
-        destination: path.join('src', 'ssmDocument', 'ssm', 'server.js.map'),
-    },
-
-    // ASL
-    {
-        target: path.join(
-            '../../node_modules',
-            'aws-core-vscode',
-            'dist',
-            'src',
-            'stepFunctions',
-            'asl',
-            'aslServer.js'
-        ),
-        destination: path.join('src', 'stepFunctions', 'asl', 'aslServer.js'),
-    },
 
     // Vue
     {
