@@ -52,14 +52,15 @@ import {
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
-import { getArtifactIdentifiers } from '../service/transformByQHumanInTheLoopHandler'
-import { downloadResultArchive } from '../service/amazonQGumby/transformByQApiHandler'
+import { downloadResultArchive, getTransformationStepsFixture } from '../service/amazonQGumby/transformByQApiHandler'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import {
     createPomCopy,
+    getArtifactIdentifiers,
     getJsonValuesFromManifestFile,
     replacePomVersion,
+    runMavenDependencyUpdateCommands,
 } from '../service/amazonQGumby/humanInTheLoopHandler'
 
 const localize = nls.loadMessageBundle()
@@ -191,6 +192,15 @@ export async function startTransformByQ() {
     let intervalId = undefined
     // Set the default state variables for our store and the UI
     await setTransformationToRunningState()
+
+    await completeHumanInTheLoopWork('fake-job-id', 0)
+    await postTransformationJob()
+    await cleanupTransformationJob(intervalId)
+
+    const quickExit = true
+    if (quickExit) {
+        return
+    }
 
     try {
         // Set web view UI to poll for progress
@@ -340,9 +350,12 @@ export async function pollTransformationStatusUntilComplete(jobId: string, userI
 }
 
 export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCount: number) {
+    console.log('Entering completeHumanInTheLoopWork', jobId, userInputRetryCount)
+    const tmpDependencyListDir = os.tmpdir()
+    const pomReplacementDelimiter = '*****'
     try {
         // 1) We need to call GetTransformationPlan to get artifactId
-        const transformationSteps = await getTransformationSteps(jobId, false)
+        const transformationSteps = await getTransformationStepsFixture(jobId)
         const { artifactId, artifactType } = getArtifactIdentifiers(transformationSteps)
 
         // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
@@ -354,16 +367,26 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
 
         // 3) We need to replace version in pom.xml
         const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
-        const newPomFileVirtualFileReference = await createPomCopy(pomFileVirtualFileReference, 'pom-primary.xml')
-        await replacePomVersion(newPomFileVirtualFileReference, manifestFileValues)
+        const newPomFileVirtualFileReference = await createPomCopy(
+            tmpDependencyListDir,
+            pomFileVirtualFileReference,
+            'pom-primary.xml'
+        )
+        await replacePomVersion(
+            newPomFileVirtualFileReference,
+            manifestFileValues.sourcePomVersion,
+            pomReplacementDelimiter
+        )
 
         // 4) We need to run maven commands on that pom.xml to get available versions
-        // runMavenDependencyUpdateCommands()
+        const dependencyListMavenOutput = runMavenDependencyUpdateCommands(newPomFileVirtualFileReference.fsPath)
+        console.log('Dependency list maven output', dependencyListMavenOutput)
 
         // 5) We need to wait for user input
 
         // 6) We need to add user input to that pom.xml, original pom.xml is intact somewhere, and run maven compile
         const userInputPomFileVirtualFileReference = await createPomCopy(
+            tmpDependencyListDir,
             pomFileVirtualFileReference,
             'pom-user-input.xml'
         )
@@ -374,9 +397,12 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function
     } finally {
-        // 1) Always delete items off disk manifest.json and pom.xml
-        // 2) Always delete Temporary pom created with new version
-        // 3) Always delete the user generated input pom AFTER upload?
+        // 1) TODO Always delete items off disk manifest.json and pom.xml
+
+        // Always delete the dependency output
+        console.log('Deleting temporary dependency output', tmpDependencyListDir)
+        fs.rmSync(tmpDependencyListDir, { recursive: true })
+        transformByQState.set
     }
 }
 

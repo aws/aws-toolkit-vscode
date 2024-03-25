@@ -5,36 +5,10 @@
 import * as vscode from 'vscode'
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
-import { FolderInfo } from '../transformByQHandler'
 import { transformByQState } from '../../models/model'
 import { spawnSync } from 'child_process'
-
-export async function createPomCopy(pomFileVirtualFileReference: vscode.Uri, fileName: string): Promise<vscode.Uri> {
-    try {
-        const pomFileContents = readFileSync(pomFileVirtualFileReference.fsPath)
-        const newlyGeneratedTmpPath = path.join(pomFileVirtualFileReference.fsPath, fileName)
-        writeFileSync(newlyGeneratedTmpPath, pomFileContents)
-        return vscode.Uri.file(newlyGeneratedTmpPath)
-    } catch (err) {
-        console.log('Error creating pom copy', err)
-        throw err
-    }
-}
-export async function replacePomVersion(pomFileVirtualFileReference: vscode.Uri, manifestFileValues: IManifestFile) {
-    const pomFile = await vscode.workspace.openTextDocument(pomFileVirtualFileReference)
-    const pomFileText = pomFile.getText()
-    const pomFileTextWithNewVersion = pomFileText.replace(
-        new RegExp(manifestFileValues.sourcePomVersion, 'g'),
-        manifestFileValues.hilType
-    )
-    const newPomFile = await vscode.workspace.openTextDocument({
-        language: 'xml',
-        content: pomFileTextWithNewVersion,
-    })
-    await vscode.window.showTextDocument(newPomFile)
-    await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-    await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-}
+import { TransformationStep } from '../../client/codewhispereruserclient'
+import * as CodeWhispererConstants from '../../models/constants'
 
 export interface IManifestFile {
     hilType: string
@@ -42,11 +16,53 @@ export interface IManifestFile {
     sourcePomVersion: string
 }
 
+export function getArtifactIdentifiers(transformationSteps: TransformationStep[]) {
+    console.log('In getArtifactIdentifiers', transformationSteps)
+    // const artifactType = transformationSteps[0]?.artifactType
+    // const artifactId = transformationSteps[0]?.artifactId
+    const artifactType = 'hil'
+    const artifactId = 'test-id'
+    return {
+        artifactId,
+        artifactType,
+    }
+}
+
+export async function createPomCopy(
+    dirname: string,
+    pomFileVirtualFileReference: vscode.Uri,
+    fileName: string
+): Promise<vscode.Uri> {
+    try {
+        const newFilePath = path.join(dirname, fileName)
+        const pomFileContents = readFileSync(pomFileVirtualFileReference.fsPath)
+        writeFileSync(newFilePath, pomFileContents)
+        return vscode.Uri.file(newFilePath)
+    } catch (err) {
+        console.log('Error creating pom copy', err)
+        throw err
+    }
+}
+
+export async function replacePomVersion(pomFileVirtualFileReference: vscode.Uri, version: string, delimiter: string) {
+    console.log('In replacePomVersion', pomFileVirtualFileReference, version, delimiter)
+    try {
+        const pomFileText = readFileSync(pomFileVirtualFileReference.fsPath, 'utf-8')
+        const pomFileTextWithNewVersion = pomFileText.replace(delimiter, version)
+        writeFileSync(pomFileVirtualFileReference.fsPath, pomFileTextWithNewVersion)
+        await vscode.window.showTextDocument(pomFileVirtualFileReference)
+    } catch (err) {
+        console.log('Error replacing pom version', err)
+        throw err
+    }
+}
+
 export async function getJsonValuesFromManifestFile(
     manifestFileVirtualFileReference: vscode.Uri
 ): Promise<IManifestFile> {
+    console.log('Inside getJsonValuesFromManifestFile', manifestFileVirtualFileReference)
     try {
-        const manifestFileContents = readFileSync(manifestFileVirtualFileReference.fsPath)
+        const manifestFileContents = readFileSync(manifestFileVirtualFileReference.fsPath, 'utf-8')
         const jsonValues = JSON.parse(manifestFileContents.toString())
         return {
             hilType: jsonValues?.hilType,
@@ -60,34 +76,40 @@ export async function getJsonValuesFromManifestFile(
 }
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
-function runMavenDependencyUpdateCommands(modulePath: string) {
-    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
-    const baseCommand = transformByQState.getMavenName()
+export function runMavenDependencyUpdateCommands(modulePath: string) {
+    console.log('In runMavenDependencyUpdateCommands', modulePath)
+    try {
+        // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+        const baseCommand = transformByQState.getMavenName()
 
-    transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
+        transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
-    // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
-    const args = [
-        `-DonlyProjectDependencies=true -DdependencyUpdatesReportFormats=xml`,
-        'versions:dependency-updates-aggregate-report',
-    ]
-    let environment = process.env
-    // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
-    if (transformByQState.getJavaHome() !== undefined) {
-        environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+        // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
+        const args = [
+            'versions:dependency-updates-aggregate-report',
+            `-DonlyProjectDependencies=true -DdependencyUpdatesReportFormats=xml`,
+        ]
+        let environment = process.env
+        // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
+        if (transformByQState.getJavaHome() !== undefined) {
+            environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+        }
+
+        const argString = args.join(' ')
+        const spawnResult = spawnSync(baseCommand, args, {
+            cwd: modulePath,
+            shell: true,
+            encoding: 'utf-8',
+            env: environment,
+            maxBuffer: CodeWhispererConstants.maxBufferSize,
+        })
+
+        console.log(`Post mvn versions command results ${baseCommand} ${argString}:`, spawnResult)
+        return spawnResult
+    } catch (err) {
+        console.log('Error in runMavenDependencyUpdateCommands', err)
+        throw err
     }
-
-    const argString = args.join(' ')
-    const spawnResult = spawnSync(baseCommand, args, {
-        cwd: modulePath,
-        shell: true,
-        encoding: 'utf-8',
-        env: environment,
-        // maxBuffer: CodeWhispererConstants.maxBufferSize,
-    })
-
-    console.log(`Post mvn versions command results ${baseCommand} ${argString}:`, spawnResult)
-
     // if (spawnResult.status !== 0) {
     //     let errorLog = ''
     //     const errorCode = getMavenErrorCode(args)
