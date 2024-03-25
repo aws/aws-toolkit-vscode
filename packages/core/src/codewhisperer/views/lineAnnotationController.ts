@@ -327,7 +327,7 @@ export class LineAnnotationController implements vscode.Disposable {
             return
         }
 
-        if (!this.container.auth.isConnectionValid()) {
+        if (!this.container.auth.isConnectionValid(true)) {
             this.clear()
             return
         }
