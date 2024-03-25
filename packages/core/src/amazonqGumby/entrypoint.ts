@@ -12,7 +12,6 @@ import { sleep } from '../shared/utilities/timeoutUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { MetadataResult } from '../shared/telemetry/telemetryClient'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
-import { StartActionPositions } from './telemetry/codeTransformTelemetry'
 
 export async function processTransformByQ() {
     if (!AuthUtil.instance.isValidCodeTransformationAuthUser()) {

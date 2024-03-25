@@ -410,7 +410,7 @@ export async function setTransformationToRunningState() {
         codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
-        codeTransformProjectId: '',
+        // codeTransformProjectId: '',
         result: MetadataResult.Pass,
     })
 
