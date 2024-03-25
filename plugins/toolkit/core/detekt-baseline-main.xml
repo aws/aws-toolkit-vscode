@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>SleepInsteadOfDelay:Waiter.kt$sleep(delay.toMillis())</ID>
     <ID>UseCheckOrError:LambdaRuntime.kt$LambdaRuntime$throw IllegalStateException("LambdaRuntime has no runtime or override string")</ID>
     <ID>UseCheckOrError:ToolkitRegionProvider.kt$ToolkitRegionProvider$throw IllegalStateException("$serviceId in ${region.partitionId} lacks a partitionEndpoint")</ID>
     <ID>UseCheckOrError:ToolkitRegionProvider.kt$ToolkitRegionProvider$throw IllegalStateException("$serviceId is not global in ${region.partitionId}")</ID>

@@ -2,13 +2,10 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>BannedImports:CawsConnectionProvider.kt$import com.intellij.ui.layout.panel</ID>
     <ID>ExpressionBodySyntax:PtyCliBasedStep.kt$PtyCliBasedStep.&lt;no name provided>$return object : BaseOutputReader.Options() { override fun policy(): BaseDataReader.SleepingPolicy { return BaseDataReader.SleepingPolicy.BLOCKING } override fun splitToLines(): Boolean { return false } }</ID>
     <ID>ExpressionBodySyntax:PtyCliBasedStep.kt$PtyCliBasedStep.&lt;no name provided>.&lt;no name provided>$return BaseDataReader.SleepingPolicy.BLOCKING</ID>
     <ID>ExpressionBodySyntax:PtyCliBasedStep.kt$PtyCliBasedStep.&lt;no name provided>.&lt;no name provided>$return false</ID>
     <ID>ForbiddenVoid:CawsLoadingPanel.kt$CawsLoadingPanel$Void</ID>
-    <ID>ImplicitDefaultLocale:Workspace.kt$Workspace$productCode.substringBefore("@sha").toUpperCase()</ID>
-    <ID>SleepInsteadOfDelay:WorkspaceActions.kt$WorkspaceActions$sleep(timeout.next())</ID>
     <ID>UnusedParameter:WorkspaceDetails.kt$e: AnActionEvent</ID>
     <ID>UnusedPrivateProperty:SshCommandLine.kt$SshCommandLine.Companion$private const val ADDITIONAL_OPTIONS = "sshAdditionalOptions"</ID>
     <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionParameters.Companion$throw IllegalStateException("Missing required parameter: CAWS environment id")</ID>

@@ -7,7 +7,6 @@ import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.extensions.PluginDescriptor
 import com.intellij.openapi.extensions.PluginId
-import com.intellij.openapi.util.registry.Registry
 import java.nio.file.Paths
 
 object AwsToolkit {
@@ -28,6 +27,4 @@ object AwsToolkit {
     } else {
         DESCRIPTOR?.pluginPath ?: throw RuntimeException("Toolkit root not available")
     }
-
-    fun isDeveloperMode() = Registry.`is`("aws.toolkit.developerMode", false)
 }

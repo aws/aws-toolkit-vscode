@@ -6,6 +6,10 @@
     <name>AWS Toolkit - Amazon Q, CodeWhisperer, and more</name>
     <version>1.0</version>
 
+    <content>
+        <module name="aws.toolkit.core"/>
+    </content>
+
     <description><![CDATA[
 <h3><a href="https://aws.amazon.com/q">Amazon Q (preview)</a></h3>
 <p>Amazon Q is an interactive, generative AI-powered assistant that gives you expert guidance when building, troubleshooting, and transforming applications on AWS.</p>
@@ -101,6 +105,8 @@
     <!-- 223.7571.182 is 2022.3 Stable -->
     <idea-version since-build="223.7571.182" until-build="224.*"/>
 
+    <!-- a 'resource-bundle' declaration under <idea-plugin> declares the global default for the entire plugin -->
+    <!-- use the 'resource-bundle' attribute in 'actions' tag if another bundle is needed -->
     <resource-bundle>software.aws.toolkits.resources.MessagesBundle</resource-bundle>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
@@ -121,6 +127,11 @@
     </xi:include>
 
     <xi:include href="/META-INF/remoteDev.xml">
+        <xi:fallback/>
+    </xi:include>
+
+    <!-- delete when fully split -->
+    <xi:include href="/META-INF/module-amazonq.xml">
         <xi:fallback/>
     </xi:include>
 
@@ -168,32 +179,11 @@
                   topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
         <listener class="software.aws.toolkits.jetbrains.services.dynamic.UpdateOnExperimentState"
                   topic="software.aws.toolkits.jetbrains.core.experiments.ToolkitExperimentStateChangedListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
-                  topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
-                  topic="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
-                  topic="software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
-                  topic="software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationListener"/>
         <listener class="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowListener"
                   topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
     </projectListeners>
 
-    <applicationListeners>
-        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererUIChangeListener"
-                  topic="software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupStateChangeListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceActionListener"
-                  topic="software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererUserActionListener"/>
-    </applicationListeners>
-
     <extensionPoints>
-        <extensionPoint name="startupAuthFactory" interface="software.aws.toolkits.jetbrains.core.credentials.ToolkitStartupAuthFactory" dynamic="true"/>
-        <extensionPoint name="connection.pinned.feature" interface="software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection"
-                        dynamic="true"/>
-
-        <extensionPoint name="credentialProviderFactory" interface="software.aws.toolkits.core.credentials.CredentialProviderFactory" dynamic="true"/>
-
         <extensionPoint name="lambda.runtimeGroup" interface="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup" dynamic="true"/>
 
         <extensionPoint name="lambda.builder" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
@@ -225,15 +215,11 @@
         <extensionPoint name="explorer.nodeProcessor" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNodeProcessor" dynamic="true"/>
         <extensionPoint name="explorer.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerTreeStructureProvider"
                         dynamic="true"/>
-        <extensionPoint name="sdk.clientCustomizer" interface="software.aws.toolkits.core.ToolkitClientCustomizer" dynamic="true"/>
         <extensionPoint name="experiment" interface="software.aws.toolkits.jetbrains.core.experiments.ToolkitExperiment" dynamic="true"/>
         <extensionPoint name="tool" interface="software.aws.toolkits.jetbrains.core.tools.ToolType" dynamic="true"/>
         <extensionPoint name="devTools.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.DevToolsServiceNode" dynamic="true"/>
         <extensionPoint name="devTools.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsTreeStructureProvider" dynamic="true"/>
         <extensionPoint name="cwq.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQTreeStructureProvider" dynamic="true"/>
-        <extensionPoint name="codewhisperer.programmingLanguage" interface="software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage" dynamic="true"/>
-        <extensionPoint name="codewhisperer.classResolver" interface="software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispererClassResolver" dynamic="true"/>
-        <extensionPoint name="codewhisperer.importAdder" interface="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererImportAdder" dynamic="true"/>
 
         <extensionPoint name="amazonq.appFactory" interface="software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppFactory" dynamic="true" />
     </extensionPoints>
@@ -241,24 +227,6 @@
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
-
-        <!-- Credential Management -->
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider"
-                            serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultRemoteResourceResolverProvider"/>
-        <applicationService serviceInterface="software.aws.toolkits.core.region.ToolkitRegionProvider"
-                            serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"
-                            testServiceImplementation="software.aws.toolkits.jetbrains.core.region.MockRegionProvider"/>
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.CredentialManager"
-                            serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialManager"
-                            testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager"/>
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher"
-                            serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.profiles.DefaultProfileWatcher"/>
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.AwsSettings"
-                            serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultAwsSettings"
-                            testServiceImplementation="software.aws.toolkits.jetbrains.settings.MockAwsSettings"/>
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.sso.SsoLoginCallbackProvider"
-                            serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.sso.DefaultSsoLoginCallbackProvider"
-                            testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.sso.MockSsoLoginCallbackProvider"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.EcsExecCommandSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamDisplayDevModeWarningSettings"/>
@@ -274,42 +242,20 @@
         <moduleService serviceImplementation="software.aws.toolkits.jetbrains.settings.SyncSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.UpdateLambdaState"/>
 
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings"/>
-
-        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager"
-                        serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultAwsConnectionManager"
-                        testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager"/>
-        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.CredentialsRegionHandler"
-                        serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialsRegionHandler"
-                        testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsRegionHandler"/>
-
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager"
-                            serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultToolkitAuthManager"/>
+        <!-- application-level ToolkitConnectionManager is gateway-only -->
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultToolkitConnectionManager"/>
-        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager"
-                        serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultToolkitConnectionManager"/>
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager"
-                            serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.pinning.DefaultConnectionPinningManager"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.CreateResourceFileStatusHandler"/>
 
         <statusBarWidgetFactory id="AwsSettingsPanel" implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
-        <statusBarWidgetFactory id="aws.codewhisperer"
-                                implementation="software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarWidgetFactory"/>
         <statusBarWidgetFactory id="CawsSpaceProjectInfo" implementation="software.aws.toolkits.jetbrains.services.caws.CawsStatusBarInstaller"/>
 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.executables.ExecutableLoader"/>
-        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupActivity"/>
-        <applicationService serviceInterface="software.aws.toolkits.core.clients.SdkClientProvider"
-                            serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSdkClient"/>
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.telemetry.TelemetryService"
-                            serviceImplementation="software.aws.toolkits.jetbrains.services.telemetry.DefaultTelemetryService"
-                            testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.NoOpTelemetryService"/>
+
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.executables.ExecutableManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
-
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.tools.ToolSettings"/>
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.tools.ToolManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.tools.DefaultToolManager"
@@ -317,12 +263,6 @@
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.plugins.ToolkitUpdateManager"/>
 
-        <applicationService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
-                            serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
-                            testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
-                            serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
-                            testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes"/>
 
@@ -336,35 +276,8 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindow" />
-
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererUserModificationTracker"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererLanguageManager"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererRecommendationManager"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupManager"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorManager"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.inlay.CodeWhispererInlayManager"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererLicenseInfoManager"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutoTriggerService"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings"/>
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator"
-            serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.customization.DefaultCodeWhispererModelConfigurator"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererFeatureConfigService"/>
-
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager"/>
-        <projectService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor"
-                        serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptorImpl"
-                        testServiceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.MockCodeWhispererClientAdaptor"/>
-        <projectService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider"
-                        serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.util.DefaultCodeWhispererFileContextProvider"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererManager"/>
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider"/>
@@ -383,11 +296,6 @@
 
         <toolWindow id="aws.sqs" anchor="bottom" doNotActivateOnStart="true" canCloseContents="true"
                     factoryClass="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindowFactory" icon="AwsIcons.Resources.Sqs.SQS_TOOL_WINDOW"/>
-
-        <toolWindow id="aws.codewhisperer.codereference" anchor="bottom" doNotActivateOnStart="true" canCloseContents="true"
-                    factoryClass="software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceToolWindowFactory"
-                    icon="AllIcons.Actions.Preview"/>
-
 
 
         <toolWindow id="amazon.q.window" anchor="right"
@@ -429,13 +337,6 @@
             key="executableCommon.configurable.title"
             instance="software.aws.toolkits.jetbrains.core.tools.ToolConfigurable"
         />
-        <projectConfigurable
-            parentId="aws"
-            id="aws.codewhisperer"
-            bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="aws.settings.codewhisperer.configurable.title"
-            instance="software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfigurable"
-        />
 
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner"/>
@@ -458,8 +359,6 @@
         <!-- Project Wizard components -->
         <directoryProjectGenerator implementation="software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGenerator"/>
         <projectTemplatesFactory implementation="software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGeneratorIntelliJAdapter"/>
-
-        <webHelpProvider implementation="software.aws.toolkits.jetbrains.core.help.HelpIdTranslator"/>
 
         <!-- S3 -->
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.s3.S3ViewerEditorProvider"/>
@@ -485,24 +384,11 @@
                                   implementation="software.aws.toolkits.jetbrains.services.federation.psireferences.ArnPsiReferenceContributor"/>
         <documentationProvider implementation="software.aws.toolkits.jetbrains.services.federation.psireferences.ArnReferenceDocumentationProvider"/>
 
-        <registryKey key="aws.telemetry.endpoint" description="Endpoint to use for publishing AWS client-side telemetry"
-                     defaultValue="https://client-telemetry.us-east-1.amazonaws.com" restartRequired="true"/>
-        <registryKey key="aws.telemetry.identityPool" description="Cognito identity pool to use for publishing AWS client-side telemetry"
-                     defaultValue="us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842" restartRequired="true"/>
-        <registryKey key="aws.telemetry.region" description="Region to use for publishing AWS client-side telemetry" defaultValue="us-east-1"
-                     restartRequired="true"/>
         <registryKey key="aws.credentialProcess.timeout" description="AWS Credential Process timeout (ms)" restartRequired="false" defaultValue="30000"/>
         <registryKey key="aws.debuggerAttach.timeout" description="Time allowed for debuggers to attach before timing out (ms)" restartRequired="false"
                      defaultValue="60000"/>
         <registryKey key="aws.codecatalyst.endpoint" description="API endpoint for the CodeCatalyst service" restartRequired="true" defaultValue=""/>
-        <registryKey key="aws.toolkit.developerMode" description="Enables features to facilitate development of the toolkit" restartRequired="false"
-                     defaultValue="false"/>
-        <typedHandler implementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererTypedHandler"/>
-        <editorFactoryListener implementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorListener"/>
-        <editorActionHandler action="EditorEnter" implementationClass="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEnterHandler"
-                             order="first, before editorEnter"/>
-        <actionPromoter order="last" implementation="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererActionPromoter"/>
-        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererEditorProvider"/>
+
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
@@ -511,7 +397,6 @@
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.metadataservice.InstanceRoleCredentialProviderFactory"/>
 
         <connection.pinned.feature implementation="software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection"/>
-        <connection.pinned.feature implementation="software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection"/>
         <connection.pinned.feature implementation="software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection"/>
 
         <!-- Executables -->
@@ -540,23 +425,16 @@
 
         <tool implementation="software.aws.toolkits.jetbrains.services.ssm.SsmPlugin"/>
 
-        <sdk.clientCustomizer implementation="software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererEndpointCustomizer"/>
         <sdk.clientCustomizer implementation="software.aws.toolkits.jetbrains.services.caws.CawsClientCustomizer"/>
     </extensions>
 
-    <extensions defaultExtensionNs="aws.toolkit.codewhisperer">
-        <!-- TODO: c/c++ extensions should live its own module instead of jetbrains-core -->
-        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererC"/>
-        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCpp"/>
-        <importAdder implementation="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererFallbackImportAdder"/>
-    </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit.amazonq">
         <appFactory implementation="software.aws.toolkits.jetbrains.services.cwc.AppFactory" />
         <appFactory implementation="software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevAppFactory" />
     </extensions>
 
-    <actions>
+    <actions resource-bundle="software.aws.toolkits.resources.MessagesBundle">
         <action id="aws.toolkit.open.telemetry.viewer" class="software.aws.toolkits.jetbrains.services.telemetry.OpenTelemetryAction"/>
         <action id="aws.settings.refresh" class="software.aws.toolkits.jetbrains.core.credentials.RefreshConnectionAction"/>
         <action id="aws.toolkit.showFeedback" class="software.aws.toolkits.jetbrains.ui.feedback.ShowFeedbackDialogAction"/>
@@ -751,14 +629,6 @@
                     class="software.aws.toolkits.jetbrains.services.sqs.actions.CreateQueueAction"/>
         </group>
 
-        <group id="aws.toolkit.explorer.codewhisperer" popup="true" compact="true">
-            <action id="codewhisperer.settings"
-                    class="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererShowSettingsAction"/>
-            <separator/>
-            <action id="codewhisperer.whatIs"
-                    class="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererWhatIsAction"/>
-        </group>
-
         <group id="aws.toolkit.explorer.sqs.queue" popup="true" compact="false">
             <action id="sqs.poll.message" class="software.aws.toolkits.jetbrains.services.sqs.actions.PollMessageAction"/>
             <action id="sqs.send.message" class="software.aws.toolkits.jetbrains.services.sqs.actions.SendMessageAction"/>
@@ -773,8 +643,6 @@
         </group>
 
         <action class="software.aws.toolkits.jetbrains.core.credentials.ConfigureAwsConnectionAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
-        <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials"
-                icon="AwsIcons.Logos.AWS"/>
 
         <action class="software.aws.toolkits.jetbrains.services.lambda.actions.SyncServerlessApplicationAction" id="serverless.sync.infra"/>
         <action class="software.aws.toolkits.jetbrains.services.lambda.actions.SyncServerlessAppAction" id="serverless.sync.app"/>
@@ -851,18 +719,6 @@
                         class="software.aws.toolkits.jetbrains.services.dynamodb.editor.actions.ConfigureMaxResultsAction"/>
             </group>
         </group>
-        <action class="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererRecommendationAction"
-                text="Show Code Suggestions">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt C"/>
-        </action>
-        <group id="aws.toolkit.codewhisperer.toolbar.security">
-            <action
-                id="codewhisperer.toolbar.security.scan"
-                class="software.aws.toolkits.jetbrains.services.codewhisperer.codescan.actions.CodeWhispererCodeScanRunAction"/>
-            <action
-                id="codewhisperer.toolbar.security.stopscan"
-                class="software.aws.toolkits.jetbrains.services.codewhisperer.codescan.actions.CodeWhispererStopCodeScanAction"/>
-        </group>
 
         <group id="aws.toolkit.q.idc.signed.in">
             <action
@@ -927,12 +783,6 @@
                 <keyboard-shortcut keymap="$default" first-keystroke="meta alt S" />
             </action>
         </group>
-
-        <group id="aws.toolkit.jetbrains.core.services.codewhisperer.suggestions"
-               class="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.QStatusBarLoggedInActionGroup" />
-
     </actions>
-
-
 
 </idea-plugin>

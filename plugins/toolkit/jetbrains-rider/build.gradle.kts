@@ -52,12 +52,11 @@ sourceSets {
 }
 
 dependencies {
-    compileOnly(project(":plugin-toolkit:jetbrains-core"))
-    runtimeOnly(project(":plugin-toolkit:jetbrains-core", "instrumentedJar"))
+    implementation(project(":plugin-toolkit:jetbrains-core"))
 
-    testCompileOnly(project(":plugin-toolkit:jetbrains-core"))
-    testRuntimeOnly(project(":plugin-toolkit:jetbrains-core", "instrumentedJar"))
+    testImplementation(project(":plugin-toolkit:jetbrains-core"))
     testImplementation(project(path = ":plugin-toolkit:jetbrains-core", configuration = "testArtifacts"))
+    testImplementation(testFixtures(project(":plugin-core:jetbrains-community")))
 }
 
 /**
@@ -252,7 +251,7 @@ fun getNugetPackagesPath(): File {
     val riderSdk = File(sdkPath, "lib/DotNetSdkForRdPlugins")
 
     println("NuGet packages: $riderSdk")
-    if (!riderSdk.isDirectory) throw IllegalStateException("$riderSdk does not exist or not a directory")
+    if (!riderSdk.isDirectory) error("$riderSdk does not exist or not a directory")
 
     return riderSdk
 }

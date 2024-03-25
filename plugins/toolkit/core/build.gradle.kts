@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 plugins {
+    id("java-library")
     id("toolkit-kotlin-conventions")
     id("toolkit-testing")
     id("toolkit-integration-testing")
@@ -9,9 +10,9 @@ plugins {
 
 dependencies {
     api(project(":plugin-toolkit:resources"))
-    compileOnly(project(":plugin-core:sdk-codegen"))
+    compileOnlyApi(project(":plugin-core:sdk-codegen"))
     // delete when fully split
-    implementation(project(":plugin-core:sdk-codegen"))
+    runtimeOnly(project(":plugin-core:sdk-codegen"))
 
     api(libs.aws.cognitoidentity)
     api(libs.aws.ecr)

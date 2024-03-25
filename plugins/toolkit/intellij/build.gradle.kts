@@ -72,8 +72,8 @@ tasks.test {
 }
 
 dependencies {
-    implementation(project(":plugin-toolkit:jetbrains-core", "instrumentedJar"))
-    implementation(project(":plugin-toolkit:jetbrains-ultimate", "instrumentedJar"))
+    implementation(project(":plugin-toolkit:jetbrains-core"))
+    implementation(project(":plugin-toolkit:jetbrains-ultimate"))
     project.findProject(":plugin-toolkit:jetbrains-gateway")?.let {
         // does this need to be the instrumented variant?
         implementation(it)
@@ -84,6 +84,11 @@ dependencies {
         implementation(it)
         resharperDlls(project(":plugin-toolkit:jetbrains-rider", configuration = "resharperDlls"))
     }
+
+    // delete when fully split
+    implementation(project(":plugin-amazonq", "moduleOnlyJars"))
+    implementation(project(":plugin-core:jetbrains-community"))
+    implementation(project(":plugin-core:jetbrains-ultimate"))
 }
 
 configurations {

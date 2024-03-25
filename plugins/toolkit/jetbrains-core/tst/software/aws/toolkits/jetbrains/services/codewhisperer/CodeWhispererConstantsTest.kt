@@ -17,7 +17,7 @@ class CodeWhispererConstantsTest {
     val application = ApplicationRule()
 
     @Test
-    fun `is codewishperer help uri has correct doc link`() {
+    fun `codewhisperer help uri has correct doc link`() {
         assertThat((HelpManager.getInstance() as HelpManagerImpl).getHelpUrl(HelpIds.CODEWHISPERER_LOGIN_YES_NO.id))
             .isEqualTo("https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/setup-credentials.html")
     }

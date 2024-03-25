@@ -69,7 +69,7 @@ if (idea.project != null) { // may be null during script compilation
             settings {
                 taskTriggers {
                     afterSync(":plugin-core:sdk-codegen:generateSdks")
-                    afterSync(":plugin-toolkit:jetbrains-core:generateTelemetry")
+                    afterSync(":plugin-core:jetbrains-community:generateTelemetry")
                 }
             }
         }

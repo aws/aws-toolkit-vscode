@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.io.FileUtil
-import software.aws.toolkits.jetbrains.core.utils.buildList
 import java.util.UUID
 
 interface ImageDebugSupport : SamDebugSupport {

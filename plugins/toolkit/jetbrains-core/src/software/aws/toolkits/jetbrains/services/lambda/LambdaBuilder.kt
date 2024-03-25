@@ -10,7 +10,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.rootManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.HandlerRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon

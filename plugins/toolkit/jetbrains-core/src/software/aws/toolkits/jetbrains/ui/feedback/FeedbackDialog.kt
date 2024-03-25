@@ -35,9 +35,9 @@ import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.help.HelpIds
+import software.aws.toolkits.jetbrains.feedback.sendFeedbackWithExperimentsMetadata
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.telemetry.ClientMetadata
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.FeedbackTelemetry
@@ -143,7 +143,7 @@ class FeedbackDialog(
                 val edtContext = getCoroutineUiContext()
                 try {
                     if (isCodeWhisperer()) {
-                        TelemetryService.getInstance().sendFeedback(
+                        sendFeedbackWithExperimentsMetadata(
                             sentiment,
                             "CodeWhisperer onboarding: $commentText",
                             mapOf(FEEDBACK_SOURCE to "CodeWhisperer onboarding")
@@ -151,13 +151,13 @@ class FeedbackDialog(
                     } else if (isAmazonQ()) {
                         val sessionState = CodeModernizerSessionState.getInstance(project)
                         val jobId: String = sessionState.currentJobId?.id ?: "None"
-                        TelemetryService.getInstance().sendFeedback(
+                        sendFeedbackWithExperimentsMetadata(
                             sentiment,
                             "Amazon Q onboarding: $commentText",
                             mapOf(FEEDBACK_SOURCE to "Amazon Q onboarding", "JobId" to jobId)
                         )
                     } else {
-                        TelemetryService.getInstance().sendFeedback(sentiment, commentText)
+                        sendFeedbackWithExperimentsMetadata(sentiment, commentText)
                     }
                     withContext(edtContext) {
                         close(OK_EXIT_CODE)

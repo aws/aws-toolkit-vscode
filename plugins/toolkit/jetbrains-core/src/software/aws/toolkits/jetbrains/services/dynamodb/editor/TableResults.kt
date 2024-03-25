@@ -11,7 +11,6 @@ import com.intellij.ui.table.JBTable
 import com.intellij.util.containers.BidirectionalMap
 import com.intellij.util.containers.Convertor
 import com.intellij.util.ui.StatusText
-import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.dynamodb.DynamoAttribute
 import software.aws.toolkits.jetbrains.services.dynamodb.Index
 import software.aws.toolkits.jetbrains.services.dynamodb.SearchResults

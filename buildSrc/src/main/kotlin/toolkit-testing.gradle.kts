@@ -5,6 +5,7 @@ import software.aws.toolkits.gradle.ciOnly
 
 plugins {
     id("java") // Needed for referencing "implementation" configuration
+    id("java-test-fixtures")
     id("jacoco")
     id("org.gradle.test-retry")
     id("com.adarshr.test-logger")
@@ -13,15 +14,23 @@ plugins {
 // TODO: https://github.com/gradle/gradle/issues/15383
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 dependencies {
-    testImplementation(versionCatalog.findBundle("mockito").get())
-    testImplementation(versionCatalog.findLibrary("assertj").get())
+    testFixturesApi(versionCatalog.findBundle("mockito").get())
+    testFixturesApi(versionCatalog.findLibrary("assertj").get())
 
     // Everything uses junit4/5 except rider, which uses TestNG
-    testImplementation(platform(versionCatalog.findLibrary("junit5-bom").get()))
-    testImplementation(versionCatalog.findLibrary("junit5-jupiterApi").get())
+    testFixturesApi(platform(versionCatalog.findLibrary("junit5-bom").get()))
+    testFixturesApi(versionCatalog.findLibrary("junit5-jupiterApi").get())
 
     testRuntimeOnly(versionCatalog.findLibrary("junit5-jupiterEngine").get())
     testRuntimeOnly(versionCatalog.findLibrary("junit5-jupiterVintage").get())
+}
+
+sourceSets {
+    testFixtures {
+        java.setSrcDirs(
+            listOf("tstFixtures")
+        )
+    }
 }
 
 jacoco {

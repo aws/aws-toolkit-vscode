@@ -10,7 +10,7 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.gridLayout.HorizontalAlign
 import com.intellij.ui.dsl.gridLayout.VerticalAlign
 import com.intellij.ui.jcef.JBCefApp
-import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.amazonq.webview.Browser
 import java.awt.event.ActionListener
 import javax.swing.JButton
@@ -30,7 +30,7 @@ class AmazonQPanel(
         }.resizableRow()
 
         // Button to show the web debugger for debugging the UI:
-        if (AwsToolkit.isDeveloperMode()) {
+        if (isDeveloperMode()) {
             row {
                 cell(
                     JButton("Show Web Debugger").apply {

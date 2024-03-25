@@ -1,5 +1,6 @@
 [versions]
-apacheCommons = "2.8.0"
+apache-commons-collections = "4.4"
+apache-commons-io = "2.8.0"
 assertJ = "3.20.2" # Upgrading leads to SAM errors: https://youtrack.jetbrains.com/issue/KT-17765
 # match with <root>/settings.gradle.kts
 awsSdk = "2.20.111"
@@ -64,7 +65,8 @@ aws-sso = { module = "software.amazon.awssdk:sso", version.ref = "awsSdk" }
 aws-ssooidc = { module = "software.amazon.awssdk:ssooidc", version.ref = "awsSdk" }
 aws-sts = { module = "software.amazon.awssdk:sts", version.ref = "awsSdk" }
 commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
-commons-io = { module = "commons-io:commons-io", version.ref = "apacheCommons" }
+commons-collections = { module = "org.apache.commons:commons-collections4", version.ref = "apache-commons-collections" }
+commons-io = { module = "commons-io:commons-io", version.ref = "apache-commons-io" }
 detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
 detekt-formattingRules = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }

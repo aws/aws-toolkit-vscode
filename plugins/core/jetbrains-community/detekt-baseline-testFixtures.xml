@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>NoNameShadowing:MockAwsConnectionManager.kt${ manager.changeCredentialProviderAndWait(it) }</ID>
+    <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$ClearableLazy$_value!!</ID>
+    <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$PsiManager.getInstance(project).findFile(file)!!</ID>
+    <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$ref!!</ID>
+    <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheInterface$connectionManager.selectedCredentialIdentifier!!</ID>
+    <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheInterface$connectionManager.selectedRegion!!</ID>
+    <ID>UseCheckOrError:MockClientManager.kt$MockClientManager$throw IllegalStateException("No mock registered for $sdkClass")</ID>
+  </CurrentIssues>
+</SmellBaseline>

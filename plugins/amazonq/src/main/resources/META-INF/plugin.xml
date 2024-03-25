@@ -1,0 +1,17 @@
+<!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
+    <id>plugin-amazonq</id>
+    <version>1.0</version>
+    <idea-version since-build="231" until-build="999"/>
+
+    <depends>core</depends>
+    <xi:include href="/META-INF/module-amazonq.xml" />
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- each plugin needs its own instance of these -->
+<!--        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>-->
+<!--        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>-->
+    </extensions>
+</idea-plugin>

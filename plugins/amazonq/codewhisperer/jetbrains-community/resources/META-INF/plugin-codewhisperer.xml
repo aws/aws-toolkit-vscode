@@ -2,7 +2,120 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin>
-    <actions>
-        <action class="Hello" id="q.hello" />
+    <applicationListeners>
+        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererUIChangeListener"
+                  topic="software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupStateChangeListener"/>
+        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceActionListener"
+                  topic="software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererUserActionListener"/>
+    </applicationListeners>
+
+    <projectListeners>
+        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
+                  topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
+        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
+                  topic="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener"/>
+        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
+                  topic="software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener"/>
+        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
+                  topic="software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationListener"/>
+    </projectListeners>
+
+    <extensionPoints>
+        <extensionPoint qualifiedName="aws.toolkit.codewhisperer.programmingLanguage" interface="software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage" dynamic="true"/>
+        <extensionPoint qualifiedName="aws.toolkit.codewhisperer.classResolver" interface="software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispererClassResolver" dynamic="true"/>
+        <extensionPoint qualifiedName="aws.toolkit.codewhisperer.importAdder" interface="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererImportAdder" dynamic="true"/>
+    </extensionPoints>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererLanguageManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererRecommendationManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.inlay.CodeWhispererInlayManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererLicenseInfoManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutoTriggerService"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator"
+                            serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.customization.DefaultCodeWhispererModelConfigurator"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererFeatureConfigService"/>
+
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager"/>
+        <projectService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor"
+                        serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptorImpl"
+                        testServiceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.MockCodeWhispererClientAdaptor"/>
+        <projectService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider"
+                        serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.util.DefaultCodeWhispererFileContextProvider"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererManager"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererUserModificationTracker"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow"/>
+
+        <statusBarWidgetFactory id="aws.codewhisperer"
+                                implementation="software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarWidgetFactory"/>
+
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupActivity"/>
+
+        <toolWindow id="aws.codewhisperer.codereference" anchor="bottom" doNotActivateOnStart="true" canCloseContents="true"
+                    factoryClass="software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceToolWindowFactory"
+                    icon="AllIcons.Actions.Preview"/>
+
+        <projectConfigurable
+            parentId="aws"
+            id="aws.codewhisperer"
+            bundle="software.aws.toolkits.resources.MessagesBundle"
+            key="aws.settings.codewhisperer.configurable.title"
+            instance="software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfigurable"
+        />
+
+        <typedHandler implementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererTypedHandler"/>
+        <editorFactoryListener implementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorListener"/>
+        <editorActionHandler action="EditorEnter" implementationClass="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEnterHandler"
+                             order="first, before editorEnter"/>
+        <actionPromoter order="last" implementation="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererActionPromoter"/>
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererEditorProvider"/>
+
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit">
+        <connection.pinned.feature implementation="software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection"/>
+        <sdk.clientCustomizer implementation="software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererEndpointCustomizer"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit.codewhisperer">
+        <!-- TODO: c/c++ extensions should live its own module instead of jetbrains-core -->
+        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererC"/>
+        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCpp"/>
+        <importAdder implementation="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererFallbackImportAdder"/>
+    </extensions>
+
+    <actions resource-bundle="software.aws.toolkits.resources.AmazonQBundle">
+        <group id="aws.toolkit.explorer.codewhisperer" popup="true" compact="true">
+            <action id="codewhisperer.settings"
+                    class="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererShowSettingsAction"/>
+            <separator/>
+            <action id="codewhisperer.whatIs"
+                    class="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererWhatIsAction"/>
+        </group>
+
+        <action class="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererRecommendationAction"
+                text="Show Code Suggestions">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt C"/>
+        </action>
+        <group id="aws.toolkit.codewhisperer.toolbar.security">
+            <action
+                id="codewhisperer.toolbar.security.scan"
+                class="software.aws.toolkits.jetbrains.services.codewhisperer.codescan.actions.CodeWhispererCodeScanRunAction"/>
+            <action
+                id="codewhisperer.toolbar.security.stopscan"
+                class="software.aws.toolkits.jetbrains.services.codewhisperer.codescan.actions.CodeWhispererStopCodeScanAction"/>
+        </group>
+
+        <group id="aws.toolkit.jetbrains.core.services.codewhisperer.suggestions"
+               class="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.QStatusBarLoggedInActionGroup" />
     </actions>
 </idea-plugin>

@@ -2,8 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererJavaCodeScanTest.kt$CodeWhispererJavaCodeScanTest$val (includedSourceFiles, srcPayloadSize, totalLines, buildPaths) = payloadMetadata</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPythonCodeScanTest.kt$CodeWhispererPythonCodeScanTest$val (includedSourceFiles, srcPayloadSize, totalLines, buildPaths) = payloadMetadata</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualProject, actualEditor, actualTriggerTypeInfo, actualCaretPosition, actualFileContextInfo) = actualRequestContext</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualRequestId, actualRecommendationDetail, _, actualIsDiscarded) = actualDetailContext</ID>
     <ID>ExpressionBodySyntax:CodeWhispererSettingsTest.kt$CodeWhispererSettingsTest.&lt;no name provided>$return myToolWindows[id]</ID>
@@ -35,27 +33,7 @@
     <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun NonSamFunction()</ID>
     <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun NonSamFunction_Substring()</ID>
     <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun SamFunction()</ID>
-    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun bothFilesOpened_bothFilesExists()</ID>
-    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun configFileOpened_onlyConfigExists()</ID>
-    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun confirmConfigFileCreated_bothFilesDoNotExist()</ID>
-    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun credentialFileOpened_onlyCredentialsExists()</ID>
-    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withNamespace()</ID>
-    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withoutNamespace()</ID>
     <ID>FunctionNaming:DeleteWaiterTest.kt$DeleteWaiterTest$@Test fun deleteSuccessful_stackNotExist()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_Duplicate()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_InvalidChars()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_TooLong()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameterAllTypesValid_hasValues()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameterAllTypesValid_noValues()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberConstraintsInvalid()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberInvalid()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberTooBig()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberTooSmall()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringConstraintsInvalid()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringFailsRegex()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringRegex()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringTooLong()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringTooShort()</ID>
     <ID>FunctionNaming:DeploySettingsTest.kt$DeploySettingsTest$@Test fun relativeSamPath_null()</ID>
     <ID>FunctionNaming:DeploySettingsTest.kt$DeploySettingsTest$@Test fun relativeSamPath_root()</ID>
     <ID>FunctionNaming:FileInfoCacheTest.kt$FileInfoCacheTest$@Test fun emptyCache_SingleExecutableRequest()</ID>
@@ -77,11 +55,8 @@
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun successExecution_EmptyOutput()</ID>
     <ID>FunctionOnlyReturningConstant:CodeWhispererCodeScanTestBase.kt$CodeWhispererCodeScanTestBase$protected fun getFakeRecommendationsOnNonExistentFile()</ID>
     <ID>NoNameShadowing:CopyUrlActionTest.kt$CopyUrlActionTest${ // Actual format is implementation detail below S3VirtualBucket URL("https://s3/${it.getArgument&lt;String>(0)}?version=${it.getArgument&lt;String>(1)}") }</ID>
-    <ID>NoNameShadowing:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest${ it.getArgument&lt;File>(0).writeText("hello") }</ID>
     <ID>NoNameShadowing:CreateServiceRoleDialogTest.kt$CreateServiceRoleDialogTest${ it.roleName(name).arn("arn") }</ID>
-    <ID>NoNameShadowing:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest${ it.message.contains(message("serverless.application.deploy.validation.new.stack.name.invalid")) }</ID>
     <ID>NoNameShadowing:EcsExecUtilsTest.kt$EcsExecUtilsTest${ it.sessionId(sessionId) it.tokenValue(token) it.streamUrl(streamUrl) }</ID>
-    <ID>NoNameShadowing:MockAwsConnectionManager.kt${ manager.changeCredentialProviderAndWait(it) }</ID>
     <ID>NoNameShadowing:S3ViewerPanelTest.kt$S3ViewerPanelTest${ it.prefix("folder/") }</ID>
     <ID>NoNameShadowing:S3VirtualBucketTest.kt$S3VirtualBucketTest${ @Suppress("UNCHECKED_CAST") val transformer = it.arguments[1] as ResponseTransformer&lt;GetObjectResponse, GetObjectResponse> val data = "hello".toByteArray() transformer.transform( GetObjectResponse.builder() .eTag("1111") .lastModified(Instant.parse("1995-10-23T10:12:35Z")) .contentLength(data.size.toLong()) .build(), AbortableInputStream.create(data.inputStream()) ) }</ID>
     <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultError>(3).invoke(searchError) latch.countDown() }</ID>
@@ -99,12 +74,6 @@
     <ID>UnnecessaryApply:SendMessagePaneTest.kt$SendMessagePaneTest$apply { inputText.text = MESSAGE }</ID>
     <ID>UnnecessaryFilter:CodeWhispererTelemetryTest.kt$CodeWhispererTelemetryTest$filter { !it.content().startsWith(typeahead) }</ID>
     <ID>UnnecessaryFilter:CodeWhispererTelemetryTest.kt$CodeWhispererTelemetryTest$filter { it.content().isEmpty() }</ID>
-    <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$ClearableLazy$_value!!</ID>
-    <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$PsiManager.getInstance(project).findFile(file)!!</ID>
-    <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$ref!!</ID>
-    <ID>UnsafeCallOnNullableType:CredentialManagerTest.kt$CredentialManagerTest.TestCredentialProviderFactory$credentialsMapping.remove(providerId)!!</ID>
-    <ID>UnsafeCallOnNullableType:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$VfsUtil.findFileByIoFile(dir.writeChild("path.yaml", byteArrayOf()).toFile(), true)!!</ID>
-    <ID>UnsafeCallOnNullableType:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest.TestParameter$getOptionalScalarProperty(key)!!</ID>
     <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$infoProvider.evaluate(tempFile.absolutePath).blockingGet(0)!!</ID>
     <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$pathPromise.blockingGet(0)!!</ID>
     <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$pathTempFile1Promise.blockingGet(0)!!</ID>
@@ -115,8 +84,6 @@
     <ID>UnsafeCallOnNullableType:JavaTestUtils.kt$psiFile.classes[0].allMethods[0].body!!</ID>
     <ID>UnsafeCallOnNullableType:LambdaRunLineMarkerContributorTest.kt$LambdaRunLineMarkerContributorTest$it!!</ID>
     <ID>UnsafeCallOnNullableType:LocalLambdaRunConfigurationTest.kt$LocalLambdaRunConfigurationTest$PsiDocumentManager.getInstance(projectRule.project).getDocument(eventFile)!!</ID>
-    <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheInterface$connectionManager.selectedCredentialIdentifier!!</ID>
-    <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheInterface$connectionManager.selectedRegion!!</ID>
     <ID>UnsafeCallOnNullableType:PythonCodeInsightTestFixtureRule.kt$PythonCodeInsightTestFixtureRule$newFixture.tempDirFixture.getFile(".")!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLambdaBuilderTest.kt$PythonLambdaBuilderTest$psiFile.findTopLevelFunction("handle")!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLambdaHandlerResolverTest.kt$PythonLambdaHandlerResolverTest$Runtime.PYTHON3_9.runtimeGroup?.let { LambdaHandlerResolver.getInstanceOrNull(it) }!!</ID>
@@ -124,8 +91,6 @@
     <ID>UnsafeCallOnNullableType:RemoteLambdaRunConfigurationTest.kt$RemoteLambdaRunConfigurationTest$PsiDocumentManager.getInstance(projectRule.project).getDocument(eventFile)!!</ID>
     <ID>UnsafeCallOnNullableType:RunConfigTestUtils.kt$ExecutorRegistry.getInstance().getExecutorById(executorId)!!</ID>
     <ID>UnsafeCallOnNullableType:RunConfigTestUtils.kt$ProgramRunner.getRunner(executorId, runConfiguration)!!</ID>
-    <ID>UnsafeCallOnNullableType:ScopeTest.kt$ScopeTest$ProjectManagerEx.getInstanceEx().openProject(projectFile, options)!!</ID>
-    <ID>UnsafeCallOnNullableType:TelemetryServiceTest.kt$TelemetryServiceTest$ProjectManagerEx.getInstanceEx().openProject(projectFile, options)!!</ID>
     <ID>UnsafeCallOnNullableType:ToolkitToolWindowTest.kt$ToolkitToolWindowTest$it!!</ID>
     <ID>UnsafeCallOnNullableType:ToolkitToolWindowTest.kt$ToolkitToolWindowTest$jbToolWindowManager.getToolWindow(sut.toolWindowId)?.contentManager!!</ID>
     <ID>UnsafeCallOnNullableType:WrapLogsActionTest.kt$WrapLogsActionTest$model.columnInfos[1].getRenderer(null)!!</ID>
@@ -133,7 +98,6 @@
     <ID>UseCheckOrError:AwsRegionProviderTest.kt$AwsRegionProviderTest$throw IllegalStateException("Bad test data")</ID>
     <ID>UseCheckOrError:JavaTestUtils.kt$throw IllegalStateException("Failed to locate $it")</ID>
     <ID>UseCheckOrError:JavaTestUtils.kt$throw IllegalStateException("Failed to locate gradlew")</ID>
-    <ID>UseCheckOrError:MockClientManager.kt$MockClientManager$throw IllegalStateException("No mock registered for $sdkClass")</ID>
     <ID>UseCheckOrError:RunWithRealCredentials.kt$RunWithRealCredentials.&lt;no name provided>$throw IllegalStateException("Can't locate us-west-2")</ID>
     <ID>UseCheckOrError:RunWithRealCredentials.kt$RunWithRealCredentials.&lt;no name provided>$throw IllegalStateException("RunWithRealCredentials requires a default AWS profile!")</ID>
     <ID>UseOrEmpty:EditAttributesDialogTest.kt$EditAttributesDialogTest$testMessageSize?.toString() ?: ""</ID>

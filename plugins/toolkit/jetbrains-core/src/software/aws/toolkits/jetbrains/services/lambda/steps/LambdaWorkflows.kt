@@ -8,7 +8,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import software.aws.toolkits.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ValidateDocker
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
