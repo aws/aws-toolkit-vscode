@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix scripts missing when connecting through JetBrains Gateway (#4188)"
+}

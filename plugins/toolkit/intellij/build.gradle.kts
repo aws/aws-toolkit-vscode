@@ -50,12 +50,11 @@ intellij {
 }
 
 tasks.prepareSandbox {
-    from(resharperDlls) {
-        into("aws-toolkit-jetbrains/dotnet")
-    }
-    from(gatewayResources) {
-        into("aws-toolkit-jetbrains/gateway-resources")
-    }
+    intoChild(pluginName.map { "$it/dotnet" })
+        .from(resharperDlls)
+
+    intoChild(pluginName.map { "$it/gateway-resources" })
+        .from(gatewayResources)
 }
 
 tasks.publishPlugin {
