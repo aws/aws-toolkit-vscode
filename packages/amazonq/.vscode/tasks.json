@@ -13,7 +13,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": ["copyPackageJson", "serve"]
+            "dependsOn": ["serve"]
         },
         {
             "label": "serve",
@@ -37,32 +37,9 @@
             }
         },
         {
-            "label": "copyPackageJson",
-            "type": "npm",
-            "script": "copyPackageJson",
-            "problemMatcher": [],
-            "isBackground": false,
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
-        },
-        {
-            "label": "restorePackageJson",
-            "type": "npm",
-            "script": "restorePackageJson",
-            "problemMatcher": [],
-            "isBackground": false,
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
-        },
-        {
             "label": "terminate",
             "command": "echo run terminate",
-            "type": "shell",
-            "dependsOn": ["restorePackageJson"]
+            "type": "shell"
         },
         {
             "type": "npm",
@@ -77,7 +54,7 @@
         {
             "type": "npm",
             "script": "compile",
-            "dependsOn": ["Kill Tasks", "copyPackageJson"],
+            "dependsOn": ["Kill Tasks"],
             "problemMatcher": "$tsc"
         },
         {

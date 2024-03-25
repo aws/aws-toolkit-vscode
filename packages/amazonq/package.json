@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q (Preview) + CodeWhisperer",
     "description": "Amazon Q (Preview) + CodeWhisperer",
-    "version": "1.0.0-fbe260a",
+    "version": "1.0.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -44,14 +44,12 @@
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* README* CHANGELOG.md",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development",
-        "package": "npm run copyPackageJson && ts-node ../../scripts/package.ts && npm run restorePackageJson",
+        "package": "ts-node ../../scripts/package.ts && npm run restorePackageJson",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "echo 'Nothing to lint yet!'",
         "watch": "npm run clean && npm run buildScripts -- --vueHr && tsc -watch -p ./",
-        "serve": "webpack serve --config-name mainServe --mode development",
-        "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
-        "restorePackageJson": "ts-node ./scripts/build/handlePackageJson --restore"
+        "serve": "webpack serve --config-name mainServe --mode development"
     },
     "dependencies": {
         "aws-core-vscode": "file:../core/"
