@@ -540,10 +540,13 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
 
-        return runCheck().catch(err => this.handleValidationError(id, err))
+        return runCheck().catch(err => this.handleSsoTokenError(id, err))
     }
 
-    private async handleValidationError(id: Connection['id'], err: unknown) {
+    private async handleSsoTokenError(id: Connection['id'], err: unknown) {
+        // Bubble-up networking issues so we don't treat the session as invalid
+        this.throwOnNetworkError(err)
+
         this.#validationErrors.set(id, UnknownError.cast(err))
         getLogger().info(`auth: Handling validation error of connection: ${id}`)
         return this.updateConnectionState(id, 'invalid')
@@ -692,7 +695,7 @@ export class Auth implements AuthService, ConnectionManager {
 
             return result
         } catch (err) {
-            await this.handleValidationError(id, err)
+            await this.handleSsoTokenError(id, err)
             throw err
         }
     }
@@ -717,16 +720,27 @@ export class Auth implements AuthService, ConnectionManager {
     private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
         const token = await provider.getToken().catch(err => {
             // Bubble-up networking issues so we don't treat the session as invalid
-            if (isNetworkError(err)) {
-                throw new ToolkitError('Failed to refresh connection due to networking issues', {
-                    cause: err,
-                })
-            }
+            this.throwOnNetworkError(err)
 
             this.#validationErrors.set(id, err)
         })
 
         return token ?? this.handleInvalidCredentials(id, () => provider.createToken())
+    }
+
+    /**
+     * Auth processes can fail if there are network issues, and we do not
+     * want to intepret these failures as invalid/expired auth tokens.
+     * 
+     * We use this to check if the given error is network related and then
+     * throw, expecting the caller to not change the state of the connection.
+     */
+    private throwOnNetworkError(e: unknown) {
+        if (isNetworkError(e)) {
+            throw new ToolkitError('Failed to update connection due to networking issues', {
+                cause: e,
+            })
+        }
     }
 
     private readonly getCredentials = keyedDebounce(this._getCredentials.bind(this))
