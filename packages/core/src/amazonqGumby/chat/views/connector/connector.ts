@@ -10,7 +10,7 @@ import { ChatItemType } from '../../../../amazonqFeatureDev/models'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import { GumbyCommands } from '../../controller/messenger/messengerUtils'
 
-export type StaticTextResponseType =
+export type GumbyMessageType =
     | 'errorMessage'
     | 'asyncEventProgressMessage'
     | 'authenticationUpdateMessage'
@@ -24,14 +24,14 @@ export type StaticTextResponseType =
 class UiMessage {
     readonly time: number = Date.now()
     readonly sender: string = gumbyChat
-    readonly type: StaticTextResponseType = 'chatMessage'
+    readonly type: GumbyMessageType = 'chatMessage'
     readonly status: string = 'info'
 
     public constructor(protected tabID: string) {}
 }
 
 export class ErrorMessage extends UiMessage {
-    override type: StaticTextResponseType = 'errorMessage'
+    override type: GumbyMessageType = 'errorMessage'
 
     constructor(readonly title: string, readonly message: string, tabID: string) {
         super(tabID)
@@ -51,7 +51,7 @@ export class AsyncEventProgressMessage extends UiMessage {
     readonly messageId?: string | undefined
     readonly buttons?: ChatItemButton[]
     readonly messageType = 'answer-part'
-    override type: StaticTextResponseType = 'asyncEventProgressMessage'
+    override type: GumbyMessageType = 'asyncEventProgressMessage'
 
     constructor(tabID: string, props: AsyncEventProgressMessageProps) {
         super(tabID)
@@ -65,13 +65,13 @@ export class AsyncEventProgressMessage extends UiMessage {
 export class AuthenticationUpdateMessage {
     readonly time: number = Date.now()
     readonly sender: string = gumbyChat
-    readonly type: StaticTextResponseType = 'authenticationUpdateMessage'
+    readonly type: GumbyMessageType = 'authenticationUpdateMessage'
 
     constructor(readonly featureDevEnabled: boolean, readonly authenticatingTabIDs: string[]) {}
 }
 
 export class AuthNeededException extends UiMessage {
-    override type: StaticTextResponseType = 'authNeededException'
+    override type: GumbyMessageType = 'authNeededException'
 
     constructor(readonly message: string, readonly authType: AuthFollowUpType, tabID: string) {
         super(tabID)
@@ -88,7 +88,7 @@ export class ChatPrompt extends UiMessage {
     readonly messageType = 'system-prompt'
     readonly formItems: ChatItemFormItem[]
     formButtons: ChatItemButton[]
-    override type: StaticTextResponseType = 'chatPrompt'
+    override type: GumbyMessageType = 'chatPrompt'
 
     constructor(props: ChatPromptProps, promptIDPrefix: string, tabID: string, keepCardAfterClick: boolean = true) {
         super(tabID)
@@ -123,7 +123,7 @@ export class ChatMessage extends UiMessage {
     readonly messageId?: string | undefined
     readonly messageType: ChatItemType
     readonly buttons: ChatItemButton[]
-    override type: StaticTextResponseType = 'chatMessage'
+    override type: GumbyMessageType = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
         super(tabID)
@@ -135,7 +135,7 @@ export class ChatMessage extends UiMessage {
 }
 
 export class ChatInputEnabledMessage extends UiMessage {
-    override type: StaticTextResponseType = 'chatInputEnabledMessage'
+    override type: GumbyMessageType = 'chatInputEnabledMessage'
 
     constructor(tabID: string, readonly enabled: boolean) {
         super(tabID)
@@ -143,7 +143,7 @@ export class ChatInputEnabledMessage extends UiMessage {
 }
 
 export class SendCommandMessage extends UiMessage {
-    override type: StaticTextResponseType = 'sendCommandMessage'
+    override type: GumbyMessageType = 'sendCommandMessage'
 
     constructor(readonly command: GumbyCommands, tabID: string, readonly eventId: string) {
         super(tabID)
@@ -152,7 +152,7 @@ export class SendCommandMessage extends UiMessage {
 
 export class UpdatePlaceholderMessage extends UiMessage {
     readonly newPlaceholder: string
-    override type: StaticTextResponseType = 'updatePlaceholderMessage'
+    override type: GumbyMessageType = 'updatePlaceholderMessage'
 
     constructor(tabID: string, newPlaceholder: string) {
         super(tabID)

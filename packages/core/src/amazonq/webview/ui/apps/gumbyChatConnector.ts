@@ -10,7 +10,7 @@
 import { ChatItem, ChatItemType } from '@aws/mynah-ui'
 import { ExtensionMessage } from '../commands'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
-import { StaticTextResponseType as GumbyMessageType } from '../../../../amazonqGumby/chat/views/connector/connector'
+import { GumbyMessageType } from '../../../../amazonqGumby/chat/views/connector/connector'
 import { ChatPayload } from '../connector'
 
 export interface ConnectorProps {
@@ -22,7 +22,7 @@ export interface ConnectorProps {
     onQuickHandlerCommand: (tabID: string, command: string, eventId?: string) => void
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
-    onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
+    onUpdateAuthentication: (gumbyEnabled: boolean, authenticatingTabIDs: string[]) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     tabsStorage: TabsStorage
@@ -34,6 +34,7 @@ export interface MessageData {
 }
 
 export class Connector {
+    private readonly onAuthenticationUpdate
     private readonly sendMessageToExtension
     private readonly onError
     private readonly onChatAnswerReceived
@@ -53,6 +54,7 @@ export class Connector {
         this.onAsyncEventProgress = props.onAsyncEventProgress
         this.updatePlaceholder = props.onUpdatePlaceholder
         this.onQuickHandlerCommand = props.onQuickHandlerCommand
+        this.onAuthenticationUpdate = props.onUpdateAuthentication
         this.tabStorage = props.tabsStorage
     }
 
@@ -147,54 +149,6 @@ export class Connector {
         })
     }
 
-    // This handles messages received from the extension, to be forwarded to the webview
-    handleMessageReceive = async (messageData: { type: GumbyMessageType } & Record<string, any>) => {
-        if (messageData.type === 'errorMessage') {
-            this.onError(messageData.tabID, messageData.message, messageData.title)
-            return
-        }
-
-        if (messageData.type === 'chatMessage') {
-            await this.processChatMessage(messageData)
-            return
-        }
-
-        if (messageData.type === 'authNeededException') {
-            await this.processAuthNeededException(messageData)
-            return
-        }
-
-        if (messageData.type === 'chatInputEnabledMessage') {
-            this.chatInputEnabled(messageData.tabID, messageData.enabled)
-            return
-        }
-
-        if (messageData.type === 'chatPrompt') {
-            await this.processChatPrompt(messageData, messageData.tabID)
-            return
-        }
-
-        if (messageData.type === 'asyncEventProgressMessage') {
-            this.onAsyncEventProgress(
-                messageData.tabID,
-                messageData.inProgress,
-                messageData.message,
-                messageData.messageId
-            )
-            return
-        }
-
-        if (messageData.type === 'updatePlaceholderMessage') {
-            this.updatePlaceholder(messageData.tabID, messageData.newPlaceholder)
-            return
-        }
-
-        if (messageData.type === 'sendCommandMessage') {
-            await this.processExecuteCommand(messageData)
-            return
-        }
-    }
-
     onCustomFormAction(
         tabId: string,
         action: {
@@ -218,5 +172,43 @@ export class Connector {
 
     private processExecuteCommand = async (messageData: any): Promise<void> => {
         this.onQuickHandlerCommand(messageData.tabID, messageData.command, messageData.eventId)
+    }
+
+    // This handles messages received from the extension, to be forwarded to the webview
+    handleMessageReceive = async (messageData: { type: GumbyMessageType } & Record<string, any>) => {
+        switch (messageData.type) {
+            case 'asyncEventProgressMessage':
+                this.onAsyncEventProgress(
+                    messageData.tabID,
+                    messageData.inProgress,
+                    messageData.message,
+                    messageData.messageId
+                )
+                break
+            case 'authNeededException':
+                await this.processAuthNeededException(messageData)
+                break
+            case 'authenticationUpdateMessage':
+                this.onAuthenticationUpdate(messageData.gumbyEnabled, messageData.authenticatingTabIDs)
+                break
+            case 'chatInputEnabledMessage':
+                this.chatInputEnabled(messageData.tabID, messageData.enabled)
+                break
+            case 'chatMessage':
+                await this.processChatMessage(messageData)
+                break
+            case 'chatPrompt':
+                await this.processChatPrompt(messageData, messageData.tabID)
+                break
+            case 'errorMessage':
+                this.onError(messageData.tabID, messageData.message, messageData.title)
+                break
+            case 'sendCommandMessage':
+                await this.processExecuteCommand(messageData)
+                break
+            case 'updatePlaceholderMessage':
+                this.updatePlaceholder(messageData.tabID, messageData.newPlaceholder)
+                break
+        }
     }
 }

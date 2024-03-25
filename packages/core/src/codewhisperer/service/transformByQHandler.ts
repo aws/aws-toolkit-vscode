@@ -37,7 +37,12 @@ import {
     JDK8VersionNumber,
     projectSizeTooLargeMessage,
 } from '../../amazonqGumby/chat/controller/messenger/stringConstants'
-import { NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError, NoOpenProjectsError } from '../../amazonqGumby/errors'
+import {
+    NoJavaProjectsFoundError,
+    NoMavenJavaProjectsFoundError,
+    NoOpenProjectsError,
+    ZipExceedsSizeLimitError,
+} from '../../amazonqGumby/errors'
 
 export interface TransformationCandidateProject {
     name: string
@@ -464,7 +469,6 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
 
     if (spawnResult.status !== 0) {
         let errorLog = ''
-        const errorCode = args.join(' ')
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} ${argString} failed: \n ${errorLog}`)
@@ -473,7 +477,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
         )
         let errorReason = ''
         if (spawnResult.stdout) {
-            errorReason = `Maven ${argString}: ${errorCode}ExecutionError`
+            errorReason = `Maven ${argString}: InstallationExecutionError`
             /*
              * adding this check here because these mvn commands sometimes generate a lot of output.
              * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
@@ -483,7 +487,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
                 errorReason += '-BufferOverflow'
             }
         } else {
-            errorReason = `Maven ${argString}: ${errorCode}SpawnError`
+            errorReason = `Maven ${argString}: InstallationSpawnError`
         }
         if (spawnResult.error) {
             const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
@@ -685,7 +689,7 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
         void vscode.window.showErrorMessage(
             projectSizeTooLargeMessage.replace('LINK_HERE', CodeWhispererConstants.linkToUploadZipTooLarge)
         )
-        throw new Error('Project size exceeds 1GB limit')
+        throw new ZipExceedsSizeLimitError()
     }
 
     return tempFilePath
