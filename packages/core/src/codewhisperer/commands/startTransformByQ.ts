@@ -358,6 +358,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         await replacePomVersion(newPomFileVirtualFileReference, manifestFileValues)
 
         // 4) We need to run maven commands on that pom.xml to get available versions
+        // runMavenDependencyUpdateCommands()
 
         // 5) We need to wait for user input
 
