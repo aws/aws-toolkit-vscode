@@ -761,6 +761,12 @@
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected || isCloud9 && suggestWidgetVisible && !editorReadonly"
             },
             {
+                "command": "aws.codeWhisperer.dismissTutorial",
+                "key": "escape",
+                "mac": "escape",
+                "when": "aws.codewhisperer.tutorial.workInProgress && !inlineSuggestionVisible && !suggestWidgetVisible"
+            },
+            {
                 "key": "right",
                 "command": "editor.action.inlineSuggest.showNext",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"

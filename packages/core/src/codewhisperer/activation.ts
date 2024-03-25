@@ -173,6 +173,16 @@ export async function activate(context: ExtContext): Promise<void> {
                 await vscode.commands.executeCommand('workbench.action.openSettings', `aws.codeWhisperer`)
             }
         }),
+        Commands.register('aws.codewhisperer.refreshAnnotation', async (forceProceed: boolean = false) => {
+            const editor = vscode.window.activeTextEditor
+            if (editor) {
+                if (forceProceed) {
+                    await container.lineAnnotationController.refresh(editor, 'codewhisperer', true)
+                } else {
+                    await container.lineAnnotationController.refresh(editor, 'codewhisperer')
+                }
+            }
+        }),
         // show introduction
         showIntroduction.register(),
         // direct CodeWhisperer connection setup with customization
