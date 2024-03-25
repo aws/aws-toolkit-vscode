@@ -10,7 +10,7 @@ import { GumbyNamedMessages, Messenger } from './messenger/messenger'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatSessionManager } from '../storages/chatSession'
 import * as vscode from 'vscode'
-import { Session } from '../session/session'
+import { ConversationState, Session } from '../session/session'
 import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
@@ -28,6 +28,7 @@ import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messen
 import { TransformationCandidateProject } from '../../../codewhisperer/service/transformByQHandler'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import fs from 'fs'
+import path from 'path'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -133,7 +134,7 @@ export class GumbyController {
         // check that a project is open
         const workspaceFolders = vscode.workspace.workspaceFolders
         if (workspaceFolders === undefined || workspaceFolders.length === 0) {
-            this.messenger.sendStaticTextResponse('no-project-found', message.tabID)
+            this.messenger.sendRetryableErrorResponse('no-project-found', message.tabID)
             return
         }
 
@@ -147,16 +148,25 @@ export class GumbyController {
                 return
             }
 
-            // check to see if a transformation is already in progress
-            if (transformByQState.isRunning()) {
-                this.messenger.sendAsyncEventProgress(
-                    message.tabID,
-                    true,
-                    undefined,
-                    GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-                )
-                this.messenger.sendJobSubmittedMessage(message.tabID)
-                return
+            switch (this.sessionStorage.getSession().conversationState) {
+                case ConversationState.JOB_SUBMITTED:
+                    this.messenger.sendAsyncEventProgress(
+                        message.tabID,
+                        true,
+                        undefined,
+                        GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
+                    )
+                    this.messenger.sendJobSubmittedMessage(message.tabID)
+                    return
+                case ConversationState.COMPILING:
+                    this.messenger.sendAsyncEventProgress(
+                        message.tabID,
+                        true,
+                        undefined,
+                        GumbyNamedMessages.COMPILATION_PROGRESS_MESSAGE
+                    )
+                    this.messenger.sendCompilationInProgress(message.tabID)
+                    return
             }
 
             this.messenger.sendTransformationIntroduction(message.tabID)
@@ -179,11 +189,11 @@ export class GumbyController {
             return await getValidCandidateProjects()
         } catch (err: any) {
             if (err instanceof NoJavaProjectsFoundError) {
-                this.messenger.sendStaticTextResponse('no-java-project-found', message.tabID)
+                this.messenger.sendRetryableErrorResponse('no-java-project-found', message.tabID)
             } else if (err instanceof NoMavenJavaProjectsFoundError) {
-                this.messenger.sendStaticTextResponse('no-maven-java-project-found', message.tabID)
+                this.messenger.sendRetryableErrorResponse('no-maven-java-project-found', message.tabID)
             } else {
-                this.messenger.sendStaticTextResponse('no-project-found', message.tabID)
+                this.messenger.sendRetryableErrorResponse('no-project-found', message.tabID)
             }
         }
         return []
@@ -213,21 +223,23 @@ export class GumbyController {
         }
     }
 
-    // Any given project could have multiple candidate modules to transform --
+    // Any given project could have multiple candidate projects to transform --
     // The user gets prompted to pick a specific one
     private async initiateTransformationOnProject(message: any) {
-        const pathToModule: string = message.formSelectedValues['GumbyTransformModuleForm']
+        const pathToProject: string = message.formSelectedValues['GumbyTransformProjectForm']
         const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
         let fromJDKVersion: JDKVersion | undefined = this.sessionStorage
             .getSession()
-            .candidateProjects.get(pathToModule)?.JDKVersion
+            .candidateProjects.get(pathToProject)?.JDKVersion
 
         // If we couldn't detect the JDK version, set 8 as the default
         if (fromJDKVersion === undefined) {
             fromJDKVersion = JDKVersion.JDK8
         }
 
-        await processTransformFormInput(pathToModule, fromJDKVersion, toJDKVersion)
+        const projectName = path.basename(pathToProject)
+        this.messenger.sendProjectSelectionMessage(projectName, toJDKVersion, message.tabId)
+        await processTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
         await this.validateBuildWithPromptOnError(message)
     }
 
@@ -240,22 +252,24 @@ export class GumbyController {
         }
 
         try {
+            this.sessionStorage.getSession().conversationState = ConversationState.COMPILING
             this.messenger.sendCompilationInProgress(message.tabID)
             await compileProject()
 
             this.messenger.sendCompilationFinished(message.tabID)
-
-            this.messenger.sendAsyncEventProgress(
-                message.tabID,
-                true,
-                undefined,
-                GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-            )
-            this.messenger.sendJobSubmittedMessage(message.tabID)
-            await startTransformByQ()
         } catch (err: any) {
-            this.messenger.sendStaticTextResponse('could-not-compile-project', message.tabID)
+            this.messenger.sendRetryableErrorResponse('could-not-compile-project', message.tabID)
         }
+
+        this.messenger.sendAsyncEventProgress(
+            message.tabID,
+            true,
+            undefined,
+            GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
+        )
+        this.messenger.sendJobSubmittedMessage(message.tabID)
+        this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
+        await startTransformByQ()
     }
 
     private async validateBuildWithPromptOnError(message: any | undefined = undefined): Promise<void> {
@@ -263,6 +277,7 @@ export class GumbyController {
             await validateCanCompileProject()
         } catch (err: any) {
             if (err instanceof JavaHomeNotSetError) {
+                this.sessionStorage.getSession().conversationState = ConversationState.PROMPT_JAVA_HOME
                 this.messenger.sendStaticTextResponse('java-home-not-set', message.tabId)
                 this.messenger.sendChatInputEnabled(message.tabId, true)
                 this.messenger.sendUpdatePlaceholder(message.tabId, 'Enter the path to your Java installation.')
@@ -275,6 +290,7 @@ export class GumbyController {
     }
 
     private async transformationFinished(message: { tabID: string; jobStatus: string }) {
+        this.sessionStorage.getSession().conversationState = ConversationState.IDLE
         this.messenger.sendJobSubmittedMessage(message.tabID, true)
         this.messenger.sendJobFinishedMessage(message.tabID, false, message.jobStatus)
     }
@@ -282,28 +298,23 @@ export class GumbyController {
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
         this.messenger.sendUserPrompt(data.message, data.tabID)
         this.messenger.sendChatInputEnabled(data.tabID, false)
-        this.messenger.sendUpdatePlaceholder(data.tabID, 'Chat is disabled.')
-        /**const session = await this.sessionStorage.getSession(data.tabID)
+        this.messenger.sendUpdatePlaceholder(data.tabID, 'Chat is disabled during Code Transformation.')
 
-         
-                   switch (session.state.phase) {
-                       case 'Init':
-                       case 'Approach':
-                           await this.onApproachGeneration(session, data.message, message.tabID)
-                           break
-        */
-        // if state is "asking for project info", parse message for a path
+        const session = this.sessionStorage.getSession()
+        switch (session.conversationState) {
+            case ConversationState.PROMPT_JAVA_HOME: {
+                const pathToJavaHome = extractPath(data.message)
 
-        const pathToJavaHome = extractPath(data.message)
-
-        if (pathToJavaHome) {
-            await this.prepareProjectForSubmission({
-                pathToJavaHome,
-                tabID: data.tabID,
-            })
-        } else {
-            this.messenger.sendErrorMessage("I'm sorry, I could not locate your Java installation.", data.tabID)
-            this.messenger.sendJobFinishedMessage(data.tabID, true, undefined)
+                if (pathToJavaHome) {
+                    await this.prepareProjectForSubmission({
+                        pathToJavaHome,
+                        tabID: data.tabID,
+                    })
+                } else {
+                    this.messenger.sendErrorMessage("I'm sorry, I could not locate your Java installation.", data.tabID)
+                    this.messenger.sendJobFinishedMessage(data.tabID, true, undefined)
+                }
+            }
         }
     }
 }

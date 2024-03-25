@@ -464,7 +464,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
 
     if (spawnResult.status !== 0) {
         let errorLog = ''
-        const errorCode = getMavenErrorCode(args)
+        const errorCode = args.join(' ')
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} ${argString} failed: \n ${errorLog}`)
@@ -505,16 +505,6 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
         throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
-    }
-}
-
-function getMavenErrorCode(args: string[]) {
-    if (args.includes('install')) {
-        return 'Install'
-    } else if (args.includes('clean')) {
-        return 'Clean'
-    } else {
-        return ''
     }
 }
 

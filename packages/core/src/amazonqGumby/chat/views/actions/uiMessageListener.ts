@@ -7,6 +7,10 @@ import { MessageListener } from '../../../../amazonq/messages/messageListener'
 import { ExtensionMessage } from '../../../../amazonq/webview/ui/commands'
 import { ChatControllerEventEmitters } from '../../controller/controller'
 
+type UIMessage = ExtensionMessage & {
+    tabID?: string
+}
+
 export interface UIMessageListenerProps {
     readonly chatControllerEventEmitters: ChatControllerEventEmitters
     readonly webViewMessageListener: MessageListener<any>
@@ -48,39 +52,39 @@ export class UIMessageListener {
         }
     }
 
-    private processChatPrompt(msg: any) {
+    private processChatPrompt(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.processHumanChatMessage.fire({
             message: msg.chatMessage,
             tabID: msg.tabID,
         })
     }
 
-    private transform(msg: any) {
+    private transform(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.transformSelected.fire({
             tabID: msg.tabID,
         })
     }
 
-    private tabOpened(msg: any) {
+    private tabOpened(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.tabOpened.fire({
             tabID: msg.tabID,
         })
     }
 
-    private tabClosed(msg: any) {
+    private tabClosed(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.tabClosed.fire({
             tabID: msg.tabID,
         })
     }
 
-    private authClicked(msg: any) {
+    private authClicked(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.authClicked.fire({
             tabID: msg.tabID,
             authType: msg.authType,
         })
     }
 
-    private formActionClicked(msg: any) {
+    private formActionClicked(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.formActionClicked.fire({
             ...msg,
         })

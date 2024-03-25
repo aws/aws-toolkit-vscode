@@ -10,7 +10,7 @@
 import { ChatItem, ChatItemType } from '@aws/mynah-ui'
 import { ExtensionMessage } from '../commands'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
-import { ChatPrompt } from '../../../../amazonqGumby/chat/views/connector/connector'
+import { StaticTextResponseType as GumbyMessageType } from '../../../../amazonqGumby/chat/views/connector/connector'
 import { ChatPayload } from '../connector'
 
 export interface ConnectorProps {
@@ -26,6 +26,11 @@ export interface ConnectorProps {
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     tabsStorage: TabsStorage
+}
+
+export interface MessageData {
+    tabID: string
+    type: GumbyMessageType
 }
 
 export class Connector {
@@ -68,7 +73,7 @@ export class Connector {
         })
     }
 
-    private processChatPrompt = async (messageData: ChatPrompt, tabID: string): Promise<void> => {
+    private processChatPrompt = async (messageData: any, tabID: string): Promise<void> => {
         if (this.onChatAnswerReceived === undefined) {
             return
         }
@@ -143,7 +148,7 @@ export class Connector {
     }
 
     // This handles messages received from the extension, to be forwarded to the webview
-    handleMessageReceive = async (messageData: any): Promise<void> => {
+    handleMessageReceive = async (messageData: { type: GumbyMessageType } & Record<string, any>) => {
         if (messageData.type === 'errorMessage') {
             this.onError(messageData.tabID, messageData.message, messageData.title)
             return

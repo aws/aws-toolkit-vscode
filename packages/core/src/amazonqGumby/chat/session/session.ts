@@ -6,7 +6,7 @@
 import { TransformationCandidateProject } from '../../../codewhisperer/service/transformByQHandler'
 
 export enum ConversationState {
-    TRANSFORMATION_INITIATED,
+    IDLE,
     PROMPT_JAVA_HOME,
     COMPILING,
     JOB_SUBMITTED,
@@ -23,7 +23,7 @@ export class Session {
     // A tab may or may not be currently open
     public tabID: string | undefined
 
-    public conversationState: ConversationState = ConversationState.TRANSFORMATION_INITIATED
+    public conversationState: ConversationState = ConversationState.IDLE
 
     // If the user is prompted to provide more details about their project, it is stored here for use in future transformations
     public projectDetails: ProjectDetails | undefined

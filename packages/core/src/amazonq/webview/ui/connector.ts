@@ -141,11 +141,7 @@ export class Connector {
     }
 
     transform = (tabID: string): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'gumby':
-                this.gumbyChatConnector.transform(tabID)
-                break
-        }
+        this.gumbyChatConnector.transform(tabID)
     }
 
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {

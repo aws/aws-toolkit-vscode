@@ -72,12 +72,12 @@ export async function startTransformByQWithProgress() {
 }
 
 export async function processTransformFormInput(
-    pathToModule: string,
+    pathToProject: string,
     fromJDKVersion: JDKVersion,
     toJDKVersion: JDKVersion
 ) {
-    transformByQState.setProjectName(path.basename(pathToModule))
-    transformByQState.setProjectPath(pathToModule)
+    transformByQState.setProjectName(path.basename(pathToProject))
+    transformByQState.setProjectPath(pathToProject)
     transformByQState.setSourceJDKVersion(fromJDKVersion)
     transformByQState.setTargetJDKVersion(toJDKVersion)
 }
