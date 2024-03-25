@@ -17,7 +17,7 @@ export const nonWindowsJava11HomeHelpMessage =
 
 export const projectSizeTooLargeMessage =
     'Your project size exceeds the Amazon Q Code Transformation upload limit of 1GB. For more information, see the [Code Transformation documentation](LINK_HERE).'
-    
+
 export const JDK8VersionNumber = '52'
 
 export const JDK11VersionNumber = '55'
