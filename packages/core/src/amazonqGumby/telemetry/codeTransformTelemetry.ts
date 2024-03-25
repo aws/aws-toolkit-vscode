@@ -49,7 +49,7 @@ export const logCodeTransformInitiatedMetric = (source: string): void => {
             ...commonMetrics,
             result: MetadataResult.Pass,
         })
-    } else if (source === StartActionPositions.Chat) {
+    } else if (source === StartActionPositions.ChatPrompt) {
         telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
             ...commonMetrics,
             result: MetadataResult.Pass,
