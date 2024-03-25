@@ -27,7 +27,7 @@ describe('supplementalContextUtil', function () {
         })
 
         it('isTextEditor returns false if scheme is debug, output or vscode-terminal', async function () {
-            let editor = await openATextEditorWithText('content', 'file.java', tempFolder, { preview: false })
+            const editor = await openATextEditorWithText('content', 'file.java', tempFolder, { preview: false })
             const uri = editor.document.uri
 
             sinon.stub(uri, 'scheme').get(() => 'debug')

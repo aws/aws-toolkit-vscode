@@ -166,7 +166,7 @@ export class Session {
     }
 
     public async insertChanges() {
-        for (const filePath of this.state.filePaths ?? []) {
+        for (const filePath of this.state.filePaths?.filter(i => !i.rejected) ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
 
             const uri = filePath.virtualMemoryUri

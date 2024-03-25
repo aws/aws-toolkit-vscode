@@ -1,3 +1,16 @@
+## 2.16.0 2024-03-21
+
+- **Bug Fix** CodeWhisperer: UI notification "no suggestion" not shown correctly
+- **Bug Fix** Lower chance of project upload failures when using Q CodeTransform.
+- **Bug Fix** FeatureDev: Rejected files are excluded when generated code is accepted by the customer
+- **Bug Fix** Fix CodeWhisperer API call failure in SageMaker Code Editor
+- **Feature** CodeWhisperer: Improve UI to indicate CodeWhisperer is generating suggestions
+- **Feature** Q CodeTransformation: show prompt to submit feedback at end of job
+- **Feature** Improved performance: SSM Documents and Step Functions LSP clients/servers are now started only when they are needed.
+- **Feature** CodeWhisperer: Improve UI to walk through new CodeWhisperer users how-to
+- **Feature** CodeWhisperer/Q actions are now available from the status bar menu instead of a dedicated panel.
+- **Feature** Expose listConnections API in AWS Toolkit
+
 ## 2.15.0 2024-03-14
 
 - **Bug Fix** CodeWhisperer: Include copied code in percentage code written metrics

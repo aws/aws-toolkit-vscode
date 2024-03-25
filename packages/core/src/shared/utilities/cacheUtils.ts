@@ -7,6 +7,9 @@ import * as vscode from 'vscode'
 import { dirname } from 'path'
 import { ToolkitError, isFileNotFoundError } from '../errors'
 import { SystemUtilities } from '../systemUtilities'
+import { promises as fsPromises } from 'fs'
+import { isWeb } from '../../common/webUtils'
+import crypto from 'crypto'
 
 // TODO(sijaden): further generalize this concept over async references (maybe create a library?)
 // It's pretty clear that this interface (and VSC's `Memento`) reduce down to what is essentially
@@ -124,7 +127,17 @@ export function createDiskCache<T, K>(
 
             try {
                 await SystemUtilities.createDirectory(dirname(target))
-                await SystemUtilities.writeFile(target, JSON.stringify(data), { mode: 0o600 })
+                if (isWeb()) {
+                    // There is no web-compatible rename() method. So do a regular write.
+                    await SystemUtilities.writeFile(target, JSON.stringify(data), { mode: 0o600 })
+                } else {
+                    // With SSO cache we noticed malformed JSON on read. A guess is that multiple writes
+                    // are occuring at the same time. The following is a bandaid that ensures an all-or-nothing
+                    // write, though there can still be race conditions with which version remains after overwrites.
+                    const tempFile = `${target}.tmp-${crypto.randomBytes(4).toString('hex')}`
+                    await SystemUtilities.writeFile(tempFile, JSON.stringify(data), { mode: 0o600 })
+                    await fsPromises.rename(tempFile, target)
+                }
             } catch (error) {
                 throw ToolkitError.chain(error, `Failed to save "${target}"`, {
                     code: 'FSWriteFailed',

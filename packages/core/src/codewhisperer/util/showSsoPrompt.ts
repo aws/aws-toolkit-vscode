@@ -17,6 +17,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { createBuilderIdItem, createSsoItem, createIamItem } from '../../auth/utils'
 import { Commands } from '../../shared/vscode/commands2'
+import { vsCodeState } from '../models/model'
 
 export const showCodeWhispererConnectionPrompt = async () => {
     const items = isCloud9('classic')
@@ -52,7 +53,7 @@ export async function awsIdSignIn() {
     } catch (e) {
         throw ToolkitError.chain(e, failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
     }
-    await Commands.tryExecute('aws.codeWhisperer.refresh')
+    vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.refresh')
     await Commands.tryExecute('aws.codeWhisperer.enableCodeSuggestions')
 }

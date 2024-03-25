@@ -13,7 +13,6 @@ import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { TransformByQReviewStatus, transformByQState } from '../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../shared/utilities/download'
-import { ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
@@ -141,7 +140,8 @@ export class DiffModel {
     public parseDiff(pathToDiff: string, pathToWorkspace: string): ProposedChangeNode[] {
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
         if (!diffContents) {
-            throw new ToolkitError('diff.patch file is empty', { code: 'EmptyDiffPatch' })
+            void vscode.window.showErrorMessage(CodeWhispererConstants.emptyDiffMessage)
+            throw new Error('diff.patch file is empty')
         }
         const changedFiles = parsePatch(diffContents)
         // path to the directory containing copy of the changed files in the transformed project
@@ -319,7 +319,12 @@ export class ProposedTransformationExplorer {
                 )
             } catch (e: any) {
                 // This allows the customer to retry the download
-                void vscode.window.showErrorMessage(CodeWhispererConstants.errorDownloadingDiffMessage)
+                void vscode.window.showErrorMessage(
+                    CodeWhispererConstants.errorDownloadingDiffMessage.replace(
+                        'LINK_HERE',
+                        CodeWhispererConstants.linkToDownloadZipTooLarge
+                    )
+                )
                 await vscode.commands.executeCommand(
                     'setContext',
                     'gumby.reviewState',
@@ -336,7 +341,7 @@ export class ProposedTransformationExplorer {
                     result: MetadataResult.Fail,
                     reason: 'ExportResultArchiveFailed',
                 })
-                throw new ToolkitError(errorMessage)
+                throw new Error('Error downloading diff')
             }
 
             const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
@@ -418,6 +423,7 @@ export class ProposedTransformationExplorer {
             transformDataProvider.refresh()
             // delete result archive after changes rejected
             fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
+            fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
             telemetry.codeTransform_vcsViewerCanceled.emit({
                 // eslint-disable-next-line id-length
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',

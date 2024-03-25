@@ -12,6 +12,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { createStartUrlPrompter, showRegionPrompter } from '../../auth/utils'
 import { Region } from '../../shared/regions/endpoints'
 import { Commands } from '../../shared/vscode/commands2'
+import { vsCodeState } from '../models/model'
 
 export const getStartUrl = async () => {
     const inputBox = await createStartUrlPrompter('IAM Identity Center', amazonQScopes)
@@ -34,7 +35,7 @@ export async function connectToEnterpriseSso(startUrl: string, region: Region['i
             code: 'FailedToConnect',
         })
     }
-    await Commands.tryExecute('aws.codeWhisperer.refresh')
+    vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.refresh')
     await Commands.tryExecute('aws.codeWhisperer.enableCodeSuggestions')
 }

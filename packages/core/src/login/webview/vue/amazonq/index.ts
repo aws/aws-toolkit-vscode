@@ -6,9 +6,12 @@
  */
 
 import { createApp } from 'vue'
-import component from './root.vue'
+import component from '../root.vue'
 
-const create = () => createApp(component)
+const create = () =>
+    createApp(component, {
+        app: 'AMAZONQ',
+    })
 const app = create()
 
 app.mount('#vue-app')

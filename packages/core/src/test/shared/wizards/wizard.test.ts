@@ -14,6 +14,7 @@ import {
     WIZARD_BACK,
     WIZARD_EXIT,
 } from '../../../shared/wizards/wizard'
+import { SkipPrompter } from '../../../shared/ui/common/skipPrompter'
 
 interface TestWizardForm {
     prop1: string
@@ -208,10 +209,13 @@ describe('Wizard', function () {
         helloPrompter = new TestPrompter(...Array(100).fill('hello')).setName('Hello')
     })
 
-    it('binds prompter to property', async function () {
+    it('binds prompter to (sync AND async) property', async function () {
         wizard.form.prop1.bindPrompter(() => helloPrompter)
+        wizard.form.prop3.bindPrompter(async () => new SkipPrompter('helloooo (async)'))
 
-        assert.strictEqual((await wizard.run())?.prop1, 'hello')
+        const result = await wizard.run()
+        assert.strictEqual(result?.prop1, 'hello')
+        assert.strictEqual(result?.prop3, 'helloooo (async)')
     })
 
     it('initializes state to empty object if not provided', async function () {

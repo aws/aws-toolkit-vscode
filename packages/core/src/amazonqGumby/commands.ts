@@ -35,7 +35,6 @@ export const showTransformByQ = Commands.declare(
                 passive: false,
             })
         }
-        await Commands.tryExecute('aws.codeWhisperer.refresh')
     }
 )
 

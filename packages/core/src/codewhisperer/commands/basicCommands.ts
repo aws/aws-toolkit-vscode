@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { CodeScanIssue, codeScanState, CodeSuggestionsState } from '../models/model'
+import { CodeScanIssue, codeScanState, CodeSuggestionsState, vsCodeState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -47,8 +47,7 @@ export const toggleCodeSuggestions = Commands.declare(
                     ? CodeWhispererConstants.autoSuggestionConfig.activated
                     : CodeWhispererConstants.autoSuggestionConfig.deactivated,
             })
-
-            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+            vsCodeState.isFreeTierLimitReached = false
         })
     }
 )
@@ -60,7 +59,7 @@ export const enableCodeSuggestions = Commands.declare(
             await CodeSuggestionsState.instance.setSuggestionsEnabled(isAuto)
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', true)
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connectionExpired', false)
-            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+            vsCodeState.isFreeTierLimitReached = false
             if (!isCloud9()) {
                 await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
             }
@@ -101,7 +100,7 @@ export const showSecurityScan = Commands.declare(
                     // Cancel only when the code scan state is "Running"
                     await confirmStopSecurityScan()
                 }
-                await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+                vsCodeState.isFreeTierLimitReached = false
             } else {
                 void vscode.window.showInformationMessage('Open a valid file to scan.')
             }

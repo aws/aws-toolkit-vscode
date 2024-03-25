@@ -36,7 +36,7 @@ import { createRegionPrompter } from '../../shared/ui/common/region'
 import { Region } from '../../shared/regions/endpoints'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
-import { getNonexistentFilenameSync } from '../../shared/filesystemUtilities'
+import { getNonexistentFilename } from '../../shared/filesystemUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -272,10 +272,14 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             })
         )
 
-        this.form.name.bindPrompter(state =>
-            createNamePrompter(
-                getNonexistentFilenameSync(state.location!.fsPath, `lambda-${state.runtimeAndPackage!.runtime}`, '', 99)
+        this.form.name.bindPrompter(async state => {
+            const fname = await getNonexistentFilename(
+                state.location!.fsPath,
+                `lambda-${state.runtimeAndPackage!.runtime}`,
+                '',
+                99
             )
-        )
+            return createNamePrompter(fname)
+        })
     }
 }

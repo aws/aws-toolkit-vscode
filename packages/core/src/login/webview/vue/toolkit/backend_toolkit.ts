@@ -4,13 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { tryAddCredentials } from '../../../auth/utils'
-import { getLogger } from '../../../shared/logger'
-import { AuthError, CommonAuthWebview } from './backend'
-import { SsoConnection, createSsoProfile } from '../../../auth/connection'
-import { Auth } from '../../../auth/auth'
+import { tryAddCredentials } from '../../../../auth/utils'
+import { getLogger } from '../../../../shared/logger'
+import { AuthError, CommonAuthWebview } from '../backend'
+import { SsoConnection, createSsoProfile } from '../../../../auth/connection'
+import { Auth } from '../../../../auth/auth'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
+    public override source: string = 'src/login/webview/vue/toolkit/index.js'
+
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
         return this.ssoSetup('createIdentityCenterConnection', async () => {
             const ssoProfile = createSsoProfile(startUrl, region)
