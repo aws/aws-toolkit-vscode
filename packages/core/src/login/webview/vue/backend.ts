@@ -12,7 +12,7 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { trustedDomainCancellation } from '../../../auth/sso/model'
 import { handleWebviewError } from '../../../webviews/server'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
-import { SsoConnection } from '../../../auth/connection'
+import { Connection, SsoConnection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 
@@ -110,4 +110,8 @@ export abstract class CommonAuthWebview extends VueWebview {
     abstract useConnection(connectionId: string): Promise<AuthError | undefined>
 
     abstract errorNotification(e: AuthError): void
+
+    async listConnections(): Promise<Connection[]> {
+        return Auth.instance.listConnections()
+    }
 }

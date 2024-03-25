@@ -144,6 +144,7 @@
                     @input="handleUrlInput"
                     v-model="startUrl"
                 />
+                <h4 class="start-url-error">{{ startUrlError }}</h4>
                 <br /><br />
                 <div class="title">Region</div>
                 <div class="hint">AWS Region that hosts identity directory</div>
@@ -153,7 +154,11 @@
                     </option>
                 </select>
                 <br /><br />
-                <button class="continue-button" :disabled="!urlValid" v-on:click="handleContinueClick()">
+                <button
+                    class="continue-button"
+                    :disabled="startUrl.length == 0 || startUrlError.length > 0"
+                    v-on:click="handleContinueClick()"
+                >
                     Continue
                 </button>
             </div>
@@ -264,7 +269,7 @@ export default defineComponent({
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
             regions: [] as Region[],
-            urlValid: false,
+            startUrlError: '',
             selectedRegion: '',
             startUrl: '',
             app: this.app,
@@ -272,6 +277,7 @@ export default defineComponent({
             profileName: '',
             accessKey: '',
             secretKey: '',
+            existingConnectionStartUrls: [] as string[],
         }
     },
     async created() {
@@ -352,10 +358,14 @@ export default defineComponent({
             }
         },
         handleUrlInput() {
-            if (this.startUrl && validateSsoUrlFormat(this.startUrl)) {
-                this.urlValid = true
+            if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
+                this.startUrlError =
+                    'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
+            } else if (this.startUrl && this.existingConnectionStartUrls.includes(this.startUrl)) {
+                this.startUrlError =
+                    'A connection for this start URL already exists. Sign out before creating a new one.'
             } else {
-                this.urlValid = false
+                this.startUrlError = ''
             }
         },
         handleCancelButtom() {
@@ -367,8 +377,10 @@ export default defineComponent({
         },
         async emitUpdate(cause?: string) {},
         async updateExistingConnections() {
-            const connections = await client.fetchConnections()
-            connections?.forEach((connection, index) => {
+            // fetch existing connections of aws toolkit in Amazon Q
+            // Only used by Amazon Q to reuse connections in AWS Toolkit
+            const toolkitConnections = await client.fetchConnections()
+            toolkitConnections?.forEach((connection, index) => {
                 this.existingLogins.push({
                     id: LoginOption.EXISTING_LOGINS + index,
                     text: 'Used by AWS Toolkit',
@@ -377,6 +389,13 @@ export default defineComponent({
                         : `IAM Identity Center ${connection.startUrl}`,
                     connectionId: connection.id,
                 })
+            })
+            // fetch existing connections of itself
+            const connections = await client.listConnections()
+            connections.forEach(connection => {
+                if ('startUrl' in connection) {
+                    this.existingConnectionStartUrls.push(connection.startUrl)
+                }
             })
             this.$forceUpdate()
         },
@@ -445,6 +464,9 @@ export default defineComponent({
     background-color: #252526;
     width: 100%;
     color: white;
+}
+.start-url-error {
+    color: #ff0000;
 }
 #logo {
     fill: var(--vscode-button-foreground);
