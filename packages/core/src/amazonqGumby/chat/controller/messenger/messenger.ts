@@ -40,6 +40,7 @@ export type ErrorTextResponseType =
     | 'no-java-project-found'
     | 'no-maven-java-project-found'
     | 'could-not-compile-project'
+    | 'invalid-java-home'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -283,6 +284,9 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
                 break
             case 'could-not-compile-project':
                 message = `Sorry, I couldn't run the Maven install or Maven copy-dependencies commands to build your project. To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)`
+                break
+            case 'invalid-java-home':
+                message = "I'm sorry, I could not locate your Java installation."
                 break
         }
 

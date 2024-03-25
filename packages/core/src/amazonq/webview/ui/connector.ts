@@ -90,6 +90,8 @@ export class Connector {
             case 'featuredev':
                 this.featureDevChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
                 break
+            case 'gumby':
+                this.gumbyChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
         }
     }
 

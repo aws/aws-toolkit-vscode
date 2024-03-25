@@ -49,6 +49,10 @@ export class UIMessageListener {
                 break
             case 'chat-prompt':
                 this.processChatPrompt(msg)
+                break
+            case 'response-body-link-click':
+                this.linkClicked(msg)
+                break
         }
     }
 
@@ -86,6 +90,12 @@ export class UIMessageListener {
 
     private formActionClicked(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.formActionClicked.fire({
+            ...msg,
+        })
+    }
+
+    private linkClicked(msg: UIMessage) {
+        this.gumbyControllerEventsEmitters?.linkClicked.fire({
             ...msg,
         })
     }

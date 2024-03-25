@@ -170,6 +170,16 @@ export class Connector {
         })
     }
 
+    onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
+        this.sendMessageToExtension({
+            command: 'response-body-link-click',
+            tabID,
+            messageId,
+            link,
+            tabType: 'gumby',
+        })
+    }
+
     private processExecuteCommand = async (messageData: any): Promise<void> => {
         this.onQuickHandlerCommand(messageData.tabID, messageData.command, messageData.eventId)
     }

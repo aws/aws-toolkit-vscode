@@ -29,6 +29,7 @@ import { TransformationCandidateProject } from '../../../codewhisperer/service/t
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import fs from 'fs'
 import path from 'path'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -41,6 +42,7 @@ export interface ChatControllerEventEmitters {
     readonly commandSentFromIDE: vscode.EventEmitter<any>
     readonly transformationFinished: vscode.EventEmitter<any>
     readonly processHumanChatMessage: vscode.EventEmitter<any>
+    readonly linkClicked: vscode.EventEmitter<any>
 }
 
 export class GumbyController {
@@ -87,6 +89,10 @@ export class GumbyController {
 
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
             return this.processHumanChatMessage(data)
+        })
+
+        this.chatControllerMessageListeners.linkClicked.event(data => {
+            this.openLink(data)
         })
     }
 
@@ -318,11 +324,15 @@ export class GumbyController {
                         tabID: data.tabID,
                     })
                 } else {
-                    this.messenger.sendErrorMessage("I'm sorry, I could not locate your Java installation.", data.tabID)
+                    this.messenger.sendRetryableErrorResponse('invalid-java-home', data.tabID)
                     this.messenger.sendJobFinishedMessage(data.tabID, true, undefined)
                 }
             }
         }
+    }
+
+    private openLink(message: { link: string }) {
+        void openUrl(vscode.Uri.parse(message.link))
     }
 }
 
