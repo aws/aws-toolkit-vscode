@@ -270,7 +270,7 @@ export async function openDevEnv(
 // Recording metrics like this is a lot more involved so for now we'll
 // assume that if the first step succeeds, the user probably succeeded
 // in connecting to the devenv
-export const codeCatalystConnectCommand = Commands.tryDeclare(
+export const codeCatalystConnectCommand = Commands.declare(
     {
         id: '_aws.codecatalyst.connect',
         telemetryName: 'codecatalyst_connect',

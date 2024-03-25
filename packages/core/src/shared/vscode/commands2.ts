@@ -187,20 +187,6 @@ export class Commands {
         return this.addResource(new CommandResource(resource, this.commands))
     }
 
-    public tryDeclare<T extends Callback, D extends any[]>(
-        id: string | Omit<CommandInfo<T>, 'args' | 'label'>,
-        factory: CommandFactory<T, D>
-    ): DeclaredCommand<T, D> {
-        try {
-            const resource = typeof id === 'string' ? { info: { id }, factory } : { info: { ...id }, factory }
-
-            return this.addResource(new CommandResource(resource, this.commands))
-        } catch (err) {
-            getLogger().error(`could not declare command: ${id}`)
-            return undefined as any
-        }
-    }
-
     /** See {@link Commands.from}. */
     public from<T>(target: new (...args: any[]) => T): Declarables<T> {
         type Id = Parameters<Declare<T, Callback>>[0]
@@ -260,7 +246,6 @@ export class Commands {
      * not just the command signature but also its immediate dependencies.
      */
     public static readonly declare = this.instance.declare.bind(this.instance)
-    public static readonly tryDeclare = this.instance.tryDeclare.bind(this.instance)
 
     /**
      * Convenience method to declare commands directly from a class.

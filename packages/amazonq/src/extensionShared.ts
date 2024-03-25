@@ -28,9 +28,6 @@ import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 export async function activateShared(context: vscode.ExtensionContext) {
     const contextPrefix = 'amazonq'
     globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
-    // void vscode.window.showInformationMessage(
-    //     'Amazon Q + CodeWhisperer: This extension is under development and offers no features at this time.'
-    // )
 
     await initializeComputeRegion()
     initialize(context)
