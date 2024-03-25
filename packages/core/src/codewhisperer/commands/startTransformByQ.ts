@@ -56,6 +56,11 @@ import { getArtifactIdentifiers } from '../service/transformByQHumanInTheLoopHan
 import { downloadResultArchive } from '../service/amazonQGumby/transformByQApiHandler'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
+import {
+    createPomCopy,
+    getJsonValuesFromManifestFile,
+    replacePomVersion,
+} from '../service/amazonQGumby/humanInTheLoopHandler'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -346,16 +351,31 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
             artifactId,
             artifactType
         )
-        console.log(pomFileVirtualFileReference, manifestFileVirtualFileReference)
+
         // 3) We need to replace version in pom.xml
+        const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
+        const newPomFileVirtualFileReference = await createPomCopy(pomFileVirtualFileReference, 'pom-primary.xml')
+        await replacePomVersion(newPomFileVirtualFileReference, manifestFileValues)
 
         // 4) We need to run maven commands on that pom.xml to get available versions
+
         // 5) We need to wait for user input
+
         // 6) We need to add user input to that pom.xml, original pom.xml is intact somewhere, and run maven compile
+        const userInputPomFileVirtualFileReference = await createPomCopy(
+            pomFileVirtualFileReference,
+            'pom-user-input.xml'
+        )
+        console.log(userInputPomFileVirtualFileReference)
+
         // 7) We need to take that output of maven and use CreateUploadUrl
     } catch (e) {
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function
+    } finally {
+        // 1) Always delete items off disk manifest.json and pom.xml
+        // 2) Always delete Temporary pom created with new version
+        // 3) Always delete the user generated input pom AFTER upload?
     }
 }
 

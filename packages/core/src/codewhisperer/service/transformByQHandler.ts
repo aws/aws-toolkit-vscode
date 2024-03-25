@@ -877,7 +877,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     codeTransformJobId: jobId,
                     codeTransformStatus: status,
                     result: MetadataResult.Pass,
-                    codeTransformPreviousStatus: transformByQState.getPolledJobStatus(),
+                    // codeTransformPreviousStatus: transformByQState.getPolledJobStatus(),
                 })
             }
             transformByQState.setPolledJobStatus(status)
