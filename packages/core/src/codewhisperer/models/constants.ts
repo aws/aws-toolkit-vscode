@@ -423,8 +423,6 @@ export const transformationJobPollingIntervalSeconds = 5
 
 export const transformationJobTimeoutSeconds = 60 * 60 // 1 hour, to match backend
 
-export const progressIntervalMs = 1000
-
 export const defaultLanguage = 'Java'
 
 export const contentChecksumType = 'SHA_256'

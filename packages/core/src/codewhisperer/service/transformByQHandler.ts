@@ -25,52 +25,35 @@ import * as vscode from 'vscode'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
 import AdmZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
-import {
-    CodeTransformJavaSourceVersionsAllowed,
-    CodeTransformMavenBuildCommand,
-    telemetry,
-} from '../../shared/telemetry/telemetry'
+import { CodeTransformMavenBuildCommand, telemetry } from '../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import {
-    calculateTotalLatency,
-    javapOutputToTelemetryValue,
-    JDKToTelemetryValue,
-} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { calculateTotalLatency, javapOutputToTelemetryValue } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
-import { ToolkitError } from '../../shared/errors'
 
 // log project details silently
 export async function validateAndLogProjectDetails() {
-    let reason,
-        result,
-        codeTransformLocalJavaVersion,
-        codeTransformPreValidationError = undefined
+    let reason = undefined
+    let javaVersion = undefined
     try {
         const openProjects = await getOpenProjects(true)
         const validProjects = await validateOpenProjects(openProjects, true)
         if (validProjects.size > 0) {
             const firstKey = validProjects.keys().next().value
-            const firstModuleEntry = validProjects.get(firstKey)
-            codeTransformLocalJavaVersion = JDKToTelemetryValue(
-                firstModuleEntry
-            ) as CodeTransformJavaSourceVersionsAllowed
+            javaVersion = validProjects.get(firstKey)
         }
     } catch (err: any) {
-        result = MetadataResult.Fail
-        reason = err?.code
-        codeTransformPreValidationError = err?.name
+        // happens if no project open or no .java files found or no pom.xml found
+        reason = err.message
+        javaVersion = JDKVersion.Unknown
     } finally {
-        if (result || reason || codeTransformLocalJavaVersion || codeTransformPreValidationError) {
-            telemetry.codeTransform_projectDetails.emit({
-                passive: true,
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformLocalJavaVersion,
-                codeTransformPreValidationError,
-                result: result ?? MetadataResult.Pass,
-                reason,
-            })
-        }
+        telemetry.codeTransform_projectDetails.emit({
+            passive: true,
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformLocalJavaVersion: javaVersion,
+            result: reason !== undefined ? MetadataResult.Fail : MetadataResult.Pass,
+            reason: reason,
+        })
     }
 }
 
@@ -97,7 +80,7 @@ export async function getOpenProjects(onProjectFirstOpen = false) {
                 )
             )
         }
-        throw new ToolkitError('', { name: 'NoProjectsOpen' })
+        throw new Error('No projects open')
     }
     const openProjects: vscode.QuickPickItem[] = []
     for (const folder of folders) {
@@ -140,7 +123,7 @@ async function getMavenJavaProjects(javaProjects: vscode.QuickPickItem[]) {
 async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickItem[], onProjectFirstOpen: boolean) {
     const projectsValidToTransform = new Map<vscode.QuickPickItem, JDKVersion | undefined>()
     for (const project of mavenJavaProjects) {
-        let detectedJavaVersion = undefined
+        let detectedJavaVersion = JDKVersion.Unknown
         const projectPath = project.description
         const compiledJavaFiles = await vscode.workspace.findFiles(
             new vscode.RelativePattern(projectPath!, '**/*.class'),
@@ -184,7 +167,7 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                 } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
                     detectedJavaVersion = JDKVersion.JDK11
                 } else {
-                    detectedJavaVersion = JDKVersion.UNSUPPORTED
+                    detectedJavaVersion = JDKVersion.Other
                     if (!onProjectFirstOpen) {
                         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -196,7 +179,7 @@ async function getProjectsValidToTransform(mavenJavaProjects: vscode.QuickPickIt
                 }
             }
         }
-        // detectedJavaVersion will be undefined if there are no .class files or if javap errors out, otherwise it will be JDK8, JDK11, or UNSUPPORTED
+        // detectedJavaVersion will be Unknown if there are no .class files found or if javap errors out, otherwise it will be JDK8, JDK11, or Other
         projectsValidToTransform.set(project, detectedJavaVersion)
     }
     return projectsValidToTransform
@@ -225,7 +208,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
                 reason: 'CouldNotFindJavaProject',
             })
         }
-        throw new ToolkitError('', { name: 'NoJavaProject' })
+        throw new Error('No Java projects open')
     }
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
@@ -243,7 +226,7 @@ export async function validateOpenProjects(projects: vscode.QuickPickItem[], onP
                 reason: 'NoPomFileFound',
             })
         }
-        throw new ToolkitError('', { name: 'NonMavenProject' })
+        throw new Error('No Maven projects open')
     }
 
     /*
@@ -783,7 +766,6 @@ export async function getTransformationPlan(jobId: string) {
 
 export async function getTransformationSteps(jobId: string) {
     try {
-        await sleep(2000) // prevent ThrottlingException
         const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
@@ -835,7 +817,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Pass,
             })
             status = response.transformationJob.status!
-            console.log('STATUS = ', status)
             // must be series of ifs, not else ifs
             if (CodeWhispererConstants.validStatesForJobStarted.includes(status)) {
                 sessionPlanProgress['startJob'] = StepProgress.Succeeded

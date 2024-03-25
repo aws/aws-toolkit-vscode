@@ -50,6 +50,7 @@ import {
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
+import { ToolkitError } from '../../shared/errors'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -135,7 +136,7 @@ async function pickSourceVersion(
     let placeholderText = ''
     if (sourceJDKVersion === JDKVersion.JDK8 || sourceJDKVersion === JDKVersion.JDK11) {
         placeholderText = `We found Java ${sourceJDKVersion}. Select a different version if incorrect.`
-    } else if (sourceJDKVersion === JDKVersion.UNSUPPORTED) {
+    } else if (sourceJDKVersion === JDKVersion.Other) {
         placeholderText = 'We found an unsupported Java version. Select your version here if incorrect.'
     } else {
         placeholderText = "Choose your project's Java version here." // if no .class files found or if javap fails
@@ -156,7 +157,7 @@ async function pickSourceVersion(
         transformByQState.setSourceJDKVersion(JDKVersion.JDK11)
     } else if (pick === validSourceVersions[2]) {
         // corresponds with the 'Other' option
-        transformByQState.setSourceJDKVersion(JDKVersion.UNSUPPORTED)
+        transformByQState.setSourceJDKVersion(JDKVersion.Other)
     }
 }
 
@@ -228,16 +229,19 @@ async function validateJavaHome() {
 
 export async function startTransformByQ() {
     let intervalId = undefined
+    let userInputState = undefined
 
-    // Validate inputs. If failed, Error will be thrown and execution stops
-    const userInputState = await validateTransformationJob()
-
-    await setMaven()
-
-    await validateJavaHome()
+    try {
+        // Validate inputs. If failed, Error will be thrown and execution stops
+        userInputState = await validateTransformationJob()
+        await setMaven()
+        await validateJavaHome()
+    } catch (error: any) {
+        throw new ToolkitError('', { code: 'InputValidationFailed' })
+    }
 
     // Set the default state variables for our store and the UI
-    await setTransformationToRunningState(userInputState)
+    await setTransformationToRunningState(userInputState!)
 
     try {
         // Set web view UI to poll for progress
@@ -246,10 +250,10 @@ export async function startTransformByQ() {
                 'aws.amazonq.showPlanProgressInHub',
                 codeTransformTelemetryState.getStartTime()
             )
-        }, CodeWhispererConstants.progressIntervalMs)
+        }, CodeWhispererConstants.transformationJobPollingIntervalSeconds)
 
         // step 1: CreateCodeUploadUrl and upload code
-        const uploadId = await preTransformationUploadCode(userInputState)
+        const uploadId = await preTransformationUploadCode(userInputState!)
 
         // step 2: StartJob and store the returned jobId in TransformByQState
         const jobId = await startTransformationJob(uploadId)
@@ -265,7 +269,7 @@ export async function startTransformByQ() {
     } catch (error: any) {
         await transformationJobErrorHandler(error)
     } finally {
-        await postTransformationJob(userInputState)
+        await postTransformationJob(userInputState!)
         await cleanupTransformationJob(intervalId)
     }
 }
