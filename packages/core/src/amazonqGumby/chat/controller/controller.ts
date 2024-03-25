@@ -261,6 +261,13 @@ export class GumbyController {
             this.messenger.sendRetryableErrorResponse('could-not-compile-project', message.tabID)
         }
 
+        const authState = await getChatAuthState()
+        if (authState.amazonQ !== 'connected') {
+            void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+            this.sessionStorage.getSession().isAuthenticating = true
+            return
+        }
+
         this.messenger.sendAsyncEventProgress(
             message.tabID,
             true,
