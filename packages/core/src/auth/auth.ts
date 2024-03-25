@@ -184,14 +184,13 @@ export class Auth implements AuthService, ConnectionManager {
     public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
     public async useConnection({ id }: Pick<IamConnection, 'id'>): Promise<IamConnection>
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
+        await this.refreshConnectionState({ id })
+
         const profile = this.store.getProfile(id)
         if (profile === undefined) {
             throw new Error(`Connection does not exist: ${id}`)
         }
-        getLogger().info(`auth: validating connection before using it: ${id}`)
-        const validated = await this.validateConnection(id, profile)
-        const conn =
-            validated.type === 'sso' ? this.getSsoConnection(id, validated) : this.getIamConnection(id, validated)
+        const conn = profile.type === 'sso' ? this.getSsoConnection(id, profile) : this.getIamConnection(id, profile)
 
         this.#activeConnection = conn
         this.#onDidChangeActiveConnection.fire(conn)
@@ -347,7 +346,7 @@ export class Auth implements AuthService, ConnectionManager {
         const provider = this.getSsoTokenProvider(conn.id, profile)
         await provider.invalidate()
         // updates the state of the connection
-        await this.validateConnection(conn.id, profile)
+        await this.refreshConnectionState(conn)
     }
 
     public async getConnection(connection: Pick<Connection, 'id'>): Promise<Connection | undefined> {
@@ -731,7 +730,7 @@ export class Auth implements AuthService, ConnectionManager {
     /**
      * Auth processes can fail if there are network issues, and we do not
      * want to intepret these failures as invalid/expired auth tokens.
-     * 
+     *
      * We use this to check if the given error is network related and then
      * throw, expecting the caller to not change the state of the connection.
      */
