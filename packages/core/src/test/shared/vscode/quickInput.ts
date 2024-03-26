@@ -308,11 +308,6 @@ export class PickerTester<T extends vscode.QuickPickItem> {
     public async setFilter(value?: string | undefined): Promise<void> {
         this.picker.value = value ?? ''
 
-        // XXX: this event does not fire from the native VSC API on minver
-        if (vscode.version.startsWith('1.50')) {
-            this.triggers.onDidChangeValue.fire(this.picker.value)
-        }
-
         await whenAppliedFilter(this.picker)
     }
 }
