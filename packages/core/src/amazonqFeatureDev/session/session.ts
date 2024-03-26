@@ -19,8 +19,6 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
-const fs = FileSystemCommon.instance
-
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -173,13 +171,13 @@ export class Session {
             const content = await this.config.fs.readFile(uri)
             const decodedContent = new TextDecoder().decode(content)
 
-            await fs.mkdir(path.dirname(absolutePath))
-            await fs.writeFile(absolutePath, decodedContent)
+            await FileSystemCommon.instance.mkdir(path.dirname(absolutePath))
+            await FileSystemCommon.instance.writeFile(absolutePath, decodedContent)
         }
 
         for (const filePath of this.state.deletedFiles?.filter(i => !i.rejected) ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
-            await fs.delete(absolutePath)
+            await FileSystemCommon.instance.delete(absolutePath)
         }
 
         for (const ref of this.state.references ?? []) {

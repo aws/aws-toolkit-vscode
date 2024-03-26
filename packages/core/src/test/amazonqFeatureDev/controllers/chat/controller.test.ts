@@ -307,14 +307,14 @@ describe('Controller', () => {
             }, {})
             return getSessionStub.getCall(0).returnValue
         }
-        it('This test case verifies that when a customer clicks on the "Reject File" button, the state of the file is updated correctly to "rejected: true".', async () => {
+        it('clicking the "Reject File" button updates the file state to "rejected: true"', async () => {
             const session = await createCodeGenState()
             const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
 
             const rejectFile = await fileClicked(getSessionStub, 'reject-change')
             assert.strictEqual(rejectFile.state.filePaths?.find(i => i.relativePath === filePath)?.rejected, true)
         })
-        it('This test case verifies that when a customer clicks on the "Reject File" button and then clicks on the "Revert Reject File" button the state of the file is updated correctly to "rejected: false".', async () => {
+        it('clicking the "Reject File" button and then "Revert Reject File", updates the file state to "rejected: false"', async () => {
             const session = await createCodeGenState()
             const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
 
