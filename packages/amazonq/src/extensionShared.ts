@@ -5,7 +5,11 @@
 
 import * as vscode from 'vscode'
 import { join } from 'path'
-import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from 'aws-core-vscode/codewhisperer'
+import {
+    CodeSuggestionsState,
+    activate as activateCodeWhisperer,
+    shutdown as codewhispererShutdown,
+} from 'aws-core-vscode/codewhisperer'
 import {
     ExtContext,
     initialize,
@@ -70,6 +74,9 @@ export async function activateShared(context: vscode.ExtensionContext) {
 
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
+
+    // enable auto suggestions on activation
+    await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
 }
 
 export async function deactivateShared() {
