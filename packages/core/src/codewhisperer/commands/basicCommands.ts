@@ -243,6 +243,11 @@ export const fetchFeatureConfigsCmd = Commands.declare(
     }
 )
 
+/**
+ * TODO: Actually install Amazon Q.
+ *
+ * For now, it just has a fake progress bar to simulate that it is installing.
+ */
 export const installAmazonQExtension = Commands.declare(
     { id: 'aws.toolkit.installAmazonQExtension', logging: true },
     () => async () => {
@@ -253,7 +258,7 @@ export const installAmazonQExtension = Commands.declare(
                 location: vscode.ProgressLocation.Notification,
             },
             async () => {
-                await new Promise(r => setTimeout(r, 3000))
+                await new Promise(r => setTimeout(r, 5000))
             }
         )
     }

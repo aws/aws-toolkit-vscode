@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as packageJson from '../../package.json'
 import * as codecatalyst from './clients/codecatalystClient'
 import * as codewhisperer from '../codewhisperer/client/codewhisperer'
 import { getLogger } from './logger'
@@ -471,48 +470,6 @@ export interface ResetableMemento extends vscode.Memento {
     reset(): Promise<void>
 }
 
-// The below types are used to split-out 'sections' from `package.json`
-// Obviously not ideal, but the alternative is to generate the properties
-// from implementations. Using types requires basically no logic but lacks
-// precision. We still need to manually specify what type something should be,
-// at least for anything beyond primitive types.
-const settingsProps = packageJson.contributes.configuration.properties
-
-// type SettingsProps = typeof settingsProps
-
-// type Split<T, S extends string> = T extends `${infer L}${S}${infer R}` ? [L, ...Split<R, S>] : [T]
-// type Pop<T> = T extends [...infer R, infer _] ? R : never
-// type Intersection<T> = (T extends any ? (_: T) => any : never) extends (_: infer U) => any ? U : never
-
-// type FromParts<T, K> = K extends [infer U, ...infer R]
-//     ? [U, R] extends [string, string[]]
-//         ? { [P in U & string]: FromParts<T, R> }
-//         : T
-//     : T
-
-// type Format<T> = { [P in keyof T]: FromParts<TypeConstructor, Split<P, '.'>> }[keyof T]
-// type Config = Intersection<Format<SettingsProps>>
-
-// type Join<T extends string[], S extends string> = T['length'] extends 1
-//     ? T[0]
-//     : T extends [infer L, ...infer R]
-//     ? L extends string
-//         ? R extends string[]
-//             ? `${L}${S}${Join<R, S>}`
-//             : ''
-//         : ''
-//     : never
-
-// type Select<T, K> = K extends [infer L, ...infer R]
-//     ? L extends keyof T
-//         ? R['length'] extends 0
-//             ? T[L]
-//             : Select<T[L], R>
-//         : never
-//     : never
-
-// type Sections = { [P in keyof SettingsProps as Join<Pop<Split<P, '.'>>, '.'>]: Select<Config, Pop<Split<P, '.'>>> }
-
 /**
  * Creates a class for manipulating specific sections of settings specified in `package.json`.
  *
@@ -565,7 +522,7 @@ export function fromExtensionManifest(section: string, descriptor: any) {
     //
     // As long as the above holds true, throwing an error here will always be caught by CI
 
-    // TODO: restore/remove checking
+    /** TODO: restore/remove checking*/
     // const resolved = keys(descriptor).map(k => `${section}.${k}`)
     // const missing = resolved.filter(k => (settingsProps as Record<string, any>)[k] === undefined)
 
@@ -578,10 +535,6 @@ export function fromExtensionManifest(section: string, descriptor: any) {
 
     return Settings.define(section, descriptor)
 }
-
-// TODO: Disable compilation type checking of package.json. This is a start.
-// const prompts = settingsProps['aws.toolkit.suppressPrompts'].properties
-// type PromptName = keyof typeof prompts
 
 /**
  * Controls flags for prompts that allow the user to hide them. Usually this is presented as
@@ -628,9 +581,6 @@ export class PromptSettings extends Settings.define(
     }
 }
 
-const experiments = settingsProps['aws.experiments'].properties
-type ExperimentName = keyof typeof experiments
-
 /**
  * "Experiments" are for features that users must opt-in to use. Experimental implementations
  * should use this class to gate relevant functionality. Certain features, like adding a new
@@ -656,9 +606,9 @@ type ExperimentName = keyof typeof experiments
  */
 export class Experiments extends Settings.define(
     'aws.experiments',
-    toRecord(keys(experiments), () => Boolean)
+    toRecord(typeof '', () => Boolean)
 ) {
-    public async isExperimentEnabled(name: ExperimentName): Promise<boolean> {
+    public async isExperimentEnabled(name: string): Promise<boolean> {
         try {
             return this._getOrThrow(name, false)
         } catch (error) {

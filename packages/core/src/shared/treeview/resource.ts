@@ -94,11 +94,11 @@ interface LoadMoreable<T> {
 }
 
 const loadMore = <T>(controller: LoadMoreable<T>) => controller.loadMore()
-let learnMoreRegistered = false
 export const loadMoreCommand = Commands.instance.declare(
     '_aws.resources.loadMore',
     () => controller => loadMore(controller)
 )
+const registerLoadMore = once(() => loadMoreCommand.register())
 
 interface TreeNodeOptions<T> {
     /**
@@ -141,10 +141,7 @@ export class ResourceTreeNode<T extends TreeResource<unknown>, U = never> implem
     private loader?: PageLoader<TreeNode<U>>
 
     public constructor(public readonly resource: T, private readonly options?: TreeNodeOptions<U>) {
-        if (!learnMoreRegistered) {
-            loadMoreCommand.register()
-            learnMoreRegistered = true
-        }
+        registerLoadMore()
     }
 
     public get onDidChangeChildren() {

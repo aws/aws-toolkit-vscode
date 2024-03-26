@@ -125,6 +125,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // MUST restore CW/Q auth so that we can see if this user is already a Q user.
         await AuthUtil.instance.restore()
+
+        // Enable an internal command so that the Q/CW standalone extension can let the
+        // Toolkit view know what connection state it is in.
         Commands.register('_aws.toolkit.auth.restore', async () => {
             void vscode.commands.executeCommand('aws.amazonq.refresh')
         })
@@ -167,11 +170,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
         if (!isCloud9()) {
             if (!isSageMaker()) {
+                // Amazon Q/CodeWhisperer Tree setup.
                 learnMoreAmazonQCommand.register()
                 qExtensionPageCommand.register()
                 dismissQTree.register()
                 switchToAmazonQCommand.register()
                 installAmazonQExtension.register()
+
                 if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) && isPreviousQUser()) {
                     void vscode.window
                         .showInformationMessage(

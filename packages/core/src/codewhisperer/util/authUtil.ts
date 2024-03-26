@@ -432,6 +432,13 @@ export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<Feat
     return state
 }
 
+/**
+ * Returns true if an SSO connection with AmazonQ and CodeWhisperer scopes are found,
+ * even if the connection is expired.
+ *
+ * Note: This function will become irrelevant if/when the Amazon Q view tree is removed
+ * from the toolkit.
+ */
 export function isPreviousQUser() {
     const auth = AuthUtil.instance
 

@@ -62,6 +62,8 @@ export async function activateShared(context: vscode.ExtensionContext) {
         })
     )
 
+    // If the toolkit extension is active, we can let the toolkit extension know
+    // that we are installed and can report our connection status.
     if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
         void vscode.commands.executeCommand('aws.amazonq.refresh')
     }

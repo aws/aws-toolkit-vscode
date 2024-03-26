@@ -264,6 +264,10 @@ export async function activate(context: ExtContext): Promise<void> {
     )
 
     await auth.restore()
+
+    // While the Q/CW exposes an API for the Toolkit to register callbacks on auth changes,
+    // we need to do it manually here because the Toolkit would have been unable to call
+    // this API if the Q/CW extension started afterwards (and this code block is running).
     if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
         auth.auth.onDidChangeActiveConnection(async () => {
             await vscode.commands.executeCommand(
