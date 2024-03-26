@@ -315,13 +315,13 @@ describe('FilterBoxQuickPickPrompter', function () {
     it('adds a new item based off the filter box', async function () {
         const input = '123'
 
-        picker.onDidShow(() => {
+        picker.onDidShow(async () => {
             picker.onDidChangeActive(items => {
                 if (items[0]?.description !== undefined) {
                     picker.acceptItem(items[0])
                 }
             })
-            void picker.setFilter(input)
+            await picker.setFilter(input)
         })
 
         assert.strictEqual(await loadAndPrompt(), Number(input))
@@ -337,7 +337,7 @@ describe('FilterBoxQuickPickPrompter', function () {
                 }
             })
 
-            void picker.setFilter(input)
+            await picker.setFilter(input)
 
             const newItems = [{ label: 'item4', data: 3 }]
             const newItemsPromise = Promise.resolve(newItems)
@@ -360,7 +360,7 @@ describe('FilterBoxQuickPickPrompter', function () {
             })
 
             testPrompter.recentItem = { data: customUserInput, description: input } as any
-            void picker.setFilter(input)
+            await picker.setFilter(input)
         })
 
         assert.strictEqual(await loadAndPrompt(), Number(input))
@@ -369,8 +369,8 @@ describe('FilterBoxQuickPickPrompter', function () {
     it('validates the custom input', async function () {
         const input = 'not a number'
 
-        picker.onDidShow(() => {
-            const disposable = picker.onDidChangeActive(items => {
+        picker.onDidShow(async () => {
+            const disposable = picker.onDidChangeActive(async items => {
                 const item = items[0]
                 if (
                     isNonNullable(item) &&
@@ -386,11 +386,11 @@ describe('FilterBoxQuickPickPrompter', function () {
                     })
                     picker.acceptItem(picker.items[0])
                     disposable.dispose()
-                    void picker.setFilter()
+                    await picker.setFilter()
                 }
             })
 
-            void picker.setFilter(input)
+            await picker.setFilter(input)
         })
 
         assert.strictEqual(await loadAndPrompt(), testItems[0].data)
