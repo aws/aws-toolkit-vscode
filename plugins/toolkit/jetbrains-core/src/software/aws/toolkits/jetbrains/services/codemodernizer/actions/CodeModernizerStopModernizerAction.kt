@@ -9,10 +9,9 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerManager
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
+import software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformTelemetryManager
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformCancelSrcComponents
-import software.aws.toolkits.telemetry.CodetransformTelemetry
 
 class CodeModernizerStopModernizerAction :
     AnAction(
@@ -32,9 +31,7 @@ class CodeModernizerStopModernizerAction :
     override fun actionPerformed(event: AnActionEvent) {
         val project = event.project ?: return
         CodeModernizerManager.getInstance(project).userInitiatedStopCodeModernization()
-        CodetransformTelemetry.jobIsCancelledByUser(
-            codeTransformCancelSrcComponents = CodeTransformCancelSrcComponents.BottomPanelSideNavButton,
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId()
-        )
+        CodeTransformTelemetryManager.getInstance(project)
+            .jobIsCancelledByUser(CodeTransformCancelSrcComponents.BottomPanelSideNavButton)
     }
 }

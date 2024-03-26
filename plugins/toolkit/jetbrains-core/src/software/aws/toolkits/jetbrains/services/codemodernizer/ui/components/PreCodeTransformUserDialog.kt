@@ -20,12 +20,11 @@ import com.intellij.ui.dsl.builder.TopGap
 import com.intellij.ui.dsl.builder.columns
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.toMutableProperty
+import software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformTelemetryManager
 import software.aws.toolkits.jetbrains.services.codemodernizer.getSupportedJavaMappings
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CustomerSelection
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codemodernizer.tryGetJdk
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodetransformTelemetry
 import kotlin.math.max
 
 class PreCodeTransformUserDialog(
@@ -49,6 +48,7 @@ class PreCodeTransformUserDialog(
         lateinit var dialogPanel: DialogPanel
         lateinit var buildFileComboBox: ComboBox<String>
 
+        val telemetry = CodeTransformTelemetryManager.getInstance(project)
         val buildfiles = supportedBuildFilesInProject
         var focusedModuleIndex = 0
         var chosenBuildFile = buildfiles.firstOrNull()
@@ -109,9 +109,7 @@ class PreCodeTransformUserDialog(
                     dialogPanel.reset() // present model changes to user
                 }
                 buildFileComboBox.addActionListener {
-                    CodetransformTelemetry.configurationFileSelectedChanged(
-                        codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId()
-                    )
+                    telemetry.configurationFileSelectedChanged()
                 }
             }
             row {
@@ -125,16 +123,12 @@ class PreCodeTransformUserDialog(
 
         val builder = DialogBuilder()
         builder.setOkOperation {
-            CodetransformTelemetry.jobIsStartedFromUserPopupClick(
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId()
-            )
+            telemetry.jobIsStartedFromUserPopupClick()
             builder.dialogWrapper.close(DialogWrapper.OK_EXIT_CODE)
         }
         builder.addOkAction().setText(message("codemodernizer.customerselectiondialog.ok_button"))
         builder.setCancelOperation {
-            CodetransformTelemetry.jobIsCanceledFromUserPopupClick(
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId()
-            )
+            telemetry.jobIsCanceledFromUserPopupClick()
             builder.dialogWrapper.close(DialogWrapper.CANCEL_EXIT_CODE)
         }
         builder.addCancelAction()

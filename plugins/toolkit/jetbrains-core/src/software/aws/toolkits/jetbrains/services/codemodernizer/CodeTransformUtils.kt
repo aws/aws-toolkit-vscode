@@ -38,10 +38,8 @@ import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerCon
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MAVEN_CONFIGURATION_FILE_NAME
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.Thread.sleep
@@ -157,6 +155,7 @@ suspend fun JobId.pollTransformationStatusAndPlan(
     maxDuration: Duration = Duration.ofSeconds(604800),
     onStateChange: (previousStatus: TransformationStatus?, currentStatus: TransformationStatus, transformationPlan: TransformationPlan?) -> Unit,
 ): PollingResult {
+    val telemetry = CodeTransformTelemetryManager.getInstance(project)
     var state = TransformationStatus.UNKNOWN_TO_SDK_VERSION
     var transformationResponse: GetTransformationResponse? = null
     var transformationPlan: TransformationPlan? = null
@@ -193,20 +192,10 @@ suspend fun JobId.pollTransformationStatusAndPlan(
                     newPlan = clientAdaptor.getCodeModernizationPlan(this).transformationPlan()
                 }
                 if (newStatus != state) {
-                    CodetransformTelemetry.jobStatusChanged(
-                        codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformJobId = this.id,
-                        codeTransformStatus = newStatus.toString(),
-                        codeTransformPreviousStatus = state.toString()
-                    )
+                    telemetry.jobStatusChanged(this, newStatus.toString(), state.toString())
                 }
                 if (newPlan != transformationPlan) {
-                    CodetransformTelemetry.jobStatusChanged(
-                        codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformJobId = this.id,
-                        codeTransformStatus = "PLAN_UPDATED",
-                        codeTransformPreviousStatus = state.toString()
-                    )
+                    telemetry.jobStatusChanged(this, "PLAN_UPDATED", state.toString())
                 }
                 if (newStatus !in failOn && (newStatus != state || newPlan != transformationPlan)) {
                     transformationPlan = newPlan

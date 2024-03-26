@@ -15,12 +15,11 @@ import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
+import software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformTelemetryManager
 import software.aws.toolkits.jetbrains.services.codemodernizer.ideMaven.runMavenCopyCommands
 import software.aws.toolkits.jetbrains.services.codemodernizer.panels.managers.CodeModernizerBottomWindowPanelManager
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codemodernizer.toolwindow.CodeModernizerBottomToolWindowFactory
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.io.File
 import java.io.IOException
 import java.nio.file.FileVisitOption
@@ -29,15 +28,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
-import kotlin.io.NoSuchFileException
-import kotlin.io.byteInputStream
-import kotlin.io.deleteRecursively
-import kotlin.io.inputStream
 import kotlin.io.path.Path
-import kotlin.io.relativeTo
-import kotlin.io.resolve
-import kotlin.io.resolveSibling
-import kotlin.io.walkTopDown
 
 const val MANIFEST_PATH = "manifest.json"
 const val ZIP_SOURCES_PATH = "sources"
@@ -83,13 +74,14 @@ data class CodeModernizerSessionContext(
     fun executeMavenCopyCommands(sourceFolder: File, buildLogBuilder: StringBuilder) = runMavenCopyCommands(sourceFolder, buildLogBuilder, LOG, project)
 
     fun createZipWithModuleFiles(): ZipCreationResult {
+        val telemetry = CodeTransformTelemetryManager.getInstance(project)
         val root = configurationFile.parent
         val sourceFolder = File(root.path)
         val buildLogBuilder = StringBuilder("Starting Build Log...\n")
         val result = executeMavenCopyCommands(sourceFolder, buildLogBuilder)
         val depDirectory = if (result is MavenCopyCommandsResult.Success) {
             showTransformationHub()
-            CodetransformTelemetry.dependenciesCopied(codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId())
+            telemetry.dependenciesCopied()
             result.dependencyDirectory
         } else {
             null

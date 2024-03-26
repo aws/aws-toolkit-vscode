@@ -21,7 +21,6 @@ import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.apache.commons.codec.digest.DigestUtils
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationJob
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationPlan
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
@@ -48,7 +47,6 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationR
 import software.aws.toolkits.jetbrains.services.codemodernizer.panels.managers.CodeModernizerBottomWindowPanelManager
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerState
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.StateFlags
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.buildState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.getLatestJobId
@@ -61,14 +59,9 @@ import software.aws.toolkits.jetbrains.utils.notifyStickyError
 import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformCancelSrcComponents
-import software.aws.toolkits.telemetry.CodeTransformJavaSourceVersionsAllowed
-import software.aws.toolkits.telemetry.CodeTransformJavaTargetVersionsAllowed
 import software.aws.toolkits.telemetry.CodeTransformPreValidationError
 import software.aws.toolkits.telemetry.CodeTransformStartSrcComponents
-import software.aws.toolkits.telemetry.CodetransformTelemetry
-import software.aws.toolkits.telemetry.Result
 import java.time.Instant
-import java.util.Base64
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.Icon
 
@@ -76,6 +69,7 @@ const val AMAZON_Q_FEEDBACK_DIALOG_KEY = "Amazon Q"
 
 @State(name = "codemodernizerStates", storages = [Storage("aws.xml", roamingType = RoamingType.PER_OS)])
 class CodeModernizerManager(private val project: Project) : PersistentStateComponent<CodeModernizerState>, Disposable {
+    private val telemetry = CodeTransformTelemetryManager.getInstance(project)
     private var managerState = CodeModernizerState()
     val codeModernizerBottomWindowPanelManager by lazy { CodeModernizerBottomWindowPanelManager(project) }
     private val codeModernizerBottomWindowPanelContent by lazy {
@@ -204,11 +198,11 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
 
     fun validateAndStart(srcStartComponent: CodeTransformStartSrcComponents = CodeTransformStartSrcComponents.DevToolsStartButton) =
         projectCoroutineScope(project).launch {
-            sendUserClickedTelemetry(srcStartComponent)
+            telemetry.sendUserClickedTelemetry(srcStartComponent)
             if (isModernizationInProgress.getAndSet(true)) return@launch
             val validationResult = validate(project)
             runInEdt {
-                sendValidationResultTelemetry(validationResult)
+                telemetry.sendValidationResult(validationResult)
                 if (validationResult.valid) {
                     runModernize(validationResult.validatedBuildFiles) ?: isModernizationInProgress.set(false)
                 } else {
@@ -218,58 +212,17 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             }
         }
 
-    private fun sendUserClickedTelemetry(srcStartComponent: CodeTransformStartSrcComponents) {
-        CodeTransformTelemetryState.instance.setSessionId()
-        CodeTransformTelemetryState.instance.setStartTime()
-        CodetransformTelemetry.isDoubleClickedToTriggerUserModal(
-            codeTransformStartSrcComponents = srcStartComponent,
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-        )
-    }
-
-    private fun sendValidationResultTelemetry(validationResult: ValidationResult, onProjectFirstOpen: Boolean = false) {
-        // Old telemetry event to be fired only when users click on transform
-        if (!validationResult.valid && !onProjectFirstOpen) {
-            CodetransformTelemetry.isDoubleClickedToTriggerInvalidProject(
-                codeTransformPreValidationError = validationResult.invalidTelemetryReason.category ?: CodeTransformPreValidationError.Unknown,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                result = Result.Failed,
-                reason = validationResult.invalidTelemetryReason.additonalInfo
-            )
-        }
-        // New projectDetails metric should always be fired whether the project was valid or invalid
-        CodetransformTelemetry.projectDetails(
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            result = if (!validationResult.valid) Result.Failed else Result.Succeeded,
-            reason = if (!validationResult.valid) validationResult.invalidTelemetryReason.additonalInfo else null,
-            codeTransformPreValidationError = validationResult.invalidTelemetryReason.category ?: CodeTransformPreValidationError.Unknown,
-            codeTransformLocalJavaVersion = project.tryGetJdk().toString()
-        )
-    }
-
     fun stopModernize() {
         if (isModernizationJobActive()) {
             userInitiatedStopCodeModernization()
-            CodetransformTelemetry.jobIsCancelledByUser(
-                codeTransformCancelSrcComponents = CodeTransformCancelSrcComponents.DevToolsStopButton,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId()
-            )
+            telemetry.jobIsCancelledByUser(CodeTransformCancelSrcComponents.DevToolsStopButton)
         }
     }
-
-    private fun calculateProjectHash(customerSelection: CustomerSelection) = Base64
-        .getEncoder()
-        .encodeToString(DigestUtils.sha256(customerSelection.configurationFile.path))
 
     fun runModernize(validatedBuildFiles: List<VirtualFile>): Job? {
         initStopParameters()
         val customerSelection = getCustomerSelection(validatedBuildFiles) ?: return null
-        CodetransformTelemetry.jobStartedCompleteFromPopupDialog(
-            codeTransformJavaSourceVersionsAllowed = CodeTransformJavaSourceVersionsAllowed.from(customerSelection.sourceJavaVersion.name),
-            codeTransformJavaTargetVersionsAllowed = CodeTransformJavaTargetVersionsAllowed.from(customerSelection.targetJavaVersion.name),
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformProjectId = calculateProjectHash(customerSelection),
-        )
+        telemetry.jobStartedCompleteFromPopupDialog(customerSelection)
         initModernizationJobUI(true, project.getModuleOrProjectNameForFile(customerSelection.configurationFile))
         val session = createCodeModernizerSession(customerSelection, project)
         codeTransformationSession = session
@@ -479,7 +432,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             // Gather project details
             if (onProjectFirstOpen) {
                 val validationResult = validate(project)
-                sendValidationResultTelemetry(validationResult, onProjectFirstOpen)
+                telemetry.sendValidationResult(validationResult, onProjectFirstOpen)
             }
 
             val context = managerState.toSessionContext(project)
@@ -541,11 +494,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                     )
                 }
             }
-            CodetransformTelemetry.jobIsResumedAfterIdeClose(
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId = lastJobId.id,
-                codeTransformStatus = result.status().toString()
-            )
+            telemetry.jobIsResumedAfterIdeClose(lastJobId, result.status())
         } catch (e: AccessDeniedException) {
             LOG.error { "Unable to resume job as credentials are invalid" }
             // User is logged in with old or invalid credentials, nothing to do until they log in with valid credentials
@@ -641,14 +590,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_PREREQUISITES), displayFeedbackNotificationAction()),
             )
         }
-        CodetransformTelemetry.totalRunTime(
-            codeTransformJobId = jobId?.toString(),
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformResultStatusMessage = result.toString(),
-            codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
-            codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
-            codeTransformLocalMavenVersion = getMavenVersion(project),
-        )
+        telemetry.totalRunTime(result.toString(), jobId)
     }
 
     fun createCodeModernizerSession(customerSelection: CustomerSelection, project: Project) = CodeModernizerSession(
@@ -669,33 +611,19 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     fun userInitiatedStopCodeModernization() {
         notifyTransformationStartStopping()
         if (transformationStoppedByUsr.getAndSet(true)) return
-        val currentId = codeTransformationSession?.getActiveJobId()?.id
+        val currentId = codeTransformationSession?.getActiveJobId()
         projectCoroutineScope(project).launch {
             try {
-                val success = codeTransformationSession?.stopTransformation(currentId) ?: true // no session -> no job to stop
+                val success = codeTransformationSession?.stopTransformation(currentId?.id) ?: true // no session -> no job to stop
                 if (!success) {
                     // This should not happen
                     throw CodeModernizerException(message("codemodernizer.notification.info.transformation_start_stopping.as_no_response"))
-                } else {
-                    // Code successfully stopped toast will display when post job is run after this
-                    CodetransformTelemetry.totalRunTime(
-                        codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformResultStatusMessage = "JobCancelled",
-                        codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
-                        codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
-                        codeTransformLocalMavenVersion = getMavenVersion(project),
-                    )
                 }
             } catch (e: Exception) {
                 LOG.error(e) { e.message.toString() }
                 notifyTransformationFailedToStop(e.localizedMessage)
-                CodetransformTelemetry.totalRunTime(
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformResultStatusMessage = "JobCancelled",
-                    codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
-                    codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
-                    codeTransformLocalMavenVersion = getMavenVersion(project),
-                )
+            } finally {
+                telemetry.totalRunTime("JobCancelled", currentId)
             }
         }
     }

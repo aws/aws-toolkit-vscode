@@ -8,8 +8,11 @@ import com.intellij.util.xmlb.annotations.Property
 import java.time.Instant
 import java.util.UUID
 
+/**
+ * The persistent state for the [CodeModernizerTelemetryManager] as such should only be accessed by [CodeModernizerTelemetryManager].
+ */
 class CodeTransformTelemetryState {
-    private var mainState = CodeModernizerTelemetryStateBase()
+    private val mainState = CodeModernizerTelemetryStateBase()
 
     fun getSessionId() = mainState.sessionId
     fun setSessionId() {

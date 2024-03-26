@@ -41,7 +41,7 @@ import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublishe
 import software.aws.toolkits.jetbrains.services.amazonq.onboarding.OnboardingPageInteraction
 import software.aws.toolkits.jetbrains.services.amazonq.onboarding.OnboardingPageInteractionType
 import software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerManager
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
+import software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformTelemetryManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererUserModificationTracker
 import software.aws.toolkits.jetbrains.services.cwc.InboundAppMessagesHandler
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.exceptions.ChatApiException
@@ -74,7 +74,6 @@ import software.aws.toolkits.jetbrains.services.cwc.messages.QuickActionMessage
 import software.aws.toolkits.jetbrains.services.cwc.storage.ChatSessionStorage
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformStartSrcComponents
-import software.aws.toolkits.telemetry.CodetransformTelemetry
 import software.aws.toolkits.telemetry.CwsprChatCommandType
 import java.time.Instant
 import java.util.UUID
@@ -145,9 +144,7 @@ class ChatController private constructor(
                 } else {
                     manager.getBottomToolWindow().show()
                 }
-                CodetransformTelemetry.jobIsStartedFromChatPrompt(
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                )
+                CodeTransformTelemetryManager.getInstance(context.project).jobIsStartedFromChatPrompt()
             }
         }
         TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Transform, startUrl = getStartUrl(context.project))

@@ -69,6 +69,7 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
         var mockFile = Mockito.mock(VirtualFile::class.java)
         `when`(mockFile.name).thenReturn("pomx.xml")
         `when`(mockFile.path).thenReturn("/mocked/path/pom.xml")
+        `when`(mockFile.toNioPath()).thenReturn(Path("/mocked/path/pom.xml"))
         val selection = CustomerSelection(mockFile, JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_17)
         doReturn(selection).whenever(codeModernizerManagerSpy).getCustomerSelection(any())
         doNothing().whenever(codeModernizerManagerSpy).postModernizationJob(any())
