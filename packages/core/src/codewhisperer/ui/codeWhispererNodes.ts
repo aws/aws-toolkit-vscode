@@ -174,7 +174,7 @@ export function createSettingsNode(): DataQuickPickItem<'openCodeWhispererSettin
         data: 'openCodeWhispererSettings',
         label: 'Open Settings',
         iconPath: getIcon('vscode-settings-gear'),
-        onClick: () => Commands.tryExecute('aws.codeWhisperer.configure'),
+        onClick: () => Commands.tryExecute('amazonQ.developer.configure'),
     } as DataQuickPickItem<'openCodeWhispererSettings'>
 }
 
