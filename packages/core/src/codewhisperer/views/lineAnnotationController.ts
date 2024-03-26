@@ -327,11 +327,6 @@ export class LineAnnotationController implements vscode.Disposable {
             return
         }
 
-        if (!this.container.auth.isConnectionValid()) {
-            this.clear()
-            return
-        }
-
         if (this.isTutorialDone()) {
             this.clear()
             return
@@ -356,6 +351,11 @@ export class LineAnnotationController implements vscode.Disposable {
 
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
         if (editor.document === undefined || !this.container.lineTracker.includes(selections)) {
+            this.clear()
+            return
+        }
+
+        if (!this.container.auth.isConnectionValid()) {
             this.clear()
             return
         }

@@ -115,8 +115,9 @@ export class LineTracker implements vscode.Disposable {
 
     // @VisibleForTesting
     onContentChanged(e: vscode.TextDocumentChangeEvent) {
-        if (e.document === vscode.window.activeTextEditor?.document && e.contentChanges.length > 0) {
-            this._editor = vscode.window.activeTextEditor
+        const editor = vscode.window.activeTextEditor
+        if (e.document === editor?.document && e.contentChanges.length > 0 && isTextEditor(editor)) {
+            this._editor = editor
             this._selections = toLineSelections(this._editor?.selections)
 
             this.notifyLinesChanged('content')
