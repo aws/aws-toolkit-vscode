@@ -23,6 +23,7 @@ export enum CancelActionPositions {
     LoadingPanel = 'loadingPanelStopButton',
     DevToolsSidePanel = 'devToolsStopButton',
     BottomHubPanel = 'bottomPanelSideNavButton',
+    Chat = 'qChatPanel',
 }
 
 export enum StartActionPositions {
@@ -45,6 +46,11 @@ export const logCodeTransformInitiatedMetric = (source: string): void => {
     } else if (source === StartActionPositions.BottomHubPanel) {
         telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
             codeTransformStartSrcComponents: StartActionPositions.BottomHubPanel,
+            ...commonMetrics,
+            result: MetadataResult.Pass,
+        })
+    } else if (source === StartActionPositions.ChatPrompt) {
+        telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
             ...commonMetrics,
             result: MetadataResult.Pass,
         })
