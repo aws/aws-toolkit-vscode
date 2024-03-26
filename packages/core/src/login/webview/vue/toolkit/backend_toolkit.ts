@@ -72,4 +72,8 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     async useConnection(connectionId: string): Promise<AuthError | undefined> {
         return undefined
     }
+
+    async quitLoginScreen() {
+        await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+    }
 }

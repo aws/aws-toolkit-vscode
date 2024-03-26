@@ -113,4 +113,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     ): Promise<AuthError | undefined> {
         throw new Error('Method not implemented.')
     }
+
+    /** If users are unauthenticated in Q/CW, we should always display the auth screen. */
+    async quitLoginScreen() {}
 }
