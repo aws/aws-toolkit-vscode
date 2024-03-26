@@ -138,7 +138,6 @@ export async function compileProject() {
         transformByQState.setDependencyFolderInfo(dependenciesFolder)
         await prepareProjectDependencies(dependenciesFolder)
     } catch (err) {
-        void vscode.window.showErrorMessage(CodeWhispererConstants.installErrorMessage)
         // open build-logs.txt file to show user error logs
         const logFilePath = await writeLogs()
         const doc = await vscode.workspace.openTextDocument(logFilePath)

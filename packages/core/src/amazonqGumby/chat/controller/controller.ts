@@ -234,17 +234,16 @@ export class GumbyController {
     private async initiateTransformationOnProject(message: any) {
         const pathToProject: string = message.formSelectedValues['GumbyTransformProjectForm']
         const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
-        let fromJDKVersion: JDKVersion | undefined = this.sessionStorage
-            .getSession()
-            .candidateProjects.get(pathToProject)?.JDKVersion
-
-        // If we couldn't detect the JDK version, set 8 as the default
-        if (fromJDKVersion === undefined) {
-            fromJDKVersion = JDKVersion.JDK8
-        }
+        const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
 
         const projectName = path.basename(pathToProject)
-        this.messenger.sendProjectSelectionMessage(projectName, toJDKVersion, message.tabId)
+        this.messenger.sendProjectSelectionMessage(projectName, fromJDKVersion, toJDKVersion, message.tabId)
+
+        if (fromJDKVersion === JDKVersion.UNSUPPORTED) {
+            this.messenger.sendRetryableErrorResponse('unsupported-source-jdk-version', message.tabId)
+            return
+        }
+
         await processTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
         await this.validateBuildWithPromptOnError(message)
     }
@@ -261,11 +260,12 @@ export class GumbyController {
             this.sessionStorage.getSession().conversationState = ConversationState.COMPILING
             this.messenger.sendCompilationInProgress(message.tabID)
             await compileProject()
-
-            this.messenger.sendCompilationFinished(message.tabID)
         } catch (err: any) {
             this.messenger.sendRetryableErrorResponse('could-not-compile-project', message.tabID)
+            throw err
         }
+
+        this.messenger.sendCompilationFinished(message.tabID)
 
         const authState = await getChatAuthState()
         if (authState.amazonQ !== 'connected') {
@@ -339,7 +339,7 @@ export class GumbyController {
 function extractPath(text: string): string | undefined {
     const words = text.split(/\s+/) // Split text into words by whitespace
 
-    // Filter words that look like paths using path.isAbsolute
+    // Filter words that are formatted like paths and do exist as local directories
     const paths = words.find(word => fs.existsSync(word) && fs.lstatSync(word).isDirectory())
 
     return paths

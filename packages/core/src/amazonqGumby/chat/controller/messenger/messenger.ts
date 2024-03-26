@@ -41,6 +41,7 @@ export type ErrorTextResponseType =
     | 'no-maven-java-project-found'
     | 'could-not-compile-project'
     | 'invalid-java-home'
+    | 'unsupported-source-jdk-version'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -104,12 +105,14 @@ export class Messenger {
 
     public async sendProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
         const projectFormOptions: { value: any; label: string }[] = []
+        const detectedJavaVersions = new Array<JDKVersion | undefined>()
 
         projects.forEach(candidateProject => {
             projectFormOptions.push({
                 value: candidateProject.path,
                 label: candidateProject.name,
             })
+            detectedJavaVersions.push(candidateProject.JDKVersion)
         })
 
         const formItems: ChatItemFormItem[] = []
@@ -120,6 +123,27 @@ export class Messenger {
             mandatory: true,
 
             options: projectFormOptions,
+        })
+
+        formItems.push({
+            id: 'GumbyTransformJdkFromForm',
+            type: 'select',
+            title: 'Choose the source code version',
+            mandatory: true,
+            options: [
+                {
+                    value: JDKVersion.JDK8,
+                    label: JDKVersion.JDK8.toString(),
+                },
+                {
+                    value: JDKVersion.JDK11,
+                    label: JDKVersion.JDK11.toString(),
+                },
+                {
+                    value: JDKVersion.UNSUPPORTED,
+                    label: 'Other',
+                },
+            ],
         })
 
         formItems.push({
@@ -138,7 +162,7 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: `I can upgrade your Java ${projects[0].JDKVersion} project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Transform.`,
+                message: MessengerUtils.createTransformationConfirmationPrompt(detectedJavaVersions),
             })
         )
 
@@ -283,11 +307,16 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
 For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
                 break
             case 'could-not-compile-project':
-                message = `Sorry, I couldn't run the Maven install or Maven copy-dependencies commands to build your project. To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)`
+                message = `Sorry, I couldn't run the Maven install to build your project. To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)`
                 break
             case 'invalid-java-home':
-                message = "I'm sorry, I could not locate your Java installation."
+                message =
+                    "I'm sorry, I could not locate your Java installation.  To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)"
                 break
+            case 'unsupported-source-jdk-version':
+                message = `I'm sorry, currently I can only upgrade Java 8 or Java 11 projects.
+                
+For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
         }
 
         const buttons: ChatItemButton[] = []
@@ -354,12 +383,18 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
         )
     }
 
-    public sendProjectSelectionMessage(projectName: string, toJDKVersion: JDKVersion, tabID: any) {
+    public sendProjectSelectionMessage(
+        projectName: string,
+        fromJDKVersion: JDKVersion,
+        toJDKVersion: JDKVersion,
+        tabID: any
+    ) {
         const message = `### Transformation details
 -------------
 | | |
 | :------------------- | -------: |
 | **Project**             |   ${projectName}   |
+| **Source JDK version** |  ${fromJDKVersion}   |
 | **Target JDK version** |  ${toJDKVersion}   |
     `
 
