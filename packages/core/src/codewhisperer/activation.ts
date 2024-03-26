@@ -113,7 +113,7 @@ export async function activate(context: ExtContext): Promise<void> {
             }
 
             if (
-                configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.includeSuggestionsWithCodeReferences')
+                configurationChangeEvent.affectsConfiguration('amazonQ.developer.includeSuggestionsWithCodeReferences')
             ) {
                 ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
@@ -130,7 +130,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             }
 
-            if (configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.shareCodeWhispererContentWithAWS')) {
+            if (configurationChangeEvent.affectsConfiguration('amazonQ.developer.shareCodeWhispererContentWithAWS')) {
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
                         .showInformationMessage(
@@ -165,14 +165,14 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * Open Configuration
          */
-        Commands.register('aws.codeWhisperer.configure', async id => {
+        Commands.register('amazonQ.developer.configure', async id => {
             if (id === 'codewhisperer') {
                 await vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    `@id:aws.codeWhisperer.includeSuggestionsWithCodeReferences`
+                    `@id:amazonQ.developer.includeSuggestionsWithCodeReferences`
                 )
             } else {
-                await vscode.commands.executeCommand('workbench.action.openSettings', `aws.codeWhisperer`)
+                await vscode.commands.executeCommand('workbench.action.openSettings', `amazonQ.developer`)
             }
         }),
         Commands.register('aws.codewhisperer.refreshAnnotation', async (forceProceed: boolean = false) => {

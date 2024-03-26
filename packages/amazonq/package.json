@@ -58,10 +58,10 @@
     "contributes": {
         "configuration": {
             "type": "object",
-            "title": "%AWS.productName%",
+            "title": "%AWS.amazonq.productName%",
             "cloud9": {
                 "cn": {
-                    "title": "%AWS.productName.cn%"
+                    "title": "%AWS.amazonq.productName.cn%"
                 }
             },
             "properties": {
@@ -70,7 +70,7 @@
                     "deprecationMessage": "The current profile is now stored internally by the Toolkit.",
                     "description": "%AWS.configuration.profileDescription%"
                 },
-                "aws.amazonq.logLevel": {
+                "amazonQ.logLevel": {
                     "type": "string",
                     "default": "info",
                     "enum": [
@@ -87,24 +87,24 @@
                         "Errors, Warnings, Info, and Verbose",
                         "Errors, Warnings, Info, Verbose, and Debug"
                     ],
-                    "markdownDescription": "%AWS.configuration.description.logLevel%",
+                    "markdownDescription": "%AWS.amazonq.configuration.description.logLevel%",
                     "cloud9": {
                         "cn": {
-                            "markdownDescription": "%AWS.configuration.description.logLevel.cn%"
+                            "markdownDescription": "%AWS.amazonq.configuration.description.logLevel.cn%"
                         }
                     }
                 },
-                "aws.amazonq.telemetry": {
+                "amazonQ.telemetry": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%AWS.configuration.description.telemetry%",
+                    "markdownDescription": "%AWS.amazonq.configuration.description.telemetry%",
                     "cloud9": {
                         "cn": {
-                            "markdownDescription": "%AWS.configuration.description.telemetry.cn%"
+                            "markdownDescription": "%AWS.amazonq.configuration.description.telemetry.cn%"
                         }
                     }
                 },
-                "aws.amazonq.suppressPrompts": {
+                "amazonQ.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
                     "default": {},
@@ -128,23 +128,23 @@
                     },
                     "additionalProperties": false
                 },
-                "aws.codeWhisperer.includeSuggestionsWithCodeReferences": {
+                "amazonQ.developer.includeSuggestionsWithCodeReferences": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.codewhisperer%",
                     "default": true
                 },
-                "aws.codeWhisperer.importRecommendation": {
+                "amazonQ.developer.importRecommendation": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.codewhisperer.importRecommendation%",
                     "default": true
                 },
-                "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {
+                "amazonQ.developer.shareCodeWhispererContentWithAWS": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.codewhisperer.shareCodeWhispererContentWithAWS%",
                     "default": true,
                     "scope": "application"
                 },
-                "aws.codeWhisperer.javaCompilationOutput": {
+                "amazonQ.developer.javaCompilationOutput": {
                     "type": "string",
                     "default": "",
                     "description": "Provide the ABSOLUTE path which is used to store java project compilation results."
