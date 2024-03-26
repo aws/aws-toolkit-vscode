@@ -40,7 +40,7 @@
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
         "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles",
-        "generateNonCodeFiles": "ts-node ./scripts/build/generateNonCodeFiles.ts",
+        "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* README* CHANGELOG.md",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development",
