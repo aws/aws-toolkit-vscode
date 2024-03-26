@@ -114,5 +114,6 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         throw new Error('Method not implemented.')
     }
 
+    /** If users are unauthenticated in Q/CW, we should always display the auth screen. */
     async quitLoginScreen() {}
 }
