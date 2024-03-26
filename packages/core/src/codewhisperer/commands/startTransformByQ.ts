@@ -250,7 +250,7 @@ export async function startTransformByQ() {
                 'aws.amazonq.showPlanProgressInHub',
                 codeTransformTelemetryState.getStartTime()
             )
-        }, CodeWhispererConstants.transformationJobPollingIntervalSeconds)
+        }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
 
         // step 1: CreateCodeUploadUrl and upload code
         const uploadId = await preTransformationUploadCode(userInputState)
