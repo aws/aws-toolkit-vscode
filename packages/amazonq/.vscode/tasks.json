@@ -13,7 +13,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": ["serve"]
+            "dependsOn": ["watchCore", "serve"]
         },
         {
             "label": "serve",
@@ -34,12 +34,43 @@
                     "beginsPattern": "Project is running at",
                     "endsPattern": "compiled"
                 }
+            },
+            "options": {
+                "env": {
+                    "NODE_OPTIONS": "--max_old_space_size=5120"
+                }
+            }
+        },
+        {
+            "label": "watchCore",
+            "command": "npm run compileLite -- --watch",
+            "type": "shell",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "custom",
+                "pattern": {
+                    "regexp": ".",
+                    "file": 1,
+                    "location": 2,
+                    "message": 3
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "Starting compilation",
+                    "endsPattern": "Watching for file changes."
+                }
+            },
+            "options": {
+                "cwd": "../core"
             }
         },
         {
             "label": "terminate",
             "command": "echo run terminate",
-            "type": "shell"
+            "type": "shell",
+            "presentation": {
+                "close": true
+            }
         },
         {
             "type": "npm",
