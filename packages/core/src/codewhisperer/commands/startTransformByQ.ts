@@ -50,7 +50,6 @@ import {
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
-import { ToolkitError } from '../../shared/errors'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -58,7 +57,11 @@ export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform
 let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
 
 export async function startTransformByQWithProgress() {
-    await startTransformByQ()
+    try {
+        await startTransformByQ()
+    } catch (error: any) {
+        // swallow error; appropriate notifications have already been shown
+    }
 }
 
 interface UserInputState {
@@ -237,7 +240,7 @@ export async function startTransformByQ() {
         await setMaven()
         await validateJavaHome()
     } catch (error: any) {
-        throw new ToolkitError('', { code: 'InputValidationFailed' })
+        throw new Error('Input validation failed')
     }
 
     // Set the default state variables for our store and the UI
