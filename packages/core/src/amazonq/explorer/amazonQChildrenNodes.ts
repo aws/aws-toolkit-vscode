@@ -46,9 +46,10 @@ export const switchToAmazonQCommand = Commands.declare(
             })
             if (signIn) {
                 await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', true)
+                await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
+            } else {
+                await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
             }
-            await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-            await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
         }
 )
 

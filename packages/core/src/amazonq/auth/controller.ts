@@ -28,7 +28,7 @@ export class AuthController {
 
     private handleFullAuth() {
         void vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', true)
-        void vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+        void vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
     }
 
     private handleReAuth() {

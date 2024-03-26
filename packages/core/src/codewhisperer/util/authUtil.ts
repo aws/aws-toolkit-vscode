@@ -31,6 +31,7 @@ import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { GlobalState } from '../../shared/globalState'
 import { vsCodeState } from '../models/model'
+import { once } from '../../shared/utilities/functionUtils'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -110,7 +111,9 @@ export class AuthUtil {
     )
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
-    public constructor(public readonly auth = Auth.instance) {
+    public constructor(public readonly auth = Auth.instance) {}
+
+    public initCodeWhispererHooks = once(() => {
         this.auth.onDidChangeConnectionState(async e => {
             getLogger().info(`codewhisperer: connection changed to ${e.state}: ${e.id}`)
             if (e.state !== 'authenticating') {
@@ -157,7 +160,7 @@ export class AuthUtil {
             }
             await this.setVscodeContextProps()
         })
-    }
+    })
 
     public async setVscodeContextProps() {
         if (!isCloud9()) {

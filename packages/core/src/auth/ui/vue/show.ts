@@ -718,7 +718,7 @@ export function getShowManageConnections(): RegisteredCommand<any> {
 export function registerCommands(context: vscode.ExtensionContext, prefix: string) {
     showManageConnections = Commands.register(
         { id: `aws.${prefix}.auth.manageConnections`, compositeKey: { 1: 'source' } },
-        (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
+        async (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
             if (_ !== placeholder) {
                 source = 'vscodeComponent'
             }
@@ -739,8 +739,8 @@ export function registerCommands(context: vscode.ExtensionContext, prefix: strin
 
             // TODO: hack
             if (prefix === 'toolkit') {
-                void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
-                void vscode.commands.executeCommand('aws.toolkit.AmazonCommonAuth.focus')
+                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
+                await vscode.commands.executeCommand('aws.toolkit.AmazonCommonAuth.focus')
             }
         }
     )

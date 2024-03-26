@@ -69,6 +69,8 @@ export async function activate(context: ExtContext): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
     const auth = AuthUtil.instance
+    auth.initCodeWhispererHooks()
+
     /**
      * Enable essential intellisense default settings for AWS C9 IDE
      */
