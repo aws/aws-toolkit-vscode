@@ -44,7 +44,7 @@
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* README* CHANGELOG.md",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development",
-        "package": "ts-node ../../scripts/package.ts && npm run restorePackageJson",
+        "package": "ts-node ../../scripts/package.ts",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "echo 'Nothing to lint yet!'",
