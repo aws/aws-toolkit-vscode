@@ -262,8 +262,7 @@ export class LineAnnotationController implements vscode.Disposable {
                     try {
                         telemetry.ui_click.emit({ elementId: `dismiss_${this._currentState.id}` })
                     } catch (_) {}
-                    this._currentState = new EndState()
-                    await vscode.commands.executeCommand('setContext', inlinehintWipKey, false)
+                    await this.markTutorialDone()
                     getLogger().debug(`codewhisperer: user dismiss tutorial.`)
                 }
             })
