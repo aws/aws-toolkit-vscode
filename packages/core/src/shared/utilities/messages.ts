@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
-import { getLogger, showLogOutputChannel } from '../../shared/logger'
+import { getLogger } from '../../shared/logger'
 import { ProgressEntry } from '../../shared/vscode/window'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
@@ -102,7 +102,7 @@ export async function showViewLogsMessage(
     const p = showMessageWithItems(message, kind, items)
     return p.then<string | undefined>(selection => {
         if (selection === logsItem) {
-            showLogOutputChannel()
+            globals.logOutputChannel.show(true)
         }
         return selection
     })

@@ -84,6 +84,13 @@ export class SsoAccessTokenProvider {
         ])
     }
 
+    public async duplicateToken(oldCacheKey: string, newCacheKey: string) {
+        const data = await this.cache.token.load(oldCacheKey)
+        if (data) {
+            await this.cache.token.save(newCacheKey, data)
+        }
+    }
+
     public async getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
         getLogger().info(

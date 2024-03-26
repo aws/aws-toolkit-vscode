@@ -3,36 +3,103 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { SsoConnection } from '../../../../auth/connection'
+import { SsoConnection, scopesCodeWhispererChat } from '../../../../auth/connection'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
+import { activateExtension, isExtensionActive, isExtensionInstalled } from '../../../../shared/utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
+import { getLogger } from '../../../../shared/logger'
+import { Auth } from '../../../../auth'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
-    public override source: string = 'src/login/webview/vue/amazonq/index.js'
+    public override id: string = 'aws.amazonq.AmazonCommonAuth'
+    public static sourcePath: string = 'vue/src/login/webview/vue/amazonq/index.js'
 
-    fetchConnection(): SsoConnection | undefined {
-        if (AuthUtil.instance.isConnected() && AuthUtil.instance.conn?.type === 'sso') {
-            return AuthUtil.instance.conn
+    constructor() {
+        super(AmazonQLoginWebview.sourcePath)
+    }
+
+    async fetchConnections(): Promise<SsoConnection[] | undefined> {
+        if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
+            return undefined
         }
-        return undefined
+        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+        const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+        const importedApi = toolkitExt?.exports
+        const connections: SsoConnection[] = []
+        if (importedApi && 'listConnections' in importedApi) {
+            return await importedApi?.listConnections()
+        }
+        return connections
+    }
+
+    async useConnection(connectionId: string): Promise<AuthError | undefined> {
+        if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
+            return undefined
+        }
+        try {
+            await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+            const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+            const importedApi = toolkitExt?.exports
+            if (importedApi && 'listConnections' in importedApi) {
+                const connections: SsoConnection[] = await importedApi?.listConnections()
+                connections.forEach(async (connection: SsoConnection) => {
+                    if (connection.id === connectionId) {
+                        if (connection.scopes?.includes(scopesCodeWhispererChat[0])) {
+                            getLogger().info(`auth: re-use connection from existing connection id ${connectionId}`)
+                            const conn = await Auth.instance.createConnectionFromProfile(connection, {
+                                type: connection.type,
+                                ssoRegion: connection.ssoRegion,
+                                scopes: connection.scopes,
+                                startUrl: connection.startUrl,
+                            })
+                            await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
+                        } else {
+                            getLogger().info(`auth: create connection from existing connection id ${connectionId}`)
+                            return this.startEnterpriseSetup(connection.startUrl, connection.ssoRegion)
+                        }
+                    }
+                })
+            }
+            return undefined
+        } catch (error) {
+            return { id: '', text: error as string }
+        } finally {
+            this.notifyToolkit()
+        }
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
         return this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
-            await awsIdSignIn()
-            AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
-            await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
+            try {
+                await awsIdSignIn()
+                await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
+                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', false)
+            } finally {
+                this.notifyToolkit()
+            }
         })
     }
 
-    startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
+    async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
         return this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
-            await connectToEnterpriseSso(startUrl, region)
-            AuthUtil.instance.hasAlreadySeenMigrationAuthScreen = true
-            void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
+            try {
+                await connectToEnterpriseSso(startUrl, region)
+                this.notifyToolkit()
+                void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
+                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', false)
+            } finally {
+                this.notifyToolkit()
+            }
         })
+    }
+
+    notifyToolkit() {
+        if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
+            void vscode.commands.executeCommand('_aws.toolkit.auth.restore')
+        }
     }
 
     async errorNotification(e: AuthError) {

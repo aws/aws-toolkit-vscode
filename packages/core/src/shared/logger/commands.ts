@@ -24,12 +24,26 @@ function clearSelection(editor: vscode.TextEditor): void {
 }
 
 export class Logging {
-    public static readonly declared = {
-        viewLogs: Commands.from(this).declareOpenLogUri('aws.viewLogs'),
-        viewLogsAtMessage: Commands.from(this).declareOpenLogId('aws.viewLogsAtMessage'),
+    public readonly viewLogs
+    public readonly viewLogsAtMessage
+
+    static #instance: Logging
+
+    public static get instance() {
+        if (!this.#instance) {
+            throw new Error('Logging class used without calling Logging.init().')
+        }
+        return this.#instance
     }
 
-    public constructor(private readonly logUri: vscode.Uri, private readonly logger: Logger) {}
+    public static init(logUri: vscode.Uri, logger: Logger, contextPrefix: string) {
+        this.#instance = new Logging(logUri, logger, contextPrefix)
+    }
+
+    constructor(private readonly logUri: vscode.Uri, private readonly logger: Logger, contextPrefix: string) {
+        this.viewLogs = Commands.register(`aws.${contextPrefix}.viewLogs`, () => this.openLogUri())
+        this.viewLogsAtMessage = Commands.register(`aws.${contextPrefix}.viewLogsAtMessage`, id => this.openLogId(id))
+    }
 
     public async openLogUri(): Promise<vscode.TextEditor | undefined> {
         telemetry.toolkit_viewLogs.emit({ result: 'Succeeded' })

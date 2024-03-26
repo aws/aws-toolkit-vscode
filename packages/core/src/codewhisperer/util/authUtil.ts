@@ -162,6 +162,7 @@ export class AuthUtil {
     public async setVscodeContextProps() {
         if (!isCloud9()) {
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
+            await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', !this.isConnected())
             await vscode.commands.executeCommand(
                 'setContext',
                 'aws.codewhisperer.connectionExpired',
@@ -429,6 +430,30 @@ export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<Feat
     }
 
     return state
+}
+
+/**
+ * Returns true if an SSO connection with AmazonQ and CodeWhisperer scopes are found,
+ * even if the connection is expired.
+ *
+ * Note: This function will become irrelevant if/when the Amazon Q view tree is removed
+ * from the toolkit.
+ */
+export function isPreviousQUser() {
+    const auth = AuthUtil.instance
+
+    if (!auth.isConnected() || !isSsoConnection(auth.conn)) {
+        return false
+    }
+    const missingScopes =
+        (auth.isEnterpriseSsoInUse() && !hasScopes(auth.conn, amazonQScopes)) ||
+        !hasScopes(auth.conn, codeWhispererChatScopes)
+
+    if (missingScopes) {
+        return false
+    }
+
+    return true
 }
 
 export type FeatureAuthState = { [feature in Feature]: AuthState }

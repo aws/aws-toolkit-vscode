@@ -57,7 +57,7 @@ export async function makeChildrenNodes<T extends AWSTreeNodeBase, P extends AWS
 }
 
 export function createErrorItem(error: Error, message?: string): TreeNode {
-    const command = Logging.declared.viewLogsAtMessage
+    const command = Logging.instance.viewLogsAtMessage
     const logId = message ? getLogger().error(`${message}: %s`, error) : getLogger().error(error)
 
     return command.build(logId).asTreeNode({

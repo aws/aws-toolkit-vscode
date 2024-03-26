@@ -475,5 +475,3 @@ export const crossFileContextConfig = {
 export const utgConfig = {
     maxSegmentSize: 10200,
 }
-
-export const transformTreeNode = 'qTreeNode'

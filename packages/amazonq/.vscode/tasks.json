@@ -32,9 +32,24 @@
                 "background": {
                     "activeOnStart": true,
                     "beginsPattern": "Project is running at",
-                    "endsPattern": "compiled successfully"
+                    "endsPattern": "compiled"
                 }
             }
+        },
+        {
+            "label": "terminate",
+            "command": "echo run terminate",
+            "type": "shell"
+        },
+        {
+            "type": "npm",
+            "script": "lint",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "type": "npm",
+            "script": "lintfix",
+            "problemMatcher": "$eslint-stylish"
         },
         {
             "type": "npm",

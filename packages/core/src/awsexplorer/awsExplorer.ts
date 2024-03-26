@@ -17,7 +17,7 @@ import { intersection, toMap, updateInPlace } from '../shared/utilities/collecti
 import { once } from '../shared/utilities/functionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { RegionNode } from './regionNode'
-import { AuthNode, useIamCredentials } from '../auth/utils'
+import { AuthNode, authCommands } from '../auth/utils'
 
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.explorer'
@@ -106,12 +106,14 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         const conn = this.auth.activeConnection
         if (conn !== undefined && conn.type !== 'iam') {
             // TODO: this should show up as a child node?
-            const selectIamNode = useIamCredentials.build(this.auth).asTreeNode({
-                // label: `No IAM credentials linked to ${conn.label}`,
-                // iconPath: getIcon('vscode-circle-slash'),
-                label: 'Select IAM Credentials to View Resources',
-                iconPath: getIcon('vscode-sync'),
-            })
+            const selectIamNode = authCommands()
+                .useIamCredentials.build(this.auth)
+                .asTreeNode({
+                    // label: `No IAM credentials linked to ${conn.label}`,
+                    // iconPath: getIcon('vscode-circle-slash'),
+                    label: 'Select IAM Credentials to View Resources',
+                    iconPath: getIcon('vscode-sync'),
+                })
 
             return [this.getAuthNode(), new TreeShim(selectIamNode)]
         } else if (conn === undefined || conn.state !== 'valid') {

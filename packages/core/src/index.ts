@@ -4,3 +4,4 @@
  */
 
 export { awsToolkitActivate, awsToolkitDeactivate } from './extension'
+export { makeEndpointsProvider } from './extensionShared'

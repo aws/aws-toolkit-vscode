@@ -43,14 +43,13 @@ import {
     createSecurityScan,
     createSelectCustomization,
     createSettingsNode,
-    createSignIn,
     createSignout,
 } from '../../../codewhisperer/ui/codeWhispererNodes'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
 import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
-import { switchToAmazonQNode } from '../../../amazonq/explorer/amazonQChildrenNodes'
+import { switchToAmazonQNode, createSignIn } from '../../../amazonq/explorer/amazonQChildrenNodes'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable

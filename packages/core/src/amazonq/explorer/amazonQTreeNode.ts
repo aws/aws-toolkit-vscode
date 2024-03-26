@@ -4,15 +4,23 @@
  */
 
 import * as vscode from 'vscode'
-import { createFreeTierLimitMet, createSignIn, createReconnect } from '../../codewhisperer/ui/codeWhispererNodes'
+import { createFreeTierLimitMet, createReconnect } from '../../codewhisperer/ui/codeWhispererNodes'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
-import { AuthUtil, amazonQScopes, codeWhispererChatScopes } from '../../codewhisperer/util/authUtil'
-import { createLearnMoreNode, createTransformByQ, enableAmazonQNode, switchToAmazonQNode } from './amazonQChildrenNodes'
+import { AuthState, AuthUtil, isPreviousQUser } from '../../codewhisperer/util/authUtil'
+import {
+    createLearnMoreNode,
+    switchToAmazonQNode,
+    createInstallQNode,
+    createDismissNode,
+    createSignIn,
+} from './amazonQChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
-import { hasScopes, isSsoConnection } from '../../auth/connection'
 import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
 import { getIcon } from '../../shared/icons'
 import { vsCodeState } from '../../codewhisperer/models/model'
+import { activateExtension, isExtensionActive, isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { once } from '../../shared/utilities/functionUtils'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -23,6 +31,8 @@ export class AmazonQNode implements TreeNode {
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
     private readonly onDidChangeVisibilityEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
+
+    public static amazonQState: AuthState
 
     constructor() {}
 
@@ -61,36 +71,31 @@ export class AmazonQNode implements TreeNode {
     }
 
     public getChildren() {
-        void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
-        if (AuthUtil.instance.isConnectionExpired()) {
-            return [createReconnect('tree'), createLearnMoreNode()]
-        }
-
-        if (!AuthUtil.instance.isConnected()) {
-            return [createSignIn('tree'), createLearnMoreNode()]
-        }
-
-        if (isSsoConnection(AuthUtil.instance.conn)) {
-            const missingScopes =
-                (AuthUtil.instance.isEnterpriseSsoInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
-                !hasScopes(AuthUtil.instance.conn, codeWhispererChatScopes)
-
-            if (missingScopes) {
-                return [enableAmazonQNode(), createLearnMoreNode()]
+        if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
+            const children = [createInstallQNode(), createLearnMoreNode()]
+            if (!isPreviousQUser()) {
+                children.push(createDismissNode())
             }
-        }
+            return children
+        } else {
+            // todo: hack
+            if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
+                void registerQHook()
+            }
 
-        const transformNode = []
-        if (AuthUtil.instance.isValidCodeTransformationAuthUser()) {
-            void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
-            transformNode.push(createTransformByQ())
-        }
+            if (AmazonQNode.amazonQState === 'expired') {
+                return [createReconnect('tree'), createLearnMoreNode()]
+            }
 
-        return [
-            vsCodeState.isFreeTierLimitReached ? createFreeTierLimitMet('tree') : switchToAmazonQNode('tree'),
-            createNewMenuButton(),
-            ...transformNode,
-        ]
+            if (AmazonQNode.amazonQState !== 'connected') {
+                return [createSignIn('tree'), createLearnMoreNode()]
+            }
+
+            return [
+                vsCodeState.isFreeTierLimitReached ? createFreeTierLimitMet('tree') : switchToAmazonQNode('tree'),
+                createNewMenuButton(),
+            ]
+        }
     }
 
     /**
@@ -116,7 +121,14 @@ function createNewMenuButton(): TreeNode<Command> {
 
 export const amazonQNode = new AmazonQNode()
 export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
-    Commands.register({ id: 'aws.amazonq.refresh', logging: false }, () => {
+    Commands.register({ id: 'aws.amazonq.refresh', logging: false }, (state?: AuthState) => {
+        if (state) {
+            AmazonQNode.amazonQState = state
+        } else {
+            if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
+                void registerQHook()
+            }
+        }
         amazonQNode.refresh()
         if (provider) {
             provider.refresh()
@@ -130,3 +142,10 @@ export const refreshAmazonQRootNode = (provider?: ResourceTreeDataProvider) =>
             provider.refresh()
         }
     })
+
+export const registerQHook = once(async () => {
+    await activateExtension(VSCODE_EXTENSION_ID.amazonq)
+    const amazonq = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.amazonq)?.exports
+    amazonq.registerStateChangeCallback((e: any) => vscode.commands.executeCommand('aws.amazonq.refresh', e))
+    void vscode.commands.executeCommand('aws.amazonq.refresh', await amazonq.getConnectionState())
+})

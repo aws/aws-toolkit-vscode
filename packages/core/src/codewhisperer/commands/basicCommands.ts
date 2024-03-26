@@ -30,7 +30,7 @@ import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/se
 import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
-import { showManageConnections } from '../../auth/ui/vue/show'
+import { getShowManageConnections } from '../../auth/ui/vue/show'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
 
 export const toggleCodeSuggestions = Commands.declare(
@@ -130,7 +130,7 @@ export const reconnect = Commands.declare(
 export const showManageCwConnections = Commands.declare(
     { id: 'aws.codewhisperer.manageConnections', compositeKey: { 1: 'source' } },
     () => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        return showManageConnections.execute(_, source, 'codewhisperer')
+        return getShowManageConnections().execute(_, source, 'codewhisperer')
     }
 )
 
@@ -240,6 +240,27 @@ export const fetchFeatureConfigsCmd = Commands.declare(
     { id: 'aws.codeWhisperer.fetchFeatureConfigs', logging: false },
     () => async () => {
         await FeatureConfigProvider.instance.fetchFeatureConfigs()
+    }
+)
+
+/**
+ * TODO: Actually install Amazon Q.
+ *
+ * For now, it just has a fake progress bar to simulate that it is installing.
+ */
+export const installAmazonQExtension = Commands.declare(
+    { id: 'aws.toolkit.installAmazonQExtension', logging: true },
+    () => async () => {
+        void vscode.window.withProgress(
+            {
+                title: 'Installing Amazon Q... (placeholder)',
+                cancellable: true,
+                location: vscode.ProgressLocation.Notification,
+            },
+            async () => {
+                await new Promise(r => setTimeout(r, 5000))
+            }
+        )
     }
 )
 
