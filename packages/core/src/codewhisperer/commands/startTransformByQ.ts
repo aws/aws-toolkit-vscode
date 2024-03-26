@@ -62,6 +62,7 @@ import {
     replacePomVersion,
     runMavenDependencyUpdateCommands,
 } from '../service/amazonQGumby/humanInTheLoopHandler'
+import { error } from 'console'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -370,7 +371,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         const newPomFileVirtualFileReference = await createPomCopy(
             tmpDependencyListDir,
             pomFileVirtualFileReference,
-            'pom-primary.xml'
+            'pom.xml'
         )
         await replacePomVersion(
             newPomFileVirtualFileReference,
@@ -396,6 +397,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
     } catch (e) {
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function
+        console.log('Error in completeHumanInTheLoopWork', error)
     } finally {
         // 1) TODO Always delete items off disk manifest.json and pom.xml
 
