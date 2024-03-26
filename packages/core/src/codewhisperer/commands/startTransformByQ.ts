@@ -241,7 +241,7 @@ export async function startTransformByQ() {
     }
 
     // Set the default state variables for our store and the UI
-    await setTransformationToRunningState(userInputState!)
+    await setTransformationToRunningState(userInputState)
 
     try {
         // Set web view UI to poll for progress
@@ -253,7 +253,7 @@ export async function startTransformByQ() {
         }, CodeWhispererConstants.transformationJobPollingIntervalSeconds)
 
         // step 1: CreateCodeUploadUrl and upload code
-        const uploadId = await preTransformationUploadCode(userInputState!)
+        const uploadId = await preTransformationUploadCode(userInputState)
 
         // step 2: StartJob and store the returned jobId in TransformByQState
         const jobId = await startTransformationJob(uploadId)
@@ -269,7 +269,7 @@ export async function startTransformByQ() {
     } catch (error: any) {
         await transformationJobErrorHandler(error)
     } finally {
-        await postTransformationJob(userInputState!)
+        await postTransformationJob(userInputState)
         await cleanupTransformationJob(intervalId)
     }
 }

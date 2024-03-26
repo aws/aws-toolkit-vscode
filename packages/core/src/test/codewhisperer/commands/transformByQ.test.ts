@@ -82,8 +82,8 @@ describe('transformByQ', function () {
                 await validateOpenProjects(dummyQuickPickItems)
             },
             {
-                name: 'NoJavaProject',
-                message: '',
+                name: 'Error',
+                message: 'No Java projects open',
             }
         )
     })
@@ -106,8 +106,8 @@ describe('transformByQ', function () {
                 await validateOpenProjects(dummyQuickPickItems)
             },
             {
-                name: 'NonMavenProject',
-                message: '',
+                name: 'Error',
+                message: 'No Maven projects open',
             }
         )
     })
@@ -129,8 +129,8 @@ describe('transformByQ', function () {
                 await getOpenProjects()
             },
             {
-                name: 'NoProjectsOpen',
-                message: '',
+                name: 'Error',
+                message: 'No projects open',
             }
         )
     })
