@@ -113,4 +113,6 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     ): Promise<AuthError | undefined> {
         throw new Error('Method not implemented.')
     }
+
+    async quitLoginScreen() {}
 }

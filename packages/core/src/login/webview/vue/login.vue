@@ -72,6 +72,14 @@
             </svg>
         </div>
         <template v-if="stage === 'START'">
+            <button class="back-button" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                        fill="#21A2FF"
+                    />
+                </svg>
+            </button>
             <div class="auth-container-section">
                 <div class="existing-logins" v-if="existingLogins.length > 0 && app === 'AMAZONQ'">
                     <div class="title">Connect with an existing account:</div>
@@ -132,6 +140,13 @@
                     />
                 </svg>
             </button>
+            <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
+                <div class="h4">
+                    Using CodeCatalyst with AWS Builder ID?
+                    <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
+                </div>
+                <br /><br />
+            </div>
             <div class="auth-container-section">
                 <div class="title">Sign in with SSO:</div>
                 <div class="p">Start URL</div>
@@ -184,12 +199,6 @@
             </button>
             <div class="title">IAM Credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
-            <div class="h4">
-                Using CodeCatalyst with AWS Builder ID?
-                <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
-            </div>
-
-            <br /><br />
             <br /><br />
             <div class="p">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
@@ -299,7 +308,11 @@ export default defineComponent({
             }
         },
         handleBackButtonClick() {
-            this.stage = 'START'
+            if (this.stage === 'START') {
+                void client.quitLoginScreen()
+            } else {
+                this.stage = 'START'
+            }
         },
         async handleContinueClick() {
             if (this.stage === 'START') {
@@ -444,7 +457,7 @@ export default defineComponent({
     color: white;
 }
 .h4 {
-    font-size: 8px;
+    font-size: 10px;
 }
 .continue-button:disabled {
     background-color: #252526;
