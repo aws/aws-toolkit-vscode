@@ -140,15 +140,15 @@
                     />
                 </svg>
             </button>
-            <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
-                <div class="h4">
-                    Using CodeCatalyst with AWS Builder ID?
-                    <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
-                </div>
-                <br /><br />
-            </div>
             <div class="auth-container-section">
                 <div class="title">Sign in with SSO:</div>
+                <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
+                    <div class="h4">
+                        Using CodeCatalyst with AWS Builder ID?
+                        <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
+                    </div>
+                    <br /><br />
+                </div>
                 <div class="p">Start URL</div>
                 <div class="hint">URL for your organization, provided by an admin or help desk</div>
                 <input
