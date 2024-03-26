@@ -76,7 +76,6 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             try {
                 await awsIdSignIn()
                 await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
-                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', false)
             } finally {
                 this.notifyToolkit()
             }
@@ -89,7 +88,6 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 await connectToEnterpriseSso(startUrl, region)
                 this.notifyToolkit()
                 void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
-                await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', false)
             } finally {
                 this.notifyToolkit()
             }
