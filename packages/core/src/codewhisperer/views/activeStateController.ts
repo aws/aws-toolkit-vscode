@@ -114,7 +114,7 @@ export class ActiveStateController implements vscode.Disposable {
     }, 1000)
 
     private async _refresh(editor: vscode.TextEditor | undefined, shouldDisplay?: boolean) {
-        if (!this.container.auth.isConnectionValid()) {
+        if (!this.container.auth.isConnectionValid(true)) {
             this.clear(this._editor)
             return
         }
