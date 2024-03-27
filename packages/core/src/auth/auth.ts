@@ -878,8 +878,14 @@ export class Auth implements AuthService, ConnectionManager {
             : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
     }
 
-    public async createConnectionFromProfile(connection: AwsConnection, profile: SsoProfile) {
+    public async createConnectionFromApi(connection: AwsConnection) {
         getLogger().info(`Reusing connection ${connection.id}`)
+        const profile = {
+            type: connection.type,
+            ssoRegion: connection.ssoRegion,
+            scopes: connection.scopes,
+            startUrl: connection.startUrl,
+        } as SsoProfile
         const id = connection.id
         const storedProfile = await this.store.addProfile(id, profile)
         await this.updateConnectionState(id, connection.state)

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { SsoConnection, scopesCodeWhispererChat } from '../../../../auth/connection'
+import { SsoConnection, scopesCodeWhispererChat, AwsConnection, SsoProfile } from '../../../../auth/connection'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
@@ -44,17 +44,12 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
             const importedApi = toolkitExt?.exports
             if (importedApi && 'listConnections' in importedApi) {
-                const connections: SsoConnection[] = await importedApi?.listConnections()
-                connections.forEach(async (connection: SsoConnection) => {
+                const connections: AwsConnection[] = await importedApi?.listConnections()
+                connections.forEach(async (connection: AwsConnection) => {
                     if (connection.id === connectionId) {
                         if (connection.scopes?.includes(scopesCodeWhispererChat[0])) {
                             getLogger().info(`auth: re-use connection from existing connection id ${connectionId}`)
-                            const conn = await Auth.instance.createConnectionFromProfile(connection, {
-                                type: connection.type,
-                                ssoRegion: connection.ssoRegion,
-                                scopes: connection.scopes,
-                                startUrl: connection.startUrl,
-                            })
+                            const conn = await Auth.instance.createConnectionFromApi(connection)
                             await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
                         } else {
                             getLogger().info(`auth: create connection from existing connection id ${connectionId}`)
