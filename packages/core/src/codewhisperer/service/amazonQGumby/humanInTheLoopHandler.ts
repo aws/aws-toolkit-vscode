@@ -96,7 +96,6 @@ async function setWarningIcon(lineNumber: number = 0) {
 
     const highlightDecorationType = vscode.window.createTextEditorDecorationType({
         backgroundColor: 'lightgreen',
-
         isWholeLine: true,
         gutterIconPath: '/packages/toolkit/resources/icons/cloud9/generated/dark/vscode-bug.svg',
         gutterIconSize: '20',
