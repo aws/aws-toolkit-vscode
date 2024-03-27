@@ -895,7 +895,7 @@ export class Auth implements AuthService, ConnectionManager {
         getLogger().info(`Creating new connection ${id} from existing connection ${connection.id}`)
         const storedProfile = await this.store.addProfile(id, profile)
         await this.updateConnectionState(id, 'valid')
-        const provider = this.getTokenProvider(id, storedProfile)
+        const provider = this.getSsoTokenProvider(id, storedProfile)
         await provider.duplicateToken(connection.id, id)
         return this.getSsoConnection(id, storedProfile)
     }
