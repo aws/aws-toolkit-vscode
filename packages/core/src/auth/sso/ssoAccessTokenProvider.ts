@@ -184,18 +184,22 @@ export class SsoAccessTokenProvider {
             clientSecret: registration.clientSecret,
         })
 
-        if (!(await openSsoPortalLink(this.profile.startUrl, authorization))) {
-            throw new CancellationError('user')
+        const openBrowserAndWaitUntilComplete = async () => {
+            if (!(await openSsoPortalLink(this.profile.startUrl, authorization))) {
+                throw new CancellationError('user')
+            }
+
+            const tokenRequest = {
+                clientId: registration.clientId,
+                clientSecret: registration.clientSecret,
+                deviceCode: authorization.deviceCode,
+                grantType: deviceGrantType,
+            }
+
+            return await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
         }
 
-        const tokenRequest = {
-            clientId: registration.clientId,
-            clientSecret: registration.clientSecret,
-            deviceCode: authorization.deviceCode,
-            grantType: deviceGrantType,
-        }
-
-        const token = await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
+        const token = await telemetry.aws_loginWithBrowser.run(async () => openBrowserAndWaitUntilComplete())
         return this.formatToken(token, registration)
     }
 

@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import { openSsoPortalLink, proceedToBrowser } from '../../../auth/sso/model'
-import { assertTelemetry } from '../../testUtil'
 import { getOpenExternalStub } from '../../globalSetup.test'
 import { getTestWindow } from '../../shared/vscode/window'
 
@@ -42,7 +41,6 @@ describe('openSsoPortalLink', function () {
         await runFlow('open')
         assert.ok(getOpenExternalStub().calledOnce)
         assert.strictEqual(getOpenExternalStub().args[0].toString(), `${verificationUri}?user_code%3D${userCode}`)
-        assertTelemetry('aws_loginWithBrowser', { result: 'Succeeded' })
     })
 
     it('continues to show the notification if the user selects help', async function () {
@@ -50,6 +48,5 @@ describe('openSsoPortalLink', function () {
         await runFlow('help', 'open')
         assert.ok(getOpenExternalStub().calledTwice)
         assert.notStrictEqual(getOpenExternalStub().args[0].toString(), getOpenExternalStub().args[1].toString())
-        assertTelemetry('aws_loginWithBrowser', { result: 'Succeeded' })
     })
 })
