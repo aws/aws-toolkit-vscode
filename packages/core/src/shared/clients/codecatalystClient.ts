@@ -5,6 +5,7 @@
 
 import globals from '../extensionGlobals'
 
+import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -162,8 +163,10 @@ export interface CodeCatalystClient extends ClassToInterfaceType<CodeCatalystCli
     readonly identity: { readonly id: string; readonly name: string }
 }
 
-export type CodeCatalystClientFactory = () => Promise<CodeCatalystClient>
+const onAccessDeniedExceptionEmitter = new vscode.EventEmitter<void>()
+export const onAccessDeniedException = onAccessDeniedExceptionEmitter.event
 
+export type CodeCatalystClientFactory = () => Promise<CodeCatalystClient>
 /**
  * Factory to create a new `CodeCatalystClient`. Call `onCredentialsChanged()` before making requests.
  */
@@ -175,7 +178,16 @@ export async function createClient(
 ): Promise<CodeCatalystClient> {
     const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint, retryOptions)
     const c = new CodeCatalystClientInternal(connection, sdkClient)
-    await c.verifySession()
+    try {
+        await c.verifySession()
+    } catch (e) {
+        if (!(e instanceof ToolkitError) || e.code !== 'AccessDeniedException') throw e
+        onAccessDeniedExceptionEmitter.fire()
+
+        // We "cancel" this error so that it prevents further execution,
+        // but doesn't display the error
+        throw new ToolkitError('CodeCatalyst scope is expired', { code: 'ScopeExpiration', cancelled: true })
+    }
 
     return c
 }
@@ -191,7 +203,7 @@ function fixAliasInRequest<
     return request
 }
 
-class CodeCatalystClientInternal {
+export class CodeCatalystClientInternal {
     private userDetails?: UserDetails
     private readonly log: logger.Logger
 
@@ -231,13 +243,14 @@ class CodeCatalystClientInternal {
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T> {
         const log = this.log
         const bearerToken = (await this.connection.getToken()).accessToken
-        req.httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
+
         const perflog = new PerfLog('API request')
 
         return new Promise<T>((resolve, reject) => {
             req.send(function (e, data) {
                 const r = req as any
                 const timecost = perflog.elapsed().toFixed(1)
+
                 if (e) {
                     if (e.code === 'AccessDeniedException' || e.statusCode === 401) {
                         CodeCatalystClientInternal.identityCache.delete(bearerToken)
