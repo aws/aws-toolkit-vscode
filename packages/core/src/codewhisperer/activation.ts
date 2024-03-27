@@ -322,12 +322,12 @@ export async function activate(context: ExtContext): Promise<void> {
             toolkitApi.onDidChangeConnection(
                 async (connection: AwsConnection) => {
                     getLogger().info(`tookitApi toolkit connection change callback ${connection.id}`)
-                    auth.auth.updateConnectionCallback(connection)
+                    await auth.auth.updateConnectionCallback(connection)
                 },
 
                 async (id: string) => {
                     getLogger().info(`tookitApi toolkit connection delete callback ${id}`)
-                    auth.auth.deletionConnectionCallback(id)
+                    await auth.auth.deletionConnectionCallback(id)
                 }
             )
         }
