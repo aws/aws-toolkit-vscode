@@ -12,7 +12,7 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { trustedDomainCancellation } from '../../../auth/sso/model'
 import { handleWebviewError } from '../../../webviews/server'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
-import { SsoConnection } from '../../../auth/connection'
+import { Connection, SsoConnection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 
@@ -20,9 +20,6 @@ export type AuthError = { id: string; text: string }
 export const userCancelled = 'userCancelled'
 
 export abstract class CommonAuthWebview extends VueWebview {
-    public override id: string = 'aws.AmazonCommonAuth'
-    public override source: string = 'src/login/webview/vue/index.js'
-
     public getRegions(): Region[] {
         return globals.regionProvider.getRegions().reverse()
     }
@@ -108,7 +105,15 @@ export abstract class CommonAuthWebview extends VueWebview {
         await vscode.commands.executeCommand('aws.explorer.focus')
     }
 
-    abstract fetchConnection(): SsoConnection | undefined
+    abstract fetchConnections(): Promise<SsoConnection[] | undefined>
+
+    abstract useConnection(connectionId: string): Promise<AuthError | undefined>
 
     abstract errorNotification(e: AuthError): void
+
+    abstract quitLoginScreen(): Promise<void>
+
+    async listConnections(): Promise<Connection[]> {
+        return Auth.instance.listConnections()
+    }
 }

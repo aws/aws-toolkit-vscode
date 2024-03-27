@@ -16,23 +16,23 @@ import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
 import { Connection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { showManageConnections } from '../auth/ui/vue/show'
+import { getShowManageConnections } from '../auth/ui/vue/show'
 
-const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
+export const learnMoreCommand = Commands.declare('aws.learnMore', () => async (docsUrl: vscode.Uri) => {
     return openUrl(docsUrl)
 })
 
 // Only used in rare cases on C9
-const reauth = Commands.register(
+export const reauth = Commands.declare(
     '_aws.codecatalyst.reauthenticate',
-    async (conn: Connection, authProvider: CodeCatalystAuthenticationProvider) => {
+    () => async (conn: Connection, authProvider: CodeCatalystAuthenticationProvider) => {
         await authProvider.auth.reauthenticate(conn)
     }
 )
 
-const onboardCommand = Commands.register(
+export const onboardCommand = Commands.declare(
     '_aws.codecatalyst.onboard',
-    async (authProvider: CodeCatalystAuthenticationProvider) => {
+    () => async (authProvider: CodeCatalystAuthenticationProvider) => {
         void authProvider.promptOnboarding()
     }
 )
@@ -46,10 +46,12 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
 
     if (!auth.activeConnection || !auth.isConnectionValid()) {
         return [
-            showManageConnections.build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst').asTreeNode({
-                label: 'Sign in to get started',
-                iconPath: getIcon('vscode-account'),
-            }),
+            getShowManageConnections()
+                .build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
+                .asTreeNode({
+                    label: 'Sign in to get started',
+                    iconPath: getIcon('vscode-account'),
+                }),
             learnMoreNode,
         ]
     }

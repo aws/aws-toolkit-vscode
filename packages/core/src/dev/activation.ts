@@ -21,6 +21,7 @@ import { isReleaseVersion } from '../shared/vscode/env'
 import { isAnySsoConnection } from '../auth/connection'
 import { Auth } from '../auth/auth'
 import { getLogger } from '../shared/logger'
+import { CommonAuthViewProvider } from '../login/webview/commonAuthViewProvider'
 
 interface MenuOption {
     readonly label: string
@@ -152,6 +153,15 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
         ctx.subscriptions.push(watchBetaVSIX(config.betaUrl))
     }
+
+    const toolkitAuthProvider = new CommonAuthViewProvider(ctx, 'toolkit')
+    ctx.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(toolkitAuthProvider.viewType, toolkitAuthProvider, {
+            webviewOptions: {
+                retainContextWhenHidden: true,
+            },
+        })
+    )
 }
 
 async function openMenu(ctx: vscode.ExtensionContext, options: typeof menuOptions): Promise<void> {

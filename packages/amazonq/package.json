@@ -12,10 +12,6 @@
         "type": "git",
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
-    "engines": {
-        "npm": "^10.1.0",
-        "vscode": "^1.68.0"
-    },
     "bugs": {
         "url": "https://github.com/aws/aws-toolkit-vscode/issues"
     },
@@ -41,18 +37,828 @@
         "onUri"
     ],
     "main": "./dist/src/extension",
-    "browser": "./dist/src/extensionWeb",
     "scripts": {
-        "vscode:prepublish": "npm run clean && npm run compile && webpack --mode production",
-        "clean": "ts-node ../../scripts/clean.ts dist/",
-        "compile": "npm run clean && tsc -p ./ && webpack --mode development",
-        "testCompile": "tsc -p ./",
+        "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
+        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles",
+        "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
+        "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
+        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* README* CHANGELOG.md",
+        "compile": "npm run clean && npm run buildScripts && webpack --mode development",
+        "package": "ts-node ../../scripts/package.ts",
+        "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
+        "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "echo 'Nothing to lint yet!'",
-        "watch": "npm run clean && tsc -watch -p ./",
-        "serve": "webpack serve --config-name vue-hmr --mode development",
-        "package": "ts-node ../../scripts/package.ts"
+        "watch": "npm run clean && npm run buildScripts -- --vueHr && tsc -watch -p ./",
+        "serve": "webpack serve --config-name mainServe --mode development"
     },
-    "dependencies": {},
+    "dependencies": {
+        "aws-core-vscode": "file:../core/"
+    },
     "devDependencies": {},
-    "contributes": {}
+    "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "%AWS.productName%",
+            "cloud9": {
+                "cn": {
+                    "title": "%AWS.productName.cn%"
+                }
+            },
+            "properties": {
+                "aws.profile": {
+                    "type": "string",
+                    "deprecationMessage": "The current profile is now stored internally by the Toolkit.",
+                    "description": "%AWS.configuration.profileDescription%"
+                },
+                "aws.amazonq.logLevel": {
+                    "type": "string",
+                    "default": "info",
+                    "enum": [
+                        "error",
+                        "warn",
+                        "info",
+                        "verbose",
+                        "debug"
+                    ],
+                    "enumDescriptions": [
+                        "Errors Only",
+                        "Errors and Warnings",
+                        "Errors, Warnings, and Info",
+                        "Errors, Warnings, Info, and Verbose",
+                        "Errors, Warnings, Info, Verbose, and Debug"
+                    ],
+                    "markdownDescription": "%AWS.configuration.description.logLevel%",
+                    "cloud9": {
+                        "cn": {
+                            "markdownDescription": "%AWS.configuration.description.logLevel.cn%"
+                        }
+                    }
+                },
+                "aws.amazonq.telemetry": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%AWS.configuration.description.telemetry%",
+                    "cloud9": {
+                        "cn": {
+                            "markdownDescription": "%AWS.configuration.description.telemetry.cn%"
+                        }
+                    }
+                },
+                "aws.amazonq.suppressPrompts": {
+                    "type": "object",
+                    "description": "%AWS.configuration.description.suppressPrompts%",
+                    "default": {},
+                    "properties": {
+                        "createCredentialsProfile": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "codeWhispererNewWelcomeMessage": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "codeWhispererConnectionExpired": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "amazonQWelcomePage": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "aws.codeWhisperer.includeSuggestionsWithCodeReferences": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.codewhisperer%",
+                    "default": true
+                },
+                "aws.codeWhisperer.importRecommendation": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.codewhisperer.importRecommendation%",
+                    "default": true
+                },
+                "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.codewhisperer.shareCodeWhispererContentWithAWS%",
+                    "default": true,
+                    "scope": "application"
+                },
+                "aws.codeWhisperer.javaCompilationOutput": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Provide the ABSOLUTE path which is used to store java project compilation results."
+                }
+            }
+        },
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "amazonq",
+                    "title": "%AWS.amazonq.title%",
+                    "icon": "resources/amazonq-logo.svg"
+                }
+            ],
+            "panel": [
+                {
+                    "id": "aws-codewhisperer-reference-log",
+                    "title": "Code Reference Log",
+                    "icon": "media/aws-logo.svg"
+                },
+                {
+                    "id": "aws-codewhisperer-transformation-hub",
+                    "title": "Transformation Hub",
+                    "icon": "media/aws-logo.svg"
+                }
+            ]
+        },
+        "views": {
+            "amazonq": [
+                {
+                    "type": "webview",
+                    "id": "aws.amazonq.AmazonCommonAuth",
+                    "name": "%AWS.amazonq.login%",
+                    "when": "!isCloud9 && !aws.isSageMaker && aws.amazonq.showLoginView"
+                },
+                {
+                    "type": "webview",
+                    "id": "aws.AmazonQChatView",
+                    "name": "%AWS.amazonq.chat%",
+                    "when": "!isCloud9 && !aws.isSageMaker && !aws.amazonq.showLoginView"
+                },
+                {
+                    "id": "aws.AmazonQNeverShowBadge",
+                    "name": "",
+                    "when": "false"
+                }
+            ],
+            "aws-codewhisperer-reference-log": [
+                {
+                    "type": "webview",
+                    "id": "aws.codeWhisperer.referenceLog",
+                    "name": ""
+                }
+            ],
+            "aws-codewhisperer-transformation-hub": [
+                {
+                    "type": "webview",
+                    "id": "aws.amazonq.transformationHub",
+                    "name": "Status",
+                    "when": "gumby.isTransformAvailable || gumby.isStopButtonAvailable"
+                },
+                {
+                    "id": "aws.amazonq.transformationProposedChangesTree",
+                    "name": "Proposed Changes",
+                    "when": "gumby.transformationProposalReviewInProgress"
+                }
+            ]
+        },
+        "viewsWelcome": [
+            {
+                "view": "aws.amazonq.transformationProposedChangesTree",
+                "contents": "Project transformation is complete.\n[Download Proposed Changes](command:aws.amazonq.transformationHub.reviewChanges.startReview)",
+                "when": "gumby.reviewState == NotStarted"
+            },
+            {
+                "view": "aws.amazonq.transformationProposedChangesTree",
+                "contents": "Project transformation is complete.\n Downloading the proposed changes...",
+                "when": "gumby.reviewState == PreparingReview"
+            }
+        ],
+        "submenus": [
+            {
+                "id": "aws.amazonq.auth",
+                "label": "%AWS.submenu.auth.title%",
+                "icon": "$(ellipsis)",
+                "when": "isCloud9 || !aws.isWebExtHost"
+            },
+            {
+                "id": "aws.codewhisperer.submenu",
+                "label": "%AWS.codewhisperer.submenu.title%",
+                "icon": "$(ellipsis)"
+            },
+            {
+                "id": "aws.amazonq.submenu",
+                "label": "%AWS.codewhisperer.submenu.title%",
+                "icon": "$(ellipsis)"
+            },
+            {
+                "label": "%AWS.submenu.amazonqEditorContextSubmenu.title%",
+                "id": "amazonqEditorContextSubmenu"
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "aws.listCommands",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.codewhisperer.signout",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.codewhisperer.reconnect",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.codeWhisperer.openReferencePanel",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.amazonq.auth.addConnection",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.amazonq.auth.switchConnections",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.amazonq.auth.signout",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.amazonq.auth.help",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.amazonq.auth.manageConnections"
+                },
+                {
+                    "command": "aws.dev.openMenu",
+                    "when": "aws.isDevMode || isCloud9"
+                },
+                {
+                    "command": "aws.amazonq.learnMore",
+                    "when": "false"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "aws.amazonq.startTransformationInHub",
+                    "when": "view == aws.amazonq.transformationHub",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "aws.amazonq.stopTransformationInHub",
+                    "when": "view == aws.amazonq.transformationHub",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "aws.amazonq.showPlanProgressInHub",
+                    "when": "view == aws.amazonq.transformationHub",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "aws.amazonq.showHistoryInHub",
+                    "when": "view == aws.amazonq.transformationHub",
+                    "group": "navigation@4"
+                },
+                {
+                    "command": "aws.amazonq.transformationHub.summary.reveal",
+                    "when": "view == aws.amazonq.transformationHub"
+                },
+                {
+                    "command": "aws.amazonq.transformationHub.reviewChanges.reveal",
+                    "when": "view == aws.amazonq.transformationHub"
+                },
+                {
+                    "command": "aws.amazonq.showTransformationPlanInHub",
+                    "when": "view == aws.amazonq.transformationHub"
+                },
+                {
+                    "command": "aws.amazonq.transformationHub.reviewChanges.acceptChanges",
+                    "when": "view == aws.amazonq.transformationProposedChangesTree && gumby.reviewState == InReview",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "aws.amazonq.transformationHub.reviewChanges.rejectChanges",
+                    "when": "view == aws.amazonq.transformationProposedChangesTree && gumby.reviewState == InReview",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "aws.codeWhisperer.openReferencePanel",
+                    "when": "view == aws.AmazonQChatView",
+                    "group": "0_topAmazonQ@1"
+                },
+                {
+                    "command": "aws.amazonq.learnMore",
+                    "when": "view == aws.AmazonQChatView || view == aws.amazonq",
+                    "group": "1_amazonQ@1"
+                },
+                {
+                    "command": "aws.codeWhisperer.introduction",
+                    "when": "view == aws.codewhisperer",
+                    "group": "1_amazonQ@1"
+                },
+                {
+                    "command": "aws.codewhisperer.manageConnections",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && !aws.codewhisperer.connected",
+                    "group": "2_amazonQ@2"
+                },
+                {
+                    "command": "aws.codewhisperer.signout",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.connected",
+                    "group": "2_amazonQ@4"
+                },
+                {
+                    "command": "aws.codewhisperer.reconnect",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.connectionExpired",
+                    "group": "2_amazonQ@3"
+                }
+            ],
+            "amazonqEditorContextSubmenu": [
+                {
+                    "command": "aws.amazonq.explainCode",
+                    "group": "cw_chat@1"
+                },
+                {
+                    "command": "aws.amazonq.refactorCode",
+                    "group": "cw_chat@2"
+                },
+                {
+                    "command": "aws.amazonq.fixCode",
+                    "group": "cw_chat@3"
+                },
+                {
+                    "command": "aws.amazonq.optimizeCode",
+                    "group": "cw_chat@4"
+                },
+                {
+                    "command": "aws.amazonq.sendToPrompt",
+                    "group": "cw_chat@5"
+                }
+            ],
+            "editor/context": [
+                {
+                    "submenu": "amazonqEditorContextSubmenu",
+                    "group": "cw_chat",
+                    "when": "editorHasSelection"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "aws.codeWhisperer.introduction",
+                    "when": "viewItem =~ /^awsCodeWhispererNode/ && !isCloud9 && CODEWHISPERER_TERMS_ACCEPTED",
+                    "group": "inline@1"
+                },
+                {
+                    "submenu": "aws.amazonq.submenu",
+                    "when": "viewItem =~ /^awsAmazonQNode/",
+                    "group": "inline@1"
+                }
+            ],
+            "aws.amazonq.auth": [
+                {
+                    "command": "aws.amazonq.auth.manageConnections",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.amazonq.auth.switchConnections",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.amazonq.auth.signout",
+                    "enablement": "!isCloud9",
+                    "group": "0@3"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "aws.amazonq.explainCode",
+                "title": "%AWS.command.amazonq.explainCode%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.amazonq.refactorCode",
+                "title": "%AWS.command.amazonq.refactorCode%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.amazonq.fixCode",
+                "title": "%AWS.command.amazonq.fixCode%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.amazonq.optimizeCode",
+                "title": "%AWS.command.amazonq.optimizeCode%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.amazonq.sendToPrompt",
+                "title": "%AWS.command.amazonq.sendToPrompt%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.amazonq.login",
+                "title": "%AWS.command.login%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.login.cn%",
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.amazonq.credentials.profile.create",
+                "title": "%AWS.command.credentials.profile.create%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.amazonq.credentials.edit",
+                "title": "%AWS.command.credentials.edit%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.amazonq.logout",
+                "title": "%AWS.command.logout%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.amazonq.auth.addConnection",
+                "title": "%AWS.command.auth.addConnection%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.amazonq.auth.manageConnections",
+                "title": "%AWS.command.auth.showConnectionsPage%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codewhisperer.manageConnections",
+                "title": "%AWS.command.auth.showConnectionsPage%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codewhisperer.reconnect",
+                "title": "%AWS.command.codewhisperer.reconnect%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codeWhisperer.openReferencePanel",
+                "title": "%AWS.command.codewhisperer.openReferencePanel%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.amazonq.transformationHub.reviewChanges.acceptChanges",
+                "title": "%AWS.command.q.transform.acceptChanges%"
+            },
+            {
+                "command": "aws.amazonq.transformationHub.reviewChanges.rejectChanges",
+                "title": "%AWS.command.q.transform.rejectChanges%"
+            },
+            {
+                "command": "aws.amazonq.transformationHub.summary.reveal",
+                "title": "%AWS.command.q.transform.showChangeSummary%",
+                "enablement": "gumby.isSummaryAvailable"
+            },
+            {
+                "command": "aws.amazonq.transformationHub.reviewChanges.reveal",
+                "title": "%AWS.command.q.transform.showChanges%",
+                "enablement": "gumby.reviewState == InReview"
+            },
+            {
+                "command": "aws.amazonq.showTransformationPlanInHub",
+                "title": "%AWS.command.q.transform.showTransformationPlan%",
+                "enablement": "gumby.isPlanAvailable"
+            },
+            {
+                "command": "aws.amazonq.auth.switchConnections",
+                "title": "%AWS.command.auth.switchConnections%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.amazonq.auth.signout",
+                "title": "%AWS.command.auth.signout%",
+                "category": "%AWS.title%",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.amazonq.auth.help",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%",
+                "icon": "$(question)"
+            },
+            {
+                "command": "aws.createIssueOnGitHub",
+                "title": "%AWS.command.createIssueOnGitHub%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.submitFeedback",
+                "title": "%AWS.command.submitFeedback%",
+                "enablement": "!aws.isWebExtHost",
+                "category": "%AWS.title%",
+                "icon": "$(comment)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.listCommands",
+                "title": "%AWS.command.listCommands%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.listCommands.cn%",
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.amazonq.viewLogs",
+                "title": "%AWS.command.viewLogs%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.help",
+                "title": "%AWS.command.help%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.github",
+                "title": "%AWS.command.github%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.quickStart",
+                "title": "%AWS.command.quickStart%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.aboutToolkit",
+                "title": "%AWS.command.aboutToolkit%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codeWhisperer",
+                "title": "%AWS.command.codewhisperer.title%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codeWhisperer.configure",
+                "title": "%AWS.command.codewhisperer.configure%",
+                "category": "%AWS.title%",
+                "icon": "$(gear)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.codeWhisperer.introduction",
+                "title": "%AWS.command.codewhisperer.introduction%",
+                "category": "%AWS.title%",
+                "icon": "$(question)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.codewhisperer.signout",
+                "title": "%AWS.command.codewhisperer.signout%",
+                "category": "%AWS.title%",
+                "icon": "$(debug-disconnect)"
+            },
+            {
+                "command": "aws.amazonq.learnMore",
+                "title": "%AWS.amazonq.learnMore%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.amazonq.welcome",
+                "title": "%AWS.command.q.welcome%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.dev.openMenu",
+                "title": "Open Developer Menu",
+                "category": "AWS (Developer)",
+                "enablement": "aws.isDevMode"
+            },
+            {
+                "command": "aws.dev.viewLogs",
+                "title": "Watch Logs",
+                "category": "AWS (Developer)"
+            },
+            {
+                "command": "aws.amazonq.startTransformationInHub",
+                "title": "Start Transformation",
+                "icon": "$(play)",
+                "enablement": "gumby.isTransformAvailable"
+            },
+            {
+                "command": "aws.amazonq.stopTransformationInHub",
+                "title": "Stop Transformation",
+                "icon": "$(stop)",
+                "enablement": "gumby.isStopButtonAvailable"
+            },
+            {
+                "command": "aws.amazonq.showPlanProgressInHub",
+                "title": "Show Transformation Status",
+                "icon": "$(checklist)"
+            },
+            {
+                "command": "aws.amazonq.showHistoryInHub",
+                "title": "Show Job Status",
+                "icon": "$(history)"
+            },
+            {
+                "command": "aws.amazonq.showTransformationPlanInHub",
+                "title": "Show Transformation Plan",
+                "enablement": "gumby.isPlanAvailable"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "aws.amazonq.explainCode",
+                "win": "win+alt+e",
+                "mac": "cmd+alt+e",
+                "linux": "meta+alt+e",
+                "when": "editorHasSelection"
+            },
+            {
+                "command": "aws.amazonq.refactorCode",
+                "win": "win+alt+u",
+                "mac": "cmd+alt+u",
+                "linux": "meta+alt+u",
+                "when": "editorHasSelection"
+            },
+            {
+                "command": "aws.amazonq.fixCode",
+                "win": "win+alt+y",
+                "mac": "cmd+alt+y",
+                "linux": "meta+alt+y",
+                "when": "editorHasSelection"
+            },
+            {
+                "command": "aws.amazonq.optimizeCode",
+                "win": "win+alt+a",
+                "mac": "cmd+alt+a",
+                "linux": "meta+alt+a",
+                "when": "editorHasSelection"
+            },
+            {
+                "command": "aws.amazonq.sendToPrompt",
+                "key": "win+alt+q",
+                "mac": "cmd+alt+q",
+                "linux": "meta+alt+q"
+            },
+            {
+                "command": "aws.codeWhisperer",
+                "key": "alt+c",
+                "mac": "alt+c",
+                "when": "editorTextFocus && aws.codewhisperer.connected || isCloud9 && editorTextFocus"
+            },
+            {
+                "command": "aws.codeWhisperer.rejectCodeSuggestion",
+                "key": "escape",
+                "mac": "escape",
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected || isCloud9 && suggestWidgetVisible && !editorReadonly"
+            },
+            {
+                "command": "aws.codeWhisperer.dismissTutorial",
+                "key": "escape",
+                "mac": "escape",
+                "when": "aws.codewhisperer.tutorial.workInProgress && !inlineSuggestionVisible && !suggestWidgetVisible"
+            },
+            {
+                "key": "right",
+                "command": "editor.action.inlineSuggest.showNext",
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
+            },
+            {
+                "key": "left",
+                "command": "editor.action.inlineSuggest.showPrevious",
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
+            }
+        ],
+        "icons": {
+            "aws-amazonq-q-gradient": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1aa"
+                }
+            },
+            "aws-amazonq-q-squid-ink": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1ab"
+                }
+            },
+            "aws-amazonq-q-white": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1ac"
+                }
+            },
+            "aws-amazonq-transform-landing-page-icon": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1ad"
+                }
+            },
+            "aws-codewhisperer-icon-black": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1b5"
+                }
+            },
+            "aws-codewhisperer-icon-white": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1b6"
+                }
+            },
+            "aws-codewhisperer-learn": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1b7"
+                }
+            },
+            "aws-generic-attach-file": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1bc"
+                }
+            },
+            "aws-mynah-MynahIconBlack": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1c1"
+                }
+            },
+            "aws-mynah-MynahIconWhite": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1c2"
+                }
+            },
+            "aws-mynah-logo": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1c3"
+                }
+            }
+        }
+    },
+    "engines": {
+        "npm": "^10.1.0",
+        "vscode": "^1.68.0"
+    }
 }

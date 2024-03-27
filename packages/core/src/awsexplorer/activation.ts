@@ -23,7 +23,7 @@ import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { ToolView } from './toolView'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { cdkNode, refreshCdkExplorer } from '../cdk/explorer/rootNode'
+import { CdkRootNode } from '../cdk/explorer/rootNode'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
@@ -115,7 +115,7 @@ export async function activate(args: {
     const viewNodes: ToolView[] = [
         ...amazonQViewNode,
         ...codecatalystViewNode,
-        { nodes: [cdkNode], view: 'aws.cdk', refreshCommands: [refreshCdkExplorer] },
+        { nodes: [CdkRootNode.instance], view: 'aws.cdk', refreshCommands: [CdkRootNode.instance.refreshCdkExplorer] },
     ]
     for (const viewNode of viewNodes) {
         registerToolView(viewNode, args.context.extensionContext)

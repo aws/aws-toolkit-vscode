@@ -31,6 +31,7 @@ import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { GlobalState } from '../../shared/globalState'
 import { vsCodeState } from '../models/model'
+import { once } from '../../shared/utilities/functionUtils'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -110,7 +111,9 @@ export class AuthUtil {
     )
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
-    public constructor(public readonly auth = Auth.instance) {
+    public constructor(public readonly auth = Auth.instance) {}
+
+    public initCodeWhispererHooks = once(() => {
         this.auth.onDidChangeConnectionState(async e => {
             getLogger().info(`codewhisperer: connection changed to ${e.state}: ${e.id}`)
             if (e.state !== 'authenticating') {
@@ -157,11 +160,12 @@ export class AuthUtil {
             }
             await this.setVscodeContextProps()
         })
-    }
+    })
 
     public async setVscodeContextProps() {
         if (!isCloud9()) {
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
+            await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', !this.isConnected())
             await vscode.commands.executeCommand(
                 'setContext',
                 'aws.codewhisperer.connectionExpired',
@@ -429,6 +433,30 @@ export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<Feat
     }
 
     return state
+}
+
+/**
+ * Returns true if an SSO connection with AmazonQ and CodeWhisperer scopes are found,
+ * even if the connection is expired.
+ *
+ * Note: This function will become irrelevant if/when the Amazon Q view tree is removed
+ * from the toolkit.
+ */
+export function isPreviousQUser() {
+    const auth = AuthUtil.instance
+
+    if (!auth.isConnected() || !isSsoConnection(auth.conn)) {
+        return false
+    }
+    const missingScopes =
+        (auth.isEnterpriseSsoInUse() && !hasScopes(auth.conn, amazonQScopes)) ||
+        !hasScopes(auth.conn, codeWhispererChatScopes)
+
+    if (missingScopes) {
+        return false
+    }
+
+    return true
 }
 
 export type FeatureAuthState = { [feature in Feature]: AuthState }

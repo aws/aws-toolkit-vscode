@@ -3,13 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**
- * This is the final webpack config that collects all webpack configs.
- */
+const path = require('path')
+const currentDir = process.cwd()
 
 const baseConfig = require('../webpack.base.config')
-const baseVueConfig = require('../webpack.vue.config')
-const baseWebConfig = require('../webpack.web.config')
+
+const devServer = {
+    static: {
+        directory: path.resolve(currentDir, 'dist'),
+    },
+    headers: {
+        'Access-Control-Allow-Origin': '*',
+    },
+    allowedHosts: 'all',
+}
 
 const config = {
     ...baseConfig,
@@ -18,22 +25,13 @@ const config = {
     },
 }
 
-const vueConfigs = baseVueConfig.configs.map(c => {
-    // Inject entry point into all configs.
-    return {
-        ...c,
-        entry: {
-            ...baseVueConfig.utils.createVueEntries(),
-            //'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
-        },
-    }
-})
-
-const webConfig = {
-    ...baseWebConfig,
-    entry: {
-        'src/extensionWeb': './src/extensionWeb.ts',
+const serveConfig = {
+    ...config,
+    name: 'mainServe',
+    devServer,
+    externals: {
+        vscode: 'commonjs vscode',
     },
 }
 
-module.exports = [config, ...vueConfigs, webConfig]
+module.exports = process.env.npm_lifecycle_event === 'serve' ? [serveConfig] : [config]

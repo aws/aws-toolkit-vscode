@@ -635,7 +635,8 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 
     try {
         if (info.autoconnect === true) {
-            await vscode.commands.executeCommand('_aws.auth.autoConnect')
+            // HACK: this only occurs for the explorer case, which is in toolkit
+            await vscode.commands.executeCommand('_aws.toolkit.auth.autoConnect')
         }
 
         return await (instrumenter ? instrumenter(fn, ...args) : fn(...args))

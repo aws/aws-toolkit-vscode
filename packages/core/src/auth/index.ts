@@ -3,5 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export { initialize as initializeAuth } from './activation'
+export { initializeAwsCredentialsStatusBarItem } from './ui/statusBarItem'
 export { Connection } from './connection'
 export { Auth } from './auth'
