@@ -8,7 +8,7 @@ import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
 import { isCloud9, isSageMaker } from '../shared/extensionUtilities'
-import { ExtContext } from '../shared/extensions'
+import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
@@ -30,6 +30,8 @@ import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { amazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQTreeNode'
 import { GlobalState } from '../shared/globalState'
 import { activateViewsShared, registerToolView } from './activationShared'
+import { isExtensionInstalled } from '../shared/utilities'
+import { amazonQDismissedKey } from '../codewhisperer/models/constants'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -106,6 +108,14 @@ export async function activate(args: {
 
     const amazonQViewNode: ToolView[] = []
     if (!isCloud9()) {
+        if (
+            !isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) &&
+            globals.context.globalState.get<boolean>(amazonQDismissedKey)
+        ) {
+            await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+        }
+
+        // We should create the tree even if it's dismissed, in case the user installs Amazon Q later.
         amazonQViewNode.push({
             nodes: [amazonQNode],
             view: 'aws.amazonq.codewhisperer',
