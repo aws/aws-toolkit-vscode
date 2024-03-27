@@ -3,16 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Auth, Connection } from 'aws-core-vscode/auth'
-
-export interface AwsConnection {
-    readonly id: string
-    readonly label: string
-    readonly type: string
-    readonly ssoRegion: string
-    readonly startUrl: string
-    readonly scopes?: string[]
-}
+import { Auth, Connection, AwsConnection } from 'aws-core-vscode/auth'
 
 /**
  * Exposing listConnections API for other extension to read or re-use
@@ -23,7 +14,7 @@ export const awsToolkitApi = {
         const connections = await Auth.instance.listConnections()
         const exposedConnections: AwsConnection[] = []
         connections.forEach((x: Connection) => {
-            if ('ssoRegion' in x) {
+            if ('ssoRegion' in x && Auth.instance.getConnectionState(x) !== undefined) {
                 exposedConnections.push({
                     id: x.id,
                     label: x.label,
@@ -31,6 +22,7 @@ export const awsToolkitApi = {
                     ssoRegion: x.ssoRegion,
                     startUrl: x.startUrl,
                     scopes: x.scopes,
+                    state: Auth.instance.getConnectionState(x),
                 })
             }
         })

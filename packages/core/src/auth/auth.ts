@@ -58,6 +58,7 @@ import {
     loadIamProfilesIntoStore,
     loadLinkedProfilesIntoStore,
     scopesSsoAccountAccess,
+    AwsConnection,
 } from './connection'
 import { isSageMaker, isCloud9 } from '../shared/extensionUtilities'
 
@@ -877,14 +878,30 @@ export class Auth implements AuthService, ConnectionManager {
             : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
     }
 
-    public async createConnectionFromProfile(connection: Connection, profile: SsoProfile) {
-        const id = uuid.v4()
-        getLogger().info(`Creating new connection ${id} from existing connection ${connection.id}`)
+    public async createConnectionFromProfile(connection: AwsConnection, profile: SsoProfile) {
+        getLogger().info(`Reusing connection ${connection.id}`)
+        const id = connection.id
         const storedProfile = await this.store.addProfile(id, profile)
-        await this.updateConnectionState(id, 'valid')
-        const provider = this.getTokenProvider(id, storedProfile)
-        await provider.duplicateToken(connection.id, id)
+        await this.updateConnectionState(id, connection.state)
         return this.getSsoConnection(id, storedProfile)
+    }
+
+    public async updateConnectionFromApi(connection: AwsConnection) {
+        getLogger().info(`Updating connection ${connection.id} from API`)
+        const id = connection.id
+        const profile = this.store.getProfile(connection.id)
+        const newProfile = {
+            type: connection.type,
+            ssoRegion: connection.ssoRegion,
+            scopes: connection.scopes,
+            startUrl: connection.startUrl,
+        } as SsoProfile
+        if (profile === undefined) {
+            await this.store.addProfile(id, newProfile)
+        } else {
+            await this.store.updateProfile(connection.id, newProfile)
+        }
+        await this.updateConnectionState(id, connection.state)
     }
 }
 /**
