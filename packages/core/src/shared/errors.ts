@@ -527,7 +527,7 @@ export class PermissionsError extends ToolkitError {
     }
 }
 
-export function isNetworkError(err?: unknown) {
+export function isNetworkError(err?: unknown): err is Error & { code: string } {
     if (!hasCode(err)) {
         return false
     }
