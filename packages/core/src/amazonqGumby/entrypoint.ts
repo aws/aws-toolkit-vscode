@@ -4,7 +4,7 @@
  */
 
 import { startTransformByQWithProgress } from '../codewhisperer/commands/startTransformByQ'
-import { jobInProgressMessage, noActiveIdCMessage } from '../codewhisperer/models/constants'
+import { jobInProgressMessage, noActiveQTransformConnectionMessage } from '../codewhisperer/models/constants'
 import { transformByQState } from '../codewhisperer/models/model'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import vscode from 'vscode'
@@ -12,12 +12,16 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { MetadataResult } from '../shared/telemetry/telemetryClient'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { StartActionPositions } from './telemetry/codeTransformTelemetry'
+import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 
 export async function processTransformByQ() {
     if (!AuthUtil.instance.isValidCodeTransformationAuthUser()) {
-        void vscode.window.showErrorMessage(noActiveIdCMessage)
+        void vscode.window.showErrorMessage(
+            noActiveQTransformConnectionMessage.replace('LINK_HERE', CodeWhispererConstants.linkToPrerequisites)
+        )
         return
     }
+
     if (transformByQState.isNotStarted()) {
         telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),

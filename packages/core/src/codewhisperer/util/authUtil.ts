@@ -58,9 +58,9 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
 /** For Builder ID only, if using IdC then use {@link isValidAmazonQConnection} */
 export const isValidCodeWhispererChatConnection = (conn?: Connection): conn is Connection => {
     return (
-        isBuilderIdConnection(conn) &&
+        (isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
         isValidCodeWhispererCoreConnection(conn) &&
-        hasScopes(conn, codeWhispererChatScopes)
+        hasScopes(conn, amazonQScopes)
     )
 }
 
@@ -214,9 +214,9 @@ export class AuthUtil {
         let conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 
         if (!conn) {
-            conn = await this.auth.createConnection(createBuilderIdProfile(codeWhispererChatScopes))
-        } else if (!isValidCodeWhispererChatConnection(conn)) {
-            conn = await this.secondaryAuth.addScopes(conn, codeWhispererChatScopes)
+            conn = await this.auth.createConnection(createBuilderIdProfile(amazonQScopes))
+        } else if (!isValidAmazonQConnection(conn)) {
+            conn = await this.secondaryAuth.addScopes(conn, amazonQScopes)
         }
 
         if (this.auth.getConnectionState(conn) === 'invalid') {
@@ -378,7 +378,7 @@ export class AuthUtil {
     }
 
     public isValidCodeTransformationAuthUser(): boolean {
-        return this.isEnterpriseSsoInUse() && this.isConnectionValid()
+        return (this.isEnterpriseSsoInUse() || this.isBuilderIdInUse()) && this.isConnectionValid()
     }
 }
 
@@ -403,11 +403,6 @@ export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<Feat
     // default to expired to indicate reauth is needed if unmodified
     const state: FeatureAuthState = buildFeatureAuthState(AuthStates.expired)
 
-    if (isBuilderIdConnection(currentConnection)) {
-        // Regardless, if using Builder ID, Amazon Q is unsupported
-        state[Features.amazonQ] = AuthStates.unsupported
-    }
-
     if (cwAuth.isConnectionExpired()) {
         return state
     }
@@ -418,6 +413,9 @@ export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<Feat
         }
         if (isValidCodeWhispererChatConnection(currentConnection)) {
             state[Features.codewhispererChat] = AuthStates.connected
+        }
+        if (isValidAmazonQConnection(currentConnection)) {
+            Object.values(Features).forEach(v => (state[v as Feature] = AuthStates.connected))
         }
     } else if (isIdcSsoConnection(currentConnection)) {
         if (isValidCodeWhispererCoreConnection(currentConnection)) {
