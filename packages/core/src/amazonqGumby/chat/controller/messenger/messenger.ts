@@ -22,26 +22,30 @@ import {
     ChatPrompt,
     ErrorMessage,
     SendCommandMessage,
+    UpdatePlaceholderMessage,
 } from '../../views/connector/connector'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
-import { ButtonActions } from './messengerUtils'
+import MessengerUtils, { ButtonActions } from './messengerUtils'
 import { TransformationCandidateProject } from '../../../../codewhisperer/service/transformByQHandler'
 
 export type StaticTextResponseType =
-    | 'no-project-found'
     | 'transform'
+    | 'java-home-not-set'
     | 'start-transformation-confirmed'
     | 'job-transmitted'
+
+export type ErrorTextResponseType =
+    | 'no-project-found'
     | 'no-workspace-open'
     | 'no-java-project-found'
     | 'no-maven-java-project-found'
     | 'could-not-compile-project'
-export type LoadingTextResponseType = 'start-compilation' | 'compile-succeeded' | 'job-submitted'
+    | 'invalid-java-home'
+    | 'unsupported-source-jdk-version'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
     JOB_SUBMISSION_STATUS_MESSAGE = 'gumbyJobSubmissionMessage',
-    HUMAN_IN_THE_LOOP_INTERVENTION = 'gumbyHumanInTheLoopIntervention',
 }
 
 export class Messenger {
@@ -70,6 +74,10 @@ export class Messenger {
         this.dispatcher.sendChatInputEnabled(new ChatInputEnabledMessage(tabID, enabled))
     }
 
+    public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {
+        this.dispatcher.sendUpdatePlaceholder(new UpdatePlaceholderMessage(tabID, newPlaceholder))
+    }
+
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
         let authType: AuthFollowUpType = 'full-auth'
         let message = reauthenticateText
@@ -95,36 +103,26 @@ export class Messenger {
         this.dispatcher.sendAuthenticationUpdate(new AuthenticationUpdateMessage(gumbyEnabled, authenticatingTabIDs))
     }
 
-    public async sendProjectPrompt(modules: TransformationCandidateProject[], tabID: string) {
-        const moduleFormOptions: { value: string; label: string }[] = []
-        const uniqueJavaOptions = new Set<JDKVersion>()
+    public async sendProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
+        const projectFormOptions: { value: any; label: string }[] = []
+        const detectedJavaVersions = new Array<JDKVersion | undefined>()
 
-        modules.forEach(candidateModule => {
-            moduleFormOptions.push({
-                value: candidateModule.path,
-                label: candidateModule.name,
+        projects.forEach(candidateProject => {
+            projectFormOptions.push({
+                value: candidateProject.path,
+                label: candidateProject.name,
             })
-
-            if (candidateModule.JDKVersion !== undefined) {
-                uniqueJavaOptions.add(candidateModule.JDKVersion)
-            }
-        })
-
-        const jdkFormOptions: { value: string; label: string }[] = []
-        uniqueJavaOptions.forEach(jdkVersion => {
-            jdkFormOptions.push({
-                value: jdkVersion,
-                label: jdkVersion.toString(),
-            })
+            detectedJavaVersions.push(candidateProject.JDKVersion)
         })
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({
-            id: 'GumbyTransformModuleForm',
+            id: 'GumbyTransformProjectForm',
             type: 'select',
-            title: 'Choose a module to transform',
+            title: 'Choose a project to transform',
             mandatory: true,
-            options: moduleFormOptions,
+
+            options: projectFormOptions,
         })
 
         formItems.push({
@@ -132,7 +130,20 @@ export class Messenger {
             type: 'select',
             title: 'Choose the source code version',
             mandatory: true,
-            options: jdkFormOptions,
+            options: [
+                {
+                    value: JDKVersion.JDK8,
+                    label: JDKVersion.JDK8.toString(),
+                },
+                {
+                    value: JDKVersion.JDK11,
+                    label: JDKVersion.JDK11.toString(),
+                },
+                {
+                    value: JDKVersion.UNSUPPORTED,
+                    label: 'Other',
+                },
+            ],
         })
 
         formItems.push({
@@ -151,7 +162,14 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: `I can upgrade your Java ${jdkFormOptions[0].label} project. To start the transformation, I need some information from you. Choose the module you want to upgrade and the target code version to upgrade to, and then choose Transform. It can take 10-30 minutes to upgrade your code, depending on the size of your module.`,
+                message: MessengerUtils.createTransformationConfirmationPrompt(detectedJavaVersions),
+            })
+        )
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: false,
+                message: undefined,
             })
         )
 
@@ -161,27 +179,7 @@ export class Messenger {
                     message: 'Q Code Transformation',
                     formItems: formItems,
                 },
-                `TransformForm`,
-                tabID
-            )
-        )
-    }
-
-    sendTextInputPrompt(prompt: string, formID: string, tabID: string) {
-        const formItems: ChatItemFormItem[] = []
-        formItems.push({
-            id: `${formID}Input`,
-            type: 'textinput',
-            mandatory: true,
-        })
-
-        this.dispatcher.sendChatPrompt(
-            new ChatPrompt(
-                {
-                    message: prompt,
-                    formItems: formItems,
-                },
-                formID,
+                'TransformForm',
                 tabID,
                 false
             )
@@ -197,46 +195,34 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, { inProgress, message, messageId }))
     }
 
-    public sendCompilationInProgress(tabID: string, addNewMessage: boolean) {
-        const message = 'Compiling the module and checking dependencies...'
+    public sendCompilationInProgress(tabID: string) {
+        const message = `I'm building your project. This can take up to 10 minutes, depending on the size of your project.`
 
-        if (addNewMessage) {
-            this.dispatcher.sendAsyncEventProgress(
-                new AsyncEventProgressMessage(tabID, {
-                    inProgress: true,
-                    message: undefined,
-                    messageId: GumbyNamedMessages.COMPILATION_PROGRESS_MESSAGE,
-                })
-            )
-        }
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, { inProgress: true, message: undefined })
+        )
 
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
                 message,
-                messageId: GumbyNamedMessages.COMPILATION_PROGRESS_MESSAGE,
             })
         )
     }
 
     public sendCompilationFinished(tabID: string) {
-        const message = 'Local project build and dependency check passed.'
+        const message = `I was able to build your project. I'll start transforming your code soon.`
 
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message,
-                    messageType: 'ai-prompt',
-                    messageId: GumbyNamedMessages.COMPILATION_PROGRESS_MESSAGE,
-                },
-                tabID
-            )
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message,
+            })
         )
     }
 
     public sendJobSubmittedMessage(tabID: string, disableJobActions: boolean = false) {
-        const message =
-            'Your job has been submitted for transformation. The code transformation process may take 10-30 mins depending on the size of your module. You can view the details in the transformation hub.'
+        const message = `I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.`
 
         const buttons: ChatItemButton[] = []
 
@@ -252,7 +238,7 @@ export class Messenger {
 
             buttons.push({
                 keepCardAfterClick: true,
-                text: 'Stop Transformation',
+                text: 'Stop transformation',
                 id: ButtonActions.STOP_TRANSFORMATION_JOB,
             })
         }
@@ -270,28 +256,24 @@ export class Messenger {
         this.dispatcher.sendChatMessage(jobSubmittedMessage)
     }
 
+    public sendUserPrompt(prompt: string, tabID: string) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: prompt,
+                    messageType: 'prompt',
+                },
+                tabID
+            )
+        )
+    }
+
     public sendStaticTextResponse(type: StaticTextResponseType, tabID: string) {
         let message = '...'
 
         switch (type) {
-            case 'no-workspace-open':
-                message = 'To begin, please open a workspace.'
-                break
-            case 'no-project-found':
-            case 'no-java-project-found':
-                message = `None of your open projects are supported by Amazon Q Code Transformation. Currently, Amazon Q can only upgrade Java projects built on Maven.
-
-For more information, see the Amazon Q documentation.`
-                break
-            case 'no-maven-java-project-found':
-                message = `None of your open Java projects are supported by Amazon Q Code Transformation. Currently, Amazon Q can only upgrade Java projects built on Maven. A pom.xml must be present in the root of your project to upgrade it.
-                    
-For more information, see the Amazon Q documentation.`
-                break
-            case 'could-not-compile-project':
-                message = `Amazon Q couldn't execute the Maven install or Maven copy-dependencies commands. 
-                
-To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)`
+            case 'java-home-not-set':
+                message = MessengerUtils.createJavaHomePrompt()
                 break
         }
 
@@ -306,13 +288,63 @@ To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/a
         )
     }
 
+    public sendRetryableErrorResponse(type: ErrorTextResponseType, tabID: string) {
+        let message = '...'
+
+        switch (type) {
+            case 'no-workspace-open':
+                message = 'To begin, please open a workspace.'
+                break
+            case 'no-project-found':
+            case 'no-java-project-found':
+                message = `Sorry, I can't upgrade any of your open projects. Currently, I can only upgrade Java projects built on Maven. 
+
+For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
+                break
+            case 'no-maven-java-project-found':
+                message = `Sorry, I can't upgrade any of your open projects. I couldn't find a pom.xml file in any of your Java projects. Currently, I can only upgrade Java projects built on Maven.
+                    
+For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
+                break
+            case 'could-not-compile-project':
+                message = `Sorry, I couldn't run the Maven install to build your project. To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)`
+                break
+            case 'invalid-java-home':
+                message =
+                    "I'm sorry, I could not locate your Java installation.  To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)"
+                break
+            case 'unsupported-source-jdk-version':
+                message = `I'm sorry, currently I can only upgrade Java 8 or Java 11 projects.
+                
+For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
+        }
+
+        const buttons: ChatItemButton[] = []
+        buttons.push({
+            keepCardAfterClick: false,
+            text: 'Start a new transformation',
+            id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
+        })
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
+                    buttons,
+                },
+                tabID
+            )
+        )
+    }
+
     public sendCommandMessage(message: any) {
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabId, message.eventId))
     }
 
     public sendJobFinishedMessage(tabID: string, cancelled: boolean = false, jobStatus: string = '') {
         let message =
-            'I cancelled your transformation. If you want to start another transformation, choose **Start a new transformation.**'
+            'I stopped your transformation. If you want to start another transformation, choose **Start a new transformation.**'
 
         if (!cancelled) {
             message =
@@ -326,29 +358,19 @@ To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/a
             id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
         })
 
-        const jobFinishedMessage = new ChatMessage(
-            {
-                message,
-                messageType: 'ai-prompt',
-                buttons,
-            },
-            tabID
-        )
-
-        this.dispatcher.sendChatMessage(jobFinishedMessage)
-    }
-
-    public sendTransformationIntroduction(tabID: string) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
-                    message: '/transform',
-                    messageType: 'prompt',
+                    message,
+                    messageType: 'ai-prompt',
+                    buttons,
                 },
                 tabID
             )
         )
+    }
 
+    public sendTransformationIntroduction(tabID: string) {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, { inProgress: true, message: undefined })
         )
@@ -361,19 +383,21 @@ To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/a
         )
     }
 
-    public sendHumanInterventionSelectedMessage(tabID: string, latestVersion: string) {
-        console.log('In sendHumanInterventionSelectedMessage', tabID, latestVersion)
-        const message = `You have selected to upgrade your module (<insertModuleName>) to version: ${latestVersion}`
+    public sendProjectSelectionMessage(
+        projectName: string,
+        fromJDKVersion: JDKVersion,
+        toJDKVersion: JDKVersion,
+        tabID: any
+    ) {
+        const message = `### Transformation details
+-------------
+| | |
+| :------------------- | -------: |
+| **Project**             |   ${projectName}   |
+| **Source JDK version** |  ${fromJDKVersion}   |
+| **Target JDK version** |  ${toJDKVersion}   |
+    `
 
-        const humanInterventionSelectedMessage = new ChatMessage(
-            {
-                message,
-                messageType: 'ai-prompt',
-                messageId: GumbyNamedMessages.HUMAN_IN_THE_LOOP_INTERVENTION,
-            },
-            tabID
-        )
-
-        this.dispatcher.sendChatMessage(humanInterventionSelectedMessage)
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
 }

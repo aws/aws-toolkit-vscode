@@ -7,6 +7,10 @@ import { MessageListener } from '../../../../amazonq/messages/messageListener'
 import { ExtensionMessage } from '../../../../amazonq/webview/ui/commands'
 import { ChatControllerEventEmitters } from '../../controller/controller'
 
+type UIMessage = ExtensionMessage & {
+    tabID?: string
+}
+
 export interface UIMessageListenerProps {
     readonly chatControllerEventEmitters: ChatControllerEventEmitters
     readonly webViewMessageListener: MessageListener<any>
@@ -43,36 +47,55 @@ export class UIMessageListener {
             case 'form-action-click':
                 this.formActionClicked(msg)
                 break
+            case 'chat-prompt':
+                this.processChatPrompt(msg)
+                break
+            case 'response-body-link-click':
+                this.linkClicked(msg)
+                break
         }
     }
 
-    private transform(msg: any) {
+    private processChatPrompt(msg: UIMessage) {
+        this.gumbyControllerEventsEmitters?.processHumanChatMessage.fire({
+            message: msg.chatMessage,
+            tabID: msg.tabID,
+        })
+    }
+
+    private transform(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.transformSelected.fire({
             tabID: msg.tabID,
         })
     }
 
-    private tabOpened(msg: any) {
+    private tabOpened(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.tabOpened.fire({
             tabID: msg.tabID,
         })
     }
 
-    private tabClosed(msg: any) {
+    private tabClosed(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.tabClosed.fire({
             tabID: msg.tabID,
         })
     }
 
-    private authClicked(msg: any) {
+    private authClicked(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.authClicked.fire({
             tabID: msg.tabID,
             authType: msg.authType,
         })
     }
 
-    private formActionClicked(msg: any) {
+    private formActionClicked(msg: UIMessage) {
         this.gumbyControllerEventsEmitters?.formActionClicked.fire({
+            ...msg,
+        })
+    }
+
+    private linkClicked(msg: UIMessage) {
+        this.gumbyControllerEventsEmitters?.linkClicked.fire({
             ...msg,
         })
     }

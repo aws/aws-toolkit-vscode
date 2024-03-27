@@ -268,6 +268,18 @@ export enum DropdownStep {
     STEP_2 = 2,
 }
 
+export const sessionPlanProgress: {
+    startJob: StepProgress
+    buildCode: StepProgress
+    generatePlan: StepProgress
+    transformCode: StepProgress
+} = {
+    startJob: StepProgress.NotStarted,
+    buildCode: StepProgress.NotStarted,
+    generatePlan: StepProgress.NotStarted,
+    transformCode: StepProgress.NotStarted,
+}
+
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
 
@@ -301,8 +313,6 @@ export class TransformByQState {
     private javaHome: string | undefined = undefined
 
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
-
-    private gumbyChatTabID: string | undefined = undefined
 
     private dependencyFolderInfo: FolderInfo | undefined = undefined
 
@@ -402,10 +412,6 @@ export class TransformByQState {
         return this.chatControllers
     }
 
-    public getGumbyChatTabID(): string | undefined {
-        return this.gumbyChatTabID
-    }
-
     public getDependencyFolderInfo(): FolderInfo | undefined {
         return this.dependencyFolderInfo
     }
@@ -500,10 +506,6 @@ export class TransformByQState {
 
     public setChatControllers(controllers: ChatControllerEventEmitters) {
         this.chatControllers = controllers
-    }
-
-    public setGumbyChatTabID(tabID: string | undefined) {
-        this.gumbyChatTabID = tabID
     }
 
     public setDependencyFolderInfo(folderInfo: FolderInfo) {

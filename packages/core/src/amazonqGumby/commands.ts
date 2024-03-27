@@ -15,6 +15,7 @@ import { ChatControllerEventEmitters } from './chat/controller/controller'
 import { focusAmazonQPanel } from '../auth/ui/vue/show'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { randomUUID } from 'crypto'
+import { ChatSessionManager } from './chat/storages/chatSession'
 
 export const showTransformByQ = Commands.declare(
     { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
@@ -29,10 +30,11 @@ export const showTransformByQ = Commands.declare(
                 // non blocking wait for a tenth of a second
                 // note: we need this because the webview has to be loaded
                 // before it can listen to events we fire
-                await sleep(100)
+                await sleep(250)
+
                 controllerEventEmitters.commandSentFromIDE.fire({
                     command: 'aws.awsq.transform',
-                    tabId: transformByQState.getGumbyChatTabID() ?? '',
+                    tabId: ChatSessionManager.Instance.getSession().tabID ?? '',
                     eventId: randomUUID,
                 })
             })

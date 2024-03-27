@@ -17,6 +17,7 @@ import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { validateAndLogProjectDetails } from '../codewhisperer/service/transformByQHandler'
 
 export async function activate(context: ExtContext) {
+    void vscode.commands.executeCommand('setContext', 'gumby.wasQCodeTransformationUsed', false)
     // If the user is codewhisperer eligible, activate the plugin
     if (AuthUtil.instance.isValidCodeTransformationAuthUser()) {
         const transformationHubViewProvider = new TransformationHubViewProvider()

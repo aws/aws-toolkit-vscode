@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
 import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import { MessageListener } from '../amazonq/messages/messageListener'
-import { ChatSessionStorage } from './chat/storages/chatSession'
 import { ChatControllerEventEmitters, GumbyController } from './chat/controller/controller'
 import { AppToWebViewMessageDispatcher } from './chat/views/connector/connector'
 import { Messenger } from './chat/controller/messenger/messenger'
@@ -26,19 +25,14 @@ export function init(appContext: AmazonQAppInitContext) {
         tabOpened: new vscode.EventEmitter<any>(),
         tabClosed: new vscode.EventEmitter<any>(),
         transformationFinished: new vscode.EventEmitter<any>(),
-        humanInTheLoopIntervention: new vscode.EventEmitter<any>(),
+        processHumanChatMessage: new vscode.EventEmitter<any>(),
+        linkClicked: new vscode.EventEmitter<any>(),
     }
 
     const dispatcher = new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher())
     const messenger = new Messenger(dispatcher)
-    const sessionStorage = new ChatSessionStorage(messenger)
 
-    new GumbyController(
-        gumbyChatControllerEventEmitters,
-        messenger,
-        sessionStorage,
-        appContext.onDidChangeAmazonQVisibility.event
-    )
+    new GumbyController(gumbyChatControllerEventEmitters, messenger, appContext.onDidChangeAmazonQVisibility.event)
 
     const featureDevChatUIInputEventEmitter = new vscode.EventEmitter<any>()
 
@@ -54,17 +48,18 @@ export function init(appContext: AmazonQAppInitContext) {
 
     const debouncedEvent = debounce(async () => {
         const authenticated = (await getChatAuthState()).amazonQ === 'connected'
-        let authenticatingSessionIDs: string[] = []
+        let authenticatingSessionID = ''
+
         if (authenticated) {
-            const authenticatingSessions = sessionStorage.getAuthenticatingSessions()
+            const session = sessionStorage.getSession()
 
-            authenticatingSessionIDs = authenticatingSessions.map(session => session.tabID)
-
-            // We've already authenticated these sessions
-            authenticatingSessions.forEach(session => (session.isAuthenticating = false))
+            if (session.isTabOpen() && session.isAuthenticating) {
+                authenticatingSessionID = session.tabID!
+                session.isAuthenticating = false
+            }
         }
 
-        messenger.sendAuthenticationUpdate(authenticated, authenticatingSessionIDs)
+        messenger.sendAuthenticationUpdate(authenticated, [authenticatingSessionID])
     }, 500)
 
     AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(() => {

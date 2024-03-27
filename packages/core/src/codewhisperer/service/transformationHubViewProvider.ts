@@ -116,19 +116,24 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     private async showPlanProgress(startTime: number): Promise<string> {
         const planProgress = getPlanProgress()
         let planSteps = undefined
-        if (planProgress['buildCode'] === StepProgress.Succeeded) {
-            planSteps = await getTransformationSteps(transformByQState.getJobId(), true)
+        if (planProgress['generatePlan'] === StepProgress.Succeeded) {
+            planSteps = await getTransformationSteps(transformByQState.getJobId())
         }
         let progressHtml = `<p><b>Transformation Status</b></p><p>No job ongoing</p>`
-        if (planProgress['returnCode'] !== StepProgress.NotStarted) {
+        if (planProgress['transformCode'] !== StepProgress.NotStarted) {
             progressHtml = `<p><b>Transformation Status</b></p>`
-            progressHtml += `<p> ${this.getProgressIconMarkup(planProgress['uploadCode'])} Waiting for job to start</p>`
-            if (planProgress['uploadCode'] === StepProgress.Succeeded) {
+            progressHtml += `<p> ${this.getProgressIconMarkup(planProgress['startJob'])} Waiting for job to start</p>`
+            if (planProgress['startJob'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['buildCode']
-                )} Build uploaded code in secure build environment and generate transformation plan</p>`
+                )} Build uploaded code in secure build environment</p>`
             }
             if (planProgress['buildCode'] === StepProgress.Succeeded) {
+                progressHtml += `<p> ${this.getProgressIconMarkup(
+                    planProgress['generatePlan']
+                )} Generate transformation plan</p>`
+            }
+            if (planProgress['generatePlan'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['transformCode']
                 )} Transform your code to Java 17 using transformation plan</p>`
@@ -172,6 +177,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         if (step.progressUpdates) {
                             for (const subStep of step.progressUpdates) {
                                 progressHtml += `<p style="margin-left: 40px">- ${subStep.name}</p>`
+                                if (subStep.description) {
+                                    progressHtml += `<p style="margin-left: 60px; color:${this.getFontColorForSubStep(
+                                        subStep.status
+                                    )}">- ${subStep.description}</p>`
+                                }
                             }
                         }
                     }
@@ -246,6 +256,16 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             return `<span style="color: grey" class="spinner"> ↻ </span>`
         } else {
             return `<span style="color: grey"> ✓ </span>`
+        }
+    }
+
+    private getFontColorForSubStep(status: string) {
+        if (status === 'COMPLETED') {
+            return 'green'
+        } else if (status === 'FAILED') {
+            return 'red'
+        } else {
+            return '' // uses VS Code's default color
         }
     }
 }

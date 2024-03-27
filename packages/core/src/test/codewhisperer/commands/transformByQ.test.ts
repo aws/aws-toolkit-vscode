@@ -25,6 +25,11 @@ import {
 } from '../../../codewhisperer/service/transformByQHandler'
 import path from 'path'
 import { createTestWorkspaceFolder, toFile } from '../../testUtil'
+import {
+    NoJavaProjectsFoundError,
+    NoMavenJavaProjectsFoundError,
+    NoOpenProjectsError,
+} from '../../../amazonqGumby/errors'
 
 describe('transformByQ', function () {
     afterEach(function () {
@@ -78,15 +83,9 @@ describe('transformByQ', function () {
                 path: '/dummy/path/here',
             },
         ]
-        await assert.rejects(
-            async () => {
-                await validateOpenProjects(dummyCandidateProjects)
-            },
-            {
-                name: 'NoJavaProject',
-                message: '',
-            }
-        )
+        await assert.rejects(async () => {
+            await validateOpenProjects(dummyCandidateProjects)
+        }, NoJavaProjectsFoundError)
     })
 
     it('WHEN validateProjectSelection called on Java project with no pom.xml THEN throws error', async function () {
@@ -102,15 +101,9 @@ describe('transformByQ', function () {
             },
         ]
 
-        await assert.rejects(
-            async () => {
-                await validateOpenProjects(dummyCandidateProjects)
-            },
-            {
-                name: 'NonMavenProject',
-                message: '',
-            }
-        )
+        await assert.rejects(async () => {
+            await validateOpenProjects(dummyCandidateProjects)
+        }, NoMavenJavaProjectsFoundError)
     })
 
     it('WHEN getOpenProjects called on non-empty workspace THEN returns open projects', async function () {
@@ -125,15 +118,9 @@ describe('transformByQ', function () {
     it('WHEN getOpenProjects called on empty workspace THEN throws error', async function () {
         sinon.stub(vscode.workspace, 'workspaceFolders').get(() => undefined)
 
-        await assert.rejects(
-            async () => {
-                await getOpenProjects()
-            },
-            {
-                name: 'NoProjectsOpen',
-                message: '',
-            }
-        )
+        await assert.rejects(async () => {
+            await getOpenProjects()
+        }, NoOpenProjectsError)
     })
 
     it('WHEN stop job called with valid jobId THEN stop API called', async function () {

@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeWhisperer: Infinite loop of logging if users' editor focus is on OUTPUT tab"
+}

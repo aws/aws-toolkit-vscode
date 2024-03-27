@@ -29,3 +29,9 @@ export class NoMavenJavaProjectsFoundError extends ToolkitError {
         super('No valid Maven build file found', { code: 'CouldNotFindPomXml' })
     }
 }
+
+export class ZipExceedsSizeLimitError extends ToolkitError {
+    constructor() {
+        super('Zip file exceeds size limit', { code: 'ZipFileExceedsSizeLimit' })
+    }
+}

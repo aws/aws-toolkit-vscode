@@ -49,12 +49,8 @@ export async function activate(context: ExtensionContext) {
 
 function registerApps(appInitContext: AmazonQAppInitContext) {
     cwChatAppInit(appInitContext)
-    if (featureDevEnabled) {
-        featureDevChatAppInit(appInitContext)
-    }
-    if (gumbyEnabled) {
-        gumbyChatAppInit(appInitContext)
-    }
+    featureDevChatAppInit(appInitContext)
+    gumbyChatAppInit(appInitContext)
 }
 
 export const amazonQWelcomeCommand = Commands.declare(

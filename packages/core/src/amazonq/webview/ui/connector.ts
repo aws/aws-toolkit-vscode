@@ -90,6 +90,8 @@ export class Connector {
             case 'featuredev':
                 this.featureDevChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
                 break
+            case 'gumby':
+                this.gumbyChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
         }
     }
 
@@ -98,6 +100,13 @@ export class Connector {
             default:
                 this.cwChatConnector.onInfoLinkClick(tabID, link)
                 break
+        }
+    }
+
+    requestAnswer = (tabID: string, payload: ChatPayload) => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'gumby':
+                return this.gumbyChatConnector.requestAnswer(tabID, payload)
         }
     }
 
@@ -134,11 +143,7 @@ export class Connector {
     }
 
     transform = (tabID: string): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'gumby':
-                this.gumbyChatConnector.transform(tabID)
-                break
-        }
+        this.gumbyChatConnector.transform(tabID)
     }
 
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {

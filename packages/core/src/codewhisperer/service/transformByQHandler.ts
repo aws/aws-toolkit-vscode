@@ -6,8 +6,9 @@
 import {
     BuildSystem,
     JDKVersion,
+    sessionPlanProgress,
+    StepProgress,
     transformByQState,
-    TransformByQStatus,
     TransformByQStoppedError,
     ZipManifest,
 } from '../models/model'
@@ -40,6 +41,29 @@ import request from '../../common/request'
 import { JDK11VersionNumber, JDK8VersionNumber } from '../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ToolkitError } from '../../shared/errors'
 
+import {
+    JDK11VersionNumber,
+    JDK8VersionNumber,
+    projectSizeTooLargeMessage,
+} from '../../amazonqGumby/chat/controller/messenger/stringConstants'
+import {
+    NoJavaProjectsFoundError,
+    NoMavenJavaProjectsFoundError,
+    NoOpenProjectsError,
+    ZipExceedsSizeLimitError,
+} from '../../amazonqGumby/errors'
+
+export interface TransformationCandidateProject {
+    name: string
+    path: string
+    JDKVersion?: JDKVersion
+}
+
+export interface FolderInfo {
+    path: string
+    name: string
+}
+
 // log project details silently
 export async function validateAndLogProjectDetails() {
     let reason,
@@ -47,12 +71,12 @@ export async function validateAndLogProjectDetails() {
         codeTransformLocalJavaVersion,
         codeTransformPreValidationError = undefined
     try {
-        const openProjects = await getOpenProjects(true)
+        const openProjects = await getOpenProjects()
         const validProjects = await validateOpenProjects(openProjects, true)
         if (validProjects.length > 0) {
-            const firstModuleEntry = validProjects[0].JDKVersion
+            const firstProjectJavaVersion = validProjects[0].JDKVersion!
             codeTransformLocalJavaVersion = JDKToTelemetryValue(
-                firstModuleEntry
+                firstProjectJavaVersion
             ) as CodeTransformJavaSourceVersionsAllowed
         }
     } catch (err: any) {
@@ -73,38 +97,17 @@ export async function validateAndLogProjectDetails() {
     }
 }
 
-export interface TransformationCandidateProject {
-    name: string
-    path: string
-    JDKVersion?: JDKVersion
-}
-
-/* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat: */
-export interface FolderInfo {
-    path: string
-    name: string
-}
-
 export function throwIfCancelled() {
     if (transformByQState.isCancelled()) {
         throw new TransformByQStoppedError()
     }
 }
 
-export async function getOpenProjects(onProjectFirstOpen = false) {
+export async function getOpenProjects(): Promise<TransformationCandidateProject[]> {
     const folders = vscode.workspace.workspaceFolders
 
     if (folders === undefined) {
-        if (!onProjectFirstOpen) {
-            // only show notification when user invokes Transform, not when validating projects silently
-            void vscode.window.showErrorMessage(
-                CodeWhispererConstants.noSupportedJavaProjectsFoundMessage.replace(
-                    'LINK_HERE',
-                    CodeWhispererConstants.linkToPrerequisites
-                )
-            )
-        }
-        throw new ToolkitError('', { name: 'NoProjectsOpen' })
+        throw new NoOpenProjectsError()
     }
 
     const openProjects: TransformationCandidateProject[] = []
@@ -150,7 +153,7 @@ async function getMavenJavaProjects(javaProjects: TransformationCandidateProject
 
 async function getProjectsValidToTransform(
     mavenJavaProjects: TransformationCandidateProject[],
-    onProjectFirstOpen = false
+    onProjectFirstOpen: boolean = true
 ) {
     const projectsValidToTransform: TransformationCandidateProject[] = []
     for (const project of mavenJavaProjects) {
@@ -224,17 +227,15 @@ async function getProjectsValidToTransform(
  * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
  * and we allow the user to specify the Java version.
  */
-export async function validateOpenProjects(projects: TransformationCandidateProject[], onProjectFirstOpen = false) {
+export async function validateOpenProjects(
+    projects: TransformationCandidateProject[],
+    onProjectFirstOpen: boolean = true
+) {
     const javaProjects = await getJavaProjects(projects)
 
     if (javaProjects.length === 0) {
         if (!onProjectFirstOpen) {
-            void vscode.window.showErrorMessage(
-                CodeWhispererConstants.noSupportedJavaProjectsFoundMessage.replace(
-                    'LINK_HERE',
-                    CodeWhispererConstants.linkToPrerequisites
-                )
-            )
+            void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformPreValidationError: 'NoJavaProject',
@@ -242,7 +243,7 @@ export async function validateOpenProjects(projects: TransformationCandidateProj
                 reason: 'CouldNotFindJavaProject',
             })
         }
-        throw new ToolkitError('', { name: 'NoJavaProject' })
+        throw new NoJavaProjectsFoundError()
     }
 
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
@@ -261,7 +262,7 @@ export async function validateOpenProjects(projects: TransformationCandidateProj
                 reason: 'NoPomFileFound',
             })
         }
-        throw new ToolkitError('', { name: 'NonMavenProject' })
+        throw new NoMavenJavaProjectsFoundError()
     }
 
     /*
@@ -461,7 +462,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
     // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
     const args = [`-Dmaven.repo.local=${dependenciesFolder.path}`, 'clean', 'install', '-q']
     let environment = process.env
-    // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
+
     if (transformByQState.getJavaHome() !== undefined) {
         environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
     }
@@ -486,7 +487,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
         )
         let errorReason = ''
         if (spawnResult.stdout) {
-            errorReason = `Maven ${argString}: ${errorCode}ExecutionError`
+            errorReason = `Maven ${argString}: InstallationExecutionError`
             /*
              * adding this check here because these mvn commands sometimes generate a lot of output.
              * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
@@ -496,7 +497,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
                 errorReason += '-BufferOverflow'
             }
         } else {
-            errorReason = `Maven ${argString}: ${errorCode}SpawnError`
+            errorReason = `Maven ${argString}: InstallationSpawnError`
         }
         if (spawnResult.error) {
             const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
@@ -515,19 +516,9 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
             result: MetadataResult.Fail,
             reason: errorReason,
         })
-        throw new Error('Maven install error')
+        throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
-    }
-}
-
-function getMavenErrorCode(args: string[]) {
-    if (args.includes('install')) {
-        return 'Install'
-    } else if (args.includes('clean')) {
-        return 'Clean'
-    } else {
-        return ''
     }
 }
 
@@ -706,12 +697,9 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
 
     if (exceedsLimit) {
         void vscode.window.showErrorMessage(
-            CodeWhispererConstants.projectSizeTooLargeMessage.replace(
-                'LINK_HERE',
-                CodeWhispererConstants.linkToUploadZipTooLarge
-            )
+            projectSizeTooLargeMessage.replace('LINK_HERE', CodeWhispererConstants.linkToUploadZipTooLarge)
         )
-        throw new Error('Project size exceeds 1GB limit')
+        throw new ZipExceedsSizeLimitError()
     }
 
     return tempFilePath
@@ -870,6 +858,16 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Pass,
             })
             status = response.transformationJob.status!
+            // must be series of ifs, not else ifs
+            if (CodeWhispererConstants.validStatesForJobStarted.includes(status)) {
+                sessionPlanProgress['startJob'] = StepProgress.Succeeded
+            }
+            if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
+                sessionPlanProgress['buildCode'] = StepProgress.Succeeded
+            }
+            if (CodeWhispererConstants.validStatesForPlanGenerated.includes(status)) {
+                sessionPlanProgress['generatePlan'] = StepProgress.Succeeded
+            }
             // emit metric when job status changes
             if (status !== transformByQState.getPolledJobStatus()) {
                 telemetry.codeTransform_jobStatusChanged.emit({

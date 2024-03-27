@@ -8,9 +8,9 @@
 
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
 import { AuthController } from '../../../amazonq/auth/controller'
-import { ChatSessionStorage } from '../storages/chatSession'
+import { ChatSessionManager } from '../storages/chatSession'
 import * as vscode from 'vscode'
-import { Session } from '../session/session'
+import { ConversationState, Session } from '../session/session'
 import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
@@ -27,8 +27,12 @@ import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFound
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
 import { TransformationCandidateProject } from '../../../codewhisperer/service/transformByQHandler'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
+import fs from 'fs'
+import path from 'path'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 
-// Define the chat / IDE events to listen to
+// These events can be interactions within the chat,
+// or elsewhere in the IDE
 export interface ChatControllerEventEmitters {
     readonly transformSelected: vscode.EventEmitter<any>
     readonly tabOpened: vscode.EventEmitter<any>
@@ -37,22 +41,22 @@ export interface ChatControllerEventEmitters {
     readonly formActionClicked: vscode.EventEmitter<any>
     readonly commandSentFromIDE: vscode.EventEmitter<any>
     readonly transformationFinished: vscode.EventEmitter<any>
-    readonly humanInTheLoopIntervention: vscode.EventEmitter<any>
+    readonly processHumanChatMessage: vscode.EventEmitter<any>
+    readonly linkClicked: vscode.EventEmitter<any>
 }
 
 export class GumbyController {
     private readonly messenger: Messenger
-    private readonly sessionStorage: ChatSessionStorage
+    private readonly sessionStorage: ChatSessionManager
     private authController: AuthController
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
-        sessionStorage: ChatSessionStorage,
         onDidChangeAmazonQVisibility: vscode.Event<boolean>
     ) {
         this.messenger = messenger
-        this.sessionStorage = sessionStorage
+        this.sessionStorage = ChatSessionManager.Instance
         this.authController = new AuthController()
 
         this.chatControllerMessageListeners.transformSelected.event(data => {
@@ -83,20 +87,26 @@ export class GumbyController {
             return this.transformationFinished(data)
         })
 
-        this.chatControllerMessageListeners.humanInTheLoopIntervention.event(data => {
-            return this.humanInTheLoopIntervention(data)
+        this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
+            return this.processHumanChatMessage(data)
+        })
+
+        this.chatControllerMessageListeners.linkClicked.event(data => {
+            this.openLink(data)
         })
     }
 
     private async tabOpened(message: any) {
-        let session: Session | undefined
+        const session: Session = this.sessionStorage.getSession()
+        const tabID = this.sessionStorage.setActiveTab(message.tabID)
+
+        // check if authentication has expired
         try {
-            session = await this.sessionStorage.getSession(message.tabID)
             getLogger().debug(`${featureName}: Session created with id: ${session.tabID}`)
 
             const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
-                void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                void this.messenger.sendAuthNeededExceptionMessage(authState, tabID)
                 session.isAuthenticating = true
                 return
             }
@@ -106,7 +116,7 @@ export class GumbyController {
     }
 
     private async tabClosed(data: any) {
-        transformByQState.setGumbyChatTabID(undefined)
+        this.sessionStorage.removeActiveTab()
     }
 
     private authClicked(message: any) {
@@ -127,37 +137,42 @@ export class GumbyController {
     }
 
     private async transformInitiated(message: any) {
-        transformByQState.setGumbyChatTabID(message.tabID)
-
         // check that a project is open
         const workspaceFolders = vscode.workspace.workspaceFolders
         if (workspaceFolders === undefined || workspaceFolders.length === 0) {
-            this.messenger.sendStaticTextResponse('no-project-found', message.tabID)
+            this.messenger.sendRetryableErrorResponse('no-project-found', message.tabID)
             return
         }
 
         // check that the session is authenticated
-        let session
+        const session: Session = this.sessionStorage.getSession()
         try {
-            session = await this.sessionStorage.getSession(message.tabID)
-
             const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
-                await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
                 return
             }
 
-            // check to see if a transformation is already in progress
-            if (transformByQState.isRunning()) {
-                this.messenger.sendAsyncEventProgress(
-                    message.tabID,
-                    true,
-                    undefined,
-                    GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-                )
-                this.messenger.sendJobSubmittedMessage(message.tabID)
-                return
+            switch (this.sessionStorage.getSession().conversationState) {
+                case ConversationState.JOB_SUBMITTED:
+                    this.messenger.sendAsyncEventProgress(
+                        message.tabID,
+                        true,
+                        undefined,
+                        GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
+                    )
+                    this.messenger.sendJobSubmittedMessage(message.tabID)
+                    return
+                case ConversationState.COMPILING:
+                    this.messenger.sendAsyncEventProgress(
+                        message.tabID,
+                        true,
+                        undefined,
+                        GumbyNamedMessages.COMPILATION_PROGRESS_MESSAGE
+                    )
+                    this.messenger.sendCompilationInProgress(message.tabID)
+                    return
             }
 
             this.messenger.sendTransformationIntroduction(message.tabID)
@@ -165,6 +180,7 @@ export class GumbyController {
             // start /transform chat flow
             const validProjects = await this.validateProjectsWithReplyOnError(message)
             if (validProjects.length > 0) {
+                this.sessionStorage.getSession().updateCandidateProjects(validProjects)
                 await this.messenger.sendProjectPrompt(validProjects, message.tabID)
             }
         } catch (err: any) {
@@ -179,11 +195,11 @@ export class GumbyController {
             return await getValidCandidateProjects()
         } catch (err: any) {
             if (err instanceof NoJavaProjectsFoundError) {
-                this.messenger.sendStaticTextResponse('no-java-project-found', message.tabID)
+                this.messenger.sendRetryableErrorResponse('no-java-project-found', message.tabID)
             } else if (err instanceof NoMavenJavaProjectsFoundError) {
-                this.messenger.sendStaticTextResponse('no-maven-java-project-found', message.tabID)
+                this.messenger.sendRetryableErrorResponse('no-maven-java-project-found', message.tabID)
             } else {
-                this.messenger.sendStaticTextResponse('no-project-found', message.tabID)
+                this.messenger.sendRetryableErrorResponse('no-project-found', message.tabID)
             }
         }
         return []
@@ -193,15 +209,9 @@ export class GumbyController {
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, message.action as any)
         switch (typedAction) {
             case ButtonActions.CONFIRM_TRANSFORMATION_FORM:
-                await this.initiateTransformationOnModule(message)
+                await this.initiateTransformationOnProject(message)
                 break
             case ButtonActions.CANCEL_TRANSFORMATION_FORM:
-                this.messenger.sendJobFinishedMessage(message.tabId, true, undefined)
-                break
-            case ButtonActions.CONFIRM_JAVA_HOME_FORM:
-                await this.prepareProjectForSubmission(message)
-                break
-            case ButtonActions.CANCEL_JAVA_HOME_FORM:
                 this.messenger.sendJobFinishedMessage(message.tabId, true, undefined)
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
@@ -219,51 +229,60 @@ export class GumbyController {
         }
     }
 
-    // Any given project could have multiple candidate modules to transform --
+    // Any given project could have multiple candidate projects to transform --
     // The user gets prompted to pick a specific one
-    private async initiateTransformationOnModule(message: any) {
-        const pathToModule: string = message.formSelectedValues['GumbyTransformModuleForm']
-        const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
+    private async initiateTransformationOnProject(message: any) {
+        const pathToProject: string = message.formSelectedValues['GumbyTransformProjectForm']
         const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
+        const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
 
-        this.messenger.sendCompilationInProgress(message.tabId, true)
+        const projectName = path.basename(pathToProject)
+        this.messenger.sendProjectSelectionMessage(projectName, fromJDKVersion, toJDKVersion, message.tabId)
 
-        await processTransformFormInput(pathToModule, fromJDKVersion, toJDKVersion)
+        if (fromJDKVersion === JDKVersion.UNSUPPORTED) {
+            this.messenger.sendRetryableErrorResponse('unsupported-source-jdk-version', message.tabId)
+            return
+        }
+
+        await processTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
         await this.validateBuildWithPromptOnError(message)
     }
 
-    private async prepareProjectForSubmission(message: any | undefined = undefined): Promise<void> {
-        if (message !== undefined && message.formSelectedValues !== undefined) {
-            const javaHome: string = message.formSelectedValues['JavaHomeFormInput'].trim()
-
-            if (!javaHome) {
-                const errorMessage = 'No JDK path provided'
-                this.messenger.sendErrorMessage(errorMessage, message.tabID)
-                throw new JavaHomeNotSetError()
-            }
-
-            transformByQState.setJavaHome(javaHome)
+    private async prepareProjectForSubmission(message: { pathToJavaHome: string; tabID: string }): Promise<void> {
+        if (message.pathToJavaHome) {
+            transformByQState.setJavaHome(message.pathToJavaHome)
             getLogger().info(
                 `CodeTransformation: using JAVA_HOME = ${transformByQState.getJavaHome()} since source JDK does not match Maven JDK`
             )
         }
 
         try {
-            this.messenger.sendCompilationInProgress(message.tabId, false)
+            this.sessionStorage.getSession().conversationState = ConversationState.COMPILING
+            this.messenger.sendCompilationInProgress(message.tabID)
             await compileProject()
-
-            this.messenger.sendCompilationFinished(message.tabId)
-            this.messenger.sendAsyncEventProgress(
-                message.tabId,
-                true,
-                undefined,
-                GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-            )
-            this.messenger.sendJobSubmittedMessage(message.tabId)
-            await startTransformByQ()
         } catch (err: any) {
-            this.messenger.sendStaticTextResponse('could-not-compile-project', message.tabId)
+            this.messenger.sendRetryableErrorResponse('could-not-compile-project', message.tabID)
+            throw err
         }
+
+        this.messenger.sendCompilationFinished(message.tabID)
+
+        const authState = await getChatAuthState()
+        if (authState.amazonQ !== 'connected') {
+            void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+            this.sessionStorage.getSession().isAuthenticating = true
+            return
+        }
+
+        this.messenger.sendAsyncEventProgress(
+            message.tabID,
+            true,
+            undefined,
+            GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
+        )
+        this.messenger.sendJobSubmittedMessage(message.tabID)
+        this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
+        await startTransformByQ()
     }
 
     private async validateBuildWithPromptOnError(message: any | undefined = undefined): Promise<void> {
@@ -271,22 +290,57 @@ export class GumbyController {
             await validateCanCompileProject()
         } catch (err: any) {
             if (err instanceof JavaHomeNotSetError) {
-                const prompt = MessengerUtils.createJavaHomePrompt()
-                this.messenger.sendTextInputPrompt(prompt, 'JavaHomeForm', message.tabId)
+                this.sessionStorage.getSession().conversationState = ConversationState.PROMPT_JAVA_HOME
+                this.messenger.sendStaticTextResponse('java-home-not-set', message.tabId)
+                this.messenger.sendChatInputEnabled(message.tabId, true)
+                this.messenger.sendUpdatePlaceholder(message.tabId, 'Enter the path to your Java installation.')
                 return
             }
             throw err
         }
 
-        await this.prepareProjectForSubmission()
+        await this.prepareProjectForSubmission(message)
     }
 
     private async transformationFinished(message: { tabID: string; jobStatus: string }) {
+        this.sessionStorage.getSession().conversationState = ConversationState.IDLE
         this.messenger.sendJobSubmittedMessage(message.tabID, true)
         this.messenger.sendJobFinishedMessage(message.tabID, false, message.jobStatus)
     }
 
-    private async humanInTheLoopIntervention(message: { tabID: string; latestVersion: string }) {
-        this.messenger.sendHumanInterventionSelectedMessage(message.tabID, message.latestVersion)
+    private async processHumanChatMessage(data: { message: string; tabID: string }) {
+        this.messenger.sendUserPrompt(data.message, data.tabID)
+        this.messenger.sendChatInputEnabled(data.tabID, false)
+        this.messenger.sendUpdatePlaceholder(data.tabID, 'Chat is disabled during Code Transformation.')
+
+        const session = this.sessionStorage.getSession()
+        switch (session.conversationState) {
+            case ConversationState.PROMPT_JAVA_HOME: {
+                const pathToJavaHome = extractPath(data.message)
+
+                if (pathToJavaHome) {
+                    await this.prepareProjectForSubmission({
+                        pathToJavaHome,
+                        tabID: data.tabID,
+                    })
+                } else {
+                    this.messenger.sendRetryableErrorResponse('invalid-java-home', data.tabID)
+                    this.messenger.sendJobFinishedMessage(data.tabID, true, undefined)
+                }
+            }
+        }
     }
+
+    private openLink(message: { link: string }) {
+        void openUrl(vscode.Uri.parse(message.link))
+    }
+}
+
+function extractPath(text: string): string | undefined {
+    const words = text.split(/\s+/) // Split text into words by whitespace
+
+    // Filter words that are formatted like paths and do exist as local directories
+    const paths = words.find(word => fs.existsSync(word) && fs.lstatSync(word).isDirectory())
+
+    return paths
 }
