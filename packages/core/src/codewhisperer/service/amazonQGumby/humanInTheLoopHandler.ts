@@ -82,6 +82,7 @@ export async function getJsonValuesFromManifestFile(
 
 export async function highlightPomIssueInProject(pomFileVirtualFileReference: vscode.Uri, currentVersion: string) {
     console.log('In highlightPomIssueInProject', pomFileVirtualFileReference, currentVersion)
+    // Open the editor and set this pom to activeTextEditor
     await vscode.window.showTextDocument(pomFileVirtualFileReference)
 
     // Find line number for "latestVersion" or set to first line in file
@@ -95,6 +96,7 @@ async function setWarningIcon(lineNumber: number = 0) {
 
     const highlightDecorationType = vscode.window.createTextEditorDecorationType({
         backgroundColor: 'lightgreen',
+
         isWholeLine: true,
         gutterIconPath:
             '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/toolkit/resources/icons/cloud9/generated/dark/vscode-bug.svg',

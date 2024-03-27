@@ -402,8 +402,8 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
 
         // 5) We need to wait for user input
         transformByQState.getChatControllers()?.humanInTheLoopIntervention.fire({
-            tabId: transformByQState.getGumbyChatTabID(),
             latestVersion,
+            tabID: transformByQState.getGumbyChatTabID(),
         })
         const getUserInputValue = latestVersion
 

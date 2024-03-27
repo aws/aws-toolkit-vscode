@@ -362,12 +362,13 @@ To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/a
     }
 
     public sendHumanInterventionSelectedMessage(tabID: string, latestVersion: string) {
-        const message = `You have selected to upgrade your module to version: ${latestVersion}`
+        console.log('In sendHumanInterventionSelectedMessage', tabID, latestVersion)
+        const message = `You have selected to upgrade your module (<insertModuleName>) to version: ${latestVersion}`
 
         const humanInterventionSelectedMessage = new ChatMessage(
             {
                 message,
-                messageType: 'answer',
+                messageType: 'ai-prompt',
                 messageId: GumbyNamedMessages.HUMAN_IN_THE_LOOP_INTERVENTION,
             },
             tabID
