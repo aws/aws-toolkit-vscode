@@ -194,7 +194,7 @@ describe('startSecurityScanOld', function () {
 
     it('Should stop security scan', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
-        const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
+        const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRenderOld')
         const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
         const testWindow = getTestWindow()
         testWindow.onDidShowMessage(message => {

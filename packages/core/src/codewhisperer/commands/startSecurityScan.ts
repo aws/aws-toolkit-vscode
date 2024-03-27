@@ -213,16 +213,15 @@ export async function startSecurityScan(
                 error.message.includes(CodeWhispererConstants.throttlingMessage)
             ) {
                 void vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReachedCodeScan)
-                await vscode.commands.executeCommand('aws.codeWhisperer.refresh', true)
+                // TODO: Should we set a graphical state?
+                // We shouldn't set vsCodeState.isFreeTierLimitReached here because it will hide CW and Q chat options.
             }
         }
         codeScanTelemetryEntry.reason = (error as Error).message
     } finally {
         codeScanState.setToNotStarted()
-        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
         codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
-        getLogger().verbose(`Security scan telemetry: ${JSON.stringify(codeScanTelemetryEntry)}`)
         await emitCodeScanTelemetry(editor, codeScanTelemetryEntry)
     }
 }
