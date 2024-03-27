@@ -802,6 +802,7 @@ export async function getTransformationPlan(jobId: string) {
 
 export async function getTransformationSteps(jobId: string) {
     try {
+        await sleep(2000) // prevent ThrottlingException
         const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,

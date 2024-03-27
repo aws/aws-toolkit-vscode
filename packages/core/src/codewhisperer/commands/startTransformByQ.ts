@@ -167,6 +167,7 @@ export async function startTransformByQ() {
         const status = await pollTransformationStatusUntilComplete(jobId)
 
         // Set the result state variables for our store and the UI
+        // At this point job should be completed or partially completed
         await finalizeTransformationJob(status)
     } catch (error: any) {
         await transformationJobErrorHandler(error)
