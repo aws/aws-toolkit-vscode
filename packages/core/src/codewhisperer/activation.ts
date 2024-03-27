@@ -103,6 +103,8 @@ export async function activate(context: ExtContext): Promise<void> {
     ImportAdderProvider.instance
 
     context.extensionContext.subscriptions.push(
+        // register toolkit api callback
+        registerToolkitApiCallback.register(),
         signoutCodeWhisperer.register(auth),
         showManageCwConnections.register(),
         /**
@@ -230,8 +232,6 @@ export async function activate(context: ExtContext): Promise<void> {
         notifyNewCustomizationsCmd.register(),
         // fetch feature configs
         fetchFeatureConfigsCmd.register(),
-        // register toolkit api callback
-        registerToolkitApiCallback.register(),
         /**
          * On recommendation acceptance
          */

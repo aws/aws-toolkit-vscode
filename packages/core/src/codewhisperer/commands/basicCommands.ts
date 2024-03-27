@@ -339,8 +339,9 @@ export const registerToolkitApiCallback = Commands.declare(
             const auth = Auth.instance
             const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
             const toolkitApi = toolkitExt?.exports
-
+            getLogger().info(`Trying to register toolkit callback. Toolkit is installed.`)
             const registerCallback = once(async () => {
+                getLogger().info(`Registering callbacks of toolkit api`)
                 auth.onDidChangeActiveConnection(async () => {
                     await vscode.commands.executeCommand(
                         '_aws.toolkit.auth.restore',
@@ -361,7 +362,7 @@ export const registerToolkitApiCallback = Commands.declare(
                         const id = e.id
                         const conn = await auth.getConnection({ id })
                         if (conn && conn.type === 'sso') {
-                            getLogger().info(`toolkitApi set connection ${id}`)
+                            getLogger().info(`toolkitApi: set connection ${id}`)
                             await toolkitApi.setConnection({
                                 type: conn.type,
                                 ssoRegion: conn.ssoRegion,
@@ -377,7 +378,7 @@ export const registerToolkitApiCallback = Commands.declare(
                 // when deleting connection in Q, also delete same connection in toolkit
                 auth.onDidDeleteConnection(async id => {
                     if (toolkitApi && 'deleteConnection' in toolkitApi) {
-                        getLogger().info(`toolkitApi delete connection ${id}`)
+                        getLogger().info(`toolkitApi: delete connection ${id}`)
                         await toolkitApi.deleteConnection(id)
                     }
                 })
@@ -386,12 +387,12 @@ export const registerToolkitApiCallback = Commands.declare(
                 if (toolkitApi && 'onDidChangeConnection' in toolkitApi) {
                     toolkitApi.onDidChangeConnection(
                         async (connection: AwsConnection) => {
-                            getLogger().info(`toolkitApi toolkit connection change callback ${connection.id}`)
+                            getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
                             await auth.updateConnectionCallback(connection)
                         },
 
                         async (id: string) => {
-                            getLogger().info(`toolkitApi toolkit connection delete callback ${id}`)
+                            getLogger().info(`toolkitApi: connection delete callback ${id}`)
                             await auth.deletionConnectionCallback(id)
                         }
                     )

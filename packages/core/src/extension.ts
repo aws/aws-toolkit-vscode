@@ -224,8 +224,10 @@ export async function activate(context: vscode.ExtensionContext) {
         if (!isReleaseVersion()) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
         }
-
-        await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
+        // after toolkit is activated, ask Amazon Q to register toolkit api callbacks
+        setTimeout(async () => {
+            await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
+        }, 2000)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
