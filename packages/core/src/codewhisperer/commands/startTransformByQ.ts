@@ -16,7 +16,7 @@ import {
     JDKVersion,
     sessionPlanProgress,
 } from '../models/model'
-import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
+import { convertToTimeString, convertDateToTimestamp, getStringHash } from '../../shared/utilities/textUtilities'
 import {
     throwIfCancelled,
     startJob,
@@ -48,6 +48,7 @@ import {
     CancelActionPositions,
     JDKToTelemetryValue,
     calculateTotalLatency,
+    telemetryUndefined,
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
@@ -358,10 +359,10 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         console.log(latestVersion, majorVersions, minorVersions)
 
         // 5) We need to wait for user input
-        transformByQState.getChatControllers()?.humanInTheLoopIntervention.fire({
-            latestVersion,
-            tabID: transformByQState.getGumbyChatTabID(),
-        })
+        // transformByQState.getChatControllers()?.humanInTheLoopIntervention.fire({
+        //     latestVersion,
+        //     tabID: ChatSessionManager.Instance.getSession().tabID,
+        // })
         const getUserInputValue = latestVersion
 
         // 6) We need to add user input to that pom.xml,
@@ -452,7 +453,7 @@ export async function setTransformationToRunningState() {
         codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
-        // codeTransformProjectId: '',
+        codeTransformProjectId: projectId,
         result: MetadataResult.Pass,
     })
 

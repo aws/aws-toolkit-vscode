@@ -39,9 +39,7 @@ import {
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
-import { JDK11VersionNumber, JDK8VersionNumber } from '../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ToolkitError } from '../../shared/errors'
-
 import {
     JDK11VersionNumber,
     JDK8VersionNumber,
@@ -479,7 +477,6 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
 
     if (spawnResult.status !== 0) {
         let errorLog = ''
-        const errorCode = getMavenErrorCode(args)
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} ${argString} failed: \n ${errorLog}`)
