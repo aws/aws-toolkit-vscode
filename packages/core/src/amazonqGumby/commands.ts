@@ -4,28 +4,43 @@
  */
 
 import * as vscode from 'vscode'
-import { ExtContext } from '../shared/extensions'
 import { Commands } from '../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
-import { startTransformByQWithProgress, confirmStopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
+import { stopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { CancelActionPositions, logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
+import { ChatControllerEventEmitters } from './chat/controller/controller'
+import { focusAmazonQPanel } from '../auth/ui/vue/show'
+import { sleep } from '../shared/utilities/timeoutUtils'
+import { randomUUID } from 'crypto'
+import { ChatSessionManager } from './chat/storages/chatSession'
 
 export const showTransformByQ = Commands.declare(
     { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
-    (context: ExtContext) => async (source: string) => {
+    (controllerEventEmitters: ChatControllerEventEmitters) => async (source: string) => {
         if (AuthUtil.instance.isConnectionExpired()) {
             await AuthUtil.instance.notifyReauthenticate()
         }
 
         if (transformByQState.isNotStarted()) {
             logCodeTransformInitiatedMetric(source)
-            await startTransformByQWithProgress()
+            await focusAmazonQPanel().then(async () => {
+                // non blocking wait for a tenth of a second
+                // note: we need this because the webview has to be loaded
+                // before it can listen to events we fire
+                await sleep(250)
+
+                controllerEventEmitters.commandSentFromIDE.fire({
+                    command: 'aws.awsq.transform',
+                    tabId: ChatSessionManager.Instance.getSession().tabID ?? '',
+                    eventId: randomUUID,
+                })
+            })
         } else if (transformByQState.isCancelled()) {
             void vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
         } else if (transformByQState.isRunning()) {
-            await confirmStopTransformByQ(transformByQState.getJobId(), CancelActionPositions.DevToolsSidePanel)
+            await stopTransformByQ(transformByQState.getJobId(), CancelActionPositions.DevToolsSidePanel)
         }
     }
 )
