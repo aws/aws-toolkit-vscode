@@ -135,13 +135,11 @@ describe('startSecurityScanOld', function () {
         extensionContext = await FakeExtensionContext.create()
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
         appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
-        appCodePath = join(appRoot, 'hello_world', 'app.py')
+        appCodePath = join(appRoot, 'hello_world/app.py')
         editor = await openTestFile(appCodePath)
     })
-    afterEach(function () {
+    afterEach(async function () {
         sinon.restore()
-    })
-    after(async function () {
         await closeAllEditors()
     })
     const createClient = () => {
