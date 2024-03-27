@@ -16,7 +16,7 @@ import org.cef.CefApp
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.network.CefRequest
-import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
 import software.aws.toolkits.jetbrains.services.amazonq.webview.AssetResourceHandler
 import java.awt.event.ActionListener
@@ -33,7 +33,7 @@ class OpenAmazonQAction : DumbAwareAction("View Q Webview") {
     }
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = AwsToolkit.isDeveloperMode()
+        e.presentation.isEnabledAndVisible = isDeveloperMode()
     }
 }
 
