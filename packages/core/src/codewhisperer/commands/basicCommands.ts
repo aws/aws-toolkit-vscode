@@ -329,6 +329,57 @@ export const signoutCodeWhisperer = Commands.declare(
     }
 )
 
+const registerToolkitApiCallbackOnce = once(async () => {
+    getLogger().info(`toolkitApi: Registering callbacks of toolkit api`)
+    const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+    const toolkitApi = toolkitExt?.exports
+    const auth = Auth.instance
+    auth.onDidChangeActiveConnection(async () => {
+        await vscode.commands.executeCommand('_aws.toolkit.auth.restore', (await getChatAuthState()).codewhispererChat)
+    })
+    auth.onDidChangeConnectionState(async e => {
+        await vscode.commands.executeCommand('_aws.toolkit.auth.restore', (await getChatAuthState()).codewhispererChat)
+        // when changing connection state in Q, also change connection state in toolkit
+        if (toolkitApi && 'setConnection' in toolkitApi) {
+            const id = e.id
+            const conn = await auth.getConnection({ id })
+            if (conn && conn.type === 'sso') {
+                getLogger().info(`toolkitApi: set connection ${id}`)
+                await toolkitApi.setConnection({
+                    type: conn.type,
+                    ssoRegion: conn.ssoRegion,
+                    scopes: conn.scopes,
+                    startUrl: conn.startUrl,
+                    state: e.state,
+                    id: id,
+                    label: conn.label,
+                } as AwsConnection)
+            }
+        }
+    })
+    // when deleting connection in Q, also delete same connection in toolkit
+    auth.onDidDeleteConnection(async id => {
+        if (toolkitApi && 'deleteConnection' in toolkitApi) {
+            getLogger().info(`toolkitApi: delete connection ${id}`)
+            await toolkitApi.deleteConnection(id)
+        }
+    })
+
+    // when toolkit connection changes
+    if (toolkitApi && 'onDidChangeConnection' in toolkitApi) {
+        toolkitApi.onDidChangeConnection(
+            async (connection: AwsConnection) => {
+                getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
+                await auth.updateConnectionCallback(connection)
+            },
+
+            async (id: string) => {
+                getLogger().info(`toolkitApi: connection delete callback ${id}`)
+                await auth.deletionConnectionCallback(id)
+            }
+        )
+    }
+})
 export const registerToolkitApiCallback = Commands.declare(
     { id: 'aws.amazonq.refreshConnectionCallback' },
     () => async () => {
@@ -336,70 +387,11 @@ export const registerToolkitApiCallback = Commands.declare(
         // we need to do it manually here because the Toolkit would have been unable to call
         // this API if the Q/CW extension started afterwards (and this code block is running).
         if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
-            const auth = Auth.instance
+            getLogger().info(`Trying to register toolkit callback. Toolkit is installed.`)
             const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
             const toolkitApi = toolkitExt?.exports
-            getLogger().info(`Trying to register toolkit callback. Toolkit is installed.`)
-            const registerCallback = once(async () => {
-                getLogger().info(`Registering callbacks of toolkit api`)
-                auth.onDidChangeActiveConnection(async () => {
-                    await vscode.commands.executeCommand(
-                        '_aws.toolkit.auth.restore',
-                        (
-                            await getChatAuthState()
-                        ).codewhispererChat
-                    )
-                })
-                auth.onDidChangeConnectionState(async e => {
-                    await vscode.commands.executeCommand(
-                        '_aws.toolkit.auth.restore',
-                        (
-                            await getChatAuthState()
-                        ).codewhispererChat
-                    )
-                    // when changing connection state in Q, also change connection state in toolkit
-                    if (toolkitApi && 'setConnection' in toolkitApi) {
-                        const id = e.id
-                        const conn = await auth.getConnection({ id })
-                        if (conn && conn.type === 'sso') {
-                            getLogger().info(`toolkitApi: set connection ${id}`)
-                            await toolkitApi.setConnection({
-                                type: conn.type,
-                                ssoRegion: conn.ssoRegion,
-                                scopes: conn.scopes,
-                                startUrl: conn.startUrl,
-                                state: e.state,
-                                id: id,
-                                label: conn.label,
-                            } as AwsConnection)
-                        }
-                    }
-                })
-                // when deleting connection in Q, also delete same connection in toolkit
-                auth.onDidDeleteConnection(async id => {
-                    if (toolkitApi && 'deleteConnection' in toolkitApi) {
-                        getLogger().info(`toolkitApi: delete connection ${id}`)
-                        await toolkitApi.deleteConnection(id)
-                    }
-                })
-
-                // when toolkit connection changes
-                if (toolkitApi && 'onDidChangeConnection' in toolkitApi) {
-                    toolkitApi.onDidChangeConnection(
-                        async (connection: AwsConnection) => {
-                            getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
-                            await auth.updateConnectionCallback(connection)
-                        },
-
-                        async (id: string) => {
-                            getLogger().info(`toolkitApi: connection delete callback ${id}`)
-                            await auth.deletionConnectionCallback(id)
-                        }
-                    )
-                }
-            })
-            if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
-                await registerCallback()
+            if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit) && toolkitApi) {
+                await registerToolkitApiCallbackOnce()
             }
         }
     }
