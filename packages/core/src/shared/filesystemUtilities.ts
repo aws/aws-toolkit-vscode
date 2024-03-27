@@ -12,7 +12,6 @@ import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
 import { GlobalState } from './globalState'
 import { fsCommon } from '../srcShared/fs'
-import fs from 'fs'
 
 export const tempDirPath = path.join(
     // https://github.com/aws/aws-toolkit-vscode/issues/240
@@ -213,39 +212,7 @@ export async function getNonexistentFilename(
         const filename =
             i === 0 ? `${name}${suffix}` : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
         const fullpath = path.join(dir, filename)
-        if (!(await fsCommon.existsFile(fullpath)) || i >= max + 99) {
-            return filename
-        }
-    }
-}
-
-/**
- * @deprecated this is a synchronous duplicate of {@link getNonexistentFilename}. We are only keeping it
- * since some code needs to do this process synchronously and the platform agnostic file system is async.
- *
- * Returns `name.suffix` if it does not already exist in directory `dir`, else appends
- * a number ("foo-1.txt", "foo-2.txt", etc.).
- *
- * To avoid excessive filesystem activity, if all filenames up to `max` exist,
- * the function instead appends a random string.
- *
- * @param dir  Path to a directory
- * @param name  Filename without extension
- * @param suffix  Filename suffix, typically an extension (".txt"), may be empty
- * @param max  Stop searching if all permutations up to this number exist
- */
-export function getNonexistentFilenameSync(dir: string, name: string, suffix: string, max: number = 99): string {
-    if (!name) {
-        throw new Error(`name is empty`)
-    }
-    if (!fs.existsSync(dir)) {
-        throw new Error(`directory does not exist: ${dir}`)
-    }
-    for (let i = 0; true; i++) {
-        const filename =
-            i === 0 ? `${name}${suffix}` : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
-        const fullpath = path.join(dir, filename)
-        if (!fs.existsSync(fullpath) || i >= max + 99) {
+        if (!(await fsCommon.exists(fullpath)) || i >= max + 99) {
             return filename
         }
     }

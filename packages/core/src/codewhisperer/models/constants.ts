@@ -151,6 +151,12 @@ export const persistedCustomizationsKey = 'CODEWHISPERER_PERSISTED_CUSTOMIZATION
 
 export const selectedCustomizationKey = 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
 
+export const inlinehintKey = 'CODEWHISPERER_HINT_DISPLAYED'
+
+export const inlinehintWipKey = 'aws.codewhisperer.tutorial.workInProgress'
+
+export type AnnotationChangeSource = 'codewhisperer' | 'selection' | 'editor' | 'content'
+
 export const learnMoreUriGeneral = 'https://aws.amazon.com/codewhisperer/'
 
 export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
@@ -286,7 +292,7 @@ export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
 export const newCustomizationMessage = 'You have access to new CodeWhisperer customizations.'
 
-export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVAILABLE'
+export const newCustomizationsAvailableKey = 'aws.amazonq.codewhisperer.newCustomizations'
 
 // Amazon Q Code Transformation
 
@@ -384,24 +390,6 @@ export const planIntroductionMessage =
     'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'
 
 export const planDisclaimerMessage = '**Proposed transformation changes** \n\n\n'
-
-export const enterJavaHomeMessage = 'Enter the path to JDK'
-
-export const windowsJavaHomeHelpMessage =
-    'To find your JDK JAVA_VERSION_HERE path, run "cd C:\\Program Files\\Java" and then "dir" in a new IDE terminal. If you see JDK JAVA_VERSION_HERE, "cd" into that directory and run "cd" once more to show the path. The path should look similar to this: "C:\\Program Files\\Java\\jdk-11.0.1".'
-
-export const nonWindowsJava8HomeHelpMessage =
-    'To find your JDK 8 path, run this command in a new IDE terminal: "/usr/libexec/java_home -v 1.8". The JDK 8 path should look like this: "/Library/Java/JavaVirtualMachines/jdk-8.jdk/Contents/Home".'
-
-export const nonWindowsJava11HomeHelpMessage =
-    'To find your JDK 11 path, run this command in a new IDE terminal: "/usr/libexec/java_home -v 11". The JDK 11 path should look like this: "/Library/Java/JavaVirtualMachines/jdk-11.jdk/Contents/Home".'
-
-export const projectSizeTooLargeMessage =
-    'Your project size exceeds the Amazon Q Code Transformation upload limit of 1GB. For more information, see the [Code Transformation documentation](LINK_HERE).'
-
-export const JDK8VersionNumber = '52'
-
-export const JDK11VersionNumber = '55'
 
 export const numMillisecondsPerSecond = 1000
 

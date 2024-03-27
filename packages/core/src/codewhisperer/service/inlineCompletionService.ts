@@ -19,7 +19,7 @@ import { codicon, getIcon } from '../../shared/icons'
 import { session } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
 import { Commands } from '../../shared/vscode/commands2'
-import { listCodeWhispererCommandsId } from '../commands/statusBarCommands'
+import { listCodeWhispererCommandsId } from '../ui/statusBarMenu'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -137,6 +137,9 @@ export class InlineCompletionService {
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
                     RecommendationHandler.instance.reportUserDecisions(-1)
                     await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+                    if (triggerType === 'OnDemand' && session.recommendations.length === 0) {
+                        void showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
+                    }
                     return {
                         result: 'Failed',
                         errorMessage: 'cancelled',

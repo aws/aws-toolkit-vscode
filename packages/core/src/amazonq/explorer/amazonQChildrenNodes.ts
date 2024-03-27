@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { Commands, placeholder } from '../../shared/vscode/commands2'
+import { Command, Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
 import { reconnect } from '../../codewhisperer/commands/basicCommands'
 import { transformByQState } from '../../codewhisperer/models/model'
@@ -15,6 +15,8 @@ import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 import { showTransformByQ } from '../../amazonqGumby/commands'
+import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
+import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 
 const localize = nls.loadMessageBundle()
 
@@ -37,12 +39,26 @@ export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView',
     void focusAmazonQPanel()
 })
 
-export const switchToAmazonQNode = () =>
-    switchToAmazonQCommand.build().asTreeNode({
-        label: 'Switch to Q Chat',
-        iconPath: getIcon('vscode-comment'),
-        contextValue: 'awsToAmazonQChatNode',
-    })
+export function switchToAmazonQNode(type: 'item'): DataQuickPickItem<'openChatPanel'>
+export function switchToAmazonQNode(type: 'tree'): TreeNode<Command>
+export function switchToAmazonQNode(type: 'item' | 'tree'): DataQuickPickItem<'openChatPanel'> | TreeNode<Command>
+export function switchToAmazonQNode(type: 'item' | 'tree'): any {
+    switch (type) {
+        case 'tree':
+            return switchToAmazonQCommand.build().asTreeNode({
+                label: 'Open Chat Panel',
+                iconPath: getIcon('vscode-comment'),
+                contextValue: 'awsToAmazonQChatNode',
+            })
+        case 'item':
+            return {
+                data: 'openChatPanel',
+                label: 'Open Chat Panel',
+                iconPath: getIcon('vscode-comment'),
+                onClick: () => switchToAmazonQCommand.execute(),
+            } as DataQuickPickItem<'openChatPanel'>
+    }
+}
 
 /*
  * This node is meant to be displayed when the user's active connection is missing scopes required for Amazon Q.

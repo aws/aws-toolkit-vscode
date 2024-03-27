@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Improved performance: SSM Documents and Step Functions LSP clients/servers are now started only when they are needed."
-}

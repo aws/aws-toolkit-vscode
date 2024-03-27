@@ -32,17 +32,25 @@ export class ActiveStateController implements vscode.Disposable {
 
     constructor(private readonly container: Container) {
         this._disposable = vscode.Disposable.from(
-            RecommendationService.instance.suggestionActionEvent(this.onSuggestionActionEvent, this),
-            RecommendationHandler.instance.onDidReceiveRecommendation(this.onDidReceiveRecommendation, this),
-            this.container.lineTracker.onDidChangeActiveLines(this.onActiveLinesChanged, this),
-            subscribeOnce(this.container.lineTracker.onReady)(this.onReady, this),
+            RecommendationService.instance.suggestionActionEvent(async e => {
+                await this.onSuggestionActionEvent(e)
+            }),
+            RecommendationHandler.instance.onDidReceiveRecommendation(async _ => {
+                await this.onDidReceiveRecommendation()
+            }),
+            this.container.lineTracker.onDidChangeActiveLines(async e => {
+                await this.onActiveLinesChanged(e)
+            }),
+            subscribeOnce(this.container.lineTracker.onReady)(async _ => {
+                await this.onReady()
+            }),
             this.container.auth.auth.onDidChangeConnectionState(async e => {
                 if (e.state !== 'authenticating') {
-                    this._refresh(vscode.window.activeTextEditor)
+                    await this._refresh(vscode.window.activeTextEditor)
                 }
             }),
             this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
-                this._refresh(vscode.window.activeTextEditor)
+                await this._refresh(vscode.window.activeTextEditor)
             })
         )
     }
@@ -53,9 +61,9 @@ export class ActiveStateController implements vscode.Disposable {
 
     private _isReady: boolean = false
 
-    private onReady(): void {
+    private async onReady(): Promise<void> {
         this._isReady = true
-        this._refresh(vscode.window.activeTextEditor)
+        await this._refresh(vscode.window.activeTextEditor)
     }
 
     private async onSuggestionActionEvent(e: SuggestionActionEvent) {
@@ -101,16 +109,11 @@ export class ActiveStateController implements vscode.Disposable {
         editor?.setDecorations(this.cwLineHintDecoration, [])
     }
 
-    readonly refreshDebounced = cancellableDebounce((editor: vscode.TextEditor | undefined) => {
-        this._refresh(editor)
+    readonly refreshDebounced = cancellableDebounce(async (editor: vscode.TextEditor | undefined) => {
+        await this._refresh(editor)
     }, 1000)
 
     private async _refresh(editor: vscode.TextEditor | undefined, shouldDisplay?: boolean) {
-        if (!this.container.auth.isConnectionValid()) {
-            this.clear(this._editor)
-            return
-        }
-
         if (!editor && !this._editor) {
             return
         }
@@ -129,6 +132,11 @@ export class ActiveStateController implements vscode.Disposable {
 
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
         if (!editor.document || !this.container.lineTracker.includes(selections)) {
+            return
+        }
+
+        if (!this.container.auth.isConnectionValid()) {
+            this.clear(this._editor)
             return
         }
 
