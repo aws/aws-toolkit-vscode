@@ -98,8 +98,7 @@ async function setWarningIcon(lineNumber: number = 0) {
         backgroundColor: 'lightgreen',
 
         isWholeLine: true,
-        gutterIconPath:
-            '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/toolkit/resources/icons/cloud9/generated/dark/vscode-bug.svg',
+        gutterIconPath: '/packages/toolkit/resources/icons/cloud9/generated/dark/vscode-bug.svg',
         gutterIconSize: '20',
         overviewRulerColor: new vscode.ThemeColor('warning'),
         overviewRulerLane: vscode.OverviewRulerLane.Right,
