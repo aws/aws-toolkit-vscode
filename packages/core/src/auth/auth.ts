@@ -926,7 +926,31 @@ export class Auth implements AuthService, ConnectionManager {
                 startUrl: connection.startUrl,
             } as SsoProfile
             await this.store.updateProfile(connection.id, profile)
-            await this.updateConnectionState(connection.id, connection.state)
+
+            await this.store.updateMetadata(connection.id, { connectionState: connection.state })
+        }
+    }
+
+    // Used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
+    // NO event should be emitted from this deletion
+    public async deletionConnectionCallback(id: string) {
+        const profile = this.store.getProfile(id)
+        // it is possible the connection was already deleted
+        // but was still requested to be deleted. We pretend
+        // we deleted it and continue as normal
+        if (profile) {
+            if (id === this.#activeConnection?.id) {
+                // Server-side invalidation.
+                await this.logout()
+            } else {
+                await this.invalidateConnection(id)
+            }
+            await this.store.deleteProfile(id)
+            if (profile.type === 'sso') {
+                // There may have been linked IAM credentials attached to this
+                // so we will want to clear them.
+                await this.clearStaleLinkedIamConnections()
+            }
         }
     }
 }

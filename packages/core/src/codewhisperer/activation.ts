@@ -296,6 +296,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 const id = e.id
                 const conn = await auth.auth.getConnection({ id })
                 if (conn && conn.type === 'sso') {
+                    getLogger().info(`tookitApi update connection ${id}`)
                     await toolkitApi.updateConnection({
                         type: conn.type,
                         ssoRegion: conn.ssoRegion,
@@ -311,20 +312,22 @@ export async function activate(context: ExtContext): Promise<void> {
         // when deleting connection in Q, also delete same connection in toolkit
         auth.auth.onDidDeleteConnection(async id => {
             if (toolkitApi && 'deleteConnection' in toolkitApi) {
+                getLogger().info(`tookitApi delete connection ${id}`)
                 await toolkitApi.deleteConnection(id)
             }
         })
 
-        // when toolkit
-
+        // when toolkit connection changes
         if (toolkitApi && 'onDidChangeConnection' in toolkitApi) {
             toolkitApi.onDidChangeConnection(
                 async (connection: AwsConnection) => {
+                    getLogger().info(`tookitApi toolkit connection change callback ${connection.id}`)
                     auth.auth.updateConnectionCallback(connection)
                 },
 
                 async (id: string) => {
-                    auth.auth.deleteConnection({ id })
+                    getLogger().info(`tookitApi toolkit connection delete callback ${id}`)
+                    auth.auth.deletionConnectionCallback(id)
                 }
             )
         }

@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { SsoConnection, scopesCodeWhispererChat, AwsConnection } from '../../../../auth/connection'
-import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
+import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
@@ -12,6 +12,7 @@ import { activateExtension, isExtensionActive, isExtensionInstalled } from '../.
 import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
 import { getLogger } from '../../../../shared/logger'
 import { Auth } from '../../../../auth'
+import { ToolkitError } from '../../../../shared/errors'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
@@ -52,8 +53,10 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                             const conn = await Auth.instance.createConnectionFromApi(connection)
                             await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
                         } else {
-                            getLogger().info(`auth: create connection from existing connection id ${connectionId}`)
-                            return this.startEnterpriseSetup(connection.startUrl, connection.ssoRegion)
+                            getLogger().info(
+                                `auth: re-use(new scope) to connection from existing connection id ${connectionId}`
+                            )
+                            return this.updateConnectionScope(connection)
                         }
                     }
                 })
@@ -83,6 +86,24 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 await connectToEnterpriseSso(startUrl, region)
                 this.notifyToolkit()
                 void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
+            } finally {
+                this.notifyToolkit()
+            }
+        })
+    }
+
+    async updateConnectionScope(connection: AwsConnection): Promise<AuthError | undefined> {
+        return this.ssoSetup('updateConnectionScope', async () => {
+            try {
+                try {
+                    const conn = await Auth.instance.createConnectionFromApi(connection)
+                    await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
+                    await AuthUtil.instance.secondaryAuth.addScopes(conn, amazonQScopes)
+                } catch (e) {
+                    throw ToolkitError.chain(e, 'Failed to add Amazon Q scope', {
+                        code: 'FailedToConnect',
+                    })
+                }
             } finally {
                 this.notifyToolkit()
             }
