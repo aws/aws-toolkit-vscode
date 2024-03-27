@@ -58,6 +58,7 @@ import {
     createPomCopy,
     getArtifactIdentifiers,
     getJsonValuesFromManifestFile,
+    highlightPomIssueInProject,
     parseXmlDependenciesReport,
     replacePomVersion,
     runMavenDependencyBuildCommands,
@@ -386,6 +387,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
             manifestFileValues.sourcePomVersion,
             pomReplacementDelimiter
         )
+        await highlightPomIssueInProject(newPomFileVirtualFileReference, manifestFileValues.sourcePomVersion)
 
         // 4) We need to run maven commands on that pom.xml to get available versions
         const compileFolderInfo: FolderInfo = {
@@ -399,6 +401,10 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         console.log(latestVersion, majorVersions, minorVersions)
 
         // 5) We need to wait for user input
+        transformByQState.getChatControllers()?.humanInTheLoopIntervention.fire({
+            tabId: transformByQState.getGumbyChatTabID(),
+            latestVersion,
+        })
         const getUserInputValue = latestVersion
 
         // 6) We need to add user input to that pom.xml,
@@ -417,6 +423,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         }
         runMavenDependencyBuildCommands(uploadFolderInfo)
         // TODO modify code to be re-usable with current framework here
+        // TODO Update manifest.json file for upload
         const uploadPayloadFilePath = await zipCode(uploadFolderInfo)
         const uploadId = await uploadPayload(uploadPayloadFilePath)
         console.log('Finished human in the loop work', uploadId)

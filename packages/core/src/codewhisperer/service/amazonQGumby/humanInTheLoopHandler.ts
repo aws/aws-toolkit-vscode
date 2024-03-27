@@ -94,30 +94,22 @@ async function setWarningIcon(lineNumber: number = 0) {
     const diffEditor = vscode.window.activeTextEditor
 
     const highlightDecorationType = vscode.window.createTextEditorDecorationType({
-        backgroundColor: 'green',
-        border: '1px solid red',
+        backgroundColor: 'lightgreen',
         isWholeLine: true,
         gutterIconPath:
             '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/toolkit/resources/icons/cloud9/generated/dark/vscode-bug.svg',
         gutterIconSize: '20',
         overviewRulerColor: new vscode.ThemeColor('warning'),
         overviewRulerLane: vscode.OverviewRulerLane.Right,
-
-        after: {
-            height: '20px',
-            border: '1px solid purple',
-            width: '20px',
-        },
     })
 
     // Set the decorations
     diffEditor?.setDecorations(highlightDecorationType, [
         {
-            range: new vscode.Range(lineNumber - 1, 0, lineNumber - 1, 50),
-            hoverMessage: `### This is my custom markdown tooltip header
-         On a custom icon line [See docs]()
-         - Item one
-         - Item Two
+            range: new vscode.Range(lineNumber, 0, lineNumber, 50),
+            hoverMessage: `### This version needs to be updated. Please see the full list details in the chat
+                - latestVersion: 1.18.32
+                - majorVersion: 1.12.2
         `,
         },
     ])

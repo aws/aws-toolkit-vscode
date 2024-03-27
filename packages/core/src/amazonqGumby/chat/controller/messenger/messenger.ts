@@ -367,7 +367,7 @@ To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/a
         const humanInterventionSelectedMessage = new ChatMessage(
             {
                 message,
-                messageType: 'ai-prompt',
+                messageType: 'answer',
                 messageId: GumbyNamedMessages.HUMAN_IN_THE_LOOP_INTERVENTION,
             },
             tabID
