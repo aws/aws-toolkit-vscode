@@ -15,6 +15,7 @@ import {
     TransformByQReviewStatus,
     JDKVersion,
     sessionPlanProgress,
+    TransformByQStatus,
 } from '../models/model'
 import { convertToTimeString, convertDateToTimestamp, getStringHash } from '../../shared/utilities/textUtilities'
 import {
@@ -51,7 +52,6 @@ import {
     telemetryUndefined,
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
-import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { downloadResultArchive, getTransformationStepsFixture } from '../service/amazonQGumby/transformByQApiHandler'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
