@@ -126,7 +126,6 @@ dependencies {
 
     implementation(project(":plugin-amazonq:mynah-ui"))
     implementation(project(":plugin-amazonq:q-webview"))
-    implementation(libs.aws.crt)
     implementation(libs.bundles.jackson)
     implementation(libs.zjsonpatch)
     implementation(libs.commonmark)
