@@ -115,9 +115,9 @@ export class SsoAccessTokenProvider {
         }
     }
 
-    public async createToken(identityProvider?: (token: SsoToken) => Promise<string>): Promise<SsoToken> {
+    public async createToken(): Promise<SsoToken> {
         const access = await this.runFlow()
-        const identity = (await identityProvider?.(access.token)) ?? this.tokenCacheKey
+        const identity = this.tokenCacheKey
         await this.cache.token.save(identity, access)
         await setSessionCreationDate(this.tokenCacheKey, new Date())
 

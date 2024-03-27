@@ -4,7 +4,7 @@
  */
 
 export type TabStatus = 'free' | 'busy' | 'dead'
-export type TabType = 'cwc' | 'featuredev' | 'unknown'
+export type TabType = 'cwc' | 'featuredev' | 'gumby' | 'unknown'
 export type TabOpenType = 'click' | 'contextMenu' | 'hotkeys'
 
 const TabTimeoutDuration = 172_800_000 // 48hrs
