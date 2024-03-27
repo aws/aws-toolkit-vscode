@@ -72,7 +72,7 @@
                 },
                 "aws.amazonq.logLevel": {
                     "type": "string",
-                    "default": "info",
+                    "default": "debug",
                     "enum": [
                         "error",
                         "warn",

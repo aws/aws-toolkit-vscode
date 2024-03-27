@@ -20,7 +20,7 @@ import globals from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
-const defaultLogLevel: LogLevel = 'info'
+export const defaultLogLevel: LogLevel = 'debug'
 
 /**
  * Activate Logger functionality for the extension.
