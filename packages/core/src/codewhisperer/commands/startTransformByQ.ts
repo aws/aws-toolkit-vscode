@@ -33,7 +33,6 @@ import {
     getDependenciesFolderInfo,
     FolderInfo,
     prepareProjectDependencies,
-    getTransformationSteps,
 } from '../service/transformByQHandler'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
@@ -59,10 +58,13 @@ import {
     createPomCopy,
     getArtifactIdentifiers,
     getJsonValuesFromManifestFile,
+    parseXmlDependenciesReport,
     replacePomVersion,
+    runMavenDependencyBuildCommands,
     runMavenDependencyUpdateCommands,
 } from '../service/amazonQGumby/humanInTheLoopHandler'
 import { error } from 'console'
+import { Folder } from 'aws-sdk/clients/storagegateway'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -352,8 +354,16 @@ export async function pollTransformationStatusUntilComplete(jobId: string, userI
 
 export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCount: number) {
     console.log('Entering completeHumanInTheLoopWork', jobId, userInputRetryCount)
-    const tmpDependencyListDir = os.tmpdir()
+
     const pomReplacementDelimiter = '*****'
+    const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
+
+    const osTmpDir = os.tmpdir()
+    const tmpDependencyListFolderName = 'q-pom-dependency-list'
+    const userDependencyUpdateFolderName = 'q-pom-dependency-update'
+    const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
+    const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
+
     try {
         // 1) We need to call GetTransformationPlan to get artifactId
         const transformationSteps = await getTransformationStepsFixture(jobId)
@@ -365,9 +375,9 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
             artifactId,
             artifactType
         )
+        const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
 
         // 3) We need to replace version in pom.xml
-        const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
         const newPomFileVirtualFileReference = await createPomCopy(
             tmpDependencyListDir,
             pomFileVirtualFileReference,
@@ -380,31 +390,50 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         )
 
         // 4) We need to run maven commands on that pom.xml to get available versions
-        const dependencyListMavenOutput = runMavenDependencyUpdateCommands(newPomFileVirtualFileReference.fsPath)
-        console.log('Dependency list maven output', dependencyListMavenOutput)
+        const compileFolderInfo: FolderInfo = {
+            name: tmpDependencyListFolderName,
+            path: tmpDependencyListDir,
+        }
+        runMavenDependencyUpdateCommands(compileFolderInfo)
+        const { latestVersion, majorVersions, minorVersions } = await parseXmlDependenciesReport(
+            path.join(tmpDependencyListDir, localPathToXmlDependencyList)
+        )
+        console.log(latestVersion, majorVersions, minorVersions)
 
         // 5) We need to wait for user input
+        const getUserInputValue = latestVersion
 
-        // 6) We need to add user input to that pom.xml, original pom.xml is intact somewhere, and run maven compile
+        // 6) We need to add user input to that pom.xml,
+        // original pom.xml is intact somewhere, and run maven compile
         const userInputPomFileVirtualFileReference = await createPomCopy(
-            tmpDependencyListDir,
+            userDependencyUpdateDir,
             pomFileVirtualFileReference,
-            'pom-user-input.xml'
+            'pom.xml'
         )
-        console.log(userInputPomFileVirtualFileReference)
+        await replacePomVersion(userInputPomFileVirtualFileReference, getUserInputValue, pomReplacementDelimiter)
 
         // 7) We need to take that output of maven and use CreateUploadUrl
-    } catch (e) {
+        const uploadFolderInfo: FolderInfo = {
+            name: userDependencyUpdateFolderName,
+            path: userDependencyUpdateDir,
+        }
+        runMavenDependencyBuildCommands(uploadFolderInfo)
+        // TODO modify code to be re-usable with current framework here
+        const uploadPayloadFilePath = await zipCode(uploadFolderInfo)
+        const uploadId = await uploadPayload(uploadPayloadFilePath)
+        console.log('Finished human in the loop work', uploadId)
+    } catch (err) {
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function
-        console.log('Error in completeHumanInTheLoopWork', error)
+        console.log('Error in completeHumanInTheLoopWork', err)
     } finally {
         // 1) TODO Always delete items off disk manifest.json and pom.xml
 
         // Always delete the dependency output
         console.log('Deleting temporary dependency output', tmpDependencyListDir)
-        fs.rmSync(tmpDependencyListDir, { recursive: true })
-        transformByQState.set
+        fs.rmdirSync(tmpDependencyListDir, { recursive: true })
+        console.log('Deleting temporary dependency output', userDependencyUpdateDir)
+        fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
     }
 }
 

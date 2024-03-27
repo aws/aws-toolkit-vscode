@@ -2,14 +2,15 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import xml2js = require('xml2js')
 import * as vscode from 'vscode'
-import { readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import path from 'path'
 import { transformByQState } from '../../models/model'
 import { spawnSync } from 'child_process'
 import { TransformationStep } from '../../client/codewhispereruserclient'
 import * as CodeWhispererConstants from '../../models/constants'
-import { getLogger } from '../../../shared/logger/logger'
+import { FolderInfo } from '../transformByQHandler'
 
 export interface IManifestFile {
     hilType: string
@@ -34,9 +35,13 @@ export async function createPomCopy(
     pomFileVirtualFileReference: vscode.Uri,
     fileName: string
 ): Promise<vscode.Uri> {
+    console.log('In createPomCopy', dirname, pomFileVirtualFileReference, fileName)
     try {
         const newFilePath = path.join(dirname, fileName)
         const pomFileContents = readFileSync(pomFileVirtualFileReference.fsPath)
+        if (!existsSync(dirname)) {
+            mkdirSync(dirname)
+        }
         writeFileSync(newFilePath, pomFileContents)
         return vscode.Uri.file(newFilePath)
     } catch (err) {
@@ -76,19 +81,41 @@ export async function getJsonValuesFromManifestFile(
     }
 }
 
-// run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
-export function runMavenDependencyUpdateCommands(modulePath: string) {
-    console.log('In runMavenDependencyUpdateCommands', modulePath)
+export async function parseXmlDependenciesReport(pathToXmlOutput: string) {
+    console.log('In parseXmlDependenciesReport', pathToXmlOutput)
+    try {
+        const xmlString = readFileSync(pathToXmlOutput, 'utf-8')
+        const parser = new xml2js.Parser()
+        const parsedOutput = await parser.parseStringPromise(xmlString)
+
+        const report = parsedOutput.DependencyUpdatesReport.dependencies[0].dependency[0]
+
+        const latestVersion = report.lastVersion[0]
+        const majorVersions = report.majors[0].major
+        const minorVersions = report.minors[0].minor
+
+        return { latestVersion, majorVersions, minorVersions }
+    } catch (err) {
+        console.log('Error in parseXmlDependenciesReport', err)
+        throw err
+    }
+}
+
+// run maven 'versions:dependency-updates-aggregate-report' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
+export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo) {
+    console.log('In runMavenDependencyUpdateCommands', dependenciesFolder)
     try {
         // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
-        const baseCommand = transformByQState.getMavenName()
+        const baseCommand = 'mvn' || transformByQState.getMavenName()
 
-        transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
+        // transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
         // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
         const args = [
             'versions:dependency-updates-aggregate-report',
-            '-DonlyProjectDependencies=true -DdependencyUpdatesReportFormats=xml',
+            `-DoutputDirectory=${dependenciesFolder.path}`,
+            '-DonlyProjectDependencies=true',
+            '-DdependencyUpdatesReportFormats=xml',
         ]
         let environment = process.env
         // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
@@ -96,61 +123,62 @@ export function runMavenDependencyUpdateCommands(modulePath: string) {
             environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
         }
 
-        const argString = args.join(' ')
         const spawnResult = spawnSync(baseCommand, args, {
-            cwd: modulePath,
+            cwd: dependenciesFolder.path,
             shell: true,
             encoding: 'utf-8',
             env: environment,
             maxBuffer: CodeWhispererConstants.maxBufferSize,
         })
 
-        console.log(`Post mvn versions command results ${baseCommand} ${argString}:`, spawnResult)
         if (spawnResult.status !== 0) {
-            let errorLog = ''
-            // const errorCode = getMavenErrorCode(args)
-            const errorCode = ''
-            errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
-            errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
-            transformByQState.appendToErrorLog(`${baseCommand} ${argString} failed: \n ${errorLog}`)
-            getLogger().error(
-                `CodeTransformation: Error in running Maven ${argString} command ${baseCommand} = ${errorLog}`
-            )
-            let errorReason = ''
-            if (spawnResult.stdout) {
-                errorReason = `Maven ${argString}: ${errorCode}ExecutionError`
-                /*
-                 * adding this check here because these mvn commands sometimes generate a lot of output.
-                 * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
-                 * which are not being used here (for now), but still keeping this just in case.
-                 */
-                if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
-                    errorReason += '-BufferOverflow'
-                }
-            } else {
-                errorReason = `Maven ${argString}: ${errorCode}SpawnError`
-            }
-            if (spawnResult.error) {
-                const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
-                errorReason += `-${errorCode}`
-            }
-            let mavenBuildCommand = transformByQState.getMavenName()
-            // slashes not allowed in telemetry
-            if (mavenBuildCommand === './mvnw') {
-                mavenBuildCommand = 'mvnw'
-            } else if (mavenBuildCommand === '.\\mvnw.cmd') {
-                mavenBuildCommand = 'mvnw.cmd'
-            }
-            // telemetry.codeTransform_mvnBuildFailed.emit({
-            //     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            //     codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
-            //     result: MetadataResult.Fail,
-            //     reason: errorReason,
-            // })
-            throw new Error('Maven list dependencies error')
+            throw new Error(spawnResult.stderr)
         } else {
-            transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
-            return spawnResult.output
+            console.log(`Maven succeeded: `, spawnResult.stdout)
+            return spawnResult.stdout
+        }
+    } catch (err) {
+        console.log('Error in runMavenDependencyUpdateCommands', err)
+        throw err
+    }
+}
+
+export function runMavenDependencyBuildCommands(dependenciesFolder: FolderInfo) {
+    console.log('In runMavenDependencyUpdateCommands', dependenciesFolder)
+    try {
+        // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+        const baseCommand = 'mvn' || transformByQState.getMavenName()
+
+        // transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
+
+        // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
+        const args = [
+            'dependency:copy-dependencies',
+            `-DoutputDirectory=${dependenciesFolder.path}`,
+            '-Dmdep.useRepositoryLayout=true',
+            '-Dmdep.copyPom=true',
+            '-Dmdep.addParentPoms=true',
+            '-q',
+        ]
+        let environment = process.env
+        // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
+        if (transformByQState.getJavaHome() !== undefined) {
+            environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+        }
+
+        const spawnResult = spawnSync(baseCommand, args, {
+            cwd: dependenciesFolder.path,
+            shell: true,
+            encoding: 'utf-8',
+            env: environment,
+            maxBuffer: CodeWhispererConstants.maxBufferSize,
+        })
+
+        if (spawnResult.status !== 0) {
+            throw new Error(spawnResult.stderr)
+        } else {
+            console.log(`Maven succeeded: `, spawnResult.stdout)
+            return spawnResult.stdout
         }
     } catch (err) {
         console.log('Error in runMavenDependencyUpdateCommands', err)
