@@ -95,15 +95,13 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     async updateConnectionScope(connection: AwsConnection): Promise<AuthError | undefined> {
         return this.ssoSetup('updateConnectionScope', async () => {
             try {
-                try {
-                    const conn = await Auth.instance.createConnectionFromApi(connection)
-                    await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
-                    await AuthUtil.instance.secondaryAuth.addScopes(conn, amazonQScopes)
-                } catch (e) {
-                    throw ToolkitError.chain(e, 'Failed to add Amazon Q scope', {
-                        code: 'FailedToConnect',
-                    })
-                }
+                const conn = await Auth.instance.createConnectionFromApi(connection)
+                await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
+                await AuthUtil.instance.secondaryAuth.addScopes(conn, amazonQScopes)
+            } catch (e) {
+                throw ToolkitError.chain(e, 'Failed to add Amazon Q scope', {
+                    code: 'FailedToConnect',
+                })
             } finally {
                 this.notifyToolkit()
             }

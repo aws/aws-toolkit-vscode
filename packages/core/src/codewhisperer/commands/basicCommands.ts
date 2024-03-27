@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CodewhispererCodeScanIssueApplyFix, Component, telemetry } from '../../shared/telemetry/telemetry'
-import { ExtContext } from '../../shared/extensions'
+import { ExtContext, VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
@@ -15,10 +15,10 @@ import { CodeScanIssue, codeScanState, CodeSuggestionsState, vsCodeState } from 
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
-import { AuthUtil } from '../util/authUtil'
+import { AuthUtil, getChatAuthState } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
-import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { isExtensionActive, isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
     getPersistedCustomizations,
     notifyNewCustomizations,
@@ -32,6 +32,8 @@ import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { getShowManageConnections } from '../../auth/ui/vue/show'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
+import { Auth, AwsConnection } from '../../auth'
+import { once } from '../../shared/utilities/functionUtils'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -324,5 +326,80 @@ export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.codewhisperer.signout', compositeKey: { 1: 'source' } },
     (auth: AuthUtil) => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         return auth.secondaryAuth.deleteConnection()
+    }
+)
+
+export const registerToolkitApiCallback = Commands.declare(
+    { id: 'aws.amazonq.refreshConnectionCallback' },
+    () => async () => {
+        // While the Q/CW exposes an API for the Toolkit to register callbacks on auth changes,
+        // we need to do it manually here because the Toolkit would have been unable to call
+        // this API if the Q/CW extension started afterwards (and this code block is running).
+        if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
+            const auth = Auth.instance
+            const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+            const toolkitApi = toolkitExt?.exports
+
+            const registerCallback = once(async () => {
+                auth.onDidChangeActiveConnection(async () => {
+                    await vscode.commands.executeCommand(
+                        '_aws.toolkit.auth.restore',
+                        (
+                            await getChatAuthState()
+                        ).codewhispererChat
+                    )
+                })
+                auth.onDidChangeConnectionState(async e => {
+                    await vscode.commands.executeCommand(
+                        '_aws.toolkit.auth.restore',
+                        (
+                            await getChatAuthState()
+                        ).codewhispererChat
+                    )
+                    // when changing connection state in Q, also change connection state in toolkit
+                    if (toolkitApi && 'setConnection' in toolkitApi) {
+                        const id = e.id
+                        const conn = await auth.getConnection({ id })
+                        if (conn && conn.type === 'sso') {
+                            getLogger().info(`toolkitApi set connection ${id}`)
+                            await toolkitApi.setConnection({
+                                type: conn.type,
+                                ssoRegion: conn.ssoRegion,
+                                scopes: conn.scopes,
+                                startUrl: conn.startUrl,
+                                state: e.state,
+                                id: id,
+                                label: conn.label,
+                            } as AwsConnection)
+                        }
+                    }
+                })
+                // when deleting connection in Q, also delete same connection in toolkit
+                auth.onDidDeleteConnection(async id => {
+                    if (toolkitApi && 'deleteConnection' in toolkitApi) {
+                        getLogger().info(`toolkitApi delete connection ${id}`)
+                        await toolkitApi.deleteConnection(id)
+                    }
+                })
+
+                // when toolkit connection changes
+                if (toolkitApi && 'onDidChangeConnection' in toolkitApi) {
+                    toolkitApi.onDidChangeConnection(
+                        async (connection: AwsConnection) => {
+                            getLogger().info(`toolkitApi toolkit connection change callback ${connection.id}`)
+                            await auth.updateConnectionCallback(connection)
+                        },
+
+                        async (id: string) => {
+                            getLogger().info(`toolkitApi toolkit connection delete callback ${id}`)
+                            await auth.deletionConnectionCallback(id)
+                        }
+                    )
+                }
+            })
+            if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
+                await registerCallback()
+            }
+        }
     }
 )

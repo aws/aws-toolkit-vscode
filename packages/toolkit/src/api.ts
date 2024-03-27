@@ -33,10 +33,10 @@ export const awsToolkitApi = {
     },
 
     /**
-     * Exposing updateConnection API for other extension to push its connection state to aws toolkit
+     * Exposing setConnection API for other extension to push its connection state to aws toolkit
      */
-    async updateConnection(connection: AwsConnection): Promise<void> {
-        await Auth.instance.updateConnectionFromApi(connection)
+    async setConnection(connection: AwsConnection): Promise<void> {
+        await Auth.instance.setConnectionFromApi(connection)
     },
 
     /**

@@ -14,7 +14,7 @@ import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
 import { CodeWhispererSettings } from './util/codewhispererSettings'
-import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { ExtContext } from '../shared/extensions'
 import { TextEditorSelectionChangeKind } from 'vscode'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
 import * as codewhispererClient from './client/codewhisperer'
@@ -40,6 +40,7 @@ import {
     signoutCodeWhisperer,
     showManageCwConnections,
     fetchFeatureConfigsCmd,
+    registerToolkitApiCallback,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -52,10 +53,10 @@ import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2
 import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
-import { AuthUtil, getChatAuthState } from './util/authUtil'
+import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
-import { activateExtension, isExtensionInstalled, openUrl } from '../shared/utilities/vsCodeUtils'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
@@ -63,7 +64,6 @@ import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActi
 import { listCodeWhispererCommands } from './ui/statusBarMenu'
 import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
-import { AwsConnection } from '../auth/connection'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -230,6 +230,8 @@ export async function activate(context: ExtContext): Promise<void> {
         notifyNewCustomizationsCmd.register(),
         // fetch feature configs
         fetchFeatureConfigsCmd.register(),
+        // register toolkit api callback
+        registerToolkitApiCallback.register(),
         /**
          * On recommendation acceptance
          */
@@ -267,71 +269,6 @@ export async function activate(context: ExtContext): Promise<void> {
     )
 
     await auth.restore()
-
-    // While the Q/CW exposes an API for the Toolkit to register callbacks on auth changes,
-    // we need to do it manually here because the Toolkit would have been unable to call
-    // this API if the Q/CW extension started afterwards (and this code block is running).
-    if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
-        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
-        const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-        const toolkitApi = toolkitExt?.exports
-
-        auth.auth.onDidChangeActiveConnection(async () => {
-            await vscode.commands.executeCommand(
-                '_aws.toolkit.auth.restore',
-                (
-                    await getChatAuthState()
-                ).codewhispererChat
-            )
-        })
-        auth.auth.onDidChangeConnectionState(async e => {
-            await vscode.commands.executeCommand(
-                '_aws.toolkit.auth.restore',
-                (
-                    await getChatAuthState()
-                ).codewhispererChat
-            )
-            // when changing connection state in Q, also change connection state in toolkit
-            if (toolkitApi && 'updateConnection' in toolkitApi) {
-                const id = e.id
-                const conn = await auth.auth.getConnection({ id })
-                if (conn && conn.type === 'sso') {
-                    getLogger().info(`tookitApi update connection ${id}`)
-                    await toolkitApi.updateConnection({
-                        type: conn.type,
-                        ssoRegion: conn.ssoRegion,
-                        scopes: conn.scopes,
-                        startUrl: conn.startUrl,
-                        state: e.state,
-                        id: id,
-                        label: conn.label,
-                    } as AwsConnection)
-                }
-            }
-        })
-        // when deleting connection in Q, also delete same connection in toolkit
-        auth.auth.onDidDeleteConnection(async id => {
-            if (toolkitApi && 'deleteConnection' in toolkitApi) {
-                getLogger().info(`tookitApi delete connection ${id}`)
-                await toolkitApi.deleteConnection(id)
-            }
-        })
-
-        // when toolkit connection changes
-        if (toolkitApi && 'onDidChangeConnection' in toolkitApi) {
-            toolkitApi.onDidChangeConnection(
-                async (connection: AwsConnection) => {
-                    getLogger().info(`tookitApi toolkit connection change callback ${connection.id}`)
-                    await auth.auth.updateConnectionCallback(connection)
-                },
-
-                async (id: string) => {
-                    getLogger().info(`tookitApi toolkit connection delete callback ${id}`)
-                    await auth.auth.deletionConnectionCallback(id)
-                }
-            )
-        }
-    }
 
     if (auth.isConnectionExpired()) {
         auth.showReauthenticatePrompt().catch(e => {
@@ -525,6 +462,7 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
+    await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
     container.ready()
 }
 

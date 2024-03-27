@@ -909,8 +909,8 @@ export class Auth implements AuthService, ConnectionManager {
     // Used by AWS Toolkit to update connection status & scope when this connection is updated by Amazon Q
     // If such connection does not exist, create one with same id.
     // Otherwise, update its scope and/or state.
-    public async updateConnectionFromApi(connection: AwsConnection) {
-        getLogger().info(`Updating connection ${connection.id} from API`)
+    public async setConnectionFromApi(connection: AwsConnection) {
+        getLogger().info(`Set connection ${connection.id} from API`)
         const id = connection.id
         const profile = this.store.getProfile(connection.id)
         const newProfile = {
