@@ -55,7 +55,7 @@ import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCov
 import { AuthUtil, getChatAuthState } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
-import { isExtensionInstalled, openUrl } from '../shared/utilities/vsCodeUtils'
+import { activateExtension, isExtensionInstalled, openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
@@ -63,6 +63,7 @@ import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActi
 import { listCodeWhispererCommands } from './ui/statusBarMenu'
 import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
+import { AwsConnection } from '../auth/connection'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -271,6 +272,10 @@ export async function activate(context: ExtContext): Promise<void> {
     // we need to do it manually here because the Toolkit would have been unable to call
     // this API if the Q/CW extension started afterwards (and this code block is running).
     if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
+        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+        const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+        const toolkitApi = toolkitExt?.exports
+
         auth.auth.onDidChangeActiveConnection(async () => {
             await vscode.commands.executeCommand(
                 '_aws.toolkit.auth.restore',
@@ -286,7 +291,43 @@ export async function activate(context: ExtContext): Promise<void> {
                     await getChatAuthState()
                 ).codewhispererChat
             )
+            // when changing connection state in Q, also change connection state in toolkit
+            if (toolkitApi && 'updateConnection' in toolkitApi) {
+                const id = e.id
+                const conn = await auth.auth.getConnection({ id })
+                if (conn && conn.type === 'sso') {
+                    await toolkitApi.updateConnection({
+                        type: conn.type,
+                        ssoRegion: conn.ssoRegion,
+                        scopes: conn.scopes,
+                        startUrl: conn.startUrl,
+                        state: e.state,
+                        id: id,
+                        label: conn.label,
+                    } as AwsConnection)
+                }
+            }
         })
+        // when deleting connection in Q, also delete same connection in toolkit
+        auth.auth.onDidDeleteConnection(async id => {
+            if (toolkitApi && 'deleteConnection' in toolkitApi) {
+                await toolkitApi.deleteConnection(id)
+            }
+        })
+
+        // when toolkit
+
+        if (toolkitApi && 'onDidChangeConnection' in toolkitApi) {
+            toolkitApi.onDidChangeConnection(
+                async (connection: AwsConnection) => {
+                    auth.auth.updateConnectionCallback(connection)
+                },
+
+                async (id: string) => {
+                    auth.auth.deleteConnection({ id })
+                }
+            )
+        }
     }
 
     if (auth.isConnectionExpired()) {

@@ -878,6 +878,7 @@ export class Auth implements AuthService, ConnectionManager {
             : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
     }
 
+    // Used by Amazon Q to re-use connection from AWS Toolkit listConnection API response
     public async createConnectionFromApi(connection: AwsConnection) {
         getLogger().info(`Reusing connection ${connection.id}`)
         const profile = {
@@ -892,6 +893,9 @@ export class Auth implements AuthService, ConnectionManager {
         return this.getSsoConnection(id, storedProfile)
     }
 
+    // Used by AWS Toolkit to update connection status & scope when this connection is updated by Amazon Q
+    // If such connection does not exist, create one with same id.
+    // Otherwise, update its scope and/or state.
     public async updateConnectionFromApi(connection: AwsConnection) {
         getLogger().info(`Updating connection ${connection.id} from API`)
         const id = connection.id
@@ -908,6 +912,22 @@ export class Auth implements AuthService, ConnectionManager {
             await this.store.updateProfile(connection.id, newProfile)
         }
         await this.updateConnectionState(id, connection.state)
+    }
+
+    // Used by Amazon Q to update connection status & scope when this connection is updated by AWS Toolkit
+    // do not create connection in Q for each change event from Toolkit
+    public async updateConnectionCallback(connection: AwsConnection) {
+        const conn = await this.getConnection({ id: connection.id })
+        if (conn) {
+            const profile = {
+                type: connection.type,
+                ssoRegion: connection.ssoRegion,
+                scopes: connection.scopes,
+                startUrl: connection.startUrl,
+            } as SsoProfile
+            await this.store.updateProfile(connection.id, profile)
+            await this.updateConnectionState(connection.id, connection.state)
+        }
     }
 }
 /**

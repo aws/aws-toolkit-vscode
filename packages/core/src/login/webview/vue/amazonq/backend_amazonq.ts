@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { SsoConnection, scopesCodeWhispererChat, AwsConnection, SsoProfile } from '../../../../auth/connection'
+import { SsoConnection, scopesCodeWhispererChat, AwsConnection } from '../../../../auth/connection'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
