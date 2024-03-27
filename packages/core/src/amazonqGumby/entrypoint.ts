@@ -11,6 +11,7 @@ import vscode from 'vscode'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { MetadataResult } from '../shared/telemetry/telemetryClient'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
+import { StartActionPositions } from './telemetry/codeTransformTelemetry'
 
 export async function processTransformByQ() {
     if (!AuthUtil.instance.isValidCodeTransformationAuthUser()) {
@@ -23,7 +24,7 @@ export async function processTransformByQ() {
             result: MetadataResult.Pass,
         })
         telemetry.codeTransform_isDoubleClickedToTriggerUserModal.emit({
-            codeTransformStartSrcComponents: 'chatPrompt',
+            codeTransformStartSrcComponents: StartActionPositions.Chat,
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             result: MetadataResult.Pass,
         })
