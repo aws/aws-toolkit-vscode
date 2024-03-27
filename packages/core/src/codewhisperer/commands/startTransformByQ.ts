@@ -290,10 +290,6 @@ export async function finalizeTransformationJob(status: string) {
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
     await vscode.commands.executeCommand('aws.amazonq.refresh')
 
-    transformByQState.getChatControllers()?.transformationFinished.fire({
-        jobStatus: status,
-        tabID: ChatSessionManager.Instance.getSession().tabID,
-    })
     sessionPlanProgress['transformCode'] = StepProgress.Succeeded
 }
 
@@ -341,6 +337,10 @@ export async function setTransformationToRunningState() {
 }
 
 export async function postTransformationJob() {
+    transformByQState.getChatControllers()?.transformationFinished.fire({
+        jobStatus: transformByQState.getPolledJobStatus(),
+        tabID: ChatSessionManager.Instance.getSession().tabID,
+    })
     const durationInMs = calculateTotalLatency(codeTransformTelemetryState.getStartTime())
     const resultStatusMessage = codeTransformTelemetryState.getResultStatus()
 
