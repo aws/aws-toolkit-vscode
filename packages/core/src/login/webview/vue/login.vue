@@ -175,6 +175,15 @@
                     />
                 </svg>
             </button>
+            <div class="title">IAM Credentials:</div>
+            <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
+            <div class="h4">
+                Using CodeCatalyst with AWS Builder ID?
+                <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
+            </div>
+
+            <br /><br />
+            <br /><br />
             <div class="p">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
             <input class="iamInput" type="text" id="profileName" name="profileName" v-model="profileName" />
@@ -325,6 +334,16 @@ export default defineComponent({
                 }
             }
         },
+        async handleCodeCatalystSignin() {
+            this.stage = 'AUTHENTICATING'
+            const error = await client.startBuilderIdSetup(this.app)
+            if (error) {
+                this.stage = 'START'
+                void client.errorNotification(error)
+            } else {
+                this.stage = 'CONNECTED'
+            }
+        },
         handleUrlInput() {
             if (this.startUrl && validateSsoUrlFormat(this.startUrl)) {
                 this.urlValid = true
@@ -380,10 +399,12 @@ export default defineComponent({
 .title {
     margin-bottom: 5px;
     margin-top: 5px;
-    font-size: 23px;
     font-size: 15px;
     font-weight: bold;
     color: white;
+}
+.h4 {
+    font-size: 8px;
 }
 .continue-button:disabled {
     background-color: #252526;

@@ -577,10 +577,12 @@ export class AuthNode implements TreeNode<Auth> {
                 command: showConnectionsPageCommand,
                 arguments: [placeholder, source],
             }
-
+            if (DevSettings.instance.isNewLoginUxEnabled()) {
+                void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
+            }
             return item
         }
-
+        void vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
         const conn = this.resource.activeConnection
         const itemLabel =
             conn?.label !== undefined

@@ -10,7 +10,7 @@ import { getIcon } from '../../shared/icons'
 import { reconnect } from '../../codewhisperer/commands/basicCommands'
 import { transformByQState } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
-import { amazonQHelpUrl } from '../../shared/constants'
+import { amazonQHelpUrl, amazonQVscodeMarketplace } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../../auth/ui/vue/show'
@@ -100,3 +100,23 @@ export const createTransformByQ = () => {
         contextValue: `${prefix}TransformByQ`,
     })
 }
+
+export const dismissCommand = Commands.declare('aws.amazonq_migrate.dismiss', () => () => {})
+
+export const installAmazonQCommand = Commands.declare('aws.amazonq_migrate.install', () => async () => {
+    await vscode.env.openExternal(vscode.Uri.parse(amazonQVscodeMarketplace))
+})
+
+export const createDismissNode = () =>
+    dismissCommand.build().asTreeNode({
+        label: localize('AWS.amazonq_migrate.dismiss', 'Dismiss'),
+        iconPath: getIcon('vscode-error'),
+        contextValue: '',
+    })
+
+export const createInstallQNode = () =>
+    installAmazonQCommand.build().asTreeNode({
+        label: localize('AWS.amazonq_migrate.install', 'Install the Amazon Q Extension'),
+        iconPath: getIcon('vscode-add'),
+        contextValue: '',
+    })

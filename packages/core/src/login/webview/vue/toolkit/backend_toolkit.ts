@@ -9,15 +9,21 @@ import { getLogger } from '../../../../shared/logger'
 import { AuthError, CommonAuthWebview } from '../backend'
 import { SsoConnection, createSsoProfile } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
+import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
-    public override source: string = 'src/login/webview/vue/toolkit/index.js'
+    public static sourcePath: string = 'vue/src/login/webview/vue/toolkit/index.js'
+
+    constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider) {
+        super(ToolkitLoginWebview.sourcePath)
+    }
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
         return this.ssoSetup('createIdentityCenterConnection', async () => {
             const ssoProfile = createSsoProfile(startUrl, region)
             const conn = await Auth.instance.createConnection(ssoProfile)
             await Auth.instance.useConnection(conn)
+            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
             void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
             void this.showResourceExplorer()
         })
@@ -36,6 +42,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         }
         try {
             await tryAddCredentials(profileName, data, true)
+            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
             await this.showResourceExplorer()
             return
         } catch (e) {
@@ -46,7 +53,9 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
         return this.ssoSetup('startCodeCatalystBuilderIdSetup', async () => {
-            // no builder id in toolkit
+            await this.codeCatalystAuth.connectToAwsBuilderId()
+            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+            await this.showResourceExplorer()
         })
     }
 
@@ -55,7 +64,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     }
 
     fetchConnection(): SsoConnection | undefined {
-        //TODO":
+        //This does not need to be implement in aws toolkit vue backend
         return undefined
     }
 }
