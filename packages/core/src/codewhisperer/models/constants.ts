@@ -470,3 +470,5 @@ export const utgConfig = {
 }
 
 export const transformTreeNode = 'qTreeNode'
+
+export const maxHumanInTheLoopAttempts = 3

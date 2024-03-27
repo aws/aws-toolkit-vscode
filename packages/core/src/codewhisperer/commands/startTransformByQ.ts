@@ -15,8 +15,9 @@ import {
     TransformByQReviewStatus,
     JDKVersion,
     sessionPlanProgress,
+    TransformByQStatus,
 } from '../models/model'
-import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
+import { convertToTimeString, convertDateToTimestamp, getStringHash } from '../../shared/utilities/textUtilities'
 import {
     throwIfCancelled,
     startJob,
@@ -36,7 +37,7 @@ import {
 } from '../service/transformByQHandler'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
-import { encodeHTML, getStringHash } from '../../shared/utilities/textUtilities'
+import { encodeHTML } from '../../shared/utilities/textUtilities'
 import {
     CodeTransformCancelSrcComponents,
     CodeTransformJavaSourceVersionsAllowed,
@@ -51,8 +52,19 @@ import {
     telemetryUndefined,
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
+import { downloadResultArchive, getTransformationStepsFixture } from '../service/amazonQGumby/transformByQApiHandler'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
+import {
+    createPomCopy,
+    getArtifactIdentifiers,
+    getJsonValuesFromManifestFile,
+    highlightPomIssueInProject,
+    parseXmlDependenciesReport,
+    replacePomVersion,
+    runMavenDependencyBuildCommands,
+    runMavenDependencyUpdateCommands,
+} from '../service/amazonQGumby/humanInTheLoopHandler'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 
@@ -145,6 +157,15 @@ export async function startTransformByQ() {
     // Set the default state variables for our store and the UI
     await setTransformationToRunningState()
 
+    await completeHumanInTheLoopWork('fake-job-id', 0)
+    await postTransformationJob()
+    await cleanupTransformationJob(intervalId)
+
+    const quickExit = true
+    if (quickExit) {
+        return
+    }
+
     try {
         // Set web view UI to poll for progress
         intervalId = setInterval(() => {
@@ -164,7 +185,7 @@ export async function startTransformByQ() {
         await pollTransformationStatusUntilPlanReady(jobId)
 
         // step 4: poll until artifacts are ready to download
-        const status = await pollTransformationStatusUntilComplete(jobId)
+        const status = await pollTransformationStatusUntilComplete(jobId, 0)
 
         // Set the result state variables for our store and the UI
         // At this point job should be completed or partially completed
@@ -257,7 +278,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     throwIfCancelled()
 }
 
-export async function pollTransformationStatusUntilComplete(jobId: string) {
+export async function pollTransformationStatusUntilComplete(jobId: string, userInputRetryCount: number) {
     let status = ''
     try {
         status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
@@ -268,7 +289,115 @@ export async function pollTransformationStatusUntilComplete(jobId: string) {
         throw new Error('Poll job failed')
     }
 
+    // Use recursion here to get user input
+    if (
+        status === TransformByQStatus.WaitingUserInput &&
+        userInputRetryCount > CodeWhispererConstants.maxHumanInTheLoopAttempts
+    ) {
+        try {
+            userInputRetryCount++
+
+            // 8) Once all this is successful we need to re-initiate pollTransformationStatusUntilComplete
+            await completeHumanInTheLoopWork(jobId, userInputRetryCount)
+            status = await pollTransformationStatusUntilComplete(jobId, userInputRetryCount)
+        } catch (e) {
+            // do nothing for now. If a recursive call failed, need to set status appropriately?
+            // or throw error
+        }
+    }
+
     return status
+}
+
+export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCount: number) {
+    console.log('Entering completeHumanInTheLoopWork', jobId, userInputRetryCount)
+
+    const pomReplacementDelimiter = '*****'
+    const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
+
+    const osTmpDir = os.tmpdir()
+    const tmpDependencyListFolderName = 'q-pom-dependency-list'
+    const userDependencyUpdateFolderName = 'q-pom-dependency-update'
+    const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
+    const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
+
+    try {
+        // 1) We need to call GetTransformationPlan to get artifactId
+        const transformationSteps = await getTransformationStepsFixture(jobId)
+        const { artifactId, artifactType } = getArtifactIdentifiers(transformationSteps)
+
+        // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
+        const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadResultArchive(
+            jobId,
+            artifactId,
+            artifactType
+        )
+        const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
+
+        // 3) We need to replace version in pom.xml
+        const newPomFileVirtualFileReference = await createPomCopy(
+            tmpDependencyListDir,
+            pomFileVirtualFileReference,
+            'pom.xml'
+        )
+        await replacePomVersion(
+            newPomFileVirtualFileReference,
+            manifestFileValues.sourcePomVersion,
+            pomReplacementDelimiter
+        )
+        await highlightPomIssueInProject(newPomFileVirtualFileReference, manifestFileValues.sourcePomVersion)
+
+        // 4) We need to run maven commands on that pom.xml to get available versions
+        const compileFolderInfo: FolderInfo = {
+            name: tmpDependencyListFolderName,
+            path: tmpDependencyListDir,
+        }
+        runMavenDependencyUpdateCommands(compileFolderInfo)
+        const { latestVersion, majorVersions, minorVersions } = await parseXmlDependenciesReport(
+            path.join(tmpDependencyListDir, localPathToXmlDependencyList)
+        )
+        console.log(latestVersion, majorVersions, minorVersions)
+
+        // 5) We need to wait for user input
+        // transformByQState.getChatControllers()?.humanInTheLoopIntervention.fire({
+        //     latestVersion,
+        //     tabID: ChatSessionManager.Instance.getSession().tabID,
+        // })
+        const getUserInputValue = latestVersion
+
+        // 6) We need to add user input to that pom.xml,
+        // original pom.xml is intact somewhere, and run maven compile
+        const userInputPomFileVirtualFileReference = await createPomCopy(
+            userDependencyUpdateDir,
+            pomFileVirtualFileReference,
+            'pom.xml'
+        )
+        await replacePomVersion(userInputPomFileVirtualFileReference, getUserInputValue, pomReplacementDelimiter)
+
+        // 7) We need to take that output of maven and use CreateUploadUrl
+        const uploadFolderInfo: FolderInfo = {
+            name: userDependencyUpdateFolderName,
+            path: userDependencyUpdateDir,
+        }
+        runMavenDependencyBuildCommands(uploadFolderInfo)
+        // TODO modify code to be re-usable with current framework here
+        // TODO Update manifest.json file for upload
+        const uploadPayloadFilePath = await zipCode(uploadFolderInfo)
+        const uploadId = await uploadPayload(uploadPayloadFilePath)
+        console.log('Finished human in the loop work', uploadId)
+    } catch (err) {
+        // Will probably emit different TYPES of errors from the Human in the loop engagement
+        // catch them here and determine what to do with in parent function
+        console.log('Error in completeHumanInTheLoopWork', err)
+    } finally {
+        // 1) TODO Always delete items off disk manifest.json and pom.xml
+
+        // Always delete the dependency output
+        console.log('Deleting temporary dependency output', tmpDependencyListDir)
+        fs.rmdirSync(tmpDependencyListDir, { recursive: true })
+        console.log('Deleting temporary dependency output', userDependencyUpdateDir)
+        fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
+    }
 }
 
 export async function finalizeTransformationJob(status: string) {
@@ -324,7 +453,7 @@ export async function setTransformationToRunningState() {
         codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
-        codeTransformProjectId: projectId,
+        // codeTransformProjectId: projectId,
         result: MetadataResult.Pass,
     })
 

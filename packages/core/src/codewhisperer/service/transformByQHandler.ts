@@ -9,6 +9,7 @@ import {
     sessionPlanProgress,
     StepProgress,
     transformByQState,
+    TransformByQStatus,
     TransformByQStoppedError,
     ZipManifest,
 } from '../models/model'
@@ -39,7 +40,6 @@ import {
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import request from '../../common/request'
 import { ToolkitError } from '../../shared/errors'
-
 import {
     JDK11VersionNumber,
     JDK8VersionNumber,
@@ -800,9 +800,11 @@ export async function getTransformationPlan(jobId: string) {
     }
 }
 
-export async function getTransformationSteps(jobId: string) {
+export async function getTransformationSteps(jobId: string, handleThrottleFlag: boolean) {
     try {
-        await sleep(2000) // prevent ThrottlingException
+        if (handleThrottleFlag) {
+            await sleep(2000)
+        } // prevent ThrottlingException
         const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
@@ -871,7 +873,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     codeTransformJobId: jobId,
                     codeTransformStatus: status,
                     result: MetadataResult.Pass,
-                    codeTransformPreviousStatus: transformByQState.getPolledJobStatus(),
+                    // codeTransformPreviousStatus: transformByQState.getPolledJobStatus(),
                 })
             }
             transformByQState.setPolledJobStatus(status)
@@ -889,6 +891,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 )
                 throw new Error('Job was rejected, stopped, or failed')
             }
+            if (status === TransformByQStatus.WaitingUserInput) {
+                // break here
+                transformByQState.setPolledJobStatus(TransformByQStatus.WaitingUserInput)
+                // TODO: Either extract artifactId and artifactType here or in parent function
+                // If extracted in parent function it will be 1 extra call to codeModernizerGetCodeTransformation
+                break
+            }
+
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
             timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds
             if (timer > CodeWhispererConstants.transformationJobTimeoutSeconds) {
