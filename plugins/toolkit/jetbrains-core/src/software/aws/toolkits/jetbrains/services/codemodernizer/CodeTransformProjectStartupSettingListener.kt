@@ -9,6 +9,7 @@ import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
+import software.aws.toolkits.jetbrains.services.codemodernizer.auth.isCodeTransformAvailable
 import software.aws.toolkits.jetbrains.services.codemodernizer.panels.managers.CodeModernizerBottomWindowPanelManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererActivationChangedListener
 
@@ -20,7 +21,7 @@ class CodeTransformProjectStartupSettingListener(private val project: Project) :
 
     override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
         runInEdt {
-            val isAvailable = isCodeModernizerAvailable(project)
+            val isAvailable = isCodeTransformAvailable(project)
             CodeModernizerBottomWindowPanelManager.getInstance(project).toolWindow?.isAvailable = isAvailable
             CodeModernizerManager.getInstance(project).handleCredentialsChanged()
             if (isAvailable) {

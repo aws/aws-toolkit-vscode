@@ -6,7 +6,7 @@
 import { ChatItemType, ChatPrompt, MynahUI, NotificationType } from '@aws/mynah-ui-chat'
 import { TabDataGenerator } from '../tabs/generator'
 import { Connector } from '../connector'
-import { TabsStorage } from '../storages/tabsStorage'
+import { Tab, TabsStorage } from '../storages/tabsStorage'
 import { uiComponentsTexts } from '../texts/constants'
 
 export interface QuickActionsHandlerProps {
@@ -14,7 +14,7 @@ export interface QuickActionsHandlerProps {
     connector: Connector
     tabsStorage: TabsStorage
     isFeatureDevEnabled: boolean
-    isGumbyEnabled: boolean
+    isCodeTransformEnabled: boolean
 }
 
 export class QuickActionHandler {
@@ -23,7 +23,7 @@ export class QuickActionHandler {
     private tabsStorage: TabsStorage
     private tabDataGenerator: TabDataGenerator
     public isFeatureDevEnabled: boolean
-    public isGumbyEnabled: boolean
+    public isCodeTransformEnabled: boolean
 
     constructor(props: QuickActionsHandlerProps) {
         this.mynahUI = props.mynahUI
@@ -31,13 +31,13 @@ export class QuickActionHandler {
         this.tabsStorage = props.tabsStorage
         this.tabDataGenerator = new TabDataGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
-            isGumbyEnabled: props.isGumbyEnabled,
+            isCodeTransformEnabled: props.isCodeTransformEnabled,
         })
         this.isFeatureDevEnabled = props.isFeatureDevEnabled
-        this.isGumbyEnabled = props.isGumbyEnabled
+        this.isCodeTransformEnabled = props.isCodeTransformEnabled
     }
 
-    public handle(chatPrompt: ChatPrompt, tabID: string) {
+    public handle(chatPrompt: ChatPrompt, tabID: string, eventId?: string) {
         this.tabsStorage.resetTabTimer(tabID)
         switch (chatPrompt.command) {
             case '/dev':
@@ -47,7 +47,7 @@ export class QuickActionHandler {
                 this.handleHelpCommand(tabID)
                 break
             case '/transform':
-                this.handleGumbyCommand(tabID)
+                this.handleCodeTransformCommand(tabID, eventId)
                 break
             case '/clear':
                 this.handleClearCommand(tabID)
@@ -55,11 +55,51 @@ export class QuickActionHandler {
         }
     }
 
-    private handleGumbyCommand(tabID: string) {
-        if (!this.isGumbyEnabled) {
+    private handleCodeTransformCommand(tabID: string, eventId?: string) {
+        if (!this.isCodeTransformEnabled) {
             return
         }
-        this.connector.transform(tabID)
+
+        // Check for existing opened transform tab
+        const existingTransformTab = this.tabsStorage.getTabs().find((tab) => tab.type === 'codetransform')
+        if (existingTransformTab !== undefined) {
+            this.mynahUI.selectTab(existingTransformTab.id, eventId || "")
+            this.connector.onTabChange(existingTransformTab.id)
+
+            this.mynahUI.notify({
+                title: "Q - Transform",
+                content: "Switched to the opened transformation tab",
+            });
+            return
+        }
+
+        // Add new tab
+        let affectedTabId: string | undefined = tabID
+        if (this.tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
+            affectedTabId = this.mynahUI.updateStore('', {})
+        }
+        if (affectedTabId === undefined) {
+            this.mynahUI.notify({
+                content: uiComponentsTexts.noMoreTabsTooltip,
+                type: NotificationType.WARNING,
+            })
+            return
+        } else {
+            this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'codetransform')
+            this.connector.onKnownTabOpen(affectedTabId)
+            // Clear unknown tab type's welcome message
+            this.mynahUI.updateStore(affectedTabId, {chatItems: []})
+            this.mynahUI.updateStore(affectedTabId, this.tabDataGenerator.getTabData('codetransform', true))
+            this.mynahUI.updateStore(affectedTabId, {
+                promptInputDisabledState: true,
+                promptInputPlaceholder: 'Chat disabled during Code Transformation.',
+                loadingChat: true,
+            })
+
+            this.connector.onTabAdd(affectedTabId)
+        }
+
+        this.connector.transform(affectedTabId)
     }
 
     private handleClearCommand(tabID: string) {

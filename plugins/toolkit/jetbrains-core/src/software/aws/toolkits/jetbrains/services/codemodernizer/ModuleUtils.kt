@@ -75,6 +75,18 @@ fun Project.getSupportedBuildFilesWithSupportedJdk(
     }
 }
 
+fun Project.getSupportedBuildModulesPath(supportedBuildFileNames: List<String>): List<String> {
+    val projectRootManager = ProjectRootManager.getInstance(this)
+    val probableProjectRoot = this.basePath?.toVirtualFile() // May point to only one intellij module (the first opened one)
+    val probableContentRoots = projectRootManager.contentRoots.toMutableSet() // May not point to the topmost folder of modules
+    probableContentRoots.add(probableProjectRoot) // dedupe
+    val topLevelRoots = filterOnlyParentFiles(probableContentRoots)
+    val detectedBuildFilePaths = topLevelRoots.flatMap { root ->
+        findBuildFiles(root.toNioPath().toFile(), supportedBuildFileNames).mapNotNull { it.path }
+    }
+    return detectedBuildFilePaths
+}
+
 fun Project.getSupportedModules(supportedJavaMappings: Map<JavaSdkVersion, Set<JavaSdkVersion>>) = this.modules.filter {
     val moduleJdk = it.tryGetJdk(this) ?: return@filter false
     moduleJdk in supportedJavaMappings

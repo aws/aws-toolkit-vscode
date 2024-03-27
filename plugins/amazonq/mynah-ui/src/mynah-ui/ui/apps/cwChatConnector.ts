@@ -296,15 +296,6 @@ export class Connector {
         }
     }
 
-    transform = (tabID: string): void => {
-        this.sendMessageToExtension({
-            tabID: tabID,
-            command: 'transform',
-            chatMessage: 'transform',
-            tabType: 'cwc',
-        })
-    }
-
     private processAuthNeededException = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived === undefined) {
             return

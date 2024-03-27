@@ -7,6 +7,7 @@ type MessageCommand =
     | 'chat-prompt'
     | 'trigger-message-processed'
     | 'new-tab-was-created'
+    | 'tab-was-added'
     | 'tab-was-removed'
     | 'tab-was-changed'
     | 'ui-is-ready'
@@ -28,5 +29,13 @@ type MessageCommand =
     | 'response-body-link-click'
     | 'transform'
     | 'footer-info-link-click'
+    | 'codetransform-start'
+    | 'codetransform-cancel'
+    | 'codetransform-stop'
+    | 'codetransform-new'
+    | 'codetransform-open-transform-hub'
+    | 'codetransform-open-mvn-build'
+    | 'codetransform-view-diff'
+    | 'codetransform-view-summary'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

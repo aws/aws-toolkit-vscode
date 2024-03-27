@@ -23,7 +23,7 @@ class TransformMavenRunner(val project: Project) {
             val handler = descriptor.processHandler
             if (handler == null) {
                 // add log error here
-                onComplete.exitCode(-1)
+                onComplete.setExitCode(-1)
                 return@Callback
             }
             handler.addProcessListener(object : ProcessAdapter() {
@@ -41,7 +41,7 @@ class TransformMavenRunner(val project: Project) {
                 }
 
                 override fun processTerminated(event: ProcessEvent) {
-                    onComplete.exitCode(event.exitCode)
+                    onComplete.setExitCode(event.exitCode)
                     onComplete.setOutput(output)
                 }
             })

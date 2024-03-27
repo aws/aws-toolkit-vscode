@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codemodernizer
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
+import software.aws.toolkits.jetbrains.services.codemodernizer.auth.isCodeTransformAvailable
 
 class CodeModernizerStartupActivity : StartupActivity.DumbAware {
 
@@ -13,8 +14,7 @@ class CodeModernizerStartupActivity : StartupActivity.DumbAware {
      * Prompts users of jobs that finished while IDE was closed.
      */
     override fun runActivity(project: Project) {
-        if (!isCodeModernizerAvailable(project)) return
-        val codeModernizerInstance = CodeModernizerManager.getInstance(project)
-        codeModernizerInstance.tryResumeJob(true)
+        if (!isCodeTransformAvailable(project)) return
+        CodeModernizerManager.getInstance(project).tryResumeJob(true)
     }
 }

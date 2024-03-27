@@ -31,10 +31,6 @@ import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnection
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnectionType
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.BearerTokenFeatureSet
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerConnectionValidity
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MAVEN_CONFIGURATION_FILE_NAME
@@ -272,12 +268,6 @@ fun findBuildFiles(sourceFolder: File, supportedBuildFileNames: List<String>): L
 fun isIntellij(): Boolean {
     val productCode = ApplicationInfo.getInstance().build.productCode
     return productCode == "IC" || productCode == "IU"
-}
-
-fun isCodeModernizerAvailable(project: Project): Boolean {
-    if (!isIntellij()) return false
-    val connection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.Q)
-    return connection.connectionType == ActiveConnectionType.IAM_IDC && connection is ActiveConnection.ValidBearer
 }
 
 fun isGradleProject(project: Project) = !GradleSettings.getInstance(project).linkedProjectsSettings.isEmpty()
