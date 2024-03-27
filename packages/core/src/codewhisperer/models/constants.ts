@@ -401,11 +401,9 @@ export const transformByQStatePartialSuccessMessage = 'partially succeeded'
 
 export const transformByQStoppedState = 'STOPPED'
 
-export const transformationJobPollingIntervalSeconds = 10
+export const transformationJobPollingIntervalSeconds = 5
 
 export const transformationJobTimeoutSeconds = 60 * 60 // 1 hour, to match backend
-
-export const progressIntervalMs = 1000
 
 export const defaultLanguage = 'Java'
 
@@ -415,13 +413,26 @@ export const uploadIntent = 'TRANSFORMATION'
 
 export const transformationType = 'LANGUAGE_UPGRADE'
 
-// when in one of these states, we can definitely say the plan is available
-// in other states, we keep polling/waiting
-export const validStatesForGettingPlan = ['COMPLETED', 'PARTIALLY_COMPLETED', 'PLANNED', 'TRANSFORMING', 'TRANSFORMED']
+// job successfully started
+export const validStatesForJobStarted = [
+    'STARTED',
+    'PREPARING',
+    'PREPARED',
+    'PLANNING',
+    'PLANNED',
+    'TRANSFORMING',
+    'TRANSFORMED',
+]
+
+// initial build succeeded
+export const validStatesForBuildSucceeded = ['PREPARED', 'PLANNING', 'PLANNED', 'TRANSFORMING', 'TRANSFORMED']
+
+// plan must be available
+export const validStatesForPlanGenerated = ['PLANNED', 'TRANSFORMING', 'TRANSFORMED']
 
 export const failureStates = ['FAILED', 'STOPPING', 'STOPPED', 'REJECTED']
 
-// similarly, when in one of these states, we can stop polling, and if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
+// if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
 export const validStatesForCheckingDownloadUrl = [
     'COMPLETED',
     'PARTIALLY_COMPLETED',

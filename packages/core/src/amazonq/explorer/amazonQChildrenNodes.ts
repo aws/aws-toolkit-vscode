@@ -77,7 +77,6 @@ export const createTransformByQ = () => {
     const prefix = transformByQState.getPrefixTextForButton()
     let status = transformByQState.getPolledJobStatus().toLowerCase()
     if (transformByQState.isRunning()) {
-        void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (status === '') {
             // job is running but polling has not started yet, so display generic message
             status = CodeWhispererConstants.transformByQStateRunningMessage
