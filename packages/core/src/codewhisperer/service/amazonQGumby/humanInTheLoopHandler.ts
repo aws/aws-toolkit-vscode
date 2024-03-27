@@ -56,7 +56,6 @@ export async function replacePomVersion(pomFileVirtualFileReference: vscode.Uri,
         const pomFileText = readFileSync(pomFileVirtualFileReference.fsPath, 'utf-8')
         const pomFileTextWithNewVersion = pomFileText.replace(delimiter, version)
         writeFileSync(pomFileVirtualFileReference.fsPath, pomFileTextWithNewVersion)
-        await vscode.window.showTextDocument(pomFileVirtualFileReference)
     } catch (err) {
         console.log('Error replacing pom version', err)
         throw err
@@ -79,6 +78,69 @@ export async function getJsonValuesFromManifestFile(
         console.log('Error parsing manifest.json file', err)
         throw err
     }
+}
+
+export async function highlightPomIssueInProject(pomFileVirtualFileReference: vscode.Uri, currentVersion: string) {
+    console.log('In highlightPomIssueInProject', pomFileVirtualFileReference, currentVersion)
+    await vscode.window.showTextDocument(pomFileVirtualFileReference)
+
+    // Find line number for "latestVersion" or set to first line in file
+    const highlightLineNumber = findLineNumber(pomFileVirtualFileReference, currentVersion) || 1
+    await setWarningIcon(highlightLineNumber)
+}
+
+async function setWarningIcon(lineNumber: number = 0) {
+    // Get active diff editor
+    const diffEditor = vscode.window.activeTextEditor
+
+    const highlightDecorationType = vscode.window.createTextEditorDecorationType({
+        backgroundColor: 'green',
+        border: '1px solid red',
+        isWholeLine: true,
+        gutterIconPath:
+            '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/toolkit/resources/icons/cloud9/generated/dark/vscode-bug.svg',
+        gutterIconSize: '20',
+        overviewRulerColor: new vscode.ThemeColor('warning'),
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
+
+        after: {
+            height: '20px',
+            border: '1px solid purple',
+            width: '20px',
+        },
+    })
+
+    // Set the decorations
+    diffEditor?.setDecorations(highlightDecorationType, [
+        {
+            range: new vscode.Range(lineNumber - 1, 0, lineNumber - 1, 50),
+            hoverMessage: `### This is my custom markdown tooltip header
+         On a custom icon line [See docs]()
+         - Item one
+         - Item Two
+        `,
+        },
+    ])
+}
+
+function findLineNumber(uri: vscode.Uri, searchString: string): number | undefined {
+    const textDocument = vscode.workspace.textDocuments.find(doc => doc.uri.toString() === uri.toString())
+    if (!textDocument) {
+        return undefined
+    }
+
+    const text = textDocument.getText()
+    let lineNumber = 0
+    const lines = text.split('\n')
+
+    for (const line of lines) {
+        if (line.includes(searchString)) {
+            return lineNumber
+        }
+        lineNumber++
+    }
+
+    return undefined
 }
 
 export async function parseXmlDependenciesReport(pathToXmlOutput: string) {

@@ -37,6 +37,7 @@ export interface ChatControllerEventEmitters {
     readonly formActionClicked: vscode.EventEmitter<any>
     readonly commandSentFromIDE: vscode.EventEmitter<any>
     readonly transformationFinished: vscode.EventEmitter<any>
+    readonly humanInTheLoopIntervention: vscode.EventEmitter<any>
 }
 
 export class GumbyController {
@@ -80,6 +81,10 @@ export class GumbyController {
 
         this.chatControllerMessageListeners.transformationFinished.event(data => {
             return this.transformationFinished(data)
+        })
+
+        this.chatControllerMessageListeners.humanInTheLoopIntervention.event(data => {
+            return this.humanInTheLoopIntervention(data)
         })
     }
 
@@ -279,5 +284,9 @@ export class GumbyController {
     private async transformationFinished(message: { tabID: string; jobStatus: string }) {
         this.messenger.sendJobSubmittedMessage(message.tabID, true)
         this.messenger.sendJobFinishedMessage(message.tabID, false, message.jobStatus)
+    }
+
+    private async humanInTheLoopIntervention(message: { tabID: string; latestVersion: string }) {
+        this.messenger.sendHumanInterventionSelectedMessage(message.tabID, message.latestVersion)
     }
 }

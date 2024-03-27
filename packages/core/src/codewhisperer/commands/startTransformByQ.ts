@@ -63,8 +63,6 @@ import {
     runMavenDependencyBuildCommands,
     runMavenDependencyUpdateCommands,
 } from '../service/amazonQGumby/humanInTheLoopHandler'
-import { error } from 'console'
-import { Folder } from 'aws-sdk/clients/storagegateway'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')

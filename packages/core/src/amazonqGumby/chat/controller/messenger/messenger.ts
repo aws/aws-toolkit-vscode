@@ -41,6 +41,7 @@ export type LoadingTextResponseType = 'start-compilation' | 'compile-succeeded' 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
     JOB_SUBMISSION_STATUS_MESSAGE = 'gumbyJobSubmissionMessage',
+    HUMAN_IN_THE_LOOP_INTERVENTION = 'gumbyHumanInTheLoopIntervention',
 }
 
 export class Messenger {
@@ -358,5 +359,20 @@ To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/a
                 message: "I'm checking for open projects that are eligible for Code Transformation.",
             })
         )
+    }
+
+    public sendHumanInterventionSelectedMessage(tabID: string, latestVersion: string) {
+        const message = `You have selected to upgrade your module to version: ${latestVersion}`
+
+        const humanInterventionSelectedMessage = new ChatMessage(
+            {
+                message,
+                messageType: 'ai-prompt',
+                messageId: GumbyNamedMessages.HUMAN_IN_THE_LOOP_INTERVENTION,
+            },
+            tabID
+        )
+
+        this.dispatcher.sendChatMessage(humanInterventionSelectedMessage)
     }
 }
