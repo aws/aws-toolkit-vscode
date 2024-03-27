@@ -25,15 +25,16 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModerni
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerStartJobResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ZipCreationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.plan.CodeModernizerPlanEditorProvider
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanSession
-import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformApiNames
 import java.io.File
 import java.io.FileInputStream
+import java.io.IOException
 import java.time.Instant
 import java.util.Base64
 import java.util.concurrent.CancellationException
@@ -55,6 +56,23 @@ class CodeModernizerSession(
     private val shouldStop = AtomicBoolean(false)
     private val telemetry = CodeTransformTelemetryManager.getInstance(sessionContext.project)
 
+    private var mvnBuildResult: MavenCopyCommandsResult? = null
+    private var transformResult: CodeModernizerJobCompletedResult? = null
+
+    fun getLastMvnBuildResult(): MavenCopyCommandsResult? = mvnBuildResult
+
+    fun setLastMvnBuildResult(result: MavenCopyCommandsResult) {
+        mvnBuildResult = result
+    }
+
+    fun getLastTransformResult(): CodeModernizerJobCompletedResult? = transformResult
+
+    fun setLastTransformResult(result: CodeModernizerJobCompletedResult) {
+        transformResult = result
+    }
+
+    fun getDependenciesUsingMaven(): MavenCopyCommandsResult = sessionContext.getDependenciesUsingMaven()
+
     /**
      * Note that this function makes network calls and needs to be run from a background thread.
      * Runs a code modernizer session which comprises the following steps:
@@ -65,7 +83,7 @@ class CodeModernizerSession(
      *
      *  Based on [CodeWhispererCodeScanSession]
      */
-    fun createModernizationJob(): CodeModernizerStartJobResult {
+    fun createModernizationJob(copyResult: MavenCopyCommandsResult): CodeModernizerStartJobResult {
         LOG.info { "Starting Modernization Job" }
         val payload: File?
 
@@ -75,11 +93,7 @@ class CodeModernizerSession(
                 return CodeModernizerStartJobResult.Disposed
             }
             val startTime = Instant.now()
-            notifyStickyInfo(
-                message("codemodernizer.notification.info.compiling_project.title"),
-                message("codemodernizer.notification.info.compiling_project.content"),
-            )
-            val result = sessionContext.createZipWithModuleFiles()
+            val result = sessionContext.createZipWithModuleFiles(copyResult)
 
             if (result is ZipCreationResult.Missing1P) {
                 return CodeModernizerStartJobResult.CancelledMissingDependencies
@@ -110,10 +124,6 @@ class CodeModernizerSession(
                 LOG.warn { "Job was cancelled by user before upload was called" }
                 return CodeModernizerStartJobResult.Cancelled
             }
-            notifyStickyInfo(
-                message("codemodernizer.notification.info.submitted_project.title"),
-                message("codemodernizer.notification.info.submitted_project.content"),
-            )
             val uploadId = uploadPayload(payload)
             if (shouldStop.get()) {
                 LOG.warn { "Job was cancelled by user before start job was called" }
@@ -126,6 +136,20 @@ class CodeModernizerSession(
         } catch (e: AlreadyDisposedException) {
             LOG.warn { e.localizedMessage }
             return CodeModernizerStartJobResult.Disposed
+        } catch (e: IOException) {
+            if (shouldStop.get()) {
+                // Cancelling during S3 upload will cause IOException of "not enough data written",
+                // so no need to show an IDE error for it
+                LOG.warn { "Job was cancelled by user before start job was called" }
+                CodeModernizerStartJobResult.Cancelled
+            } else {
+                val errorMessage = "Failed to start job"
+                LOG.error(e) { errorMessage }
+                state.putJobHistory(sessionContext, TransformationStatus.FAILED)
+                state.currentJobStatus = TransformationStatus.FAILED
+                telemetry.error(errorMessage)
+                CodeModernizerStartJobResult.UnableToStartJob(e.message.toString())
+            }
         } catch (e: Exception) {
             val errorMessage = "Failed to start job"
             LOG.error(e) { errorMessage }
@@ -184,7 +208,7 @@ class CodeModernizerSession(
             !passedBuild && result.state == TransformationStatus.FAILED -> AwaitModernizationPlanResult.BuildFailed(
                 result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_build_failure")
             )
-
+            result.state == TransformationStatus.STOPPED -> AwaitModernizationPlanResult.Stopped
             else -> AwaitModernizationPlanResult.Failure(message("codemodernizer.notification.warn.unknown_status_response"))
         }
     }
@@ -208,6 +232,11 @@ class CodeModernizerSession(
     fun getJobDetails(jobId: JobId): TransformationJob {
         LOG.info { "Getting job details." }
         return clientAdaptor.getCodeModernizationJob(jobId.id).transformationJob()
+    }
+
+    fun getTransformPlanDetails(jobId: JobId): TransformationPlan {
+        LOG.info { "Getting transform plan details." }
+        return clientAdaptor.getCodeModernizationPlan(jobId).transformationPlan()
     }
 
     /**
@@ -244,7 +273,6 @@ class CodeModernizerSession(
             ) { shouldStop.get() }
         } catch (e: Exception) {
             val errorMessage = "Unexpected error when uploading artifact to S3: ${e.localizedMessage}"
-            LOG.error(e) { errorMessage }
             telemetry.apiError(errorMessage, CodeTransformApiNames.UploadZip, createUploadUrlResponse.uploadId())
             throw e // pass along error to callee
         }
@@ -279,7 +307,7 @@ class CodeModernizerSession(
                     jobId,
                     result.failureReason,
                 )
-
+                is AwaitModernizationPlanResult.Stopped -> return CodeModernizerJobCompletedResult.Stopped
                 is AwaitModernizationPlanResult.UnknownStatusWhenPolling -> return CodeModernizerJobCompletedResult.JobFailed(
                     jobId,
                     message("codemodernizer.notification.warn.unknown_status_response"),
@@ -321,6 +349,7 @@ class CodeModernizerSession(
                 LOG.info { "Waiting for Modernization Job [$jobId] to complete. State changed for job: $old -> $new" }
             }
             return when {
+                result.state == TransformationStatus.STOPPED -> CodeModernizerJobCompletedResult.Stopped
                 isPartialSuccess -> CodeModernizerJobCompletedResult.JobPartiallySucceeded(jobId, sessionContext.targetJavaVersion)
                 result.succeeded -> CodeModernizerJobCompletedResult.JobCompletedSuccessfully(jobId)
                 result.state == TransformationStatus.UNKNOWN_TO_SDK_VERSION -> CodeModernizerJobCompletedResult.JobFailed(

@@ -38,7 +38,11 @@ sealed interface IncomingCwcMessage : CwcMessage {
         val userIntent: String?,
     ) : IncomingCwcMessage
 
-    // TODO: new tab was created
+    data class TabAdded(
+        @JsonProperty("tabID") val tabId: String,
+        val tabType: String,
+    ) : IncomingCwcMessage
+
     data class TabRemoved(
         @JsonProperty("tabID") val tabId: String,
         val tabType: String,
@@ -54,6 +58,7 @@ sealed interface IncomingCwcMessage : CwcMessage {
         @JsonProperty("tabID") val tabId: String,
         val messageId: String?,
         val command: String,
+        val tabType: String,
     ) : IncomingCwcMessage
 
     data class CopyCodeToClipboard(
@@ -99,10 +104,6 @@ sealed interface IncomingCwcMessage : CwcMessage {
         @JsonDeserialize(using = FocusTypeDeserializer::class)
         @JsonSerialize(using = FocusTypeSerializer::class)
         val type: FocusType,
-    ) : IncomingCwcMessage
-
-    data class Transform(
-        @JsonProperty("tabID") val tabId: String,
     ) : IncomingCwcMessage
 
     data class ClickedLink(
@@ -155,6 +156,8 @@ enum class ChatMessageType(
     AnswerStream("answer-stream"),
     AnswerPart("answer-part"),
     Answer("answer"),
+    AIPrompt("ai-prompt"),
+    Prompt("prompt"),
 }
 
 data class CodeReference(

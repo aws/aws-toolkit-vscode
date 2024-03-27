@@ -73,16 +73,22 @@ data class CodeModernizerSessionContext(
 
     fun executeMavenCopyCommands(sourceFolder: File, buildLogBuilder: StringBuilder) = runMavenCopyCommands(sourceFolder, buildLogBuilder, LOG, project)
 
-    fun createZipWithModuleFiles(): ZipCreationResult {
+    fun getDependenciesUsingMaven(): MavenCopyCommandsResult {
+        val root = configurationFile.parent
+        val sourceFolder = File(root.path)
+        val buildLogBuilder = StringBuilder("Starting Build Log...\n")
+        return executeMavenCopyCommands(sourceFolder, buildLogBuilder)
+    }
+
+    fun createZipWithModuleFiles(copyResult: MavenCopyCommandsResult): ZipCreationResult {
         val telemetry = CodeTransformTelemetryManager.getInstance(project)
         val root = configurationFile.parent
         val sourceFolder = File(root.path)
         val buildLogBuilder = StringBuilder("Starting Build Log...\n")
-        val result = executeMavenCopyCommands(sourceFolder, buildLogBuilder)
-        val depDirectory = if (result is MavenCopyCommandsResult.Success) {
+        val depDirectory = if (copyResult is MavenCopyCommandsResult.Success) {
             showTransformationHub()
             telemetry.dependenciesCopied()
-            result.dependencyDirectory
+            copyResult.dependencyDirectory
         } else {
             null
         }
@@ -94,7 +100,7 @@ data class CodeModernizerSessionContext(
                     val childPath = Path(child.path)
                     !child.isDirectory && directoriesToExclude.none { childPath.startsWith(it.toPath()) }
                 }
-                val dependencyfiles = if (depDirectory != null) {
+                val dependencyFiles = if (depDirectory != null) {
                     iterateThroughDependencies(depDirectory)
                 } else {
                     mutableListOf()
@@ -113,7 +119,7 @@ data class CodeModernizerSessionContext(
 
                     // 2) Dependencies
                     if (depDirectory != null) {
-                        dependencyfiles.forEach { depfile ->
+                        dependencyFiles.forEach { depfile ->
                             val relativePath = File(depfile.path).relativeTo(depDirectory.parentFile)
                             val paddedPath = depSources.resolve(relativePath)
                             var paddedPathString = paddedPath.toPath().toString()

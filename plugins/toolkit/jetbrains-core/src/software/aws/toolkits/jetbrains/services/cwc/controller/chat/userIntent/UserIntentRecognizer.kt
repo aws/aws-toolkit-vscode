@@ -35,6 +35,8 @@ class UserIntentRecognizer {
         FollowUpType.LineByLine -> UserIntent.EXPLAIN_LINE_BY_LINE
         FollowUpType.ExplainInDetail -> UserIntent.EXPLAIN_CODE_SELECTION
         FollowUpType.Generated -> null
+        FollowUpType.StopCodeTransform -> null
+        FollowUpType.NewCodeTransform -> null
     }
 
     fun getUserIntentFromOnboardingPageInteraction(interaction: OnboardingPageInteraction) = when (interaction.type) {

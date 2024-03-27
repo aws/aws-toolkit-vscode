@@ -38,10 +38,12 @@ fun runMavenCopyCommands(sourceFolder: File, buildlogBuilder: StringBuilder, log
             runMavenCopyDependencies(sourceFolder, buildlogBuilder, mvnSettings, transformMvnRunner, destinationDir, logger, telemetry)
         copyDependenciesRunnable.await()
         buildlogBuilder.appendLine(copyDependenciesRunnable.getOutput())
-        if (copyDependenciesRunnable.isComplete() == 0) {
+        if (copyDependenciesRunnable.isComplete()) {
             val successMsg = "IntelliJ bundled Maven copy-dependencies executed successfully"
             logger.info { successMsg }
             buildlogBuilder.appendLine(successMsg)
+        } else if (copyDependenciesRunnable.isTerminated()) {
+            return MavenCopyCommandsResult.Cancelled
         } else {
             emitMavenFailure("Maven Copy: bundled Maven failed: exitCode ${copyDependenciesRunnable.isComplete()}", logger, telemetry)
         }
@@ -50,11 +52,13 @@ fun runMavenCopyCommands(sourceFolder: File, buildlogBuilder: StringBuilder, log
         val cleanRunnable = runMavenClean(sourceFolder, buildlogBuilder, mvnSettings, transformMvnRunner, logger, telemetry, destinationDir)
         cleanRunnable.await()
         buildlogBuilder.appendLine(cleanRunnable.getOutput())
-        if (cleanRunnable.isComplete() == 0) {
+        if (cleanRunnable.isComplete()) {
             val successMsg = "IntelliJ bundled Maven clean executed successfully"
             logger.info { successMsg }
             buildlogBuilder.appendLine(successMsg)
-        } else if (cleanRunnable.isComplete() != Integer.MIN_VALUE) {
+        } else if (cleanRunnable.isTerminated()) {
+            return MavenCopyCommandsResult.Cancelled
+        } else {
             emitMavenFailure("Maven Clean: bundled Maven failed: exitCode ${cleanRunnable.isComplete()}", logger, telemetry)
             return MavenCopyCommandsResult.Failure
         }
@@ -63,11 +67,13 @@ fun runMavenCopyCommands(sourceFolder: File, buildlogBuilder: StringBuilder, log
         val installRunnable = runMavenInstall(sourceFolder, buildlogBuilder, mvnSettings, transformMvnRunner, logger, telemetry, destinationDir)
         installRunnable.await()
         buildlogBuilder.appendLine(installRunnable.getOutput())
-        if (installRunnable.isComplete() == 0) {
+        if (installRunnable.isComplete()) {
             val successMsg = "IntelliJ bundled Maven install executed successfully"
             logger.info { successMsg }
             buildlogBuilder.appendLine(successMsg)
-        } else if (installRunnable.isComplete() != Integer.MIN_VALUE) {
+        } else if (installRunnable.isTerminated()) {
+            return MavenCopyCommandsResult.Cancelled
+        } else {
             emitMavenFailure("Maven Install: bundled Maven failed: exitCode ${installRunnable.isComplete()}", logger, telemetry)
             return MavenCopyCommandsResult.Failure
         }
@@ -110,7 +116,7 @@ private fun runMavenCopyDependencies(
             transformMavenRunner.run(copyParams, mvnSettings, copyTransformRunnable)
         } catch (t: Throwable) {
             val error = "Maven Copy: Unexpected error when executing bundled Maven copy dependencies"
-            copyTransformRunnable.exitCode(Integer.MIN_VALUE) // to stop looking for the exitCode
+            copyTransformRunnable.setExitCode(Integer.MIN_VALUE) // to stop looking for the exitCode
             logger.error(t) { error }
             buildlogBuilder.appendLine("IntelliJ bundled Maven copy dependencies failed: ${t.message}")
             telemetry.mvnBuildFailed(CodeTransformMavenBuildCommand.IDEBundledMaven, error)
@@ -143,7 +149,7 @@ private fun runMavenClean(
             transformMavenRunner.run(cleanParams, mvnSettings, cleanTransformRunnable)
         } catch (t: Throwable) {
             val error = "Maven Clean: Unexpected error when executing bundled Maven clean"
-            cleanTransformRunnable.exitCode(Integer.MIN_VALUE) // to stop looking for the exitCode
+            cleanTransformRunnable.setExitCode(Integer.MIN_VALUE) // to stop looking for the exitCode
             buildlogBuilder.appendLine("IntelliJ bundled Maven clean failed: ${t.message}")
             emitMavenFailure(error, logger, telemetry, t)
         }
@@ -175,7 +181,7 @@ private fun runMavenInstall(
             transformMavenRunner.run(installParams, mvnSettings, installTransformRunnable)
         } catch (t: Throwable) {
             val error = "Maven Install: Unexpected error when executing bundled Maven install"
-            installTransformRunnable.exitCode(Integer.MIN_VALUE) // to stop looking for the exitCode
+            installTransformRunnable.setExitCode(Integer.MIN_VALUE) // to stop looking for the exitCode
             buildlogBuilder.appendLine("IntelliJ bundled Maven install failed: ${t.message}")
             emitMavenFailure(error, logger, telemetry, t)
         }

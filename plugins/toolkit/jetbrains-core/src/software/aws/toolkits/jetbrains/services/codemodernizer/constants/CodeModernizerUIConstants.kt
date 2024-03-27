@@ -11,6 +11,8 @@ import java.awt.Color
 import java.awt.GridBagConstraints
 import javax.swing.BorderFactory
 
+const val FEATURE_NAME = "Amazon Q Transform"
+
 class CodeModernizerUIConstants {
 
     object HEADER {

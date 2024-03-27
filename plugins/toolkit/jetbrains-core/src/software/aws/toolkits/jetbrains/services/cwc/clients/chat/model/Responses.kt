@@ -21,6 +21,8 @@ enum class FollowUpType {
     LineByLine,
     ExplainInDetail,
     Generated,
+    StopCodeTransform,
+    NewCodeTransform,
 }
 
 data class SuggestedFollowUp(

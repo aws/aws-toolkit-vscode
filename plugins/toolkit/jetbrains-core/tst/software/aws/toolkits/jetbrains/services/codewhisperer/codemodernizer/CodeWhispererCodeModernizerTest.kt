@@ -3,34 +3,24 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.codemodernizer
 
-import com.intellij.openapi.projectRoots.JavaSdkVersion
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.LightVirtualFile
-import com.intellij.testFramework.runInEdtAndWait
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
-import junit.framework.TestCase.assertNotNull
-import junit.framework.TestCase.assertNull
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito
 import org.mockito.Mockito.never
-import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import software.aws.toolkits.jetbrains.services.codemodernizer.ArtifactHandler
 import software.aws.toolkits.jetbrains.services.codemodernizer.DownloadArtifactResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.filterOnlyParentFiles
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
-import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerStartJobResult
-import software.aws.toolkits.jetbrains.services.codemodernizer.model.CustomerSelection
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.InvalidTelemetryReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.unzipFile
@@ -45,44 +35,6 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
     @Before
     override fun setup() {
         super.setup()
-    }
-
-    @Test
-    fun `test runModernize handles user cancelled dialog`() {
-        doReturn(null).whenever(codeModernizerManagerSpy).getCustomerSelection(any())
-        runInEdtAndWait {
-            val buildFiles = listOf(emptyPomFile)
-            val job = codeModernizerManagerSpy.runModernize(buildFiles)
-            assertNull(job)
-            verify(codeModernizerManagerSpy, times(1)).runModernize(buildFiles)
-            verify(codeModernizerManagerSpy, times(1)).getCustomerSelection(buildFiles)
-            // verify execution stopped after user cancelled
-            verify(codeModernizerManagerSpy, times(0)).createCodeModernizerSession(any(), any())
-            verify(codeModernizerManagerSpy, times(0)).launchModernizationJob(any())
-            verify(codeModernizerManagerSpy, times(0)).postModernizationJob(any())
-            verifyNoMoreInteractions(codeModernizerManagerSpy)
-        }
-    }
-
-    @Test
-    fun `test runModernize handles users completed dialog`() {
-        var mockFile = Mockito.mock(VirtualFile::class.java)
-        `when`(mockFile.name).thenReturn("pomx.xml")
-        `when`(mockFile.path).thenReturn("/mocked/path/pom.xml")
-        `when`(mockFile.toNioPath()).thenReturn(Path("/mocked/path/pom.xml"))
-        val selection = CustomerSelection(mockFile, JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_17)
-        doReturn(selection).whenever(codeModernizerManagerSpy).getCustomerSelection(any())
-        doNothing().whenever(codeModernizerManagerSpy).postModernizationJob(any())
-        doReturn(CodeModernizerStartJobResult.Started(jobId)).whenever(testSessionSpy).createModernizationJob()
-        runInEdtAndWait {
-            val buildFiles = listOf(emptyPomFile)
-            val job = codeModernizerManagerSpy.runModernize(buildFiles)
-            assertNotNull(job)
-            verify(codeModernizerManagerSpy, times(1)).runModernize(buildFiles)
-            verify(codeModernizerManagerSpy, times(1)).getCustomerSelection(buildFiles)
-            verify(codeModernizerManagerSpy, times(1)).createCodeModernizerSession(any(), any())
-            verify(codeModernizerManagerSpy, times(1)).launchModernizationJob(any())
-        }
     }
 
     @Test

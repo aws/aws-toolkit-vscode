@@ -5,7 +5,7 @@
 
 import { ChatItemAction, ChatItemType, MynahUI } from '@aws/mynah-ui-chat'
 import { Connector } from '../connector'
-import { TabsStorage } from '../storages/tabsStorage'
+import { TabType, TabsStorage } from '../storages/tabsStorage'
 import { WelcomeFollowupType } from '../apps/amazonqCommonsConnector'
 import { AuthFollowUpType } from './generator'
 
@@ -34,6 +34,12 @@ export class FollowUpInteractionHandler {
             this.connector.onAuthFollowUpClicked(tabID, followUp.type as AuthFollowUpType)
             return
         }
+
+        if (this.tabsStorage.getTab(tabID)?.type === 'codetransform') {
+            this.connector.onFollowUpClicked(tabID, messageId, followUp)
+            return
+        }
+
         if (followUp.type !== undefined && followUp.type === 'help') {
             this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
             this.connector.onUpdateTabType(tabID)
@@ -79,5 +85,48 @@ export class FollowUpInteractionHandler {
             this.connector.onUpdateTabType(tabID)
             return
         }
+    }
+
+    public onGumbyFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemAction) {
+        if (
+            followUp.type !== undefined &&
+            ['full-auth', 're-auth', 'missing_scopes', 'use-supported-auth'].includes(followUp.type)
+        ) {
+            this.connector.onAuthFollowUpClicked(tabID, followUp.type as AuthFollowUpType)
+            return
+        }
+        if (followUp.type !== undefined && followUp.type === 'help') {
+            this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+            this.connector.onUpdateTabType(tabID)
+            this.connector.help(tabID)
+            return
+        }
+        // we need to check if there is a prompt
+        // which will cause an api call
+        // then we can set the loading state to true
+        if (followUp.prompt !== undefined) {
+            this.mynahUI.updateStore(tabID, {
+                loadingChat: true,
+                promptInputDisabledState: true,
+            })
+            this.mynahUI.addChatItem(tabID, {
+                type: ChatItemType.PROMPT,
+                body: followUp.prompt,
+            })
+            this.mynahUI.addChatItem(tabID, {
+                type: ChatItemType.ANSWER_STREAM,
+                body: '',
+            })
+            this.tabsStorage.updateTabStatus(tabID, 'busy')
+            this.tabsStorage.resetTabTimer(tabID)
+
+            if (followUp.type !== undefined && followUp.type === 'init-prompt') {
+                this.connector.requestGenerativeAIAnswer(tabID, {
+                    chatMessage: followUp.prompt,
+                })
+                return
+            }
+        }
+        this.connector.onFollowUpClicked(tabID, messageId, followUp)
     }
 }

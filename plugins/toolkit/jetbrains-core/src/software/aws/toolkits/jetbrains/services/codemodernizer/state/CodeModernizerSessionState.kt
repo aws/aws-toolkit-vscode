@@ -17,10 +17,6 @@ import java.time.Instant
 import kotlin.io.path.Path
 
 class CodeModernizerSessionState {
-    fun setDefaults() {
-        currentJobStatus = TransformationStatus.UNKNOWN_TO_SDK_VERSION
-    }
-
     var currentJobStatus: TransformationStatus = TransformationStatus.UNKNOWN_TO_SDK_VERSION
     private val previousJobHistory = mutableMapOf<String, JobHistoryItem>()
     var currentJobCreationTime: Instant = Instant.MIN
@@ -28,6 +24,14 @@ class CodeModernizerSessionState {
     var transformationPlan: TransformationPlan? = null
     var transformationSummary: TransformationSummary? = null
     var currentJobId: JobId? = null
+
+    companion object {
+        fun getInstance(project: Project): CodeModernizerSessionState = project.service()
+    }
+
+    fun setDefaults() {
+        currentJobStatus = TransformationStatus.UNKNOWN_TO_SDK_VERSION
+    }
 
     private fun getJobModuleName(sessionContext: CodeModernizerSessionContext) = Path(sessionContext.configurationFile.path).toAbsolutePath().toString()
     fun putJobHistory(sessionContext: CodeModernizerSessionContext, status: TransformationStatus, jobId: String = "", startedAt: Instant = Instant.now()) {
@@ -50,8 +54,4 @@ class CodeModernizerSessionState {
     }
 
     fun getJobHistory(): Array<JobHistoryItem> = previousJobHistory.values.toTypedArray()
-
-    companion object {
-        fun getInstance(project: Project): CodeModernizerSessionState = project.service()
-    }
 }
