@@ -55,7 +55,7 @@ const refreshGrantType = 'refresh_token'
  *         - Interval               : Minimum time (seconds) the client SHOULD wait between polling intervals.
  *    3. Poll for the access token.
  *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
- *          - Calls {@link OidcClient.pollForToken}
+ *          - Calls {@link pollForTokenWithProgress}
  *       - RETURNS:
  *         - AccessToken
  *         - ExpiresIn
@@ -108,9 +108,9 @@ export class SsoAccessTokenProvider {
         }
     }
 
-    public async createToken(identityProvider?: (token: SsoToken) => Promise<string>): Promise<SsoToken> {
+    public async createToken(): Promise<SsoToken> {
         const access = await this.runFlow()
-        const identity = (await identityProvider?.(access.token)) ?? this.tokenCacheKey
+        const identity = this.tokenCacheKey
         await this.cache.token.save(identity, access)
         await setSessionCreationDate(this.tokenCacheKey, new Date())
 

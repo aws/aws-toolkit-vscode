@@ -15,6 +15,8 @@ import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
 import { autoScansEnabledKey, autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
+import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
+import { FolderInfo } from '../service/transformByQHandler'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -31,12 +33,15 @@ interface VsCodeState {
      * Timestamp of previous user edit
      */
     lastUserModificationTime: number
+
+    isFreeTierLimitReached: boolean
 }
 
 export const vsCodeState: VsCodeState = {
     isIntelliSenseActive: false,
     isCodeWhispererEditing: false,
     lastUserModificationTime: 0,
+    isFreeTierLimitReached: false,
 }
 
 export type UtgStrategy = 'ByName' | 'ByContent'
@@ -332,6 +337,10 @@ export class TransformByQState {
 
     private javaHome: string | undefined = undefined
 
+    private chatControllers: ChatControllerEventEmitters | undefined = undefined
+
+    private dependencyFolderInfo: FolderInfo | undefined = undefined
+
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
     }
@@ -424,6 +433,14 @@ export class TransformByQState {
         return this.javaHome
     }
 
+    public getChatControllers() {
+        return this.chatControllers
+    }
+
+    public getDependencyFolderInfo(): FolderInfo | undefined {
+        return this.dependencyFolderInfo
+    }
+
     public appendToErrorLog(message: string) {
         this.errorLog += `${message}\n\n`
     }
@@ -510,6 +527,14 @@ export class TransformByQState {
 
     public setJavaHome(javaHome: string) {
         this.javaHome = javaHome
+    }
+
+    public setChatControllers(controllers: ChatControllerEventEmitters) {
+        this.chatControllers = controllers
+    }
+
+    public setDependencyFolderInfo(folderInfo: FolderInfo) {
+        this.dependencyFolderInfo = folderInfo
     }
 
     public getPrefixTextForButton() {
