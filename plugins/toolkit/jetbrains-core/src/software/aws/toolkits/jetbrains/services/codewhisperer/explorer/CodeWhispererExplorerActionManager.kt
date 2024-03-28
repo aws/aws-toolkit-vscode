@@ -110,7 +110,7 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
     }
 
     // Adding Auto CodeScan Function
-    fun SetAutoCodeScan(project: Project, isAutoEnabledForCodeScan: Boolean) {
+    fun setAutoCodeScan(project: Project, isAutoEnabledForCodeScan: Boolean) {
         setAutoEnabledForCodeScan(isAutoEnabledForCodeScan)
         val autoCodeScanState = if (isAutoEnabledForCodeScan) CodeWhispererConstants.AutoCodeScan.ACTIVATED else CodeWhispererConstants.AutoCodeScan.DEACTIVATED
         AwsTelemetry.modifySetting(project, settingId = CodeWhispererConstants.AutoCodeScan.SETTING_ID, settingState = autoCodeScanState)

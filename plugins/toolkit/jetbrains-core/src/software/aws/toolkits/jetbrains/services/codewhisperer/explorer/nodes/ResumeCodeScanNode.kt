@@ -17,6 +17,6 @@ class ResumeCodeScanNode(nodeProject: Project) : CodeWhispererActionNode(
 ) {
 
     override fun onDoubleClick(event: MouseEvent) {
-        CodeWhispererExplorerActionManager.getInstance().SetAutoCodeScan(project, true)
+        CodeWhispererExplorerActionManager.getInstance().setAutoCodeScan(project, true)
     }
 }

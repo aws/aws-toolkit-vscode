@@ -16,6 +16,6 @@ class PauseCodeScans : DumbAwareAction(
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
 
-        CodeWhispererExplorerActionManager.getInstance().SetAutoCodeScan(project, false)
+        CodeWhispererExplorerActionManager.getInstance().setAutoCodeScan(project, false)
     }
 }

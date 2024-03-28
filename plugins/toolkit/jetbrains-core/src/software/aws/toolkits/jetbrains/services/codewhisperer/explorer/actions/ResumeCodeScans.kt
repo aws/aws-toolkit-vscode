@@ -16,6 +16,6 @@ class ResumeCodeScans : DumbAwareAction(
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
 
-        CodeWhispererExplorerActionManager.getInstance().SetAutoCodeScan(project, true)
+        CodeWhispererExplorerActionManager.getInstance().setAutoCodeScan(project, true)
     }
 }
