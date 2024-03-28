@@ -312,11 +312,11 @@ export class AuthUtil {
     private logConnection() {
         const logStr = indent(
             `codewhisperer: connection states
-            connection is valid = ${this.isConnectionValid(false)},
-            connection is valid codewhisperer core connection = ${isValidCodeWhispererCoreConnection(this.conn)},
-            connection expired = ${this.isConnectionExpired(false)},
-            secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired},
-            connection is undefined = ${this.conn === undefined}`,
+            connection isValid=${this.isConnectionValid(false)},
+            connection isValidCodewhispererCoreConnection=${isValidCodeWhispererCoreConnection(this.conn)},
+            connection isExpired=${this.isConnectionExpired(false)},
+            secondaryAuth isExpired=${this.secondaryAuth.isConnectionExpired},
+            connection isUndefined=${this.conn === undefined}`,
             4,
             true
         )
