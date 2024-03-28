@@ -14,6 +14,8 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { globals } from '../../shared'
+import { amazonQDismissedKey } from '../../codewhisperer/models/constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -25,8 +27,9 @@ export const qExtensionPageCommand = Commands.declare('aws.toolkit.amazonq.exten
     void vscode.env.openExternal(vscode.Uri.parse(`vscode:extension/${VSCODE_EXTENSION_ID.awstoolkit}`))
 })
 
-export const dismissQTree = Commands.declare('aws.toolkit.amazonq.dismiss', () => () => {
-    void vscode.commands.executeCommand('setContext', 'aws.toolkit.amazonq.dismissed', true)
+export const dismissQTree = Commands.declare('aws.toolkit.amazonq.dismiss', () => async () => {
+    await globals.context.globalState.update(amazonQDismissedKey, true)
+    await vscode.commands.executeCommand('setContext', 'aws.toolkit.amazonq.dismissed', true)
 })
 
 export const createLearnMoreNode = () =>
