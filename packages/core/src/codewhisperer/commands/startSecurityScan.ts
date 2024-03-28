@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ArtifactMap, DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { initSecurityScanRender } from '../service/diagnosticsProvider'
+import { initSecurityScanRender, initSecurityScanRenderOld, securityScanRender } from '../service/diagnosticsProvider'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import { getLogger } from '../../shared/logger'
 import { makeLogger } from '../../shared/logger/activation'
@@ -20,9 +20,11 @@ import {
     pollScanJobStatus,
     listScanResults,
     throwIfCancelled,
+    throwIfCancelledOld,
+    pollScanJobStatusOld,
 } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { codeScanState, CodeScanTelemetryEntry } from '../models/model'
+import { AggregatedCodeScanIssue, codeScanState, CodeScanTelemetryEntry } from '../models/model'
 import { openSettings } from '../../shared/settings'
 import { cancel, ok, viewSettings } from '../../shared/localizedText'
 import { statSync } from 'fs'
@@ -34,6 +36,8 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import { DependencyGraphConstants } from '../util/dependencyGraph/dependencyGraph'
 import path from 'path'
+import { ZipMetadata, ZipUtil } from '../util/zipUtil'
+import { debounce } from 'lodash'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
@@ -56,12 +60,199 @@ export function startSecurityScanWithProgress(
             cancellable: false,
         },
         async () => {
-            await startSecurityScan(securityPanelViewProvider, editor, client, context)
+            await startSecurityScan(
+                securityPanelViewProvider,
+                editor,
+                client,
+                context,
+                CodeWhispererConstants.SecurityScanType.Project
+            )
         }
     )
 }
 
+export const debounceStartSecurityScan = debounce(
+    startSecurityScan,
+    CodeWhispererConstants.autoScanDebounceDelaySeconds * 1000
+)
+
 export async function startSecurityScan(
+    securityPanelViewProvider: SecurityPanelViewProvider,
+    editor: vscode.TextEditor,
+    client: DefaultCodeWhispererClient,
+    context: vscode.ExtensionContext,
+    scanType: CodeWhispererConstants.SecurityScanType
+) {
+    /**
+     * Step 0: Initial Code Scan telemetry
+     */
+    const codeScanStartTime = performance.now()
+    let serviceInvocationStartTime = 0
+    const codeScanTelemetryEntry: CodeScanTelemetryEntry = {
+        codewhispererLanguage: runtimeLanguageContext.getLanguageContext(
+            editor.document.languageId,
+            path.extname(editor.document.fileName)
+        ).language,
+        codewhispererCodeScanSrcPayloadBytes: 0,
+        codewhispererCodeScanSrcZipFileBytes: 0,
+        codewhispererCodeScanLines: 0,
+        duration: 0,
+        contextTruncationDuration: 0,
+        artifactsUploadDuration: 0,
+        codeScanServiceInvocationsDuration: 0,
+        result: 'Succeeded',
+        codewhispererCodeScanTotalIssues: 0,
+        codewhispererCodeScanIssuesWithFixes: 0,
+        credentialStartUrl: AuthUtil.instance.startUrl,
+    }
+    try {
+        getLogger().verbose(`Starting security scan `)
+        /**
+         * Step 1: Generate zip
+         */
+        throwIfCancelled(scanType)
+        const zipUtil = new ZipUtil()
+        const zipMetadata = await zipUtil.generateZip(editor.document.uri)
+        const projectPath = zipUtil.getProjectPath(editor.document.uri)
+
+        const contextTruncationStartTime = performance.now()
+        codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
+        getLogger().verbose(`Complete project context processing.`)
+        codeScanTelemetryEntry.codewhispererCodeScanSrcPayloadBytes = zipMetadata.srcPayloadSizeInBytes
+        codeScanTelemetryEntry.codewhispererCodeScanBuildPayloadBytes = zipMetadata.buildPayloadSizeInBytes
+        codeScanTelemetryEntry.codewhispererCodeScanSrcZipFileBytes = zipMetadata.zipFileSizeInBytes
+        codeScanTelemetryEntry.codewhispererCodeScanLines = zipMetadata.lines
+
+        /**
+         * Step 2: Get presigned Url, upload and clean up
+         */
+        throwIfCancelled(scanType)
+        let artifactMap: ArtifactMap = {}
+        const uploadStartTime = performance.now()
+        try {
+            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata)
+        } catch (error) {
+            getLogger().error('Failed to upload code artifacts', error)
+            throw error
+        } finally {
+            await zipUtil.removeTmpFiles(zipMetadata)
+            codeScanTelemetryEntry.artifactsUploadDuration = performance.now() - uploadStartTime
+        }
+
+        /**
+         * Step 3:  Create scan job
+         */
+        throwIfCancelled(scanType)
+        serviceInvocationStartTime = performance.now()
+        const scanJob = await createScanJob(client, artifactMap, codeScanTelemetryEntry.codewhispererLanguage)
+        if (scanJob.status === 'Failed') {
+            throw new Error(scanJob.errorMessage)
+        }
+        getLogger().verbose(`Created security scan job.`)
+        codeScanTelemetryEntry.codewhispererCodeScanJobId = scanJob.jobId
+
+        /**
+         * Step 4:  Polling mechanism on scan job status
+         */
+        throwIfCancelled(scanType)
+        const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scanType)
+        if (jobStatus === 'Failed') {
+            throw new Error('Security scan job failed.')
+        }
+
+        /**
+         * Step 5: Process and render scan results
+         */
+        throwIfCancelled(scanType)
+        getLogger().verbose(`Security scan job succeeded and start processing result.`)
+        const securityRecommendationCollection = await listScanResults(
+            client,
+            scanJob.jobId,
+            CodeWhispererConstants.codeScanFindingsSchema,
+            projectPath
+        )
+        const { total, withFixes } = securityRecommendationCollection.reduce(
+            (accumulator, current) => ({
+                total: accumulator.total + current.issues.length,
+                withFixes: accumulator.withFixes + current.issues.filter(i => i.suggestedFixes.length > 0).length,
+            }),
+            { total: 0, withFixes: 0 }
+        )
+        codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
+        codeScanTelemetryEntry.codewhispererCodeScanIssuesWithFixes = withFixes
+        throwIfCancelled(scanType)
+        getLogger().verbose(`Security scan totally found ${total} issues. ${withFixes} of them have fixes.`)
+        if (codeScanStartTime > securityScanRender.lastUpdated) {
+            showSecurityScanResults(
+                securityPanelViewProvider,
+                securityRecommendationCollection,
+                editor,
+                context,
+                scanType,
+                zipMetadata,
+                total,
+                codeScanStartTime
+            )
+        } else {
+            getLogger().verbose('Received issues from older scan, discarding the results')
+        }
+
+        getLogger().verbose(`Security scan completed.`)
+    } catch (error) {
+        getLogger().error('Security scan failed.', error)
+        if (codeScanState.isCancelling()) {
+            codeScanTelemetryEntry.result = 'Cancelled'
+        } else {
+            errorPromptHelper(error as Error)
+            codeScanTelemetryEntry.result = 'Failed'
+        }
+
+        if (isAwsError(error)) {
+            if (
+                error.code === 'ThrottlingException' &&
+                error.message.includes(CodeWhispererConstants.throttlingMessage)
+            ) {
+                void vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReachedCodeScan)
+                // TODO: Should we set a graphical state?
+                // We shouldn't set vsCodeState.isFreeTierLimitReached here because it will hide CW and Q chat options.
+            }
+        }
+        codeScanTelemetryEntry.reason = (error as Error).message
+    } finally {
+        codeScanState.setToNotStarted()
+        codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
+        codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
+        await emitCodeScanTelemetry(editor, codeScanTelemetryEntry)
+    }
+}
+
+export function showSecurityScanResults(
+    securityPanelViewProvider: SecurityPanelViewProvider,
+    securityRecommendationCollection: AggregatedCodeScanIssue[],
+    editor: vscode.TextEditor,
+    context: vscode.ExtensionContext,
+    scanType: CodeWhispererConstants.SecurityScanType,
+    zipMetadata: ZipMetadata,
+    totalIssues: number,
+    codeScanStartTime: number
+) {
+    if (isCloud9()) {
+        securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
+        void vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
+    } else {
+        initSecurityScanRender(securityRecommendationCollection, context, editor, codeScanStartTime)
+        if (scanType === CodeWhispererConstants.SecurityScanType.Project) {
+            void vscode.commands.executeCommand('workbench.action.problems.focus')
+        }
+    }
+    populateCodeScanLogStream(zipMetadata.scannedFiles)
+    if (scanType === CodeWhispererConstants.SecurityScanType.Project) {
+        showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles, false)
+    }
+}
+
+// TODO: Remove this
+export async function startSecurityScanOld(
     securityPanelViewProvider: SecurityPanelViewProvider,
     editor: vscode.TextEditor,
     client: DefaultCodeWhispererClient,
@@ -94,7 +285,7 @@ export async function startSecurityScan(
         /**
          * Step 1: Generate context truncations
          */
-        throwIfCancelled()
+        throwIfCancelledOld()
         const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor)
         if (dependencyGraph === undefined) {
             throw new Error(`"${editor.document.languageId}" is not supported for security scan.`)
@@ -132,7 +323,7 @@ export async function startSecurityScan(
         /**
          * Step 2: Get presigned Url, upload and clean up
          */
-        throwIfCancelled()
+        throwIfCancelledOld()
         let artifactMap: ArtifactMap = {}
         const uploadStartTime = performance.now()
         try {
@@ -148,7 +339,7 @@ export async function startSecurityScan(
         /**
          * Step 3:  Create scan job
          */
-        throwIfCancelled()
+        throwIfCancelledOld()
         serviceInvocationStartTime = performance.now()
         const scanJob = await createScanJob(client, artifactMap, codeScanTelemetryEntry.codewhispererLanguage)
         if (scanJob.status === 'Failed') {
@@ -160,8 +351,8 @@ export async function startSecurityScan(
         /**
          * Step 4:  Polling mechanism on scan job status
          */
-        throwIfCancelled()
-        const jobStatus = await pollScanJobStatus(client, scanJob.jobId)
+        throwIfCancelledOld()
+        const jobStatus = await pollScanJobStatusOld(client, scanJob.jobId)
         if (jobStatus === 'Failed') {
             throw new Error('Security scan job failed.')
         }
@@ -169,7 +360,7 @@ export async function startSecurityScan(
         /**
          * Step 5: Process and render scan results
          */
-        throwIfCancelled()
+        throwIfCancelledOld()
         getLogger().verbose(`Security scan job succeeded and start processing result.`)
         const securityRecommendationCollection = await listScanResults(
             client,
@@ -186,13 +377,13 @@ export async function startSecurityScan(
         )
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
         codeScanTelemetryEntry.codewhispererCodeScanIssuesWithFixes = withFixes
-        throwIfCancelled()
+        throwIfCancelledOld()
         getLogger().verbose(`Security scan totally found ${total} issues. ${withFixes} of them have fixes.`)
         if (isCloud9()) {
             securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
             void vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
         } else {
-            initSecurityScanRender(securityRecommendationCollection, context)
+            initSecurityScanRenderOld(securityRecommendationCollection, context)
             void vscode.commands.executeCommand('workbench.action.problems.focus')
         }
         populateCodeScanLogStream(truncation.scannedFiles)

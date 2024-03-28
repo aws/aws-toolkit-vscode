@@ -219,6 +219,8 @@ export const codeScanTerraformPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 2
 
 export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
+export const fileScanPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
 export const codeScanTruncDirPrefix = 'codewhisperer_scan'
 
 export const codeScanZipExt = '.zip'
@@ -234,6 +236,33 @@ export const codeScanJobPollingIntervalSeconds = 1
 export const artifactTypeSource = 'SourceCode'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
+
+export const autoScanDebounceDelaySeconds = 2
+
+export const codewhispererDiagnosticSourceLabel = 'CodeWhisperer '
+
+// use vscode languageId here / Supported languages
+export const securityScanLanguageIds = [
+    'java',
+    'python',
+    'javascript',
+    'typescript',
+    'csharp',
+    'go',
+    'ruby',
+    'golang', // Cloud9 reports Go files with this language-id
+    'json',
+    'yaml',
+    'tf',
+    'hcl',
+    'terraform',
+    'terragrunt',
+    'packer',
+    'plaintext',
+    'jsonc',
+] as const
+
+export type SecurityScanLanguageId = (typeof securityScanLanguageIds)[number]
 
 // wait time for editor to update editor.selection.active (in milliseconds)
 export const vsCodeCursorUpdateDelay = 10

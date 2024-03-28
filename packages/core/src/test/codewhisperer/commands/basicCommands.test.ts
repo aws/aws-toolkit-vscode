@@ -49,7 +49,7 @@ import {
 } from '../../../codewhisperer/ui/codeWhispererNodes'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
-import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
+import { CodeScansState, CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 import { switchToAmazonQNode } from '../../../amazonq/explorer/amazonQChildrenNodes'
 
@@ -327,6 +327,7 @@ describe('CodeWhisperer-basicCommands', function () {
         it('shows expected quick pick items when connected', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(CodeScansState.instance, 'isScansEnabled').returns(false)
             getTestWindow().onDidShowQuickPick(e => {
                 e.assertContainsItems(
                     createAutoSuggestions(false),
@@ -349,6 +350,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
             sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
             sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
+            sinon.stub(CodeScansState.instance, 'isScansEnabled').returns(false)
 
             getTestWindow().onDidShowQuickPick(async e => {
                 e.assertContainsItems(

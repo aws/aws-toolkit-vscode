@@ -18,7 +18,7 @@ import { statSync } from 'fs'
 import {
     getPresignedUrlAndUpload,
     createScanJob,
-    pollScanJobStatus,
+    pollScanJobStatusOld,
     listScanResults,
 } from '../../codewhisperer/service/securityScanHandler'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
@@ -134,7 +134,7 @@ describe('CodeWhisperer security scan', async function () {
 
         //get job status and result
         const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
-        const jobStatus = await pollScanJobStatus(client, scanJob.jobId)
+        const jobStatus = await pollScanJobStatusOld(client, scanJob.jobId)
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
@@ -160,7 +160,7 @@ describe('CodeWhisperer security scan', async function () {
         const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
 
         //get job status and result
-        const jobStatus = await pollScanJobStatus(client, scanJob.jobId)
+        const jobStatus = await pollScanJobStatusOld(client, scanJob.jobId)
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,

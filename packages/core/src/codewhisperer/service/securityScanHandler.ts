@@ -5,7 +5,7 @@
 
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { getLogger } from '../../shared/logger'
-import { AggregatedCodeScanIssue, codeScanState, CodeScanStoppedError } from '../models/model'
+import { AggregatedCodeScanIssue, CodeScansState, codeScanState, CodeScanStoppedError } from '../models/model'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
@@ -18,6 +18,7 @@ import { ArtifactMap, CreateUploadUrlRequest, CreateUploadUrlResponse } from '..
 import { Truncation } from '../util/dependencyGraph/dependencyGraph'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import request from '../../common/request'
+import { ZipMetadata } from '../util/zipUtil'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -94,12 +95,16 @@ function mapToAggregatedList(
     })
 }
 
-export async function pollScanJobStatus(client: DefaultCodeWhispererClient, jobId: string) {
+export async function pollScanJobStatus(
+    client: DefaultCodeWhispererClient,
+    jobId: string,
+    scanType: CodeWhispererConstants.SecurityScanType
+) {
     getLogger().verbose(`Polling scan job status...`)
     let status: string = 'Pending'
     let timer: number = 0
     while (true) {
-        throwIfCancelled()
+        throwIfCancelled(scanType)
         const req: codewhispererClient.GetCodeScanRequest = {
             jobId: jobId,
         }
@@ -111,7 +116,37 @@ export async function pollScanJobStatus(client: DefaultCodeWhispererClient, jobI
             getLogger().verbose(`Complete Polling scan job status.`)
             break
         }
-        throwIfCancelled()
+        throwIfCancelled(scanType)
+        await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
+        timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
+        if (timer > CodeWhispererConstants.codeScanJobTimeoutSeconds) {
+            getLogger().verbose(`Scan job status: ${status}`)
+            getLogger().verbose(`Scan job timeout.`)
+            throw new Error('Scan job timeout.')
+        }
+    }
+    return status
+}
+
+// TODO: Remove this
+export async function pollScanJobStatusOld(client: DefaultCodeWhispererClient, jobId: string) {
+    getLogger().verbose(`Polling scan job status...`)
+    let status: string = 'Pending'
+    let timer: number = 0
+    while (true) {
+        throwIfCancelledOld()
+        const req: codewhispererClient.GetCodeScanRequest = {
+            jobId: jobId,
+        }
+        const resp = await client.getCodeScan(req)
+        getLogger().verbose(`Request id: ${resp.$response.requestId}`)
+        if (resp.status !== 'Pending') {
+            status = resp.status
+            getLogger().verbose(`Scan job status: ${status}`)
+            getLogger().verbose(`Complete Polling scan job status.`)
+            break
+        }
+        throwIfCancelledOld()
         await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
         timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
         if (timer > CodeWhispererConstants.codeScanJobTimeoutSeconds) {
@@ -141,7 +176,29 @@ export async function createScanJob(
     return resp
 }
 
-export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClient, truncation: Truncation) {
+export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClient, zipMetadata: ZipMetadata) {
+    if (zipMetadata.zipFilePath === '') {
+        throw new Error("Zip failure: can't find valid source zip.")
+    }
+    const srcReq: CreateUploadUrlRequest = {
+        contentMd5: getMd5(zipMetadata.zipFilePath),
+        artifactType: 'SourceCode',
+    }
+    getLogger().verbose(`Prepare for uploading src context...`)
+    const srcResp = await client.createUploadUrl(srcReq)
+    getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
+    getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
+    getLogger().verbose(`Uploading src context...`)
+    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp)
+    getLogger().verbose(`Complete uploading src context.`)
+    const artifactMap: ArtifactMap = {
+        SourceCode: srcResp.uploadId,
+    }
+    return artifactMap
+}
+
+// TODO: Remove this
+export async function getPresignedUrlAndUploadOld(client: DefaultCodeWhispererClient, truncation: Truncation) {
     if (truncation.zipFilePath === '') {
         throw new Error("Truncation failure: can't find valid source zip.")
     }
@@ -168,7 +225,26 @@ function getMd5(fileName: string) {
     return hasher.digest('base64')
 }
 
-export function throwIfCancelled() {
+export function throwIfCancelled(scanType: CodeWhispererConstants.SecurityScanType) {
+    switch (scanType) {
+        case CodeWhispererConstants.SecurityScanType.Project:
+            if (codeScanState.isCancelling()) {
+                throw new CodeScanStoppedError()
+            }
+            break
+        case CodeWhispererConstants.SecurityScanType.File:
+            if (!CodeScansState.instance.isScansEnabled()) {
+                throw new CodeScanStoppedError()
+            }
+            break
+        default:
+            getLogger().warn(`Unknown scan type: ${scanType}`)
+            break
+    }
+}
+
+// TODO: Remove this
+export function throwIfCancelledOld() {
     if (codeScanState.isCancelling()) {
         throw new CodeScanStoppedError()
     }
