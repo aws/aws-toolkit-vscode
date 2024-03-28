@@ -105,7 +105,7 @@ object CodeWhispererConstants {
     }
 
     object AutoCodeScan {
-        const val SETTING_ID = "codewhisperer_autoCodeScanActivation"
+        const val SETTING_ID = "codewhisperer_autoScansActivation"
         const val ACTIVATED = "Activated"
         const val DEACTIVATED = "Deactivated"
     }
