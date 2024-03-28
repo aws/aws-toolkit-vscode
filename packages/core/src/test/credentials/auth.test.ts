@@ -240,6 +240,19 @@ describe('Auth', function () {
             assert.strictEqual(actual.cause, expected)
             assert.strictEqual(auth.getConnectionState(conn), 'valid')
         })
+
+        it('connection is not invalidated when networking issue during connection refresh', async function () {
+            const networkError = new ToolkitError('test', { code: 'ETIMEDOUT' })
+            const expectedError = new ToolkitError('Failed to update connection due to networking issues', {
+                cause: networkError,
+            })
+            const conn = await auth.createConnection(ssoProfile)
+            auth.getTestTokenProvider(conn)?.getToken.rejects(networkError)
+            const actual = await auth.refreshConnectionState(conn).catch(e => e)
+            assert.ok(actual instanceof ToolkitError)
+            assert.deepStrictEqual(actual, expectedError)
+            assert.strictEqual(auth.getConnectionState(conn), 'valid')
+        })
     })
 
     describe('Linked Connections', function () {

@@ -114,11 +114,6 @@ export class ActiveStateController implements vscode.Disposable {
     }, 1000)
 
     private async _refresh(editor: vscode.TextEditor | undefined, shouldDisplay?: boolean) {
-        if (!this.container.auth.isConnectionValid(true)) {
-            this.clear(this._editor)
-            return
-        }
-
         if (!editor && !this._editor) {
             return
         }
@@ -137,6 +132,11 @@ export class ActiveStateController implements vscode.Disposable {
 
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
         if (!editor.document || !this.container.lineTracker.includes(selections)) {
+            return
+        }
+
+        if (!this.container.auth.isConnectionValid()) {
+            this.clear(this._editor)
             return
         }
 
