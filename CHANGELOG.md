@@ -1,3 +1,9 @@
+# _2.14_ (2024-03-21)
+- **(Feature)** Amazon Q + CodeWhisperer: Most Amazon Q + CodeWhisperer actions are now migrated from the AWS Toolkit panel to the Amazon Q status bar menu.
+- **(Bug Fix)** CodeCatalyst: Update status of connection in developer tools if the user connection is expired.
+- **(Bug Fix)** Respect IDE HTTP proxy server settings when using Amazon Q
+- **(Removal)** CodeTransformation: remove play button from Transformation Hub, instead use /transform in chat
+
 # _2.13_ (2024-03-13)
 - **(Feature)** CodeTransform: add button to submit feedback when job fails
 
