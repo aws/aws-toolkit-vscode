@@ -55,6 +55,7 @@ enum TelemetryType {
     ADD_CONNECTION = 'ADD_CONNECTION',
     OPEN_WFS = 'OPEN_WFS',
     CLOSE_WFS = 'CLOSE_WFS',
+    TEMPLATE_OPENED = 'TEMPLATE_OPENED',
 }
 
 export interface InitResponseMessage extends Message {

@@ -17,6 +17,7 @@ import {
     AppcomposerOpenWfs,
     AppcomposerPostProcess,
     AppcomposerRegenerateClicked,
+    AppcomposerInitializeProject,
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { getLogger } from '../../shared/logger'
@@ -60,6 +61,9 @@ export function emitTelemetryMessageHandler(message: EmitTelemetryMessage) {
                 return
             case 'CLOSE_WFS':
                 sendCloseWfs(parsedData as AppcomposerCloseWfs)
+                return
+            case 'TEMPLATE_OPENED':
+                sendInitializeProject(parsedData as AppcomposerInitializeProject)
                 return
         }
     } catch (e) {
@@ -156,5 +160,12 @@ function sendCloseWfs(metadata: AppcomposerCloseWfs) {
     telemetry.appcomposer_closeWfs.emit({
         result: metadata.result ?? 'Succeeded',
         didSave: metadata.didSave,
+    })
+}
+
+function sendInitializeProject(metadata: AppcomposerInitializeProject) {
+    telemetry.appcomposer_initializeProject.emit({
+        resourceCounts: metadata.resourceCounts,
+        totalResourceCount: metadata.totalResourceCount,
     })
 }
