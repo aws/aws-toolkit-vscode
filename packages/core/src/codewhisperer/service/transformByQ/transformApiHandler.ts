@@ -30,6 +30,7 @@ import request from '../../../common/request'
 
 import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
+import { writeLogs } from './transformFileHandler'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')

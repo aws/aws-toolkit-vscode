@@ -15,7 +15,7 @@ import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryS
 import { telemetry } from '../shared/telemetry/telemetry'
 import { CancelActionPositions } from './telemetry/codeTransformTelemetry'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
-import { validateAndLogProjectDetails } from '../codewhisperer/service/transformByQ/transformByQSharedHandler'
+import { validateAndLogProjectDetails } from '../codewhisperer/service/transformByQ/transformProjectValidationHandler'
 
 export async function activate(context: ExtContext) {
     void vscode.commands.executeCommand('setContext', 'gumby.wasQCodeTransformationUsed', false)

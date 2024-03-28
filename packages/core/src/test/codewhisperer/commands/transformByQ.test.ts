@@ -14,15 +14,6 @@ import * as CodeWhispererConstants from '../../../codewhisperer/models/constants
 import { getTestWindow } from '../../shared/vscode/window'
 import { stopTransformByQMessage } from '../../../codewhisperer/models/constants'
 import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
-import {
-    throwIfCancelled,
-    stopJob,
-    pollTransformationJob,
-    validateOpenProjects,
-    getOpenProjects,
-    getHeadersObj,
-    TransformationCandidateProject,
-} from '../../../codewhisperer/service/transformByQ/transformByQSharedHandler'
 import path from 'path'
 import { createTestWorkspaceFolder, toFile } from '../../testUtil'
 import {
@@ -30,6 +21,16 @@ import {
     NoMavenJavaProjectsFoundError,
     NoOpenProjectsError,
 } from '../../../amazonqGumby/errors'
+import { throwIfCancelled } from '../../../codewhisperer/service/securityScanHandler'
+import {
+    stopJob,
+    pollTransformationJob,
+    getHeadersObj,
+} from '../../../codewhisperer/service/transformByQ/transformApiHandler'
+import {
+    validateOpenProjects,
+    getOpenProjects,
+} from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
 
 describe('transformByQ', function () {
     afterEach(function () {
@@ -77,7 +78,7 @@ describe('transformByQ', function () {
     })
 
     it('WHEN validateProjectSelection called on non-Java project THEN throws error', async function () {
-        const dummyCandidateProjects: TransformationCandidateProject[] = [
+        const dummyCandidateProjects: model.TransformationCandidateProject[] = [
             {
                 name: 'SampleProject',
                 path: '/dummy/path/here',
@@ -94,7 +95,7 @@ describe('transformByQ', function () {
         await toFile('', dummyPath)
         const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
         findFilesStub.onFirstCall().resolves([folder.uri])
-        const dummyCandidateProjects: TransformationCandidateProject[] = [
+        const dummyCandidateProjects: model.TransformationCandidateProject[] = [
             {
                 name: 'SampleProject',
                 path: folder.uri.fsPath,
