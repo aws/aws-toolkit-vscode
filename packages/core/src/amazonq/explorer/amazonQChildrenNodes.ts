@@ -29,7 +29,7 @@ export const qExtensionPageCommand = Commands.declare('aws.toolkit.amazonq.exten
 
 export const dismissQTree = Commands.declare('aws.toolkit.amazonq.dismiss', () => async () => {
     await globals.context.globalState.update(amazonQDismissedKey, true)
-    await vscode.commands.executeCommand('setContext', 'aws.toolkit.amazonq.dismissed', true)
+    await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
 })
 
 export const createLearnMoreNode = () =>

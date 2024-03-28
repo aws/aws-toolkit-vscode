@@ -78,7 +78,7 @@ export async function activateShared(context: vscode.ExtensionContext) {
          * Note: We do not update the memento back to false, which would show the tree again if Q is uninstalled.
          * The user is already aware of Q and has tried it so no need to show it again.
          */
-        void vscode.commands.executeCommand('setContext', amazonQDismissedKey, false)
+        await vscode.commands.executeCommand('setContext', amazonQDismissedKey, false)
     }
 
     // reload webviews
