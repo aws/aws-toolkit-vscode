@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Amazon Q Feature Dev: Upload workspaces' root directories instead of /src folder"
+}

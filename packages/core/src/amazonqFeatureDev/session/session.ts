@@ -90,7 +90,7 @@ export class Session {
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
         return {
-            sourceRoots: this.config.sourceRoots,
+            workspaceRoots: this.config.workspaceRoots,
             workspaceFolders: this.config.workspaceFolders,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
