@@ -370,7 +370,7 @@ const registerToolkitApiCallbackOnce = once(async () => {
         _toolkitApi.onDidChangeConnection(
             async (connection: AwsConnection) => {
                 getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
-                await auth.updateConnectionCallback(connection)
+                await AuthUtil.instance.updateConnectionCallback(connection)
             },
 
             async (id: string) => {

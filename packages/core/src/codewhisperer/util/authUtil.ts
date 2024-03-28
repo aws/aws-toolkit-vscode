@@ -25,6 +25,7 @@ import {
     scopesFeatureDev,
     scopesGumby,
     isIdcSsoConnection,
+    AwsConnection,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
@@ -180,6 +181,16 @@ export class AuthUtil {
      */
     public async deletionConnectionCallback(id: string) {
         await this.secondaryAuth.onDeleteConnection(id)
+        await this.setVscodeContextProps()
+        await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+    }
+
+    /* Callback used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
+     ** 1. NO event should be emitted from this deletion
+     ** 2. Should update the context key to update UX
+     */
+    public async updateConnectionCallback(connection: AwsConnection) {
+        await this.auth.onConnectionUpdate(connection)
         await this.setVscodeContextProps()
         await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }

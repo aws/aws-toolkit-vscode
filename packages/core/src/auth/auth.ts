@@ -929,7 +929,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     // Used by Amazon Q to update connection status & scope when this connection is updated by AWS Toolkit
     // do not create connection in Q for each change event from Toolkit
-    public async updateConnectionCallback(connection: AwsConnection) {
+    public async onConnectionUpdate(connection: AwsConnection) {
         const conn = await this.getConnection({ id: connection.id })
         if (conn) {
             const profile = {
