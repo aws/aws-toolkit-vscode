@@ -76,6 +76,24 @@ export class ContentLengthError extends ToolkitError {
     }
 }
 
+export class PlanIterationLimitError extends ToolkitError {
+    constructor() {
+        super(
+            'You have reached the free tier limit for number of iterations on an implementation plan. Please proceed to generating code or start to discuss a new plan.',
+            { code: 'PlanIterationLimitError' }
+        )
+    }
+}
+
+export class CodeIterationLimitError extends ToolkitError {
+    constructor() {
+        super(
+            'You have reached the free tier limit for number of iterations on a code generation. Please proceed to accept the code or start a new conversation.',
+            { code: 'CodeIterationLimitError' }
+        )
+    }
+}
+
 export class UnknownApiError extends ToolkitError {
     constructor(message: string, api: string) {
         super(message, { code: `${api}-Unknown` })
