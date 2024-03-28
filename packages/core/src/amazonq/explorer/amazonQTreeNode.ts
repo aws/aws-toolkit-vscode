@@ -54,10 +54,8 @@ export class AmazonQNode implements TreeNode {
     }
 
     private getDescription(): string {
-        void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionValid()) {
             if (AuthUtil.instance.isEnterpriseSsoInUse()) {
-                void vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
                 return 'IAM Identity Center Connected'
             } else if (AuthUtil.instance.isBuilderIdInUse()) {
                 return 'AWS Builder ID Connected'

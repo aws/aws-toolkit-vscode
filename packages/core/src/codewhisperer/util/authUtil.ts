@@ -32,7 +32,8 @@ import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { GlobalState } from '../../shared/globalState'
 import { vsCodeState } from '../models/model'
-import { once } from '../../shared/utilities/functionUtils'
+import { onceChanged, once } from '../../shared/utilities/functionUtils'
+import { indent } from '../../shared/utilities/textUtilities'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -80,6 +81,7 @@ interface HasAlreadySeenQWelcome {
 
 export class AuthUtil {
     static #instance: AuthUtil
+    protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
 
     private reauthenticatePromptShown: boolean = false
     private _isCustomizationFeatureEnabled: boolean = false
@@ -308,31 +310,42 @@ export class AuthUtil {
         return this.conn.getCredentials()
     }
 
-    public isConnectionValid(): boolean {
+    public isConnectionValid(log: boolean = true): boolean {
         const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
-        if (connectionValid === false) {
-            getLogger().debug(`codewhisperer: Connection is valid = ${connectionValid}, 
-                            connection is undefined = ${this.conn === undefined},
-                            secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired}`)
+
+        if (log) {
+            this.logConnection()
         }
 
         return connectionValid
     }
 
-    public isConnectionExpired(): boolean {
+    public isConnectionExpired(log: boolean = true): boolean {
         const connectionExpired =
             this.secondaryAuth.isConnectionExpired &&
             this.conn !== undefined &&
             isValidCodeWhispererCoreConnection(this.conn)
-        getLogger().info(`codewhisperer: Connection expired = ${connectionExpired},
-                           secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired},
-                           connection is undefined = ${this.conn === undefined}`)
-        if (this.conn) {
-            getLogger().info(
-                `codewhisperer: isValidCodeWhispererConnection = ${isValidCodeWhispererCoreConnection(this.conn)}`
-            )
+
+        if (log) {
+            this.logConnection()
         }
+
         return connectionExpired
+    }
+
+    private logConnection() {
+        const logStr = indent(
+            `codewhisperer: connection states
+            connection isValid=${this.isConnectionValid(false)},
+            connection isValidCodewhispererCoreConnection=${isValidCodeWhispererCoreConnection(this.conn)},
+            connection isExpired=${this.isConnectionExpired(false)},
+            secondaryAuth isExpired=${this.secondaryAuth.isConnectionExpired},
+            connection isUndefined=${this.conn === undefined}`,
+            4,
+            true
+        )
+
+        AuthUtil.logIfChanged(logStr)
     }
 
     public async reauthenticate(addMissingScopes: boolean = false) {
