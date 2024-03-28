@@ -274,4 +274,13 @@ export class SecondaryAuth<T extends Connection = Connection> {
             return conn
         }
     }
+
+    // Used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
+    // NO event should be emitted from this deletion
+    public async deletionConnectionCallback(id: string) {
+        await this.auth.deletionConnectionCallback(id)
+        await this.memento.update(this.key, undefined)
+        this.#savedConnection = undefined
+        this.#activeConnection = undefined
+    }
 }
