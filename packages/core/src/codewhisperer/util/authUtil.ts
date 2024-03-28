@@ -289,7 +289,7 @@ export class AuthUtil {
     public isConnectionValid(): boolean {
         const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
 
-        this.logCnnection()
+        this.logConnection()
 
         return connectionValid
     }
@@ -300,12 +300,12 @@ export class AuthUtil {
             this.conn !== undefined &&
             isValidCodeWhispererCoreConnection(this.conn)
 
-        this.logCnnection()
+        this.logConnection()
 
         return connectionExpired
     }
 
-    private logCnnection() {
+    private logConnection() {
         const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
         const connectionExpired =
             this.secondaryAuth.isConnectionExpired &&
