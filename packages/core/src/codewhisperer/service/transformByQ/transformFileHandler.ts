@@ -2,11 +2,11 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { FolderInfo, transformByQState, TransformByQStoppedError } from '../../models/model'
-import * as CodeWhispererConstants from '../../models/constants'
-import * as fs from 'fs-extra'
+import { existsSync, writeFileSync } from 'fs'
 import * as path from 'path'
 import * as os from 'os'
+import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
+import * as CodeWhispererConstants from '../../models/constants'
 
 export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
@@ -19,12 +19,14 @@ export function getDependenciesFolderInfo(): FolderInfo {
 
 export async function writeLogs() {
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
-    fs.writeFileSync(logFilePath, transformByQState.getErrorLog())
+    writeFileSync(logFilePath, transformByQState.getErrorLog())
     return logFilePath
 }
 
-export function throwIfCancelled() {
-    if (transformByQState.isCancelled()) {
-        throw new TransformByQStoppedError()
+export async function checkBuildSystem(projectPath: string) {
+    const mavenBuildFilePath = path.join(projectPath, 'pom.xml')
+    if (existsSync(mavenBuildFilePath)) {
+        return BuildSystem.Maven
     }
+    return BuildSystem.Unknown
 }

@@ -5,17 +5,17 @@
 
 import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
-import { TransformationHubViewProvider } from '../codewhisperer/service/transformation/transformationHubViewProvider'
+import { TransformationHubViewProvider } from '../codewhisperer/service/transformByQ/transformationHubViewProvider'
 import { ExtContext } from '../shared/extensions'
 import { stopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
-import { ProposedTransformationExplorer } from '../codewhisperer/service/transformation/transformationResultsViewProvider'
+import { ProposedTransformationExplorer } from '../codewhisperer/service/transformByQ/transformationResultsViewProvider'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { CancelActionPositions } from './telemetry/codeTransformTelemetry'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
-import { validateAndLogProjectDetails } from '../codewhisperer/service/transformation/transformByQSharedHandler'
+import { validateAndLogProjectDetails } from '../codewhisperer/service/transformByQ/transformByQSharedHandler'
 
 export async function activate(context: ExtContext) {
     void vscode.commands.executeCommand('setContext', 'gumby.wasQCodeTransformationUsed', false)

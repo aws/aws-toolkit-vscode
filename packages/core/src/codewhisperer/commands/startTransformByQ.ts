@@ -15,13 +15,10 @@ import {
     TransformByQReviewStatus,
     JDKVersion,
     sessionPlanProgress,
+    FolderInfo,
+    TransformationCandidateProject,
 } from '../models/model'
 import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
-import {
-    throwIfCancelled,
-    writeLogs,
-    getDependenciesFolderInfo,
-} from '../service/transformation/transformByQSharedHandler'
 import {
     startJob,
     stopJob,
@@ -29,9 +26,10 @@ import {
     getTransformationPlan,
     zipCode,
     pollTransformationJob,
-} from '../service/transformation/transformByQApiHandler'
-import { getOpenProjects, validateOpenProjects } from '../service/transformation/transformByQValidationHandler'
-import { getVersionData, prepareProjectDependencies } from '../service/transformation/transformByQMavenHandler'
+    throwIfCancelled,
+} from '../service/transformByQ/transformApiHandler'
+import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
+import { getVersionData, prepareProjectDependencies } from '../service/transformByQ/transformMavenHandler'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML, getStringHash } from '../../shared/utilities/textUtilities'
@@ -53,6 +51,7 @@ import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
+import { getDependenciesFolderInfo, writeLogs } from '../service/transformByQ/transformFileHandler'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')

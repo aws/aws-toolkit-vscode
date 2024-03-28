@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TransformationCandidateProject } from '../../../codewhisperer/service/transformation/transformByQSharedHandler'
+import { TransformationCandidateProject } from '../../../codewhisperer/service/transformByQ/transformByQSharedHandler'
 
 export enum ConversationState {
     IDLE,

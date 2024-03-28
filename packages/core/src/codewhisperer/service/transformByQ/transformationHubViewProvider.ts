@@ -7,9 +7,9 @@ import * as vscode from 'vscode'
 import globals from '../../../shared/extensionGlobals'
 import { getJobHistory, getPlanProgress } from '../../commands/startTransformByQ'
 import { StepProgress, transformByQState } from '../../models/model'
-import { getTransformationSteps } from './transformByQSharedHandler'
 import { convertToTimeString } from '../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../shared/logger'
+import { getTransformationSteps } from './transformApiHandler'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'

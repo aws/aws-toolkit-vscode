@@ -10,7 +10,7 @@ import {
     DiffModel,
     AddedChangeNode,
     ModifiedChangeNode,
-} from '../../../codewhisperer/service/transformation/transformationResultsViewProvider'
+} from '../../../codewhisperer/service/transformByQ/transformationResultsViewProvider'
 import path from 'path'
 
 const getTestFilePath = (relativePathToFile: string) => {

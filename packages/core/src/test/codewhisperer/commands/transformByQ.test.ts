@@ -22,7 +22,7 @@ import {
     getOpenProjects,
     getHeadersObj,
     TransformationCandidateProject,
-} from '../../../codewhisperer/service/transformation/transformByQSharedHandler'
+} from '../../../codewhisperer/service/transformByQ/transformByQSharedHandler'
 import path from 'path'
 import { createTestWorkspaceFolder, toFile } from '../../testUtil'
 import {

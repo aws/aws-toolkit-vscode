@@ -26,7 +26,7 @@ import {
 } from '../../views/connector/connector'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import MessengerUtils, { ButtonActions } from './messengerUtils'
-import { TransformationCandidateProject } from '../../../../codewhisperer/service/transformation/transformByQSharedHandler'
+import { TransformationCandidateProject } from '../../../../codewhisperer/service/transformByQ/transformByQSharedHandler'
 
 export type StaticTextResponseType =
     | 'transform'

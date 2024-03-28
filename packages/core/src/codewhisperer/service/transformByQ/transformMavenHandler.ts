@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
+import { FolderInfo, transformByQState } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
@@ -11,9 +11,8 @@ import { CodeTransformMavenBuildCommand, telemetry } from '../../../shared/telem
 import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { ToolkitError } from '../../../shared/errors'
-import path from 'path'
-import { throwIfCancelled, writeLogs } from './transformByQSharedHandler'
-import { existsSync } from 'fs'
+import { throwIfCancelled } from '../securityScanHandler'
+import { writeLogs } from './transformFileHandler'
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 function installProjectDependencies(dependenciesFolder: FolderInfo) {
@@ -150,14 +149,6 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies succeeded`)
     }
-}
-
-export async function checkBuildSystem(projectPath: string) {
-    const mavenBuildFilePath = path.join(projectPath, 'pom.xml')
-    if (existsSync(mavenBuildFilePath)) {
-        return BuildSystem.Maven
-    }
-    return BuildSystem.Unknown
 }
 
 export async function prepareProjectDependencies(dependenciesFolder: FolderInfo) {

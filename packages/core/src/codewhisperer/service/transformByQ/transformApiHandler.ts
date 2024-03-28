@@ -30,12 +30,17 @@ import request from '../../../common/request'
 
 import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
-import { throwIfCancelled, writeLogs } from './transformByQSharedHandler'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
     hasher.update(buffer)
     return hasher.digest('base64')
+}
+
+export function throwIfCancelled() {
+    if (transformByQState.isCancelled()) {
+        throw new TransformByQStoppedError()
+    }
 }
 
 export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {

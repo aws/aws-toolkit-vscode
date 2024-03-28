@@ -4,11 +4,7 @@
  */
 
 import assert from 'assert'
-import {
-    getSha256,
-    uploadArtifactToS3,
-    zipCode,
-} from '../../codewhisperer/service/transformation/transformByQApiHandler'
+import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQ/transformApiHandler'
 import request from '../../common/request'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'

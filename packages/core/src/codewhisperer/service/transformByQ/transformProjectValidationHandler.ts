@@ -20,7 +20,7 @@ import {
     NoMavenJavaProjectsFoundError,
     NoOpenProjectsError,
 } from '../../../amazonqGumby/errors'
-import { checkBuildSystem } from './transformByQMavenHandler'
+import { checkBuildSystem } from './transformFileHandler'
 
 // log project details silently
 export async function validateAndLogProjectDetails() {
