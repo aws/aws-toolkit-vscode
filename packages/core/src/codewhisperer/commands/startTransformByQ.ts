@@ -19,21 +19,19 @@ import {
 import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     throwIfCancelled,
+    writeLogs,
+    getDependenciesFolderInfo,
+} from '../service/transformation/transformByQSharedHandler'
+import {
     startJob,
     stopJob,
     uploadPayload,
     getTransformationPlan,
     zipCode,
     pollTransformationJob,
-    getOpenProjects,
-    getVersionData,
-    validateOpenProjects,
-    writeLogs,
-    TransformationCandidateProject,
-    getDependenciesFolderInfo,
-    FolderInfo,
-    prepareProjectDependencies,
-} from '../service/transformByQHandler'
+} from '../service/transformation/transformByQApiHandler'
+import { getOpenProjects, validateOpenProjects } from '../service/transformation/transformByQValidationHandler'
+import { getVersionData, prepareProjectDependencies } from '../service/transformation/transformByQMavenHandler'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML, getStringHash } from '../../shared/utilities/textUtilities'
