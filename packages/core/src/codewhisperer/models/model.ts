@@ -16,7 +16,6 @@ import globals from '../../shared/extensionGlobals'
 import { autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
-import { FolderInfo } from '../service/transformByQHandler'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -644,4 +643,15 @@ export enum Cloud9AccessState {
     NoAccess,
     RequestedAccess,
     HasAccess,
+}
+
+export interface TransformationCandidateProject {
+    name: string
+    path: string
+    JDKVersion?: JDKVersion
+}
+
+export interface FolderInfo {
+    path: string
+    name: string
 }

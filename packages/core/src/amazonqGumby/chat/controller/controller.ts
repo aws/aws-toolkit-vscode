@@ -22,10 +22,9 @@ import {
     stopTransformByQ,
     validateCanCompileProject,
 } from '../../../codewhisperer/commands/startTransformByQ'
-import { JDKVersion, transformByQState } from '../../../codewhisperer/models/model'
+import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
 import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
-import { TransformationCandidateProject } from '../../../codewhisperer/service/transformByQHandler'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import fs from 'fs'
 import path from 'path'

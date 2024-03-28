@@ -15,26 +15,22 @@ import {
     TransformByQReviewStatus,
     JDKVersion,
     sessionPlanProgress,
+    FolderInfo,
+    TransformationCandidateProject,
     TransformByQStatus,
 } from '../models/model'
 import { convertToTimeString, convertDateToTimestamp, getStringHash } from '../../shared/utilities/textUtilities'
 import {
-    throwIfCancelled,
     startJob,
     stopJob,
     uploadPayload,
     getTransformationPlan,
     zipCode,
     pollTransformationJob,
-    getOpenProjects,
-    getVersionData,
-    validateOpenProjects,
-    writeLogs,
-    TransformationCandidateProject,
-    getDependenciesFolderInfo,
-    FolderInfo,
-    prepareProjectDependencies,
-} from '../service/transformByQHandler'
+    throwIfCancelled,
+} from '../service/transformByQ/transformApiHandler'
+import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
+import { getVersionData, prepareProjectDependencies } from '../service/transformByQ/transformMavenHandler'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
@@ -67,6 +63,7 @@ import {
 } from '../service/amazonQGumby/humanInTheLoopHandler'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
+import { getDependenciesFolderInfo, writeLogs } from '../service/transformByQ/transformFileHandler'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
