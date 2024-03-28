@@ -425,7 +425,7 @@ describe('DevSetting', function () {
 })
 
 describe('PromptSetting', function () {
-    const promptSettingKey = 'aws.suppressPrompts'
+    const promptSettingKey = 'aws.toolkit.suppressPrompts'
     const target = vscode.ConfigurationTarget.Workspace
 
     let settings: Settings

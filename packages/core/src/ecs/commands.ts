@@ -82,7 +82,7 @@ export async function toggleExecuteCommandFlag(
     await service.toggleExecuteCommand()
 }
 
-export const runCommandInContainer = Commands.register('aws.ecs.runCommandInContainer', (obj?: unknown) => {
+export const runCommandInContainer = Commands.declare('aws.ecs.runCommandInContainer', () => (obj?: unknown) => {
     return telemetry.ecs_runExecuteCommand.run(async span => {
         span.record({ ecsExecuteCommandType: 'command' })
 
@@ -130,7 +130,7 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
     })
 })
 
-export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal', (obj?: unknown) => {
+export const openTaskInTerminal = Commands.declare('aws.ecs.openTaskInTerminal', () => (obj?: unknown) => {
     return telemetry.ecs_runExecuteCommand.run(async span => {
         span.record({ ecsExecuteCommandType: 'shell' })
 

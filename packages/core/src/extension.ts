@@ -38,8 +38,6 @@ import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './redshift/activation'
-import { activate as activateCWChat } from './amazonq/activation'
-import { activate as activateQGumby } from './amazonqGumby/activation'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
@@ -50,9 +48,18 @@ import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
-import { initializeNetworkAgent } from './codewhisperer/client/agent'
 import { submitFeedback } from './feedback/vue/submitFeedback'
 import { activateShared, deactivateShared } from './extensionShared'
+import {
+    learnMoreAmazonQCommand,
+    qExtensionPageCommand,
+    dismissQTree,
+    switchToAmazonQCommand,
+} from './amazonq/explorer/amazonQChildrenNodes'
+import { AuthUtil, isPreviousQUser } from './codewhisperer/util/authUtil'
+import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
+import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
+import { Commands } from './shared/vscode/commands2'
 
 let localize: nls.LocalizeFunc
 
@@ -70,7 +77,6 @@ export async function activate(context: vscode.ExtensionContext) {
         // IMPORTANT: If you are doing setup that should also work in web mode (browser), it should be done in the function below
         const extContext = await activateShared(context)
 
-        initializeNetworkAgent()
         initializeCredentialsProviderManager()
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
@@ -117,6 +123,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
+        // MUST restore CW/Q auth so that we can see if this user is already a Q user.
+        await AuthUtil.instance.restore()
+
+        // Enable an internal command so that the Q/CW standalone extension can let the
+        // Toolkit view know what connection state it is in.
+        Commands.register('_aws.toolkit.auth.restore', async () => {
+            void vscode.commands.executeCommand('aws.amazonq.refresh')
+        })
+
         await activateAwsExplorer({
             context: extContext,
             regionProvider: globals.regionProvider,
@@ -155,8 +170,30 @@ export async function activate(context: vscode.ExtensionContext) {
 
         if (!isCloud9()) {
             if (!isSageMaker()) {
-                await activateCWChat(extContext.extensionContext)
-                await activateQGumby(extContext)
+                // Amazon Q/CodeWhisperer Tree setup.
+                learnMoreAmazonQCommand.register()
+                qExtensionPageCommand.register()
+                dismissQTree.register()
+                switchToAmazonQCommand.register()
+                installAmazonQExtension.register()
+
+                if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) && isPreviousQUser()) {
+                    void vscode.window
+                        .showInformationMessage(
+                            'Amazon Q has moved to its own VSCode extension.' +
+                                '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
+                            'Install',
+                            'Learn More',
+                            'Dismiss'
+                        )
+                        .then(async resp => {
+                            if (resp === 'Learn More') {
+                                void learnMoreAmazonQCommand.execute()
+                            } else if (resp === 'Install') {
+                                void installAmazonQExtension.execute()
+                            }
+                        })
+                }
             }
             await activateApplicationComposer(context)
         }

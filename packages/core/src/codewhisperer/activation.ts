@@ -40,6 +40,7 @@ import {
     signoutCodeWhisperer,
     showManageCwConnections,
     fetchFeatureConfigsCmd,
+    registerToolkitApiCallback,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -69,6 +70,8 @@ export async function activate(context: ExtContext): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
     const auth = AuthUtil.instance
+    auth.initCodeWhispererHooks()
+
     /**
      * Enable essential intellisense default settings for AWS C9 IDE
      */
@@ -100,6 +103,8 @@ export async function activate(context: ExtContext): Promise<void> {
     ImportAdderProvider.instance
 
     context.extensionContext.subscriptions.push(
+        // register toolkit api callback
+        registerToolkitApiCallback.register(),
         signoutCodeWhisperer.register(auth),
         showManageCwConnections.register(),
         /**
@@ -457,6 +462,7 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
+    await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
     container.ready()
 }
 

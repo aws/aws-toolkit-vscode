@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CodewhispererCodeScanIssueApplyFix, Component, telemetry } from '../../shared/telemetry/telemetry'
-import { ExtContext } from '../../shared/extensions'
+import { ExtContext, VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
@@ -15,10 +15,10 @@ import { CodeScanIssue, codeScanState, CodeSuggestionsState, vsCodeState } from 
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
-import { AuthUtil } from '../util/authUtil'
+import { AuthUtil, getChatAuthState } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
-import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
     getPersistedCustomizations,
     notifyNewCustomizations,
@@ -30,8 +30,10 @@ import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/se
 import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
-import { showManageConnections } from '../../auth/ui/vue/show'
+import { getShowManageConnections } from '../../auth/ui/vue/show'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
+import { Auth, AwsConnection } from '../../auth'
+import { once } from '../../shared/utilities/functionUtils'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -130,7 +132,7 @@ export const reconnect = Commands.declare(
 export const showManageCwConnections = Commands.declare(
     { id: 'aws.codewhisperer.manageConnections', compositeKey: { 1: 'source' } },
     () => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        return showManageConnections.execute(_, source, 'codewhisperer')
+        return getShowManageConnections().execute(_, source, 'codewhisperer')
     }
 )
 
@@ -243,6 +245,27 @@ export const fetchFeatureConfigsCmd = Commands.declare(
     }
 )
 
+/**
+ * TODO: Actually install Amazon Q.
+ *
+ * For now, it just has a fake progress bar to simulate that it is installing.
+ */
+export const installAmazonQExtension = Commands.declare(
+    { id: 'aws.toolkit.installAmazonQExtension', logging: true },
+    () => async () => {
+        void vscode.window.withProgress(
+            {
+                title: 'Installing Amazon Q... (placeholder)',
+                cancellable: true,
+                location: vscode.ProgressLocation.Notification,
+            },
+            async () => {
+                await new Promise(r => setTimeout(r, 5000))
+            }
+        )
+    }
+)
+
 export const applySecurityFix = Commands.declare(
     'aws.codeWhisperer.applySecurityFix',
     () => async (issue: CodeScanIssue, filePath: string, source: Component) => {
@@ -303,5 +326,79 @@ export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.codewhisperer.signout', compositeKey: { 1: 'source' } },
     (auth: AuthUtil) => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         return auth.secondaryAuth.deleteConnection()
+    }
+)
+
+let _toolkitApi: any = undefined
+
+const registerToolkitApiCallbackOnce = once(async () => {
+    getLogger().info(`toolkitApi: Registering callbacks of toolkit api`)
+    const auth = Auth.instance
+    auth.onDidChangeActiveConnection(async () => {
+        await vscode.commands.executeCommand('_aws.toolkit.auth.restore', (await getChatAuthState()).codewhispererChat)
+    })
+    auth.onDidChangeConnectionState(async e => {
+        await vscode.commands.executeCommand('_aws.toolkit.auth.restore', (await getChatAuthState()).codewhispererChat)
+        // when changing connection state in Q, also change connection state in toolkit
+        if (_toolkitApi && 'setConnection' in _toolkitApi) {
+            const id = e.id
+            const conn = await auth.getConnection({ id })
+            if (conn && conn.type === 'sso') {
+                getLogger().info(`toolkitApi: set connection ${id}`)
+                await _toolkitApi.setConnection({
+                    type: conn.type,
+                    ssoRegion: conn.ssoRegion,
+                    scopes: conn.scopes,
+                    startUrl: conn.startUrl,
+                    state: e.state,
+                    id: id,
+                    label: conn.label,
+                } as AwsConnection)
+            }
+        }
+    })
+    // when deleting connection in Q, also delete same connection in toolkit
+    auth.onDidDeleteConnection(async id => {
+        if (_toolkitApi && 'deleteConnection' in _toolkitApi) {
+            getLogger().info(`toolkitApi: delete connection ${id}`)
+            await _toolkitApi.deleteConnection(id)
+        }
+    })
+
+    // when toolkit connection changes
+    if (_toolkitApi && 'onDidChangeConnection' in _toolkitApi) {
+        _toolkitApi.onDidChangeConnection(
+            async (connection: AwsConnection) => {
+                getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
+                await AuthUtil.instance.onUpdateConnection(connection)
+            },
+
+            async (id: string) => {
+                getLogger().info(`toolkitApi: connection delete callback ${id}`)
+                await AuthUtil.instance.onDeleteConnection(id)
+            }
+        )
+    }
+})
+export const registerToolkitApiCallback = Commands.declare(
+    { id: 'aws.amazonq.refreshConnectionCallback' },
+    () => async (toolkitApi?: any) => {
+        // While the Q/CW exposes an API for the Toolkit to register callbacks on auth changes,
+        // we need to do it manually here because the Toolkit would have been unable to call
+        // this API if the Q/CW extension started afterwards (and this code block is running).
+        if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
+            getLogger().info(`Trying to register toolkit callback. Toolkit is installed.`)
+            if (toolkitApi) {
+                // when this command is executed by AWS Toolkit activation
+                _toolkitApi = toolkitApi
+            } else {
+                // when this command is executed by Amazon Q activation
+                const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+                _toolkitApi = toolkitExt?.exports
+            }
+            if (_toolkitApi) {
+                await registerToolkitApiCallbackOnce()
+            }
+        }
     }
 )
