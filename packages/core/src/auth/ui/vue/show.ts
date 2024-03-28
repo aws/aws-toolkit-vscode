@@ -739,6 +739,7 @@ export function registerCommands(context: vscode.ExtensionContext, prefix: strin
 
             // TODO: hack
             if (prefix === 'toolkit') {
+                await vscode.commands.executeCommand('aws.explorer.setLoginService', serviceToShow)
                 await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
                 await vscode.commands.executeCommand('aws.toolkit.AmazonCommonAuth.focus')
             }

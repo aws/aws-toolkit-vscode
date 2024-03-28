@@ -160,6 +160,11 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             webviewOptions: {
                 retainContextWhenHidden: true,
             },
+        }),
+        vscode.commands.registerCommand('aws.explorer.setLoginService', (serviceToShow?: string) => {
+            if (toolkitAuthProvider.webView && 'setLoginService' in toolkitAuthProvider.webView.server) {
+                toolkitAuthProvider.webView.server.setLoginService(serviceToShow)
+            }
         })
     )
 }
