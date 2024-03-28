@@ -174,6 +174,15 @@ export class AuthUtil {
         }
     }
 
+    /* Callback used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
+     ** 1. NO event should be emitted from this deletion
+     ** 2. Should update the context key to update UX
+     */
+    public async deletionConnectionCallback(id: string) {
+        await this.secondaryAuth.deletionConnectionCallback(id)
+        await this.setVscodeContextProps()
+    }
+
     public reformatStartUrl(startUrl: string | undefined) {
         return !startUrl ? undefined : startUrl.replace(/[\/#]+$/g, '')
     }

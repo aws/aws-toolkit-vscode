@@ -375,7 +375,7 @@ const registerToolkitApiCallbackOnce = once(async () => {
 
             async (id: string) => {
                 getLogger().info(`toolkitApi: connection delete callback ${id}`)
-                await auth.deletionConnectionCallback(id)
+                await AuthUtil.instance.deletionConnectionCallback(id)
             }
         )
     }
