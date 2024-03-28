@@ -756,8 +756,8 @@
         >
             <add-to-group
                 group-id="EditorPopupMenu"
-                anchor="after"
-                relative-to-action="ShowIntentionsGroup"
+                anchor="last"
+
             />
 
             <action id="aws.toolkit.jetbrains.core.services.cwc.commands.ExplainCodeAction"
