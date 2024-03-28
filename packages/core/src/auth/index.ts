@@ -5,5 +5,5 @@
 
 export { initialize as initializeAuth } from './activation'
 export { initializeAwsCredentialsStatusBarItem } from './ui/statusBarItem'
-export { Connection } from './connection'
+export { Connection, AwsConnection } from './connection'
 export { Auth } from './auth'

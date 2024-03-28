@@ -14,7 +14,7 @@ import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
 import { CodeWhispererSettings } from './util/codewhispererSettings'
-import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { ExtContext } from '../shared/extensions'
 import { TextEditorSelectionChangeKind } from 'vscode'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
 import * as codewhispererClient from './client/codewhisperer'
@@ -40,6 +40,7 @@ import {
     signoutCodeWhisperer,
     showManageCwConnections,
     fetchFeatureConfigsCmd,
+    registerToolkitApiCallback,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -52,10 +53,10 @@ import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2
 import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
-import { AuthUtil, getChatAuthState } from './util/authUtil'
+import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
-import { isExtensionInstalled, openUrl } from '../shared/utilities/vsCodeUtils'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
@@ -102,6 +103,8 @@ export async function activate(context: ExtContext): Promise<void> {
     ImportAdderProvider.instance
 
     context.extensionContext.subscriptions.push(
+        // register toolkit api callback
+        registerToolkitApiCallback.register(),
         signoutCodeWhisperer.register(auth),
         showManageCwConnections.register(),
         /**
@@ -266,28 +269,6 @@ export async function activate(context: ExtContext): Promise<void> {
     )
 
     await auth.restore()
-
-    // While the Q/CW exposes an API for the Toolkit to register callbacks on auth changes,
-    // we need to do it manually here because the Toolkit would have been unable to call
-    // this API if the Q/CW extension started afterwards (and this code block is running).
-    if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
-        auth.auth.onDidChangeActiveConnection(async () => {
-            await vscode.commands.executeCommand(
-                '_aws.toolkit.auth.restore',
-                (
-                    await getChatAuthState()
-                ).codewhispererChat
-            )
-        })
-        auth.auth.onDidChangeConnectionState(async e => {
-            await vscode.commands.executeCommand(
-                '_aws.toolkit.auth.restore',
-                (
-                    await getChatAuthState()
-                ).codewhispererChat
-            )
-        })
-    }
 
     if (auth.isConnectionExpired()) {
         auth.showReauthenticatePrompt().catch(e => {
@@ -481,6 +462,7 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
+    await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
     container.ready()
 }
 

@@ -58,6 +58,7 @@ import {
     loadIamProfilesIntoStore,
     loadLinkedProfilesIntoStore,
     scopesSsoAccountAccess,
+    AwsConnection,
 } from './connection'
 import { isSageMaker, isCloud9 } from '../shared/extensionUtilities'
 
@@ -890,14 +891,80 @@ export class Auth implements AuthService, ConnectionManager {
             : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
     }
 
-    public async createConnectionFromProfile(connection: Connection, profile: SsoProfile) {
-        const id = uuid.v4()
-        getLogger().info(`Creating new connection ${id} from existing connection ${connection.id}`)
+    // Used by Amazon Q to re-use connection from AWS Toolkit listConnection API response
+    public async createConnectionFromApi(connection: AwsConnection) {
+        getLogger().info(`Reusing connection ${connection.id}`)
+        const profile = {
+            type: connection.type,
+            ssoRegion: connection.ssoRegion,
+            scopes: connection.scopes,
+            startUrl: connection.startUrl,
+        } as SsoProfile
+        const id = connection.id
         const storedProfile = await this.store.addProfile(id, profile)
-        await this.updateConnectionState(id, 'valid')
-        const provider = this.getSsoTokenProvider(id, storedProfile)
-        await provider.duplicateToken(connection.id, id)
+        await this.updateConnectionState(id, connection.state)
         return this.getSsoConnection(id, storedProfile)
+    }
+
+    // Used by AWS Toolkit to update connection status & scope when this connection is updated by Amazon Q
+    // If such connection does not exist, create one with same id.
+    // Otherwise, update its scope and/or state.
+    public async setConnectionFromApi(connection: AwsConnection) {
+        getLogger().info(`Set connection ${connection.id} from API`)
+        const id = connection.id
+        const profile = this.store.getProfile(connection.id)
+        const newProfile = {
+            type: connection.type,
+            ssoRegion: connection.ssoRegion,
+            scopes: connection.scopes,
+            startUrl: connection.startUrl,
+        } as SsoProfile
+        if (profile === undefined) {
+            await this.store.addProfile(id, newProfile)
+        } else {
+            await this.store.updateProfile(connection.id, newProfile)
+        }
+        await this.updateConnectionState(id, connection.state)
+    }
+
+    // Used by Amazon Q to update connection status & scope when this connection is updated by AWS Toolkit
+    // do not create connection in Q for each change event from Toolkit
+    public async updateConnectionCallback(connection: AwsConnection) {
+        const conn = await this.getConnection({ id: connection.id })
+        if (conn) {
+            const profile = {
+                type: connection.type,
+                ssoRegion: connection.ssoRegion,
+                scopes: connection.scopes,
+                startUrl: connection.startUrl,
+            } as SsoProfile
+            await this.store.updateProfile(connection.id, profile)
+
+            await this.store.updateMetadata(connection.id, { connectionState: connection.state })
+        }
+    }
+
+    // Used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
+    // NO event should be emitted from this deletion
+    public async deletionConnectionCallback(id: string) {
+        const profile = this.store.getProfile(id)
+        // it is possible the connection was already deleted
+        // but was still requested to be deleted. We pretend
+        // we deleted it and continue as normal
+        if (profile) {
+            if (id === this.#activeConnection?.id) {
+                // Server-side invalidation.
+                await this.logout()
+            } else {
+                await this.invalidateConnection(id)
+            }
+            await this.store.deleteProfile(id)
+            if (profile.type === 'sso') {
+                // There may have been linked IAM credentials attached to this
+                // so we will want to clear them.
+                await this.clearStaleLinkedIamConnections()
+            }
+        }
     }
 }
 /**
