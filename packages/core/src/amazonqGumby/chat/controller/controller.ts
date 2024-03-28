@@ -25,7 +25,7 @@ import {
 import { JDKVersion, transformByQState } from '../../../codewhisperer/models/model'
 import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
-import { TransformationCandidateProject } from '../../../codewhisperer/service/transformByQHandler'
+import { TransformationCandidateProject } from '../../../codewhisperer/service/transformation/transformByQSharedHandler'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import fs from 'fs'
 import path from 'path'
