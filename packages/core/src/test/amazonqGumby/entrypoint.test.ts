@@ -14,8 +14,9 @@ describe('EntryPointTest', () => {
         sinon.restore()
     })
 
-    it('should not start transformation when attempted without active IdC', async () => {
+    it('should not start transformation when attempted without active IdC and without active builder id', async () => {
         sinon.stub(AuthUtil.instance, 'isEnterpriseSsoInUse').returns(false)
+        sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').returns(false)
         sinon.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
         const startTransformByQWithProgressStub = sinon.stub(startTransformByQ, 'startTransformByQWithProgress')
         transformByQState.setToNotStarted()
@@ -25,6 +26,7 @@ describe('EntryPointTest', () => {
 
     it('should not start transformation when attempted with expired connection', async () => {
         sinon.stub(AuthUtil.instance, 'isEnterpriseSsoInUse').returns(true)
+        sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').returns(true)
         sinon.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
         const startTransformByQWithProgressStub = sinon.stub(startTransformByQ, 'startTransformByQWithProgress')
         transformByQState.setToNotStarted()
@@ -34,6 +36,15 @@ describe('EntryPointTest', () => {
 
     it('should start transformation when attempted with active IdC and no job is in-progress', async () => {
         sinon.stub(AuthUtil.instance, 'isEnterpriseSsoInUse').returns(true)
+        sinon.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
+        const startTransformByQWithProgressStub = sinon.stub(startTransformByQ, 'startTransformByQWithProgress')
+        transformByQState.setToNotStarted()
+        await processTransformByQ()
+        sinon.assert.calledOnce(startTransformByQWithProgressStub)
+    })
+
+    it('should start transformation when attempted with active builder id and no job is in-progress', async () => {
+        sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').returns(true)
         sinon.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
         const startTransformByQWithProgressStub = sinon.stub(startTransformByQ, 'startTransformByQWithProgress')
         transformByQState.setToNotStarted()
