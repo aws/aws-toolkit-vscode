@@ -181,6 +181,7 @@ export class AuthUtil {
     public async deletionConnectionCallback(id: string) {
         await this.secondaryAuth.deletionConnectionCallback(id)
         await this.setVscodeContextProps()
+        await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }
 
     public reformatStartUrl(startUrl: string | undefined) {
