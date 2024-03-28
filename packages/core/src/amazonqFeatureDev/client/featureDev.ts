@@ -175,8 +175,9 @@ export class FeatureDevClient {
                     }`
                 )
                 if (
-                    e.name === 'ThrottlingException' &&
-                    e.message.includes('limit for number of iterations on an implementation plan')
+                    (e.name === 'ThrottlingException' &&
+                        e.message.includes('limit for number of iterations on an implementation plan')) ||
+                    e.name === 'ServiceQuotaExceededException'
                 ) {
                     throw new PlanIterationLimitError()
                 }
@@ -220,8 +221,9 @@ export class FeatureDevClient {
             )
             if (
                 isAwsError(e) &&
-                e.code === 'ThrottlingException' &&
-                e.message.includes('limit for number of iterations on a code generation')
+                ((e.code === 'ThrottlingException' &&
+                    e.message.includes('limit for number of iterations on a code generation')) ||
+                    e.code === 'ServiceQuotaExceededException')
             ) {
                 throw new CodeIterationLimitError()
             }
