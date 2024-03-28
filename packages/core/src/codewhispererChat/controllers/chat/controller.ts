@@ -45,7 +45,6 @@ import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
-import { processTransformByQ } from '../../../amazonqGumby/entrypoint'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 
 export interface ChatControllerMessagePublishers {
@@ -223,11 +222,6 @@ export class ChatController {
                     void this.generateStaticTextResponse('quick-action-help', triggerID)
                     recordTelemetryChatRunCommand('help')
                     return
-                } else if (quickActionCommand === 'transform') {
-                    void this.generateStaticTextResponse('transform', triggerID)
-                    return processTransformByQ().then(() => {
-                        return recordTelemetryChatRunCommand('transform')
-                    })
                 }
             })
             .catch(e => {

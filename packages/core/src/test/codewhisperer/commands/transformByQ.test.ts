@@ -13,18 +13,23 @@ import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { getTestWindow } from '../../shared/vscode/window'
 import { stopTransformByQMessage } from '../../../codewhisperer/models/constants'
+import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import {
-    convertDateToTimestamp,
-    convertToTimeString,
     throwIfCancelled,
     stopJob,
     pollTransformationJob,
     validateOpenProjects,
     getOpenProjects,
     getHeadersObj,
+    TransformationCandidateProject,
 } from '../../../codewhisperer/service/transformByQHandler'
 import path from 'path'
 import { createTestWorkspaceFolder, toFile } from '../../testUtil'
+import {
+    NoJavaProjectsFoundError,
+    NoMavenJavaProjectsFoundError,
+    NoOpenProjectsError,
+} from '../../../amazonqGumby/errors'
 
 describe('transformByQ', function () {
     afterEach(function () {
@@ -43,7 +48,7 @@ describe('transformByQ', function () {
 
     it('WHEN converting long duration in milliseconds THEN converts correctly', async function () {
         const durationTimeString = convertToTimeString(3700 * 1000)
-        assert.strictEqual(durationTimeString, '1 hr 1 min')
+        assert.strictEqual(durationTimeString, '1 hr 1 min 40 sec')
     })
 
     it('WHEN converting date object to timestamp THEN converts correctly', async function () {
@@ -67,26 +72,20 @@ describe('transformByQ', function () {
             }
         })
         model.transformByQState.setToRunning()
-        await startTransformByQ.confirmStopTransformByQ('abc-123')
+        await startTransformByQ.stopTransformByQ('abc-123')
         assert.strictEqual(model.transformByQState.getStatus(), 'Cancelled')
     })
 
     it('WHEN validateProjectSelection called on non-Java project THEN throws error', async function () {
-        const dummyQuickPickItems: vscode.QuickPickItem[] = [
+        const dummyCandidateProjects: TransformationCandidateProject[] = [
             {
-                label: 'SampleProject',
-                description: '/dummy/path/here',
+                name: 'SampleProject',
+                path: '/dummy/path/here',
             },
         ]
-        await assert.rejects(
-            async () => {
-                await validateOpenProjects(dummyQuickPickItems)
-            },
-            {
-                name: 'NoJavaProject',
-                message: 'No Java projects found',
-            }
-        )
+        await assert.rejects(async () => {
+            await validateOpenProjects(dummyCandidateProjects)
+        }, NoJavaProjectsFoundError)
     })
 
     it('WHEN validateProjectSelection called on Java project with no pom.xml THEN throws error', async function () {
@@ -95,22 +94,16 @@ describe('transformByQ', function () {
         await toFile('', dummyPath)
         const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
         findFilesStub.onFirstCall().resolves([folder.uri])
-        const dummyQuickPickItems: vscode.QuickPickItem[] = [
+        const dummyCandidateProjects: TransformationCandidateProject[] = [
             {
-                label: 'SampleProject',
-                description: folder.uri.fsPath,
+                name: 'SampleProject',
+                path: folder.uri.fsPath,
             },
         ]
 
-        await assert.rejects(
-            async () => {
-                await validateOpenProjects(dummyQuickPickItems)
-            },
-            {
-                name: 'NonMavenProject',
-                message: 'No valid Maven build file found',
-            }
-        )
+        await assert.rejects(async () => {
+            await validateOpenProjects(dummyCandidateProjects)
+        }, NoMavenJavaProjectsFoundError)
     })
 
     it('WHEN getOpenProjects called on non-empty workspace THEN returns open projects', async function () {
@@ -119,21 +112,15 @@ describe('transformByQ', function () {
             .get(() => [{ uri: vscode.Uri.file('/user/test/project/'), name: 'TestProject', index: 0 }])
 
         const openProjects = await getOpenProjects()
-        assert.strictEqual(openProjects[0].label, 'TestProject')
+        assert.strictEqual(openProjects[0].name, 'TestProject')
     })
 
     it('WHEN getOpenProjects called on empty workspace THEN throws error', async function () {
         sinon.stub(vscode.workspace, 'workspaceFolders').get(() => undefined)
 
-        await assert.rejects(
-            async () => {
-                await getOpenProjects()
-            },
-            {
-                name: 'Error',
-                message: 'No Java projects found since no projects are open',
-            }
-        )
+        await assert.rejects(async () => {
+            await getOpenProjects()
+        }, NoOpenProjectsError)
     })
 
     it('WHEN stop job called with valid jobId THEN stop API called', async function () {

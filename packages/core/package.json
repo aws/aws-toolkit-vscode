@@ -712,13 +712,9 @@
             ],
             "aws-explorer": [
                 {
-                    "id": "aws.amazonq",
-                    "name": "%AWS.amazonq.title%",
+                    "id": "aws.amazonq.codewhisperer",
+                    "name": "%AWS.amazonq.codewhisperer.title%",
                     "when": "!isCloud9 && !aws.isSageMaker"
-                },
-                {
-                    "id": "aws.codewhisperer",
-                    "name": "%AWS.codewhisperer.explorerTitle%"
                 },
                 {
                     "id": "aws.explorer",
@@ -747,7 +743,7 @@
                     "type": "webview",
                     "id": "aws.amazonq.transformationHub",
                     "name": "Status",
-                    "when": "gumby.isTransformAvailable || gumby.isStopButtonAvailable"
+                    "when": "gumby.wasQCodeTransformationUsed"
                 },
                 {
                     "id": "aws.amazonq.transformationProposedChangesTree",
@@ -1299,24 +1295,19 @@
             ],
             "view/title": [
                 {
-                    "command": "aws.amazonq.startTransformationInHub",
+                    "command": "aws.amazonq.stopTransformationInHub",
                     "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "aws.amazonq.stopTransformationInHub",
+                    "command": "aws.amazonq.showPlanProgressInHub",
                     "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "aws.amazonq.showPlanProgressInHub",
-                    "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@3"
-                },
-                {
                     "command": "aws.amazonq.showHistoryInHub",
                     "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@4"
+                    "group": "navigation@3"
                 },
                 {
                     "command": "aws.amazonq.transformationHub.summary.reveal",
@@ -3763,12 +3754,6 @@
                 }
             },
             {
-                "command": "aws.amazonq.startTransformationInHub",
-                "title": "Start Transformation",
-                "icon": "$(play)",
-                "enablement": "gumby.isTransformAvailable"
-            },
-            {
                 "command": "aws.amazonq.stopTransformationInHub",
                 "title": "Stop Transformation",
                 "icon": "$(stop)",
@@ -3893,6 +3878,12 @@
                 "key": "escape",
                 "mac": "escape",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected || isCloud9 && suggestWidgetVisible && !editorReadonly"
+            },
+            {
+                "command": "aws.codeWhisperer.dismissTutorial",
+                "key": "escape",
+                "mac": "escape",
+                "when": "aws.codewhisperer.tutorial.workInProgress && !inlineSuggestionVisible && !suggestWidgetVisible"
             },
             {
                 "key": "right",
@@ -4311,7 +4302,7 @@
         "@aws-sdk/property-provider": "3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "4.3.2",
+        "@aws/mynah-ui": "4.4.3",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@smithy/shared-ini-file-loader": "^2.2.8",

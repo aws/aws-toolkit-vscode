@@ -6,20 +6,19 @@
 import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
 import { TransformationHubViewProvider } from '../codewhisperer/service/transformationHubViewProvider'
-import { showTransformByQ, showTransformationHub } from './commands'
 import { ExtContext } from '../shared/extensions'
-import { startTransformByQWithProgress, confirmStopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
+import { stopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformationResultsViewProvider'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { CancelActionPositions, logCodeTransformInitiatedMetric } from './telemetry/codeTransformTelemetry'
-import { CodeTransformConstants } from './models/constants'
+import { CancelActionPositions } from './telemetry/codeTransformTelemetry'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { validateAndLogProjectDetails } from '../codewhisperer/service/transformByQHandler'
 
 export async function activate(context: ExtContext) {
+    void vscode.commands.executeCommand('setContext', 'gumby.wasQCodeTransformationUsed', false)
     // If the user is codewhisperer eligible, activate the plugin
     if (AuthUtil.instance.isValidCodeTransformationAuthUser()) {
         const transformationHubViewProvider = new TransformationHubViewProvider()
@@ -48,20 +47,11 @@ export async function activate(context: ExtContext) {
         })
 
         context.extensionContext.subscriptions.push(
-            showTransformByQ.register(context),
-
-            showTransformationHub.register(),
-
             vscode.window.registerWebviewViewProvider('aws.amazonq.transformationHub', transformationHubViewProvider),
-
-            Commands.register('aws.amazonq.startTransformationInHub', async () => {
-                logCodeTransformInitiatedMetric(CodeTransformConstants.HubStartButton)
-                await startTransformByQWithProgress()
-            }),
 
             Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
                 if (transformByQState.isRunning()) {
-                    void confirmStopTransformByQ(transformByQState.getJobId(), cancelSrc)
+                    void stopTransformByQ(transformByQState.getJobId(), cancelSrc)
                 } else {
                     void vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
                 }

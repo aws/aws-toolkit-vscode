@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import { getJobHistory, getPlanProgress } from '../commands/startTransformByQ'
 import { StepProgress, transformByQState } from '../models/model'
-import { convertToTimeString, getTransformationSteps } from './transformByQHandler'
+import { getTransformationSteps } from './transformByQHandler'
+import { convertToTimeString } from '../../shared/utilities/textUtilities'
 import { getLogger } from '../../shared/logger'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
@@ -78,7 +79,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </head>
             <body>
             <p><b>Job Status</b></p>
-            ${history.length === 0 ? '<p>No job to display</p>' : this.getTableMarkup(history)}
+            ${history.length === 0 ? '<p>Nothing to show</p>' : this.getTableMarkup(history)}
             </body>
             </html>`
     }
@@ -115,21 +116,24 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     private async showPlanProgress(startTime: number): Promise<string> {
         const planProgress = getPlanProgress()
         let planSteps = undefined
-        if (planProgress['buildCode'] === StepProgress.Succeeded) {
+        if (planProgress['generatePlan'] === StepProgress.Succeeded) {
             planSteps = await getTransformationSteps(transformByQState.getJobId())
         }
-        let progressHtml = `<p><b>Transformation Status</b></p><p>No job is in-progress at the moment</p>`
-        if (planProgress['returnCode'] !== StepProgress.NotStarted) {
+        let progressHtml = `<p><b>Transformation Status</b></p><p>No job ongoing</p>`
+        if (planProgress['transformCode'] !== StepProgress.NotStarted) {
             progressHtml = `<p><b>Transformation Status</b></p>`
-            progressHtml += `<p> ${this.getProgressIconMarkup(
-                planProgress['uploadCode']
-            )} Zip code and upload to secure build environment</p>`
-            if (planProgress['uploadCode'] === StepProgress.Succeeded) {
+            progressHtml += `<p> ${this.getProgressIconMarkup(planProgress['startJob'])} Waiting for job to start</p>`
+            if (planProgress['startJob'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['buildCode']
-                )} Generate transformation plan</p>`
+                )} Build uploaded code in secure build environment</p>`
             }
             if (planProgress['buildCode'] === StepProgress.Succeeded) {
+                progressHtml += `<p> ${this.getProgressIconMarkup(
+                    planProgress['generatePlan']
+                )} Generate transformation plan</p>`
+            }
+            if (planProgress['generatePlan'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['transformCode']
                 )} Transform your code to Java 17 using transformation plan</p>`
@@ -173,15 +177,15 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         if (step.progressUpdates) {
                             for (const subStep of step.progressUpdates) {
                                 progressHtml += `<p style="margin-left: 40px">- ${subStep.name}</p>`
+                                if (subStep.description) {
+                                    progressHtml += `<p style="margin-left: 60px; color:${this.getFontColorForSubStep(
+                                        subStep.status
+                                    )}">- ${subStep.description}</p>`
+                                }
                             }
                         }
                     }
                 }
-            }
-            if (planProgress['transformCode'] === StepProgress.Succeeded) {
-                progressHtml += `<p> ${this.getProgressIconMarkup(
-                    planProgress['returnCode']
-                )} Validate and prepare proposed changes</p>`
             }
         }
         const isJobInProgress = transformByQState.isRunning()
@@ -224,21 +228,20 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     }
                 }
 
-                // copied from transformByQHandler.ts
+                // copied from textUtilities.ts
                 function convertToTimeString(durationInMs) {
-                    const duration = durationInMs / 1000;
-                    if (duration < 60) {
-                        const numSeconds = Math.floor(duration);
-                        return numSeconds + " sec";
-                    } else if (duration < 3600) {
-                        const numMinutes = Math.floor(duration / 60);
-                        const numSeconds = Math.floor(duration % 60);
-                        return numMinutes + " min " + numSeconds + " sec";
-                    } else {
-                        const numHours = Math.floor(duration / 3600);
-                        const numMinutes = Math.floor((duration % 3600) / 60);
-                        return numHours + " hr " + numMinutes + " min";
+                    const time = new Date(durationInMs);
+                    const hours = time.getUTCHours();
+                    const minutes = time.getUTCMinutes();
+                    const seconds = time.getUTCSeconds();
+                    let timeString = seconds + " sec"
+                    if (minutes > 0) {
+                        timeString = minutes + " min " + timeString
                     }
+                    if (hours > 0) {
+                        timeString = hours + " hr " + timeString
+                    }
+                    return timeString
                 }
                 intervalId = setInterval(updateTimer, 1000);
             </script>
@@ -246,7 +249,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </html>`
     }
 
-    // TODO: replace these pasted icons with codicons
     private getProgressIconMarkup(stepStatus: StepProgress) {
         if (stepStatus === StepProgress.Succeeded) {
             return `<span style="color: green"> ✓ </span>`
@@ -254,6 +256,16 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             return `<span style="color: grey" class="spinner"> ↻ </span>`
         } else {
             return `<span style="color: grey"> ✓ </span>`
+        }
+    }
+
+    private getFontColorForSubStep(status: string) {
+        if (status === 'COMPLETED') {
+            return 'green'
+        } else if (status === 'FAILED') {
+            return 'red'
+        } else {
+            return '' // uses VS Code's default color
         }
     }
 }
