@@ -10,7 +10,7 @@ import { QuickActionGenerator } from '../quickActions/generator'
 
 export interface TabDataGeneratorProps {
     isFeatureDevEnabled: boolean
-    isGumbyEnabled: boolean
+    isCodeTransformEnabled: boolean
 }
 
 export class TabDataGenerator {
@@ -21,6 +21,7 @@ export class TabDataGenerator {
         ['unknown', 'Chat'],
         ['cwc', 'Chat'],
         ['featuredev', 'Q - Dev'],
+        ['codetransform', 'Q - Transform'],
     ])
 
     private tabInputPlaceholder: Map<TabType, string> = new Map([
@@ -51,13 +52,20 @@ Here I can provide code suggestions across files in your current project by look
 Before I begin generating code, let's agree on an implementation plan. What change would you like to make?
 `,
         ],
+        [
+            'codetransform',
+            `Welcome to Code Transformation!
+
+I can help you upgrade your Java 8 and 11 codebases to Java 17.
+`,
+        ],
     ])
 
     constructor(props: TabDataGeneratorProps) {
         this.followUpsGenerator = new FollowUpGenerator()
         this.quickActionsGenerator = new QuickActionGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
-            isGumbyEnabled: props.isGumbyEnabled,
+            isCodeTransformEnabled: props.isCodeTransformEnabled,
         })
     }
 

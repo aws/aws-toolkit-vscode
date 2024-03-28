@@ -13,7 +13,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
@@ -40,8 +39,6 @@ import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthNeededState
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonq.onboarding.OnboardingPageInteraction
 import software.aws.toolkits.jetbrains.services.amazonq.onboarding.OnboardingPageInteractionType
-import software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerManager
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererUserModificationTracker
 import software.aws.toolkits.jetbrains.services.cwc.InboundAppMessagesHandler
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.exceptions.ChatApiException
@@ -73,8 +70,6 @@ import software.aws.toolkits.jetbrains.services.cwc.messages.OnboardingPageInter
 import software.aws.toolkits.jetbrains.services.cwc.messages.QuickActionMessage
 import software.aws.toolkits.jetbrains.services.cwc.storage.ChatSessionStorage
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodeTransformStartSrcComponents
-import software.aws.toolkits.telemetry.CodetransformTelemetry
 import software.aws.toolkits.telemetry.CwsprChatCommandType
 import java.time.Instant
 import java.util.UUID
@@ -118,39 +113,6 @@ class ChatController private constructor(
             response = StaticTextResponse.Help,
         )
         TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Help, startUrl = getStartUrl(context.project))
-    }
-
-    override suspend fun processTransformQuickAction(message: IncomingCwcMessage.Transform) {
-        val triggerId = UUID.randomUUID().toString()
-        sendQuickActionMessage(triggerId, StaticPrompt.Transform)
-        val manager = CodeModernizerManager.getInstance(context.project)
-        val isActive = manager.isModernizationJobActive()
-        val replyContent = if (isActive) {
-            message("codemodernizer.chat.reply_job_is_running")
-        } else {
-            message("codemodernizer.chat.reply")
-        }
-        val reply = ChatMessage(
-            tabId = message.tabId,
-            triggerId = UUID.randomUUID().toString(),
-            messageId = "",
-            messageType = ChatMessageType.Answer,
-            message = replyContent,
-        )
-        context.messagesFromAppToUi.publish(reply)
-        ApplicationManager.getApplication().invokeLater {
-            runInEdt {
-                if (!isActive) {
-                    manager.validateAndStart(CodeTransformStartSrcComponents.ChatPrompt)
-                } else {
-                    manager.getBottomToolWindow().show()
-                }
-                CodetransformTelemetry.jobIsStartedFromChatPrompt(
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                )
-            }
-        }
-        TelemetryHelper.recordTelemetryChatRunCommand(CwsprChatCommandType.Transform, startUrl = getStartUrl(context.project))
     }
 
     override suspend fun processPromptChatMessage(message: IncomingCwcMessage.ChatPrompt) {

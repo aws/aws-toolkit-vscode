@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions
 
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
@@ -14,9 +15,15 @@ interface ActionProvider<T> {
     val openCodeReference: T
     val customize: T
     val learn: T
+    val openChatPanel: T
+    val runScan: T
+    val stopScan: T
+    val sendFeedback: T
+    val connectOnGithub: T
+    val documentation: T
 }
 
-fun<T> buildActionList(project: Project, actionProvider: ActionProvider<T>): List<T> {
+fun<T> buildActionListForInlineSuggestions(project: Project, actionProvider: ActionProvider<T>): List<T> {
     val manager = CodeWhispererExplorerActionManager.getInstance()
     val activeConnectionType = manager.checkActiveCodeWhispererConnectionType(project)
 
@@ -39,3 +46,21 @@ fun<T> buildActionList(project: Project, actionProvider: ActionProvider<T>): Lis
         add(actionProvider.learn)
     }
 }
+
+fun<T> buildActionListForOtherFeatures(project: Project, actionProvider: ActionProvider<T>): List<T> =
+    buildList {
+        add(actionProvider.openChatPanel)
+        val codeScanManager = CodeWhispererCodeScanManager.getInstance(project)
+        if (codeScanManager.isCodeScanInProgress()) {
+            add(actionProvider.stopScan)
+        } else {
+            add(actionProvider.runScan)
+        }
+    }
+
+fun<T> buildActionListForConnectHelp(actionProvider: ActionProvider<T>): List<T> =
+    buildList {
+        add(actionProvider.sendFeedback)
+        add(actionProvider.connectOnGithub)
+        add(actionProvider.documentation)
+    }

@@ -17,6 +17,11 @@ val publishChannel: String by project
 intellij {
     version.set(ideProfile.community.version())
     localPath.set(ideProfile.community.localPath())
+    plugins.set(
+        listOf(
+            project(":plugin-core")
+        )
+    )
 
     updateSinceUntilBuild.set(false)
     instrumentCode.set(false)
@@ -35,4 +40,20 @@ configurations {
         exclude(group = "org.jetbrains.kotlin")
         exclude(group = "org.jetbrains.kotlinx")
     }
+}
+
+val moduleOnlyJar = tasks.create<Jar>("moduleOnlyJar") {
+    archiveClassifier.set("module-only")
+    // empty jar
+}
+
+val moduleOnlyJars by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    // If you want this configuration to share the same dependencies, otherwise omit this line
+    extendsFrom(configurations["implementation"], configurations["runtimeOnly"])
+}
+
+artifacts {
+    add("moduleOnlyJars", moduleOnlyJar)
 }

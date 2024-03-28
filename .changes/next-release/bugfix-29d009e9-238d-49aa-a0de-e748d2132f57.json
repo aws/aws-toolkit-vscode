@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "CodeCatalyst: Update status of connection in developer tools if the user connection is expired."
-}

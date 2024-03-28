@@ -6,6 +6,6 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":plugin-amazonq:codewhisperer:jetbrains-community", "instrumentedJar"))
-    implementation(project(":plugin-amazonq:codewhisperer:jetbrains-ultimate", "instrumentedJar"))
+    implementation(project(":plugin-amazonq:codewhisperer:jetbrains-community"))
+    implementation(project(":plugin-amazonq:codewhisperer:jetbrains-ultimate"))
 }

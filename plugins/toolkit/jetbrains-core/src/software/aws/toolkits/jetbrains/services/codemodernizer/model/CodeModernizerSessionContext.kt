@@ -15,12 +15,11 @@ import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
+import software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformTelemetryManager
 import software.aws.toolkits.jetbrains.services.codemodernizer.ideMaven.runMavenCopyCommands
 import software.aws.toolkits.jetbrains.services.codemodernizer.panels.managers.CodeModernizerBottomWindowPanelManager
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codemodernizer.toolwindow.CodeModernizerBottomToolWindowFactory
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.io.File
 import java.io.IOException
 import java.nio.file.FileVisitOption
@@ -29,15 +28,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
-import kotlin.io.NoSuchFileException
-import kotlin.io.byteInputStream
-import kotlin.io.deleteRecursively
-import kotlin.io.inputStream
 import kotlin.io.path.Path
-import kotlin.io.relativeTo
-import kotlin.io.resolve
-import kotlin.io.resolveSibling
-import kotlin.io.walkTopDown
 
 const val MANIFEST_PATH = "manifest.json"
 const val ZIP_SOURCES_PATH = "sources"
@@ -82,15 +73,22 @@ data class CodeModernizerSessionContext(
 
     fun executeMavenCopyCommands(sourceFolder: File, buildLogBuilder: StringBuilder) = runMavenCopyCommands(sourceFolder, buildLogBuilder, LOG, project)
 
-    fun createZipWithModuleFiles(): ZipCreationResult {
+    fun getDependenciesUsingMaven(): MavenCopyCommandsResult {
         val root = configurationFile.parent
         val sourceFolder = File(root.path)
         val buildLogBuilder = StringBuilder("Starting Build Log...\n")
-        val result = executeMavenCopyCommands(sourceFolder, buildLogBuilder)
-        val depDirectory = if (result is MavenCopyCommandsResult.Success) {
+        return executeMavenCopyCommands(sourceFolder, buildLogBuilder)
+    }
+
+    fun createZipWithModuleFiles(copyResult: MavenCopyCommandsResult): ZipCreationResult {
+        val telemetry = CodeTransformTelemetryManager.getInstance(project)
+        val root = configurationFile.parent
+        val sourceFolder = File(root.path)
+        val buildLogBuilder = StringBuilder("Starting Build Log...\n")
+        val depDirectory = if (copyResult is MavenCopyCommandsResult.Success) {
             showTransformationHub()
-            CodetransformTelemetry.dependenciesCopied(codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId())
-            result.dependencyDirectory
+            telemetry.dependenciesCopied()
+            copyResult.dependencyDirectory
         } else {
             null
         }
@@ -102,7 +100,7 @@ data class CodeModernizerSessionContext(
                     val childPath = Path(child.path)
                     !child.isDirectory && directoriesToExclude.none { childPath.startsWith(it.toPath()) }
                 }
-                val dependencyfiles = if (depDirectory != null) {
+                val dependencyFiles = if (depDirectory != null) {
                     iterateThroughDependencies(depDirectory)
                 } else {
                     mutableListOf()
@@ -121,7 +119,7 @@ data class CodeModernizerSessionContext(
 
                     // 2) Dependencies
                     if (depDirectory != null) {
-                        dependencyfiles.forEach { depfile ->
+                        dependencyFiles.forEach { depfile ->
                             val relativePath = File(depfile.path).relativeTo(depDirectory.parentFile)
                             val paddedPath = depSources.resolve(relativePath)
                             var paddedPathString = paddedPath.toPath().toString()

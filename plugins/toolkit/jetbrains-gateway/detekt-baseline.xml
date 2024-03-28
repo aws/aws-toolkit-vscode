@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>BannedImports:CawsConnectionProvider.kt$import com.intellij.ui.layout.panel</ID>
     <ID>ExplicitItLambdaParameter:GitUtilsTest.kt$GitUtilsTest.NormalizeRepoUrl${ it: String -> normalizeRepoUrl(it).authority }</ID>
     <ID>ExplicitItLambdaParameter:GitUtilsTest.kt$GitUtilsTest.NormalizeRepoUrl${ it: String -> normalizeRepoUrl(it).scheme }</ID>
     <ID>ExplicitItLambdaParameter:GitUtilsTest.kt$GitUtilsTest.PrimeSSHAgentCommand${ it: String -> buildAgentPrimeCommand(normalizeRepoUrl(it))?.commandLineString }</ID>

@@ -58,7 +58,6 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.CodeCatalystCredent
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
-import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.gateway.connection.GET_IDE_BACKEND_VERSION_COMMAND
 import software.aws.toolkits.jetbrains.gateway.connection.GitSettings
 import software.aws.toolkits.jetbrains.gateway.connection.IDE_BACKEND_DIR

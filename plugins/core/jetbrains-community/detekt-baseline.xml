@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>Filename:DEFAULT_PROFILE_ID.kt$software.aws.toolkits.jetbrains.core.credentials.profiles.DEFAULT_PROFILE_ID.kt</ID>
+    <ID>Filename:contexts.kt$software.aws.toolkits.jetbrains.core.coroutines.contexts.kt</ID>
+    <ID>Filename:scopes.kt$software.aws.toolkits.jetbrains.core.coroutines.scopes.kt</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun bothFilesOpened_bothFilesExists()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun configFileOpened_onlyConfigExists()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun confirmConfigFileCreated_bothFilesDoNotExist()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun credentialFileOpened_onlyCredentialsExists()</ID>
+    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withNamespace()</ID>
+    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withoutNamespace()</ID>
+    <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Bug: Attempting to retrieve connection settings with invalid connection state")</ID>
+    <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Connection settings are not configured")</ID>
+    <ID>UseCheckOrError:AwsRegionProvider.kt$AwsRegionProvider$throw IllegalStateException("Region provider data is missing default data")</ID>
+    <ID>UseCheckOrError:MockClientManager.kt$MockClientManager$throw IllegalStateException("No mock registered for $sdkClass")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile $sourceProfileName looks to have been removed")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile ${profileProviderId.profileName} looks to have been removed")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("ProfileCredentialProviderFactory can only handle ProfileCredentialsIdentifier, but got ${providerId::class}")</ID>
+  </CurrentIssues>
+</SmellBaseline>

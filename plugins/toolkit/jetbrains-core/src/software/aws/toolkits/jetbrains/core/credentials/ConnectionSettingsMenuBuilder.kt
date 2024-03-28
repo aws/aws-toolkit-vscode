@@ -18,7 +18,6 @@ import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.actions.SsoLogoutAction
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
-import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.resources.message
 
 class ConnectionSettingsMenuBuilder private constructor() {

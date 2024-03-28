@@ -1,0 +1,17 @@
+{
+  "date" : "2024-03-21",
+  "version" : "2.14",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Amazon Q + CodeWhisperer: Most Amazon Q + CodeWhisperer actions are now migrated from the AWS Toolkit panel to the Amazon Q status bar menu."
+  }, {
+    "type" : "bugfix",
+    "description" : "CodeCatalyst: Update status of connection in developer tools if the user connection is expired."
+  }, {
+    "type" : "bugfix",
+    "description" : "Respect IDE HTTP proxy server settings when using Amazon Q"
+  }, {
+    "type" : "removal",
+    "description" : "CodeTransformation: remove play button from Transformation Hub, instead use /transform in chat"
+  } ]
+}

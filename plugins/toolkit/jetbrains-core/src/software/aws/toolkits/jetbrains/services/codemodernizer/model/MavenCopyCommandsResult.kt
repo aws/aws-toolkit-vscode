@@ -8,4 +8,5 @@ import java.io.File
 sealed class MavenCopyCommandsResult {
     data class Success(val dependencyDirectory: File) : MavenCopyCommandsResult()
     object Failure : MavenCopyCommandsResult()
+    object Cancelled : MavenCopyCommandsResult()
 }

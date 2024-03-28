@@ -14,6 +14,7 @@ plugins {
 }
 
 intellij {
+    pluginName.set("aws-toolkit-jetbrains")
     type.set("GW")
 }
 
@@ -31,9 +32,13 @@ dependencies {
     compileOnly(project(":plugin-toolkit:jetbrains-core"))
     gatewayRunOnly(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
 
+    // delete when fully split
+    implementation(project(":plugin-core:jetbrains-community"))
+
     testImplementation(project(path = ":plugin-toolkit:core", configuration = "testArtifacts"))
     testCompileOnly(project(":plugin-toolkit:jetbrains-core"))
     testRuntimeOnly(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
+    testImplementation(testFixtures(project(":plugin-core:jetbrains-community")))
     testImplementation(project(path = ":plugin-toolkit:jetbrains-core", configuration = "testArtifacts"))
     testImplementation(libs.kotlin.coroutinesTest)
     testImplementation(libs.kotlin.coroutinesDebug)
@@ -96,9 +101,8 @@ tasks.jar {
 }
 
 tasks.withType<PrepareSandboxTask>().all {
-    from(gatewayResourcesDir) {
-        into("aws-toolkit-jetbrains/gateway-resources")
-    }
+    intoChild(pluginName.map { "$it/gateway-resources" })
+        .from(gatewayResourcesDir)
 }
 
 tasks.prepareSandbox {

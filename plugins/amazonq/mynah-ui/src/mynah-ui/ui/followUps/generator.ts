@@ -52,6 +52,11 @@ export class FollowUpGenerator {
                         },
                     ],
                 }
+            case 'codetransform':
+                return {
+                    text: '',
+                    options: [],
+                }
             default:
                 return {
                     text: 'Try Examples:',

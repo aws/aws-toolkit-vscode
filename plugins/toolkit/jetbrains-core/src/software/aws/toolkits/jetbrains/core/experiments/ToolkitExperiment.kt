@@ -15,7 +15,7 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.util.messages.Topic
 import com.intellij.util.xmlb.annotations.Property
 import software.aws.toolkits.core.utils.replace
-import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
@@ -132,7 +132,7 @@ internal class ToolkitExperimentManager : PersistentStateComponent<ExperimentSta
         val systemProperty = System.getProperty("aws.experiment.${experiment.id}")
         return when {
             systemProperty != null -> systemProperty.isBlank() || systemProperty.equals("true", ignoreCase = true)
-            AwsToolkit.isDeveloperMode() -> true
+            isDeveloperMode() -> true
             else -> experiment.default
         }
     }

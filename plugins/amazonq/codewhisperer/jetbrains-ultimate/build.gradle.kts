@@ -13,4 +13,7 @@ intellijToolkit {
 
 dependencies {
     compileOnly(project(":plugin-amazonq:codewhisperer:jetbrains-community"))
+    compileOnly(project(":plugin-amazonq:shared:jetbrains-ultimate"))
+
+    compileOnly(project(":plugin-core:jetbrains-ultimate"))
 }

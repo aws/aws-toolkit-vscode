@@ -16,5 +16,5 @@ dependencies {
     compileOnly(project(":plugin-core:jetbrains-ultimate"))
 
     // delete when fully split
-    compileOnly(project(":plugin-toolkit:jetbrains-ultimate"))
+    implementation(project(":plugin-toolkit:jetbrains-ultimate"))
 }

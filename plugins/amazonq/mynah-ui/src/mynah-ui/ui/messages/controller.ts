@@ -14,7 +14,7 @@ export interface MessageControllerProps {
     connector: Connector
     tabsStorage: TabsStorage
     isFeatureDevEnabled: boolean
-    isGumbyEnabled: boolean
+    isCodeTransformEnabled: boolean
 }
 
 export class MessageController {
@@ -29,7 +29,7 @@ export class MessageController {
         this.tabsStorage = props.tabsStorage
         this.tabDataGenerator = new TabDataGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
-            isGumbyEnabled: props.isGumbyEnabled,
+            isCodeTransformEnabled: props.isCodeTransformEnabled,
         })
     }
 

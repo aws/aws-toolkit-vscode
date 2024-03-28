@@ -31,17 +31,11 @@ import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnection
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnectionType
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.BearerTokenFeatureSet
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerConnectionValidity
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MAVEN_CONFIGURATION_FILE_NAME
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.Thread.sleep
@@ -157,6 +151,7 @@ suspend fun JobId.pollTransformationStatusAndPlan(
     maxDuration: Duration = Duration.ofSeconds(604800),
     onStateChange: (previousStatus: TransformationStatus?, currentStatus: TransformationStatus, transformationPlan: TransformationPlan?) -> Unit,
 ): PollingResult {
+    val telemetry = CodeTransformTelemetryManager.getInstance(project)
     var state = TransformationStatus.UNKNOWN_TO_SDK_VERSION
     var transformationResponse: GetTransformationResponse? = null
     var transformationPlan: TransformationPlan? = null
@@ -193,20 +188,10 @@ suspend fun JobId.pollTransformationStatusAndPlan(
                     newPlan = clientAdaptor.getCodeModernizationPlan(this).transformationPlan()
                 }
                 if (newStatus != state) {
-                    CodetransformTelemetry.jobStatusChanged(
-                        codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformJobId = this.id,
-                        codeTransformStatus = newStatus.toString(),
-                        codeTransformPreviousStatus = state.toString()
-                    )
+                    telemetry.jobStatusChanged(this, newStatus.toString(), state.toString())
                 }
                 if (newPlan != transformationPlan) {
-                    CodetransformTelemetry.jobStatusChanged(
-                        codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformJobId = this.id,
-                        codeTransformStatus = "PLAN_UPDATED",
-                        codeTransformPreviousStatus = state.toString()
-                    )
+                    telemetry.jobStatusChanged(this, "PLAN_UPDATED", state.toString())
                 }
                 if (newStatus !in failOn && (newStatus != state || newPlan != transformationPlan)) {
                     transformationPlan = newPlan
@@ -283,12 +268,6 @@ fun findBuildFiles(sourceFolder: File, supportedBuildFileNames: List<String>): L
 fun isIntellij(): Boolean {
     val productCode = ApplicationInfo.getInstance().build.productCode
     return productCode == "IC" || productCode == "IU"
-}
-
-fun isCodeModernizerAvailable(project: Project): Boolean {
-    if (!isIntellij()) return false
-    val connection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.Q)
-    return connection.connectionType == ActiveConnectionType.IAM_IDC && connection is ActiveConnection.ValidBearer
 }
 
 fun isGradleProject(project: Project) = !GradleSettings.getInstance(project).linkedProjectsSettings.isEmpty()

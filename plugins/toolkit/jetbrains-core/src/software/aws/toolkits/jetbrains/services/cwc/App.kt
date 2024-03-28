@@ -43,7 +43,6 @@ class App : AmazonQApp {
             "auth-follow-up-was-clicked" to IncomingCwcMessage.AuthFollowUpWasClicked::class,
 
             // JB specific (not in vscode)
-            "transform" to IncomingCwcMessage.Transform::class,
             "source-link-click" to IncomingCwcMessage.ClickedLink::class,
             "response-body-link-click" to IncomingCwcMessage.ClickedLink::class,
             "footer-info-link-click" to IncomingCwcMessage.ClickedLink::class,
@@ -61,7 +60,6 @@ class App : AmazonQApp {
         when (message) {
             is IncomingCwcMessage.ClearChat -> inboundAppMessagesHandler.processClearQuickAction(message)
             is IncomingCwcMessage.Help -> inboundAppMessagesHandler.processHelpQuickAction(message)
-            is IncomingCwcMessage.Transform -> inboundAppMessagesHandler.processTransformQuickAction(message)
             is IncomingCwcMessage.ChatPrompt -> inboundAppMessagesHandler.processPromptChatMessage(message)
             is IncomingCwcMessage.TabRemoved -> inboundAppMessagesHandler.processTabWasRemoved(message)
             is IncomingCwcMessage.TabChanged -> inboundAppMessagesHandler.processTabChanged(message)

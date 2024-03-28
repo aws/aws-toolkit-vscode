@@ -21,15 +21,10 @@ import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codemodernizer.summary.CodeModernizerSummaryEditorProvider
 import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.jetbrains.utils.notifyStickyWarn
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodeTransformPatchViewerCancelSrcComponents
-import software.aws.toolkits.telemetry.CodeTransformVCSViewerSrcComponents
-import software.aws.toolkits.telemetry.CodetransformTelemetry
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
@@ -37,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 data class DownloadArtifactResult(val artifact: CodeModernizerArtifact?, val zipPath: String)
 class ArtifactHandler(private val project: Project, private val clientAdaptor: GumbyClient) {
+    private val telemetry = CodeTransformTelemetryManager.getInstance(project)
     private val downloadedArtifacts = mutableMapOf<JobId, Path>()
     private val downloadedSummaries = mutableMapOf<JobId, TransformationSummary>()
 
@@ -103,15 +99,14 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
                 output
             } catch (e: RuntimeException) {
                 LOG.error { e.message.toString() }
-                telemetryErrorMessage = "Unexpected error when downloading result"
+                telemetryErrorMessage = "Unexpected error when downloading result ${e.localizedMessage}"
                 DownloadArtifactResult(null, zipPath)
             } finally {
-                CodetransformTelemetry.jobArtifactDownloadAndDeserializeTime(
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformRunTimeLatency = calculateTotalLatency(downloadStartTime, Instant.now()),
-                    codeTransformJobId = job.id,
-                    codeTransformTotalByteSize = totalDownloadBytes,
-                    codeTransformRuntimeError = telemetryErrorMessage,
+                telemetry.jobArtifactDownloadAndDeserializeTime(
+                    downloadStartTime,
+                    job,
+                    totalDownloadBytes,
+                    telemetryErrorMessage,
                 )
             }
         } catch (e: Exception) {
@@ -142,24 +137,11 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
             )
             dialog.isModal = true
 
-            CodetransformTelemetry.vcsDiffViewerVisible(
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId = jobId.id,
-            )
-
+            telemetry.vcsDiffViewerVisible(jobId)
             if (dialog.showAndGet()) {
-                CodetransformTelemetry.vcsViewerSubmitted(
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId = jobId.id,
-                    codeTransformStatus = CodeModernizerSessionState.getInstance(project).currentJobStatus.toString(),
-                )
+                telemetry.vcsViewerSubmitted(jobId)
             } else {
-                CodetransformTelemetry.vcsViewerCanceled(
-                    codeTransformPatchViewerCancelSrcComponents = CodeTransformPatchViewerCancelSrcComponents.CancelButton,
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId = jobId.id,
-                    codeTransformStatus = CodeModernizerSessionState.getInstance(project).currentJobStatus.toString(),
-                )
+                telemetry.vscViewerCancelled(jobId)
             }
         }
     }
@@ -185,11 +167,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
     }
 
     fun displayDiffAction(jobId: JobId) = runReadAction {
-        CodetransformTelemetry.vcsViewerClicked(
-            codeTransformVCSViewerSrcComponents = CodeTransformVCSViewerSrcComponents.ToastNotification,
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId = jobId.id,
-        )
+        telemetry.vcsViewerClicked(jobId)
         projectCoroutineScope(project).launch {
             displayDiff(jobId)
         }

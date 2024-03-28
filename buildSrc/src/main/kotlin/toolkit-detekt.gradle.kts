@@ -41,22 +41,4 @@ tasks.withType<Detekt> {
 tasks.withType<DetektCreateBaselineTask> {
     // weird issue where the baseline tasks can't find the source code
     source.plus(projectDir)
-
-    // hack around https://github.com/detekt/detekt/issues/6167
-    doLast {
-        Class.forName("io.gitlab.arturbosch.detekt.invoke.DetektInvoker").kotlin.let { detektInvoker ->
-            val invokerInstance = detektInvoker.companionObject!!.memberFunctions.find { it.name == "create" }!!.call(detektInvoker.companionObjectInstance, false)
-            val invokeCliMethod = detektInvoker.memberFunctions.find { it.name == "invokeCli" }
-            val jdkHomeArgumentClass = Class.forName("io.gitlab.arturbosch.detekt.invoke.JdkHomeArgument").kotlin
-            val jdkHomeArgument = jdkHomeArgumentClass.constructors.first().call(jdkHome)
-            val jdkHomeArgs = jdkHomeArgumentClass.memberFunctions.find { it.name == "toArgument" }!!.call(jdkHomeArgument) as List<String>
-            val taskArgs = this::class.memberProperties.find { it.name == "arguments" }!!.call(this) as List<String>
-
-            val cliArgs = taskArgs + jdkHomeArgs
-            val ignoreFailures = ignoreFailures.getOrElse(false)
-            val classpath = detektClasspath.plus(pluginClasspath)
-            val taskName = name
-            invokeCliMethod!!.call(invokerInstance, cliArgs, classpath, taskName, ignoreFailures)
-        }
-    }
 }

@@ -2,8 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>Filename:setUpCustomToolset.kt$base.setUpCustomToolset.kt</ID>
-    <ID>FunctionNaming:DotNetHandlerCompletionProviderTest.kt$DotNetHandlerCompletionProviderTest$@Test( dataProvider = "handlerCompletionSupportedData", description = "Check completion in run configuration feature is enabled for DOTNET runtime." ) fun testCompletion_IsSupportedForDotNetRuntime(name: String, runtime: LambdaRuntime)</ID>
     <ID>FunctionNaming:DotNetHandlerCompletionTest.kt$DotNetHandlerCompletionTest$@Test(description = "Check a single handler is shown in lookup when one is defined in a project.") @TestEnvironment(solution = "SamHelloWorldApp") fun testDetermineHandlers_SingleHandler()</ID>
     <ID>FunctionNaming:DotNetHandlerCompletionTest.kt$DotNetHandlerCompletionTest$@Test(enabled = false, description = "Check all handlers are show in completion lookup when multiple handlers are defined in a project.") @TestEnvironment(solution = "SamMultipleHandlersApp") fun testDetermineHandlers_MultipleHandlers()</ID>
     <ID>FunctionNaming:DotNetLambdaHandlerResolverTest.kt$DotNetLambdaHandlerResolverTest$@Test fun testHandler_SingleValidHandler()</ID>
@@ -12,7 +10,6 @@
     <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_InvalidHandlerString()</ID>
     <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_NonExistingMethodName()</ID>
     <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_NonExistingTypeName()</ID>
-    <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_ValidHandler()</ID>
     <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Suppress("UNUSED_PARAMETER") @Test(dataProvider = "singleParameterAmazonEventType") fun testParameters_SingleParameterAmazonEvent_Detected(name: String)</ID>
     <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testClass_FunctionAbstractClass_NotDetected()</ID>
     <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testClass_FunctionClass_Detected()</ID>
@@ -57,6 +54,5 @@
     <ID>UnusedParameter:DotNetHandlerCompletionProviderTest.kt$DotNetHandlerCompletionProviderTest$name: String</ID>
     <ID>UseCheckOrError:RiderTestFrameworkUtils.kt$throw IllegalStateException("Failed to locate dotnet version: ${output.stderr}")</ID>
     <ID>UseCheckOrError:RiderTestUtils.kt$throw IllegalStateException("Took too long to execute Rider run configuration!")</ID>
-    <ID>UseCheckOrError:build.gradle.kts$throw IllegalStateException("$riderSdk does not exist or not a directory")</ID>
   </CurrentIssues>
 </SmellBaseline>

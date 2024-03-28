@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codemodernizer.client
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.util.io.HttpRequests
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ContentChecksumType
@@ -25,19 +26,26 @@ import software.amazon.awssdk.services.codewhispererruntime.model.UploadIntent
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
+import software.aws.toolkits.jetbrains.services.amazonq.APPLICATION_ZIP
+import software.aws.toolkits.jetbrains.services.amazonq.AWS_KMS
+import software.aws.toolkits.jetbrains.services.amazonq.CONTENT_SHA256
+import software.aws.toolkits.jetbrains.services.amazonq.SERVER_SIDE_ENCRYPTION
+import software.aws.toolkits.jetbrains.services.amazonq.SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID
 import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
-import software.aws.toolkits.jetbrains.services.codemodernizer.calculateTotalLatency
+import software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformTelemetryManager
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.telemetry.CodeTransformApiNames
-import software.aws.toolkits.telemetry.CodetransformTelemetry
+import java.io.File
+import java.net.HttpURLConnection
 import java.time.Instant
 
 @Service(Service.Level.PROJECT)
 class GumbyClient(private val project: Project) {
+    private val telemetry = CodeTransformTelemetryManager.getInstance(project)
     private fun connection() = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance())
         ?: error("Attempted to use connection while one does not exist")
 
@@ -102,21 +110,15 @@ class GumbyClient(private val project: Project) {
             return result
         } catch (e: Exception) {
             LOG.error(e) { "$apiName failed: ${e.message}" }
-            CodetransformTelemetry.logApiError(
-                codeTransformApiErrorMessage = e.message.toString(),
-                codeTransformApiNames = apiName,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId = jobId,
-            )
+            telemetry.apiError(e.message.toString(), apiName, jobId)
             throw e // pass along error to callee
         } finally {
-            CodetransformTelemetry.logApiLatency(
-                codeTransformApiNames = apiName,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformRunTimeLatency = calculateTotalLatency(startTime, Instant.now()),
+            telemetry.logApiLatency(
+                apiName,
+                startTime,
                 codeTransformUploadId = uploadId,
                 codeTransformJobId = jobId,
-                codeTransformRequestId = result?.responseMetadata()?.requestId(),
+                codeTransformRequestId = result?.responseMetadata()?.requestId()
             )
         }
     }
@@ -126,22 +128,41 @@ class GumbyClient(private val project: Project) {
         ExportIntent.TRANSFORMATION,
         { e ->
             LOG.error(e) { "${CodeTransformApiNames.ExportResultArchive} failed: ${e.message}" }
-            CodetransformTelemetry.logApiError(
-                codeTransformApiNames = CodeTransformApiNames.ExportResultArchive,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformApiErrorMessage = e.message.toString(),
-                codeTransformJobId = jobId.id,
-            )
+            telemetry.apiError(e.localizedMessage, CodeTransformApiNames.ExportResultArchive, jobId.id)
         },
         { startTime ->
-            CodetransformTelemetry.logApiLatency(
-                codeTransformApiNames = CodeTransformApiNames.ExportResultArchive,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformRunTimeLatency = calculateTotalLatency(startTime, Instant.now()),
-                codeTransformJobId = jobId.id,
-            )
+            telemetry.logApiLatency(CodeTransformApiNames.ExportResultArchive, startTime, codeTransformJobId = jobId.id)
         }
     )
+
+    /*
+     * Adapted from [CodeWhispererCodeScanSession]
+     */
+    fun uploadArtifactToS3(url: String, fileToUpload: File, checksum: String, kmsArn: String, shouldStop: () -> Boolean) {
+        HttpRequests.put(url, APPLICATION_ZIP).userAgent(AwsClientManager.userAgent).tuner {
+            it.setRequestProperty(CONTENT_SHA256, checksum)
+            if (kmsArn.isNotEmpty()) {
+                it.setRequestProperty(SERVER_SIDE_ENCRYPTION, AWS_KMS)
+                it.setRequestProperty(SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID, kmsArn)
+            }
+        }
+            .connect { request -> // default connect timeout is 10s
+                val connection = request.connection as HttpURLConnection
+                connection.setFixedLengthStreamingMode(fileToUpload.length())
+                fileToUpload.inputStream().use { inputStream ->
+                    connection.outputStream.use {
+                        val bufferSize = 4096
+                        val array = ByteArray(bufferSize)
+                        var n = inputStream.readNBytes(array, 0, bufferSize)
+                        while (0 != n) {
+                            if (shouldStop()) break
+                            it.write(array, 0, n)
+                            n = inputStream.readNBytes(array, 0, bufferSize)
+                        }
+                    }
+                }
+            }
+    }
 
     companion object {
         private val LOG = getLogger<GumbyClient>()

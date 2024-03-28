@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun bothFilesOpened_bothFilesExists()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun configFileOpened_onlyConfigExists()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun confirmConfigFileCreated_bothFilesDoNotExist()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun credentialFileOpened_onlyCredentialsExists()</ID>
+    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withNamespace()</ID>
+    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withoutNamespace()</ID>
+    <ID>UnsafeCallOnNullableType:CredentialManagerTest.kt$CredentialManagerTest.TestCredentialProviderFactory$credentialsMapping.remove(providerId)!!</ID>
+    <ID>UnsafeCallOnNullableType:ScopeTest.kt$ScopeTest$ProjectManagerEx.getInstanceEx().openProject(projectFile, options)!!</ID>
+    <ID>UnsafeCallOnNullableType:TelemetryServiceTest.kt$TelemetryServiceTest$ProjectManagerEx.getInstanceEx().openProject(projectFile, options)!!</ID>
+  </CurrentIssues>
+</SmellBaseline>

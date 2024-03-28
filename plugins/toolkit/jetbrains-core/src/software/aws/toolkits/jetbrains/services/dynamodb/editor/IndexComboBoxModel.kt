@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.dynamodb.editor
 
 import com.intellij.ui.CollectionComboBoxModel
-import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.dynamodb.Index
 import software.aws.toolkits.resources.message
 

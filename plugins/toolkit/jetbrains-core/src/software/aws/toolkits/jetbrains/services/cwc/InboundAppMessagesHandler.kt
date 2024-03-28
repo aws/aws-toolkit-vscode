@@ -28,7 +28,6 @@ interface InboundAppMessagesHandler {
     // JB specific (not in vscode)
     suspend fun processClearQuickAction(message: IncomingCwcMessage.ClearChat)
     suspend fun processHelpQuickAction(message: IncomingCwcMessage.Help)
-    suspend fun processTransformQuickAction(message: IncomingCwcMessage.Transform)
     suspend fun processContextMenuCommand(message: ContextMenuActionMessage)
 
     suspend fun processLinkClick(message: IncomingCwcMessage.ClickedLink)

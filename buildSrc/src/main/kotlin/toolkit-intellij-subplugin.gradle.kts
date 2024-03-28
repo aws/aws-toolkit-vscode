@@ -50,14 +50,6 @@ configurations {
         exclude(group = "org.slf4j")
         exclude(group = "org.jetbrains.kotlin")
         exclude(group = "org.jetbrains.kotlinx")
-
-        // Exclude dependencies we don't use to make plugin smaller
-        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
-    }
-
-    testRuntimeClasspath {
-        // Conflicts with CRT in test classpath
-        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
     }
 
     all {
@@ -193,35 +185,21 @@ tasks.runIde {
     }
 }
 
-configurations.instrumentedJar.configure {
-    // when the "instrumentedJar" configuration is selected, gradle is unable to resolve configurations needed by jacoco
-    // to calculate coverage, so we declare these as seconary artifacts on the primary "instrumentedJar" implicit variant
-    outgoing.variants {
-        create("instrumentedClasses") {
-            attributes {
-                attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
-                attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
-                attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
-                attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.CLASSES))
-            }
+// rewrite `runtimeElements` to use the `instrumentedJar` variant
+// there should never be a reason to use the default artifact at runtime, but `testFixturesRuntimeElements` pulls in `runtimeElements`
+// which is causing conflict between the `runtimeElements` and `instrumentedJar` variants
+// additionally more cleanly solves another headache from the IDE defaulting to instrumented classes while navigating between modules
+configurations.runtimeElements {
+    // remove the default artifact and replace with the instrumented jar
+    outgoing.artifacts.clear()
+    outgoing.artifacts(configurations.instrumentedJar.map { it.artifacts })
 
+    // replace default classes with instrumented classes
+    outgoing.variants {
+        get("classes").apply {
+            artifacts.clear()
             artifact(tasks.instrumentCode) {
                 type = ArtifactTypeDefinition.JVM_CLASS_DIRECTORY
-            }
-        }
-
-        listOf("coverageDataElements", "mainSourceElements").forEach { implicitVariant ->
-            val configuration = configurations.getByName(implicitVariant)
-            create(implicitVariant) {
-                attributes {
-                    configuration.attributes.keySet().forEach {
-                        attribute(it as Attribute<Any>, configuration.attributes.getAttribute(it)!!)
-                    }
-                }
-
-                configuration.artifacts.forEach {
-                    artifact(it)
-                }
             }
         }
     }

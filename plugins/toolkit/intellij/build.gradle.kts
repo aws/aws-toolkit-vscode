@@ -50,12 +50,11 @@ intellij {
 }
 
 tasks.prepareSandbox {
-    from(resharperDlls) {
-        into("aws-toolkit-jetbrains/dotnet")
-    }
-    from(gatewayResources) {
-        into("aws-toolkit-jetbrains/gateway-resources")
-    }
+    intoChild(pluginName.map { "$it/dotnet" })
+        .from(resharperDlls)
+
+    intoChild(pluginName.map { "$it/gateway-resources" })
+        .from(gatewayResources)
 }
 
 tasks.publishPlugin {
@@ -73,8 +72,8 @@ tasks.test {
 }
 
 dependencies {
-    implementation(project(":plugin-toolkit:jetbrains-core", "instrumentedJar"))
-    implementation(project(":plugin-toolkit:jetbrains-ultimate", "instrumentedJar"))
+    implementation(project(":plugin-toolkit:jetbrains-core"))
+    implementation(project(":plugin-toolkit:jetbrains-ultimate"))
     project.findProject(":plugin-toolkit:jetbrains-gateway")?.let {
         // does this need to be the instrumented variant?
         implementation(it)
@@ -85,6 +84,11 @@ dependencies {
         implementation(it)
         resharperDlls(project(":plugin-toolkit:jetbrains-rider", configuration = "resharperDlls"))
     }
+
+    // delete when fully split
+    implementation(project(":plugin-amazonq", "moduleOnlyJars"))
+    implementation(project(":plugin-core:jetbrains-community"))
+    implementation(project(":plugin-core:jetbrains-ultimate"))
 }
 
 configurations {
@@ -93,7 +97,6 @@ configurations {
         exclude(group = "org.slf4j")
         exclude(group = "org.jetbrains.kotlin")
         exclude(group = "org.jetbrains.kotlinx")
-        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
     }
 }
 

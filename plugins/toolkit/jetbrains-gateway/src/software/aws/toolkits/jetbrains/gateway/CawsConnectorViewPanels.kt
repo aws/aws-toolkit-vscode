@@ -50,7 +50,6 @@ import software.amazon.awssdk.services.codecatalyst.model.InstanceType
 import software.aws.toolkits.core.ClientConnectionSettings
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.awsClient
@@ -58,10 +57,10 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
-import software.aws.toolkits.jetbrains.core.utils.buildMap
 import software.aws.toolkits.jetbrains.gateway.connection.IdeBackendActions
 import software.aws.toolkits.jetbrains.gateway.welcomescreen.recursivelySetBackground
 import software.aws.toolkits.jetbrains.gateway.welcomescreen.setDefaultBackgroundAndBorder
+import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.caws.CawsCodeRepository
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
 import software.aws.toolkits.jetbrains.services.caws.CawsProject
@@ -480,7 +479,7 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
                             }
                         }
 
-                        if (AwsToolkit.isDeveloperMode()) {
+                        if (isDeveloperMode()) {
                             group(message("caws.workspace.details.developer_tool_settings")) {
                                 lateinit var useBundledToolkit: Cell<JBCheckBox>
                                 row {

@@ -14,7 +14,7 @@ import software.aws.toolkits.resources.message
 
 class CodeWhispererShowSettingsAction :
     AnAction(
-        message("codewhisperer.settings.show.label"),
+        message("codewhisperer.actions.open_settings.title"),
         null,
         AllIcons.General.GearPlain
     ),

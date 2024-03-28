@@ -29,7 +29,7 @@ class Customize : DumbAwareAction(
             val suffix = if (newCount > 0) {
                 " ($newCount new)"
             } else if (activeCustomization != null) {
-                " ${activeCustomization.name}"
+                " (${activeCustomization.name})"
             } else {
                 ""
             }

@@ -8,16 +8,16 @@ import { TabType } from '../storages/tabsStorage'
 
 export interface QuickActionGeneratorProps {
     isFeatureDevEnabled: boolean
-    isGumbyEnabled: boolean
+    isCodeTransformEnabled: boolean
 }
 
 export class QuickActionGenerator {
     public isFeatureDevEnabled: boolean
-    public isGumbyEnabled: boolean
+    public isCodeTransformEnabled: boolean
 
     constructor(props: QuickActionGeneratorProps) {
         this.isFeatureDevEnabled = props.isFeatureDevEnabled
-        this.isGumbyEnabled = props.isGumbyEnabled
+        this.isCodeTransformEnabled = props.isCodeTransformEnabled
     }
 
     public generateForTab(tabType: TabType): QuickActionCommandGroup[] {
@@ -41,7 +41,7 @@ export class QuickActionGenerator {
                               },
                           ]
                         : []),
-                    ...(this.isGumbyEnabled
+                    ...(this.isCodeTransformEnabled
                         ? [
                               {
                                   commands: [

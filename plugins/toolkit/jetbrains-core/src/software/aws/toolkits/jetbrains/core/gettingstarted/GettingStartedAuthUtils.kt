@@ -15,7 +15,6 @@ import software.amazon.awssdk.profiles.ProfileProperty
 import software.amazon.awssdk.services.ssooidc.model.InvalidGrantException
 import software.amazon.awssdk.services.ssooidc.model.InvalidRequestException
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
-import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
@@ -30,7 +29,6 @@ import software.aws.toolkits.jetbrains.core.credentials.UserConfigSsoSessionProf
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
-import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialsIdentifierSso
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
@@ -480,22 +478,6 @@ internal fun authAndUpdateConfig(
     )
 
     return connection
-}
-
-fun deleteSsoConnectionCW(connection: AwsBearerTokenConnection) =
-    deleteSsoConnection(getSsoSessionProfileNameFromBearer(connection))
-
-fun deleteSsoConnectionExplorer(connection: CredentialIdentifier) =
-    deleteSsoConnection(getSsoSessionProfileNameFromCredentials(connection))
-
-fun deleteSsoConnection(sessionName: String) = DefaultConfigFilesFacade().deleteSsoConnectionFromConfig(sessionName)
-
-fun getSsoSessionProfileNameFromBearer(connection: AwsBearerTokenConnection): String =
-    connection.id.substringAfter("${SsoSessionConstants.SSO_SESSION_SECTION_NAME}:")
-
-fun getSsoSessionProfileNameFromCredentials(connection: CredentialIdentifier): String {
-    connection as ProfileCredentialsIdentifierSso
-    return connection.ssoSessionName
 }
 
 const val CODEWHISPERER_AUTH_LEARN_MORE_LINK = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/codewhisperer-auth.html"

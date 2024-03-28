@@ -30,12 +30,13 @@ reported the issue. Please try to include as much information as you can. Detail
     ```
     brew install dotnet@6
     ```
+  * If Gradle cannot find `dotnet`, run `./gradlew --stop` and `./gradlew projects` to reload the daemon. Note that this should be done in your terminal as invoking Gradle through the IDE will use the IDE's cached PATH.
 
 ### Instructions
 
-1. Clone the github repository and run `./gradlew :intellij:buildPlugin` <br/> (This will produce a plugin zip under `intellij/build/distributions`)
+1. Clone the github repository and run `./gradlew :plugin-toolkit:intellij:buildPlugin` <br/> (This will produce a plugin zip under `plugins/toolkit/intellij/build/distributions`)
 2. In your JetBrains IDE (e.g. IntelliJ) navigate to the `Plugins` preferences and select "Install Plugin from Disk...", navigate to the zip file produced in step 1. 
-4. You will be prompted to restart your IDE.
+3. You will be prompted to restart your IDE.
 
 ## Contributing via Pull Requests
 

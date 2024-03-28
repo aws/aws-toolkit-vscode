@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.codemodernizer
 
-import com.intellij.icons.AllIcons
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -16,12 +15,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.apache.commons.codec.digest.DigestUtils
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationJob
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationPlan
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
@@ -31,11 +28,9 @@ import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnection
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnectionType
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.BearerTokenFeatureSet
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerConnectionValidity
+import software.aws.toolkits.jetbrains.services.codemodernizer.auth.isCodeTransformAvailable
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
+import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformMessageListener
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerException
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
@@ -44,38 +39,29 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.CustomerSel
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.InvalidTelemetryReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MAVEN_CONFIGURATION_FILE_NAME
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.panels.managers.CodeModernizerBottomWindowPanelManager
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerState
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.StateFlags
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.buildState
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.getLatestJobId
-import software.aws.toolkits.jetbrains.services.codemodernizer.state.toSessionContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.toolwindow.CodeModernizerBottomToolWindowFactory
-import software.aws.toolkits.jetbrains.services.codemodernizer.ui.components.PreCodeTransformUserDialog
 import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.jetbrains.utils.notifyStickyError
 import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformCancelSrcComponents
-import software.aws.toolkits.telemetry.CodeTransformJavaSourceVersionsAllowed
-import software.aws.toolkits.telemetry.CodeTransformJavaTargetVersionsAllowed
 import software.aws.toolkits.telemetry.CodeTransformPreValidationError
-import software.aws.toolkits.telemetry.CodeTransformStartSrcComponents
-import software.aws.toolkits.telemetry.CodetransformTelemetry
-import software.aws.toolkits.telemetry.Result
 import java.time.Instant
-import java.util.Base64
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.swing.Icon
 
 const val AMAZON_Q_FEEDBACK_DIALOG_KEY = "Amazon Q"
 
 @State(name = "codemodernizerStates", storages = [Storage("aws.xml", roamingType = RoamingType.PER_OS)])
 class CodeModernizerManager(private val project: Project) : PersistentStateComponent<CodeModernizerState>, Disposable {
+    private val telemetry = CodeTransformTelemetryManager.getInstance(project)
     private var managerState = CodeModernizerState()
     val codeModernizerBottomWindowPanelManager by lazy { CodeModernizerBottomWindowPanelManager(project) }
     private val codeModernizerBottomWindowPanelContent by lazy {
@@ -92,6 +78,8 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     private val supportedBuildFileNames = listOf(MAVEN_CONFIGURATION_FILE_NAME)
     private val isModernizationInProgress = AtomicBoolean(false)
     private val isResumingJob = AtomicBoolean(false)
+    private val isMvnRunning = AtomicBoolean(false)
+    private val isJobSuccessfullyResumed = AtomicBoolean(false)
 
     private val transformationStoppedByUsr = AtomicBoolean(false)
     private var codeTransformationSession: CodeModernizerSession? = null
@@ -111,60 +99,70 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     }
 
     fun validate(project: Project): ValidationResult {
-        if (isRunningOnRemoteBackend()) {
-            return ValidationResult(
-                false,
-                message("codemodernizer.notification.warn.invalid_project.description.reason.remote_backend"),
-                InvalidTelemetryReason(
-                    CodeTransformPreValidationError.RemoteRunProject
+        fun validateCore(project: Project): ValidationResult {
+            if (isRunningOnRemoteBackend()) {
+                return ValidationResult(
+                    false,
+                    message("codemodernizer.notification.warn.invalid_project.description.reason.remote_backend"),
+                    InvalidTelemetryReason(
+                        CodeTransformPreValidationError.RemoteRunProject
+                    )
                 )
-            )
-        }
-        val connection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.Q)
-        if (!(connection.connectionType == ActiveConnectionType.IAM_IDC && connection is ActiveConnection.ValidBearer)) {
-            return ValidationResult(
-                false,
-                message("codemodernizer.notification.warn.invalid_project.description.reason.not_logged_in"),
-                InvalidTelemetryReason(
-                    CodeTransformPreValidationError.NonSsoLogin
+            }
+            if (!isCodeTransformAvailable(project)) {
+                return ValidationResult(
+                    false,
+                    message("codemodernizer.notification.warn.invalid_project.description.reason.not_logged_in"),
+                    InvalidTelemetryReason(
+                        CodeTransformPreValidationError.NonSsoLogin
+                    )
                 )
-            )
+            }
+
+            if (ProjectRootManager.getInstance(project).contentRoots.isEmpty()) {
+                return ValidationResult(
+                    false,
+                    message("codemodernizer.notification.warn.invalid_project.description.reason.missing_content_roots"),
+                    InvalidTelemetryReason(
+                        CodeTransformPreValidationError.NoPom
+                    )
+                )
+            }
+            val supportedModules = project.getSupportedModules(supportedJavaMappings).toSet()
+            val validProjectJdk = project.getSupportedJavaMappings(supportedJavaMappings).isNotEmpty()
+            val projectJdk = project.tryGetJdk()
+            if (supportedModules.isEmpty() && !validProjectJdk) {
+                return ValidationResult(
+                    false,
+                    message(
+                        "codemodernizer.notification.warn.invalid_project.description.reason.invalid_jdk_versions",
+                        supportedJavaMappings.keys.joinToString()
+                    ),
+                    InvalidTelemetryReason(
+                        CodeTransformPreValidationError.UnsupportedJavaVersion,
+                        projectJdk?.toString().orEmpty()
+                    )
+                )
+            }
+            val validatedBuildFiles = project.getSupportedBuildFilesWithSupportedJdk(supportedBuildFileNames, supportedJavaMappings)
+            return if (validatedBuildFiles.isNotEmpty()) {
+                ValidationResult(true, validatedBuildFiles = validatedBuildFiles, validatedProjectJdkName = projectJdk?.description.orEmpty())
+            } else {
+                ValidationResult(
+                    false,
+                    message("codemodernizer.notification.warn.invalid_project.description.reason.no_valid_files", supportedBuildFileNames.joinToString()),
+                    InvalidTelemetryReason(
+                        CodeTransformPreValidationError.NonMavenProject,
+                        if (isGradleProject(project)) "Gradle build" else "other build"
+                    )
+                )
+            }
         }
 
-        if (ProjectRootManager.getInstance(project).contentRoots.isEmpty()) {
-            return ValidationResult(
-                false,
-                message("codemodernizer.notification.warn.invalid_project.description.reason.missing_content_roots"),
-                InvalidTelemetryReason(
-                    CodeTransformPreValidationError.NoPom
-                )
-            )
-        }
-        val supportedModules = project.getSupportedModules(supportedJavaMappings).toSet()
-        val validProjectJdk = project.getSupportedJavaMappings(supportedJavaMappings).isNotEmpty()
-        if (supportedModules.isEmpty() && !validProjectJdk) {
-            return ValidationResult(
-                false,
-                message("codemodernizer.notification.warn.invalid_project.description.reason.invalid_jdk_versions", supportedJavaMappings.keys.joinToString()),
-                InvalidTelemetryReason(
-                    CodeTransformPreValidationError.UnsupportedJavaVersion,
-                    project.tryGetJdk().toString()
-                )
-            )
-        }
-        val validatedBuildFiles = project.getSupportedBuildFilesWithSupportedJdk(supportedBuildFileNames, supportedJavaMappings)
-        return if (validatedBuildFiles.isNotEmpty()) {
-            ValidationResult(true, validatedBuildFiles = validatedBuildFiles)
-        } else {
-            ValidationResult(
-                false,
-                message("codemodernizer.notification.warn.invalid_project.description.reason.no_valid_files", supportedBuildFileNames.joinToString()),
-                InvalidTelemetryReason(
-                    CodeTransformPreValidationError.NonMavenProject,
-                    if (isGradleProject(project)) "Gradle build" else "other build"
-                )
-            )
-        }
+        val result = validateCore(project)
+        telemetry.sendValidationResult(result)
+
+        return result
     }
 
     /**
@@ -202,93 +200,26 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         codeModernizerBottomWindowPanelManager.setJobStartingUI()
     }
 
-    fun validateAndStart(srcStartComponent: CodeTransformStartSrcComponents = CodeTransformStartSrcComponents.DevToolsStartButton) =
-        projectCoroutineScope(project).launch {
-            sendUserClickedTelemetry(srcStartComponent)
-            if (isModernizationInProgress.getAndSet(true)) return@launch
-            val validationResult = validate(project)
-            runInEdt {
-                sendValidationResultTelemetry(validationResult)
-                if (validationResult.valid) {
-                    runModernize(validationResult.validatedBuildFiles) ?: isModernizationInProgress.set(false)
-                } else {
-                    warnUnsupportedProject(validationResult.invalidReason)
-                    isModernizationInProgress.set(false)
-                }
-            }
-        }
-
-    private fun sendUserClickedTelemetry(srcStartComponent: CodeTransformStartSrcComponents) {
-        CodeTransformTelemetryState.instance.setSessionId()
-        CodeTransformTelemetryState.instance.setStartTime()
-        CodetransformTelemetry.isDoubleClickedToTriggerUserModal(
-            codeTransformStartSrcComponents = srcStartComponent,
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-        )
-    }
-
-    private fun sendValidationResultTelemetry(validationResult: ValidationResult, onProjectFirstOpen: Boolean = false) {
-        // Old telemetry event to be fired only when users click on transform
-        if (!validationResult.valid && !onProjectFirstOpen) {
-            CodetransformTelemetry.isDoubleClickedToTriggerInvalidProject(
-                codeTransformPreValidationError = validationResult.invalidTelemetryReason.category ?: CodeTransformPreValidationError.Unknown,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                result = Result.Failed,
-                reason = validationResult.invalidTelemetryReason.additonalInfo
-            )
-        }
-        // New projectDetails metric should always be fired whether the project was valid or invalid
-        CodetransformTelemetry.projectDetails(
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            result = if (!validationResult.valid) Result.Failed else Result.Succeeded,
-            reason = if (!validationResult.valid) validationResult.invalidTelemetryReason.additonalInfo else null,
-            codeTransformPreValidationError = validationResult.invalidTelemetryReason.category ?: CodeTransformPreValidationError.Unknown,
-            codeTransformLocalJavaVersion = project.tryGetJdk().toString()
-        )
-    }
-
     fun stopModernize() {
         if (isModernizationJobActive()) {
             userInitiatedStopCodeModernization()
-            CodetransformTelemetry.jobIsCancelledByUser(
-                codeTransformCancelSrcComponents = CodeTransformCancelSrcComponents.DevToolsStopButton,
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId()
-            )
+            telemetry.jobIsCancelledByUser(CodeTransformCancelSrcComponents.DevToolsStopButton)
         }
     }
 
-    private fun calculateProjectHash(customerSelection: CustomerSelection) = Base64
-        .getEncoder()
-        .encodeToString(DigestUtils.sha256(customerSelection.configurationFile.path))
-
-    fun runModernize(validatedBuildFiles: List<VirtualFile>): Job? {
+    fun runModernize(copyResult: MavenCopyCommandsResult): Job? {
         initStopParameters()
-        val customerSelection = getCustomerSelection(validatedBuildFiles) ?: return null
-        CodetransformTelemetry.jobStartedCompleteFromPopupDialog(
-            codeTransformJavaSourceVersionsAllowed = CodeTransformJavaSourceVersionsAllowed.from(customerSelection.sourceJavaVersion.name),
-            codeTransformJavaTargetVersionsAllowed = CodeTransformJavaTargetVersionsAllowed.from(customerSelection.targetJavaVersion.name),
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformProjectId = calculateProjectHash(customerSelection),
-        )
-        initModernizationJobUI(true, project.getModuleOrProjectNameForFile(customerSelection.configurationFile))
-        val session = createCodeModernizerSession(customerSelection, project)
-        codeTransformationSession = session
-        return launchModernizationJob(session)
+        val session = codeTransformationSession as CodeModernizerSession
+        initModernizationJobUI(true, project.getModuleOrProjectNameForFile(session.sessionContext.configurationFile))
+        return launchModernizationJob(session, copyResult)
     }
 
     private fun initStopParameters() {
-        codeTransformationSession = null
         transformationStoppedByUsr.set(false)
         CodeModernizerSessionState.getInstance(project).currentJobStatus = TransformationStatus.UNKNOWN_TO_SDK_VERSION
         CodeModernizerSessionState.getInstance(project).currentJobCreationTime = Instant.MIN
         CodeModernizerSessionState.getInstance(project).currentJobStopTime = Instant.MIN
     }
-
-    fun getCustomerSelection(validatedBuildFiles: List<VirtualFile>): CustomerSelection? = PreCodeTransformUserDialog(
-        project,
-        validatedBuildFiles,
-        supportedJavaMappings,
-    ).create()
 
     private fun notifyJobFailure(failureReason: String?, retryable: Boolean) {
         val reason = failureReason ?: message("codemodernizer.notification.info.modernize_failed.unknown_failure_reason") // should not happen
@@ -327,26 +258,17 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         )
     }
 
-    internal fun notifyTransformationStartCannotYetStop() {
+    internal fun notifyTransformationFailedToStop() {
         notifyStickyError(
             message("codemodernizer.notification.info.transformation_start_stopping.failed_title"),
-            message("codemodernizer.notification.info.transformation_start_stopping.failed_as_job_not_started"),
+            message("codemodernizer.notification.info.transformation_start_stopping.failed_content"),
             project,
             listOf(displayFeedbackNotificationAction())
         )
     }
 
-    internal fun notifyTransformationFailedToStop(message: String) {
-        notifyStickyError(
-            message("codemodernizer.notification.info.transformation_start_stopping.failed_title"),
-            message("codemodernizer.notification.info.transformation_start_stopping.failed_content", message),
-            project,
-            listOf(displayFeedbackNotificationAction())
-        )
-    }
-
-    fun launchModernizationJob(session: CodeModernizerSession) = projectCoroutineScope(project).launch {
-        val result = initModernizationJob(session)
+    fun launchModernizationJob(session: CodeModernizerSession, copyResult: MavenCopyCommandsResult) = projectCoroutineScope(project).launch {
+        val result = initModernizationJob(session, copyResult)
         postModernizationJob(result)
     }
 
@@ -390,11 +312,39 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         managerState.flags[StateFlags.IS_ONGOING] = false
     }
 
-    /**
-     *Start the modernization job and return the reference
-     */
-    internal suspend fun initModernizationJob(session: CodeModernizerSession): CodeModernizerJobCompletedResult {
-        val result = session.createModernizationJob()
+    fun handleLocalMavenBuildResult(mavenCopyCommandsResult: MavenCopyCommandsResult) {
+        codeTransformationSession?.setLastMvnBuildResult(mavenCopyCommandsResult)
+        // Send IDE notifications first
+        if (mavenCopyCommandsResult == MavenCopyCommandsResult.Failure) {
+            notifyStickyInfo(
+                message("codemodernizer.notification.warn.maven_failed.title"),
+                message("codemodernizer.notification.warn.maven_failed.content"),
+                project,
+                listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_MAVEN_COMMANDS), displayFeedbackNotificationAction()),
+            )
+        }
+
+        CodeTransformMessageListener.instance.onMavenBuildResult(mavenCopyCommandsResult)
+    }
+
+    fun runLocalMavenBuild(project: Project, customerSelection: CustomerSelection) {
+        telemetry.jobStartedCompleteFromPopupDialog(customerSelection)
+
+        // Create and set a session
+        codeTransformationSession = null
+        val session = createCodeModernizerSession(customerSelection, project)
+        codeTransformationSession = session
+
+        projectCoroutineScope(project).launch {
+            isMvnRunning.set(true)
+            val result = session.getDependenciesUsingMaven()
+            isMvnRunning.set(false)
+            handleLocalMavenBuildResult(result)
+        }
+    }
+
+    internal suspend fun initModernizationJob(session: CodeModernizerSession, copyResult: MavenCopyCommandsResult): CodeModernizerJobCompletedResult {
+        val result = session.createModernizationJob(copyResult)
         return when (result) {
             is CodeModernizerStartJobResult.ZipCreationFailed -> {
                 CodeModernizerJobCompletedResult.UnableToCreateJob(
@@ -446,9 +396,12 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     }
 
     internal fun postModernizationJob(result: CodeModernizerJobCompletedResult) {
+        codeTransformationSession?.setLastTransformResult(result)
+
         if (result is CodeModernizerJobCompletedResult.ManagerDisposed) {
             return
         }
+
         // https://plugins.jetbrains.com/docs/intellij/general-threading-rules.html#write-access
         ApplicationManager.getApplication().invokeLater {
             setJobNotOngoing()
@@ -456,10 +409,12 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             if (!transformationStoppedByUsr.get()) {
                 informUserOfCompletion(result)
                 codeModernizerBottomWindowPanelManager.setJobFinishedUI(result)
+                CodeTransformMessageListener.instance.onTransformResult(result)
             } else {
                 codeModernizerBottomWindowPanelManager.userInitiatedStopCodeModernizationUI()
                 notifyTransformationStopped()
                 transformationStoppedByUsr.set(false)
+                CodeTransformMessageListener.instance.onTransformStopped()
             }
         }
     }
@@ -479,7 +434,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             // Gather project details
             if (onProjectFirstOpen) {
                 val validationResult = validate(project)
-                sendValidationResultTelemetry(validationResult, onProjectFirstOpen)
+                telemetry.sendValidationResult(validationResult, onProjectFirstOpen)
             }
 
             val context = managerState.toSessionContext(project)
@@ -489,6 +444,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             val result = session.getJobDetails(lastJobId)
             when (result.status()) {
                 TransformationStatus.COMPLETED -> {
+                    CodeTransformMessageListener.instance.onTransformResuming()
                     notifyStickyInfo(
                         message("codemodernizer.manager.job_finished_title"),
                         message("codemodernizer.manager.job_finished_content"),
@@ -504,6 +460,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 }
 
                 TransformationStatus.PARTIALLY_COMPLETED -> {
+                    CodeTransformMessageListener.instance.onTransformResuming()
                     notifyStickyInfo(
                         message("codemodernizer.notification.info.modernize_failed.title"),
                         message("codemodernizer.manager.job_failed_content", result.reason()),
@@ -520,6 +477,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 }
 
                 TransformationStatus.UNKNOWN_TO_SDK_VERSION -> {
+                    CodeTransformMessageListener.instance.onTransformResuming()
                     notifyStickyInfo(
                         message("codemodernizer.notification.warn.on_resume.unknown_status_response.title"),
                         message("codemodernizer.notification.warn.on_resume.unknown_status_response.content"),
@@ -528,10 +486,13 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 }
 
                 TransformationStatus.STOPPED, TransformationStatus.STOPPING -> {
+                    CodeTransformMessageListener.instance.onTransformResuming()
                     setJobNotOngoing()
                 }
 
                 else -> {
+                    isJobSuccessfullyResumed.set(true)
+                    CodeTransformMessageListener.instance.onTransformResuming()
                     resumeJob(session, lastJobId, result)
                     notifyStickyInfo(
                         message("codemodernizer.manager.job_ongoing_title"),
@@ -541,11 +502,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                     )
                 }
             }
-            CodetransformTelemetry.jobIsResumedAfterIdeClose(
-                codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId = lastJobId.id,
-                codeTransformStatus = result.status().toString()
-            )
+            telemetry.jobIsResumedAfterIdeClose(lastJobId, result.status())
         } catch (e: AccessDeniedException) {
             LOG.error { "Unable to resume job as credentials are invalid" }
             // User is logged in with old or invalid credentials, nothing to do until they log in with valid credentials
@@ -581,7 +538,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             FeedbackDialog(project, productName = AMAZON_Q_FEEDBACK_DIALOG_KEY).showAndGet()
         }
 
-    fun informUserOfCompletion(result: CodeModernizerJobCompletedResult) {
+    private fun informUserOfCompletion(result: CodeModernizerJobCompletedResult) {
         var jobId: JobId? = null
         when (result) {
             is CodeModernizerJobCompletedResult.UnableToCreateJob -> notifyJobFailure(
@@ -640,15 +597,14 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 project,
                 listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_PREREQUISITES), displayFeedbackNotificationAction()),
             )
+            is CodeModernizerJobCompletedResult.Stopped -> notifyStickyInfo(
+                message("codemodernizer.notification.info.transformation_stop.title"),
+                message("codemodernizer.notification.info.transformation_stop.content"),
+                project,
+                listOf(displayFeedbackNotificationAction())
+            )
         }
-        CodetransformTelemetry.totalRunTime(
-            codeTransformJobId = jobId?.toString(),
-            codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformResultStatusMessage = result.toString(),
-            codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
-            codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
-            codeTransformLocalMavenVersion = getMavenVersion(project),
-        )
+        telemetry.totalRunTime(result.toString(), jobId)
     }
 
     fun createCodeModernizerSession(customerSelection: CustomerSelection, project: Project) = CodeModernizerSession(
@@ -669,44 +625,42 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     fun userInitiatedStopCodeModernization() {
         notifyTransformationStartStopping()
         if (transformationStoppedByUsr.getAndSet(true)) return
-        val currentId = codeTransformationSession?.getActiveJobId()?.id
+        val currentId = codeTransformationSession?.getActiveJobId()
         projectCoroutineScope(project).launch {
             try {
-                val success = codeTransformationSession?.stopTransformation(currentId) ?: true // no session -> no job to stop
+                val success = codeTransformationSession?.stopTransformation(currentId?.id) ?: true // no session -> no job to stop
                 if (!success) {
                     // This should not happen
                     throw CodeModernizerException(message("codemodernizer.notification.info.transformation_start_stopping.as_no_response"))
-                } else {
-                    // Code successfully stopped toast will display when post job is run after this
-                    CodetransformTelemetry.totalRunTime(
-                        codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformResultStatusMessage = "JobCancelled",
-                        codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
-                        codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
-                        codeTransformLocalMavenVersion = getMavenVersion(project),
-                    )
                 }
             } catch (e: Exception) {
                 LOG.error(e) { e.message.toString() }
-                notifyTransformationFailedToStop(e.localizedMessage)
-                CodetransformTelemetry.totalRunTime(
-                    codeTransformSessionId = CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformResultStatusMessage = "JobCancelled",
-                    codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
-                    codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
-                    codeTransformLocalMavenVersion = getMavenVersion(project),
-                )
+                notifyTransformationFailedToStop()
+            } finally {
+                telemetry.totalRunTime("JobCancelled", currentId)
             }
         }
     }
 
+    fun isModernizationJobResuming(): Boolean = isResumingJob.get()
+
+    fun isModernizationJobStopping(): Boolean = transformationStoppedByUsr.get()
+
     fun isModernizationJobActive(): Boolean = isModernizationInProgress.get()
+
+    fun isRunningMvn(): Boolean = isMvnRunning.get()
+
+    fun isJobSuccessfullyResumed(): Boolean = isJobSuccessfullyResumed.get()
+
+    fun getLastMvnBuildResult(): MavenCopyCommandsResult? = codeTransformationSession?.getLastMvnBuildResult()
+
+    fun getLastTransformResult(): CodeModernizerJobCompletedResult? = codeTransformationSession?.getLastTransformResult()
 
     fun getBottomToolWindow() = ToolWindowManager.getInstance(project).getToolWindow(CodeModernizerBottomToolWindowFactory.id)
         ?: error(message("codemodernizer.toolwindow.problems_window_not_found"))
 
-    fun getRunActionButtonIcon(): Icon =
-        if (isModernizationInProgress.get()) AllIcons.Actions.Suspend else AllIcons.Actions.Execute
+    fun getMvnBuildWindow() = ToolWindowManager.getInstance(project).getToolWindow("Run")
+        ?: error(message("codemodernizer.toolwindow.problems_mvn_window_not_found"))
 
     override fun getState(): CodeModernizerState = CodeModernizerState().apply {
         lastJobContext.putAll(managerState.lastJobContext)

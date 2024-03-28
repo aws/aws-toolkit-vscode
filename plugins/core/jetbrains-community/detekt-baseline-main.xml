@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>Filename:DEFAULT_PROFILE_ID.kt$software.aws.toolkits.jetbrains.core.credentials.profiles.DEFAULT_PROFILE_ID.kt</ID>
+    <ID>Filename:contexts.kt$software.aws.toolkits.jetbrains.core.coroutines.contexts.kt</ID>
+    <ID>Filename:scopes.kt$software.aws.toolkits.jetbrains.core.coroutines.scopes.kt</ID>
+    <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Bug: Attempting to retrieve connection settings with invalid connection state")</ID>
+    <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Connection settings are not configured")</ID>
+    <ID>UseCheckOrError:AwsRegionProvider.kt$AwsRegionProvider$throw IllegalStateException("Region provider data is missing default data")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile $sourceProfileName looks to have been removed")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile ${profileProviderId.profileName} looks to have been removed")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("ProfileCredentialProviderFactory can only handle ProfileCredentialsIdentifier, but got ${providerId::class}")</ID>
+    <ID>UseOrEmpty:NotificationUtils.kt$&lt;no name provided>$title ?: ""</ID>
+    <ID>UseOrEmpty:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$e.message?.let { ": $it" } ?: ""</ID>
+    <ID>UseOrEmpty:ToolkitCredentialProcessProvider.kt$ToolkitCredentialProcessProvider$errorOutput?.let { ": $it" } ?: ""</ID>
+    <ID>UseRequire:ProfileUtils.kt$throw IllegalArgumentException(message("credentials.profile.assume_role.duplicate_source", currentProfileName))</ID>
+    <ID>UseRequire:ProfileUtils.kt$throw IllegalArgumentException(message("credentials.profile.assume_role.missing_source", currentProfileName))</ID>
+  </CurrentIssues>
+</SmellBaseline>

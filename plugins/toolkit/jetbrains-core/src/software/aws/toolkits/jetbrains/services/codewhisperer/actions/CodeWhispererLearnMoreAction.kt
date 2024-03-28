@@ -16,7 +16,7 @@ import java.net.URI
 
 class CodeWhispererLearnMoreAction :
     AnAction(
-        message("codewhisperer.explorer.learn_more"),
+        message("codewhisperer.actions.view_documentation.title"),
         null,
         AllIcons.Actions.Help
     ),

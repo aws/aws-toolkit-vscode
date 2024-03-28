@@ -2,60 +2,25 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>BannedImports:CawsCloneDialogComponent.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:CreateEcrRepoDialog.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:CreateIamServiceRoleDialog.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:CreationPanel.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:DeleteResourceDialog.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:DeployServerlessApplicationDialog.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:DynamicResourcesConfigurable.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:EnableDisableExecuteCommandWarning.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:ExperimentConfigurable.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:LambdaSettingsConfigurable.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:OpenShellInContainerDialog.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:PauseServiceAction.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:PullFromRepositoryAction.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:PushToRepositoryAction.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:ResumeServiceAction.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:RunCommandDialog.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:SamInitSelectionPanel.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:SchemaSelectionPanel.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:SdkSelectionPanel.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:SearchPanel.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:SonoLoginOverlay.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:TaskRoleNotFoundWarningDialog.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:ToolConfigurable.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:UploadFunctionContinueDialog.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:ValidatingPanel.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:ViewResourceDialog.kt$import com.intellij.ui.layout.panel</ID>
     <ID>CommentWrapping:Attributes.kt$NullAttribute$/*Dynamo always expects the NUL field to contain true */</ID>
     <ID>CommentWrapping:ConfigureMaxResultsAction.kt$ConfigureMaxResultsAction$/* popup */</ID>
-    <ID>CommentWrapping:CredentialIdentifierSelector.kt$CredentialIdentifierSelector.Companion$/* Guarded by apply check */</ID>
     <ID>CommentWrapping:ProjectFileBrowseListener.kt$/* infer disposable from UI context */</ID>
     <ID>CommentWrapping:S3VirtualBucket.kt$S3VirtualBucket$/* Unit tests refuse to open this in an editor if this is true */</ID>
     <ID>CommentWrapping:SamInitSelectionPanel.kt$SamInitSelectionPanel$/* Only available in PyCharm! */</ID>
     <ID>CommentWrapping:SamInitSelectionPanel.kt$SamInitSelectionPanel$/* Used in Rider to refresh the validation */</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeScanSessionConfig.kt$CodeScanSessionConfig$val (includedSourceFiles, payloadSize, totalLines, _) = includeDependencies()</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager$val (_, editor, _, caretPosition) = requestContext</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager.&lt;no name provided>$val (localEditor, highlighter, codeContent, referenceContent) = it</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererJavaCodeScanTest.kt$CodeWhispererJavaCodeScanTest$val (includedSourceFiles, srcPayloadSize, totalLines, buildPaths) = payloadMetadata</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPopupManager.kt$CodeWhispererPopupManager$val (_, _, recommendationContext, popup) = states</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPythonCodeScanTest.kt$CodeWhispererPythonCodeScanTest$val (includedSourceFiles, srcPayloadSize, totalLines, buildPaths) = payloadMetadata</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualProject, actualEditor, actualTriggerTypeInfo, actualCaretPosition, actualFileContextInfo) = actualRequestContext</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualRequestId, actualRecommendationDetail, _, actualIsDiscarded) = actualDetailContext</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$val (payloadContext, serviceInvocationContext, codeScanJobId, totalIssues, reason) = codeScanEvent.codeScanResponseContext</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$val (project, _, triggerTypeInfo, caretPosition) = requestContext</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$val (requestId, detail, _, isDiscarded) = detailContext</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:JavaCodeScanSessionConfig.kt$JavaCodeScanSessionConfig$val (sourceFiles, srcPayloadSize, totalLines, buildPaths) = includeDependencies()</ID>
     <ID>ExpressionBodySyntax:CawsProjectListRenderer.kt$CawsProjectListRenderer.&lt;no name provided>$return myContext</ID>
     <ID>ExpressionBodySyntax:CodeWhispererSettingsTest.kt$CodeWhispererSettingsTest.&lt;no name provided>$return myToolWindows[id]</ID>
     <ID>ExpressionBodySyntax:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$return previousUserTriggerDecisionTimestamp?.let { Duration.between(it, Instant.now()).toMillis().toDouble() }</ID>
     <ID>Filename:AwsSettingsPanel.kt$software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanel.kt</ID>
     <ID>Filename:CawsSpaceProjectInfo.kt$software.aws.toolkits.jetbrains.services.caws.CawsSpaceProjectInfo.kt</ID>
-    <ID>Filename:CognitoIdentityProvider.kt$software.aws.toolkits.jetbrains.services.telemetry.CognitoIdentityProvider.kt</ID>
     <ID>Filename:ShowLogsAroundAction.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ShowLogsAroundAction.kt</ID>
-    <ID>Filename:contexts.kt$software.aws.toolkits.jetbrains.core.coroutines.contexts.kt</ID>
-    <ID>Filename:scopes.kt$software.aws.toolkits.jetbrains.core.coroutines.scopes.kt</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_fail_autodetectBadSam_andManuallySetToBadSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectBadSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectValidSam()</ID>
@@ -84,27 +49,7 @@
     <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun NonSamFunction()</ID>
     <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun NonSamFunction_Substring()</ID>
     <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun SamFunction()</ID>
-    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun bothFilesOpened_bothFilesExists()</ID>
-    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun configFileOpened_onlyConfigExists()</ID>
-    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun confirmConfigFileCreated_bothFilesDoNotExist()</ID>
-    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun credentialFileOpened_onlyCredentialsExists()</ID>
-    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withNamespace()</ID>
-    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withoutNamespace()</ID>
     <ID>FunctionNaming:DeleteWaiterTest.kt$DeleteWaiterTest$@Test fun deleteSuccessful_stackNotExist()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_Duplicate()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_InvalidChars()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_TooLong()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameterAllTypesValid_hasValues()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameterAllTypesValid_noValues()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberConstraintsInvalid()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberInvalid()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberTooBig()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberTooSmall()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringConstraintsInvalid()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringFailsRegex()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringRegex()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringTooLong()</ID>
-    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringTooShort()</ID>
     <ID>FunctionNaming:DeploySettingsTest.kt$DeploySettingsTest$@Test fun relativeSamPath_null()</ID>
     <ID>FunctionNaming:DeploySettingsTest.kt$DeploySettingsTest$@Test fun relativeSamPath_root()</ID>
     <ID>FunctionNaming:FileInfoCacheTest.kt$FileInfoCacheTest$@Test fun emptyCache_SingleExecutableRequest()</ID>
@@ -132,12 +77,7 @@
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val wrongPageMessage = "Wrong list of available pages"</ID>
     <ID>TopLevelPropertyNaming:SqsUtils.kt$const val sqsPolicyStatementArray = "Statement"</ID>
     <ID>UnusedPrivateProperty:CawsCloneDialogComponent.kt$CawsCloneDialogComponent$private val modalityState: ModalityState</ID>
-    <ID>UnusedPrivateProperty:RaceDefaultToolkitAuthManagerTest.kt$RaceDefaultToolkitAuthManagerTest$val jobs = (1..50).map { // scope.async { ApplicationManager.getApplication().executeOnPooledThread { ToolkitAuthManager.getInstance().getConnection("id") } }</ID>
-    <ID>UnusedPrivateProperty:RaceDefaultToolkitAuthManagerTest.kt$RaceDefaultToolkitAuthManagerTest$val scope = projectCoroutineScope(projectRule.project)</ID>
-    <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Bug: Attempting to retrieve connection settings with invalid connection state")</ID>
-    <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Connection settings are not configured")</ID>
     <ID>UseCheckOrError:AwsConsoleUrlFactory.kt$AwsConsoleUrlFactory$throw IllegalStateException("Partition '${region.partitionId}' is not supported")</ID>
-    <ID>UseCheckOrError:AwsRegionProvider.kt$AwsRegionProvider$throw IllegalStateException("Region provider data is missing default data")</ID>
     <ID>UseCheckOrError:AwsRegionProviderTest.kt$AwsRegionProviderTest$throw IllegalStateException("Bad test data")</ID>
     <ID>UseCheckOrError:CawsParameterDescriptions.kt$throw IllegalStateException("Failed to locate parameterDescriptions.json")</ID>
     <ID>UseCheckOrError:CloudWatchActor.kt$CloudWatchLogsActor$throw IllegalStateException("Table does not support loadInitial")</ID>
@@ -172,11 +112,7 @@
     <ID>UseCheckOrError:LocalLambdaRunSettings.kt$ImageTemplateRunSettings$throw IllegalStateException("Attempting to run SAM for unsupported language ${imageDebugger.languageId}")</ID>
     <ID>UseCheckOrError:LocalLambdaRunSettings.kt$TemplateRunSettings$throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")</ID>
     <ID>UseCheckOrError:LocalLambdaRunSettings.kt$throw IllegalStateException("Can't find debugger support for $this")</ID>
-    <ID>UseCheckOrError:MockClientManager.kt$MockClientManager$throw IllegalStateException("No mock registered for $sdkClass")</ID>
     <ID>UseCheckOrError:OpenShellInContainerDialog.kt$OpenShellInContainerDialog$throw IllegalStateException("Task not Selected")</ID>
-    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile $sourceProfileName looks to have been removed")</ID>
-    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile ${profileProviderId.profileName} looks to have been removed")</ID>
-    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("ProfileCredentialProviderFactory can only handle ProfileCredentialsIdentifier, but got ${providerId::class}")</ID>
     <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException("image id was null")</ID>
     <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException("repository uri was null")</ID>
     <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException("run configuration was null")</ID>

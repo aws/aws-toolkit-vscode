@@ -16,7 +16,6 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManagerConn
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsMenuBuilder.Companion.connectionSettingsMenuBuilder
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.lazyGetUnauthedBearerConnections
-import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.resources.message
 
 class MoreConnectionActionsAction : DumbAwareAction(AllIcons.Actions.MoreHorizontal) {

@@ -17,7 +17,6 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
 import software.aws.toolkits.jetbrains.gateway.BranchCloneType
 import software.aws.toolkits.jetbrains.gateway.CawsSettings
@@ -25,6 +24,7 @@ import software.aws.toolkits.jetbrains.gateway.CawsWizardCloneType
 import software.aws.toolkits.jetbrains.gateway.Workspace
 import software.aws.toolkits.jetbrains.gateway.WorkspaceIdentifier
 import software.aws.toolkits.jetbrains.gateway.toWorkspace
+import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.telemetry.CodecatalystTelemetry
 import java.net.URI
 import java.time.Duration
@@ -56,7 +56,7 @@ class IdeBackendActions(
         val cmd = buildString {
             val token = if (ApplicationManager.getApplication().isUnitTestMode) {
                 System.getenv("CWM_HOST_STATUS_OVER_HTTP_TOKEN")
-            } else if (AwsToolkit.isDeveloperMode()) {
+            } else if (isDeveloperMode()) {
                 System.getProperty("user.name")
             } else {
                 null
