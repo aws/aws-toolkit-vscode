@@ -44,6 +44,8 @@ describe('session', () => {
         const controllerSetup: ControllerSetup = await createController()
 
         const workspaceFolder = controllerSetup.workspaceFolder
+        const notRejectedFileName = 'myfile.js'
+        const notRejectedFileContent = ''
 
         beforeEach(async () => {
             const uploadID = '789'
@@ -73,9 +75,9 @@ describe('session', () => {
                 testApproach,
                 [
                     {
-                        zipFilePath: 'myfile.js',
-                        relativePath: 'myfile.js',
-                        fileContent: '',
+                        zipFilePath: notRejectedFileName,
+                        relativePath: notRejectedFileName,
+                        fileContent: notRejectedFileContent,
                         rejected: false,
                         virtualMemoryUri: '' as unknown as vscode.Uri,
                         workspaceFolder,
@@ -108,9 +110,9 @@ describe('session', () => {
                 return Promise.resolve(fsStub.callCount > 0)
             }, {})
 
-            const absolutePath = path.join(workspaceFolder.uri.fsPath, 'myfile.js')
+            const absolutePath = path.join(workspaceFolder.uri.fsPath, notRejectedFileName)
             assert.ok(fsStub.calledOnce)
-            assert.ok(fsStub.calledWith(absolutePath, ''))
+            assert.ok(fsStub.calledWith(absolutePath, notRejectedFileContent))
         })
     })
 })
