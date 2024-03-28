@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { CodeScanIssue, AggregatedCodeScanIssue, CodeScansState } from '../models/model'
 import { SecurityIssueHoverProvider } from './securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './securityIssueCodeActionProvider'
-import { codewhispererDiagnosticSourceLabel } from '../models/constants'
+import { SecurityScanType, codewhispererDiagnosticSourceLabel } from '../models/constants'
 
 interface SecurityScanRender {
     securityDiagnosticCollection: vscode.DiagnosticCollection | undefined
@@ -25,10 +25,15 @@ export function initSecurityScanRender(
     securityRecommendationList: AggregatedCodeScanIssue[],
     context: vscode.ExtensionContext,
     editor: vscode.TextEditor,
+    scanType: SecurityScanType,
     codeScanStartTime: number
 ) {
     securityScanRender.initialized = false
-    securityScanRender.securityDiagnosticCollection?.delete(editor.document.uri)
+    if (scanType === SecurityScanType.File) {
+        securityScanRender.securityDiagnosticCollection?.delete(editor.document.uri)
+    } else if (scanType === SecurityScanType.Project) {
+        securityScanRender.securityDiagnosticCollection?.clear()
+    }
     securityRecommendationList.forEach(securityRecommendation => {
         updateSecurityDiagnosticCollection(securityRecommendation)
     })

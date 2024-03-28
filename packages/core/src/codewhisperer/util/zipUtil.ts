@@ -5,11 +5,13 @@
 import admZip from 'adm-zip'
 import * as vscode from 'vscode'
 import path from 'path'
-import { tempDirPath } from '../../shared/filesystemUtilities'
+import { readFileAsString, tempDirPath } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
+import { existsSync, readdirSync, statSync } from 'fs'
+import { ToolkitError } from '../../shared/errors'
+import ignore, { Ignore } from 'ignore'
 import { fsCommon } from '../../srcShared/fs'
-import { statSync } from 'fs'
 
 export interface ZipMetadata {
     rootDir: string
@@ -23,19 +25,28 @@ export interface ZipMetadata {
 
 export const ZipConstants = {
     newlineRegex: /\r?\n/,
+    gitignoreFilename: '.gitignore',
+    javaBuildExt: '.class',
 }
 
 export class ZipUtil {
     protected _pickedSourceFiles: Set<string> = new Set<string>()
+    protected _pickedBuildFiles: Set<string> = new Set<string>()
     protected _totalSize: number = 0
+    protected _totalBuildSize: number = 0
     protected _tmpDir: string = tempDirPath
     protected _zipDir: string = ''
     protected _totalLines: number = 0
+    protected _fetchedDirs: Set<string> = new Set<string>()
 
     constructor() {}
 
     getFileScanPayloadSizeLimitInBytes(): number {
         return CodeWhispererConstants.fileScanPayloadSizeLimitBytes
+    }
+
+    getProjectScanPayloadSizeLimitInBytes(): number {
+        return CodeWhispererConstants.projectScanPayloadSizeLimitBytes
     }
 
     public getProjectName(uri: vscode.Uri) {
@@ -61,8 +72,61 @@ export class ZipUtil {
         return content
     }
 
-    public reachSizeLimit(size: number): boolean {
-        return size > this.getFileScanPayloadSizeLimitInBytes()
+    public isJavaClassFile(uri: vscode.Uri) {
+        return uri.fsPath.endsWith(ZipConstants.javaBuildExt)
+    }
+
+    public reachSizeLimit(size: number, scanType: CodeWhispererConstants.SecurityScanType): boolean {
+        if (scanType === CodeWhispererConstants.SecurityScanType.File) {
+            return size > this.getFileScanPayloadSizeLimitInBytes()
+        } else {
+            return size > this.getProjectScanPayloadSizeLimitInBytes()
+        }
+    }
+
+    public willReachSizeLimit(current: number, adding: number): boolean {
+        const willReachLimit = current + adding > this.getProjectScanPayloadSizeLimitInBytes()
+        return willReachLimit
+    }
+
+    protected async traverseDir(dirPath: string, ignore?: Ignore) {
+        if (!existsSync(dirPath) || this._fetchedDirs.has(dirPath)) {
+            return
+        }
+        if (this.reachSizeLimit(this._totalSize, CodeWhispererConstants.SecurityScanType.Project)) {
+            getLogger().error(`Payload size limit reached.`)
+            throw new ToolkitError('Payload size limit reached.')
+        }
+
+        const files = readdirSync(dirPath, { withFileTypes: true })
+        for (const file of files) {
+            const fileAbsPath = path.join(dirPath, file.name)
+            if (file.name.charAt(0) === '.' || !existsSync(fileAbsPath)) {
+                continue
+            }
+            if (file.isDirectory()) {
+                await this.traverseDir(fileAbsPath, ignore)
+            } else if (file.isFile()) {
+                const projectPath = this.getProjectPath(vscode.Uri.file(fileAbsPath))
+                const fileRelativePath = path.relative(projectPath, fileAbsPath)
+                const currentFileSize = statSync(fileAbsPath).size
+                if (this.isJavaClassFile(vscode.Uri.file(fileAbsPath))) {
+                    this._pickedBuildFiles.add(fileAbsPath)
+                    this._totalBuildSize += currentFileSize
+                } else if (!ignore?.ignores(fileRelativePath) && !this._pickedSourceFiles.has(fileAbsPath)) {
+                    if (this.willReachSizeLimit(this._totalSize, currentFileSize)) {
+                        getLogger().error(`Payload size limit reached.`)
+                        throw new ToolkitError('Payload size limit reached.')
+                    }
+                    this._pickedSourceFiles.add(fileAbsPath)
+                    this._totalSize += currentFileSize
+                    const content = await readFileAsString(fileAbsPath)
+                    this._totalLines += content.split(ZipConstants.newlineRegex).length
+                }
+            }
+        }
+
+        this._fetchedDirs.add(dirPath)
     }
 
     protected async zipFile(uri: vscode.Uri) {
@@ -79,10 +143,38 @@ export class ZipUtil {
         this._totalSize += statSync(uri.fsPath).size
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
-        if (this.reachSizeLimit(this._totalSize)) {
+        if (this.reachSizeLimit(this._totalSize, CodeWhispererConstants.SecurityScanType.File)) {
             getLogger().error(`Payload size limit reached.`)
-            throw new Error('Payload size limit reached.')
+            throw new ToolkitError('Payload size limit reached.')
         }
+
+        const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
+        zip.writeZip(zipFilePath)
+        return zipFilePath
+    }
+
+    protected async zipProject(uri: vscode.Uri) {
+        const zip = new admZip()
+
+        const projectName = this.getProjectName(uri)
+        const projectPath = this.getProjectPath(uri)
+        const gitignorePath = path.join(projectPath, ZipConstants.gitignoreFilename)
+        const gitignoreExists = existsSync(gitignorePath)
+
+        if (!gitignoreExists) {
+            getLogger().verbose('Project does not contain .gitignore, scanning all files')
+            await this.traverseDir(projectPath)
+        } else {
+            getLogger().verbose(`Reading .gitignore at ${gitignorePath}`)
+            const gitignoreAsString = await readFileAsString(gitignorePath)
+            const gitignore = ignore().add(gitignoreAsString)
+            await this.traverseDir(projectPath, gitignore)
+        }
+
+        zip.addLocalFolder(projectPath, projectName, fileName => {
+            const fileAbsPath = path.join(projectPath, fileName)
+            return this._pickedSourceFiles.has(fileAbsPath) || this._pickedBuildFiles.has(fileAbsPath)
+        })
 
         const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
         zip.writeZip(zipFilePath)
@@ -99,10 +191,18 @@ export class ZipUtil {
         return this._zipDir
     }
 
-    public async generateZip(uri: vscode.Uri): Promise<ZipMetadata> {
+    public async generateZip(uri: vscode.Uri, scanType: CodeWhispererConstants.SecurityScanType): Promise<ZipMetadata> {
         try {
             const zipDirPath = this.getZipDirPath()
-            const zipFilePath = await this.zipFile(uri)
+            let zipFilePath: string
+            if (scanType === CodeWhispererConstants.SecurityScanType.File) {
+                zipFilePath = await this.zipFile(uri)
+            } else if (scanType === CodeWhispererConstants.SecurityScanType.Project) {
+                zipFilePath = await this.zipProject(uri)
+            } else {
+                throw new ToolkitError(`Unknown scan type: ${scanType}`)
+            }
+
             getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
             const zipFileSize = statSync(zipFilePath).size
             return {
@@ -111,7 +211,7 @@ export class ZipUtil {
                 srcPayloadSizeInBytes: this._totalSize,
                 scannedFiles: new Set(this._pickedSourceFiles),
                 zipFileSizeInBytes: zipFileSize,
-                buildPayloadSizeInBytes: 0,
+                buildPayloadSizeInBytes: this._totalBuildSize,
                 lines: this._totalLines,
             }
         } catch (error) {
