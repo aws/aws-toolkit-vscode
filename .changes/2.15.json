@@ -1,0 +1,14 @@
+{
+  "date" : "2024-03-28",
+  "version" : "2.15",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeTransform: new experience with Amazon Q chat integration"
+  }, {
+    "type" : "bugfix",
+    "description" : "Move 'Send to Amazon Q' action group to the bottom of right click menu"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix scripts missing when connecting through JetBrains Gateway (#4188)"
+  } ]
+}
