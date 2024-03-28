@@ -953,17 +953,11 @@ export class Auth implements AuthService, ConnectionManager {
         // we deleted it and continue as normal
         if (profile) {
             if (id === this.#activeConnection?.id) {
-                // Server-side invalidation.
-                await this.logout()
+                await this.store.setCurrentProfileId(undefined)
             } else {
                 await this.invalidateConnection(id)
             }
             await this.store.deleteProfile(id)
-            if (profile.type === 'sso') {
-                // There may have been linked IAM credentials attached to this
-                // so we will want to clear them.
-                await this.clearStaleLinkedIamConnections()
-            }
         }
     }
 }
