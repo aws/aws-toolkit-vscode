@@ -21,7 +21,9 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.C
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.Learn
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.OpenCodeReference
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.Pause
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.PauseCodeScans
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.Resume
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.ResumeCodeScans
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.buildActionListForConnectHelp
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.buildActionListForInlineSuggestions
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.buildActionListForOtherFeatures
@@ -37,6 +39,8 @@ class QStatusBarLoggedInActionGroup : DefaultActionGroup() {
         override val openChatPanel = ActionManager.getInstance().getAction("q.openchat")
         override val runScan = ActionManager.getInstance().getAction("codewhisperer.toolbar.security.scan")
         override val stopScan = ActionManager.getInstance().getAction("codewhisperer.toolbar.security.stopscan")
+        override val pauseAutoScans = PauseCodeScans()
+        override val resumeAutoScans = ResumeCodeScans()
         override val sendFeedback = CodeWhispererProvideFeedbackAction()
         override val connectOnGithub = CodeWhispererConnectOnGithubAction()
         override val documentation = CodeWhispererLearnMoreAction()

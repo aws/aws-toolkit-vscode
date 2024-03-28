@@ -16,6 +16,8 @@ interface ActionProvider<T> {
     val customize: T
     val learn: T
     val openChatPanel: T
+    val pauseAutoScans: T
+    val resumeAutoScans: T
     val runScan: T
     val stopScan: T
     val sendFeedback: T
@@ -51,6 +53,12 @@ fun<T> buildActionListForOtherFeatures(project: Project, actionProvider: ActionP
     buildList {
         add(actionProvider.openChatPanel)
         val codeScanManager = CodeWhispererCodeScanManager.getInstance(project)
+        val manager = CodeWhispererExplorerActionManager.getInstance()
+        if (manager.isAutoEnabledForCodeScan()) {
+            add(actionProvider.pauseAutoScans)
+        } else {
+            add(actionProvider.resumeAutoScans)
+        }
         if (codeScanManager.isCodeScanInProgress()) {
             add(actionProvider.stopScan)
         } else {

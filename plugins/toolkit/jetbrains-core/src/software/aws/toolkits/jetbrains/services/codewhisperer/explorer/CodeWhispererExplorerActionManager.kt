@@ -56,6 +56,12 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
         actionState.value[CodeWhispererExploreStateType.IsAutoEnabled] = isAutoEnabled
     }
 
+    fun isAutoEnabledForCodeScan(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.IsAutoCodeScanEnabled, true)
+
+    fun setAutoEnabledForCodeScan(isAutoEnabledForCodeScan: Boolean) {
+        actionState.value[CodeWhispererExploreStateType.IsAutoCodeScanEnabled] = isAutoEnabledForCodeScan
+    }
+
     fun setHasShownNewOnboardingPage(hasShownNewOnboardingPage: Boolean) {
         actionState.value[CodeWhispererExploreStateType.HasShownNewOnboardingPage] = hasShownNewOnboardingPage
     }
@@ -100,6 +106,14 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
         setAutoEnabled(isAutoEnabled)
         val autoSuggestionState = if (isAutoEnabled) CodeWhispererConstants.AutoSuggestion.ACTIVATED else CodeWhispererConstants.AutoSuggestion.DEACTIVATED
         AwsTelemetry.modifySetting(project, settingId = CodeWhispererConstants.AutoSuggestion.SETTING_ID, settingState = autoSuggestionState)
+        project.refreshCwQTree()
+    }
+
+    // Adding Auto CodeScan Function
+    fun SetAutoCodeScan(project: Project, isAutoEnabledForCodeScan: Boolean) {
+        setAutoEnabledForCodeScan(isAutoEnabledForCodeScan)
+        val autoCodeScanState = if (isAutoEnabledForCodeScan) CodeWhispererConstants.AutoCodeScan.ACTIVATED else CodeWhispererConstants.AutoCodeScan.DEACTIVATED
+        AwsTelemetry.modifySetting(project, settingId = CodeWhispererConstants.AutoCodeScan.SETTING_ID, settingState = autoCodeScanState)
         project.refreshCwQTree()
     }
 
@@ -186,6 +200,7 @@ class CodeWhispererExploreActionState : BaseState() {
 // TODO: Don't remove IsManualEnabled
 enum class CodeWhispererExploreStateType {
     IsAutoEnabled,
+    IsAutoCodeScanEnabled,
     IsManualEnabled,
     HasAcceptedTermsOfServices,
     HasShownHowToUseCodeWhisperer,
