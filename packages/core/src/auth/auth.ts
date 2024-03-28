@@ -946,18 +946,13 @@ export class Auth implements AuthService, ConnectionManager {
 
     // Used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
     // NO event should be emitted from this deletion
-    public async deletionConnectionCallback(id: string) {
+    // Do not actually perform the delete because toolkit has done the deletion
+    // Delete the momento states only.
+    public async onDeleteConnection(id: string) {
         const profile = this.store.getProfile(id)
-        // it is possible the connection was already deleted
-        // but was still requested to be deleted. We pretend
-        // we deleted it and continue as normal
         if (profile) {
-            if (id === this.#activeConnection?.id) {
-                await this.store.setCurrentProfileId(undefined)
-            } else {
-                await this.invalidateConnection(id)
-            }
             await this.store.deleteProfile(id)
+            await this.store.setCurrentProfileId(undefined)
         }
     }
 }

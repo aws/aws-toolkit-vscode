@@ -179,7 +179,7 @@ export class AuthUtil {
      ** 2. Should update the context key to update UX
      */
     public async deletionConnectionCallback(id: string) {
-        await this.secondaryAuth.deletionConnectionCallback(id)
+        await this.secondaryAuth.onDeleteConnection(id)
         await this.setVscodeContextProps()
         await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }
