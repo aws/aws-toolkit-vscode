@@ -8,7 +8,7 @@ import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
-import { activateExtension, isExtensionActive, isExtensionInstalled } from '../../../../shared/utilities/vsCodeUtils'
+import { activateExtension, isExtensionInstalled } from '../../../../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
 import { getLogger } from '../../../../shared/logger'
 import { Auth } from '../../../../auth'
@@ -82,39 +82,22 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 throw ToolkitError.chain(e, 'Failed to add Amazon Q scope', {
                     code: 'FailedToConnect',
                 })
-            } finally {
-                this.notifyToolkit()
             }
         })
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
         return this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
-            try {
-                await awsIdSignIn()
-                await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
-            } finally {
-                this.notifyToolkit()
-            }
+            await awsIdSignIn()
+            await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
         })
     }
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
         return this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
-            try {
-                await connectToEnterpriseSso(startUrl, region)
-                this.notifyToolkit()
-                void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
-            } finally {
-                this.notifyToolkit()
-            }
+            await connectToEnterpriseSso(startUrl, region)
+            void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
         })
-    }
-
-    notifyToolkit() {
-        if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
-            void vscode.commands.executeCommand('_aws.toolkit.auth.restore')
-        }
     }
 
     async errorNotification(e: AuthError) {

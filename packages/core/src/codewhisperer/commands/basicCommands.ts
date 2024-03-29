@@ -15,7 +15,7 @@ import { CodeScanIssue, codeScanState, CodeSuggestionsState, vsCodeState } from 
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
-import { AuthUtil, getChatAuthState } from '../util/authUtil'
+import { AuthUtil, refreshToolkitQState } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
 import { isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -334,11 +334,8 @@ let _toolkitApi: any = undefined
 const registerToolkitApiCallbackOnce = once(async () => {
     getLogger().info(`toolkitApi: Registering callbacks of toolkit api`)
     const auth = Auth.instance
-    auth.onDidChangeActiveConnection(async () => {
-        await vscode.commands.executeCommand('_aws.toolkit.auth.restore', (await getChatAuthState()).codewhispererChat)
-    })
+
     auth.onDidChangeConnectionState(async e => {
-        await vscode.commands.executeCommand('_aws.toolkit.auth.restore', (await getChatAuthState()).codewhispererChat)
         // when changing connection state in Q, also change connection state in toolkit
         if (_toolkitApi && 'setConnection' in _toolkitApi) {
             const id = e.id
@@ -371,11 +368,15 @@ const registerToolkitApiCallbackOnce = once(async () => {
             async (connection: AwsConnection) => {
                 getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
                 await AuthUtil.instance.onUpdateConnection(connection)
+                // If the connection was properly updated, then calling this with (true) shouldn't
+                // trigger an event. But, just to be safe...
+                await refreshToolkitQState.execute(false)
             },
 
             async (id: string) => {
                 getLogger().info(`toolkitApi: connection delete callback ${id}`)
                 await AuthUtil.instance.onDeleteConnection(id)
+                await refreshToolkitQState.execute(false)
             }
         )
     }

@@ -34,6 +34,8 @@ import { GlobalState } from '../../shared/globalState'
 import { vsCodeState } from '../models/model'
 import { onceChanged, once } from '../../shared/utilities/functionUtils'
 import { indent } from '../../shared/utilities/textUtilities'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { isExtensionActive } from '../../shared/utilities'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -102,7 +104,6 @@ export class AuthUtil {
             return
         }
         this._isCustomizationFeatureEnabled = value
-        void Commands.tryExecute('aws.amazonq.refresh')
         void Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
     }
 
@@ -124,6 +125,9 @@ export class AuthUtil {
             }
 
             await this.setVscodeContextProps()
+            if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
+                await refreshToolkitQState.execute()
+            }
         })
 
         this.secondaryAuth.onDidChangeActiveConnection(async () => {
@@ -134,11 +138,12 @@ export class AuthUtil {
             vsCodeState.isFreeTierLimitReached = false
             await Promise.all([
                 // onDidChangeActiveConnection may trigger before these modules are activated.
-                Commands.tryExecute('aws.amazonq.refresh'),
-                Commands.tryExecute('aws.amazonq.refreshRootNode'),
                 Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
                 Commands.tryExecute('aws.codeWhisperer.updateReferenceLog'),
             ])
+            if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
+                await refreshToolkitQState.execute()
+            }
 
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
 
@@ -378,11 +383,7 @@ export class AuthUtil {
 
     public async refreshCodeWhisperer() {
         vsCodeState.isFreeTierLimitReached = false
-        await Promise.all([
-            Commands.tryExecute('aws.amazonq.refresh'),
-            Commands.tryExecute('aws.amazonq.refreshRootNode'),
-            Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
-        ])
+        await Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
     }
 
     public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
@@ -418,55 +419,62 @@ export class AuthUtil {
     public isValidCodeTransformationAuthUser(): boolean {
         return this.isEnterpriseSsoInUse() && this.isConnectionValid()
     }
-}
 
-/**
- * Returns a snapshot of the overall auth state of
- * CodeWhisperer + Chat features.
- */
-export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<FeatureAuthState> {
-    const currentConnection = cwAuth.conn
+    /**
+     * Returns a snapshot of the overall auth state of CodeWhisperer + Chat features.
+     *
+     * @param shouldRefresh (default true) validate and update the current connection state.
+     * If this setting is set to false, there is a risk that the evaluated state is outdated,
+     * but it is safe from modifying the state of the connection.
+     */
+    public async getChatAuthState(shouldRefresh: boolean = true): Promise<FeatureAuthState> {
+        const currentConnection = this.conn
 
-    if (currentConnection === undefined) {
-        return buildFeatureAuthState(AuthStates.disconnected)
-    }
-    if (!isSsoConnection(currentConnection)) {
-        throw new ToolkitError(`Connection "${currentConnection.id}" is not a valid type: ${currentConnection.type}`)
-    }
+        if (currentConnection === undefined) {
+            return buildFeatureAuthState(AuthStates.disconnected)
+        }
+        if (!isSsoConnection(currentConnection)) {
+            throw new ToolkitError(
+                `Connection "${currentConnection.id}" is not a valid type: ${currentConnection.type}`
+            )
+        }
 
-    // The state of the connection may not have been properly validated
-    // and the current state we see may be stale, so refresh for latest state.
-    await cwAuth.auth.refreshConnectionState(currentConnection)
+        // The state of the connection may not have been properly validated
+        // and the current state we see may be stale, so refresh for latest state.
+        if (shouldRefresh) {
+            await this.auth.refreshConnectionState(currentConnection)
+        }
 
-    // default to expired to indicate reauth is needed if unmodified
-    const state: FeatureAuthState = buildFeatureAuthState(AuthStates.expired)
+        // default to expired to indicate reauth is needed if unmodified
+        const state: FeatureAuthState = buildFeatureAuthState(AuthStates.expired)
 
-    if (isBuilderIdConnection(currentConnection)) {
-        // Regardless, if using Builder ID, Amazon Q is unsupported
-        state[Features.amazonQ] = AuthStates.unsupported
-    }
+        if (isBuilderIdConnection(currentConnection)) {
+            // Regardless, if using Builder ID, Amazon Q is unsupported
+            state[Features.amazonQ] = AuthStates.unsupported
+        }
 
-    if (cwAuth.isConnectionExpired()) {
+        if (this.isConnectionExpired()) {
+            return state
+        }
+
+        if (isBuilderIdConnection(currentConnection)) {
+            if (isValidCodeWhispererCoreConnection(currentConnection)) {
+                state[Features.codewhispererCore] = AuthStates.connected
+            }
+            if (isValidCodeWhispererChatConnection(currentConnection)) {
+                state[Features.codewhispererChat] = AuthStates.connected
+            }
+        } else if (isIdcSsoConnection(currentConnection)) {
+            if (isValidCodeWhispererCoreConnection(currentConnection)) {
+                state[Features.codewhispererCore] = AuthStates.connected
+            }
+            if (isValidAmazonQConnection(currentConnection)) {
+                Object.values(Features).forEach(v => (state[v as Feature] = AuthStates.connected))
+            }
+        }
+
         return state
     }
-
-    if (isBuilderIdConnection(currentConnection)) {
-        if (isValidCodeWhispererCoreConnection(currentConnection)) {
-            state[Features.codewhispererCore] = AuthStates.connected
-        }
-        if (isValidCodeWhispererChatConnection(currentConnection)) {
-            state[Features.codewhispererChat] = AuthStates.connected
-        }
-    } else if (isIdcSsoConnection(currentConnection)) {
-        if (isValidCodeWhispererCoreConnection(currentConnection)) {
-            state[Features.codewhispererCore] = AuthStates.connected
-        }
-        if (isValidAmazonQConnection(currentConnection)) {
-            Object.values(Features).forEach(v => (state[v as Feature] = AuthStates.connected))
-        }
-    }
-
-    return state
 }
 
 /**
@@ -542,3 +550,26 @@ function getEnvType(): keyof HasAlreadySeenQWelcome {
     }
     return 'local'
 }
+
+/**
+ * Refreshes toolkit's Amazon Q tree view with the current Amazon Q connection state.
+ * Can be called by Amazon Q or Toolkit.
+ *
+ * `getChatAuthState()` has the ability to update the active connection/state. If this
+ * is called in a connection update callback, we could potentially be in an infinite loop.
+ * However, the callbacks only trigger if there is a change to the active connection/state.
+ * This means that our loop would converge immediately, or within a few iterations of the
+ * state is being updated rapidly due to race conditions.
+ */
+export const refreshToolkitQState = Commands.declare(
+    '_aws.amazonq.refreshToolkitQTreeState',
+    () =>
+        async (shouldRefresh: boolean = true) => {
+            await vscode.commands.executeCommand(
+                '_aws.toolkit.amazonq.refreshTreeNode',
+                (
+                    await AuthUtil.instance.getChatAuthState(shouldRefresh)
+                ).codewhispererChat
+            )
+        }
+)

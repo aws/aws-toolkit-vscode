@@ -54,7 +54,6 @@ export async function awsIdSignIn() {
         throw ToolkitError.chain(e, failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
     }
     vsCodeState.isFreeTierLimitReached = false
-    await Commands.tryExecute('aws.amazonq.refresh')
     await Commands.tryExecute('aws.codeWhisperer.enableCodeSuggestions')
 }
 

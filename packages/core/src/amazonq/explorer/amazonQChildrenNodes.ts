@@ -46,10 +46,13 @@ export const switchToAmazonQCommand = Commands.declare(
             })
             if (signIn) {
                 await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', true)
-                await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
-            } else {
-                await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
             }
+
+            // Attempt to show both, in case something is wrong with the state of the tree. Only the active
+            // one will be shown. This way, even if the state of the tree is broken, the buttons still take
+            // you to Amazon Q.
+            await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+            await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
         }
 )
 

@@ -53,7 +53,7 @@ import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2
 import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
-import { AuthUtil } from './util/authUtil'
+import { AuthUtil, refreshToolkitQState } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
@@ -107,6 +107,7 @@ export async function activate(context: ExtContext): Promise<void> {
         registerToolkitApiCallback.register(),
         signoutCodeWhisperer.register(auth),
         showManageCwConnections.register(),
+        refreshToolkitQState.register(),
         /**
          * Configuration change
          */

@@ -10,7 +10,6 @@ import {
     amazonQScopes,
     codeWhispererChatScopes,
     codeWhispererCoreScopes,
-    getChatAuthState,
 } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
@@ -254,7 +253,7 @@ describe('getChatAuthState()', function () {
     })
 
     it('indicates nothing connected when no auth connection exists', async function () {
-        const result = await getChatAuthState(authUtil)
+        const result = await authUtil.getChatAuthState()
         assert.deepStrictEqual(result, {
             codewhispererChat: AuthStates.disconnected,
             codewhispererCore: AuthStates.disconnected,
@@ -273,7 +272,7 @@ describe('getChatAuthState()', function () {
             createToken(conn)
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.connected,
                 codewhispererChat: AuthStates.expired,
@@ -286,7 +285,7 @@ describe('getChatAuthState()', function () {
             createToken(conn)
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.connected,
                 codewhispererChat: AuthStates.connected,
@@ -300,7 +299,7 @@ describe('getChatAuthState()', function () {
             )
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.expired,
                 codewhispererChat: AuthStates.expired,
@@ -317,7 +316,7 @@ describe('getChatAuthState()', function () {
             createToken(conn)
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.connected,
                 codewhispererChat: AuthStates.expired,
@@ -332,7 +331,7 @@ describe('getChatAuthState()', function () {
             createToken(conn)
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.connected,
                 codewhispererChat: AuthStates.connected,
@@ -346,7 +345,7 @@ describe('getChatAuthState()', function () {
             )
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.expired,
                 codewhispererChat: AuthStates.expired,
