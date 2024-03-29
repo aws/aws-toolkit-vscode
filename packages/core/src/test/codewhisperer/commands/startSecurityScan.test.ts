@@ -296,7 +296,6 @@ describe('startSecurityScan', function () {
             codewhispererLanguage: 'python',
             codewhispererCodeScanTotalIssues: 1,
             codewhispererCodeScanIssuesWithFixes: 0,
-            codewhispererCodeScanLines: 66,
         } as CodewhispererSecurityScan)
     })
 
