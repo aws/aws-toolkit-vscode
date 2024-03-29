@@ -131,6 +131,4 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
     /** If users are unauthenticated in Q/CW, we should always display the auth screen. */
     async quitLoginScreen() {}
-
-    async refreshToolkit() {}
 }
