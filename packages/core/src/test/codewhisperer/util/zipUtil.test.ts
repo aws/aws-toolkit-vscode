@@ -23,14 +23,14 @@ describe('zipUtil', function () {
     describe('getProjectName', function () {
         it('Should return the correct project name', function () {
             const zipUtil = new ZipUtil()
-            assert.strictEqual(zipUtil.getProjectName(vscode.Uri.parse(appCodePath)), 'workspaceFolder')
+            assert.strictEqual(zipUtil.getProjectName(vscode.Uri.file(appCodePath)), 'workspaceFolder')
         })
     })
 
     describe('getProjectPath', function () {
         it('Should return the correct project path', function () {
             const zipUtil = new ZipUtil()
-            assert.strictEqual(zipUtil.getProjectPath(vscode.Uri.parse(appCodePath)), workspaceFolder)
+            assert.strictEqual(zipUtil.getProjectPath(vscode.Uri.file(appCodePath)), workspaceFolder)
         })
     })
 
