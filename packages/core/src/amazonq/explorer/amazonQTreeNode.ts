@@ -18,9 +18,9 @@ import { Command, Commands } from '../../shared/vscode/commands2'
 import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
 import { getIcon } from '../../shared/icons'
 import { vsCodeState } from '../../codewhisperer/models/model'
-import { activateExtension, isExtensionActive, isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
+import { isExtensionActive, isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { once } from '../../shared/utilities/functionUtils'
+import { getLogger } from '../../shared/logger'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -34,7 +34,13 @@ export class AmazonQNode implements TreeNode {
 
     public static amazonQState: AuthState
 
-    constructor() {}
+    private constructor() {
+        if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
+            // 'void' instead of await, so that the command call doesn't trigger an infinite loop
+            // on constructing these instances.
+            void vscode.commands.executeCommand('aws.amazonq.refreshToolkitQState')
+        }
+    }
 
     public getTreeItem() {
         const item = new vscode.TreeItem('Amazon Q')
@@ -76,11 +82,6 @@ export class AmazonQNode implements TreeNode {
             }
             return children
         } else {
-            // todo: hack
-            if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
-                void registerQHook()
-            }
-
             if (AmazonQNode.amazonQState === 'expired') {
                 return [createReconnect('tree'), createLearnMoreNode()]
             }
@@ -107,6 +108,12 @@ export class AmazonQNode implements TreeNode {
     getParent(): TreeNode<unknown> | undefined {
         return undefined
     }
+
+    static #instance: AmazonQNode
+
+    static get instance(): AmazonQNode {
+        return (this.#instance ??= new AmazonQNode())
+    }
 }
 
 function createNewMenuButton(): TreeNode<Command> {
@@ -117,33 +124,25 @@ function createNewMenuButton(): TreeNode<Command> {
     })
 }
 
-export const amazonQNode = new AmazonQNode()
 export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
-    Commands.register({ id: 'aws.amazonq.refresh', logging: false }, (state?: AuthState) => {
+    Commands.register({ id: 'aws.toolkit.amazonq.refresh', logging: false }, (state?: AuthState) => {
         if (state) {
             AmazonQNode.amazonQState = state
+            getLogger().debug(`aws.amazonq.refresh called, updating state to ${state}.`)
         } else {
-            if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
-                void registerQHook()
-            }
+            getLogger().debug(`aws.amazonq.refresh was called, but state wasn't specified.`)
         }
-        amazonQNode.refresh()
+
+        AmazonQNode.instance.refresh()
         if (provider) {
             provider.refresh()
         }
     })
 
 export const refreshAmazonQRootNode = (provider?: ResourceTreeDataProvider) =>
-    Commands.register({ id: 'aws.amazonq.refreshRootNode', logging: false }, () => {
-        amazonQNode.refreshRootNode()
+    Commands.register({ id: '_aws.amazonq.refreshRootNode', logging: false }, () => {
+        AmazonQNode.instance.refreshRootNode()
         if (provider) {
             provider.refresh()
         }
     })
-
-export const registerQHook = once(async () => {
-    await activateExtension(VSCODE_EXTENSION_ID.amazonq)
-    const amazonq = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.amazonq)?.exports
-    amazonq.registerStateChangeCallback((e: any) => vscode.commands.executeCommand('aws.amazonq.refresh', e))
-    void vscode.commands.executeCommand('aws.amazonq.refresh', await amazonq.getConnectionState())
-})

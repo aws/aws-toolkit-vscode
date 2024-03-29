@@ -178,7 +178,6 @@ export async function startTransformByQ() {
 }
 
 export async function preTransformationUploadCode() {
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
     let uploadId = ''
@@ -222,7 +221,6 @@ export async function startTransformationJob(uploadId: string) {
         throw new Error('Start job failed')
     }
     transformByQState.setJobId(encodeHTML(jobId))
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     await sleep(2000) // sleep before polling job to prevent ThrottlingException
     throwIfCancelled()
@@ -289,7 +287,6 @@ export async function finalizeTransformationJob(status: string) {
     }
 
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     sessionPlanProgress['transformCode'] = StepProgress.Succeeded
 }
@@ -333,8 +330,6 @@ export async function setTransformationToRunningState() {
         'aws.amazonq.showPlanProgressInHub',
         codeTransformTelemetryState.getStartTime()
     )
-
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 }
 
 export async function postTransformationJob() {
@@ -452,7 +447,6 @@ export async function cleanupTransformationJob(intervalId: NodeJS.Timeout | unde
     clearInterval(intervalId)
     transformByQState.setJobDefaults()
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
     void vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', codeTransformTelemetryState.getStartTime())
 }
 
@@ -485,7 +479,6 @@ export async function stopTransformByQ(
     if (transformByQState.isRunning()) {
         getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
         transformByQState.setToCancelled()
-        await vscode.commands.executeCommand('aws.amazonq.refresh')
         await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         try {
             await stopJob(jobId)

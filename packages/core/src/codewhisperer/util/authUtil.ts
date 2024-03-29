@@ -34,6 +34,8 @@ import { GlobalState } from '../../shared/globalState'
 import { vsCodeState } from '../models/model'
 import { onceChanged, once } from '../../shared/utilities/functionUtils'
 import { indent } from '../../shared/utilities/textUtilities'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { isExtensionActive } from '../../shared/utilities'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -102,7 +104,6 @@ export class AuthUtil {
             return
         }
         this._isCustomizationFeatureEnabled = value
-        void Commands.tryExecute('aws.amazonq.refresh')
         void Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
     }
 
@@ -124,6 +125,9 @@ export class AuthUtil {
             }
 
             await this.setVscodeContextProps()
+            if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
+                await refreshToolkitQState.execute()
+            }
         })
 
         this.secondaryAuth.onDidChangeActiveConnection(async () => {
@@ -134,11 +138,12 @@ export class AuthUtil {
             vsCodeState.isFreeTierLimitReached = false
             await Promise.all([
                 // onDidChangeActiveConnection may trigger before these modules are activated.
-                Commands.tryExecute('aws.amazonq.refresh'),
-                Commands.tryExecute('aws.amazonq.refreshRootNode'),
                 Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
                 Commands.tryExecute('aws.codeWhisperer.updateReferenceLog'),
             ])
+            if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
+                await refreshToolkitQState.execute()
+            }
 
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
 
@@ -378,11 +383,7 @@ export class AuthUtil {
 
     public async refreshCodeWhisperer() {
         vsCodeState.isFreeTierLimitReached = false
-        await Promise.all([
-            Commands.tryExecute('aws.amazonq.refresh'),
-            Commands.tryExecute('aws.amazonq.refreshRootNode'),
-            Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
-        ])
+        await Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
     }
 
     public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
@@ -549,3 +550,25 @@ function getEnvType(): keyof HasAlreadySeenQWelcome {
     }
     return 'local'
 }
+
+/**
+ * Refreshes toolkit's Amazon Q tree view with the current Amazon Q connection state.
+ *
+ * `getChatAuthState()` has the ability to update the active connection/state. If this
+ * is called in a connection update callback, we could potentially be in an infinite loop.
+ * However, the callbacks only trigger if there is a change to the active connection/state.
+ * This means that our loop would converge immediately, or within a few iterations of the
+ * state is being updated rapidly due to race conditions.
+ */
+export const refreshToolkitQState = Commands.declare(
+    'aws.amazonq.refreshToolkitQState',
+    () =>
+        async (shouldRefresh: boolean = true) => {
+            await vscode.commands.executeCommand(
+                'aws.toolkit.amazonq.refresh',
+                (
+                    await AuthUtil.instance.getChatAuthState(shouldRefresh)
+                ).codewhispererChat
+            )
+        }
+)
