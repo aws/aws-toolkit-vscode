@@ -553,6 +553,7 @@ function getEnvType(): keyof HasAlreadySeenQWelcome {
 
 /**
  * Refreshes toolkit's Amazon Q tree view with the current Amazon Q connection state.
+ * Can be called by Amazon Q or Toolkit.
  *
  * `getChatAuthState()` has the ability to update the active connection/state. If this
  * is called in a connection update callback, we could potentially be in an infinite loop.

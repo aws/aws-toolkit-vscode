@@ -35,6 +35,8 @@ export class AmazonQNode implements TreeNode {
     public static amazonQState: AuthState
 
     private constructor() {
+        // This case handles if the Toolkit extension is installed or activated after the Amazon Q extension.
+        // This command is registered in Amazon Q.
         if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
             // 'void' instead of await, so that the command call doesn't trigger an infinite loop
             // on constructing these instances.
@@ -123,7 +125,12 @@ function createNewMenuButton(): TreeNode<Command> {
         description: 'Learn more',
     })
 }
-
+/**
+ * Refreshes the Amazon Q Tree node. If Amazon Q's connection state is provided, it will also internally
+ * update the connection state.
+ *
+ * This command is meant to be called by Amazon Q. It doesn't serve much purpose being called otherwise.
+ */
 export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
     Commands.register({ id: '_aws.toolkit.amazonq.refreshTreeNode', logging: false }, (state?: AuthState) => {
         if (state) {
