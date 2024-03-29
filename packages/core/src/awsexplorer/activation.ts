@@ -129,6 +129,7 @@ export async function activate(args: {
                 retainContextWhenHidden: true,
             },
         }),
+        // Hacky way for a webview to call setLoginService().
         vscode.commands.registerCommand('aws.explorer.setLoginService', (serviceToShow?: string) => {
             if (toolkitAuthProvider.webView && 'setLoginService' in toolkitAuthProvider.webView.server) {
                 toolkitAuthProvider.webView.server.setLoginService(serviceToShow)
