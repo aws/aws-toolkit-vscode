@@ -97,11 +97,17 @@ export default defineComponent({
     user-select: none;
 }
 .title {
-    font-size: 21px;
+    font-size: 15px;
     font-weight: bold;
+    color: white;
 }
 .text {
     display: flex;
     flex-direction: column;
+    font-size: 15px;
+    color: white;
+}
+.icon {
+    padding-right: 10px;
 }
 </style>

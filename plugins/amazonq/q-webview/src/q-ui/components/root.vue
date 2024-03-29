@@ -1,21 +1,6 @@
 <!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-<!--testing purpose-->
-<!--<script>-->
-<!--export default {-->
-<!--    data() {-->
-<!--        return {-->
-<!--            message: 'Hello World!'-->
-<!--        }-->
-<!--    }-->
-<!--}-->
-<!--</script>-->
-
-<!--<template>-->
-<!--    <h1>{{ message }}</h1>-->
-<!--</template>-->
-
 <template>
     <div>
         <!-- Body -->
