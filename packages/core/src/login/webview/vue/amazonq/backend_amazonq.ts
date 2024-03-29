@@ -47,18 +47,32 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 const importedApi = toolkitExt?.exports
                 if (importedApi && 'listConnections' in importedApi) {
                     const connections: AwsConnection[] = await importedApi?.listConnections()
-                    for (const connection of connections) {
-                        if (connection.id === connectionId) {
-                            if (connection.scopes?.includes(scopesCodeWhispererChat[0])) {
+                    for (const conn of connections) {
+                        if (conn.id === connectionId) {
+                            if (conn.scopes?.includes(scopesCodeWhispererChat[0])) {
                                 getLogger().info(`auth: re-use connection from existing connection id ${connectionId}`)
-                                const conn = await Auth.instance.createConnectionFromApi(connection)
-                                await AuthUtil.instance.secondaryAuth.useNewConnection(conn)
+                                const newConn = await Auth.instance.createConnectionFromApi(conn)
+                                await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
                             } else {
                                 getLogger().info(
                                     `auth: re-use(new scope) to connection from existing connection id ${connectionId}`
                                 )
-                                const conn = await Auth.instance.createConnectionFromApi(connection)
-                                const newConn = await AuthUtil.instance.secondaryAuth.addScopes(conn, amazonQScopes)
+                                // when re-using a connection from toolkit, if adding scope is necessary
+                                // temporarily create a new connection without triggerring any connection hooks
+                                // then try reauthenticate, if success, use this connection, toolkit connnection scope also gets updated.
+                                // if failed, remove this temporary connection. Toolkit connection stays the same without getting logged out.
+                                const oldScopes = conn?.scopes ? conn.scopes : []
+                                const newScopes = Array.from(new Set([...oldScopes, ...amazonQScopes]))
+                                const newConn = await Auth.instance.createConnectionFromApi({
+                                    type: conn.type,
+                                    ssoRegion: conn.ssoRegion,
+                                    scopes: newScopes,
+                                    startUrl: conn.startUrl,
+                                    state: conn.state,
+                                    id: conn.id,
+                                    label: conn.label,
+                                })
+                                await Auth.instance.reauthenticate(newConn)
                                 await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
                             }
                         }
