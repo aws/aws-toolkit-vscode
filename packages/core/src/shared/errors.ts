@@ -532,5 +532,18 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         return false
     }
 
-    return ['ENOTFOUND', 'EAI_AGAIN', 'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT'].includes(err.code)
+    return [
+        'ENOTFOUND',
+        'EAI_AGAIN',
+        'ECONNRESET',
+        'ECONNREFUSED',
+        'ETIMEDOUT',
+        'ENETUNREACH',
+        'ERR_TLS_CERT_ALTNAME_INVALID', // dns issue?
+        'EPROTO', // due to legacy server "unsafe legacy renegotiation"?
+        'EHOSTUNREACH',
+        'EADDRINUSE',
+        'ENOBUFS', // client side memory issue during http request?
+        'EADDRNOTAVAIL', // port not available/allowed?
+    ].includes(err.code)
 }
