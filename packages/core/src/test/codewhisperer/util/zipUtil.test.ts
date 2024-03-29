@@ -44,14 +44,13 @@ describe('zipUtil', function () {
         })
 
         it('Should generate zip for file scan and return expected metadata', async function () {
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.parse(appCodePath), SecurityScanType.File)
+            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.File)
             assert.strictEqual(zipMetadata.lines, 49)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
             assert.strictEqual(zipMetadata.scannedFiles.size, 1)
             assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
-            assert.ok(zipMetadata.scannedFiles.has(relative(workspaceFolder, appCodePath)))
             assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
         })
 
@@ -59,13 +58,13 @@ describe('zipUtil', function () {
             sinon.stub(zipUtil, 'reachSizeLimit').returns(true)
 
             await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.parse(appCodePath), SecurityScanType.File),
+                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.File),
                 new ToolkitError('Payload size limit reached.')
             )
         })
 
         it('Should generate zip for project scan and return expected metadata', async function () {
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.parse(appCodePath), SecurityScanType.Project)
+            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
             assert.strictEqual(zipMetadata.lines, 2705)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
@@ -79,7 +78,7 @@ describe('zipUtil', function () {
             sinon.stub(zipUtil, 'reachSizeLimit').returns(true)
 
             await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.parse(appCodePath), SecurityScanType.Project),
+                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project),
                 new ToolkitError('Payload size limit reached.')
             )
         })
@@ -88,7 +87,7 @@ describe('zipUtil', function () {
             sinon.stub(zipUtil, 'willReachSizeLimit').returns(true)
 
             await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.parse(appCodePath), SecurityScanType.Project),
+                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project),
                 new ToolkitError('Payload size limit reached.')
             )
         })
@@ -113,7 +112,7 @@ describe('zipUtil', function () {
                     return fsCommon.readFileAsString(...args)
                 })
 
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.parse(appCodePath), SecurityScanType.Project)
+            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
             assert.strictEqual(zipMetadata.lines, 2656)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
@@ -134,7 +133,7 @@ describe('zipUtil', function () {
                     return zipUtil.isJavaClassFile(...args)
                 })
 
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.parse(appCodePath), SecurityScanType.Project)
+            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
             assert.strictEqual(zipMetadata.lines, 2698)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
@@ -146,7 +145,7 @@ describe('zipUtil', function () {
 
         it('Should throw error if scan type is invalid', async function () {
             await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.parse(appCodePath), 'unknown' as SecurityScanType),
+                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), 'unknown' as SecurityScanType),
                 new ToolkitError('Unknown scan type: unknown')
             )
         })

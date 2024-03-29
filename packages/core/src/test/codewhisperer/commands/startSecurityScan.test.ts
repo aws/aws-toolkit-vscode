@@ -284,6 +284,7 @@ describe('startSecurityScan', function () {
                 message.selectItem(showScannedFilesMessage)
             }
         })
+        await model.CodeScansState.instance.setScansEnabled(false)
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
@@ -296,6 +297,7 @@ describe('startSecurityScan', function () {
             codewhispererLanguage: 'python',
             codewhispererCodeScanTotalIssues: 1,
             codewhispererCodeScanIssuesWithFixes: 0,
+            codewhispererCodeScanLines: 2705,
         } as CodewhispererSecurityScan)
     })
 
