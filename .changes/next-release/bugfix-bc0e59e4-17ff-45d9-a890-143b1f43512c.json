@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix issue where Amazon Q Chat does not appear in IDEs other than IntelliJ IDEA (#4218)"
-}
