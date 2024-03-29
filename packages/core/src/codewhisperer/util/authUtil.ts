@@ -561,11 +561,11 @@ function getEnvType(): keyof HasAlreadySeenQWelcome {
  * state is being updated rapidly due to race conditions.
  */
 export const refreshToolkitQState = Commands.declare(
-    'aws.amazonq.refreshToolkitQState',
+    '_aws.amazonq.refreshToolkitQTreeState',
     () =>
         async (shouldRefresh: boolean = true) => {
             await vscode.commands.executeCommand(
-                'aws.toolkit.amazonq.refresh',
+                '_aws.toolkit.amazonq.refreshTreeNode',
                 (
                     await AuthUtil.instance.getChatAuthState(shouldRefresh)
                 ).codewhispererChat

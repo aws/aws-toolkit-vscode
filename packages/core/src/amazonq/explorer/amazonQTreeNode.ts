@@ -38,7 +38,7 @@ export class AmazonQNode implements TreeNode {
         if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
             // 'void' instead of await, so that the command call doesn't trigger an infinite loop
             // on constructing these instances.
-            void vscode.commands.executeCommand('aws.amazonq.refreshToolkitQState')
+            void vscode.commands.executeCommand('_aws.amazonq.refreshToolkitQTreeState')
         }
     }
 
@@ -125,12 +125,12 @@ function createNewMenuButton(): TreeNode<Command> {
 }
 
 export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
-    Commands.register({ id: 'aws.toolkit.amazonq.refresh', logging: false }, (state?: AuthState) => {
+    Commands.register({ id: '_aws.toolkit.amazonq.refreshTreeNode', logging: false }, (state?: AuthState) => {
         if (state) {
             AmazonQNode.amazonQState = state
-            getLogger().debug(`aws.amazonq.refresh called, updating state to ${state}.`)
+            getLogger().debug(`_aws.toolkit.amazonq.refreshTreeNode called, updating state to ${state}.`)
         } else {
-            getLogger().debug(`aws.amazonq.refresh was called, but state wasn't specified.`)
+            getLogger().debug(`_aws.toolkit.amazonq.refreshTreeNode was called, but state wasn't specified.`)
         }
 
         AmazonQNode.instance.refresh()
