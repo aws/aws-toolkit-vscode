@@ -60,7 +60,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                 // when re-using a connection from toolkit, if adding scope is necessary
                                 // temporarily create a new connection without triggerring any connection hooks
                                 // then try reauthenticate, if success, use this connection, toolkit connnection scope also gets updated.
-                                // if failed, remove this temporary connection. Toolkit connection stays the same without getting logged out.
+                                // if failed, connection is set to invalid
                                 const oldScopes = conn?.scopes ? conn.scopes : []
                                 const newScopes = Array.from(new Set([...oldScopes, ...amazonQScopes]))
                                 const newConn = await Auth.instance.createConnectionFromApi({
