@@ -1,0 +1,8 @@
+{
+  "date" : "2024-03-29",
+  "version" : "2.16",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix issue where Amazon Q Chat does not appear in IDEs other than IntelliJ IDEA (#4218)"
+  } ]
+}
