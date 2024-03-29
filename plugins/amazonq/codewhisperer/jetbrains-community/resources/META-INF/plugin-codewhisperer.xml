@@ -53,7 +53,6 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererManager"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererUserModificationTracker"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow"/>
 
         <statusBarWidgetFactory id="aws.codewhisperer"
                                 implementation="software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarWidgetFactory"/>
@@ -82,7 +81,6 @@
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
-        <connection.pinned.feature implementation="software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection"/>
         <sdk.clientCustomizer implementation="software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererEndpointCustomizer"/>
     </extensions>
 

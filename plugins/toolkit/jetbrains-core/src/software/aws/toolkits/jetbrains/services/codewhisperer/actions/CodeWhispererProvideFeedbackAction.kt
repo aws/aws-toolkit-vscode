@@ -8,7 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.project.DumbAware
 import icons.AwsIcons
-import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
+import software.aws.toolkits.jetbrains.ui.feedback.CodeWhispererFeedbackDialog
 import software.aws.toolkits.resources.message
 
 class CodeWhispererProvideFeedbackAction :
@@ -19,6 +19,6 @@ class CodeWhispererProvideFeedbackAction :
     ),
     DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
-        FeedbackDialog(e.getRequiredData(LangDataKeys.PROJECT), productName = "CodeWhisperer").showAndGet()
+        CodeWhispererFeedbackDialog(e.getRequiredData(LangDataKeys.PROJECT)).showAndGet()
     }
 }

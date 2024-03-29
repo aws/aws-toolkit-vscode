@@ -43,7 +43,6 @@ aws-cloudwatchlogs = { module = "software.amazon.awssdk:cloudwatchlogs", version
 aws-codecatalyst = { module = "software.amazon.awssdk:codecatalyst", version.ref = "awsSdk" }
 aws-codeGen = { module = "software.amazon.awssdk:codegen", version.ref = "awsSdk" }
 aws-cognitoidentity = { module = "software.amazon.awssdk:cognitoidentity", version.ref = "awsSdk" }
-aws-crt = { module = "software.amazon.awssdk:aws-crt-client", version.ref = "awsSdk" }
 aws-dynamodb = { module = "software.amazon.awssdk:dynamodb", version.ref = "awsSdk" }
 aws-ec2 = { module = "software.amazon.awssdk:ec2", version.ref = "awsSdk" }
 aws-ecr = { module = "software.amazon.awssdk:ecr", version.ref = "awsSdk" }

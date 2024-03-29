@@ -18,7 +18,6 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
-import software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.OpenCodeReference
@@ -45,7 +44,6 @@ class CodeWhispererActionNodeTest {
     private lateinit var explorerManager: CodeWhispererExplorerActionManager
     private lateinit var connectionManager: ToolkitConnectionManager
     private lateinit var codeScanManager: CodeWhispererCodeScanManager
-    private lateinit var codeModernizerManager: CodeModernizerManager
 
     @Before
     fun setup() {
@@ -59,9 +57,6 @@ class CodeWhispererActionNodeTest {
 
         codeScanManager = mock()
         project.replaceService(CodeWhispererCodeScanManager::class.java, codeScanManager, disposableRule.disposable)
-
-        codeModernizerManager = mock()
-        project.replaceService(CodeModernizerManager::class.java, codeModernizerManager, disposableRule.disposable)
     }
 
     @Test

@@ -1,6 +1,10 @@
 * @aws/aws-ides-team
-codewhisperer/ @aws/codewhisperer-team
+
 amazonq/ @aws/aws-mynah
 amazonqFeatureDev/ @aws/earlybird
-mynah-ui/ @aws/aws-mynah
+
 codemodernizer/ @aws/elastic-gumby
+codetransform/ @aws/elastic-gumby
+codewhisperer/ @aws/codewhisperer-team
+
+mynah-ui/ @aws/aws-mynah

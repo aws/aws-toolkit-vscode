@@ -64,7 +64,7 @@ import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsFor
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
 import software.aws.toolkits.jetbrains.services.caws.CawsResources
 import software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererEditorProvider
-import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
+import software.aws.toolkits.jetbrains.ui.feedback.ToolkitFeedbackDialog
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.jetbrains.utils.ui.editorNotificationCompoundBorder
 import software.aws.toolkits.resources.message
@@ -1243,7 +1243,7 @@ class GettingStartedPanel(
 class ShareFeedbackInGetStarted : DumbAwareAction() {
     override fun actionPerformed(e: AnActionEvent) {
         runInEdt {
-            FeedbackDialog(DefaultProjectFactory.getInstance().defaultProject).show()
+            ToolkitFeedbackDialog(DefaultProjectFactory.getInstance().defaultProject).show()
         }
     }
 }
