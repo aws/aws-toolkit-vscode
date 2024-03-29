@@ -328,6 +328,7 @@ export default defineComponent({
                 } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                     this.stage = 'SSO_FORM'
                 } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
+                    this.stage = 'AUTHENTICATING'
                     const selectedConnection =
                         this.existingLogins[this.selectedLoginOption - LoginOption.EXISTING_LOGINS]
                     const error = await client.useConnection(selectedConnection.connectionId)
