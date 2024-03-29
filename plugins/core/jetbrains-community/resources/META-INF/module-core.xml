@@ -1,0 +1,11 @@
+<!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <extensions defaultExtensionNs="aws.toolkit">
+        <!-- need to resolve hard dependency on telemetry querying the status of these -->
+        <connection.pinned.feature implementation="software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection"/>
+        <connection.pinned.feature implementation="software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection"/>
+        <connection.pinned.feature implementation="software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection"/>
+    </extensions>
+</idea-plugin>

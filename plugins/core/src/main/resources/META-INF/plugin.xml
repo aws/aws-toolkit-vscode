@@ -12,6 +12,7 @@
     <content>
         <module name="aws.toolkit.core"/>
     </content>
+    <xi:include href="/META-INF/module-core.xml" />
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- each plugin needs its own instance of these -->

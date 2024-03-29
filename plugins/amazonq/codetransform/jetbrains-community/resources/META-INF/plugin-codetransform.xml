@@ -1,0 +1,5 @@
+<!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<idea-plugin>
+    <depends optional="true" config-file="ext-codetransform-java.xml">com.intellij.modules.java</depends>
+</idea-plugin>

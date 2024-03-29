@@ -28,9 +28,11 @@ intellij {
 }
 
 dependencies {
-    implementation(project(":plugin-amazonq:shared"))
+    implementation(project(":plugin-amazonq:chat"))
+    implementation(project(":plugin-amazonq:codetransform"))
     implementation(project(":plugin-amazonq:codewhisperer"))
     implementation(project(":plugin-amazonq:mynah-ui"))
+    implementation(project(":plugin-amazonq:shared"))
 }
 
 configurations {

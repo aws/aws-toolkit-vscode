@@ -12,7 +12,7 @@ import software.aws.toolkits.resources.message
 class SubmitFeedbackInGateway : DumbAwareAction(message("feedback.title", "Toolkit")) {
     override fun actionPerformed(e: AnActionEvent) {
         runInEdt {
-            FeedbackDialog(DefaultProjectFactory.getInstance().defaultProject).show()
+            ToolkitFeedbackDialog(DefaultProjectFactory.getInstance().defaultProject).show()
         }
     }
 }

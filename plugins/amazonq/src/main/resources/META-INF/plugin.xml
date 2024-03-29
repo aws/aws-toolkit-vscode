@@ -6,6 +6,8 @@
     <version>1.0</version>
     <idea-version since-build="231" until-build="999"/>
 
+    <resource-bundle>software.aws.toolkits.resources.MessagesBundle</resource-bundle>
+
     <depends>core</depends>
     <xi:include href="/META-INF/module-amazonq.xml" />
 
