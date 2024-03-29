@@ -296,25 +296,28 @@ export class Messenger {
                 message = 'To begin, please open a workspace.'
                 break
             case 'no-project-found':
+                message = `Sorry, I couldn't find any open projects. Currently, I can only upgrade Java projects built on Maven. 
+
+For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
+                break
             case 'no-java-project-found':
                 message = `Sorry, I can't upgrade any of your open projects. Currently, I can only upgrade Java projects built on Maven. 
 
-For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
+For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
                 break
             case 'no-maven-java-project-found':
                 message = `Sorry, I can't upgrade any of your open projects. I couldn't find a pom.xml file in any of your Java projects. Currently, I can only upgrade Java projects built on Maven.
                     
-For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
+For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
                 break
             case 'could-not-compile-project':
-                message = `Sorry, I couldn't run the Maven install to build your project. To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)`
+                message = `Sorry, I couldn't run Maven clean install to build your project. To troubleshoot, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing).`
                 break
             case 'invalid-java-home':
-                message =
-                    "I'm sorry, I could not locate your Java installation.  To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)"
+                message = `Sorry, I couldn't locate your Java installation. To troubleshoot, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing).`
                 break
             case 'unsupported-source-jdk-version':
-                message = `I'm sorry, currently I can only upgrade Java 8 or Java 11 projects.
+                message = `Sorry, currently I can only upgrade Java 8 or Java 11 projects.
                 
 For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
         }
@@ -342,13 +345,13 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabId, message.eventId))
     }
 
-    public sendJobFinishedMessage(tabID: string, cancelled: boolean = false, jobStatus: string = '') {
+    public sendJobFinishedMessage(tabID: string, cancelled: boolean = false) {
         let message =
-            'I stopped your transformation. If you want to start another transformation, choose **Start a new transformation.**'
+            'I stopped your transformation. If you want to start another transformation, choose **Start a new transformation**.'
 
         if (!cancelled) {
             message =
-                'The transformation job has been completed. If you want to start another transformation, choose **Start a new transformation.**'
+                'The transformation job is over. If you want to start another transformation, choose **Start a new transformation**.'
         }
 
         const buttons: ChatItemButton[] = []

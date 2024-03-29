@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q Code Transformation: remove Transform button; allow users to retry transformations from chat right after one fails or stops"
+}

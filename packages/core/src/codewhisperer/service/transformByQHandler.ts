@@ -861,9 +861,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
                 sessionPlanProgress['buildCode'] = StepProgress.Succeeded
             }
-            if (CodeWhispererConstants.validStatesForPlanGenerated.includes(status)) {
-                sessionPlanProgress['generatePlan'] = StepProgress.Succeeded
-            }
             // emit metric when job status changes
             if (status !== transformByQState.getPolledJobStatus()) {
                 telemetry.codeTransform_jobStatusChanged.emit({
@@ -895,7 +892,8 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 throw new Error('Job timed out')
             }
         } catch (e: any) {
-            const errorMessage = (e as Error).message ?? 'Error in GetTransformation API call'
+            let errorMessage = (e as Error).message ?? 'Error in GetTransformation API call'
+            errorMessage += ` -- ${transformByQState.getJobFailureMetadata()}`
             getLogger().error(`CodeTransformation: GetTransformation error = ${errorMessage}`)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'GetTransformation',
