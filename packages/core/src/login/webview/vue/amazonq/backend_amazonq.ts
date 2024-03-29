@@ -37,7 +37,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     async useConnection(connectionId: string): Promise<AuthError | undefined> {
-        return this.ssoSetup('updateConnectionScope', async () => {
+        return this.ssoSetup('useConnection', async () => {
             if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
                 return
             }
@@ -117,4 +117,6 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
     /** If users are unauthenticated in Q/CW, we should always display the auth screen. */
     async quitLoginScreen() {}
+
+    async refreshToolkit() {}
 }
