@@ -23,6 +23,10 @@
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.codemodernizer.summary.CodeModernizerSummaryEditorProvider"/>
     </extensions>
 
+    <extensions defaultExtensionNs="aws.toolkit.amazonq">
+        <appFactory implementation="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformChatAppFactory" />
+    </extensions>
+
     <actions>
         <group id="aws.toolkit.codemodernizer.toolbar">
             <action

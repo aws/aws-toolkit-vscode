@@ -9,5 +9,9 @@ import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppFactory
 
 class AppSource {
     private val extensionPointName = ExtensionPointName.create<AmazonQAppFactory>("aws.toolkit.amazonq.appFactory")
-    fun getApps(project: Project) = extensionPointName.extensionList.map { it.createApp(project) }
+    fun getApps(project: Project) = buildList {
+        extensionPointName.forEachExtensionSafe {
+            add(it.createApp(project))
+        }
+    }
 }

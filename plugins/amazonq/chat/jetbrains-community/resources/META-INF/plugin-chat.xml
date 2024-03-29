@@ -25,7 +25,6 @@
     <extensions defaultExtensionNs="aws.toolkit.amazonq">
         <appFactory implementation="software.aws.toolkits.jetbrains.services.cwc.AppFactory" />
         <appFactory implementation="software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevAppFactory" />
-        <appFactory implementation="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformChatAppFactory" />
     </extensions>
 
     <actions>
