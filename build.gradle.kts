@@ -38,12 +38,11 @@ allprojects {
 }
 
 val generateChangeLog = tasks.register<GenerateGithubChangeLog>("generateChangeLog") {
+    mustRunAfter(tasks.createRelease)
     changeLogFile.set(project.file("CHANGELOG.md"))
 }
 
 tasks.createRelease.configure {
-    mustRunAfter(generateChangeLog)
-
     releaseVersion.set(providers.gradleProperty("toolkitVersion"))
 }
 
