@@ -2,5 +2,15 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
+    <xi:include href="/META-INF/plugin-chat.xml" />
+    <xi:include href="/META-INF/plugin-codetransform.xml" />
     <xi:include href="/META-INF/plugin-codewhisperer.xml" />
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit">
+        <cwq.rootNode implementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQRootNodeProviderImpl"/>
+    </extensions>
 </idea-plugin>
