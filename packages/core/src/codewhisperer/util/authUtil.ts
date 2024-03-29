@@ -418,55 +418,62 @@ export class AuthUtil {
     public isValidCodeTransformationAuthUser(): boolean {
         return this.isEnterpriseSsoInUse() && this.isConnectionValid()
     }
-}
 
-/**
- * Returns a snapshot of the overall auth state of
- * CodeWhisperer + Chat features.
- */
-export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<FeatureAuthState> {
-    const currentConnection = cwAuth.conn
+    /**
+     * Returns a snapshot of the overall auth state of CodeWhisperer + Chat features.
+     *
+     * @param shouldRefresh (default true) validate and update the current connection state.
+     * If this setting is set to false, there is a risk that the evaluated state is outdated,
+     * but it is safe from modifying the state of the connection.
+     */
+    public async getChatAuthState(shouldRefresh: boolean = true): Promise<FeatureAuthState> {
+        const currentConnection = this.conn
 
-    if (currentConnection === undefined) {
-        return buildFeatureAuthState(AuthStates.disconnected)
-    }
-    if (!isSsoConnection(currentConnection)) {
-        throw new ToolkitError(`Connection "${currentConnection.id}" is not a valid type: ${currentConnection.type}`)
-    }
+        if (currentConnection === undefined) {
+            return buildFeatureAuthState(AuthStates.disconnected)
+        }
+        if (!isSsoConnection(currentConnection)) {
+            throw new ToolkitError(
+                `Connection "${currentConnection.id}" is not a valid type: ${currentConnection.type}`
+            )
+        }
 
-    // The state of the connection may not have been properly validated
-    // and the current state we see may be stale, so refresh for latest state.
-    await cwAuth.auth.refreshConnectionState(currentConnection)
+        // The state of the connection may not have been properly validated
+        // and the current state we see may be stale, so refresh for latest state.
+        if (shouldRefresh) {
+            await this.auth.refreshConnectionState(currentConnection)
+        }
 
-    // default to expired to indicate reauth is needed if unmodified
-    const state: FeatureAuthState = buildFeatureAuthState(AuthStates.expired)
+        // default to expired to indicate reauth is needed if unmodified
+        const state: FeatureAuthState = buildFeatureAuthState(AuthStates.expired)
 
-    if (isBuilderIdConnection(currentConnection)) {
-        // Regardless, if using Builder ID, Amazon Q is unsupported
-        state[Features.amazonQ] = AuthStates.unsupported
-    }
+        if (isBuilderIdConnection(currentConnection)) {
+            // Regardless, if using Builder ID, Amazon Q is unsupported
+            state[Features.amazonQ] = AuthStates.unsupported
+        }
 
-    if (cwAuth.isConnectionExpired()) {
+        if (this.isConnectionExpired()) {
+            return state
+        }
+
+        if (isBuilderIdConnection(currentConnection)) {
+            if (isValidCodeWhispererCoreConnection(currentConnection)) {
+                state[Features.codewhispererCore] = AuthStates.connected
+            }
+            if (isValidCodeWhispererChatConnection(currentConnection)) {
+                state[Features.codewhispererChat] = AuthStates.connected
+            }
+        } else if (isIdcSsoConnection(currentConnection)) {
+            if (isValidCodeWhispererCoreConnection(currentConnection)) {
+                state[Features.codewhispererCore] = AuthStates.connected
+            }
+            if (isValidAmazonQConnection(currentConnection)) {
+                Object.values(Features).forEach(v => (state[v as Feature] = AuthStates.connected))
+            }
+        }
+
         return state
     }
-
-    if (isBuilderIdConnection(currentConnection)) {
-        if (isValidCodeWhispererCoreConnection(currentConnection)) {
-            state[Features.codewhispererCore] = AuthStates.connected
-        }
-        if (isValidCodeWhispererChatConnection(currentConnection)) {
-            state[Features.codewhispererChat] = AuthStates.connected
-        }
-    } else if (isIdcSsoConnection(currentConnection)) {
-        if (isValidCodeWhispererCoreConnection(currentConnection)) {
-            state[Features.codewhispererCore] = AuthStates.connected
-        }
-        if (isValidAmazonQConnection(currentConnection)) {
-            Object.values(Features).forEach(v => (state[v as Feature] = AuthStates.connected))
-        }
-    }
-
-    return state
 }
 
 /**

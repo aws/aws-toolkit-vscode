@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthUtil, AuthState, getChatAuthState } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, AuthState } from 'aws-core-vscode/codewhisperer'
 
 /**
  * API for the toolkit extension to understand the state of Amazon Q.
  */
 
 const getConnectionState = async () => {
-    return (await getChatAuthState()).codewhispererChat
+    return (await AuthUtil.instance.getChatAuthState()).codewhispererChat
 }
 
 export const amazonQApi = {

@@ -15,7 +15,7 @@ import { CodeScanIssue, codeScanState, CodeSuggestionsState, vsCodeState } from 
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
-import { AuthUtil, getChatAuthState } from '../util/authUtil'
+import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
 import { isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -334,11 +334,29 @@ let _toolkitApi: any = undefined
 const registerToolkitApiCallbackOnce = once(async () => {
     getLogger().info(`toolkitApi: Registering callbacks of toolkit api`)
     const auth = Auth.instance
+
+    /**
+     * getChatAuthState() has the ability to update the active connection/state, which would
+     * actually call this callback again. However, the callback only triggers if there
+     * is a change to the active connection/state. This means that our loop would converge
+     * immediately, or within a few iterations of the state is being updated rapidly
+     * due to race conditions.
+     */
     auth.onDidChangeActiveConnection(async () => {
-        await vscode.commands.executeCommand('_aws.toolkit.auth.restore', (await getChatAuthState()).codewhispererChat)
+        await vscode.commands.executeCommand(
+            '_aws.toolkit.auth.restore',
+            (
+                await AuthUtil.instance.getChatAuthState()
+            ).codewhispererChat
+        )
     })
     auth.onDidChangeConnectionState(async e => {
-        await vscode.commands.executeCommand('_aws.toolkit.auth.restore', (await getChatAuthState()).codewhispererChat)
+        await vscode.commands.executeCommand(
+            '_aws.toolkit.auth.restore',
+            (
+                await AuthUtil.instance.getChatAuthState()
+            ).codewhispererChat
+        )
         // when changing connection state in Q, also change connection state in toolkit
         if (_toolkitApi && 'setConnection' in _toolkitApi) {
             const id = e.id
@@ -371,11 +389,25 @@ const registerToolkitApiCallbackOnce = once(async () => {
             async (connection: AwsConnection) => {
                 getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
                 await AuthUtil.instance.onUpdateConnection(connection)
+                await vscode.commands.executeCommand(
+                    'aws.amazonq.refresh',
+                    // If the connection was properly updated, then calling this with (true) shoudn't
+                    // trigger an event. But, just to be safe...
+                    (
+                        await AuthUtil.instance.getChatAuthState(false)
+                    ).codewhispererChat
+                )
             },
 
             async (id: string) => {
                 getLogger().info(`toolkitApi: connection delete callback ${id}`)
                 await AuthUtil.instance.onDeleteConnection(id)
+                await vscode.commands.executeCommand(
+                    'aws.amazonq.refresh',
+                    (
+                        await AuthUtil.instance.getChatAuthState(false)
+                    ).codewhispererChat
+                )
             }
         )
     }
