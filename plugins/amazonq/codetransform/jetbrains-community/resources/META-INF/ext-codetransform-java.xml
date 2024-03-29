@@ -1,0 +1,48 @@
+<!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <projectListeners>
+        <listener class="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformProjectStartupSettingListener"
+                  topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
+        <listener class="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformProjectStartupSettingListener"
+                  topic="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener"/>
+        <listener class="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformProjectStartupSettingListener"
+                  topic="software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener"/>
+    </projectListeners>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerStartupActivity"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerManager"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codemodernizer.panels.managers.CodeModernizerBottomWindowPanelManager"/>
+        <toolWindow id="aws.codewhisperer.codetransform" anchor="bottom" doNotActivateOnStart="true" canCloseContents="false"
+                    factoryClass="software.aws.toolkits.jetbrains.services.codemodernizer.toolwindow.CodeModernizerBottomToolWindowFactory"
+                    icon="AllIcons.Actions.Preview"/>
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.codemodernizer.plan.CodeModernizerPlanEditorProvider"/>
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.codemodernizer.summary.CodeModernizerSummaryEditorProvider"/>
+    </extensions>
+
+    <actions>
+        <group id="aws.toolkit.codemodernizer.toolbar">
+            <action
+                id="codemodernizer.toolbar.stopmodernizer"
+                class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerStopModernizerAction"/>
+            <separator/>
+            <action
+                id="codemodernizer.toolbar.showactivejob"
+                class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerShowActiveJobDetailsAction"/>
+            <separator/>
+            <action
+                id="codemodernizer.toolbar.showpreviousjobs"
+                class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerShowJobHistoryAction"/>
+        </group>
+
+        <action
+            id="codemodernizer.toolbar.showtransformationplan"
+            class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerShowTransformationPlanAction"/>
+        <action
+            id="codemodernizer.toolbar.showtransformationsummary"
+            class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerShowTransformationSummaryAction"/>
+    </actions>
+</idea-plugin>

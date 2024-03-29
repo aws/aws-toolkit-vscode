@@ -76,6 +76,11 @@ tasks.processResources {
     duplicatesStrategy = DuplicatesStrategy.WARN
 }
 
+tasks.processTestResources {
+    // TODO how can we remove this
+    duplicatesStrategy = DuplicatesStrategy.WARN
+}
+
 // Run after the project has been evaluated so that the extension (intellijToolkit) has been configured
 intellij {
     // find the name of first subproject depth, or root if not applied to a subproject hierarchy

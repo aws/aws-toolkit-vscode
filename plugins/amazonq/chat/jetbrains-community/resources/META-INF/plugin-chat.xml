@@ -1,0 +1,91 @@
+<!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<idea-plugin>
+    <extensionPoints>
+        <extensionPoint qualifiedName="aws.toolkit.amazonq.appFactory" interface="software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppFactory" dynamic="true" />
+    </extensionPoints>
+
+    <projectListeners>
+        <listener class="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowListener"
+                  topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
+    </projectListeners>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.MeetQSettings"/>
+
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindow" />
+
+        <!--Q Getting Started page -->
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.QGettingStartedEditorProvider"/>
+
+        <toolWindow id="amazon.q.window" anchor="right"
+                    factoryClass="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory" icon="AwsIcons.Logos.AWS_Q" />
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit.amazonq">
+        <appFactory implementation="software.aws.toolkits.jetbrains.services.cwc.AppFactory" />
+        <appFactory implementation="software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevAppFactory" />
+        <appFactory implementation="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformChatAppFactory" />
+    </extensions>
+
+    <actions>
+        <group id="aws.toolkit.q.idc.signed.in">
+            <action
+                id="q.openchat"
+                class="software.aws.toolkits.jetbrains.services.amazonq.QOpenPanelAction"/>
+            <action
+                id="q.migrate"
+                class="software.aws.toolkits.jetbrains.services.amazonq.QMigrationNotificationAction"/>
+        </group>
+
+        <group id="aws.toolkit.q.sign.in">
+            <action id="q.sign.in" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.SignInToQAction"/>
+            <action id="q.learn.more" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.QLearnMoreAction"/>
+        </group>
+
+        <group id="aws.toolkit.q.enable">
+            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.EnableQAction"/>
+            <reference id="q.learn.more"/>
+        </group>
+
+        <group id="aws.toolkit.q.expired">
+            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.ReauthenticateWithQ"/>
+        </group>
+
+        <group
+            id="aws.toolkit.jetbrains.core.services.cwc.actions.ContextMenuActions"
+            class="software.aws.toolkits.jetbrains.services.cwc.commands.SendToQActionGroup"
+            popup="true"
+        >
+            <add-to-group
+                group-id="EditorPopupMenu"
+                anchor="last"
+            />
+
+            <action id="aws.toolkit.jetbrains.core.services.cwc.commands.ExplainCodeAction"
+                    class="software.aws.toolkits.jetbrains.services.cwc.commands.ExplainCodeAction">
+                <keyboard-shortcut keymap="$default" first-keystroke="meta alt E" />
+            </action>
+
+            <action id="aws.toolkit.jetbrains.core.services.cwc.commands.RefactorCodeAction"
+                    class="software.aws.toolkits.jetbrains.services.cwc.commands.RefactorCodeAction">
+                <keyboard-shortcut keymap="$default" first-keystroke="meta alt U" />
+            </action>
+
+            <action id="aws.toolkit.jetbrains.core.services.cwc.commands.FixCodeAction"
+                    class="software.aws.toolkits.jetbrains.services.cwc.commands.FixCodeAction">
+                <keyboard-shortcut keymap="$default" first-keystroke="meta alt Y" />
+            </action>
+
+            <action id="aws.toolkit.jetbrains.core.services.cwc.commands.OptimizeCodeAction"
+                    class="software.aws.toolkits.jetbrains.services.cwc.commands.OptimizeCodeAction">
+                <keyboard-shortcut keymap="$default" first-keystroke="meta alt A" />
+            </action>
+
+            <action id="aws.toolkit.jetbrains.core.services.cwc.commands.SendToPromptAction"
+                    class="software.aws.toolkits.jetbrains.services.cwc.commands.SendToPromptAction">
+                <keyboard-shortcut keymap="$default" first-keystroke="meta alt S" />
+            </action>
+        </group>
+    </actions>
+</idea-plugin>

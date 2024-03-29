@@ -2,34 +2,17 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin>
-    <projectListeners>
-        <listener class="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformProjectStartupSettingListener"
-                  topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformProjectStartupSettingListener"
-                  topic="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformProjectStartupSettingListener"
-                  topic="software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener"/>
-    </projectListeners>
-
     <extensions defaultExtensionNs="com.intellij">
         <codeInsight.lineMarkerProvider language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
         <runConfigurationExtension implementation="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension"/>
         <dependencySupport displayName="AWS SDK for Java" coordinate="com.amazonaws:aws-java-sdk-core" kind="java"/>
         <dependencySupport displayName="AWS SDK for Java v2" coordinate="software.amazon.awssdk:sdk-core" kind="java"/>
-        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerStartupActivity"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerManager"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codemodernizer.panels.managers.CodeModernizerBottomWindowPanelManager"/>
-        <toolWindow id="aws.codewhisperer.codetransform" anchor="bottom" doNotActivateOnStart="true" canCloseContents="false"
-                    factoryClass="software.aws.toolkits.jetbrains.services.codemodernizer.toolwindow.CodeModernizerBottomToolWindowFactory"
-                    icon="AllIcons.Actions.Preview"/>
-        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.codemodernizer.plan.CodeModernizerPlanEditorProvider"/>
-        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.codemodernizer.summary.CodeModernizerSummaryEditorProvider"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
         <experiment implementation="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExperiment"/>
     </extensions>
+
     <extensions defaultExtensionNs="aws.toolkit.lambda">
         <runtimeGroup implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaRuntimeGroup"/>
         <builder id="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaBuilder"/>
@@ -41,31 +24,10 @@
         <handlerResolver id="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaHandlerResolver"/>
         <sam.projectWizard id="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.java.JavaSamProjectWizard"/>
     </extensions>
+
     <extensions defaultExtensionNs="aws.toolkit.codewhisperer">
         <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava"/>
         <classResolver implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispereJavaClassResolver"/>
         <importAdder implementation="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererJavaImportAdder"/>
     </extensions>
-    <actions>
-        <group id="aws.toolkit.codemodernizer.toolbar">
-            <action
-                id="codemodernizer.toolbar.stopmodernizer"
-                class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerStopModernizerAction"/>
-            <separator/>
-            <action
-                id="codemodernizer.toolbar.showactivejob"
-                class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerShowActiveJobDetailsAction"/>
-            <separator/>
-            <action
-                id="codemodernizer.toolbar.showpreviousjobs"
-                class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerShowJobHistoryAction"/>
-        </group>
-
-        <action
-            id="codemodernizer.toolbar.showtransformationplan"
-            class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerShowTransformationPlanAction"/>
-        <action
-            id="codemodernizer.toolbar.showtransformationsummary"
-            class="software.aws.toolkits.jetbrains.services.codemodernizer.actions.CodeModernizerShowTransformationSummaryAction"/>
-    </actions>
 </idea-plugin>

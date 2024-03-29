@@ -6,6 +6,7 @@
     <name>AWS Toolkit - Amazon Q, CodeWhisperer, and more</name>
     <version>1.0</version>
 
+    <!-- delete when fully split -->
     <content>
         <module name="aws.toolkit.core"/>
     </content>
@@ -131,9 +132,8 @@
     </xi:include>
 
     <!-- delete when fully split -->
-    <xi:include href="/META-INF/module-amazonq.xml">
-        <xi:fallback/>
-    </xi:include>
+    <xi:include href="/META-INF/module-amazonq.xml"/>
+    <xi:include href="/META-INF/module-core.xml" />
 
     <!-- global optional dependencies here, otherwise in their respective optional includes -->
     <depends optional="true">org.jetbrains.idea.maven</depends>
@@ -179,8 +179,6 @@
                   topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
         <listener class="software.aws.toolkits.jetbrains.services.dynamic.UpdateOnExperimentState"
                   topic="software.aws.toolkits.jetbrains.core.experiments.ToolkitExperimentStateChangedListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowListener"
-                  topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
     </projectListeners>
 
     <extensionPoints>
@@ -219,9 +217,7 @@
         <extensionPoint name="tool" interface="software.aws.toolkits.jetbrains.core.tools.ToolType" dynamic="true"/>
         <extensionPoint name="devTools.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.DevToolsServiceNode" dynamic="true"/>
         <extensionPoint name="devTools.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsTreeStructureProvider" dynamic="true"/>
-        <extensionPoint name="cwq.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQTreeStructureProvider" dynamic="true"/>
-
-        <extensionPoint name="amazonq.appFactory" interface="software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppFactory" dynamic="true" />
+        <extensionPoint name="cwq.rootNode" interface="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQRootNodeProvider" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -234,7 +230,6 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings"
                             serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultDynamicResourcesSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.GettingStartedSettings"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.MeetQSettings"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
@@ -277,7 +272,6 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindow" />
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider"/>
@@ -296,10 +290,6 @@
 
         <toolWindow id="aws.sqs" anchor="bottom" doNotActivateOnStart="true" canCloseContents="true"
                     factoryClass="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindowFactory" icon="AwsIcons.Resources.Sqs.SQS_TOOL_WINDOW"/>
-
-
-        <toolWindow id="amazon.q.window" anchor="right"
-                    factoryClass="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory" icon="AwsIcons.Logos.AWS_Q" />
 
         <!-- plugin configurables -->
         <applicationConfigurable
@@ -352,7 +342,6 @@
         <notificationGroup id="aws.toolkit_deprecation" displayType="STICKY_BALLOON" key="aws.toolkit_deprecation.title"/>
         <notificationGroup id="aws.toolkit_telemetry" displayType="STICKY_BALLOON" key="aws.settings.telemetry.prompt.title"/>
 
-
         <!--Sticky notifications -->
         <notificationGroup id="aws.toolkit_sticky" displayType="STICKY_BALLOON" key="aws.settings.title"/>
 
@@ -373,10 +362,6 @@
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedEditorProvider"/>
         <fileIconProvider order="first" implementation="software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedFileIconProvider"/>
 
-        <!--Q Getting Started page -->
-        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.QGettingStartedEditorProvider"/>
-
-
         <!-- Open in Console -->
         <referenceProviderType key="commentsReferenceProvider"
                                implementationClass="software.aws.toolkits.jetbrains.services.federation.psireferences.ArnPsiReferenceProvider"/>
@@ -395,9 +380,6 @@
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory"/>
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.metadataservice.ContainerCredentialProviderFactory"/>
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.metadataservice.InstanceRoleCredentialProviderFactory"/>
-
-        <connection.pinned.feature implementation="software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection"/>
-        <connection.pinned.feature implementation="software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection"/>
 
         <!-- Executables -->
         <executable implementation="software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable"/>
@@ -426,13 +408,6 @@
         <tool implementation="software.aws.toolkits.jetbrains.services.ssm.SsmPlugin"/>
 
         <sdk.clientCustomizer implementation="software.aws.toolkits.jetbrains.services.caws.CawsClientCustomizer"/>
-    </extensions>
-
-
-    <extensions defaultExtensionNs="aws.toolkit.amazonq">
-        <appFactory implementation="software.aws.toolkits.jetbrains.services.cwc.AppFactory" />
-        <appFactory implementation="software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevAppFactory" />
-        <appFactory implementation="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformChatAppFactory" />
     </extensions>
 
     <actions resource-bundle="software.aws.toolkits.resources.MessagesBundle">
@@ -721,69 +696,9 @@
             </group>
         </group>
 
-        <group id="aws.toolkit.q.idc.signed.in">
-            <action
-                id="q.openchat"
-                class="software.aws.toolkits.jetbrains.services.amazonq.QOpenPanelAction"/>
-            <action
-                id="q.migrate"
-                class="software.aws.toolkits.jetbrains.services.amazonq.QMigrationNotificationAction"/>
-        </group>
-
-        <group id="aws.toolkit.q.sign.in">
-            <action id="q.sign.in" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.SignInToQAction"/>
-            <action id="q.learn.more" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.QLearnMoreAction"/>
-        </group>
-
-        <group id="aws.toolkit.q.enable">
-            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.EnableQAction"/>
-            <reference id="q.learn.more"/>
-        </group>
-
-        <group id="aws.toolkit.q.expired">
-            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.ReauthenticateWithQ"/>
-        </group>
-
-
         <action id="aws.toolkit.connection.pinning.unpin"
                 class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.UnpinConnectionAction"/>
 
-        <group
-            id="aws.toolkit.jetbrains.core.services.cwc.actions.ContextMenuActions"
-            class="software.aws.toolkits.jetbrains.services.cwc.commands.SendToQActionGroup"
-            popup="true"
-        >
-            <add-to-group
-                group-id="EditorPopupMenu"
-                anchor="last"
-
-            />
-
-            <action id="aws.toolkit.jetbrains.core.services.cwc.commands.ExplainCodeAction"
-                    class="software.aws.toolkits.jetbrains.services.cwc.commands.ExplainCodeAction">
-                <keyboard-shortcut keymap="$default" first-keystroke="meta alt E" />
-            </action>
-
-            <action id="aws.toolkit.jetbrains.core.services.cwc.commands.RefactorCodeAction"
-                    class="software.aws.toolkits.jetbrains.services.cwc.commands.RefactorCodeAction">
-                <keyboard-shortcut keymap="$default" first-keystroke="meta alt U" />
-            </action>
-
-            <action id="aws.toolkit.jetbrains.core.services.cwc.commands.FixCodeAction"
-                    class="software.aws.toolkits.jetbrains.services.cwc.commands.FixCodeAction">
-                <keyboard-shortcut keymap="$default" first-keystroke="meta alt Y" />
-            </action>
-
-            <action id="aws.toolkit.jetbrains.core.services.cwc.commands.OptimizeCodeAction"
-                    class="software.aws.toolkits.jetbrains.services.cwc.commands.OptimizeCodeAction">
-                <keyboard-shortcut keymap="$default" first-keystroke="meta alt A" />
-            </action>
-
-            <action id="aws.toolkit.jetbrains.core.services.cwc.commands.SendToPromptAction"
-                    class="software.aws.toolkits.jetbrains.services.cwc.commands.SendToPromptAction">
-                <keyboard-shortcut keymap="$default" first-keystroke="meta alt S" />
-            </action>
-        </group>
     </actions>
 
 </idea-plugin>
