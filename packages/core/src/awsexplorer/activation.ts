@@ -30,6 +30,7 @@ import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { AmazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQTreeNode'
 import { GlobalState } from '../shared/globalState'
 import { activateViewsShared, registerToolView } from './activationShared'
+import { CommonAuthViewProvider } from '../login/webview'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -120,6 +121,21 @@ export async function activate(args: {
     for (const viewNode of viewNodes) {
         registerToolView(viewNode, args.context.extensionContext)
     }
+
+    const toolkitAuthProvider = new CommonAuthViewProvider(args.context.extensionContext, 'toolkit')
+    args.context.extensionContext.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(toolkitAuthProvider.viewType, toolkitAuthProvider, {
+            webviewOptions: {
+                retainContextWhenHidden: true,
+            },
+        }),
+        // Hacky way for a webview to call setLoginService().
+        vscode.commands.registerCommand('aws.explorer.setLoginService', (serviceToShow?: string) => {
+            if (toolkitAuthProvider.webView && 'setLoginService' in toolkitAuthProvider.webView.server) {
+                toolkitAuthProvider.webView.server.setLoginService(serviceToShow)
+            }
+        })
+    )
 }
 
 async function registerAwsExplorerCommands(

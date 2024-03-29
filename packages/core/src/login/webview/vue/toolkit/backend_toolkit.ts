@@ -14,12 +14,24 @@ import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/aut
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/toolkit/index.js'
+    private isCodeCatalystLogin = false
 
     constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider) {
         super(ToolkitLoginWebview.sourcePath)
     }
 
+    setLoginService(serviceToShow?: string) {
+        this.isCodeCatalystLogin = serviceToShow === 'codecatalyst'
+    }
+
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
+        if (this.isCodeCatalystLogin) {
+            return this.ssoSetup('startCodeCatalystSSOSetup', async () => {
+                await this.codeCatalystAuth.connectToEnterpriseSso(startUrl, region)
+                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+                await this.showResourceExplorer()
+            })
+        }
         return this.ssoSetup('createIdentityCenterConnection', async () => {
             const ssoProfile = createSsoProfile(startUrl, region)
             const conn = await Auth.instance.createConnection(ssoProfile)
