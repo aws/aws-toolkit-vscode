@@ -34,6 +34,7 @@
 
 <script lang="ts">
 import {defineComponent} from 'vue'
+
 export default defineComponent({
     name: "awsProfileForm",
     data() {
@@ -61,6 +62,7 @@ export default defineComponent({
     width: 100%;
     height: 40px;
 }
+
 .back-button {
     background: none;
     border: none;
@@ -68,23 +70,28 @@ export default defineComponent({
     color: white;
     font-size: 30px;
 }
+
 .hint {
     color: #948a8a;
     margin-bottom: 5px;
     margin-top: 5px;
 }
+
 .continue-button:disabled {
     background-color: #252526;
     color: #6f6f6f;
 }
+
 .iamInput {
     background-color: #252526;
     width: 100%;
     color: white;
 }
+
 body.vscode-dark #logo-text {
     fill: white;
 }
+
 body.vscode-light #logo-text {
     fill: #232f3e; /* squid ink */
 }

@@ -5,8 +5,20 @@
 import { createApp } from 'vue'
 import {createStore, Store} from 'vuex'
 import HelloWorld from './components/root.vue'
+import {Region, Stage} from "../model";
+import {IdeClient} from "../ideClient";
 
-export interface State {}
+declare global {
+    interface Window {
+        ideApi: { postMessage: (arg: { command: string } & any) => any }
+        ideClient: IdeClient
+    }
+}
+
+export interface State {
+    stage: Stage,
+    ssoRegions: Region[]
+}
 
 declare module '@vue/runtime-core' {
     interface ComponentCustomProperties {
@@ -16,10 +28,22 @@ declare module '@vue/runtime-core' {
 
 const app = createApp(HelloWorld)
 const store = createStore<State>({
-    state: {},
+    state: {
+        stage: 'START' as Stage,
+        ssoRegions: [] as Region[]
+    },
     getters: {},
-    mutations: {},
+    mutations: {
+        setStage(state: State, stage: Stage) {
+            state.stage = stage
+        },
+        setSsoRegions(state: State, regions: Region[]) {
+            state.ssoRegions = regions
+        }
+    },
     actions: {},
     modules: {},
 })
+
+window.ideClient = new IdeClient(store)
 app.use(store).mount('#app')

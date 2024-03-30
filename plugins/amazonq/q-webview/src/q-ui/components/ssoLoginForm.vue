@@ -39,11 +39,13 @@
 
 <script lang="ts">
 import {defineComponent} from 'vue'
+import {Region} from "../../model";
 
 function validateSsoUrlFormat(url: string) {
     const regex = /^https?:\/\/(.+)\.awsapps\.com\/start$/
     return regex.test(url)
 }
+
 export default defineComponent({
     name: "ssoForm",
     data() {
@@ -51,7 +53,11 @@ export default defineComponent({
             startUrl: "",
             selectedRegion: "",
             urlValid: false,
-            regions: []
+        }
+    },
+    computed: {
+        regions(): Region[] {
+            return this.$store.state.ssoRegions
         }
     },
     methods: {
@@ -66,6 +72,7 @@ export default defineComponent({
             this.$emit('backToMenu')
         },
         async handleContinueClick() {
+            window.ideApi.postMessage({command: 'loginIdC', url: this.startUrl, region: this.selectedRegion})
             this.$emit('stageChanged', 'AUTHENTICATING')
         },
     },
@@ -79,6 +86,7 @@ export default defineComponent({
     width: 100%;
     height: 40px;
 }
+
 .back-button {
     background: none;
     border: none;
@@ -86,11 +94,13 @@ export default defineComponent({
     color: white;
     font-size: 30px;
 }
+
 .hint {
     color: #948a8a;
     margin-bottom: 5px;
     margin-top: 5px;
 }
+
 .title {
     margin-bottom: 5px;
     margin-top: 5px;
@@ -98,14 +108,17 @@ export default defineComponent({
     font-weight: bold;
     color: white;
 }
+
 .urlInput {
     background-color: #252526;
     width: 100%;
     color: white;
 }
+
 .regionSelect {
     background-color: #252526;
     width: 100%;
     color: white;
 }
+
 </style>

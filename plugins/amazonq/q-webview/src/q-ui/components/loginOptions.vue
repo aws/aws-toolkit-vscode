@@ -44,6 +44,7 @@
 <script lang="ts">
 import {defineComponent} from 'vue'
 import SelectableItem from "./selectableItem.vue";
+
 enum LoginOption {
     NONE,
     BUILDER_ID,
@@ -51,6 +52,7 @@ enum LoginOption {
     IAM_CREDENTIAL,
     EXISTING_LOGINS,
 }
+
 export default defineComponent({
     name: "loginOptions",
     components: {SelectableItem},
@@ -73,8 +75,10 @@ export default defineComponent({
             if (this.selectedLoginOption === LoginOption.BUILDER_ID) {
                 console.log('builderId is selected')
                 this.$emit('stageChanged', 'AUTHENTICATING')
+                window.ideApi.postMessage({ command: 'loginBuilderId' })
             } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                 this.$emit('stageChanged', 'SSO_FORM')
+                window.ideApi.postMessage({ command: 'fetchSsoRegion' })
             } else if (this.selectedLoginOption === LoginOption.EXISTING_LOGINS) {
                 this.$emit('stageChanged', 'START')
             } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
@@ -90,12 +94,14 @@ export default defineComponent({
     margin-bottom: 10px;
     margin-top: 10px;
 }
+
 .continue-button {
     background-color: #29a7ff;
     color: white;
     width: 100%;
     height: 40px;
 }
+
 .title {
     margin-bottom: 5px;
     margin-top: 5px;
@@ -103,13 +109,16 @@ export default defineComponent({
     font-weight: bold;
     color: white;
 }
+
 .continue-button:disabled {
     background-color: #252526;
     color: #6f6f6f;
 }
+
 body.vscode-dark #logo-text {
     fill: white;
 }
+
 body.vscode-light #logo-text {
     fill: #232f3e; /* squid ink */
 }

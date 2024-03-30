@@ -107,6 +107,7 @@ export default defineComponent({
     font-size: 15px;
     color: white;
 }
+
 .icon {
     padding-right: 10px;
 }

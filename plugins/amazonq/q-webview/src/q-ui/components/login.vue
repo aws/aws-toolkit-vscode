@@ -32,9 +32,7 @@ import Logo from './logo.vue'
 import SsoLoginForm from "./ssoLoginForm.vue";
 import LoginOptions from "./loginOptions.vue";
 import AwsProfileForm from "./awsProfileForm.vue";
-
-/** Where the user is currently in the builder id setup process */
-type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
+import {Stage} from "../../model";
 
 enum LoginOption {
     NONE,
@@ -70,18 +68,19 @@ export default defineComponent({
         return {
             existingLogin: { id: -1, text: '', title: '' },
             selectedLoginOption: LoginOption.NONE,
-            stage: 'START' as Stage,
             app: this.app,
             LoginOption,
             profileName: '',
         }
     },
+    computed: {
+        stage(): Stage {
+            return this.$store.state.stage
+        }
+    },
     methods: {
         mutateStage(stage: Stage) {
-            this.stage = stage
-        },
-        toggleItemSelection(itemId: number) {
-            this.selectedLoginOption = itemId
+            this.$store.commit('setStage', stage)
         },
         handleDocumentClick(event: any) {
             const isClickInsideSelectableItems = event.target.closest('.selectable-item')
@@ -94,8 +93,6 @@ export default defineComponent({
         },
         handleCancelButton() {
             this.mutateStage('START')
-        },
-        async emitUpdate(cause?: string) {
         },
     },
 })
