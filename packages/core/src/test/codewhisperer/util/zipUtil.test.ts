@@ -6,7 +6,7 @@
 import assert from 'assert'
 import vscode from 'vscode'
 import sinon from 'sinon'
-import { join, relative } from 'path'
+import { join } from 'path'
 import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
 import { ZipUtil } from '../../../codewhisperer/util/zipUtil'
 import { SecurityScanType } from '../../../codewhisperer/models/constants'
@@ -105,7 +105,7 @@ describe('zipUtil', function () {
             const readFileStub = sinon
                 .stub(fsCommon, 'readFileAsString')
                 .onFirstCall()
-                .returns(Promise.resolve(relative(workspaceFolder, appCodePath)))
+                .returns(Promise.resolve('*.py'))
                 .onSecondCall()
                 .callsFake((...args) => {
                     readFileStub.restore()
@@ -113,10 +113,10 @@ describe('zipUtil', function () {
                 })
 
             const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
-            assert.strictEqual(zipMetadata.lines, 2656)
+            assert.strictEqual(zipMetadata.lines, 2517)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
-            assert.strictEqual(zipMetadata.scannedFiles.size, 88)
+            assert.strictEqual(zipMetadata.scannedFiles.size, 83)
             assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
             assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
