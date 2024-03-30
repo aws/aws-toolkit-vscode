@@ -74,6 +74,10 @@ class ToolkitUpdateManager {
             }
 
             val toolkitPlugin = AwsToolkit.DESCRIPTOR as IdeaPluginDescriptor? ?: return
+            if (toolkitPlugin.version.contains("SNAPSHOT", ignoreCase = true)) {
+                LOG.debug { "AWS Toolkit is a SNAPSHOT version, not performing auto-update" }
+                return
+            }
             if (!toolkitPlugin.isEnabled) {
                 LOG.debug { "AWS Toolkit is disabled, not performing auto-update" }
                 return
