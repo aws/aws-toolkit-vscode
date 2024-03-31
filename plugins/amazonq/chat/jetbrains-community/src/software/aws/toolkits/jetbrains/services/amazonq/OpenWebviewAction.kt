@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.amazonq
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -18,6 +19,12 @@ import org.cef.CefApp
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.network.CefRequest
+import software.aws.toolkits.jetbrains.core.credentials.loginSso
+import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES_UNAVAILABLE_BUILDER_ID
+import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
+import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
@@ -122,6 +129,15 @@ class WebviewBrowser(val project: Project) {
 
                 "loginBuilderId" -> {
                     println("log in with builder id........")
+                    val scope = CODEWHISPERER_SCOPES + Q_SCOPES - Q_SCOPES_UNAVAILABLE_BUILDER_ID.toSet()
+                    runInEdt {
+                        loginSso(project, SONO_URL, SONO_REGION, scope)
+                        jcefBrowser.cefBrowser.executeJavaScript(
+                            "window.ideClient.updateStage('START')",
+                            jcefBrowser.cefBrowser.url,
+                            0
+                        )
+                    }
                 }
 
                 "loginIdC" -> {
@@ -132,6 +148,16 @@ class WebviewBrowser(val project: Project) {
                             "region: $region" +
                             "url: $url"
                     )
+
+                    val scope = CODEWHISPERER_SCOPES + Q_SCOPES
+                    runInEdt {
+                        loginSso(project, url, region, scope)
+                        jcefBrowser.cefBrowser.executeJavaScript(
+                            "window.ideClient.updateStage('START')",
+                            jcefBrowser.cefBrowser.url,
+                            0
+                        )
+                    }
                 }
 
                 else -> {

@@ -7,6 +7,8 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.services.amazonq.isQSupportedInThisVersion
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.resources.message
@@ -14,6 +16,22 @@ import software.aws.toolkits.resources.message
 class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val contentManager = toolWindow.contentManager
+
+        project.messageBus.connect(project).subscribe(
+            ToolkitConnectionManagerListener.TOPIC,
+            object : ToolkitConnectionManagerListener {
+                override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+                    val content = contentManager.factory.createContent(AmazonQToolWindow.getInstance(project).component, null, false).also {
+                        it.isCloseable = true
+                        it.isPinnable = true
+                    }
+
+                    contentManager.removeAllContents(true)
+                    contentManager.addContent(content)
+                }
+            }
+        )
+
         val content = contentManager.factory.createContent(AmazonQToolWindow.getInstance(project).component, null, false).also {
             it.isCloseable = true
             it.isPinnable = true

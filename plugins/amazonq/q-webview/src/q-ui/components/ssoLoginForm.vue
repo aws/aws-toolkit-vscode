@@ -12,7 +12,7 @@
     </button>
     <div class="auth-container-section">
         <div class="title">Sign in with SSO:</div>
-        <div class="p">Start URL</div>
+        <div class="title">Start URL</div>
         <div class="hint">URL for your organization, provided by an admin or help desk</div>
         <input
             class="urlInput"
@@ -80,6 +80,11 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.auth-container-section {
+    margin-left: 10px;
+    margin-right:10px;
+}
+
 .continue-button {
     background-color: #29a7ff;
     color: white;
