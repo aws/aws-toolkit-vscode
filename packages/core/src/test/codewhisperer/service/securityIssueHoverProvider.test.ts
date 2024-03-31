@@ -48,6 +48,9 @@ describe('securityIssueHoverProvider', () => {
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName])
                 )} 'Open "CodeWhisperer Security Issue"')\n` +
+                ` | [$(comment) Send to Chat](command:aws.amazonq.fixCode?${encodeURIComponent(
+                    JSON.stringify([undefined, issues[0]])
+                )} 'Send to Amazon Q')\n` +
                 ` | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
                 )} "Apply suggested fix")\n` +
@@ -88,7 +91,10 @@ describe('securityIssueHoverProvider', () => {
                 'recommendationText\n\n' +
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[1], mockDocument.fileName])
-                )} 'Open "CodeWhisperer Security Issue"')\n`
+                )} 'Open "CodeWhisperer Security Issue"')\n` +
+                ` | [$(comment) Send to Chat](command:aws.amazonq.fixCode?${encodeURIComponent(
+                    JSON.stringify([undefined, issues[1]])
+                )} 'Send to Amazon Q')\n`
         )
         assertTelemetry('codewhisperer_codeScanIssueHover', [
             { findingId: 'finding-1', detectorId: 'language/detector-1', ruleId: 'Rule-123', includesFix: true },

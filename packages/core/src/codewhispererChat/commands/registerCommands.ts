@@ -4,6 +4,7 @@
  */
 
 import { focusAmazonQPanel } from '../../auth/ui/vue/show'
+import { CodeScanIssue } from '../../codewhisperer/models/model'
 import { Commands } from '../../shared/vscode/commands2'
 import { ChatControllerMessagePublishers } from '../controllers/chat/controller'
 
@@ -30,11 +31,12 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
-    Commands.register('aws.amazonq.fixCode', async data => {
+    Commands.register('aws.amazonq.fixCode', async (data, issue) => {
         return focusAmazonQPanel().then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.fixCode',
                 triggerType: getCommandTriggerType(data),
+                codeScanIssue: issue,
             })
         })
     })
@@ -68,4 +70,9 @@ export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | 'co
 export interface EditorContextCommand {
     type: EditorContextCommandType
     triggerType: EditorContextCommandTriggerType
+}
+
+export interface EditorContextCommandWithIssue extends EditorContextCommand {
+    type: 'aws.amazonq.fixCode'
+    codeScanIssue: CodeScanIssue
 }

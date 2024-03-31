@@ -33,10 +33,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                 if (issueRange.contains(range)) {
                     const [suggestedFix] = issue.suggestedFixes
                     if (suggestedFix) {
-                        const fixIssue = new vscode.CodeAction(
-                            `Apply fix for "${issue.title}"`,
-                            vscode.CodeActionKind.QuickFix
-                        )
+                        const fixIssue = new vscode.CodeAction('Fix with Amazon Q', vscode.CodeActionKind.QuickFix)
                         const args: [CodeScanIssue, string, Component] = [issue, group.filePath, 'quickfix']
                         fixIssue.command = {
                             title: 'Apply suggested fix',
@@ -53,6 +50,15 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                         arguments: args,
                     }
                     codeActions.push(openIssue)
+
+                    const sendToChat = new vscode.CodeAction('Send to Amazon Q')
+                    const sendToChatArgs = [undefined, issue] // First arg is reserved for `data`
+                    sendToChat.command = {
+                        title: 'Send to Amazon Q',
+                        command: 'aws.amazonq.fixCode',
+                        arguments: sendToChatArgs,
+                    }
+                    codeActions.push(sendToChat)
                 }
             }
         }

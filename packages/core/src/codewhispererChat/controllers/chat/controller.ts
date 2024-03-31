@@ -30,7 +30,7 @@ import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
-import { EditorContextCommand } from '../../commands/registerCommands'
+import { EditorContextCommand, EditorContextCommandWithIssue } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
@@ -54,7 +54,7 @@ export interface ChatControllerMessagePublishers {
     readonly processTabChangedMessage: MessagePublisher<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
     readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
-    readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
+    readonly processContextMenuCommand: MessagePublisher<EditorContextCommand | EditorContextCommandWithIssue>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
     readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
@@ -377,7 +377,13 @@ export class ChatController {
         this.sessionStorage.deleteSession(tabID)
     }
 
-    private async processContextMenuCommand(command: EditorContextCommand) {
+    private isCommandWithIssue(
+        command: EditorContextCommand | EditorContextCommandWithIssue
+    ): command is EditorContextCommandWithIssue {
+        return (command as EditorContextCommandWithIssue).codeScanIssue !== undefined
+    }
+
+    private async processContextMenuCommand(command: EditorContextCommand | EditorContextCommandWithIssue) {
         // Just open the chat panel in this case
         if (!this.editorContextExtractor.isCodeBlockSelected() && command.type === 'aws.amazonq.sendToPrompt') {
             return
@@ -394,11 +400,23 @@ export class ChatController {
 
                 const prompt = this.promptGenerator.generateForContextMenuCommand(command)
 
-                this.messenger.sendEditorContextCommandMessage(
-                    command.type,
-                    context?.focusAreaContext?.codeBlock ?? '',
-                    triggerID
-                )
+                if (this.isCommandWithIssue(command)) {
+                    this.messenger.sendEditorContextCommandMessage(
+                        command.type,
+                        context.activeFileContext?.fileText
+                            ?.split('\n')
+                            .slice(command.codeScanIssue.startLine, command.codeScanIssue.endLine)
+                            .join('') ?? '',
+                        triggerID,
+                        command.codeScanIssue
+                    )
+                } else {
+                    this.messenger.sendEditorContextCommandMessage(
+                        command.type,
+                        context?.focusAreaContext?.codeBlock ?? '',
+                        triggerID
+                    )
+                }
 
                 if (command.type === 'aws.amazonq.sendToPrompt') {
                     // No need for response if send the code to prompt

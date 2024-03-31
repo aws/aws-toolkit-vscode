@@ -68,6 +68,12 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
             `[$(eye) View Details](${viewDetailsCommand} 'Open "CodeWhisperer Security Issue"')\n`
         )
 
+        const sendToChatArgs = [undefined, issue] // First arg is reserved for `data`
+        const sendToChatCommand = vscode.Uri.parse(
+            `command:aws.amazonq.fixCode?${encodeURIComponent(JSON.stringify(sendToChatArgs))}`
+        )
+        markdownString.appendMarkdown(` | [$(comment) Send to Chat](${sendToChatCommand} 'Send to Amazon Q')\n`)
+
         if (suggestedFix) {
             const args: [CodeScanIssue, string, Component] = [issue, filePath, 'hover']
             const applyFixCommand = vscode.Uri.parse(
