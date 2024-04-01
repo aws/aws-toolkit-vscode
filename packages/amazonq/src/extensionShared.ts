@@ -78,7 +78,7 @@ export async function activateShared(context: vscode.ExtensionContext) {
          * The user is already aware of Q and has tried it so no need to show it again.
          */
         await vscode.commands.executeCommand('setContext', amazonQDismissedKey, false)
-      
+
         await refreshToolkitQState.execute()
     }
 
