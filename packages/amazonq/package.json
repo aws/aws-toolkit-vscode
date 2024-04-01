@@ -227,22 +227,6 @@
         ],
         "submenus": [
             {
-                "id": "aws.amazonq.auth",
-                "label": "%AWS.submenu.auth.title%",
-                "icon": "$(ellipsis)",
-                "when": "isCloud9 || !aws.isWebExtHost"
-            },
-            {
-                "id": "aws.codewhisperer.submenu",
-                "label": "%AWS.codewhisperer.submenu.title%",
-                "icon": "$(ellipsis)"
-            },
-            {
-                "id": "aws.amazonq.submenu",
-                "label": "%AWS.codewhisperer.submenu.title%",
-                "icon": "$(ellipsis)"
-            },
-            {
                 "label": "%AWS.submenu.amazonqEditorContextSubmenu.title%",
                 "id": "amazonqEditorContextSubmenu"
             },
@@ -258,10 +242,6 @@
         "menus": {
             "commandPalette": [
                 {
-                    "command": "aws.listCommands",
-                    "when": "false"
-                },
-                {
                     "command": "aws.codewhisperer.signout",
                     "when": "false"
                 },
@@ -275,10 +255,6 @@
                 },
                 {
                     "command": "aws.amazonq.auth.addConnection",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.amazonq.auth.switchConnections",
                     "when": "false"
                 },
                 {
@@ -355,23 +331,18 @@
                     "group": "1_amazonQ@1"
                 },
                 {
-                    "command": "aws.codeWhisperer.introduction",
-                    "when": "view == aws.codewhisperer",
-                    "group": "1_amazonQ@1"
-                },
-                {
                     "command": "aws.codewhisperer.manageConnections",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer) && !aws.codewhisperer.connected",
+                    "when": "(view == aws.AmazonQChatView) && !aws.codewhisperer.connected",
                     "group": "2_amazonQ@2"
                 },
                 {
                     "command": "aws.codewhisperer.signout",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer) && aws.codewhisperer.connected",
+                    "when": "(view == aws.AmazonQChatView) && aws.codewhisperer.connected",
                     "group": "2_amazonQ@4"
                 },
                 {
                     "command": "aws.codewhisperer.reconnect",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer) && aws.codewhisperer.connectionExpired",
+                    "when": "(view == aws.AmazonQChatView) && aws.codewhisperer.connectionExpired",
                     "group": "2_amazonQ@3"
                 },
                 {
@@ -412,33 +383,6 @@
                     "submenu": "amazonqEditorContextSubmenu",
                     "group": "cw_chat",
                     "when": "editorHasSelection"
-                }
-            ],
-            "view/item/context": [
-                {
-                    "command": "aws.codeWhisperer.introduction",
-                    "when": "viewItem =~ /^awsCodeWhispererNode/ && !isCloud9 && CODEWHISPERER_TERMS_ACCEPTED",
-                    "group": "inline@1"
-                },
-                {
-                    "submenu": "aws.amazonq.submenu",
-                    "when": "viewItem =~ /^awsAmazonQNode/",
-                    "group": "inline@1"
-                }
-            ],
-            "aws.amazonq.auth": [
-                {
-                    "command": "aws.amazonq.auth.manageConnections",
-                    "group": "0@1"
-                },
-                {
-                    "command": "aws.amazonq.auth.switchConnections",
-                    "group": "0@2"
-                },
-                {
-                    "command": "aws.amazonq.auth.signout",
-                    "enablement": "!isCloud9",
-                    "group": "0@3"
                 }
             ],
             "aws.amazonq.submenu.feedback": [
