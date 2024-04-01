@@ -61,6 +61,7 @@ import {
     AwsConnection,
 } from './connection'
 import { isSageMaker, isCloud9 } from '../shared/extensionUtilities'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 interface AuthService {
     /**
@@ -171,7 +172,13 @@ export class Auth implements AuthService, ConnectionManager {
         const profile = this.store.getProfileOrThrow(id)
         if (profile.type === 'sso') {
             const provider = this.getSsoTokenProvider(id, profile)
-            await this.authenticate(id, () => provider.createToken())
+
+            // We create our own span with run() since we want to
+            // set the isReAuth attribute
+            await telemetry.aws_loginWithBrowser.run(async span => {
+                span.record({ isReAuth: true })
+                await this.authenticate(id, () => provider.createToken())
+            })
 
             return this.getSsoConnection(id, profile)
         } else {
