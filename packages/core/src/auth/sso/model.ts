@@ -11,7 +11,6 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger/logger'
-import { telemetry } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ssoAuthHelpUrl } from '../../shared/constants'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -111,6 +110,7 @@ export async function openSsoPortalLink(startUrl: string, authorization: Authori
             throw new ToolkitError(`User clicked 'Copy' or 'Cancel' during the Trusted Domain popup`, {
                 code: trustedDomainCancellation,
                 name: trustedDomainCancellation,
+                cancelled: true,
             })
         }
         return didOpenUrl
@@ -144,7 +144,7 @@ export async function openSsoPortalLink(startUrl: string, authorization: Authori
         }
     }
 
-    return telemetry.aws_loginWithBrowser.run(() => showLoginNotification())
+    return showLoginNotification()
 }
 
 // Most SSO 'expirables' are fairly long lived, so a one minute buffer is plenty.
