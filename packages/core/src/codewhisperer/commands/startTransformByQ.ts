@@ -9,7 +9,13 @@ import * as fs from 'fs'
 import * as os from 'os'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
-import { transformByQState, StepProgress, TransformByQReviewStatus, JDKVersion } from '../models/model'
+import {
+    transformByQState,
+    StepProgress,
+    TransformByQReviewStatus,
+    JDKVersion,
+    sessionPlanProgress,
+} from '../models/model'
 import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     throwIfCancelled,
@@ -54,18 +60,6 @@ const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
 
 let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
-
-const sessionPlanProgress: {
-    uploadCode: StepProgress
-    buildCode: StepProgress
-    transformCode: StepProgress
-    returnCode: StepProgress
-} = {
-    uploadCode: StepProgress.NotStarted,
-    buildCode: StepProgress.NotStarted,
-    transformCode: StepProgress.NotStarted,
-    returnCode: StepProgress.NotStarted,
-}
 
 export async function startTransformByQWithProgress() {
     await startTransformByQ()
@@ -158,7 +152,7 @@ export async function startTransformByQ() {
                 'aws.amazonq.showPlanProgressInHub',
                 codeTransformTelemetryState.getStartTime()
             )
-        }, CodeWhispererConstants.progressIntervalMs)
+        }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
 
         // step 1: CreateCodeUploadUrl and upload code
         const uploadId = await preTransformationUploadCode()
@@ -173,6 +167,7 @@ export async function startTransformByQ() {
         const status = await pollTransformationStatusUntilComplete(jobId)
 
         // Set the result state variables for our store and the UI
+        // At this point job should be completed or partially completed
         await finalizeTransformationJob(status)
     } catch (error: any) {
         await transformationJobErrorHandler(error)
@@ -183,7 +178,6 @@ export async function startTransformByQ() {
 }
 
 export async function preTransformationUploadCode() {
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
     let uploadId = ''
@@ -204,7 +198,6 @@ export async function preTransformationUploadCode() {
         })
         throw err
     }
-    sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
 
     await sleep(2000) // sleep before starting job to prevent ThrottlingException
     throwIfCancelled()
@@ -228,7 +221,6 @@ export async function startTransformationJob(uploadId: string) {
         throw new Error('Start job failed')
     }
     transformByQState.setJobId(encodeHTML(jobId))
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     await sleep(2000) // sleep before polling job to prevent ThrottlingException
     throwIfCancelled()
@@ -238,7 +230,7 @@ export async function startTransformationJob(uploadId: string) {
 
 export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     try {
-        await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForGettingPlan)
+        await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForPlanGenerated)
     } catch (error) {
         const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
         getLogger().error(`CodeTransformation: ${errorMessage}`, error)
@@ -254,7 +246,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         transformByQState.setJobFailureErrorMessage(errorMessage)
         throw new Error('Get plan failed')
     }
-    sessionPlanProgress['buildCode'] = StepProgress.Succeeded
+
     const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
     fs.writeFileSync(planFilePath, plan)
     await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
@@ -286,7 +278,6 @@ export async function finalizeTransformationJob(status: string) {
         throw new Error('Job was not successful nor partially successful')
     }
 
-    sessionPlanProgress['transformCode'] = StepProgress.Succeeded
     transformByQState.setToSucceeded()
     if (status === 'PARTIALLY_COMPLETED') {
         transformByQState.setToPartiallySucceeded()
@@ -296,13 +287,8 @@ export async function finalizeTransformationJob(status: string) {
     }
 
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 
-    transformByQState.getChatControllers()?.transformationFinished.fire({
-        jobStatus: status,
-        tabID: ChatSessionManager.Instance.getSession().tabID,
-    })
-    sessionPlanProgress['returnCode'] = StepProgress.Succeeded
+    sessionPlanProgress['transformCode'] = StepProgress.Succeeded
 }
 
 export async function getValidCandidateProjects(): Promise<TransformationCandidateProject[]> {
@@ -311,11 +297,13 @@ export async function getValidCandidateProjects(): Promise<TransformationCandida
 }
 
 export async function setTransformationToRunningState() {
+    await setContextVariables()
+
     transformByQState.setToRunning()
-    sessionPlanProgress['uploadCode'] = StepProgress.Pending
+    sessionPlanProgress['startJob'] = StepProgress.Pending
     sessionPlanProgress['buildCode'] = StepProgress.Pending
+    sessionPlanProgress['generatePlan'] = StepProgress.Pending
     sessionPlanProgress['transformCode'] = StepProgress.Pending
-    sessionPlanProgress['returnCode'] = StepProgress.Pending
 
     codeTransformTelemetryState.setStartTime()
 
@@ -342,14 +330,13 @@ export async function setTransformationToRunningState() {
         'aws.amazonq.showPlanProgressInHub',
         codeTransformTelemetryState.getStartTime()
     )
-
-    await setContextVariables()
-
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 }
 
 export async function postTransformationJob() {
-    await vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
+    transformByQState.getChatControllers()?.transformationFinished.fire({
+        jobStatus: transformByQState.getPolledJobStatus(),
+        tabID: ChatSessionManager.Instance.getSession().tabID,
+    })
     const durationInMs = calculateTotalLatency(codeTransformTelemetryState.getStartTime())
     const resultStatusMessage = codeTransformTelemetryState.getResultStatus()
 
@@ -441,17 +428,17 @@ export async function transformationJobErrorHandler(error: any) {
                 }
             })
     }
-    if (sessionPlanProgress['uploadCode'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['uploadCode'] = StepProgress.Failed
+    if (sessionPlanProgress['startJob'] !== StepProgress.Succeeded) {
+        sessionPlanProgress['startJob'] = StepProgress.Failed
     }
     if (sessionPlanProgress['buildCode'] !== StepProgress.Succeeded) {
         sessionPlanProgress['buildCode'] = StepProgress.Failed
     }
+    if (sessionPlanProgress['generatePlan'] !== StepProgress.Succeeded) {
+        sessionPlanProgress['generatePlan'] = StepProgress.Failed
+    }
     if (sessionPlanProgress['transformCode'] !== StepProgress.Succeeded) {
         sessionPlanProgress['transformCode'] = StepProgress.Failed
-    }
-    if (sessionPlanProgress['returnCode'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['returnCode'] = StepProgress.Failed
     }
     getLogger().error(`CodeTransformation: ${error.message}`)
 }
@@ -460,7 +447,6 @@ export async function cleanupTransformationJob(intervalId: NodeJS.Timeout | unde
     clearInterval(intervalId)
     transformByQState.setJobDefaults()
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
     void vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', codeTransformTelemetryState.getStartTime())
 }
 
@@ -493,7 +479,6 @@ export async function stopTransformByQ(
     if (transformByQState.isRunning()) {
         getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
         transformByQState.setToCancelled()
-        await vscode.commands.executeCommand('aws.amazonq.refresh')
         await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         try {
             await stopJob(jobId)
@@ -509,8 +494,8 @@ export async function stopTransformByQ(
 }
 
 async function setContextVariables() {
+    await vscode.commands.executeCommand('setContext', 'gumby.wasQCodeTransformationUsed', true)
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
-    await vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
     await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
     await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', false)
     await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)

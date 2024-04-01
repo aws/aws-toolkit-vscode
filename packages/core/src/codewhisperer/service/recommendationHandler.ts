@@ -559,7 +559,6 @@ export class RecommendationHandler {
                 void vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReached)
             }
             vsCodeState.isFreeTierLimitReached = true
-            await Commands.tryExecute('aws.amazonq.refresh')
         }
     }
 

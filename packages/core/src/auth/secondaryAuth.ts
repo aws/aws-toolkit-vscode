@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { Auth } from './auth'
-import { once } from '../shared/utilities/functionUtils'
+import { once, onceChanged } from '../shared/utilities/functionUtils'
 import { isNonNullable } from '../shared/utilities/tsUtils'
 import { Connection, SsoConnection, StatefulConnection } from './connection'
 import { indent } from '../shared/utilities/textUtilities'
@@ -85,6 +85,7 @@ export const onDidChangeConnections = onDidChangeConnectionsEmitter.event
 export class SecondaryAuth<T extends Connection = Connection> {
     #activeConnection: Connection | undefined
     #savedConnection: T | undefined
+    protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
 
     private readonly key = `${this.toolId}.savedConnectionId`
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<T | undefined>()
@@ -158,10 +159,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     public get isConnectionExpired() {
         if (this.activeConnection) {
-            getLogger().info(
+            SecondaryAuth.logIfChanged(
                 indent(
-                    `secondaryAuth connection id = ${this.activeConnection.id}
-            secondaryAuth connection status = ${this.auth.getConnectionState(this.activeConnection)}`,
+                    `secondaryAuth: connectionId=${
+                        this.activeConnection.id
+                    }, connectionStatus=${this.auth.getConnectionState(this.activeConnection)}`,
                     4,
                     true
                 )
@@ -272,6 +274,17 @@ export class SecondaryAuth<T extends Connection = Connection> {
         } else {
             await this.auth.refreshConnectionState(conn)
             return conn
+        }
+    }
+
+    // Used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
+    // NO event should be emitted from this deletion to avoid infinite loop
+    public async onDeleteConnection(id: string) {
+        await this.auth.onDeleteConnection(id)
+        if (id === this.activeConnection?.id) {
+            await this.memento.update(this.key, undefined)
+            this.#savedConnection = undefined
+            this.#activeConnection = undefined
         }
     }
 }

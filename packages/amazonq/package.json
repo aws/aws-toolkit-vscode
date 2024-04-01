@@ -204,7 +204,7 @@
                     "type": "webview",
                     "id": "aws.amazonq.transformationHub",
                     "name": "Status",
-                    "when": "gumby.isTransformAvailable || gumby.isStopButtonAvailable"
+                    "when": "gumby.wasQCodeTransformationUsed"
                 },
                 {
                     "id": "aws.amazonq.transformationProposedChangesTree",
