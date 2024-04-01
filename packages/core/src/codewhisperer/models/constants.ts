@@ -286,6 +286,8 @@ export const newCustomizationMessage = 'You have access to new CodeWhisperer cus
 
 export const newCustomizationsAvailableKey = 'aws.amazonq.codewhisperer.newCustomizations'
 
+export const amazonQDismissedKey = 'aws.toolkit.amazonq.dismissed'
+
 // Amazon Q Code Transformation
 
 export const amazonQFeedbackKey = 'Amazon Q'
