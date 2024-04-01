@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { CodeScanIssue } from '../models/model'
 import globals from '../../shared/extensionGlobals'
 import { SecurityIssueProvider } from './securityIssueProvider'
-import { Component, telemetry } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import path from 'path'
 import { AuthUtil } from '../util/authUtil'
 
@@ -59,27 +59,43 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         markdownString.appendMarkdown(`## ${issue.title} ${this._makeSeverityBadge(issue.severity)}\n`)
         markdownString.appendMarkdown(`${suggestedFix ? suggestedFix.description : issue.recommendation.text}\n\n`)
 
-        const args = [issue, filePath]
-        const viewDetailsCommand = vscode.Uri.parse(
-            `command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(JSON.stringify(args))}`
+        const viewDetailsCommand = this._getCommandMarkdown(
+            'aws.codeWhisperer.openSecurityIssuePanel',
+            [issue, filePath],
+            'eye',
+            'View Details',
+            'Open "Amazon Q Security Issue"'
         )
+        markdownString.appendMarkdown(viewDetailsCommand)
 
-        markdownString.appendMarkdown(
-            `[$(eye) View Details](${viewDetailsCommand} 'Open "CodeWhisperer Security Issue"')\n`
+        const explainWithQCommand = this._getCommandMarkdown(
+            'aws.amazonq.explainCode',
+            [undefined, issue], // First arg is reserved for `data`
+            'comment-discussion',
+            'Explain with Q',
+            'Explain with Amazon Q'
         )
+        markdownString.appendMarkdown(' | ' + explainWithQCommand)
 
-        const sendToChatArgs = [undefined, issue] // First arg is reserved for `data`
-        const sendToChatCommand = vscode.Uri.parse(
-            `command:aws.amazonq.fixCode?${encodeURIComponent(JSON.stringify(sendToChatArgs))}`
+        const fixWithQCommand = this._getCommandMarkdown(
+            'aws.amazonq.fixCode',
+            [undefined, issue], // First arg is reserved for `data`
+            'comment',
+            'Fix with Q',
+            'Fix with Amazon Q'
         )
-        markdownString.appendMarkdown(` | [$(comment) Send to Chat](${sendToChatCommand} 'Send to Amazon Q')\n`)
+        markdownString.appendMarkdown(' | ' + fixWithQCommand)
 
         if (suggestedFix) {
-            const args: [CodeScanIssue, string, Component] = [issue, filePath, 'hover']
-            const applyFixCommand = vscode.Uri.parse(
-                `command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(JSON.stringify(args))}`
+            const applyFixCommand = this._getCommandMarkdown(
+                'aws.codeWhisperer.applySecurityFix',
+                [issue, filePath, 'hover'],
+                'wrench',
+                'Apply Fix',
+                'Apply Amazon Q Suggestion'
             )
-            markdownString.appendMarkdown(` | [$(wrench) Apply Fix](${applyFixCommand} "Apply suggested fix")\n`)
+            markdownString.appendMarkdown(' | ' + applyFixCommand)
+
             markdownString.appendMarkdown('### Suggested Fix Preview\n')
             markdownString.appendMarkdown(
                 `${this._makeCodeBlock(suggestedFix.code, issue.detectorId.split('/').shift())}\n`
@@ -87,6 +103,11 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         }
 
         return markdownString
+    }
+
+    private _getCommandMarkdown(command: string, args: any, icon: string, text: string, description: string) {
+        const commandUri = vscode.Uri.parse(`command:${command}?${encodeURIComponent(JSON.stringify(args))}`)
+        return `[$(${icon}) ${text}](${commandUri} '${description}')\n`
     }
 
     private _makeSeverityBadge(severity: string) {

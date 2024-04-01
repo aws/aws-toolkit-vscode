@@ -4,7 +4,13 @@
     <div class="mb-16">
         <div class="container button-container" style="justify-content: space-between">
             <h1>{{ title }} <img class="severity" :src="severityImage" :alt="severity" /></h1>
-            <input v-if="isFixAvailable" class="mt-4 ml-16" type="submit" @click="applyFix" value="Apply fix" />
+            <input
+                v-if="isFixAvailable"
+                class="mt-4 ml-16"
+                type="submit"
+                @click="applyFix"
+                value="Apply Amazon Q Suggestion"
+            />
         </div>
 
         <div class="mt-16">
@@ -65,6 +71,13 @@
                 <span>{{ suggestedFixDescription }}</span>
             </div>
         </div>
+    </div>
+
+    <hr />
+
+    <div class="mt-16">
+        <input type="submit" class="mr-8" @click="explainWithQ" value="Explain with Amazon Q" />
+        <input type="submit" class="mr-8" @click="fixWithQ" value="Fix with Amazon Q" />
     </div>
 </template>
 
@@ -159,6 +172,12 @@ export default defineComponent({
         },
         applyFix() {
             client.applyFix()
+        },
+        explainWithQ() {
+            client.explainWithQ()
+        },
+        fixWithQ() {
+            client.fixWithQ()
         },
         navigateToFile() {
             client.navigateToFile()

@@ -33,7 +33,10 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                 if (issueRange.contains(range)) {
                     const [suggestedFix] = issue.suggestedFixes
                     if (suggestedFix) {
-                        const fixIssue = new vscode.CodeAction('Fix with Amazon Q', vscode.CodeActionKind.QuickFix)
+                        const fixIssue = new vscode.CodeAction(
+                            'Apply Amazon Q Suggestion',
+                            vscode.CodeActionKind.QuickFix
+                        )
                         const args: [CodeScanIssue, string, Component] = [issue, group.filePath, 'quickfix']
                         fixIssue.command = {
                             title: 'Apply suggested fix',
@@ -45,20 +48,29 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     const openIssue = new vscode.CodeAction(`View details for "${issue.title}"`)
                     const args: [CodeScanIssue, string] = [issue, group.filePath]
                     openIssue.command = {
-                        title: 'Open "CodeWhisperer Security Issue"',
+                        title: 'Open "Amazon Q Security Issue"',
                         command: 'aws.codeWhisperer.openSecurityIssuePanel',
                         arguments: args,
                     }
                     codeActions.push(openIssue)
 
-                    const sendToChat = new vscode.CodeAction('Send to Amazon Q')
-                    const sendToChatArgs = [undefined, issue] // First arg is reserved for `data`
-                    sendToChat.command = {
-                        title: 'Send to Amazon Q',
-                        command: 'aws.amazonq.fixCode',
-                        arguments: sendToChatArgs,
+                    const explainWithQ = new vscode.CodeAction('Explain with Amazon Q')
+                    const explainWithQArgs = [undefined, issue] // First arg is reserved for `data`
+                    explainWithQ.command = {
+                        title: 'Explain with Amazon Q',
+                        command: 'aws.amazonq.explainCode',
+                        arguments: explainWithQArgs,
                     }
-                    codeActions.push(sendToChat)
+                    codeActions.push(explainWithQ)
+
+                    const fixWithQ = new vscode.CodeAction('Fix with Amazon Q')
+                    const fixWithQArgs = [undefined, issue] // First arg is reserved for `data`
+                    fixWithQ.command = {
+                        title: 'Fix with Amazon Q',
+                        command: 'aws.amazonq.fixCode',
+                        arguments: fixWithQArgs,
+                    }
+                    codeActions.push(fixWithQ)
                 }
             }
         }

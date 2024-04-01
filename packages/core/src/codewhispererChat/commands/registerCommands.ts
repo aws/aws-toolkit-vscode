@@ -15,11 +15,12 @@ const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
 }
 
 export function registerCommands(controllerPublishers: ChatControllerMessagePublishers) {
-    Commands.register('aws.amazonq.explainCode', async data => {
+    Commands.register('aws.amazonq.explainCode', async (data, issue) => {
         return focusAmazonQPanel().then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.explainCode',
                 triggerType: getCommandTriggerType(data),
+                codeScanIssue: issue,
             })
         })
     })
@@ -65,6 +66,11 @@ export type EditorContextCommandType =
     | 'aws.amazonq.optimizeCode'
     | 'aws.amazonq.sendToPrompt'
 
+export type EditorContextCommandWithIssueType = Extract<
+    EditorContextCommandType,
+    'aws.amazonq.explainCode' | 'aws.amazonq.fixCode'
+>
+
 export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | 'commandPalette' | 'click'
 
 export interface EditorContextCommand {
@@ -72,7 +78,8 @@ export interface EditorContextCommand {
     triggerType: EditorContextCommandTriggerType
 }
 
-export interface EditorContextCommandWithIssue extends EditorContextCommand {
-    type: 'aws.amazonq.fixCode'
+export interface EditorContextCommandWithIssue {
+    type: EditorContextCommandWithIssueType
+    triggerType: EditorContextCommandTriggerType
     codeScanIssue: CodeScanIssue
 }

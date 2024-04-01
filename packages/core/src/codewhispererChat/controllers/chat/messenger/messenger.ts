@@ -418,7 +418,7 @@ export class Messenger {
             message = [
                 this.editorContextMenuCommandVerbs.get(command),
                 ' the following part of my code:',
-                ...(issue ? [`\nIssue: ${issue.title}\nDescription: ${issue.recommendation.text}`] : []),
+                ...(issue ? [`\n**Issue**: ${issue.title}\n**Description**: ${issue.recommendation.text}`] : []),
                 '\n```\n',
                 trimmedCode,
                 '\n```',
