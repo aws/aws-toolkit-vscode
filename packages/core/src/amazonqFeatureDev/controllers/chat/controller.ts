@@ -734,7 +734,7 @@ export class FeatureDevController {
     }
 
     private sendFeedback() {
-        void submitFeedback.execute(placeholder, 'Amazon Q')
+        void submitFeedback(placeholder, 'Amazon Q')
     }
 
     private processLink(message: any) {

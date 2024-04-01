@@ -4,4 +4,4 @@
  */
 
 export { awsToolkitActivate, awsToolkitDeactivate } from './extension'
-export { makeEndpointsProvider } from './extensionShared'
+export { makeEndpointsProvider, registerCommands } from './extensionShared'

@@ -245,6 +245,14 @@
             {
                 "label": "%AWS.submenu.amazonqEditorContextSubmenu.title%",
                 "id": "amazonqEditorContextSubmenu"
+            },
+            {
+                "label": "%AWS.generic.feedback%",
+                "id": "aws.amazonq.submenu.feedback"
+            },
+            {
+                "label": "%AWS.generic.help%",
+                "id": "aws.amazonq.submenu.help"
             }
         ],
         "menus": {
@@ -343,7 +351,7 @@
                 },
                 {
                     "command": "aws.amazonq.learnMore",
-                    "when": "view == aws.AmazonQChatView || view == aws.amazonq",
+                    "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
                     "group": "1_amazonQ@1"
                 },
                 {
@@ -353,18 +361,28 @@
                 },
                 {
                     "command": "aws.codewhisperer.manageConnections",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && !aws.codewhisperer.connected",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer) && !aws.codewhisperer.connected",
                     "group": "2_amazonQ@2"
                 },
                 {
                     "command": "aws.codewhisperer.signout",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.connected",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer) && aws.codewhisperer.connected",
                     "group": "2_amazonQ@4"
                 },
                 {
                     "command": "aws.codewhisperer.reconnect",
-                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.connectionExpired",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer) && aws.codewhisperer.connectionExpired",
                     "group": "2_amazonQ@3"
+                },
+                {
+                    "submenu": "aws.amazonq.submenu.feedback",
+                    "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
+                    "group": "y_toolkitMeta@1"
+                },
+                {
+                    "submenu": "aws.amazonq.submenu.help",
+                    "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
+                    "group": "y_toolkitMeta@2"
                 }
             ],
             "amazonqEditorContextSubmenu": [
@@ -422,6 +440,31 @@
                     "enablement": "!isCloud9",
                     "group": "0@3"
                 }
+            ],
+            "aws.amazonq.submenu.feedback": [
+                {
+                    "command": "aws.amazonq.submitFeedback",
+                    "when": "!aws.isWebExtHost",
+                    "group": "1_feedback@1"
+                },
+                {
+                    "command": "aws.amazonq.createIssueOnGitHub",
+                    "group": "1_feedback@2"
+                }
+            ],
+            "aws.amazonq.submenu.help": [
+                {
+                    "command": "aws.amazonq.github",
+                    "group": "1_help@3"
+                },
+                {
+                    "command": "aws.amazonq.aboutExtension",
+                    "group": "1_help@4"
+                },
+                {
+                    "command": "aws.amazonq.viewLogs",
+                    "group": "1_help@5"
+                }
             ]
         },
         "commands": [
@@ -454,13 +497,13 @@
                 "command": "aws.amazonq.login",
                 "title": "%AWS.command.login%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "title": "%AWS.command.login.cn%",
                         "category": "%AWS.title.cn%"
                     }
-                }
+                },
+                "enablement": "false"
             },
             {
                 "command": "aws.amazonq.credentials.profile.create",
@@ -470,7 +513,8 @@
                     "cn": {
                         "category": "%AWS.title.cn%"
                     }
-                }
+                },
+                "enablement": "false"
             },
             {
                 "command": "aws.amazonq.credentials.edit",
@@ -480,7 +524,8 @@
                     "cn": {
                         "category": "%AWS.title.cn%"
                     }
-                }
+                },
+                "enablement": "false"
             },
             {
                 "command": "aws.amazonq.logout",
@@ -490,7 +535,8 @@
                     "cn": {
                         "category": "%AWS.title.cn%"
                     }
-                }
+                },
+                "enablement": "false"
             },
             {
                 "command": "aws.amazonq.auth.addConnection",
@@ -558,7 +604,7 @@
                 "icon": "$(question)"
             },
             {
-                "command": "aws.createIssueOnGitHub",
+                "command": "aws.amazonq.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -568,7 +614,7 @@
                 }
             },
             {
-                "command": "aws.submitFeedback",
+                "command": "aws.amazonq.submitFeedback",
                 "title": "%AWS.command.submitFeedback%",
                 "enablement": "!aws.isWebExtHost",
                 "category": "%AWS.title%",
@@ -580,33 +626,12 @@
                 }
             },
             {
-                "command": "aws.listCommands",
-                "title": "%AWS.command.listCommands%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "title": "%AWS.command.listCommands.cn%",
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.amazonq.viewLogs",
                 "title": "%AWS.command.viewLogs%",
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.help",
-                "title": "%AWS.command.help%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
-                "command": "aws.github",
+                "command": "aws.amazonq.github",
                 "title": "%AWS.command.github%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -616,18 +641,7 @@
                 }
             },
             {
-                "command": "aws.quickStart",
-                "title": "%AWS.command.quickStart%",
-                "category": "%AWS.title%",
-                "enablement": "isCloud9",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
-                "command": "aws.aboutToolkit",
+                "command": "aws.amazonq.aboutExtension",
                 "title": "%AWS.command.aboutToolkit%",
                 "category": "%AWS.title%"
             },
