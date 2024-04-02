@@ -348,7 +348,7 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
 
         if (!cancelled) {
             message =
-                'The transformation job has been completed. If you want to start another transformation, choose **Start a new transformation.**'
+                'The transformation job is over. If you want to start another transformation, choose **Start a new transformation.**'
         }
 
         const buttons: ChatItemButton[] = []
