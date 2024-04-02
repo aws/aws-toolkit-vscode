@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as fs from 'fs'
 import * as os from 'os'
+import path from 'path'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import {
@@ -33,8 +34,7 @@ import {
     downloadResultArchive,
 } from '../service/transformByQ/transformApiHandler'
 import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
-import { getVersionData, prepareProjectDependencies, runMavenDependencyBuildCommands, runMavenDependencyUpdateCommands } from '../service/transformByQ/transformMavenHandler'
-import path from 'path'
+import { getVersionData, prepareProjectDependencies } from '../service/transformByQ/transformMavenHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
 import {
@@ -55,7 +55,15 @@ import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
-import { createPomCopy, getDependenciesFolderInfo, getJsonValuesFromManifestFile, highlightPomIssueInProject, parseXmlDependenciesReport, replacePomVersion, writeLogs } from '../service/transformByQ/transformFileHandler'
+import {
+    createPomCopy,
+    getDependenciesFolderInfo,
+    getJsonValuesFromManifestFile,
+    highlightPomIssueInProject,
+    parseXmlDependenciesReport,
+    replacePomVersion,
+    writeLogs,
+} from '../service/transformByQ/transformFileHandler'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')

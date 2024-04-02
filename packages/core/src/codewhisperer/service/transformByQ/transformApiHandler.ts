@@ -2,12 +2,15 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
+import * as path from 'path'
+import * as os from 'os'
 import {
     FolderInfo,
     sessionPlanProgress,
     StepProgress,
     transformByQState,
-    TransformByQStatus,
     TransformByQStoppedError,
     ZipManifest,
 } from '../../models/model'
@@ -17,10 +20,6 @@ import { getLogger } from '../../../shared/logger'
 import { CreateUploadUrlResponse, TransformationStep } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import * as CodeWhispererConstants from '../../models/constants'
-import * as fs from 'fs-extra'
-import * as path from 'path'
-import * as os from 'os'
-import * as vscode from 'vscode'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
 import { telemetry } from '../../../shared/telemetry/telemetry'

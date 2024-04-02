@@ -5,11 +5,12 @@
  * This class is responsible for responding to UI events by calling
  * the Gumby extension.
  */
-
+import fs from 'fs'
+import path from 'path'
+import * as vscode from 'vscode'
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatSessionManager } from '../storages/chatSession'
-import * as vscode from 'vscode'
 import { ConversationState, Session } from '../session/session'
 import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
@@ -26,8 +27,6 @@ import { JDKVersion, TransformationCandidateProject, transformByQState } from '.
 import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
-import fs from 'fs'
-import path from 'path'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 
 // These events can be interactions within the chat,
