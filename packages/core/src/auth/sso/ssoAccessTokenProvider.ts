@@ -184,19 +184,31 @@ export class SsoAccessTokenProvider {
             clientSecret: registration.clientSecret,
         })
 
-        if (!(await openSsoPortalLink(this.profile.startUrl, authorization))) {
-            throw new CancellationError('user')
+        const openBrowserAndWaitUntilComplete = async () => {
+            if (!(await openSsoPortalLink(this.profile.startUrl, authorization))) {
+                throw new CancellationError('user')
+            }
+
+            const tokenRequest = {
+                clientId: registration.clientId,
+                clientSecret: registration.clientSecret,
+                deviceCode: authorization.deviceCode,
+                grantType: deviceGrantType,
+            }
+
+            return await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
         }
 
-        const tokenRequest = {
-            clientId: registration.clientId,
-            clientSecret: registration.clientSecret,
-            deviceCode: authorization.deviceCode,
-            grantType: deviceGrantType,
+        let token: ReturnType<typeof openBrowserAndWaitUntilComplete>
+        if (telemetry.spans.map(s => s.name).includes('aws_loginWithBrowser')) {
+            // During certain flows, eg reauthentication, we are already running within a span (run())
+            // so we don't need to create a new one.
+            token = openBrowserAndWaitUntilComplete()
+        } else {
+            token = telemetry.aws_loginWithBrowser.run(async () => openBrowserAndWaitUntilComplete())
         }
 
-        const token = await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
-        return this.formatToken(token, registration)
+        return this.formatToken(await token, registration)
     }
 
     /**
