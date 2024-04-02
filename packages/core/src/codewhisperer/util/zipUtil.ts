@@ -103,7 +103,6 @@ export class ZipUtil {
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
         if (this.reachSizeLimit(this._totalSize, CodeWhispererConstants.SecurityScanType.File)) {
-            getLogger().error(`Payload size limit reached.`)
             throw new ToolkitError('Payload size limit reached.')
         }
 
@@ -133,7 +132,6 @@ export class ZipUtil {
                     this.reachSizeLimit(this._totalSize, CodeWhispererConstants.SecurityScanType.Project) ||
                     this.willReachSizeLimit(this._totalSize, fileSize)
                 ) {
-                    getLogger().error(`Payload size limit reached`)
                     throw new ToolkitError('Payload size limit reached.')
                 }
                 this._pickedSourceFiles.add(file.fileUri.fsPath)
