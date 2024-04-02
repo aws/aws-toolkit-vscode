@@ -9,8 +9,8 @@ import software.aws.toolkits.jetbrains.feedback.sendFeedbackWithExperimentsMetad
 import software.aws.toolkits.resources.message
 
 class CodeWhispererFeedbackDialog(project: Project) : FeedbackDialog(project) {
-    override val productName = "CodeWhisperer"
-    override val notificationTitle = message("aws.notification.title.codewhisperer")
+    override fun productName() = message("aws.notification.title.codewhisperer")
+    override fun notificationTitle() = productName()
     override fun getHelpId() = HelpIds.CODEWHISPERER_TOKEN.id
 
     override suspend fun sendFeedback() {

@@ -14,9 +14,9 @@ class CodeTransformFeedbackDialog(project: Project) : FeedbackDialog(project) {
         title = message("feedback.title.amazonq")
     }
 
-    override val productName = "Amazon Q"
-    override val feedbackPrompt = message("feedback.comment.textbox.title.amazonq")
-    override val notificationTitle = message("aws.notification.title.amazonq")
+    override fun productName() = "Amazon Q"
+    override fun feedbackPrompt() = message("feedback.comment.textbox.title.amazonq")
+    override fun notificationTitle() = message("aws.notification.title.amazonq")
 
     override suspend fun sendFeedback() {
         val sessionState = CodeModernizerSessionState.getInstance(project)

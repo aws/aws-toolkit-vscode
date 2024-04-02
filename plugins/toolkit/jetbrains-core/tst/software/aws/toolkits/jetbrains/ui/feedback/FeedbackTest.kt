@@ -25,9 +25,9 @@ class FeedbackTest {
         initialSentiment: Sentiment,
         initialComment: String
     ) : FeedbackDialog(project, initialSentiment, initialComment) {
-        override val notificationTitle = "title"
-        override val productName = "product"
-        override val feedbackPrompt = "prompt"
+        override fun notificationTitle() = "title"
+        override fun productName() = "product"
+        override fun feedbackPrompt() = "prompt"
     }
 
     @Test
