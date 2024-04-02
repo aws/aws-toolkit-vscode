@@ -9,6 +9,7 @@ import { SecurityIssueProvider } from './securityIssueProvider'
 import { Component, telemetry } from '../../shared/telemetry/telemetry'
 import path from 'path'
 import { AuthUtil } from '../util/authUtil'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export class SecurityIssueHoverProvider extends SecurityIssueProvider implements vscode.HoverProvider {
     static #instance: SecurityIssueHoverProvider
@@ -40,6 +41,17 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
                         includesFix: !!issue.suggestedFixes.length,
                         credentialStartUrl: AuthUtil.instance.startUrl,
                     })
+                    TelemetryHelper.instance.sendCodeScanRemediationsEvent(
+                        document.languageId,
+                        'CODESCAN_ISSUE_HOVER',
+                        issue.detectorId,
+                        issue.findingId,
+                        issue.ruleId,
+                        undefined,
+                        undefined,
+                        undefined,
+                        !!issue.suggestedFixes.length
+                    )
                 }
             }
         }
