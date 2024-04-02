@@ -44,8 +44,8 @@ import software.aws.toolkits.telemetry.Result
 import java.net.URLEncoder
 
 class ToolkitFeedbackDialog(project: Project) : FeedbackDialog(project) {
-    override val productName = "Toolkit"
-    override val notificationTitle = message("aws.notification.title")
+    override fun productName() = "AWS Toolkit"
+    override fun notificationTitle() = message("aws.notification.title")
 
     override fun getHelpId() = HelpIds.AWS_TOOLKIT_GETTING_STARTED.id
 }
@@ -59,9 +59,9 @@ abstract class FeedbackDialog(
         sendFeedbackWithExperimentsMetadata(sentiment, commentText)
     }
 
-    protected abstract val notificationTitle: String
-    protected abstract val productName: String
-    protected open val feedbackPrompt: String = message("feedback.comment.textbox.title", productName)
+    protected abstract fun notificationTitle(): String
+    protected abstract fun productName(): String
+    protected open fun feedbackPrompt(): String = message("feedback.comment.textbox.title", productName())
 
     private val coroutineScope = projectCoroutineScope(project)
     protected var sentiment = initialSentiment
@@ -71,62 +71,64 @@ abstract class FeedbackDialog(
     private lateinit var comment: Cell<JBTextArea>
     private var lengthLimitLabel = JBLabel(message("feedback.comment.textbox.initial.length")).also { it.foreground = UIUtil.getLabelInfoForeground() }
 
-    private val dialogPanel = panel {
-        if (isToolkit()) {
-            row {
-                text(message("feedback.initial.help.text"))
-            }
-        }
-        group(message("feedback.connect.with.github.title")) {
-            row {
-                icon(AllIcons.Toolwindows.ToolWindowDebugger)
-                link(message("feedback.report.issue.link")) {
-                    BrowserUtil.browse("${GITHUB_LINK_BASE}${URLEncoder.encode("${comment.component.text}\n\n$toolkitMetadata", Charsets.UTF_8.name())}")
-                }
-            }
-            row {
-                icon(AllIcons.Actions.IntentionBulbGrey)
-
-                link(message("feedback.request.feature.link")) {
-                    BrowserUtil.browse("${GITHUB_LINK_BASE}${URLEncoder.encode("${comment.component.text}\n\n$toolkitMetadata", Charsets.UTF_8.name())}")
-                }
-            }
-            row {
-                icon(AllIcons.Nodes.Tag)
-                link(message("feedback.view.source.code.link")) {
-                    BrowserUtil.browse(TOOLKIT_REPOSITORY_LINK)
-                }
-            }
-        }
-
-        group(message("feedback.share.feedback.title")) {
-            buttonsGroup {
+    private val dialogPanel by lazy {
+        panel {
+            if (isToolkit()) {
                 row {
-                    radioButton("", value = Sentiment.POSITIVE).applyToComponent {
-                        icon(smileIcon)
-                    }
-
-                    radioButton("", value = Sentiment.NEGATIVE).applyToComponent {
-                        icon(sadIcon)
+                    text(message("feedback.initial.help.text"))
+                }
+            }
+            group(message("feedback.connect.with.github.title")) {
+                row {
+                    icon(AllIcons.Toolwindows.ToolWindowDebugger)
+                    link(message("feedback.report.issue.link")) {
+                        BrowserUtil.browse("${GITHUB_LINK_BASE}${URLEncoder.encode("${comment.component.text}\n\n$toolkitMetadata", Charsets.UTF_8.name())}")
                     }
                 }
-            }.bind({ sentiment }, { sentiment = it })
+                row {
+                    icon(AllIcons.Actions.IntentionBulbGrey)
 
-            row(feedbackPrompt) {}
-            row { comment(message("feedback.customer.alert.info")) }
-            row {
-                comment = textArea().rows(6).columns(52).bindText(::commentText).applyToComponent {
-                    this.emptyText.text = message("feedback.comment.emptyText")
-                    this.lineWrap = true
-
-                    this.document.addUndoableEditListener {
-                        onTextAreaUpdate(this.text)
-                        commentText = this.text
+                    link(message("feedback.request.feature.link")) {
+                        BrowserUtil.browse("${GITHUB_LINK_BASE}${URLEncoder.encode("${comment.component.text}\n\n$toolkitMetadata", Charsets.UTF_8.name())}")
                     }
                 }
-            }.comment(commentText)
-            row {
-                cell(lengthLimitLabel)
+                row {
+                    icon(AllIcons.Nodes.Tag)
+                    link(message("feedback.view.source.code.link")) {
+                        BrowserUtil.browse(TOOLKIT_REPOSITORY_LINK)
+                    }
+                }
+            }
+
+            group(message("feedback.share.feedback.title")) {
+                buttonsGroup {
+                    row {
+                        radioButton("", value = Sentiment.POSITIVE).applyToComponent {
+                            icon(smileIcon)
+                        }
+
+                        radioButton("", value = Sentiment.NEGATIVE).applyToComponent {
+                            icon(sadIcon)
+                        }
+                    }
+                }.bind({ sentiment }, { sentiment = it })
+
+                row(feedbackPrompt()) {}
+                row { comment(message("feedback.customer.alert.info")) }
+                row {
+                    comment = textArea().rows(6).columns(52).bindText(::commentText).applyToComponent {
+                        this.emptyText.text = message("feedback.comment.emptyText")
+                        this.lineWrap = true
+
+                        this.document.addUndoableEditListener {
+                            onTextAreaUpdate(this.text)
+                            commentText = this.text
+                        }
+                    }
+                }.comment(commentText)
+                row {
+                    cell(lengthLimitLabel)
+                }
             }
         }
     }
@@ -155,7 +157,7 @@ abstract class FeedbackDialog(
                         close(OK_EXIT_CODE)
                     }
 
-                    notifyInfo(notificationTitle, message("feedback.submit_success"), project)
+                    notifyInfo(notificationTitle(), message("feedback.submit_success"), project)
                 } catch (e: Exception) {
                     withContext(edtContext) {
                         Messages.showMessageDialog(message("feedback.submit_failed", e), message("feedback.submit_failed_title"), null)
@@ -195,11 +197,11 @@ abstract class FeedbackDialog(
     init {
         super.init()
 
-        title = message("feedback.title", productName)
+        title = message("feedback.title", productName())
         setOKButtonText(message("feedback.submit_button"))
     }
 
-    private fun isToolkit(): Boolean = (productName == "Toolkit")
+    private fun isToolkit(): Boolean = (productName() == "Toolkit")
 
     @TestOnly
     fun getFeedbackDialog() = dialogPanel

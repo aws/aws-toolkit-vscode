@@ -7,9 +7,9 @@ import com.intellij.openapi.project.Project
 import software.aws.toolkits.resources.message
 
 class FeatureDevFeedbackDialog(project: Project) : FeedbackDialog(project) {
-    override val notificationTitle = message("aws.notification.title.amazonq.feature_dev")
-    override val feedbackPrompt = message("feedback.comment.textbox.title.amazonq.feature_dev")
-    override val productName = "Amazon Q FeatureDev"
+    override fun notificationTitle() = message("aws.notification.title.amazonq.feature_dev")
+    override fun feedbackPrompt() = message("feedback.comment.textbox.title.amazonq.feature_dev")
+    override fun productName() = "Amazon Q FeatureDev"
 
     init {
         title = message("feedback.title.amazonq.feature_dev")
