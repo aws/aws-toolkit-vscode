@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as fs from 'fs'
 import * as os from 'os'
+import path from 'path'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import {
@@ -15,6 +16,8 @@ import {
     TransformByQReviewStatus,
     JDKVersion,
     sessionPlanProgress,
+    FolderInfo,
+    TransformationCandidateProject,
 } from '../models/model'
 import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
@@ -32,7 +35,6 @@ import {
 } from '../service/transformation/transformByQApiHandler'
 import { getOpenProjects, validateOpenProjects } from '../service/transformation/transformByQValidationHandler'
 import { getVersionData, prepareProjectDependencies } from '../service/transformation/transformByQMavenHandler'
-import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML, getStringHash } from '../../shared/utilities/textUtilities'
 import {

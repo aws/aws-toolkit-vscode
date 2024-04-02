@@ -16,7 +16,6 @@ import globals from '../../shared/extensionGlobals'
 import { autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
-import { FolderInfo } from '../service/transformation/transformByQSharedHandler'
 
 // unavoidable global variables
 interface VsCodeState {

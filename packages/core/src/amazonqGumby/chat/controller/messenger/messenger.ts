@@ -10,7 +10,7 @@
 
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 import { ChatItemType } from '../../../../amazonqFeatureDev/models'
-import { JDKVersion } from '../../../../codewhisperer/models/model'
+import { JDKVersion, TransformationCandidateProject } from '../../../../codewhisperer/models/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import {
     AppToWebViewMessageDispatcher,
@@ -26,7 +26,6 @@ import {
 } from '../../views/connector/connector'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import MessengerUtils, { ButtonActions } from './messengerUtils'
-import { TransformationCandidateProject } from '../../../../codewhisperer/service/transformation/transformByQSharedHandler'
 
 export type StaticTextResponseType =
     | 'transform'
