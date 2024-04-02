@@ -1,37 +1,21 @@
 {
     "name": "amazon-q-vscode",
-    "displayName": "Amazon Q (Preview) + CodeWhisperer",
-    "description": "Amazon Q (Preview) + CodeWhisperer",
-    "version": "1.0.0-SNAPSHOT",
+    "displayName": "Standalone Test",
+    "description": "",
+    "version": "0.1.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/aws/aws-toolkit-vscode"
-    },
-    "bugs": {
-        "url": "https://github.com/aws/aws-toolkit-vscode/issues"
-    },
     "galleryBanner": {
         "color": "#FF9900",
         "theme": "light"
     },
-    "categories": [
-        "Debuggers",
-        "Linters",
-        "Visualization",
-        "Other"
-    ],
-    "keywords": [
-        "CodeWhisperer",
-        "Code",
-        "Whisperer"
-    ],
-    "preview": false,
-    "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
+    "categories": [],
+    "keywords": [],
+    "preview": true,
+    "qna": "false",
     "activationEvents": [
         "onStartupFinished",
         "onUri"

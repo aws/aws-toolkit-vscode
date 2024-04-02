@@ -26,17 +26,7 @@ interface CopyTask {
 }
 
 const tasks: CopyTask[] = [
-    ...[
-        'CHANGELOG.md',
-        'LICENSE',
-        'NOTICE',
-        'README.md',
-        'README.quickstart.cloud9.md',
-        'README.quickstart.vscode.md',
-        'quickStartCloud9-cn.html',
-        'quickStartCloud9.html',
-        'quickStartVscode.html',
-    ].map(f => {
+    ...['LICENSE', 'NOTICE'].map(f => {
         return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
     }),
 
