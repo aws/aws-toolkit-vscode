@@ -18,7 +18,7 @@ import {
 import * as codeWhisperer from '../../client/codewhisperer'
 import * as crypto from 'crypto'
 import { getLogger } from '../../../shared/logger'
-import { CreateUploadUrlResponse } from '../../client/codewhispereruserclient'
+import { CreateUploadUrlResponse, TransformationStep } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import * as CodeWhispererConstants from '../../models/constants'
 import AdmZip from 'adm-zip'
