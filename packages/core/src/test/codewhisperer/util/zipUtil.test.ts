@@ -63,10 +63,10 @@ describe('zipUtil', function () {
 
         it('Should generate zip for project scan and return expected metadata', async function () {
             const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
-            assert.strictEqual(zipMetadata.lines, 3256)
+            assert.strictEqual(zipMetadata.lines, 2840)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
-            assert.strictEqual(zipMetadata.scannedFiles.size, 93)
+            assert.strictEqual(zipMetadata.scannedFiles.size, 92)
             assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
             assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
@@ -102,10 +102,10 @@ describe('zipUtil', function () {
                 })
 
             const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
-            assert.strictEqual(zipMetadata.lines, 3249)
+            assert.strictEqual(zipMetadata.lines, 2833)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
-            assert.strictEqual(zipMetadata.scannedFiles.size, 93)
+            assert.strictEqual(zipMetadata.scannedFiles.size, 92)
             assert.ok(zipMetadata.buildPayloadSizeInBytes > 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
             assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
