@@ -345,7 +345,7 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabId, message.eventId))
     }
 
-    public sendJobFinishedMessage(tabID: string, cancelled: boolean = false, jobStatus: string = '') {
+    public sendJobFinishedMessage(tabID: string, cancelled: boolean, jobStatus: string = '') {
         let message =
             'I stopped your transformation. If you want to start another transformation, choose **Start a new transformation**.'
 

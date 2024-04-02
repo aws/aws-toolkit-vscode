@@ -303,10 +303,10 @@ export class GumbyController {
         await this.prepareProjectForSubmission(message)
     }
 
-    private async transformationFinished(message: { tabID: string; jobStatus: string }) {
+    private async transformationFinished(tabID: string, jobStatus: string = '') {
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
         // at this point job is either completed, partially_completed, cancelled, or failed
-        this.messenger.sendJobFinishedMessage(message.tabID, false, message.jobStatus)
+        this.messenger.sendJobFinishedMessage(tabID, false)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
