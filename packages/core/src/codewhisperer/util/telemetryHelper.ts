@@ -26,6 +26,7 @@ import { getLogger } from '../../shared/logger'
 import { session } from './codeWhispererSession'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
+import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -565,6 +566,54 @@ export class TelemetryHelper {
                     `Failed to sendCodeScanEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
                         error.message
                     }`
+                )
+            })
+    }
+
+    public sendCodeScanRemediationsEvent(
+        languageId?: string,
+        codeScanRemediationEventType?: CodeScanRemediationsEventType,
+        detectorId?: string,
+        findingId?: string,
+        ruleId?: string,
+        component?: string,
+        reason?: string,
+        result?: string,
+        includesFix?: boolean
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeScanRemediationsEvent: {
+                        programmingLanguage: languageId
+                            ? {
+                                  languageName: runtimeLanguageContext.toRuntimeLanguage(
+                                      languageId as CodewhispererLanguage
+                                  ),
+                              }
+                            : undefined,
+                        CodeScanRemediationsEventType: codeScanRemediationEventType,
+                        detectorId: detectorId,
+                        findingId: findingId,
+                        ruleId: ruleId,
+                        component: component,
+                        reason: reason,
+                        result: result,
+                        includesFix: includesFix,
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch(error => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendCodeScanRemediationsEvent to CodeWhisperer, requestId: ${
+                        requestId ?? ''
+                    }, message: ${error.message}`
                 )
             })
     }
