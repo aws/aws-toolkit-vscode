@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
-import { parseXmlDependenciesReport } from '../../../../codewhisperer/service/amazonQGumby/humanInTheLoopHandler'
+import { parseXmlDependenciesReport } from '../../../../codewhisperer/service/transformByQ/transformFileHandler'
 
 describe('Amazon Q Gumby Human In The Loop Handler', function () {
     describe('parseXmlDependenciesReport', function () {

@@ -14,7 +14,7 @@ import {
 import * as codeWhisperer from '../../client/codewhisperer'
 import * as crypto from 'crypto'
 import { getLogger } from '../../../shared/logger'
-import { CreateUploadUrlResponse } from '../../client/codewhispereruserclient'
+import { CreateUploadUrlResponse, TransformationStep } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import * as CodeWhispererConstants from '../../models/constants'
 import * as fs from 'fs-extra'
@@ -28,10 +28,10 @@ import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/cod
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
-
 import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
+import CodeWhispererUserClient from '../../client/codewhispereruserclient'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -460,7 +460,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     codeTransformJobId: jobId,
                     codeTransformStatus: status,
                     result: MetadataResult.Pass,
-                    // codeTransformPreviousStatus: transformByQState.getPolledJobStatus(),
+                    codeTransformPreviousStatus: transformByQState.getPolledJobStatus(),
                 })
             }
             transformByQState.setPolledJobStatus(status)
@@ -507,4 +507,57 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
         }
     }
     return status
+}
+
+export async function downloadResultArchive(jobId: string, artifactId: string, artifactType: string) {
+    console.log('Inside downloadResultArchive artifacts', jobId, artifactId, artifactType)
+    // /Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/manifest.json
+    // src/amazonqGumby/mock/downloadHilZip/manifest.json
+    // TODO replace API call
+    // 1) Save location on disk for downloaded results
+    const manifestFileVirtualFileReference = vscode.Uri.file(
+        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/manifest.json'
+    )
+    const pomFileVirtualFileReference = vscode.Uri.file(
+        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/pom.xml'
+    )
+    return { manifestFileVirtualFileReference, pomFileVirtualFileReference }
+}
+
+export async function getTransformationStepsFixture(
+    jobId: string
+): Promise<CodeWhispererUserClient.TransformationSteps> {
+    console.log('In getTransformationStepsFixture', jobId)
+    // fake API call to get transformation steps
+    return [
+        {
+            id: 'fake-step-id-1',
+            name: 'Building Code',
+            description: 'Building dependencies',
+            status: 'COMPLETED',
+            progressUpdates: [
+                {
+                    name: 'Status step',
+                    status: 'FAILED',
+                    description: 'This step should be hil identifier',
+                    startTime: new Date(),
+                    endTime: new Date(),
+                },
+            ],
+            startTime: new Date(),
+            endTime: new Date(),
+        },
+    ]
+}
+
+export function getArtifactIdentifiers(transformationSteps: TransformationStep[]) {
+    console.log('In getArtifactIdentifiers', transformationSteps)
+    // const artifactType = transformationSteps[0]?.artifactType
+    // const artifactId = transformationSteps[0]?.artifactId
+    const artifactType = 'hil'
+    const artifactId = 'test-id'
+    return {
+        artifactId,
+        artifactType,
+    }
 }

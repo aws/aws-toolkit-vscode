@@ -207,3 +207,88 @@ export async function getVersionData() {
     )
     return [localMavenVersion, localJavaVersion]
 }
+
+// run maven 'versions:dependency-updates-aggregate-report' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
+export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo) {
+    console.log('In runMavenDependencyUpdateCommands', dependenciesFolder)
+    try {
+        // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+        const baseCommand = 'mvn' || transformByQState.getMavenName()
+
+        // transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
+
+        // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
+        const args = [
+            'versions:dependency-updates-aggregate-report',
+            `-DoutputDirectory=${dependenciesFolder.path}`,
+            '-DonlyProjectDependencies=true',
+            '-DdependencyUpdatesReportFormats=xml',
+        ]
+        let environment = process.env
+        // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
+        if (transformByQState.getJavaHome() !== undefined) {
+            environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+        }
+
+        const spawnResult = spawnSync(baseCommand, args, {
+            cwd: dependenciesFolder.path,
+            shell: true,
+            encoding: 'utf-8',
+            env: environment,
+            maxBuffer: CodeWhispererConstants.maxBufferSize,
+        })
+
+        if (spawnResult.status !== 0) {
+            throw new Error(spawnResult.stderr)
+        } else {
+            console.log(`Maven succeeded: `, spawnResult.stdout)
+            return spawnResult.stdout
+        }
+    } catch (err) {
+        console.log('Error in runMavenDependencyUpdateCommands', err)
+        throw err
+    }
+}
+
+export function runMavenDependencyBuildCommands(dependenciesFolder: FolderInfo) {
+    console.log('In runMavenDependencyUpdateCommands', dependenciesFolder)
+    try {
+        // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+        const baseCommand = 'mvn' || transformByQState.getMavenName()
+
+        // transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
+
+        // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
+        const args = [
+            'dependency:copy-dependencies',
+            `-DoutputDirectory=${dependenciesFolder.path}`,
+            '-Dmdep.useRepositoryLayout=true',
+            '-Dmdep.copyPom=true',
+            '-Dmdep.addParentPoms=true',
+            '-q',
+        ]
+        let environment = process.env
+        // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
+        if (transformByQState.getJavaHome() !== undefined) {
+            environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+        }
+
+        const spawnResult = spawnSync(baseCommand, args, {
+            cwd: dependenciesFolder.path,
+            shell: true,
+            encoding: 'utf-8',
+            env: environment,
+            maxBuffer: CodeWhispererConstants.maxBufferSize,
+        })
+
+        if (spawnResult.status !== 0) {
+            throw new Error(spawnResult.stderr)
+        } else {
+            console.log(`Maven succeeded: `, spawnResult.stdout)
+            return spawnResult.stdout
+        }
+    } catch (err) {
+        console.log('Error in runMavenDependencyUpdateCommands', err)
+        throw err
+    }
+}

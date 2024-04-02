@@ -28,9 +28,12 @@ import {
     zipCode,
     pollTransformationJob,
     throwIfCancelled,
+    getArtifactIdentifiers,
+    getTransformationStepsFixture,
+    downloadResultArchive,
 } from '../service/transformByQ/transformApiHandler'
 import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
-import { getVersionData, prepareProjectDependencies } from '../service/transformByQ/transformMavenHandler'
+import { getVersionData, prepareProjectDependencies, runMavenDependencyBuildCommands, runMavenDependencyUpdateCommands } from '../service/transformByQ/transformMavenHandler'
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
@@ -48,22 +51,11 @@ import {
     telemetryUndefined,
 } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
-import { downloadResultArchive, getTransformationStepsFixture } from '../service/amazonQGumby/transformByQApiHandler'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
-import {
-    createPomCopy,
-    getArtifactIdentifiers,
-    getJsonValuesFromManifestFile,
-    highlightPomIssueInProject,
-    parseXmlDependenciesReport,
-    replacePomVersion,
-    runMavenDependencyBuildCommands,
-    runMavenDependencyUpdateCommands,
-} from '../service/amazonQGumby/humanInTheLoopHandler'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
-import { getDependenciesFolderInfo, writeLogs } from '../service/transformByQ/transformFileHandler'
+import { createPomCopy, getDependenciesFolderInfo, getJsonValuesFromManifestFile, highlightPomIssueInProject, parseXmlDependenciesReport, replacePomVersion, writeLogs } from '../service/transformByQ/transformFileHandler'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -450,7 +442,7 @@ export async function setTransformationToRunningState() {
         codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getTargetJDKVersion()
         ) as CodeTransformJavaTargetVersionsAllowed,
-        // codeTransformProjectId: projectId,
+        codeTransformProjectId: projectId,
         result: MetadataResult.Pass,
     })
 
