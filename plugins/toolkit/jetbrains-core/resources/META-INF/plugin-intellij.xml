@@ -1,11 +1,14 @@
 <!-- Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-<idea-plugin>
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
     <depends>com.intellij.modules.lang</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
 
     <incompatible-with>com.intellij.cwm.guest</incompatible-with>
     <incompatible-with>com.intellij.jetbrains.client</incompatible-with>
     <incompatible-with>com.intellij.gateway</incompatible-with>
+
+    <!-- delete when fully split -->
+    <xi:include href="/META-INF/module-amazonq.xml"/>
 </idea-plugin>
