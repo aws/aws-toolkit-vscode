@@ -4321,7 +4321,6 @@
         "got": "^11.8.5",
         "highlight.js": "^11.9.0",
         "i18n-ts": "^1.0.5",
-        "ignore": "^5.3.1",
         "immutable": "^4.3.0",
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^3.2.0",

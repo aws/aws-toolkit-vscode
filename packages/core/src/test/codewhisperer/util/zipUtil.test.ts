@@ -12,8 +12,6 @@ import { ZipUtil } from '../../../codewhisperer/util/zipUtil'
 import { SecurityScanType } from '../../../codewhisperer/models/constants'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { ToolkitError } from '../../../shared/errors'
-import fs from 'fs'
-import { fsCommon } from '../../../srcShared/fs'
 
 describe('zipUtil', function () {
     const workspaceFolder = getTestWorkspaceFolder()
@@ -65,10 +63,10 @@ describe('zipUtil', function () {
 
         it('Should generate zip for project scan and return expected metadata', async function () {
             const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
-            assert.strictEqual(zipMetadata.lines, 2705)
+            assert.strictEqual(zipMetadata.lines, 3256)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
-            assert.strictEqual(zipMetadata.scannedFiles.size, 89)
+            assert.strictEqual(zipMetadata.scannedFiles.size, 93)
             assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
             assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
@@ -92,36 +90,6 @@ describe('zipUtil', function () {
             )
         })
 
-        it('Should not include files ignored by .gitignore', async function () {
-            const existsStub = sinon
-                .stub(fs, 'existsSync')
-                .onFirstCall()
-                .returns(true)
-                .onSecondCall()
-                .callsFake((...args) => {
-                    existsStub.restore()
-                    return fs.existsSync(...args)
-                })
-            const readFileStub = sinon
-                .stub(fsCommon, 'readFileAsString')
-                .onFirstCall()
-                .returns(Promise.resolve('*.py'))
-                .onSecondCall()
-                .callsFake((...args) => {
-                    readFileStub.restore()
-                    return fsCommon.readFileAsString(...args)
-                })
-
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
-            assert.strictEqual(zipMetadata.lines, 2517)
-            assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
-            assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
-            assert.strictEqual(zipMetadata.scannedFiles.size, 83)
-            assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
-            assert.ok(zipMetadata.zipFileSizeInBytes > 0)
-            assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
-        })
-
         it('Should include java .class files', async function () {
             const isClassFileStub = sinon
                 .stub(zipUtil, 'isJavaClassFile')
@@ -134,10 +102,10 @@ describe('zipUtil', function () {
                 })
 
             const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
-            assert.strictEqual(zipMetadata.lines, 2698)
+            assert.strictEqual(zipMetadata.lines, 3249)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
-            assert.strictEqual(zipMetadata.scannedFiles.size, 88)
+            assert.strictEqual(zipMetadata.scannedFiles.size, 93)
             assert.ok(zipMetadata.buildPayloadSizeInBytes > 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
             assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))

@@ -107,7 +107,7 @@ export type PlatformLanguageId = (typeof platformLanguageIds)[number]
  */
 export const pendingResponse = 'Waiting for CodeWhisperer...'
 
-export const runningSecurityScan = 'Scanning active file and its dependencies...'
+export const runningSecurityScan = 'Scanning project for security issues...'
 
 export const noSuggestions = 'No suggestions from CodeWhisperer'
 
