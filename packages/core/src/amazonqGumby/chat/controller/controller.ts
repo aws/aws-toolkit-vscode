@@ -219,7 +219,6 @@ export class GumbyController {
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
                 await stopTransformByQ(transformByQState.getJobId(), CancelActionPositions.Chat)
-                this.messenger.sendJobFinishedMessage(message.tabId, true)
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
@@ -261,6 +260,8 @@ export class GumbyController {
             await compileProject()
         } catch (err: any) {
             this.messenger.sendRetryableErrorResponse('could-not-compile-project', message.tabID)
+            // reset state to allow "Start a new transformation" button to work
+            this.sessionStorage.getSession().conversationState = ConversationState.IDLE
             throw err
         }
 
@@ -303,7 +304,7 @@ export class GumbyController {
 
     private async transformationFinished(message: { tabID: string; jobStatus: string }) {
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
-        this.messenger.sendJobSubmittedMessage(message.tabID, true)
+        // at this point job is either completed, partially_completed, cancelled, or failed
         this.messenger.sendJobFinishedMessage(message.tabID, false, message.jobStatus)
     }
 
@@ -324,7 +325,6 @@ export class GumbyController {
                     })
                 } else {
                     this.messenger.sendRetryableErrorResponse('invalid-java-home', data.tabID)
-                    this.messenger.sendJobFinishedMessage(data.tabID, true, undefined)
                 }
             }
         }
