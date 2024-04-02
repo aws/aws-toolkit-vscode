@@ -172,10 +172,10 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile.type === 'sso') {
             const provider = this.getSsoTokenProvider(id, profile)
 
-            // We create our own span with run() since we want to
-            // set the isReAuth attribute
+            // We cannot easily set isReAuth inside the createToken() call,
+            // so we need to set it here.
             await telemetry.aws_loginWithBrowser.run(async span => {
-                span.record({ isReAuth: true })
+                span.record({ isReAuth: true, credentialStartUrl: profile.startUrl })
                 await this.authenticate(id, () => provider.createToken())
             })
 
