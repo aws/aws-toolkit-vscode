@@ -1,3 +1,11 @@
+## 2.17.0 2024-03-28
+
+- **Bug Fix** CodeWhisperer: Infinite loop of logging if users' editor focus is on OUTPUT tab
+- **Bug Fix** Amazon Q Chat: Code block colors remapped to proper ones
+- **Bug Fix** CodeWhisperer: Inline tutorial state not persisted when user press ESC to skip the tutorial
+- **Feature** Amazon Q Code Transformation: show detailed progress updates in Transformation Hub
+- **Feature** Code Transformation runs through Amazon Q Chat
+
 ## 2.16.0 2024-03-21
 
 - **Bug Fix** CodeWhisperer: UI notification "no suggestion" not shown correctly

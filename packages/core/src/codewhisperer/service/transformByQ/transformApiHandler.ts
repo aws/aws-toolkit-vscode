@@ -2,14 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import {
-    FolderInfo,
-    sessionPlanProgress,
-    StepProgress,
-    transformByQState,
-    TransformByQStoppedError,
-    ZipManifest,
-} from '../../models/model'
+import { FolderInfo, sessionPlanProgress, StepProgress, transformByQState, ZipManifest } from '../../models/model'
 import * as codeWhisperer from '../../client/codewhisperer'
 import * as crypto from 'crypto'
 import { getLogger } from '../../../shared/logger'

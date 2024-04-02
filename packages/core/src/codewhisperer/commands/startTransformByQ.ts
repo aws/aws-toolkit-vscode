@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as fs from 'fs'
 import * as os from 'os'
+import path from 'path'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import {
@@ -30,7 +31,6 @@ import {
 } from '../service/transformByQ/transformApiHandler'
 import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
 import { getVersionData, prepareProjectDependencies } from '../service/transformByQ/transformMavenHandler'
-import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML, getStringHash } from '../../shared/utilities/textUtilities'
 import {

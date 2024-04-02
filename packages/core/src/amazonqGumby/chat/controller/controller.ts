@@ -5,11 +5,12 @@
  * This class is responsible for responding to UI events by calling
  * the Gumby extension.
  */
-
+import fs from 'fs'
+import path from 'path'
+import * as vscode from 'vscode'
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatSessionManager } from '../storages/chatSession'
-import * as vscode from 'vscode'
 import { ConversationState, Session } from '../session/session'
 import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
@@ -26,8 +27,6 @@ import { JDKVersion, TransformationCandidateProject, transformByQState } from '.
 import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
-import fs from 'fs'
-import path from 'path'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 
 // These events can be interactions within the chat,
@@ -219,7 +218,6 @@ export class GumbyController {
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
                 await stopTransformByQ(transformByQState.getJobId(), CancelActionPositions.Chat)
-                this.messenger.sendJobFinishedMessage(message.tabId, true)
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
@@ -261,6 +259,8 @@ export class GumbyController {
             await compileProject()
         } catch (err: any) {
             this.messenger.sendRetryableErrorResponse('could-not-compile-project', message.tabID)
+            // reset state to allow "Start a new transformation" button to work
+            this.sessionStorage.getSession().conversationState = ConversationState.IDLE
             throw err
         }
 
@@ -303,7 +303,7 @@ export class GumbyController {
 
     private async transformationFinished(message: { tabID: string; jobStatus: string }) {
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
-        this.messenger.sendJobSubmittedMessage(message.tabID, true)
+        // at this point job is either completed, partially_completed, cancelled, or failed
         this.messenger.sendJobFinishedMessage(message.tabID, false, message.jobStatus)
     }
 
@@ -324,7 +324,6 @@ export class GumbyController {
                     })
                 } else {
                     this.messenger.sendRetryableErrorResponse('invalid-java-home', data.tabID)
-                    this.messenger.sendJobFinishedMessage(data.tabID, true, undefined)
                 }
             }
         }
