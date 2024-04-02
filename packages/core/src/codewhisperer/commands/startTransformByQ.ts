@@ -34,7 +34,12 @@ import {
     downloadResultArchive,
 } from '../service/transformByQ/transformApiHandler'
 import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
-import { getVersionData, prepareProjectDependencies } from '../service/transformByQ/transformMavenHandler'
+import {
+    getVersionData,
+    prepareProjectDependencies,
+    runMavenDependencyBuildCommands,
+    runMavenDependencyUpdateCommands,
+} from '../service/transformByQ/transformMavenHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
 import {
