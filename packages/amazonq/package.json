@@ -262,15 +262,15 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.amazonq.auth.manageConnections",
-                    "when": "false"
-                },
-                {
                     "command": "aws.amazonq.auth.signout",
                     "when": "false"
                 },
                 {
                     "command": "aws.amazonq.auth.help",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.amazonq.auth.manageConnections",
                     "when": "false"
                 },
                 {
