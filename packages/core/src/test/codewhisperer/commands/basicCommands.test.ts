@@ -298,13 +298,16 @@ describe('CodeWhisperer-basicCommands', function () {
     })
 
     describe('listCodeWhispererCommands()', function () {
-        const genericItems = [createFeedbackNode(), createGitHubNode(), createDocumentationNode()]
+        function genericItems() {
+            return [createFeedbackNode(), createGitHubNode(), createDocumentationNode()]
+        }
+
         it('shows expected items when not connected', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertContainsItems(createSignIn('item'), createLearnMore(), ...genericItems)
+                e.assertContainsItems(createSignIn('item'), createLearnMore(), ...genericItems())
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -316,7 +319,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertContainsItems(createReconnect('item'), createLearnMore(), ...genericItems, createSignout())
+                e.assertContainsItems(createReconnect('item'), createLearnMore(), ...genericItems(), createSignout())
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -333,7 +336,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     createGettingStarted(),
                     switchToAmazonQNode('item'),
                     createSecurityScan(),
-                    ...genericItems,
+                    ...genericItems(),
                     createSettingsNode(),
                     createSignout()
                 )
@@ -356,7 +359,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     createGettingStarted(),
                     switchToAmazonQNode('item'),
                     createSecurityScan(),
-                    ...genericItems,
+                    ...genericItems(),
                     createSettingsNode(),
                     createSignout()
                 )
