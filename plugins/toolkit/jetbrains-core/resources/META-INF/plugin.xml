@@ -132,7 +132,6 @@
     </xi:include>
 
     <!-- delete when fully split -->
-    <xi:include href="/META-INF/module-amazonq.xml"/>
     <xi:include href="/META-INF/module-core.xml" />
 
     <!-- global optional dependencies here, otherwise in their respective optional includes -->
