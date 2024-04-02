@@ -261,10 +261,9 @@ export class GumbyController {
             await compileProject()
         } catch (err: any) {
             this.messenger.sendRetryableErrorResponse('could-not-compile-project', message.tabID)
-            transformByQState
-                .getChatControllers()
-                ?.transformationFinished.fire(ChatSessionManager.Instance.getSession().tabID)
-            return
+            // reset state to allow "Start a new transformation" button to work
+            this.sessionStorage.getSession().conversationState = ConversationState.IDLE
+            throw err
         }
 
         this.messenger.sendCompilationFinished(message.tabID)
@@ -304,10 +303,10 @@ export class GumbyController {
         await this.prepareProjectForSubmission(message)
     }
 
-    private async transformationFinished(tabID: string) {
+    private async transformationFinished(message: { tabID: string; jobStatus: string }) {
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
-        this.messenger.sendJobSubmittedMessage(tabID, true)
-        this.messenger.sendJobFinishedMessage(tabID, false)
+        // at this point job is either completed, partially_completed, cancelled, or failed
+        this.messenger.sendJobFinishedMessage(message.tabID, false, message.jobStatus)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
@@ -327,7 +326,6 @@ export class GumbyController {
                     })
                 } else {
                     this.messenger.sendRetryableErrorResponse('invalid-java-home', data.tabID)
-                    this.messenger.sendJobFinishedMessage(data.tabID, true)
                 }
             }
         }
