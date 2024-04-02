@@ -30,7 +30,6 @@ import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/se
 import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
-import { getShowManageConnections } from '../../auth/ui/vue/show'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
@@ -126,14 +125,6 @@ export const reconnect = Commands.declare(
             }
             await AuthUtil.instance.reauthenticate(addMissingScopes)
         }
-)
-
-/** Opens the Add Connections webview with CW highlighted */
-export const showManageCwConnections = Commands.declare(
-    { id: 'aws.codewhisperer.manageConnections', compositeKey: { 1: 'source' } },
-    () => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        return getShowManageConnections().execute(_, source, 'codewhisperer')
-    }
 )
 
 /** @deprecated in favor of the `Add Connection` page */

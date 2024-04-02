@@ -258,15 +258,20 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.amazonq.auth.switchConnections",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.amazonq.auth.manageConnections",
+                    "when": "false"
+                },
+                {
                     "command": "aws.amazonq.auth.signout",
                     "when": "false"
                 },
                 {
                     "command": "aws.amazonq.auth.help",
                     "when": "false"
-                },
-                {
-                    "command": "aws.amazonq.auth.manageConnections"
                 },
                 {
                     "command": "aws.dev.openMenu",
@@ -329,11 +334,6 @@
                     "command": "aws.amazonq.learnMore",
                     "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
                     "group": "1_amazonQ@1"
-                },
-                {
-                    "command": "aws.codewhisperer.manageConnections",
-                    "when": "(view == aws.AmazonQChatView) && !aws.codewhisperer.connected",
-                    "group": "2_amazonQ@2"
                 },
                 {
                     "command": "aws.codewhisperer.signout",
@@ -489,11 +489,6 @@
             },
             {
                 "command": "aws.amazonq.auth.manageConnections",
-                "title": "%AWS.command.auth.showConnectionsPage%",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.codewhisperer.manageConnections",
                 "title": "%AWS.command.auth.showConnectionsPage%",
                 "category": "%AWS.title%"
             },
