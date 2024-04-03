@@ -124,6 +124,7 @@ dependencies {
     api(libs.aws.services)
     compileOnlyApi(project(":plugin-core:jetbrains-community"))
 
+    // TODO: remove Q dependency when split is fully done
     implementation(project(":plugin-amazonq:mynah-ui"))
     implementation(project(":plugin-amazonq:q-webview"))
     implementation(libs.bundles.jackson)
