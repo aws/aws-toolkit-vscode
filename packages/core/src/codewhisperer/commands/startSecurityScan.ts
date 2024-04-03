@@ -112,7 +112,7 @@ export async function startSecurityScan(
          */
         throwIfCancelled(scanType)
         const zipUtil = new ZipUtil()
-        const zipMetadata = await zipUtil.generateZip(editor.document.uri)
+        const zipMetadata = await zipUtil.generateZip(editor.document.uri, scanType)
         const projectPath = zipUtil.getProjectPath(editor.document.uri)
 
         const contextTruncationStartTime = performance.now()
@@ -240,7 +240,7 @@ export function showSecurityScanResults(
         securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
         void vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
     } else {
-        initSecurityScanRender(securityRecommendationCollection, context, editor, codeScanStartTime)
+        initSecurityScanRender(securityRecommendationCollection, context, editor, scanType, codeScanStartTime)
         if (scanType === CodeWhispererConstants.SecurityScanType.Project) {
             void vscode.commands.executeCommand('workbench.action.problems.focus')
         }

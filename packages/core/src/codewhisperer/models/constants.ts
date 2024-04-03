@@ -107,7 +107,7 @@ export type PlatformLanguageId = (typeof platformLanguageIds)[number]
  */
 export const pendingResponse = 'Waiting for CodeWhisperer...'
 
-export const runningSecurityScan = 'Scanning active file and its dependencies...'
+export const runningSecurityScan = 'Scanning project for security issues...'
 
 export const noSuggestions = 'No suggestions from CodeWhisperer'
 
@@ -220,6 +220,8 @@ export const codeScanTerraformPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 2
 export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
 export const fileScanPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const projectScanPayloadSizeLimitBytes = 5 * Math.pow(2, 30) // 5 GB
 
 export const codeScanTruncDirPrefix = 'codewhisperer_scan'
 

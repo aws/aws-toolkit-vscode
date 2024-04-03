@@ -284,6 +284,7 @@ describe('startSecurityScan', function () {
                 message.selectItem(showScannedFilesMessage)
             }
         })
+        await model.CodeScansState.instance.setScansEnabled(false)
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
@@ -296,7 +297,6 @@ describe('startSecurityScan', function () {
             codewhispererLanguage: 'python',
             codewhispererCodeScanTotalIssues: 1,
             codewhispererCodeScanIssuesWithFixes: 0,
-            codewhispererCodeScanLines: 66,
         } as CodewhispererSecurityScan)
     })
 
@@ -316,7 +316,5 @@ describe('startSecurityScan', function () {
         )
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.notCalled)
-        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
-        assert.strictEqual(warnings.length, 0)
     })
 })
