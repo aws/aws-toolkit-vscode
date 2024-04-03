@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q Code Transformation: remove Transform button from side panel, use /transform in chat now"
+}

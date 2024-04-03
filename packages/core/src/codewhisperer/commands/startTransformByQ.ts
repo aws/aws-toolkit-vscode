@@ -254,6 +254,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
     transformByQState.setPlanFilePath(planFilePath)
     await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
+    sessionPlanProgress['generatePlan'] = StepProgress.Succeeded
     throwIfCancelled()
 }
 
@@ -338,10 +339,20 @@ export async function setTransformationToRunningState() {
 }
 
 export async function postTransformationJob() {
-    transformByQState.getChatControllers()?.transformationFinished.fire({
-        jobStatus: transformByQState.getPolledJobStatus(),
-        tabID: ChatSessionManager.Instance.getSession().tabID,
-    })
+    if (sessionPlanProgress['startJob'] !== StepProgress.Succeeded) {
+        sessionPlanProgress['startJob'] = StepProgress.Failed
+    }
+    if (sessionPlanProgress['buildCode'] !== StepProgress.Succeeded) {
+        sessionPlanProgress['buildCode'] = StepProgress.Failed
+    }
+    if (sessionPlanProgress['generatePlan'] !== StepProgress.Succeeded) {
+        sessionPlanProgress['generatePlan'] = StepProgress.Failed
+    }
+    if (sessionPlanProgress['transformCode'] !== StepProgress.Succeeded) {
+        sessionPlanProgress['transformCode'] = StepProgress.Failed
+    }
+
+    transformByQState.getChatControllers()?.transformationFinished.fire(ChatSessionManager.Instance.getSession().tabID)
     const durationInMs = calculateTotalLatency(codeTransformTelemetryState.getStartTime())
     const resultStatusMessage = codeTransformTelemetryState.getResultStatus()
 
@@ -390,40 +401,13 @@ export async function postTransformationJob() {
 }
 
 export async function transformationJobErrorHandler(error: any) {
-    if (transformByQState.isCancelled()) {
-        codeTransformTelemetryState.setResultStatus('JobCancelled')
-        try {
-            await stopJob(transformByQState.getJobId())
-            void vscode.window
-                .showErrorMessage(
-                    CodeWhispererConstants.transformByQCancelledMessage,
-                    CodeWhispererConstants.amazonQFeedbackText
-                )
-                .then(choice => {
-                    if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
-                    }
-                })
-        } catch {
-            void vscode.window
-                .showErrorMessage(
-                    CodeWhispererConstants.errorStoppingJobMessage,
-                    CodeWhispererConstants.amazonQFeedbackText
-                )
-                .then(choice => {
-                    if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
-                    }
-                })
-        }
-    } else {
+    if (!transformByQState.isCancelled()) {
+        // means some other error occurred; cancellation already handled by now with stopTransformByQ
         transformByQState.setToFailed()
         codeTransformTelemetryState.setResultStatus('JobFailed')
-        let displayedErrorMessage = `${
-            CodeWhispererConstants.failedToCompleteJobMessage
-        } ${transformByQState.getJobFailureErrorMessage()}`
+        let displayedErrorMessage = transformByQState.getJobFailureErrorMessage()
         if (transformByQState.getJobFailureMetadata() !== '') {
-            displayedErrorMessage += transformByQState.getJobFailureMetadata()
+            displayedErrorMessage += ` ${transformByQState.getJobFailureMetadata()}`
         }
         void vscode.window
             .showErrorMessage(displayedErrorMessage, CodeWhispererConstants.amazonQFeedbackText)
@@ -433,18 +417,6 @@ export async function transformationJobErrorHandler(error: any) {
                 }
             })
     }
-    if (sessionPlanProgress['startJob'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['startJob'] = StepProgress.Failed
-    }
-    if (sessionPlanProgress['buildCode'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['buildCode'] = StepProgress.Failed
-    }
-    if (sessionPlanProgress['generatePlan'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['generatePlan'] = StepProgress.Failed
-    }
-    if (sessionPlanProgress['transformCode'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['transformCode'] = StepProgress.Failed
-    }
     getLogger().error(`CodeTransformation: ${error.message}`)
 }
 
@@ -453,7 +425,10 @@ export async function cleanupTransformationJob(intervalId: NodeJS.Timeout | unde
     transformByQState.setJobDefaults()
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
     await vscode.commands.executeCommand('aws.amazonq.refresh')
-    void vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', codeTransformTelemetryState.getStartTime())
+    await vscode.commands.executeCommand(
+        'aws.amazonq.showPlanProgressInHub',
+        codeTransformTelemetryState.getStartTime()
+    )
 }
 
 export function processHistory(
@@ -485,12 +460,32 @@ export async function stopTransformByQ(
     if (transformByQState.isRunning()) {
         getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
         transformByQState.setToCancelled()
+        codeTransformTelemetryState.setResultStatus('JobCancelled')
         await vscode.commands.executeCommand('aws.amazonq.refresh')
         await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         try {
             await stopJob(jobId)
+            void vscode.window
+                .showErrorMessage(
+                    CodeWhispererConstants.transformByQCancelledMessage,
+                    CodeWhispererConstants.amazonQFeedbackText
+                )
+                .then(choice => {
+                    if (choice === CodeWhispererConstants.amazonQFeedbackText) {
+                        void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                    }
+                })
         } catch {
-            void vscode.window.showErrorMessage(CodeWhispererConstants.errorStoppingJobMessage)
+            void vscode.window
+                .showErrorMessage(
+                    CodeWhispererConstants.errorStoppingJobMessage,
+                    CodeWhispererConstants.amazonQFeedbackText
+                )
+                .then(choice => {
+                    if (choice === CodeWhispererConstants.amazonQFeedbackText) {
+                        void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                    }
+                })
         }
         telemetry.codeTransform_jobIsCancelledByUser.emit({
             codeTransformCancelSrcComponents: cancelSrc as CodeTransformCancelSrcComponents,
