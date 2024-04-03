@@ -32,6 +32,7 @@ import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { showManageConnections } from '../../auth/ui/vue/show'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -224,6 +225,17 @@ export const openSecurityIssuePanel = Commands.declare(
             ruleId: issue.ruleId,
             credentialStartUrl: AuthUtil.instance.startUrl,
         })
+        TelemetryHelper.instance.sendCodeScanRemediationsEvent(
+            undefined,
+            'CODESCAN_ISSUE_VIEW_DETAILS',
+            issue.detectorId,
+            issue.findingId,
+            issue.ruleId,
+            undefined,
+            undefined,
+            undefined,
+            !!issue.suggestedFixes.length
+        )
     }
 )
 
@@ -259,12 +271,12 @@ export const applySecurityFix = Commands.declare(
             result: 'Succeeded',
             credentialStartUrl: AuthUtil.instance.startUrl,
         }
-
+        let languageId = undefined
         try {
             const patch = suggestedFix.code
             const document = await vscode.workspace.openTextDocument(filePath)
             const fileContent = document.getText()
-
+            languageId = document.languageId
             const updatedContent = applyPatch(fileContent, patch)
             if (!updatedContent) {
                 void vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
@@ -295,6 +307,17 @@ export const applySecurityFix = Commands.declare(
             applyFixTelemetryEntry.reason = err as string
         } finally {
             telemetry.codewhisperer_codeScanIssueApplyFix.emit(applyFixTelemetryEntry)
+            TelemetryHelper.instance.sendCodeScanRemediationsEvent(
+                languageId,
+                'CODESCAN_ISSUE_APPLY_FIX',
+                issue.detectorId,
+                issue.findingId,
+                issue.ruleId,
+                source,
+                applyFixTelemetryEntry.reason,
+                applyFixTelemetryEntry.result,
+                !!issue.suggestedFixes.length
+            )
         }
     }
 )

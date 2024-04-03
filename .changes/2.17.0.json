@@ -1,0 +1,26 @@
+{
+	"date": "2024-03-28",
+	"version": "2.17.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: Infinite loop of logging if users' editor focus is on OUTPUT tab"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Code block colors remapped to proper ones"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: Inline tutorial state not persisted when user press ESC to skip the tutorial"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Code Transformation: show detailed progress updates in Transformation Hub"
+		},
+		{
+			"type": "Feature",
+			"description": "Code Transformation runs through Amazon Q Chat"
+		}
+	]
+}
