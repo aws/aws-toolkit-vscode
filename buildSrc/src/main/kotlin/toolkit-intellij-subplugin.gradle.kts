@@ -209,3 +209,13 @@ configurations.runtimeElements {
         }
     }
 }
+
+// 1.x declares dependsOn, but we want mustRunAfter
+// https://github.com/JetBrains/intellij-platform-gradle-plugin/blob/47e2de88e86ffdefd3f6f45c2bb3181366ee4fa4/src/main/kotlin/org/jetbrains/intellij/IntelliJPlugin.kt#L1702
+tasks.classpathIndexCleanup {
+    dependsOn.clear()
+
+    project.tasks
+        .runCatching { named("compileTestKotlin") }
+        .onSuccess { mustRunAfter(it) }
+}
