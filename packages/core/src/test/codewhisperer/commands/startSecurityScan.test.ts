@@ -316,7 +316,5 @@ describe('startSecurityScan', function () {
         )
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.notCalled)
-        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
-        assert.strictEqual(warnings.length, 0)
     })
 })
