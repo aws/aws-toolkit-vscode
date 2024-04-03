@@ -398,13 +398,13 @@ export const linkToPrerequisites =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
 
 export const linkToMavenTroubleshooting =
-    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19b7'
+    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing'
 
 export const linkToUploadZipTooLarge =
-    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19b5'
+    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#project-size-limit'
 
 export const linkToDownloadZipTooLarge =
-    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19c11'
+    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit'
 
 export const dependencyDisclaimer =
     'Please confirm you are ready to proceed with the transformation. Amazon Q Code Transformation will upload the application code and its dependency binaries from your machine to start the upgrade. If you have not yet compiled the application on your local machine, please do so once before starting the upgrade.'
@@ -412,7 +412,7 @@ export const dependencyDisclaimer =
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
 export const installErrorMessage =
-    "Amazon Q couldn't execute the Maven install command. To troubleshoot, see the [Amazon Q Code Transformation documentation](LINK_HERE)."
+    "Amazon Q couldn't execute the Maven clean install command. To troubleshoot, see the [Amazon Q Code Transformation documentation](LINK_HERE)."
 
 export const dependencyErrorMessage =
     "Amazon Q couldn't execute the Maven copy-dependencies command. To troubleshoot, see the [Amazon Q Code Transformation documentation](LINK_HERE)."
