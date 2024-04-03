@@ -19,4 +19,3 @@ export interface IManifestFile {
     pomFolderName: string
     sourcePomVersion: string
 }
-    
