@@ -19,12 +19,23 @@ import {
     FolderInfo,
     TransformationCandidateProject,
 } from '../models/model'
-import { convertToTimeString, convertDateToTimestamp, getStringHash } from '../../shared/utilities/textUtilities'
 import {
+    convertToTimeString,
+    convertDateToTimestamp,
+    getStringHash,
+    encodeHTML,
+} from '../../shared/utilities/textUtilities'
+import {
+    downloadResultArchive,
+    getArtifactIdentifiers,
     getTransformationPlan,
+    getTransformationStepsFixture,
     pollTransformationJob,
     startJob,
     stopJob,
+    throwIfCancelled,
+    uploadPayload,
+    zipCode,
 } from '../service/transformByQ/transformApiHandler'
 import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
 import {
@@ -179,7 +190,7 @@ export async function startTransformByQ() {
         await pollTransformationStatusUntilPlanReady(jobId)
 
         // step 4: poll until artifacts are ready to download
-        const status = await pollTransformationStatusUntilComplete(jobId, 0)
+        const status = await pollTransformationStatusUntilComplete(jobId)
 
         // Set the result state variables for our store and the UI
         // At this point job should be completed or partially completed
@@ -310,7 +321,6 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         console.log('Deleting temporary dependency output', userDependencyUpdateDir)
         fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
     }
-    return uploadId
 }
 
 export async function startTransformationJob(uploadId: string) {
