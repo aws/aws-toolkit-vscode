@@ -6,6 +6,9 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as os from 'os'
+import * as codeWhisperer from '../../client/codewhisperer'
+import * as crypto from 'crypto'
+import * as CodeWhispererConstants from '../../models/constants'
 import {
     FolderInfo,
     sessionPlanProgress,
@@ -15,15 +18,12 @@ import {
     TransformByQStoppedError,
     ZipManifest,
 } from '../../models/model'
-import * as codeWhisperer from '../../client/codewhisperer'
-import * as crypto from 'crypto'
 import { getLogger } from '../../../shared/logger'
 import CodeWhispererUserClient, {
     CreateUploadUrlResponse,
     TransformationStep,
 } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
-import * as CodeWhispererConstants from '../../models/constants'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -34,8 +34,6 @@ import request from '../../../common/request'
 import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
-import { encodeHTML } from '../../../shared/utilities/textUtilities'
-import { completeHumanInTheLoopWork } from '../../commands/startTransformByQ'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -454,9 +452,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
                 sessionPlanProgress['buildCode'] = StepProgress.Succeeded
             }
-            if (CodeWhispererConstants.validStatesForPlanGenerated.includes(status)) {
-                sessionPlanProgress['generatePlan'] = StepProgress.Succeeded
-            }
             // emit metric when job status changes
             if (status !== transformByQState.getPolledJobStatus()) {
                 telemetry.codeTransform_jobStatusChanged.emit({
@@ -496,7 +491,8 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 throw new Error('Job timed out')
             }
         } catch (e: any) {
-            const errorMessage = (e as Error).message ?? 'Error in GetTransformation API call'
+            let errorMessage = (e as Error).message ?? 'Error in GetTransformation API call'
+            errorMessage += ` -- ${transformByQState.getJobFailureMetadata()}`
             getLogger().error(`CodeTransformation: GetTransformation error = ${errorMessage}`)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'GetTransformation',
@@ -510,169 +506,5 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             throw new Error('Error while polling job status')
         }
     }
-    return status
-}
-
-export async function downloadResultArchive(jobId: string, artifactId: string, artifactType: string) {
-    console.log('Inside downloadResultArchive artifacts', jobId, artifactId, artifactType)
-    // /Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/manifest.json
-    // src/amazonqGumby/mock/downloadHilZip/manifest.json
-    // TODO replace API call
-    // 1) Save location on disk for downloaded results
-    const manifestFileVirtualFileReference = vscode.Uri.file(
-        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/manifest.json'
-    )
-    const pomFileVirtualFileReference = vscode.Uri.file(
-        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/pom.xml'
-    )
-    return { manifestFileVirtualFileReference, pomFileVirtualFileReference }
-}
-
-export async function getTransformationStepsFixture(
-    jobId: string
-): Promise<CodeWhispererUserClient.TransformationSteps> {
-    console.log('In getTransformationStepsFixture', jobId)
-    // fake API call to get transformation steps
-    return [
-        {
-            id: 'fake-step-id-1',
-            name: 'Building Code',
-            description: 'Building dependencies',
-            status: 'COMPLETED',
-            progressUpdates: [
-                {
-                    name: 'Status step',
-                    status: 'FAILED',
-                    description: 'This step should be hil identifier',
-                    startTime: new Date(),
-                    endTime: new Date(),
-                },
-            ],
-            startTime: new Date(),
-            endTime: new Date(),
-        },
-    ]
-}
-
-export function getArtifactIdentifiers(transformationSteps: TransformationStep[]) {
-    console.log('In getArtifactIdentifiers', transformationSteps)
-    // const artifactType = transformationSteps[0]?.artifactType
-    // const artifactId = transformationSteps[0]?.artifactId
-    const artifactType = 'hil'
-    const artifactId = 'test-id'
-    return {
-        artifactId,
-        artifactType,
-    }
-}
-
-export async function preTransformationUploadCode() {
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
-    await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
-
-    let uploadId = ''
-    let payloadFilePath = ''
-    throwIfCancelled()
-    try {
-        payloadFilePath = await zipCode(transformByQState.getDependencyFolderInfo()!)
-        transformByQState.setPayloadFilePath(payloadFilePath)
-        uploadId = await uploadPayload(payloadFilePath)
-    } catch (err) {
-        const errorMessage = `Failed to upload code due to ${(err as Error).message}`
-        getLogger().error(errorMessage)
-        telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            result: MetadataResult.Fail,
-            reason: 'UploadArchiveFailed',
-        })
-        throw err
-    }
-
-    await sleep(2000) // sleep before starting job to prevent ThrottlingException
-    throwIfCancelled()
-
-    return uploadId
-}
-
-export async function startTransformationJob(uploadId: string) {
-    let jobId = ''
-    try {
-        jobId = await startJob(uploadId)
-    } catch (error) {
-        const errorMessage = CodeWhispererConstants.failedToStartJobMessage
-        telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            result: MetadataResult.Fail,
-            reason: 'StartJobFailed',
-        })
-        transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new Error('Start job failed')
-    }
-    transformByQState.setJobId(encodeHTML(jobId))
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
-
-    await sleep(2000) // sleep before polling job to prevent ThrottlingException
-    throwIfCancelled()
-
-    return jobId
-}
-
-export async function pollTransformationStatusUntilPlanReady(jobId: string) {
-    try {
-        await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForPlanGenerated)
-    } catch (error) {
-        const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
-        getLogger().error(`CodeTransformation: ${errorMessage}`, error)
-        transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new Error('Poll job failed')
-    }
-    let plan = undefined
-    try {
-        plan = await getTransformationPlan(jobId)
-    } catch (error) {
-        const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
-        getLogger().error(`CodeTransformation: ${errorMessage}`, error)
-        transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new Error('Get plan failed')
-    }
-
-    const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
-    fs.writeFileSync(planFilePath, plan)
-    await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
-    transformByQState.setPlanFilePath(planFilePath)
-    await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
-    throwIfCancelled()
-}
-
-export async function pollTransformationStatusUntilComplete(jobId: string, userInputRetryCount: number) {
-    let status = ''
-    try {
-        status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
-    } catch (error) {
-        const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
-        getLogger().error(`CodeTransformation: ${errorMessage}`, error)
-        transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new Error('Poll job failed')
-    }
-
-    // Use recursion here to get user input
-    if (
-        status === TransformByQStatus.WaitingUserInput &&
-        userInputRetryCount > CodeWhispererConstants.maxHumanInTheLoopAttempts
-    ) {
-        try {
-            userInputRetryCount++
-
-            // 8) Once all this is successful we need to re-initiate pollTransformationStatusUntilComplete
-            await completeHumanInTheLoopWork(jobId, userInputRetryCount)
-            status = await pollTransformationStatusUntilComplete(jobId, userInputRetryCount)
-        } catch (e) {
-            // do nothing for now. If a recursive call failed, need to set status appropriately?
-            // or throw error
-        }
-    }
-
     return status
 }

@@ -16,6 +16,7 @@ import globals from '../../shared/extensionGlobals'
 import { autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
+import { TransformationSteps } from '../client/codewhispereruserclient'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -315,6 +316,8 @@ export class TransformByQState {
 
     private dependencyFolderInfo: FolderInfo | undefined = undefined
 
+    private planSteps: TransformationSteps | undefined = undefined
+
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
     }
@@ -415,6 +418,10 @@ export class TransformByQState {
         return this.dependencyFolderInfo
     }
 
+    public getPlanSteps() {
+        return this.planSteps
+    }
+
     public appendToErrorLog(message: string) {
         this.errorLog += `${message}\n\n`
     }
@@ -509,6 +516,10 @@ export class TransformByQState {
 
     public setDependencyFolderInfo(folderInfo: FolderInfo) {
         this.dependencyFolderInfo = folderInfo
+    }
+
+    public setPlanSteps(steps: TransformationSteps) {
+        this.planSteps = steps
     }
 
     public getPrefixTextForButton() {

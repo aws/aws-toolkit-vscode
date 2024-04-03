@@ -31,6 +31,7 @@ import {
     validateOpenProjects,
     getOpenProjects,
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
+import { TransformationCandidateProject } from '../../../codewhisperer/models/model'
 
 describe('transformByQ', function () {
     afterEach(function () {
@@ -78,7 +79,7 @@ describe('transformByQ', function () {
     })
 
     it('WHEN validateProjectSelection called on non-Java project THEN throws error', async function () {
-        const dummyCandidateProjects: model.TransformationCandidateProject[] = [
+        const dummyCandidateProjects: TransformationCandidateProject[] = [
             {
                 name: 'SampleProject',
                 path: '/dummy/path/here',
@@ -95,7 +96,7 @@ describe('transformByQ', function () {
         await toFile('', dummyPath)
         const findFilesStub = sinon.stub(vscode.workspace, 'findFiles')
         findFilesStub.onFirstCall().resolves([folder.uri])
-        const dummyCandidateProjects: model.TransformationCandidateProject[] = [
+        const dummyCandidateProjects: TransformationCandidateProject[] = [
             {
                 name: 'SampleProject',
                 path: folder.uri.fsPath,
