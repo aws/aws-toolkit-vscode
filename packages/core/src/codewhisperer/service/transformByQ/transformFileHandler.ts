@@ -6,10 +6,10 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as os from 'os'
+import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
-import xml2js = require('xml2js')
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 
 export function getDependenciesFolderInfo(): FolderInfo {

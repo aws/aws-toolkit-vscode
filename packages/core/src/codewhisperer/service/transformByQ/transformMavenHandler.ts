@@ -209,6 +209,8 @@ export async function getVersionData() {
 }
 
 // run maven 'versions:dependency-updates-aggregate-report' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
+// osTmpDir  -> /user/var/tmp/q2312341234/q-pom-dependency-list/pom.xml
+
 export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo) {
     console.log('In runMavenDependencyUpdateCommands', dependenciesFolder)
     try {
@@ -231,6 +233,7 @@ export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo)
         }
 
         const spawnResult = spawnSync(baseCommand, args, {
+            // default behavior is looks for pom.xml in this root
             cwd: dependenciesFolder.path,
             shell: true,
             encoding: 'utf-8',
