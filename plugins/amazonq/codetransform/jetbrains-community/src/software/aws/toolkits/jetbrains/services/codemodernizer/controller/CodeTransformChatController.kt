@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codemodernizer.controller
 
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.delay
@@ -50,6 +51,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.session.ChatSessi
 import software.aws.toolkits.jetbrains.services.codemodernizer.session.Session
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codemodernizer.toVirtualFile
+import software.aws.toolkits.jetbrains.services.codemodernizer.tryGetJdk
 import software.aws.toolkits.jetbrains.services.cwc.messages.ChatMessageType
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformStartSrcComponents
@@ -90,7 +92,6 @@ class CodeTransformChatController(
         val validationResult = codeModernizerManager.validate(context.project)
 
         if (!validationResult.valid) {
-            codeModernizerManager.warnUnsupportedProject(validationResult.invalidReason)
             codeTransformChatHelper.updateLastPendingMessage(
                 buildProjectInvalidChatContent(validationResult)
             )
@@ -179,9 +180,13 @@ class CodeTransformChatController(
             addNewMessage(buildCompileLocalInProgressChatContent())
         }
 
+        // this should never throw the RuntimeException since invalid JDK case is already handled in previous validation step
+        val sourceJdk = ModuleUtil.findModuleForFile(moduleVirtualFile, context.project)?.tryGetJdk(context.project) ?: context.project.tryGetJdk()
+            ?: throw RuntimeException("Unable to determine source JDK version")
+
         val selection = CustomerSelection(
             moduleVirtualFile,
-            JavaSdkVersion.JDK_1_8,
+            sourceJdk,
             JavaSdkVersion.JDK_17
         )
 
