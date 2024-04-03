@@ -189,8 +189,6 @@ export async function activate(context: ExtContext): Promise<void> {
         }),
         // show introduction
         showIntroduction.register(),
-        // direct CodeWhisperer connection setup with customization
-        connectWithCustomization.register(),
         // toggle code suggestions
         toggleCodeSuggestions.register(CodeSuggestionsState.instance),
         // enable code suggestions
@@ -266,6 +264,11 @@ export async function activate(context: ExtContext): Promise<void> {
             SecurityIssueCodeActionProvider.instance
         )
     )
+
+    const connectWithCustomizationCommand = connectWithCustomization()
+    if (connectWithCustomizationCommand) {
+        context.extensionContext.subscriptions.push(connectWithCustomizationCommand.register())
+    }
 
     await auth.restore()
 

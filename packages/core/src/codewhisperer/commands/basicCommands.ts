@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { CodewhispererCodeScanIssueApplyFix, Component, telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
+import { Commands, DeclaredCommand, VsCodeCommandArg } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
