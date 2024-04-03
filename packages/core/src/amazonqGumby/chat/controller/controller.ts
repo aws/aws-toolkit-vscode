@@ -219,7 +219,6 @@ export class GumbyController {
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
                 await stopTransformByQ(transformByQState.getJobId(), CancelActionPositions.Chat)
-                this.messenger.sendJobFinishedMessage(message.tabId, true)
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })

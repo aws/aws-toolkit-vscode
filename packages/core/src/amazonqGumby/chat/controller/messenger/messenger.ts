@@ -347,7 +347,7 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
 
     public sendJobFinishedMessage(tabID: string, cancelled: boolean, jobStatus: string = '') {
         let message =
-            'I stopped your transformation. If you want to start another transformation, choose **Start a new transformation**.'
+            'I cancelled your transformation. If you want to start another transformation, choose **Start a new transformation**.'
 
         if (!cancelled) {
             message =
