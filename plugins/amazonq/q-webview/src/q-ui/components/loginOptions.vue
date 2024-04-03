@@ -2,8 +2,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <template>
-    <div class="auth-container-section">
-        <div class="title" v-if="existingLogin.id === -1">Choose a sign-in option:</div>
+    <div @keydown.enter="handleContinueClick">
+        <div class="title font-amazon bottom-small-gap" v-if="existingLogin.id === -1">Choose a sign-in option:</div>
         <SelectableItem
             v-if="app === 'AMAZONQ'"
             @toggle="toggleItemSelection"
@@ -11,15 +11,15 @@
             :itemId="LoginOption.BUILDER_ID"
             :itemText="'Create or sign-in using AWS Builder ID'"
             :itemTitle="'Personal'"
-            class="selectable-item"
+            class="font-amazon bottom-small-gap"
         ></SelectableItem>
         <SelectableItem
             @toggle="toggleItemSelection"
             :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
             :itemId="LoginOption.ENTERPRISE_SSO"
-            :itemText="'Single sign-on with AWS IAM Identity Center'"
+            :itemText="'Sign in to AWS with single sign-on'"
             :itemTitle="'Workforce'"
-            class="selectable-item"
+            class="font-amazon bottom-small-gap"
         ></SelectableItem>
         <SelectableItem
             v-if="app === 'TOOLKIT'"
@@ -28,13 +28,13 @@
             :itemId="LoginOption.IAM_CREDENTIAL"
             :itemText="'Store keys locally for use with AWS CLI tools'"
             :itemTitle="'IAM Credential'"
-            class="selectable-item"
+            class="font-amazon bottom-small-gap"
         ></SelectableItem>
         <button
-            id="continue-button"
-            class="continue-button"
+            class="login-flow-button continue-button font-amazon"
             :disabled="selectedLoginOption === 0"
             v-on:click="handleContinueClick()"
+            tabindex="-1"
         >
             Continue
         </button>
@@ -88,40 +88,3 @@ export default defineComponent({
     }
 })
 </script>
-
-<style scoped>
-.selectable-item {
-    margin-bottom: 10px;
-    margin-top: 10px;
-}
-
-.continue-button {
-    background-color: #365880;
-    color: white;
-    width: 100%;
-    height: 40px;
-    border: none;
-    border-radius: 5px;
-}
-
-.title {
-    margin-bottom: 5px;
-    margin-top: 5px;
-    font-size: 15px;
-    font-weight: bold;
-    color: white;
-}
-
-.continue-button:disabled {
-    background-color: #252526;
-    color: #6f6f6f;
-}
-
-body.vscode-dark #logo-text {
-    fill: white;
-}
-
-body.vscode-light #logo-text {
-    fill: #232f3e; /* squid ink */
-}
-</style>

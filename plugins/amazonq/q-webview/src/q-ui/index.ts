@@ -7,11 +7,13 @@ import {createStore, Store} from 'vuex'
 import HelloWorld from './components/root.vue'
 import {Region, Stage} from "../model";
 import {IdeClient} from "../ideClient";
+import './assets/common.scss'
 
 declare global {
     interface Window {
         ideApi: { postMessage: (arg: { command: string } & any) => any }
         ideClient: IdeClient
+        changeTheme: (darkMode: boolean) => void
     }
 }
 
@@ -56,4 +58,10 @@ const store = createStore<State>({
 })
 
 window.ideClient = new IdeClient(store)
+app.directive('autofocus', {
+    // When the bound element is inserted into the DOM...
+    mounted: function (el) {
+        el.focus();
+    }
+});
 app.use(store).mount('#app')

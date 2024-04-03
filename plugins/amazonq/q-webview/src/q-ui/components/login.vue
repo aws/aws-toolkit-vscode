@@ -15,16 +15,16 @@
         <AwsProfileForm v-if="stage === 'AWS_PROFILE'" @backToMenu="handleBackButtonClick"/>
 
         <template v-if="stage === 'AUTHENTICATING'">
-            <div class="auth-container-section">
+            <div class="font-amazon">
                 <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Authenticating...</div>
                 <div v-else>
-                    <div class="title">Authenticating in browser...</div>
-                    <div v-if="authorizationCode.length > 0" class="confirmationCodeContainer">
+                    <div class="title bottom-small-gap">Authenticating in browser...</div>
+                    <div v-if="authorizationCode.length > 0" class="confirmation-code-container bottom-small-gap">
                         <div class="hint">CONFIRMATION CODE</div>
-                        <div class="confirmationCode">{{ this.authorizationCode }}</div>
+                        <div class="confirmation-code">{{ this.authorizationCode }}</div>
                     </div>
                 </div>
-                <button class="continue-button" v-on:click="handleCancelButton()">Cancel</button>
+                <button class="login-flow-button cancel-button font-amazon" v-on:click="handleCancelButton()">Cancel</button>
             </div>
         </template>
 
@@ -91,7 +91,7 @@ export default defineComponent({
             this.$store.commit('setStage', stage)
         },
         handleDocumentClick(event: any) {
-            const isClickInsideSelectableItems = event.target.closest('.selectable-item')
+            const isClickInsideSelectableItems = event.target.closest('.item-container')
             if (!isClickInsideSelectableItems) {
                 this.selectedLoginOption = 0
             }
@@ -102,40 +102,21 @@ export default defineComponent({
         handleCancelButton() {
             this.mutateStage('START')
         },
+        changeTheme(darkMode: boolean) {
+            const oldCssId = darkMode ? "jb-light" : "jb-dark"
+            const newCssId = darkMode ? "jb-dark" : "jb-light"
+            document.body.classList.add(newCssId);
+            document.body.classList.remove(oldCssId);
+        },
+    },
+    mounted() {
+        window.changeTheme = this.changeTheme.bind(this)
     },
 })
 </script>
 
 <style>
-.continue-button {
-    background-color: #29a7ff;
-    color: white;
-    width: 100%;
-    height: 40px;
-}
-
-.title {
-    margin-bottom: 5px;
-    margin-top: 5px;
-    font-size: 15px;
-    font-weight: bold;
-    color: white;
-}
-
-.continue-button:disabled {
-    background-color: #252526;
-    color: #6f6f6f;
-}
-
-body.vscode-dark #logo-text {
-    fill: white;
-}
-
-body.vscode-light #logo-text {
-    fill: #232f3e; /* squid ink */
-}
-
-.confirmationCodeContainer {
+.confirmation-code-container {
     margin-top: 20px;
     border: 1px
 }
@@ -146,9 +127,13 @@ body.vscode-light #logo-text {
     margin-top: 5px;
 }
 
-.confirmationCode {
-    color: white;
-    font-size: 32px;
+.confirmation-code {
+    font-size: 48px;
     font-weight: bold;
+}
+
+.auth-container {
+    margin-left: 20px;
+    margin-right: 20px;
 }
 </style>

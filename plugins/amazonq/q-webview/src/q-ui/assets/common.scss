@@ -1,0 +1,77 @@
+/* Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* Common styles */
+.font-amazon {
+    font-family: "Amazon Ember", sans-serif;
+    user-select: none;
+    font-size: 15px;
+}
+
+.bottom-small-gap {
+    margin-bottom: 20px !important;
+}
+
+.login-flow-button {
+    width: 100%;
+    height: 55px;
+    border-radius: 3px;
+    border-width: 0;
+    font-weight: bold;
+}
+
+.continue-button {
+    background-color: #3574f0;
+}
+
+.back-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.title {
+    margin-bottom: 5px;
+    margin-top: 5px;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.no-bold {
+    font-weight: normal !important;
+}
+
+/* Theme specific css */
+body.jb-dark {
+    .login-flow-button, .title, .text, .back-button, .confirmation-code {
+        color: white;
+    }
+    .cancel-button {
+        background-color: #FFFFFF1A;
+    }
+    .continue-button:disabled {
+        background-color: #FFFFFF1A !important;
+        color: #6f6f6f !important;
+    }
+}
+
+body.jb-light {
+    .title, .text, .back-button, .confirmation-code {
+        color: black;
+    }
+    .login-flow-button {
+        color: white;
+    }
+    .cancel-button {
+        background-color: #0000001A;
+        color: black !important;
+    }
+    .continue-button:disabled {
+        background-color: #0000001A !important;
+        color: #6f6f6f !important;
+    }
+}
+
+
+

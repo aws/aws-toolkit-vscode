@@ -129,7 +129,8 @@ class AmazonQToolWindow @NonInjectable constructor(
         scope.launch {
             // Update the theme in the UI when the IDE theme changes
             browserConnector.connectTheme(
-                browser = browser,
+                chatBrowser = browser.jcefBrowser.cefBrowser,
+                loginBrowser = loginPanel.browser.jcefBrowser.cefBrowser,
                 themeSource = editorThemeAdapter.onThemeChange(),
             )
         }

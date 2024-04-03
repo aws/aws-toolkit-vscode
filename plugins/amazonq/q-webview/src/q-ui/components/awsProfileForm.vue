@@ -24,7 +24,7 @@
 
     <br/><br/>
     <button
-        class="continue-button"
+        class="login-flow-button continue-button"
         :disabled="profileName.length <= 0 || accessKey.length <= 0 || secretKey.length <= 0"
         v-on:click="handleContinueClick()"
     >
@@ -56,13 +56,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.continue-button {
-    background-color: #29a7ff;
-    color: white;
-    width: 100%;
-    height: 40px;
-}
-
 .back-button {
     background: none;
     border: none;
@@ -75,11 +68,6 @@ export default defineComponent({
     color: #948a8a;
     margin-bottom: 5px;
     margin-top: 5px;
-}
-
-.continue-button:disabled {
-    background-color: #252526;
-    color: #6f6f6f;
 }
 
 .iamInput {

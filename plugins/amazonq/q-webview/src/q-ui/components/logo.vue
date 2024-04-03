@@ -19,7 +19,7 @@ export default defineComponent({
 </script>
 
 <template>
-    <div class="logoIcon">
+    <div class="logoIcon bottom-small-gap">
         <!-- Icon -->
 
         <svg
@@ -98,8 +98,6 @@ export default defineComponent({
     justify-content: left;
     align-items: flex-start;
     padding-top: 75px;
-    padding-bottom: 10px;
-    padding-left: 10px;
     height: auto;
 }
 </style>

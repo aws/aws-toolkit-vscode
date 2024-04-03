@@ -10,6 +10,7 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.ui.JBColor
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.gridLayout.HorizontalAlign
@@ -243,6 +244,7 @@ class WebviewBrowser(val project: Project) {
     }
 
     private fun getWebviewHTML(): String {
+        val colorMode = if (JBColor.isBright()) "jb-light" else "jb-dark"
         val postMessageToJavaJsCode = query.inject("JSON.stringify(message)")
 
         val jsScripts = """
@@ -264,7 +266,7 @@ class WebviewBrowser(val project: Project) {
                 <head>
                     <title>AWS Q</title>
                 </head>
-                <body>
+                <body class="$colorMode">
                     <div id="app"></div>
                     $jsScripts
                 </body>
