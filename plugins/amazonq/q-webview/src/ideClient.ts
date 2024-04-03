@@ -17,4 +17,13 @@ export class IdeClient {
         console.log(regions)
         this.store.commit('setSsoRegions', regions)
     }
+
+    updateAuthorization(code: string) {
+        console.log('authorization code: ', code)
+        this.store.commit('setAuthorizationCode', code)
+    }
+
+    reset() {
+        this.store.commit('reset')
+    }
 }

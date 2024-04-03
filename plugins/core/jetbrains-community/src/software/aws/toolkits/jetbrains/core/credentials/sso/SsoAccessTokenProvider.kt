@@ -23,6 +23,7 @@ import software.aws.toolkits.telemetry.Result
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Takes care of creating/refreshing the SSO access token required to fetch SSO-based credentials.
@@ -38,6 +39,9 @@ class SsoAccessTokenProvider(
 
     @TestOnly
     var authorizationCreationTime = Instant.now(clock)
+
+    var authorization = AtomicReference<Authorization?>()
+        private set
 
     private val clientRegistrationCacheKey by lazy {
         ClientRegistrationCacheKey(
@@ -127,6 +131,8 @@ class SsoAccessTokenProvider(
         val authorization = authorizeClient(registration)
 
         progressIndicator?.text2 = message("aws.sso.signing.device.waiting", authorization.userCode)
+        this.authorization.set(authorization)
+
         onPendingToken.tokenPending(authorization)
 
         var backOffTime = Duration.ofSeconds(authorization.pollInterval)
@@ -141,6 +147,7 @@ class SsoAccessTokenProvider(
                 }
 
                 onPendingToken.tokenRetrieved()
+                this.authorization.set(null)
 
                 return tokenResponse.toAccessToken(authorization.createdAt)
             } catch (e: SlowDownException) {

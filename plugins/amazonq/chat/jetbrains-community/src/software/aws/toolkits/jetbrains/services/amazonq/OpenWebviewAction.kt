@@ -15,16 +15,24 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.gridLayout.HorizontalAlign
 import com.intellij.ui.dsl.gridLayout.VerticalAlign
 import com.intellij.ui.jcef.JBCefJSQuery
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.cef.CefApp
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.network.CefRequest
+import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
+import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES_UNAVAILABLE_BUILDER_ID
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
+import software.aws.toolkits.jetbrains.core.credentials.sso.Authorization
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
@@ -34,6 +42,7 @@ import java.io.IOException
 import java.util.function.Function
 import javax.swing.JButton
 import javax.swing.JComponent
+import kotlin.random.Random
 
 // This action is used to open the Q webview  development mode.
 class OpenAmazonQAction : DumbAwareAction("View Q Webview") {
@@ -131,9 +140,13 @@ class WebviewBrowser(val project: Project) {
                     println("log in with builder id........")
                     val scope = CODEWHISPERER_SCOPES + Q_SCOPES - Q_SCOPES_UNAVAILABLE_BUILDER_ID.toSet()
                     runInEdt {
-                        loginSso(project, SONO_URL, SONO_REGION, scope)
+                        projectCoroutineScope(project).launch {
+                            pollForAuthorizationCode(SONO_URL, SONO_REGION)
+                        }
+                        val conn = loginSso(project, SONO_URL, SONO_REGION, scope)
+                        println("loginSso returned, ${conn.state().name}")
                         jcefBrowser.cefBrowser.executeJavaScript(
-                            "window.ideClient.updateStage('START')",
+                            "window.ideClient.reset()",
                             jcefBrowser.cefBrowser.url,
                             0
                         )
@@ -150,10 +163,13 @@ class WebviewBrowser(val project: Project) {
                     )
 
                     val scope = CODEWHISPERER_SCOPES + Q_SCOPES
+                    projectCoroutineScope(project).launch {
+                        pollForAuthorizationCode(url, region)
+                    }
                     runInEdt {
                         loginSso(project, url, region, scope)
                         jcefBrowser.cefBrowser.executeJavaScript(
-                            "window.ideClient.updateStage('START')",
+                            "window.ideClient.reset()",
                             jcefBrowser.cefBrowser.url,
                             0
                         )
@@ -172,6 +188,54 @@ class WebviewBrowser(val project: Project) {
     }
 
     fun component() = jcefBrowser.component
+
+    private suspend fun pollForAuthorizationCode(url: String, region: String): Authorization? {
+        val factor = 2
+        val maxBackoffMillis = 10000L
+        val timeoutMillis = 50000L
+
+        val startTime = System.currentTimeMillis()
+        var nextDelay = 1L
+
+        while (true) {
+            try {
+                val authManager = ToolkitAuthManager.getInstance()
+                val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(url, region)
+                val conn = authManager.getConnection(connectionId)
+
+                val authorization = if (conn != null) {
+                    (conn as ManagedBearerSsoConnection).getConnectionSettings().tokenProvider.delegate.let {
+                        (it as InteractiveBearerTokenProvider).pendingAuthorization
+                    }
+                } else {
+                    null
+                }
+
+                // if there is pending connection working in progress, try read authorization
+                if (authorization != null) {
+                    jcefBrowser.cefBrowser.executeJavaScript(
+                        "window.ideClient.updateAuthorization(\"${authorization.userCode}\")",
+                        jcefBrowser.cefBrowser.url,
+                        0
+                    )
+
+                    return authorization
+                }
+
+                val elapsed = System.currentTimeMillis() - startTime
+                if (elapsed >= timeoutMillis) {
+                    return null
+                }
+
+                val backoffTime = Random.nextLong(0, nextDelay.coerceAtMost(maxBackoffMillis))
+                delay(backoffTime)
+
+                nextDelay = (nextDelay * factor).coerceAtMost(maxBackoffMillis)
+            } catch (e: Exception) {
+                throw e
+            }
+        }
+    }
 
     private fun loadWebView() {
         // load the web app

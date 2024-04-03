@@ -17,11 +17,16 @@
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
                 <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Authenticating...</div>
-                <div v-else class="title">Authenticating in browser...</div>
+                <div v-else>
+                    <div class="title">Authenticating in browser...</div>
+                    <div v-if="authorizationCode.length > 0" class="confirmationCodeContainer">
+                        <div class="hint">CONFIRMATION CODE</div>
+                        <div class="confirmationCode">{{ this.authorizationCode }}</div>
+                    </div>
+                </div>
                 <button class="continue-button" v-on:click="handleCancelButton()">Cancel</button>
             </div>
         </template>
-
 
         <template v-if="stage === 'CONNECTED'"></template>
     </div>
@@ -76,6 +81,9 @@ export default defineComponent({
     computed: {
         stage(): Stage {
             return this.$store.state.stage
+        },
+        authorizationCode(): string {
+            return this.$store.state.authorizationCode
         }
     },
     methods: {
@@ -125,5 +133,22 @@ body.vscode-dark #logo-text {
 
 body.vscode-light #logo-text {
     fill: #232f3e; /* squid ink */
+}
+
+.confirmationCodeContainer {
+    margin-top: 20px;
+    border: 1px
+}
+
+.hint {
+    color: #909090;
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.confirmationCode {
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
 }
 </style>

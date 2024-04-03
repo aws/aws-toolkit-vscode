@@ -11,7 +11,7 @@
         </svg>
     </button>
     <div class="auth-container-section">
-        <div class="title">Sign in with SSO:</div>
+        <div class="title header">Sign in with SSO:</div>
         <div class="title">Start URL</div>
         <div class="hint">URL for your organization, provided by an admin or help desk</div>
         <input
@@ -86,10 +86,12 @@ export default defineComponent({
 }
 
 .continue-button {
-    background-color: #29a7ff;
+    background-color: #365880;
     color: white;
     width: 100%;
     height: 40px;
+    border: none;
+    border-radius: 5px;
 }
 
 .back-button {
@@ -101,17 +103,21 @@ export default defineComponent({
 }
 
 .hint {
-    color: #948a8a;
+    color: #909090;
     margin-bottom: 5px;
     margin-top: 5px;
 }
 
 .title {
-    margin-bottom: 5px;
     margin-top: 5px;
     font-size: 15px;
     font-weight: bold;
     color: white;
+}
+
+.header {
+    margin-bottom: 20px;
+    margin-top: 10px;
 }
 
 .urlInput {
@@ -124,6 +130,20 @@ export default defineComponent({
     background-color: #252526;
     width: 100%;
     color: white;
+}
+
+input {
+    height: 28px;
+    background-color: #3C3C3C;
+    color: #CCCCCC;
+    border: none;
+}
+
+select {
+    height: 28px;
+    background-color: #3C3C3C;
+    color: #CCCCCC;
+    border: none;
 }
 
 </style>

@@ -25,4 +25,8 @@ export default defineComponent({
     methods: {},
 })
 </script>
-<style></style>
+<style>
+.body {
+    margin: 0 10px;
+}
+</style>

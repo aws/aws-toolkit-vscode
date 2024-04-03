@@ -17,7 +17,8 @@ declare global {
 
 export interface State {
     stage: Stage,
-    ssoRegions: Region[]
+    ssoRegions: Region[],
+    authorizationCode: string
 }
 
 declare module '@vue/runtime-core' {
@@ -30,7 +31,8 @@ const app = createApp(HelloWorld)
 const store = createStore<State>({
     state: {
         stage: 'START' as Stage,
-        ssoRegions: [] as Region[]
+        ssoRegions: [] as Region[],
+        authorizationCode: ''
     },
     getters: {},
     mutations: {
@@ -39,6 +41,14 @@ const store = createStore<State>({
         },
         setSsoRegions(state: State, regions: Region[]) {
             state.ssoRegions = regions
+        },
+        setAuthorizationCode(state: State, code: string) {
+            state.authorizationCode = code
+        },
+        reset(state: State) {
+            state.stage = 'START'
+            state.ssoRegions = []
+            state.authorizationCode = ''
         }
     },
     actions: {},
