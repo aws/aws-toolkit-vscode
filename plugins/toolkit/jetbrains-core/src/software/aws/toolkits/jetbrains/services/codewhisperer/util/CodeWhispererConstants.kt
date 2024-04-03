@@ -7,7 +7,6 @@ import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.ui.JBColor
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.codewhispererruntime.model.AccessDeniedException
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.telemetry.CodewhispererGettingStartedTask
@@ -76,6 +75,8 @@ object CodeWhispererConstants {
     const val GO_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val CODE_SCAN_POLLING_INTERVAL_IN_SECONDS: Long = 1
     const val CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS: Long = 10
+    const val FILE_PAYLOAD_SIZE_LIMIT = 1024 * 200 // 200KB
+    const val AUTO_SCAN_DEBOUNCE_DELAY_IN_SECONDS: Long = 2
     const val TOTAL_BYTES_IN_KB = 1024
     const val TOTAL_BYTES_IN_MB = 1024 * 1024
     const val TOTAL_MILLIS_IN_SECOND = 1000
@@ -108,6 +109,11 @@ object CodeWhispererConstants {
         const val SETTING_ID = "codewhisperer_autoScansActivation"
         const val ACTIVATED = "Activated"
         const val DEACTIVATED = "Deactivated"
+    }
+
+    object SecurityScanType {
+        const val FILE = "File"
+        const val PROJECT = "Project"
     }
 
     object Config {

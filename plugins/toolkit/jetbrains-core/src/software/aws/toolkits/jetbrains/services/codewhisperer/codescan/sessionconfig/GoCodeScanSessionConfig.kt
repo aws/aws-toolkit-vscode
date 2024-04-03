@@ -18,8 +18,9 @@ import kotlin.io.path.listDirectoryEntries
 
 internal class GoCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
-    private val project: Project
-) : CodeScanSessionConfig(selectedFile, project) {
+    private val project: Project,
+    private val scanType: String
+) : CodeScanSessionConfig(selectedFile, project, scanType) {
     private val importRegex = Regex("^\\s*import\\s+([^(]+?\$|\\([^)]+\\))", RegexOption.MULTILINE)
     private val moduleRegex = Regex("\"[^\"\\r\\n]+\"", RegexOption.MULTILINE)
 

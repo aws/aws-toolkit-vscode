@@ -17,8 +17,9 @@ import java.nio.file.Path
 internal class JavaScriptCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project,
-    private val language: CodewhispererLanguage
-) : CodeScanSessionConfig(selectedFile, project) {
+    private val language: CodewhispererLanguage,
+    private val scanType: String
+) : CodeScanSessionConfig(selectedFile, project, scanType) {
 
     private val importRegex = Regex("^import.*(?:[\"'](.+)[\"']);?\$")
     private val requireRegex = Regex("^.+require\\(['\"](.+)['\"]\\)[ \\t]*;?")

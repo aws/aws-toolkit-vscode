@@ -31,10 +31,12 @@ import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
 import com.intellij.ui.treeStructure.Tree
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -132,7 +134,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
     /**
      * Triggers a code scan and displays results in the new tab in problems view panel.
      */
-    fun runCodeScan() {
+    fun runCodeScan(scanType: String) {
         if (!isCodeWhispererEnabled(project)) return
 
         // Return if a scan is already in progress.
@@ -142,12 +144,57 @@ class CodeWhispererCodeScanManager(val project: Project) {
             return
         }
 
-        // Prepare for a code scan
-        beforeCodeScan()
+        //  If scanType is project
+        if (scanType == CodeWhispererConstants.SecurityScanType.PROJECT) {
+            // Prepare for a project code scan
+            beforeCodeScan(false)
 
-        // launch code scan coroutine
-        codeScanJob = launchCodeScanCoroutine()
+            // launch code scan coroutine
+            codeScanJob = launchCodeScanCoroutine(CodeWhispererConstants.SecurityScanType.PROJECT)
+        } else {
+            if (CodeWhispererExplorerActionManager.getInstance().isAutoEnabledForCodeScan()) {
+                // Prepare for a code scan
+                beforeCodeScan(true)
+                //  Add File Scan
+                codeScanJob = launchCodeScanCoroutine(CodeWhispererConstants.SecurityScanType.FILE)
+            }
+        }
     }
+
+    private fun <T> debounce(
+        waitMs: Long = 300L,
+        coroutineScope: CoroutineScope,
+        destinationFunction: (T) -> Unit
+    ): (T) -> Unit {
+        var debounceJob: Job? = null
+        return { param: T ->
+            debounceJob?.cancel()
+            debounceJob = coroutineScope.launch {
+                delay(waitMs)
+                destinationFunction(param)
+            }
+        }
+    }
+
+    private fun createDebouncedCodeScan(
+        waitMs: Long = 300L,
+        coroutineScope: CoroutineScope
+    ): (String) -> Unit {
+        val debouncedCodeScan = debounce<String>(
+            waitMs = waitMs,
+            coroutineScope = coroutineScope,
+            destinationFunction = { scanType ->
+                runCodeScan(scanType)
+            }
+        )
+        return debouncedCodeScan
+    }
+
+    val defaultScope = projectCoroutineScope(project)
+    val debouncedCodeScan = createDebouncedCodeScan(
+        waitMs = CodeWhispererConstants.AUTO_SCAN_DEBOUNCE_DELAY_IN_SECONDS * 1000,
+        coroutineScope = defaultScope
+    )
 
     fun stopCodeScan() {
         // Return if code scan job is not active.
@@ -167,7 +214,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
         .yesText(message("codewhisperer.codescan.stop_scan_confirm_button"))
         .ask(project)
 
-    private fun launchCodeScanCoroutine() = projectCoroutineScope(project).launch {
+    private fun launchCodeScanCoroutine(scanType: String) = projectCoroutineScope(project).launch {
         var codeScanStatus: Result = Result.Failed
         val startTime = Instant.now().toEpochMilli()
         var codeScanResponseContext = defaultCodeScanResponseContext()
@@ -178,7 +225,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
         try {
             val file = FileEditorManager.getInstance(project).selectedEditor?.file
                 ?: noFileOpenError()
-            val codeScanSessionConfig = CodeScanSessionConfig.create(file, project)
+            val codeScanSessionConfig = CodeScanSessionConfig.create(file, project, scanType)
             language = codeScanSessionConfig.getSelectedFile().programmingLanguage()
             withTimeout(Duration.ofSeconds(codeScanSessionConfig.overallJobTimeoutInSeconds())) {
                 // 1. Generate truncation (zip files) based on the current editor.
@@ -195,7 +242,8 @@ class CodeWhispererCodeScanManager(val project: Project) {
                         renderResponseOnUIThread(
                             issues,
                             codeScanResponse.responseContext.payloadContext.scannedFiles,
-                            codeScanSessionConfig.isProjectTruncated()
+                            codeScanSessionConfig.isProjectTruncated(),
+                            scanType
                         )
                         codeScanStatus = Result.Succeeded
                     }
@@ -384,14 +432,21 @@ class CodeWhispererCodeScanManager(val project: Project) {
         EditorFactory.getInstance().eventMulticaster.removeEditorMouseMotionListener(editorMouseListener)
     }
 
-    private fun beforeCodeScan() {
+    private fun beforeCodeScan(isFileScan: Boolean) {
         // Refresh CodeWhisperer Explorer tree node to reflect scan in progress.
         project.refreshCwQTree()
-        addCodeScanUI(setSelected = true)
-        // Show in progress indicator
-        codeScanResultsPanel.showInProgressIndicator()
-        (FileDocumentManagerImpl.getInstance() as FileDocumentManagerImpl).saveAllDocuments(false)
-        LOG.info { "Starting security scan on package ${project.name}..." }
+        if (isFileScan) {
+            (FileDocumentManagerImpl.getInstance() as FileDocumentManagerImpl).saveAllDocuments(false)
+            val file = FileEditorManager.getInstance(project).selectedEditor?.file
+                ?: noFileOpenError()
+            LOG.info { "Starting security scan on file ${file.path}..." }
+        } else {
+            addCodeScanUI(setSelected = true)
+            // Show in progress indicator
+            codeScanResultsPanel.showInProgressIndicator()
+            (FileDocumentManagerImpl.getInstance() as FileDocumentManagerImpl).saveAllDocuments(false)
+            LOG.info { "Starting security scan on package ${project.name}..." }
+        }
     }
 
     private fun afterCodeScan() {
@@ -425,10 +480,12 @@ class CodeWhispererCodeScanManager(val project: Project) {
      *   2. Update the lookups - [fileNodeLookup] for efficiently adding scan nodes and
      *   [scanNodesLookup] for receiving the editor events and updating the corresponding scan nodes.
      */
+    private val codeScanTreeNodeRoot = DefaultMutableTreeNode("CodeWhisperer Code scan results")
+
     private fun createCodeScanIssuesTree(codeScanIssues: List<CodeWhispererCodeScanIssue>): DefaultMutableTreeNode {
         LOG.debug { "Rendering response from the scan API" }
 
-        val codeScanTreeNodeRoot = DefaultMutableTreeNode("CodeWhisperer Code scan results")
+        codeScanTreeNodeRoot.removeAllChildren()
         codeScanIssues.forEach { issue ->
             val fileNode = synchronized(fileNodeLookup) {
                 fileNodeLookup.getOrPut(issue.file) {
@@ -451,9 +508,48 @@ class CodeWhispererCodeScanManager(val project: Project) {
         return codeScanTreeNodeRoot
     }
 
-    suspend fun renderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>, scannedFiles: List<VirtualFile>, isProjectTruncated: Boolean) {
+    fun updateFileIssues(file: VirtualFile, newIssues: List<CodeWhispererCodeScanIssue>): DefaultMutableTreeNode {
+        val fileNode = synchronized(fileNodeLookup) {
+            fileNodeLookup.getOrPut(file) {
+                val node = DefaultMutableTreeNode(file)
+                synchronized(codeScanTreeNodeRoot) {
+                    codeScanTreeNodeRoot.add(node)
+                }
+                node
+            }
+        }
+        // Remove the old scan nodes from the file node.
+        fileNode.removeAllChildren()
+
+        // Add new issues to the file node.
+        newIssues.forEach { issue ->
+            val scanNode = DefaultMutableTreeNode(issue)
+            fileNode.add(scanNode)
+            scanNodesLookup.getOrPut(issue.file) {
+                mutableListOf()
+            }.add(scanNode)
+        }
+        // Add document and editor listeners to the documents having scan issues.
+        addListeners()
+        return codeScanTreeNodeRoot
+    }
+
+    suspend fun renderResponseOnUIThread(
+        issues: List<CodeWhispererCodeScanIssue>,
+        scannedFiles: List<VirtualFile>,
+        isProjectTruncated: Boolean,
+        scanType: String
+    ) {
         withContext(getCoroutineUiContext()) {
-            val root = createCodeScanIssuesTree(issues)
+            var root: Any? = null
+            when (scanType) {
+                CodeWhispererConstants.SecurityScanType.FILE -> {
+                    val file = scannedFiles.first()
+                    root = updateFileIssues(file, issues)
+                } else -> {
+                    root = createCodeScanIssuesTree(issues)
+                }
+            }
             val codeScanTreeModel = CodeWhispererCodeScanTreeModel(root)
             val totalIssuesCount = codeScanTreeModel.getTotalIssuesCount()
             if (totalIssuesCount > 0) {
@@ -467,7 +563,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
     @TestOnly
     suspend fun testRenderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>, scannedFiles: List<VirtualFile>, isProjectTruncated: Boolean) {
         assert(ApplicationManager.getApplication().isUnitTestMode)
-        renderResponseOnUIThread(issues, scannedFiles, isProjectTruncated)
+        renderResponseOnUIThread(issues, scannedFiles, isProjectTruncated, CodeWhispererConstants.SecurityScanType.PROJECT)
     }
 
     companion object {

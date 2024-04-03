@@ -9,8 +9,9 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 
 internal class CloudFormationJsonCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
-    private val project: Project
-) : CodeScanSessionConfig(selectedFile, project) {
+    private val project: Project,
+    private val scanType: String
+) : CodeScanSessionConfig(selectedFile, project, scanType) {
 
     override val sourceExt: List<String> = listOf(".json")
 

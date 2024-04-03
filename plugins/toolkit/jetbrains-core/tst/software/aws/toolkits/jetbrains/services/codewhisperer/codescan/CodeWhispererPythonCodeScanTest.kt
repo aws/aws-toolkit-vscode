@@ -12,6 +12,7 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PythonCodeScanSessionConfig
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
@@ -32,7 +33,7 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
     override fun setup() {
         super.setup()
         setupPythonProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testPy, project) as PythonCodeScanSessionConfig)
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(testPy, project, CodeWhispererConstants.SecurityScanType.PROJECT) as PythonCodeScanSessionConfig)
         setupResponse(testPy.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {
@@ -145,7 +146,13 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
         ).virtualFile
         val totalSize = fileOutsideProjectPy.length
         val totalLines = fileOutsideProjectPy.toNioPath().toFile().readLines().size.toLong()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(fileOutsideProjectPy, project) as PythonCodeScanSessionConfig)
+        sessionConfigSpy = spy(
+            CodeScanSessionConfig.create(
+                fileOutsideProjectPy,
+                project,
+                CodeWhispererConstants.SecurityScanType.PROJECT
+            ) as PythonCodeScanSessionConfig
+        )
 
         val payload = sessionConfigSpy.createPayload()
         assertNotNull(payload)

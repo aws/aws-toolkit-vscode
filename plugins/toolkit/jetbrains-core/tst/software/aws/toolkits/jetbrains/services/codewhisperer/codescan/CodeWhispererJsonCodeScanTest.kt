@@ -12,6 +12,7 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CloudFormationJsonCodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
@@ -33,7 +34,13 @@ class CodeWhispererJsonCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     override fun setup() {
         super.setup()
         setupJsonProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testJson, project) as CloudFormationJsonCodeScanSessionConfig)
+        sessionConfigSpy = spy(
+            CodeScanSessionConfig.create(
+                testJson,
+                project,
+                CodeWhispererConstants.SecurityScanType.PROJECT
+            ) as CloudFormationJsonCodeScanSessionConfig
+        )
         setupResponse(testJson.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {

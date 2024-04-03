@@ -13,6 +13,7 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.JavaScriptCodeScanSessionConfig
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
@@ -34,7 +35,13 @@ class CodeWhispererTypeScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
     override fun setup() {
         super.setup()
         setupTypeScriptProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testTs, project) as JavaScriptCodeScanSessionConfig)
+        sessionConfigSpy = spy(
+            CodeScanSessionConfig.create(
+                testTs,
+                project,
+                CodeWhispererConstants.SecurityScanType.PROJECT
+            ) as JavaScriptCodeScanSessionConfig
+        )
         setupResponse(testTs.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {
@@ -71,7 +78,12 @@ class CodeWhispererTypeScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
 
     @Test
     fun `test getSourceFilesUnderProjectRoot`() {
-        assertThat(sessionConfigSpy.getSourceFilesUnderProjectRoot(testTs).size).isEqualTo(3)
+        assertThat(
+            sessionConfigSpy.getSourceFilesUnderProjectRoot(
+                testTs,
+                CodeWhispererConstants.SecurityScanType.PROJECT
+            ).size
+        ).isEqualTo(3)
     }
 
     @Test

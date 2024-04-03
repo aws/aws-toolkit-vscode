@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.resources.message
 
 class CodeWhispererCodeScanRunAction : DumbAwareAction(
@@ -27,6 +28,6 @@ class CodeWhispererCodeScanRunAction : DumbAwareAction(
 
     override fun actionPerformed(event: AnActionEvent) {
         val project = event.project ?: return
-        CodeWhispererCodeScanManager.getInstance(project).runCodeScan()
+        CodeWhispererCodeScanManager.getInstance(project).runCodeScan(CodeWhispererConstants.SecurityScanType.PROJECT)
     }
 }

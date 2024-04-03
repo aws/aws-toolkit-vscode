@@ -24,3 +24,6 @@ internal fun fileFormatNotSupported(format: String): Nothing =
 
 internal fun fileTooLarge(presentableSize: String): Nothing =
     throw CodeWhispererCodeScanException(message("codewhisperer.codescan.file_too_large", presentableSize))
+
+internal fun fileScanTooLarge(presentableSize: String): Nothing =
+    throw CodeWhispererCodeScanException(message("codewhisperer.codescan.file_too_large_for_file_scan", presentableSize))

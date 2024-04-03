@@ -16,7 +16,9 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileScanTooLarge
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLarge
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JAVA_CODE_SCAN_TIMEOUT_IN_SECONDS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JAVA_PAYLOAD_LIMIT_IN_BYTES
 import software.aws.toolkits.resources.message
@@ -28,8 +30,9 @@ import java.time.Instant
 
 internal class JavaCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
-    private val project: Project
-) : CodeScanSessionConfig(selectedFile, project) {
+    private val project: Project,
+    private val scanType: String
+) : CodeScanSessionConfig(selectedFile, project, scanType) {
 
     private val packageRegex = Regex("package\\s+([\\w.]+)\\s*;")
     private val importRegex = Regex("import\\s+([\\w.]+[*]?)\\s*;")
@@ -44,44 +47,66 @@ internal class JavaCodeScanSessionConfig(
 
     override fun createPayload(): Payload {
         // Fail fast if the selected file size is greater than the payload limit.
-        if (selectedFile.length > getPayloadLimitInBytes()) {
-            fileTooLarge(getPresentablePayloadLimit())
+        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+            if (selectedFile.length > getFilePayloadLimitInBytes()) {
+                fileScanTooLarge(getPresentableFilePayloadLimit())
+            }
+        } else {
+            if (selectedFile.length > getPayloadLimitInBytes()) {
+                fileTooLarge(getPresentablePayloadLimit())
+            }
         }
 
         val start = Instant.now().toEpochMilli()
 
         LOG.debug { "Creating payload. File selected as root for the context truncation: ${selectedFile.path}" }
 
-        // Include all the dependencies using BFS
-        val (sourceFiles, srcPayloadSize, totalLines, buildPaths) = includeDependencies()
+        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+            val payloadMetadata = getFilePayloadMetadata()
+            val srcZip = zipFiles(payloadMetadata.sourceFiles.map { Path.of(it) })
+            val payloadContext = PayloadContext(
+                CodewhispererLanguage.Java,
+                payloadMetadata.linesScanned,
+                payloadMetadata.sourceFiles.size,
+                Instant.now().toEpochMilli() - start,
+                payloadMetadata.sourceFiles.mapNotNull { Path.of(it).toFile().toVirtualFile() },
+                payloadMetadata.payloadSize,
+                srcZip.length()
+            )
 
-        val outputPaths = CompilerPaths.getOutputPaths(ModuleManager.getInstance(project).modules)
-        var totalBuildPayloadSize = 0L
-        val buildFiles = buildPaths.mapNotNull { relativePath ->
-            val classFile = findClassFile(relativePath, outputPaths)
-            if (classFile == null) {
-                LOG.debug { "Cannot find class file for $relativePath" }
-            } else {
-                totalBuildPayloadSize += classFile.toFile().length()
+            return Payload(payloadContext, srcZip)
+        } else {
+            // Include all the dependencies using BFS
+            val (sourceFiles, srcPayloadSize, totalLines, buildPaths) = includeDependencies()
+
+            val outputPaths = CompilerPaths.getOutputPaths(ModuleManager.getInstance(project).modules)
+            var totalBuildPayloadSize = 0L
+            val buildFiles = buildPaths.mapNotNull { relativePath ->
+                val classFile = findClassFile(relativePath, outputPaths)
+                if (classFile == null) {
+                    LOG.debug { "Cannot find class file for $relativePath" }
+                } else {
+                    totalBuildPayloadSize += classFile.toFile().length()
+                }
+                classFile
             }
-            classFile
+            LOG.debug { "Total build files sent in payload: ${buildFiles.size}" }
+
+            // Copy all the included source and build files to the source zip
+            val srcZip = zipFiles(sourceFiles.mapNotNull { getPath(it) } + buildFiles)
+
+            val payloadContext = PayloadContext(
+                CodewhispererLanguage.Java,
+                totalLines,
+                sourceFiles.size,
+                Instant.now().toEpochMilli() - start,
+                sourceFiles.mapNotNull { Path.of(it).toFile().toVirtualFile() },
+                srcPayloadSize,
+                srcZip.length(),
+                totalBuildPayloadSize
+            )
+            return Payload(payloadContext, srcZip)
         }
-        LOG.debug { "Total build files sent in payload: ${buildFiles.size}" }
-
-        // Copy all the included source and build files to the source zip
-        val srcZip = zipFiles(sourceFiles.mapNotNull { getPath(it) } + buildFiles)
-
-        val payloadContext = PayloadContext(
-            CodewhispererLanguage.Java,
-            totalLines,
-            sourceFiles.size,
-            Instant.now().toEpochMilli() - start,
-            sourceFiles.mapNotNull { Path.of(it).toFile().toVirtualFile() },
-            srcPayloadSize,
-            srcZip.length(),
-            totalBuildPayloadSize
-        )
-        return Payload(payloadContext, srcZip)
     }
 
     private fun findClassFile(relativePath: String, outputPaths: Array<String>): Path? {
@@ -134,16 +159,21 @@ internal class JavaCodeScanSessionConfig(
         } + buildExt
     }
 
-    override fun getSourceFilesUnderProjectRoot(selectedFile: VirtualFile): List<VirtualFile> {
+    override fun getSourceFilesUnderProjectRoot(selectedFile: VirtualFile, scanType: String): List<VirtualFile> {
         val files = mutableListOf<VirtualFile>()
-        val sourceRoots = ProjectRootManager.getInstance(project).getModuleSourceRoots(setOf(JavaSourceRootType.SOURCE))
         files.add(selectedFile)
-        sourceRoots.forEach { vFile ->
-            files.addAll(
-                VfsUtil.collectChildrenRecursively(vFile).filter {
-                    it.path.endsWith(sourceExt[0]) && it != selectedFile
-                }
-            )
+
+        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+            return files
+        } else {
+            val sourceRoots = ProjectRootManager.getInstance(project).getModuleSourceRoots(setOf(JavaSourceRootType.SOURCE))
+            sourceRoots.forEach { vFile ->
+                files.addAll(
+                    VfsUtil.collectChildrenRecursively(vFile).filter {
+                        it.path.endsWith(sourceExt[0]) && it != selectedFile
+                    }
+                )
+            }
         }
         return files
     }
@@ -153,44 +183,48 @@ internal class JavaCodeScanSessionConfig(
         val buildPaths = mutableSetOf<String?>()
         var currentTotalFileSize = 0L
         var currentTotalLines = 0L
-        val files = getSourceFilesUnderProjectRoot(selectedFile)
+        val files = getSourceFilesUnderProjectRoot(selectedFile, scanType)
         val queue = ArrayDeque<VirtualFile>()
 
-        files.forEach { file ->
-            queue.add(file)
+        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+            return getFilePayloadMetadata()
+        } else {
+            files.forEach { file ->
+                queue.add(file)
 
-            // BFS
-            while (queue.isNotEmpty()) {
-                if (currentTotalFileSize.equals(getPayloadLimitInBytes())) {
-                    return PayloadMetadata(sourceFiles.map { it.path }.toSet(), currentTotalFileSize, currentTotalLines, buildPaths.filterNotNull().toSet())
-                }
-
-                val currentFile = queue.removeFirst()
-                if (!currentFile.path.startsWith(projectRoot.path) ||
-                    sourceFiles.contains(currentFile) ||
-                    willExceedPayloadLimit(currentTotalFileSize, currentFile.length)
-                ) {
-                    if (!currentFile.path.startsWith(projectRoot.path)) {
-                        LOG.error { "Invalid workspace: Current file ${currentFile.path} is not under the project root ${projectRoot.path}" }
+                // BFS
+                while (queue.isNotEmpty()) {
+                    if (currentTotalFileSize.equals(getPayloadLimitInBytes())) {
+                        return PayloadMetadata(sourceFiles.map { it.path }.toSet(), currentTotalFileSize, currentTotalLines, buildPaths.filterNotNull().toSet())
                     }
-                    continue
-                }
 
-                val currentFileSize = currentFile.length
-
-                currentTotalFileSize += currentFileSize
-                currentTotalLines += Files.lines(currentFile.toNioPath()).count()
-                sourceFiles.add(currentFile)
-
-                // Get all imports from the file
-                val importsInfo = parseImports(currentFile)
-                importsInfo.imports.forEach { importPath ->
-                    val importedFiles = getSourceFilesForImport(currentFile, importPath)
-                    importedFiles.forEach { importedFile ->
-                        if (!sourceFiles.contains(importedFile)) queue.addLast(importedFile)
+                    val currentFile = queue.removeFirst()
+                    if (!currentFile.path.startsWith(projectRoot.path) ||
+                        sourceFiles.contains(currentFile) ||
+                        willExceedPayloadLimit(currentTotalFileSize, currentFile.length)
+                    ) {
+                        if (!currentFile.path.startsWith(projectRoot.path)) {
+                            LOG.error { "Invalid workspace: Current file ${currentFile.path} is not under the project root ${projectRoot.path}" }
+                        }
+                        continue
                     }
+
+                    val currentFileSize = currentFile.length
+
+                    currentTotalFileSize += currentFileSize
+                    currentTotalLines += Files.lines(currentFile.toNioPath()).count()
+                    sourceFiles.add(currentFile)
+
+                    // Get all imports from the file
+                    val importsInfo = parseImports(currentFile)
+                    importsInfo.imports.forEach { importPath ->
+                        val importedFiles = getSourceFilesForImport(currentFile, importPath)
+                        importedFiles.forEach { importedFile ->
+                            if (!sourceFiles.contains(importedFile)) queue.addLast(importedFile)
+                        }
+                    }
+                    buildPaths.add(getRelativeBuildPath(currentFile, importsInfo.packagePath))
                 }
-                buildPaths.add(getRelativeBuildPath(currentFile, importsInfo.packagePath))
             }
         }
 

@@ -14,8 +14,9 @@ import java.io.IOException
 
 internal class CsharpCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
-    private val project: Project
-) : CodeScanSessionConfig(selectedFile, project) {
+    private val project: Project,
+    private val scanType: String
+) : CodeScanSessionConfig(selectedFile, project, scanType) {
 
     private val importRegex = Regex("^(global\\s)?using\\s(static\\s)?((\\b[A-Z][A-Za-z]+(\\.\\b[A-Z][A-Za-z]+)*)|\\w+\\s*=\\s*([\\w.]+));$")
 

@@ -41,6 +41,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionco
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import java.nio.file.Path
@@ -230,8 +231,15 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         ]                
     """
     internal fun getSourceFilesUnderProjectRoot(sessionConfigSpy: CodeScanSessionConfig, testFile: VirtualFile, size: Int) = assertThat(
-        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile).size
+        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile, CodeWhispererConstants.SecurityScanType.PROJECT).size
     ).isEqualTo(size)
+
+    internal fun getSourceFilesUnderProjectRootForFileScan(
+        sessionConfigSpy: CodeScanSessionConfig,
+        testFile: VirtualFile
+    ) = assertThat(
+        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile, CodeWhispererConstants.SecurityScanType.FILE).size
+    ).isEqualTo(1)
 
     internal fun getTotalProjectSizeInBytes(sessionConfigSpy: CodeScanSessionConfig, totalSize: Long) = runBlocking {
         assertThat(sessionConfigSpy.getTotalProjectSizeInBytes()).isEqualTo(totalSize)

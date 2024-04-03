@@ -15,8 +15,9 @@ import java.io.IOException
 
 internal class PythonCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
-    private val project: Project
-) : CodeScanSessionConfig(selectedFile, project) {
+    private val project: Project,
+    private val scanType: String
+) : CodeScanSessionConfig(selectedFile, project, scanType) {
 
     private val importRegex = Regex("^(?:from\\s+(\\S+)\\s+)?(?:import\\s+((?:\\S+(?:\\s+as\\s+\\S+)?\\s*[,]?\\s*)+))\$")
     private val projectContentRoots = ProjectRootManager.getInstance(project).contentRoots

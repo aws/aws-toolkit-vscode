@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.core.plugins.ToolkitUpdateManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
@@ -86,6 +87,8 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
         // show notification to accountless users
         showAccountlessNotificationIfNeeded(project)
 
+        //  Run Proactive Code File Scan
+        CodeWhispererCodeScanManager.getInstance(project).debouncedCodeScan(CodeWhispererConstants.SecurityScanType.FILE)
         runOnce = true
     }
 
