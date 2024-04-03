@@ -19,8 +19,16 @@ import {
     FolderInfo,
     TransformationCandidateProject,
 } from '../models/model'
-import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
-import { stopJob } from '../service/transformByQ/transformApiHandler'
+import { convertToTimeString, convertDateToTimestamp, encodeHTML } from '../../shared/utilities/textUtilities'
+import {
+    getTransformationPlan,
+    pollTransformationJob,
+    startJob,
+    stopJob,
+    throwIfCancelled,
+    uploadPayload,
+    zipCode,
+} from '../service/transformByQ/transformApiHandler'
 import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
 import { getVersionData, prepareProjectDependencies } from '../service/transformByQ/transformMavenHandler'
 import { getStringHash } from '../../shared/utilities/textUtilities'
@@ -43,6 +51,7 @@ import { placeholder } from '../../shared/vscode/commands2'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 import { getDependenciesFolderInfo, writeLogs } from '../service/transformByQ/transformFileHandler'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -259,28 +268,6 @@ export async function pollTransformationStatusUntilComplete(jobId: string) {
     return status
 }
 
-export async function stopTransformByQ(
-    jobId: string,
-    cancelSrc: CancelActionPositions = CancelActionPositions.BottomHubPanel
-) {
-    if (transformByQState.isRunning()) {
-        getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
-        transformByQState.setToCancelled()
-        await vscode.commands.executeCommand('aws.amazonq.refresh')
-        await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
-        try {
-            await stopJob(jobId)
-        } catch {
-            void vscode.window.showErrorMessage(CodeWhispererConstants.errorStoppingJobMessage)
-        }
-        telemetry.codeTransform_jobIsCancelledByUser.emit({
-            codeTransformCancelSrcComponents: cancelSrc as CodeTransformCancelSrcComponents,
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            result: MetadataResult.Pass,
-        })
-    }
-}
-
 export async function finalizeTransformationJob(status: string) {
     if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
         const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
@@ -302,6 +289,28 @@ export async function finalizeTransformationJob(status: string) {
     await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     sessionPlanProgress['transformCode'] = StepProgress.Succeeded
+}
+
+export async function stopTransformByQ(
+    jobId: string,
+    cancelSrc: CancelActionPositions = CancelActionPositions.BottomHubPanel
+) {
+    if (transformByQState.isRunning()) {
+        getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
+        transformByQState.setToCancelled()
+        await vscode.commands.executeCommand('aws.amazonq.refresh')
+        await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
+        try {
+            await stopJob(jobId)
+        } catch {
+            void vscode.window.showErrorMessage(CodeWhispererConstants.errorStoppingJobMessage)
+        }
+        telemetry.codeTransform_jobIsCancelledByUser.emit({
+            codeTransformCancelSrcComponents: cancelSrc as CodeTransformCancelSrcComponents,
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            result: MetadataResult.Pass,
+        })
+    }
 }
 
 export async function getValidCandidateProjects(): Promise<TransformationCandidateProject[]> {
