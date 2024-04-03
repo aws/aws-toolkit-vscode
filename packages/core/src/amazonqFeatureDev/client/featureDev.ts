@@ -13,7 +13,13 @@ import * as FeatureDevProxyClient from './featuredevproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
-import { ApiError, ContentLengthError, UnknownApiError } from '../errors'
+import {
+    ApiError,
+    CodeIterationLimitError,
+    ContentLengthError,
+    PlanIterationLimitError,
+    UnknownApiError,
+} from '../errors'
 import { ToolkitError, isAwsError, isCodeWhispererStreamingServiceException } from '../../shared/errors'
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
 import { LLMResponseType } from '../types'
@@ -168,6 +174,13 @@ export class FeatureDevClient {
                         e.$metadata.requestId ?? 'unknown'
                     }`
                 )
+                if (
+                    (e.name === 'ThrottlingException' &&
+                        e.message.includes('limit for number of iterations on an implementation plan')) ||
+                    e.name === 'ServiceQuotaExceededException'
+                ) {
+                    throw new PlanIterationLimitError()
+                }
                 throw new ApiError(
                     e.message,
                     'GeneratePlan',
@@ -206,6 +219,14 @@ export class FeatureDevClient {
                     (e as any).requestId
                 }`
             )
+            if (
+                isAwsError(e) &&
+                ((e.code === 'ThrottlingException' &&
+                    e.message.includes('limit for number of iterations on a code generation')) ||
+                    e.code === 'ServiceQuotaExceededException')
+            ) {
+                throw new CodeIterationLimitError()
+            }
             throw new ToolkitError((e as Error).message, { code: 'StartCodeGenerationFailed' })
         }
     }
