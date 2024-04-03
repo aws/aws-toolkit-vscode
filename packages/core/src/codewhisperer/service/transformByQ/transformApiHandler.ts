@@ -6,6 +6,9 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as os from 'os'
+import * as codeWhisperer from '../../client/codewhisperer'
+import * as crypto from 'crypto'
+import * as CodeWhispererConstants from '../../models/constants'
 import {
     FolderInfo,
     sessionPlanProgress,
@@ -14,12 +17,9 @@ import {
     TransformByQStoppedError,
     ZipManifest,
 } from '../../models/model'
-import * as codeWhisperer from '../../client/codewhisperer'
-import * as crypto from 'crypto'
 import { getLogger } from '../../../shared/logger'
 import { CreateUploadUrlResponse } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
-import * as CodeWhispererConstants from '../../models/constants'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -27,11 +27,9 @@ import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/cod
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
-
 import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
-import { encodeHTML } from '../../../shared/utilities/textUtilities'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -496,99 +494,5 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             throw new Error('Error while polling job status')
         }
     }
-    return status
-}
-
-export async function preTransformationUploadCode() {
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
-    await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
-
-    let uploadId = ''
-    let payloadFilePath = ''
-    throwIfCancelled()
-    try {
-        payloadFilePath = await zipCode(transformByQState.getDependencyFolderInfo()!)
-        transformByQState.setPayloadFilePath(payloadFilePath)
-        uploadId = await uploadPayload(payloadFilePath)
-    } catch (err) {
-        const errorMessage = `Failed to upload code due to ${(err as Error).message}`
-        getLogger().error(errorMessage)
-        telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            result: MetadataResult.Fail,
-            reason: 'UploadArchiveFailed',
-        })
-        throw err
-    }
-
-    await sleep(2000) // sleep before starting job to prevent ThrottlingException
-    throwIfCancelled()
-
-    return uploadId
-}
-
-export async function startTransformationJob(uploadId: string) {
-    let jobId = ''
-    try {
-        jobId = await startJob(uploadId)
-    } catch (error) {
-        const errorMessage = CodeWhispererConstants.failedToStartJobMessage
-        telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            result: MetadataResult.Fail,
-            reason: 'StartJobFailed',
-        })
-        transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new Error('Start job failed')
-    }
-    transformByQState.setJobId(encodeHTML(jobId))
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
-
-    await sleep(2000) // sleep before polling job to prevent ThrottlingException
-    throwIfCancelled()
-
-    return jobId
-}
-
-export async function pollTransformationStatusUntilPlanReady(jobId: string) {
-    try {
-        await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForPlanGenerated)
-    } catch (error) {
-        const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
-        getLogger().error(`CodeTransformation: ${errorMessage}`, error)
-        transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new Error('Poll job failed')
-    }
-    let plan = undefined
-    try {
-        plan = await getTransformationPlan(jobId)
-    } catch (error) {
-        const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
-        getLogger().error(`CodeTransformation: ${errorMessage}`, error)
-        transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new Error('Get plan failed')
-    }
-
-    const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
-    fs.writeFileSync(planFilePath, plan)
-    await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
-    transformByQState.setPlanFilePath(planFilePath)
-    await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
-    throwIfCancelled()
-}
-
-export async function pollTransformationStatusUntilComplete(jobId: string) {
-    let status = ''
-    try {
-        status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
-    } catch (error) {
-        const errorMessage = CodeWhispererConstants.failedToCompleteJobMessage
-        getLogger().error(`CodeTransformation: ${errorMessage}`, error)
-        transformByQState.setJobFailureErrorMessage(errorMessage)
-        throw new Error('Poll job failed')
-    }
-
     return status
 }
