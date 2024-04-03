@@ -12,24 +12,38 @@
     </button>
     <div class="auth-container-section">
         <div class="title header">Sign in with SSO:</div>
-        <div class="title">Start URL</div>
-        <div class="hint">URL for your organization, provided by an admin or help desk</div>
-        <input
-            class="urlInput"
-            type="text"
-            id="startUrl"
-            name="startUrl"
-            @input="handleUrlInput"
-            v-model="startUrl"
-        />
-        <br/><br/>
-        <div class="title">Region</div>
-        <div class="hint">AWS Region that hosts identity directory</div>
-        <select class="regionSelect" id="regions" name="regions" v-model="selectedRegion">
-            <option v-for="region in regions" :key="region.id" :value="region.id">
-                {{ `${region.name} (${region.id})` }}
-            </option>
-        </select>
+        <div>
+            <div class="title">Profile Name</div>
+            <div class="hint">User-specified name used to label credentials locally</div>
+            <input
+                class="ssoProfile"
+                type="text"
+                id="ssoProfile"
+                name="ssoProfile"
+                v-model="ssoProfile"
+            />
+        </div>
+        <div>
+            <div class="title">Start URL</div>
+            <div class="hint">URL for your organization, provided by an admin or help desk</div>
+            <input
+                class="urlInput"
+                type="text"
+                id="startUrl"
+                name="startUrl"
+                @input="handleUrlInput"
+                v-model="startUrl"
+            />
+        </div>
+        <div>
+            <div class="title">Region</div>
+            <div class="hint">AWS Region that hosts identity directory</div>
+            <select class="regionSelect" id="regions" name="regions" v-model="selectedRegion">
+                <option v-for="region in regions" :key="region.id" :value="region.id">
+                    {{ `${region.name} (${region.id})` }}
+                </option>
+            </select>
+        </div>
         <br/><br/>
         <button class="continue-button" :disabled="!urlValid" v-on:click="handleContinueClick()">
             Continue
@@ -50,6 +64,7 @@ export default defineComponent({
     name: "ssoForm",
     data() {
         return {
+            ssoProfile: "",
             startUrl: "",
             selectedRegion: "",
             urlValid: false,
@@ -121,6 +136,12 @@ export default defineComponent({
 }
 
 .urlInput {
+    background-color: #252526;
+    width: 100%;
+    color: white;
+}
+
+.ssoProfile {
     background-color: #252526;
     width: 100%;
     color: white;
