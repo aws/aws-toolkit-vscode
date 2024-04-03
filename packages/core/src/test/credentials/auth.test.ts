@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
-import { captureEventOnce } from '../testUtil'
+import { assertTelemetry, captureEventOnce } from '../testUtil'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from './testUtil'
 import { toCollection } from '../../shared/utilities/asyncCollection'
 import globals from '../../shared/extensionGlobals'
@@ -239,6 +239,25 @@ describe('Auth', function () {
             assert.ok(actual instanceof ToolkitError)
             assert.strictEqual(actual.cause, expected)
             assert.strictEqual(auth.getConnectionState(conn), 'valid')
+        })
+
+        it('connection is not invalidated when networking issue during connection refresh', async function () {
+            const networkError = new ToolkitError('test', { code: 'ETIMEDOUT' })
+            const expectedError = new ToolkitError('Failed to update connection due to networking issues', {
+                cause: networkError,
+            })
+            const conn = await auth.createConnection(ssoProfile)
+            auth.getTestTokenProvider(conn)?.getToken.rejects(networkError)
+            const actual = await auth.refreshConnectionState(conn).catch(e => e)
+            assert.ok(actual instanceof ToolkitError)
+            assert.deepStrictEqual(actual, expectedError)
+            assert.strictEqual(auth.getConnectionState(conn), 'valid')
+        })
+
+        it('reauthentication is indicated in metric', async function () {
+            const conn = await auth.createInvalidSsoConnection(ssoProfile)
+            await auth.reauthenticate(conn)
+            assertTelemetry('aws_loginWithBrowser', { isReAuth: true })
         })
     })
 

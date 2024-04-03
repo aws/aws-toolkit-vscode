@@ -383,24 +383,6 @@ export const planIntroductionMessage =
 
 export const planDisclaimerMessage = '**Proposed transformation changes** \n\n\n'
 
-export const enterJavaHomeMessage = 'Enter the path to JDK'
-
-export const windowsJavaHomeHelpMessage =
-    'To find your JDK JAVA_VERSION_HERE path, run "cd C:\\Program Files\\Java" and then "dir" in a new IDE terminal. If you see JDK JAVA_VERSION_HERE, "cd" into that directory and run "cd" once more to show the path. The path should look similar to this: "C:\\Program Files\\Java\\jdk-11.0.1".'
-
-export const nonWindowsJava8HomeHelpMessage =
-    'To find your JDK 8 path, run this command in a new IDE terminal: "/usr/libexec/java_home -v 1.8". The JDK 8 path should look like this: "/Library/Java/JavaVirtualMachines/jdk-8.jdk/Contents/Home".'
-
-export const nonWindowsJava11HomeHelpMessage =
-    'To find your JDK 11 path, run this command in a new IDE terminal: "/usr/libexec/java_home -v 11". The JDK 11 path should look like this: "/Library/Java/JavaVirtualMachines/jdk-11.jdk/Contents/Home".'
-
-export const projectSizeTooLargeMessage =
-    'Your project size exceeds the Amazon Q Code Transformation upload limit of 1GB. For more information, see the [Code Transformation documentation](LINK_HERE).'
-
-export const JDK8VersionNumber = '52'
-
-export const JDK11VersionNumber = '55'
-
 export const numMillisecondsPerSecond = 1000
 
 export const uploadZipSizeLimitInBytes = 1000000000 // 1GB
@@ -419,11 +401,9 @@ export const transformByQStatePartialSuccessMessage = 'partially succeeded'
 
 export const transformByQStoppedState = 'STOPPED'
 
-export const transformationJobPollingIntervalSeconds = 10
+export const transformationJobPollingIntervalSeconds = 5
 
 export const transformationJobTimeoutSeconds = 60 * 60 // 1 hour, to match backend
-
-export const progressIntervalMs = 1000
 
 export const defaultLanguage = 'Java'
 
@@ -433,13 +413,26 @@ export const uploadIntent = 'TRANSFORMATION'
 
 export const transformationType = 'LANGUAGE_UPGRADE'
 
-// when in one of these states, we can definitely say the plan is available
-// in other states, we keep polling/waiting
-export const validStatesForGettingPlan = ['COMPLETED', 'PARTIALLY_COMPLETED', 'PLANNED', 'TRANSFORMING', 'TRANSFORMED']
+// job successfully started
+export const validStatesForJobStarted = [
+    'STARTED',
+    'PREPARING',
+    'PREPARED',
+    'PLANNING',
+    'PLANNED',
+    'TRANSFORMING',
+    'TRANSFORMED',
+]
+
+// initial build succeeded
+export const validStatesForBuildSucceeded = ['PREPARED', 'PLANNING', 'PLANNED', 'TRANSFORMING', 'TRANSFORMED']
+
+// plan must be available
+export const validStatesForPlanGenerated = ['PLANNED', 'TRANSFORMING', 'TRANSFORMED']
 
 export const failureStates = ['FAILED', 'STOPPING', 'STOPPED', 'REJECTED']
 
-// similarly, when in one of these states, we can stop polling, and if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
+// if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
 export const validStatesForCheckingDownloadUrl = [
     'COMPLETED',
     'PARTIALLY_COMPLETED',

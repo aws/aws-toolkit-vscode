@@ -743,7 +743,7 @@
                     "type": "webview",
                     "id": "aws.amazonq.transformationHub",
                     "name": "Status",
-                    "when": "gumby.isTransformAvailable || gumby.isStopButtonAvailable"
+                    "when": "gumby.wasQCodeTransformationUsed"
                 },
                 {
                     "id": "aws.amazonq.transformationProposedChangesTree",
@@ -3752,12 +3752,6 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
-            },
-            {
-                "command": "aws.amazonq.startTransformationInHub",
-                "title": "Start Transformation",
-                "icon": "$(play)",
-                "enablement": "gumby.isTransformAvailable"
             },
             {
                 "command": "aws.amazonq.stopTransformationInHub",
