@@ -4,37 +4,23 @@
     "version": "2.0.0",
     "tasks": [
         {
+            // Single build task to enable parallel tasks
+            "label": "build",
+            "dependsOn": ["watch", "serve"]
+        },
+        {
             "label": "watch",
             "type": "npm",
             "script": "watch",
             "problemMatcher": "$tsc-watch",
-            "isBackground": true,
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "dependsOn": ["serve"]
+            "isBackground": true
         },
         {
             "label": "serve",
             "type": "npm",
             "script": "serve",
-            "group": "build",
             "isBackground": true,
-            "problemMatcher": {
-                "owner": "custom",
-                "pattern": {
-                    "regexp": ".",
-                    "file": 1,
-                    "location": 2,
-                    "message": 3
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "Project is running at",
-                    "endsPattern": "compiled successfully"
-                }
-            }
+            "problemMatcher": "$ts-webpack-watch"
         },
         {
             "label": "webWatch",
