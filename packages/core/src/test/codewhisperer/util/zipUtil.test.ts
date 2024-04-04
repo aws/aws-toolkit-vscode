@@ -49,8 +49,7 @@ describe('zipUtil', function () {
             assert.strictEqual(zipMetadata.scannedFiles.size, 1)
             assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
-            assert.ok(zipMetadata.zipStreamBuffer)
-            assert.ok(zipMetadata.zipMd5)
+            assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
         })
 
         it('Should throw error if payload size limit is reached for file scan', async function () {
@@ -70,8 +69,7 @@ describe('zipUtil', function () {
             assert.ok(zipMetadata.scannedFiles.size > 0)
             assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
-            assert.ok(zipMetadata.zipStreamBuffer)
-            assert.ok(zipMetadata.zipMd5)
+            assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
         })
 
         it('Should throw error if payload size limit is reached for project scan', async function () {
@@ -110,8 +108,7 @@ describe('zipUtil', function () {
             assert.ok(zipMetadata.scannedFiles.size > 0)
             assert.ok(zipMetadata.buildPayloadSizeInBytes > 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
-            assert.ok(zipMetadata.zipStreamBuffer)
-            assert.ok(zipMetadata.zipMd5)
+            assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
         })
 
         it('Should throw error if scan type is invalid', async function () {

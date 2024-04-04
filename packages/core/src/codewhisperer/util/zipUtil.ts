@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import admZip from 'adm-zip'
 import * as vscode from 'vscode'
 import path from 'path'
 import { tempDirPath } from '../../shared/filesystemUtilities'
@@ -10,13 +11,10 @@ import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fsCommon } from '../../srcShared/fs'
 import { collectFiles } from '../../amazonqFeatureDev/util/files'
-import { ZipStream, ZipStreamResult } from '../../shared/utilities/zipStream'
-import { WritableStreamBuffer } from 'stream-buffers'
 
 export interface ZipMetadata {
     rootDir: string
-    zipMd5: string
-    zipStreamBuffer: WritableStreamBuffer
+    zipFilePath: string
     scannedFiles: Set<string>
     srcPayloadSizeInBytes: number
     buildPayloadSizeInBytes: number
@@ -91,14 +89,14 @@ export class ZipUtil {
     }
 
     protected async zipFile(uri: vscode.Uri) {
-        const zipStream = new ZipStream()
+        const zip = new admZip()
 
         const projectName = this.getProjectName(uri)
         const relativePath = vscode.workspace.asRelativePath(uri)
 
         const content = await this.getTextContent(uri)
 
-        zipStream.writeString(content, path.join(projectName, relativePath))
+        zip.addFile(path.join(projectName, relativePath), Buffer.from(content, 'utf-8'))
 
         this._pickedSourceFiles.add(relativePath)
         this._totalSize += (await fsCommon.stat(uri.fsPath)).size
@@ -108,11 +106,13 @@ export class ZipUtil {
             throw new ToolkitError('Payload size limit reached.')
         }
 
-        return zipStream.finalize()
+        const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
+        zip.writeZip(zipFilePath)
+        return zipFilePath
     }
 
     protected async zipProject(uri: vscode.Uri) {
-        const zipStream = new ZipStream()
+        const zip = new admZip()
 
         const projectName = this.getProjectName(uri)
         const projectPath = this.getProjectPath(uri)
@@ -138,10 +138,12 @@ export class ZipUtil {
                 this._totalSize += fileSize
                 this._totalLines += file.fileContent.split(ZipConstants.newlineRegex).length
             }
-            zipStream.writeFile(file.fileUri.fsPath, path.join(projectName, file.relativeFilePath))
+            zip.addLocalFile(file.fileUri.fsPath, path.join(projectName, path.dirname(file.zipFilePath)))
         }
 
-        return zipStream.finalize()
+        const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
+        zip.writeZip(zipFilePath)
+        return zipFilePath
     }
 
     protected getZipDirPath(): string {
@@ -157,23 +159,23 @@ export class ZipUtil {
     public async generateZip(uri: vscode.Uri, scanType: CodeWhispererConstants.SecurityScanType): Promise<ZipMetadata> {
         try {
             const zipDirPath = this.getZipDirPath()
-            let zipStreamResult: ZipStreamResult
+            let zipFilePath: string
             if (scanType === CodeWhispererConstants.SecurityScanType.File) {
-                zipStreamResult = await this.zipFile(uri)
+                zipFilePath = await this.zipFile(uri)
             } else if (scanType === CodeWhispererConstants.SecurityScanType.Project) {
-                zipStreamResult = await this.zipProject(uri)
+                zipFilePath = await this.zipProject(uri)
             } else {
                 throw new ToolkitError(`Unknown scan type: ${scanType}`)
             }
 
             getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
+            const zipFileSize = (await fsCommon.stat(zipFilePath)).size
             return {
                 rootDir: zipDirPath,
-                zipMd5: zipStreamResult.md5,
-                zipStreamBuffer: zipStreamResult.streamBuffer,
+                zipFilePath: zipFilePath,
                 srcPayloadSizeInBytes: this._totalSize,
                 scannedFiles: new Set([...this._pickedSourceFiles, ...this._pickedBuildFiles]),
-                zipFileSizeInBytes: zipStreamResult.sizeInBytes,
+                zipFileSizeInBytes: zipFileSize,
                 buildPayloadSizeInBytes: this._totalBuildSize,
                 lines: this._totalLines,
             }
@@ -181,5 +183,12 @@ export class ZipUtil {
             getLogger().error('Zip error caused by:', error)
             throw error
         }
+    }
+
+    public async removeTmpFiles(zipMetadata: ZipMetadata) {
+        getLogger().verbose(`Cleaning up temporary files...`)
+        await fsCommon.delete(zipMetadata.zipFilePath)
+        await fsCommon.delete(zipMetadata.rootDir)
+        getLogger().verbose(`Complete cleaning up temporary files.`)
     }
 }

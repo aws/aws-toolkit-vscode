@@ -9,8 +9,9 @@ import { AggregatedCodeScanIssue, CodeScansState, codeScanState, CodeScanStopped
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
-import { existsSync, statSync } from 'fs'
+import { existsSync, statSync, readFileSync } from 'fs'
 import { RawCodeScanIssue } from '../models/model'
+import * as crypto from 'crypto'
 import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import { ArtifactMap, CreateUploadUrlRequest, CreateUploadUrlResponse } from '../client/codewhispereruserclient'
@@ -145,12 +146,11 @@ export async function createScanJob(
 }
 
 export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClient, zipMetadata: ZipMetadata) {
-    const zipBuffer = zipMetadata.zipStreamBuffer.getContents()
-    if (!zipBuffer) {
+    if (zipMetadata.zipFilePath === '') {
         throw new Error("Zip failure: can't find valid source zip.")
     }
     const srcReq: CreateUploadUrlRequest = {
-        contentMd5: zipMetadata.zipMd5,
+        contentMd5: getMd5(zipMetadata.zipFilePath),
         artifactType: 'SourceCode',
     }
     getLogger().verbose(`Prepare for uploading src context...`)
@@ -158,12 +158,18 @@ export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClien
     getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
     getLogger().verbose(`Uploading src context...`)
-    await uploadArtifactToS3(zipBuffer, srcResp, zipMetadata.zipMd5)
+    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp)
     getLogger().verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,
     }
     return artifactMap
+}
+
+function getMd5(fileName: string) {
+    const hasher = crypto.createHash('md5')
+    hasher.update(readFileSync(fileName))
+    return hasher.digest('base64')
 }
 
 export function throwIfCancelled(scanType: CodeWhispererConstants.SecurityScanType) {
@@ -184,10 +190,10 @@ export function throwIfCancelled(scanType: CodeWhispererConstants.SecurityScanTy
     }
 }
 
-export async function uploadArtifactToS3(buffer: Buffer, resp: CreateUploadUrlResponse, md5: string) {
+export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
     const encryptionContext = `{"uploadId":"${resp.uploadId}"}`
     const headersObj: Record<string, string> = {
-        'Content-MD5': md5,
+        'Content-MD5': getMd5(fileName),
         'x-amz-server-side-encryption': 'aws:kms',
         'Content-Type': 'application/zip',
         'x-amz-server-side-encryption-context': Buffer.from(encryptionContext, 'utf8').toString('base64'),
@@ -198,7 +204,7 @@ export async function uploadArtifactToS3(buffer: Buffer, resp: CreateUploadUrlRe
     }
 
     const response = await request.fetch('PUT', resp.uploadUrl, {
-        body: buffer,
+        body: readFileSync(fileName),
         headers: headersObj,
     }).response
     getLogger().debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
