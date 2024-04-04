@@ -31,7 +31,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         const importedApi = toolkitExt?.exports
         const connections: SsoConnection[] = []
         if (importedApi && 'listConnections' in importedApi) {
-            return await importedApi?.listConnections()
+            return await importedApi?.listConnections(VSCODE_EXTENSION_ID.amazonq)
         }
         return connections
     }
@@ -46,7 +46,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
                 const importedApi = toolkitExt?.exports
                 if (importedApi && 'listConnections' in importedApi) {
-                    const connections: AwsConnection[] = await importedApi?.listConnections()
+                    const connections: AwsConnection[] = await importedApi?.listConnections(VSCODE_EXTENSION_ID.amazonq)
                     for (const conn of connections) {
                         if (conn.id === connectionId) {
                             if (conn.scopes?.includes(scopesCodeWhispererChat[0])) {

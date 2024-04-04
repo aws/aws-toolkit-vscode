@@ -4,13 +4,15 @@
  */
 
 import { Auth, Connection, AwsConnection } from 'aws-core-vscode/auth'
+import { getLogger } from 'aws-core-vscode/shared'
 
 export const awsToolkitApi = {
     /**
      * Exposing listConnections API for other extension to read or re-use
      * the available connections in aws toolkit.
      */
-    async listConnections(): Promise<AwsConnection[]> {
+    async listConnections(extensionId: string): Promise<AwsConnection[]> {
+        getLogger().debug(`${extensionId} invokes listConnections`)
         const connections = await Auth.instance.listConnections()
         const exposedConnections: AwsConnection[] = []
         connections.forEach((x: Connection) => {
@@ -35,14 +37,16 @@ export const awsToolkitApi = {
     /**
      * Exposing setConnection API for other extension to push its connection state to aws toolkit
      */
-    async setConnection(connection: AwsConnection): Promise<void> {
+    async setConnection(extensionId: string, connection: AwsConnection): Promise<void> {
+        getLogger().debug(`${extensionId} sets connection ${connection.id}`)
         await Auth.instance.setConnectionFromApi(connection)
     },
 
     /**
      * Exposing deleteConnection API for other extension to push connection deletion event to aws toolkit
      */
-    async deleteConnection(id: string): Promise<void> {
+    async deleteConnection(extensionId: string, id: string): Promise<void> {
+        getLogger().debug(`${extensionId} delete connection ${id}`)
         await Auth.instance.deleteConnection({ id })
     },
 
@@ -50,9 +54,11 @@ export const awsToolkitApi = {
      * Exposing onDidChangeConnection API for other extension to know when aws toolkit connection changed
      */
     async onDidChangeConnection(
+        extensionId: string,
         onConnectionStateChange: (c: AwsConnection) => Promise<void>,
         onConnectionDeletion: (id: string) => Promise<void>
     ) {
+        getLogger().debug(`${extensionId} invokes onDidChangeConnection`)
         Auth.instance.onDidChangeConnectionState(async e => {
             const conn = await Auth.instance.getConnection({ id: e.id })
             if (conn && conn.type === 'sso') {
