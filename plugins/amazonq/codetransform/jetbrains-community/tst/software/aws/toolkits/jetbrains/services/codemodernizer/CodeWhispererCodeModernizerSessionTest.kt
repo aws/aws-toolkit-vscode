@@ -14,15 +14,19 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.testFramework.common.ThreadLeakTracker
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.testFramework.utils.io.createFile
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.codec.digest.DigestUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.spy
@@ -54,7 +58,6 @@ import java.io.FileInputStream
 import java.util.Base64
 import java.util.zip.ZipFile
 import kotlin.io.path.Path
-import kotlin.test.assertNotNull
 
 class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBase(HeavyJavaCodeInsightTestFixtureRule()) {
     fun addFilesToProjectModule(vararg path: String) {
@@ -65,6 +68,10 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
     @Rule
     @JvmField
     val wireMock = WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort())
+
+    @Rule
+    @JvmField
+    val tempFolder = TemporaryFolder()
 
     @Before
     override fun setup() {
@@ -336,6 +343,44 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
             }
             zipFile.close()
         }
+    }
+
+    @Test
+    fun `CodeModernizerSession can create zip and excludes maven metadata from dependencies folder`() {
+        // get project.projectFile because project.projectFile can not be null
+        val context = CodeModernizerSessionContext(project, emptyPomFile, JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_11)
+        val m2Folders = listOf(
+            "com/groupid1/artifactid1/version1",
+            "com/groupid1/artifactid1/version2",
+            "com/groupid1/artifactid2/version1",
+            "com/groupid2/artifactid1/version1",
+            "com/groupid2/artifactid1/version2",
+        )
+        // List of files that exist in m2 artifact directory
+        val filesToAdd = listOf(
+            "_remote.repositories",
+            "test-0.0.1-20240315.145420-18.pom",
+            "test-0.0.1-20240315.145420-18.pom.sha1",
+            "test-0.0.1-SNAPSHOT.pom",
+            "maven-metadata-test-repo.xml",
+            "maven-metadata-test-repo.xml.sha1",
+            "resolver-status.properties",
+        )
+        val expectedFilesAfterClean = listOf(
+            "test-0.0.1-20240315.145420-18.pom",
+            "test-0.0.1-SNAPSHOT.pom",
+            "maven-metadata-test-repo.xml",
+            "resolver-status.properties",
+        )
+
+        m2Folders.forEach {
+            val newFolder = tempFolder.newFolder(*it.split("/").toTypedArray())
+            filesToAdd.forEach { file -> newFolder.toPath().resolve(file).createFile() }
+        }
+
+        val dependenciesToUpload = context.iterateThroughDependencies(tempFolder.root)
+        assertEquals(m2Folders.size * expectedFilesAfterClean.size, dependenciesToUpload.size)
+        assertTrue(dependenciesToUpload.all { it.name in expectedFilesAfterClean })
     }
 
     @Test
