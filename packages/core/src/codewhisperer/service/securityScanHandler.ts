@@ -9,13 +9,11 @@ import { AggregatedCodeScanIssue, CodeScansState, codeScanState, CodeScanStopped
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
-import { existsSync, statSync, readFileSync } from 'fs'
+import { existsSync, statSync } from 'fs'
 import { RawCodeScanIssue } from '../models/model'
-import * as crypto from 'crypto'
 import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import { ArtifactMap, CreateUploadUrlRequest, CreateUploadUrlResponse } from '../client/codewhispereruserclient'
-import { Truncation } from '../util/dependencyGraph/dependencyGraph'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import request from '../../common/request'
 import { ZipMetadata } from '../util/zipUtil'
@@ -128,36 +126,6 @@ export async function pollScanJobStatus(
     return status
 }
 
-// TODO: Remove this
-export async function pollScanJobStatusOld(client: DefaultCodeWhispererClient, jobId: string) {
-    getLogger().verbose(`Polling scan job status...`)
-    let status: string = 'Pending'
-    let timer: number = 0
-    while (true) {
-        throwIfCancelledOld()
-        const req: codewhispererClient.GetCodeScanRequest = {
-            jobId: jobId,
-        }
-        const resp = await client.getCodeScan(req)
-        getLogger().verbose(`Request id: ${resp.$response.requestId}`)
-        if (resp.status !== 'Pending') {
-            status = resp.status
-            getLogger().verbose(`Scan job status: ${status}`)
-            getLogger().verbose(`Complete Polling scan job status.`)
-            break
-        }
-        throwIfCancelledOld()
-        await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
-        timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
-        if (timer > CodeWhispererConstants.codeScanJobTimeoutSeconds) {
-            getLogger().verbose(`Scan job status: ${status}`)
-            getLogger().verbose(`Scan job timeout.`)
-            throw new Error('Scan job timeout.')
-        }
-    }
-    return status
-}
-
 export async function createScanJob(
     client: DefaultCodeWhispererClient,
     artifactMap: codewhispererClient.ArtifactMap,
@@ -177,11 +145,12 @@ export async function createScanJob(
 }
 
 export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClient, zipMetadata: ZipMetadata) {
-    if (zipMetadata.zipFilePath === '') {
+    const zipBuffer = zipMetadata.zipStreamBuffer.getContents()
+    if (!zipBuffer) {
         throw new Error("Zip failure: can't find valid source zip.")
     }
     const srcReq: CreateUploadUrlRequest = {
-        contentMd5: getMd5(zipMetadata.zipFilePath),
+        contentMd5: zipMetadata.zipMd5,
         artifactType: 'SourceCode',
     }
     getLogger().verbose(`Prepare for uploading src context...`)
@@ -189,40 +158,12 @@ export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClien
     getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
     getLogger().verbose(`Uploading src context...`)
-    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp)
+    await uploadArtifactToS3(zipBuffer, srcResp, zipMetadata.zipMd5)
     getLogger().verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,
     }
     return artifactMap
-}
-
-// TODO: Remove this
-export async function getPresignedUrlAndUploadOld(client: DefaultCodeWhispererClient, truncation: Truncation) {
-    if (truncation.zipFilePath === '') {
-        throw new Error("Truncation failure: can't find valid source zip.")
-    }
-    const srcReq: CreateUploadUrlRequest = {
-        contentMd5: getMd5(truncation.zipFilePath),
-        artifactType: 'SourceCode',
-    }
-    getLogger().verbose(`Prepare for uploading src context...`)
-    const srcResp = await client.createUploadUrl(srcReq)
-    getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
-    getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
-    getLogger().verbose(`Uploading src context...`)
-    await uploadArtifactToS3(truncation.zipFilePath, srcResp)
-    getLogger().verbose(`Complete uploading src context.`)
-    const artifactMap: ArtifactMap = {
-        SourceCode: srcResp.uploadId,
-    }
-    return artifactMap
-}
-
-function getMd5(fileName: string) {
-    const hasher = crypto.createHash('md5')
-    hasher.update(readFileSync(fileName))
-    return hasher.digest('base64')
 }
 
 export function throwIfCancelled(scanType: CodeWhispererConstants.SecurityScanType) {
@@ -243,17 +184,10 @@ export function throwIfCancelled(scanType: CodeWhispererConstants.SecurityScanTy
     }
 }
 
-// TODO: Remove this
-export function throwIfCancelledOld() {
-    if (codeScanState.isCancelling()) {
-        throw new CodeScanStoppedError()
-    }
-}
-
-export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
+export async function uploadArtifactToS3(buffer: Buffer, resp: CreateUploadUrlResponse, md5: string) {
     const encryptionContext = `{"uploadId":"${resp.uploadId}"}`
     const headersObj: Record<string, string> = {
-        'Content-MD5': getMd5(fileName),
+        'Content-MD5': md5,
         'x-amz-server-side-encryption': 'aws:kms',
         'Content-Type': 'application/zip',
         'x-amz-server-side-encryption-context': Buffer.from(encryptionContext, 'utf8').toString('base64'),
@@ -264,7 +198,7 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
     }
 
     const response = await request.fetch('PUT', resp.uploadUrl, {
-        body: readFileSync(fileName),
+        body: buffer,
         headers: headersObj,
     }).response
     getLogger().debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)

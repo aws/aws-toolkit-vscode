@@ -54,21 +54,6 @@ function updateSecurityIssueHoverAndCodeActions(
     SecurityIssueCodeActionProvider.instance.issues = updatedSecurityRecommendationList
 }
 
-// TODO: Remove this
-export function initSecurityScanRenderOld(
-    securityRecommendationList: AggregatedCodeScanIssue[],
-    context: vscode.ExtensionContext
-) {
-    securityScanRender.initialized = false
-    securityScanRender.securityDiagnosticCollection?.clear()
-    securityRecommendationList.forEach(securityRecommendation => {
-        updateSecurityDiagnosticCollection(securityRecommendation)
-    })
-    securityScanRender.initialized = true
-    SecurityIssueHoverProvider.instance.issues = securityRecommendationList
-    SecurityIssueCodeActionProvider.instance.issues = securityRecommendationList
-}
-
 export function updateSecurityDiagnosticCollection(securityRecommendation: AggregatedCodeScanIssue) {
     const filePath = securityRecommendation.filePath
     const uri = vscode.Uri.file(filePath)

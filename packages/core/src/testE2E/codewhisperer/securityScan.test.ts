@@ -13,16 +13,15 @@ import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispere
 import { resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
 import { closeAllEditors } from '../../test/testUtil'
-import { DependencyGraphFactory } from '../../codewhisperer/util/dependencyGraph/dependencyGraphFactory'
-import { statSync } from 'fs'
 import {
-    getPresignedUrlAndUpload,
     createScanJob,
-    pollScanJobStatusOld,
+    pollScanJobStatus,
     listScanResults,
+    getPresignedUrlAndUpload,
 } from '../../codewhisperer/service/securityScanHandler'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { fsCommon } from '../../srcShared/fs'
+import { ZipUtil } from '../../codewhisperer/util/zipUtil'
 
 const filePromptWithSecurityIssues = `from flask import app
 
@@ -79,42 +78,22 @@ describe('CodeWhisperer security scan', async function () {
         })
     }
 
-    function getDependencyGraph(editor: vscode.TextEditor) {
-        return DependencyGraphFactory.getDependencyGraph(editor)
-    }
-
     /*
     securityJobSetup: combines steps 1 and 2 in startSecurityScan:
-    
-        Step 1: Generate context truncations
+
+        Step 1: Generate zip
         Step 2: Get presigned Url, upload and clean up
 
     returns artifactMap and projectPath
     */
     async function securityJobSetup(editor: vscode.TextEditor) {
-        const dependencyGraph = getDependencyGraph(editor)
-        if (dependencyGraph === undefined) {
-            throw new Error(`"${editor.document.languageId}" is not supported for security scan.`)
-        }
-        const uri = dependencyGraph.getRootFile(editor)
+        const zipUtil = new ZipUtil()
+        const uri = editor.document.uri
 
-        if (dependencyGraph.reachSizeLimit(statSync(uri.fsPath).size)) {
-            throw new Error(
-                `Selected file larger than ${dependencyGraph.getReadableSizeLimit()}. Try a different file.`
-            )
-        }
-        const projectPath = dependencyGraph.getProjectPath(uri)
-        const truncation = await dependencyGraph.generateTruncationWithTimeout(
-            uri,
-            CodeWhispererConstants.contextTruncationTimeoutSeconds
-        )
+        const projectPath = zipUtil.getProjectPath(uri)
+        const zipMetadata = await zipUtil.generateZip(uri, CodeWhispererConstants.SecurityScanType.Project)
 
-        let artifactMap
-        try {
-            artifactMap = await getPresignedUrlAndUpload(client, truncation)
-        } finally {
-            await dependencyGraph.removeTmpFiles(truncation)
-        }
+        const artifactMap = await getPresignedUrlAndUpload(client, zipMetadata)
         return {
             artifactMap: artifactMap,
             projectPath: projectPath,
@@ -134,7 +113,11 @@ describe('CodeWhisperer security scan', async function () {
 
         //get job status and result
         const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
-        const jobStatus = await pollScanJobStatusOld(client, scanJob.jobId)
+        const jobStatus = await pollScanJobStatus(
+            client,
+            scanJob.jobId,
+            CodeWhispererConstants.SecurityScanType.Project
+        )
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
@@ -160,7 +143,11 @@ describe('CodeWhisperer security scan', async function () {
         const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
 
         //get job status and result
-        const jobStatus = await pollScanJobStatusOld(client, scanJob.jobId)
+        const jobStatus = await pollScanJobStatus(
+            client,
+            scanJob.jobId,
+            CodeWhispererConstants.SecurityScanType.Project
+        )
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
@@ -187,16 +174,6 @@ describe('CodeWhisperer security scan', async function () {
         await testutil.toFile(javaPromptNoBuild, tempFile)
         const editor = await openTestFile(tempFile)
 
-        await assert.rejects(() => securityJobSetup(editor))
-    })
-
-    it('codescan request for file in unsupported language fails to generate dependency graph and causes scan setup to fail', async function () {
-        const appRoot = path.join(workspaceFolder, 'go1-plain-sam-app')
-        const appCodePath = path.join(appRoot, 'hello-world', 'main.go')
-        const editor = await openTestFile(appCodePath)
-        const dependencyGraph = getDependencyGraph(editor)
-
-        assert.strictEqual(dependencyGraph, undefined)
         await assert.rejects(() => securityJobSetup(editor))
     })
 })
