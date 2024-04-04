@@ -4,6 +4,7 @@
  */
 
 import { focusAmazonQPanel } from '../../auth/ui/vue/show'
+import { CodeScanIssue } from '../../codewhisperer/models/model'
 import { Commands } from '../../shared/vscode/commands2'
 import { ChatControllerMessagePublishers } from '../controllers/chat/controller'
 
@@ -54,18 +55,48 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
+    Commands.register('aws.amazonq.explainIssue', async issue => {
+        return focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.explainIssue',
+                triggerType: 'click',
+                issue,
+            })
+        })
+    })
+    Commands.register('aws.amazonq.fixIssue', async issue => {
+        return focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.fixIssue',
+                triggerType: 'click',
+                issue,
+            })
+        })
+    })
 }
 
-export type EditorContextCommandType =
+export type EditorContextBaseCommandType =
     | 'aws.amazonq.explainCode'
     | 'aws.amazonq.refactorCode'
     | 'aws.amazonq.fixCode'
     | 'aws.amazonq.optimizeCode'
     | 'aws.amazonq.sendToPrompt'
 
+export type CodeScanIssueCommandType = 'aws.amazonq.explainIssue' | 'aws.amazonq.fixIssue'
+
+export type EditorContextCommandType = EditorContextBaseCommandType | CodeScanIssueCommandType
+
 export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | 'commandPalette' | 'click'
 
-export interface EditorContextCommand {
-    type: EditorContextCommandType
+export interface EditorContextCommandBase {
+    type: EditorContextBaseCommandType
     triggerType: EditorContextCommandTriggerType
 }
+
+export interface EditorContextCommandWithIssue {
+    type: CodeScanIssueCommandType
+    triggerType: EditorContextCommandTriggerType
+    issue: CodeScanIssue
+}
+
+export type EditorContextCommand = EditorContextCommandBase | EditorContextCommandWithIssue

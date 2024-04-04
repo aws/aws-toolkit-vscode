@@ -34,7 +34,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     const [suggestedFix] = issue.suggestedFixes
                     if (suggestedFix) {
                         const fixIssue = new vscode.CodeAction(
-                            `Apply fix for "${issue.title}"`,
+                            'Apply Amazon Q Suggestion',
                             vscode.CodeActionKind.QuickFix
                         )
                         const args: [CodeScanIssue, string, Component] = [issue, group.filePath, 'quickfix']
@@ -48,11 +48,29 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     const openIssue = new vscode.CodeAction(`View details for "${issue.title}"`)
                     const args: [CodeScanIssue, string] = [issue, group.filePath]
                     openIssue.command = {
-                        title: 'Open "CodeWhisperer Security Issue"',
+                        title: 'Open "Amazon Q Security Issue"',
                         command: 'aws.codeWhisperer.openSecurityIssuePanel',
                         arguments: args,
                     }
                     codeActions.push(openIssue)
+
+                    const explainWithQ = new vscode.CodeAction('Explain with Amazon Q')
+                    const explainWithQArgs = [issue]
+                    explainWithQ.command = {
+                        title: 'Explain with Amazon Q',
+                        command: 'aws.amazonq.explainIssue',
+                        arguments: explainWithQArgs,
+                    }
+                    codeActions.push(explainWithQ)
+
+                    const fixWithQ = new vscode.CodeAction('Fix with Amazon Q')
+                    const fixWithQArgs = [issue]
+                    fixWithQ.command = {
+                        title: 'Fix with Amazon Q',
+                        command: 'aws.amazonq.fixIssue',
+                        arguments: fixWithQArgs,
+                    }
+                    codeActions.push(fixWithQ)
                 }
             }
         }

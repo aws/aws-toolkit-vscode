@@ -47,10 +47,16 @@ describe('securityIssueHoverProvider', () => {
                 'fix\n\n' +
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName])
-                )} 'Open "CodeWhisperer Security Issue"')\n` +
+                )} 'Open "Amazon Q Security Issue"')\n` +
+                ` | [$(comment-discussion) Explain with Q](command:aws.amazonq.explainIssue?${encodeURIComponent(
+                    JSON.stringify([issues[0]])
+                )} 'Explain with Amazon Q')\n` +
+                ` | [$(comment) Fix with Q](command:aws.amazonq.fixIssue?${encodeURIComponent(
+                    JSON.stringify([issues[0]])
+                )} 'Fix with Amazon Q')\n` +
                 ` | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
-                )} "Apply suggested fix")\n` +
+                )} 'Apply Amazon Q Suggestion')\n` +
                 '### Suggested Fix Preview\n\n' +
                 '<span class="codicon codicon-none" style="background-color:var(--vscode-editorMarkerNavigationInfo-headerBackground);">\n\n' +
                 '```undefined\n' +
@@ -88,7 +94,13 @@ describe('securityIssueHoverProvider', () => {
                 'recommendationText\n\n' +
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[1], mockDocument.fileName])
-                )} 'Open "CodeWhisperer Security Issue"')\n`
+                )} 'Open "Amazon Q Security Issue"')\n` +
+                ` | [$(comment-discussion) Explain with Q](command:aws.amazonq.explainIssue?${encodeURIComponent(
+                    JSON.stringify([issues[1]])
+                )} 'Explain with Amazon Q')\n` +
+                ` | [$(comment) Fix with Q](command:aws.amazonq.fixIssue?${encodeURIComponent(
+                    JSON.stringify([issues[1]])
+                )} 'Fix with Amazon Q')\n`
         )
         assertTelemetry('codewhisperer_codeScanIssueHover', [
             { findingId: 'finding-1', detectorId: 'language/detector-1', ruleId: 'Rule-123', includesFix: true },

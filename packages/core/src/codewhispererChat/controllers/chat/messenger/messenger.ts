@@ -30,6 +30,7 @@ import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/mo
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
+import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -282,8 +283,10 @@ export class Messenger {
 
     private editorContextMenuCommandVerbs: Map<EditorContextCommandType, string> = new Map([
         ['aws.amazonq.explainCode', 'Explain'],
+        ['aws.amazonq.explainIssue', 'Explain'],
         ['aws.amazonq.refactorCode', 'Refactor'],
         ['aws.amazonq.fixCode', 'Fix'],
+        ['aws.amazonq.fixIssue', 'Fix'],
         ['aws.amazonq.optimizeCode', 'Optimize'],
         ['aws.amazonq.sendToPrompt', 'Send to prompt'],
     ])
@@ -401,7 +404,12 @@ export class Messenger {
         )
     }
 
-    public sendEditorContextCommandMessage(command: EditorContextCommandType, selectedCode: string, triggerID: string) {
+    public sendEditorContextCommandMessage(
+        command: EditorContextCommandType,
+        selectedCode: string,
+        triggerID: string,
+        issue?: CodeScanIssue
+    ) {
         // Remove newlines and spaces before and after the code
         const trimmedCode = selectedCode.trimStart().trimEnd()
 
@@ -412,6 +420,9 @@ export class Messenger {
             message = [
                 this.editorContextMenuCommandVerbs.get(command),
                 ' the following part of my code:',
+                ...(issue
+                    ? [`\n\n**Issue**: ${issue.title}`, `\n\n**Description**: ${issue.recommendation.text}\n`]
+                    : []),
                 '\n```\n',
                 trimmedCode,
                 '\n```',

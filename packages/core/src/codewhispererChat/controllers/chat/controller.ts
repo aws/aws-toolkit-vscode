@@ -394,11 +394,23 @@ export class ChatController {
 
                 const prompt = this.promptGenerator.generateForContextMenuCommand(command)
 
-                this.messenger.sendEditorContextCommandMessage(
-                    command.type,
-                    context?.focusAreaContext?.codeBlock ?? '',
-                    triggerID
-                )
+                if (command.type === 'aws.amazonq.explainIssue' || command.type === 'aws.amazonq.fixIssue') {
+                    this.messenger.sendEditorContextCommandMessage(
+                        command.type,
+                        context.activeFileContext?.fileText
+                            ?.split('\n')
+                            .slice(command.issue.startLine, command.issue.endLine)
+                            .join('') ?? '',
+                        triggerID,
+                        command.issue
+                    )
+                } else {
+                    this.messenger.sendEditorContextCommandMessage(
+                        command.type,
+                        context?.focusAreaContext?.codeBlock ?? '',
+                        triggerID
+                    )
+                }
 
                 if (command.type === 'aws.amazonq.sendToPrompt') {
                     // No need for response if send the code to prompt
