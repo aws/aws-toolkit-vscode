@@ -12,7 +12,7 @@ export const awsToolkitApi = {
      * the available connections in aws toolkit.
      */
     async listConnections(extensionId: string): Promise<AwsConnection[]> {
-        getLogger().debug(`${extensionId} invokes listConnections`)
+        getLogger().debug(`listConnections: extension ${extensionId}`)
         const connections = await Auth.instance.listConnections()
         const exposedConnections: AwsConnection[] = []
         connections.forEach((x: Connection) => {
@@ -38,7 +38,7 @@ export const awsToolkitApi = {
      * Exposing setConnection API for other extension to push its connection state to aws toolkit
      */
     async setConnection(extensionId: string, connection: AwsConnection): Promise<void> {
-        getLogger().debug(`${extensionId} sets connection ${connection.id}`)
+        getLogger().debug(`setConnection: extension ${extensionId}, connection id ${connection.id}`)
         await Auth.instance.setConnectionFromApi(connection)
     },
 
@@ -46,7 +46,7 @@ export const awsToolkitApi = {
      * Exposing deleteConnection API for other extension to push connection deletion event to aws toolkit
      */
     async deleteConnection(extensionId: string, id: string): Promise<void> {
-        getLogger().debug(`${extensionId} delete connection ${id}`)
+        getLogger().debug(`deleteConnection: extension ${extensionId}, connection id ${id}`)
         await Auth.instance.deleteConnection({ id })
     },
 
@@ -58,7 +58,7 @@ export const awsToolkitApi = {
         onConnectionStateChange: (c: AwsConnection) => Promise<void>,
         onConnectionDeletion: (id: string) => Promise<void>
     ) {
-        getLogger().debug(`${extensionId} invokes onDidChangeConnection`)
+        getLogger().debug(`onDidChangeConnection: extension ${extensionId}`)
         Auth.instance.onDidChangeConnectionState(async e => {
             const conn = await Auth.instance.getConnection({ id: e.id })
             if (conn && conn.type === 'sso') {
