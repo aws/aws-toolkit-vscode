@@ -122,6 +122,17 @@ interface CodeWhispererClientAdaptor : Disposable {
         codeScanJobId: String?
     ): SendTelemetryEventResponse
 
+    fun sendCodeScanRemediationTelemetry(
+        language: CodeWhispererProgrammingLanguage?,
+        codeScanRemediationEventType: String?,
+        detectorId: String?,
+        findingId: String?,
+        ruleId: String?,
+        component: String?,
+        reason: String?,
+        result: String?,
+        includesFix: Boolean?
+    ): SendTelemetryEventResponse
     fun listFeatureEvaluations(): ListFeatureEvaluationsResponse
 
     fun sendMetricDataTelemetry(eventName: String, metadata: Map<String, Any?>): SendTelemetryEventResponse
@@ -370,6 +381,36 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                     languageBuilder.languageName(language.toCodeWhispererRuntimeLanguage().languageId)
                 }
                 it.codeScanJobId(if (codeScanJobId.isNullOrEmpty()) CodeWhispererClientAdaptor.INVALID_CODESCANJOBID else codeScanJobId)
+                it.timestamp(Instant.now())
+            }
+        }
+        requestBuilder.optOutPreference(getTelemetryOptOutPreference())
+        requestBuilder.userContext(codeWhispererUserContext)
+    }
+    override fun sendCodeScanRemediationTelemetry(
+        language: CodeWhispererProgrammingLanguage?,
+        codeScanRemediationEventType: String?,
+        detectorId: String?,
+        findingId: String?,
+        ruleId: String?,
+        component: String?,
+        reason: String?,
+        result: String?,
+        includesFix: Boolean?
+    ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
+        requestBuilder.telemetryEvent { telemetryEventBuilder ->
+            telemetryEventBuilder.codeScanRemediationsEvent {
+                it.programmingLanguage { languageBuilder ->
+                    languageBuilder.languageName(language?.toCodeWhispererRuntimeLanguage()?.languageId)
+                }
+                it.codeScanRemediationsEventType(codeScanRemediationEventType)
+                it.detectorId(detectorId)
+                it.findingId(findingId)
+                it.ruleId(ruleId)
+                it.component(component)
+                it.reason(reason)
+                it.result(result)
+                it.includesFix(includesFix)
                 it.timestamp(Instant.now())
             }
         }
