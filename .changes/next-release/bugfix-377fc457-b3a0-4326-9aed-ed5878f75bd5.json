@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix \"null\" appearing in feedback dialog prompts"
-}

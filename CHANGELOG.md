@@ -1,3 +1,8 @@
+# _2.17_ (2024-04-04)
+- **(Bug Fix)** Fix "null" appearing in feedback dialog prompts
+- **(Bug Fix)** Amazon Q Code Transformation - Omit Maven metadata files when uploading dependencies to fix certain build failures in backend.
+- **(Bug Fix)** Amazon Q Code Transformation: use actual project JDK when transforming project
+
 # _2.16_ (2024-03-29)
 - **(Bug Fix)** Fix issue where Amazon Q Chat does not appear in IDEs other than IntelliJ IDEA ([#4218](https://github.com/aws/aws-toolkit-jetbrains/issues/4218))
 
