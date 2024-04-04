@@ -47,7 +47,7 @@ interface AnnotationState {
 
     text: () => string
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined
-    isNextState(state: AnnotationState): boolean
+    isNextState(state: AnnotationState | undefined): boolean
 }
 
 /**
@@ -79,7 +79,7 @@ class AutotriggerState implements AnnotationState {
         }
     }
 
-    isNextState(state: AnnotationState): boolean {
+    isNextState(state: AnnotationState | undefined): boolean {
         return state instanceof ManualtriggerState
     }
 }
@@ -105,7 +105,7 @@ class PressTabState implements AnnotationState {
         return new AutotriggerState().updateState(changeSource, force)
     }
 
-    isNextState(state: AnnotationState): boolean {
+    isNextState(state: AnnotationState | undefined): boolean {
         return state instanceof ManualtriggerState
     }
 }
@@ -147,7 +147,7 @@ class ManualtriggerState implements AnnotationState {
         }
     }
 
-    isNextState(state: AnnotationState): boolean {
+    isNextState(state: AnnotationState | undefined): boolean {
         return state instanceof TryMoreExState
     }
 }
@@ -175,7 +175,7 @@ class TryMoreExState implements AnnotationState {
         return this
     }
 
-    isNextState(state: AnnotationState): boolean {
+    isNextState(state: AnnotationState | undefined): boolean {
         return state instanceof EndState
     }
 
@@ -451,10 +451,8 @@ export class LineAnnotationController implements vscode.Disposable {
             return undefined
         }
 
-        if (!this._seen.has(updatedState.id)) {
-            try {
-                telemetry.ui_click.emit({ elementId: this._currentState.id, passive: true })
-            } catch (e) {}
+        if (this._currentState.isNextState(updatedState)) {
+            telemetry.ui_click.emit({ elementId: this._currentState.id, passive: true })
         }
 
         // update state
