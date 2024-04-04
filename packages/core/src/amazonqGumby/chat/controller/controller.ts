@@ -336,10 +336,6 @@ export class GumbyController {
 }
 
 function extractPath(text: string): string | undefined {
-    const words = text.split(/\s+/) // Split text into words by whitespace
-
-    // Filter words that are formatted like paths and do exist as local directories
-    const paths = words.find(word => fs.existsSync(word) && fs.lstatSync(word).isDirectory())
-
-    return paths
+    const resolvedPath = path.resolve(text)
+    return fs.existsSync(resolvedPath) && fs.lstatSync(resolvedPath).isDirectory() ? resolvedPath : undefined
 }
