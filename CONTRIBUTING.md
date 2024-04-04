@@ -252,8 +252,6 @@ Pull requests that change **customer-impacting behavior** must include a changel
 
     npm run newChange
 
-
-
 > [!TIP]
 >
 > -   Describe the change in a way that is _meaningful to the customer_. If you can't describe the _customer impact_ then it probably shouldn't be in the changelog.
@@ -269,7 +267,6 @@ Pull requests that change **customer-impacting behavior** must include a changel
 > -   To update an _existing_ changelog item, just edit its `.changes/next-release/….json` file, you don't need to re-run `npm run newChange`.
 > -   If there are multiple unrelated changes, run `npm run newChange` for each change.
 > -   Include the feature that the change affects, Q, CodeWhisperer, etc.
-
 
 ### Commit messages
 
@@ -539,8 +536,7 @@ As a simple example, let's say I wanted to add a new icon for CloudWatch log str
 ### VSCode Marketplace
 
 The [marketplace page](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode)
-is defined in `README.quickstart.vscode.md` (which replaces `README.md` during
-the release automation). The `vsce` package tool always [replaces relative image paths](https://github.com/microsoft/vscode-vsce/blob/9478dbd11ea2e7adb23ec72923e889c7bb215263/src/package.ts#L885)
+is defined in `packages/toolkit/README.md`. The `vsce` package tool always [replaces relative image paths](https://github.com/microsoft/vscode-vsce/blob/9478dbd11ea2e7adb23ec72923e889c7bb215263/src/package.ts#L885)
 with URLs pointing to `HEAD` on GitHub (`https://github.com/aws/aws-toolkit-vscode/raw/HEAD/…/foo.gif`).
 
 Note therefore:
