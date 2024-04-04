@@ -522,6 +522,46 @@
             "max":128,
             "min":1
         },
+        "CodeScanRemediationsEvent": {
+            "type": "structure",
+            "members": {
+                "programmingLanguage": {
+                    "shape": "ProgrammingLanguage"
+                },
+                "CodeScanRemediationsEventType": {
+                    "shape": "CodeScanRemediationsEventType"
+                },
+                "timestamp": {
+                    "shape": "Timestamp"
+                },
+                "detectorId": {
+                    "shape": "String"
+                },
+                "findingId": {
+                    "shape": "String"
+                },
+                "ruleId": {
+                    "shape": "String"
+                },
+                "component": {
+                    "shape": "String"
+                },
+                "reason": {
+                    "shape": "String"
+                },
+                "result": {
+                    "shape": "String"
+                },
+                "includesFix": {
+                    "shape": "Boolean"
+                }
+            }
+        },
+        "CodeScanRemediationsEventType": {
+            "type": "string",
+            "documentation": "<p>Code Scan Remediations Interaction Type</p>",
+            "enum": ["CODESCAN_ISSUE_HOVER", "CODESCAN_ISSUE_APPLY_FIX", "CODESCAN_ISSUE_VIEW_DETAILS"]
+        },
         "Completion":{
             "type":"structure",
             "required":["content"],
@@ -1458,6 +1498,7 @@
                 "codeCoverageEvent":{"shape":"CodeCoverageEvent"},
                 "userModificationEvent":{"shape":"UserModificationEvent"},
                 "codeScanEvent":{"shape":"CodeScanEvent"},
+                "codeScanRemediationsEvent": { "shape": "CodeScanRemediationsEvent" },
                 "metricData":{"shape":"MetricData"},
                 "chatAddMessageEvent": { "shape": "ChatAddMessageEvent" },
                 "chatInteractWithMessageEvent": { "shape": "ChatInteractWithMessageEvent" },

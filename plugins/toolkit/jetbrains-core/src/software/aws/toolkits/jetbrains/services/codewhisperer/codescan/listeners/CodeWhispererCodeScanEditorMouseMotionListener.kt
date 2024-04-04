@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listener
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
 import com.intellij.ide.ui.laf.darcula.ui.DarculaButtonUI
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.event.EditorMouseEvent
 import com.intellij.openapi.editor.event.EditorMouseEventArea
@@ -19,13 +20,18 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.components.JBScrollPane
 import icons.AwsIcons
+import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanIssue
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.getHexString
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
 import software.aws.toolkits.jetbrains.utils.applyPatch
 import software.aws.toolkits.jetbrains.utils.convertMarkdownToHTML
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -95,7 +101,7 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
                 <tbody>
                     <tr>
                         <td>$cweLinks</td>
-                        <td>${if (isFixAvailable) "<span style=\"color:${additionForegroundColor.getHexString()};\">Yes</span>" else "<span style=\"color:${deletionForegroundColor.getHexString()};\">No</span>" }</td>
+                        <td>${if (isFixAvailable) "<span style=\"color:${additionForegroundColor.getHexString()};\">Yes</span>" else "<span style=\"color:${deletionForegroundColor.getHexString()};\">No</span>"}</td>
                         <td>$detectorLibraryLink</td>
                     </tr>
                 </tbody>
@@ -115,13 +121,17 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
             |${issue.suggestedFixes[0].code}
             |```
             |
-            |${if (isFixDescriptionAvailable) {
-                "|### ${message(
-                    "codewhisperer.codescan.suggested_fix_description"
-                )}\n${issue.suggestedFixes[0].description}"
-            } else {
-                ""
-            }}
+            |${
+                if (isFixDescriptionAvailable) {
+                    "|### ${
+                        message(
+                            "codewhisperer.codescan.suggested_fix_description"
+                        )
+                    }\n${issue.suggestedFixes[0].description}"
+                } else {
+                    ""
+                }
+            }
             """.trimMargin()
         } else {
             ""
@@ -253,6 +263,54 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
         popup.show(RelativePoint(e.mouseEvent))
 
         CodeWhispererTelemetryService.getInstance().sendCodeScanIssueHoverEvent(issue)
+        sendCodeRemediationTelemetryToServiceApi(
+            issue.file.programmingLanguage(),
+            "CODESCAN_ISSUE_HOVER",
+            issue.detectorId,
+            issue.findingId,
+            issue.ruleId,
+            null,
+            null,
+            null,
+            issue.suggestedFixes.isNotEmpty()
+        )
+    }
+
+    private fun sendCodeRemediationTelemetryToServiceApi(
+        language: CodeWhispererProgrammingLanguage?,
+        codeScanRemediationEventType: String?,
+        detectorId: String?,
+        findingId: String?,
+        ruleId: String?,
+        component: String?,
+        reason: String?,
+        result: String?,
+        includesFix: Boolean?
+    ) {
+        runIfIdcConnectionOrTelemetryEnabled(project) {
+            ApplicationManager.getApplication().executeOnPooledThread {
+                try {
+                    val response = CodeWhispererClientAdaptor.getInstance(project)
+                        .sendCodeScanRemediationTelemetry(
+                            language,
+                            codeScanRemediationEventType,
+                            detectorId,
+                            findingId,
+                            ruleId,
+                            component,
+                            reason,
+                            result,
+                            includesFix
+                        )
+                    LOG.debug { "Successfully sent code scan remediation telemetry. RequestId: ${response.responseMetadata().requestId()}" }
+                } catch (e: Exception) {
+                    val requestId = if (e is CodeWhispererRuntimeException) e.requestId() else null
+                    LOG.debug {
+                        "Failed to send code scan remediation telemetry. RequestId: $requestId, ErrorMessage: ${e.message}"
+                    }
+                }
+            }
+        }
     }
 
     override fun mouseMoved(e: EditorMouseEvent) {
@@ -305,10 +363,32 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
                 CodeWhispererTelemetryService.getInstance().sendCodeScanIssueApplyFixEvent(issue, Result.Succeeded)
                 hidePopup()
             }
+            sendCodeRemediationTelemetryToServiceApi(
+                issue.file.programmingLanguage(),
+                "CODESCAN_ISSUE_APPLY_FIX",
+                issue.detectorId,
+                issue.findingId,
+                issue.ruleId,
+                null,
+                null,
+                Result.Succeeded.toString(),
+                issue.suggestedFixes.isNotEmpty()
+            )
         } catch (err: Error) {
             notifyError(message("codewhisperer.codescan.fix_applied_fail", err))
             LOG.error { "Apply fix command failed. $err" }
             CodeWhispererTelemetryService.getInstance().sendCodeScanIssueApplyFixEvent(issue, Result.Failed, err.message)
+            sendCodeRemediationTelemetryToServiceApi(
+                issue.file.programmingLanguage(),
+                "CODESCAN_ISSUE_APPLY_FIX",
+                issue.detectorId,
+                issue.findingId,
+                issue.ruleId,
+                null,
+                err.message,
+                Result.Failed.toString(),
+                issue.suggestedFixes.isNotEmpty()
+            )
         }
     }
 }
