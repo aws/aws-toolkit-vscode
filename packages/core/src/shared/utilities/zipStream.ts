@@ -11,11 +11,11 @@ import { getLogger } from '../logger'
 export interface ZipStreamResult {
     sizeInBytes: number
     md5: string
-    buffer: Buffer
+    streamBuffer: WritableStreamBuffer
 }
 
 /**
- * Utility class to create in-memory zip archives that outputs to a stream buffer.
+ * Creates in-memory zip archives that output to a stream buffer.
  *
  * Example usage:
  * ```ts
@@ -23,18 +23,18 @@ export interface ZipStreamResult {
  * zipStream.writeString('Hello World', 'file1.txt')
  * zipStream.writeFile('/path/to/some/file.txt', 'file2.txt')
  * const result = await zipStream.finalize()
- * console.log(result) // { sizeInBytes: ..., md5: ..., buffer: ... }
+ * console.log(result) // { sizeInBytes: ..., md5: ..., streamBuffer: ... }
  * ```
  */
 export class ZipStream {
     private _archive: archiver.Archiver
-    private _outputBuffer: WritableStreamBuffer
+    private _streamBuffer: WritableStreamBuffer
     private _hasher: crypto.Hash
 
     constructor() {
         this._archive = archiver('zip')
-        this._outputBuffer = new WritableStreamBuffer()
-        this._archive.pipe(this._outputBuffer)
+        this._streamBuffer = new WritableStreamBuffer()
+        this._archive.pipe(this._streamBuffer)
         this._hasher = crypto.createHash('md5')
 
         this._archive.on('data', data => {
@@ -60,16 +60,10 @@ export class ZipStream {
         return new Promise((resolve, reject) => {
             void this._archive.finalize()
             this._archive.on('finish', () => {
-                const buffer = this._outputBuffer.getContents()
-                if (!buffer) {
-                    reject(new Error('No output buffer'))
-                    return
-                }
-
                 resolve({
                     sizeInBytes: this._archive.pointer(),
                     md5: this._hasher.digest('base64'),
-                    buffer,
+                    streamBuffer: this._streamBuffer,
                 })
             })
         })

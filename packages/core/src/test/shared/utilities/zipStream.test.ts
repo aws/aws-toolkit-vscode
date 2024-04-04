@@ -11,8 +11,7 @@ import path from 'path'
 import { fsCommon } from '../../../srcShared/fs'
 import crypto from 'crypto'
 
-// eslint-disable-next-line aws-toolkits/no-only-in-tests
-describe.only('zipStream', function () {
+describe('zipStream', function () {
     let tmpDir: string
 
     beforeEach(async function () {
@@ -28,8 +27,11 @@ describe.only('zipStream', function () {
         zipStream.writeString('foo bar', 'file.txt')
         const result = await zipStream.finalize()
 
+        const zipBuffer = result.streamBuffer.getContents()
+        assert.ok(zipBuffer)
+
         const zipPath = path.join(tmpDir, 'test.zip')
-        await fsCommon.writeFile(zipPath, result.buffer)
+        await fsCommon.writeFile(zipPath, zipBuffer)
         const expectedMd5 = crypto
             .createHash('md5')
             .update(await fsCommon.readFile(zipPath))
@@ -47,7 +49,11 @@ describe.only('zipStream', function () {
         const result = await zipStream.finalize()
 
         const zipPath = path.join(tmpDir, 'test.zip')
-        await fsCommon.writeFile(zipPath, result.buffer)
+
+        const zipBuffer = result.streamBuffer.getContents()
+        assert.ok(zipBuffer)
+
+        await fsCommon.writeFile(zipPath, zipBuffer)
         const expectedMd5 = crypto
             .createHash('md5')
             .update(await fsCommon.readFile(zipPath))
