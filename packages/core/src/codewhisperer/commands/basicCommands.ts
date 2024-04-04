@@ -164,48 +164,60 @@ export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => asy
 // Shortcut command to directly connect to Identity Center or prompt start URL entry
 // It can optionally set a customization too based on given values to match on
 export const connectWithCustomization = Commands.declare(
-    'aws.codeWhisperer.connect',
-    () => async (startUrl?: string, region?: string, customizationArn?: string, customizationNamePrefix?: string) => {
-        // This command supports the following arguments:
-        //  * startUrl and region. If both arguments are provided they will be used, otherwise
-        //    the command prompts for them interactively.
-        //  * customizationArn: select customization by ARN. If provided, `customizationNamePrefix` is ignored.
-        //  * customizationNamePrefix: select customization by prefix, if `customizationArn` is `undefined`.
-        if (startUrl && region) {
-            await connectToEnterpriseSso(startUrl, region)
-        } else {
-            await getStartUrl()
+    { id: 'aws.codeWhisperer.connect', compositeKey: { 0: 'source' } },
+    /**
+     * This command supports the following arguments:
+     * @param source - an identifier for who used this command. This value is not explicitly used in the function, but is used elsewhere.
+     * startUrl and region. If both arguments are provided they will be used, otherwise
+     *  the command prompts for them interactively.
+     * customizationArn: select customization by ARN. If provided, `customizationNamePrefix` is ignored.
+     * customizationNamePrefix: select customization by prefix, if `customizationArn` is `undefined`.
+     */
+    () =>
+        async (
+            source: string,
+            startUrl?: string,
+            region?: string,
+            customizationArn?: string,
+            customizationNamePrefix?: string
+        ) => {
+            if (startUrl && region) {
+                await connectToEnterpriseSso(startUrl, region)
+            } else {
+                await getStartUrl()
+            }
+
+            // No customization match information given, exit early.
+            if (!customizationArn && !customizationNamePrefix) {
+                return
+            }
+
+            let persistedCustomizations = getPersistedCustomizations()
+
+            // Check if any customizations have already been persisted.
+            // If not, call `notifyNewCustomizations` to handle it then recheck.
+            if (persistedCustomizations.length === 0) {
+                await notifyNewCustomizations()
+                persistedCustomizations = getPersistedCustomizations()
+            }
+
+            // If given an ARN, assume a specific customization is desired and find an entry that matches it. Ignores the prefix logic.
+            // Otherwise if only a prefix is given, find an entry that matches it.
+            // Backwards compatible with previous implementation.
+            const match = customizationArn
+                ? persistedCustomizations.find(c => c.arn === customizationArn)
+                : persistedCustomizations.find(c => c.name?.startsWith(customizationNamePrefix as string))
+
+            // If no match is found, nothing to do :)
+            if (!match) {
+                getLogger().error(
+                    `No customization match found: arn=${customizationArn} prefix=${customizationNamePrefix}`
+                )
+                return
+            }
+            // Since we selected based on a match, we'll reuse the persisted values.
+            await selectCustomization(match)
         }
-
-        // No customization match information given, exit early.
-        if (!customizationArn && !customizationNamePrefix) {
-            return
-        }
-
-        let persistedCustomizations = getPersistedCustomizations()
-
-        // Check if any customizations have already been persisted.
-        // If not, call `notifyNewCustomizations` to handle it then recheck.
-        if (persistedCustomizations.length === 0) {
-            await notifyNewCustomizations()
-            persistedCustomizations = getPersistedCustomizations()
-        }
-
-        // If given an ARN, assume a specific customization is desired and find an entry that matches it. Ignores the prefix logic.
-        // Otherwise if only a prefix is given, find an entry that matches it.
-        // Backwards compatible with previous implementation.
-        const match = customizationArn
-            ? persistedCustomizations.find(c => c.arn === customizationArn)
-            : persistedCustomizations.find(c => c.name?.startsWith(customizationNamePrefix as string))
-
-        // If no match is found, nothing to do :)
-        if (!match) {
-            getLogger().error(`No customization match found: arn=${customizationArn} prefix=${customizationNamePrefix}`)
-            return
-        }
-        // Since we selected based on a match, we'll reuse the persisted values.
-        await selectCustomization(match)
-    }
 )
 
 export const showLearnMore = Commands.declare(
