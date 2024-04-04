@@ -75,24 +75,26 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
     })
 }
 
-export type EditorContextCommandType =
+export type EditorContextBaseCommandType =
     | 'aws.amazonq.explainCode'
     | 'aws.amazonq.refactorCode'
     | 'aws.amazonq.fixCode'
     | 'aws.amazonq.optimizeCode'
     | 'aws.amazonq.sendToPrompt'
-    | 'aws.amazonq.explainIssue'
-    | 'aws.amazonq.fixIssue'
+
+export type CodeScanIssueCommandType = 'aws.amazonq.explainIssue' | 'aws.amazonq.fixIssue'
+
+export type EditorContextCommandType = EditorContextBaseCommandType | CodeScanIssueCommandType
 
 export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | 'commandPalette' | 'click'
 
 export interface EditorContextCommandBase {
-    type: Exclude<EditorContextCommandType, 'aws.amazonq.explainIssue' | 'aws.amazonq.fixIssue'>
+    type: EditorContextBaseCommandType
     triggerType: EditorContextCommandTriggerType
 }
 
 export interface EditorContextCommandWithIssue {
-    type: Extract<EditorContextCommandType, 'aws.amazonq.explainIssue' | 'aws.amazonq.fixIssue'>
+    type: CodeScanIssueCommandType
     triggerType: EditorContextCommandTriggerType
     issue: CodeScanIssue
 }
