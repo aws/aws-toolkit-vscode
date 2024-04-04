@@ -214,8 +214,6 @@ export class LineAnnotationController implements vscode.Disposable {
 
     private _currentState: AnnotationState
 
-    private _seen: Set<string> = new Set()
-
     private readonly cwLineHintDecoration: vscode.TextEditorDecorationType =
         vscode.window.createTextEditorDecorationType({
             after: {
@@ -451,12 +449,16 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         if (this._currentState.isNextState(updatedState)) {
+            // special case because PressTabState is part of case_1 (1a) which possibly jumps directly from case_1a to case_2 and miss case_1
+            if (this._currentState instanceof PressTabState) {
+                telemetry.ui_click.emit({ elementId: AutotriggerState.id, passive: true })
+            }
             telemetry.ui_click.emit({ elementId: this._currentState.id, passive: true })
         }
 
         // update state
         this._currentState = updatedState
-        this._seen.add(this._currentState.id)
+
         // take snapshot of accepted session so that we can compre if there is delta -> users accept 1 suggestion after seeing this state
         AutotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
         // take snapshot of total trigger count so that we can compare if there is delta -> users accept/reject suggestions after seeing this state
