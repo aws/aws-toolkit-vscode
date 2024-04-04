@@ -284,7 +284,7 @@ export class LineAnnotationController implements vscode.Disposable {
                     try {
                         telemetry.ui_click.emit({ elementId: `dismiss_${this._currentState.id}` })
                     } catch (_) {}
-                    await this.markTutorialDone()
+                    await this.dismissTutorial()
                     getLogger().debug(`codewhisperer: user dismiss tutorial.`)
                 }
             })
@@ -306,7 +306,7 @@ export class LineAnnotationController implements vscode.Disposable {
         return this._currentState.id === new EndState().id
     }
 
-    async markTutorialDone() {
+    async dismissTutorial() {
         this._currentState = new EndState()
         await vscode.commands.executeCommand('setContext', inlinehintWipKey, false)
         await set(inlinehintKey, this._currentState.id, globals.context.globalState)
@@ -406,14 +406,13 @@ export class LineAnnotationController implements vscode.Disposable {
             // special case
             // Endstate is meaningless and doesnt need to be rendered
             this.clear()
-            await this.markTutorialDone()
+            await this.dismissTutorial()
             return
         } else if (decorationOptions.renderOptions?.after?.contentText === new TryMoreExState().text()) {
             // special case
             // case 3 exit criteria is to fade away in 30s
             setTimeout(async () => {
-                await this.markTutorialDone()
-                await this.refresh(editor, source)
+                await this.refresh(editor, source, true)
             }, case3TimeWindow)
         }
 
