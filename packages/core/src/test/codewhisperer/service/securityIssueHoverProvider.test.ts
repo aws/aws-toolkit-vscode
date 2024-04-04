@@ -48,11 +48,11 @@ describe('securityIssueHoverProvider', () => {
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName])
                 )} 'Open "Amazon Q Security Issue"')\n` +
-                ` | [$(comment-discussion) Explain with Q](command:aws.amazonq.explainCode?${encodeURIComponent(
-                    JSON.stringify([undefined, issues[0]])
+                ` | [$(comment-discussion) Explain with Q](command:aws.amazonq.explainIssue?${encodeURIComponent(
+                    JSON.stringify([issues[0]])
                 )} 'Explain with Amazon Q')\n` +
-                ` | [$(comment) Fix with Q](command:aws.amazonq.fixCode?${encodeURIComponent(
-                    JSON.stringify([undefined, issues[0]])
+                ` | [$(comment) Fix with Q](command:aws.amazonq.fixIssue?${encodeURIComponent(
+                    JSON.stringify([issues[0]])
                 )} 'Fix with Amazon Q')\n` +
                 ` | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
@@ -95,11 +95,11 @@ describe('securityIssueHoverProvider', () => {
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[1], mockDocument.fileName])
                 )} 'Open "Amazon Q Security Issue"')\n` +
-                ` | [$(comment-discussion) Explain with Q](command:aws.amazonq.explainCode?${encodeURIComponent(
-                    JSON.stringify([undefined, issues[1]])
+                ` | [$(comment-discussion) Explain with Q](command:aws.amazonq.explainIssue?${encodeURIComponent(
+                    JSON.stringify([issues[1]])
                 )} 'Explain with Amazon Q')\n` +
-                ` | [$(comment) Fix with Q](command:aws.amazonq.fixCode?${encodeURIComponent(
-                    JSON.stringify([undefined, issues[1]])
+                ` | [$(comment) Fix with Q](command:aws.amazonq.fixIssue?${encodeURIComponent(
+                    JSON.stringify([issues[1]])
                 )} 'Fix with Amazon Q')\n`
         )
         assertTelemetry('codewhisperer_codeScanIssueHover', [

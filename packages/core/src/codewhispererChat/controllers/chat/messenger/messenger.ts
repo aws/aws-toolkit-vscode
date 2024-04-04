@@ -283,8 +283,10 @@ export class Messenger {
 
     private editorContextMenuCommandVerbs: Map<EditorContextCommandType, string> = new Map([
         ['aws.amazonq.explainCode', 'Explain'],
+        ['aws.amazonq.explainIssue', 'Explain'],
         ['aws.amazonq.refactorCode', 'Refactor'],
         ['aws.amazonq.fixCode', 'Fix'],
+        ['aws.amazonq.fixIssue', 'Fix'],
         ['aws.amazonq.optimizeCode', 'Optimize'],
         ['aws.amazonq.sendToPrompt', 'Send to prompt'],
     ])
@@ -418,7 +420,9 @@ export class Messenger {
             message = [
                 this.editorContextMenuCommandVerbs.get(command),
                 ' the following part of my code:',
-                ...(issue ? [`\n**Issue**: ${issue.title}\n**Description**: ${issue.recommendation.text}`] : []),
+                ...(issue
+                    ? [`\n\n**Issue**: ${issue.title}`, `\n\n**Description**: ${issue.recommendation.text}\n`]
+                    : []),
                 '\n```\n',
                 trimmedCode,
                 '\n```',

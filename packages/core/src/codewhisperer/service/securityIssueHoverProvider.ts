@@ -69,8 +69,8 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         markdownString.appendMarkdown(viewDetailsCommand)
 
         const explainWithQCommand = this._getCommandMarkdown(
-            'aws.amazonq.explainCode',
-            [undefined, issue], // First arg is reserved for `data`
+            'aws.amazonq.explainIssue',
+            [issue],
             'comment-discussion',
             'Explain with Q',
             'Explain with Amazon Q'
@@ -78,8 +78,8 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         markdownString.appendMarkdown(' | ' + explainWithQCommand)
 
         const fixWithQCommand = this._getCommandMarkdown(
-            'aws.amazonq.fixCode',
-            [undefined, issue], // First arg is reserved for `data`
+            'aws.amazonq.fixIssue',
+            [issue],
             'comment',
             'Fix with Q',
             'Fix with Amazon Q'

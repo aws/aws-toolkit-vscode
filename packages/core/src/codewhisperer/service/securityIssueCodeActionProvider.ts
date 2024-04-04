@@ -55,19 +55,19 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     codeActions.push(openIssue)
 
                     const explainWithQ = new vscode.CodeAction('Explain with Amazon Q')
-                    const explainWithQArgs = [undefined, issue] // First arg is reserved for `data`
+                    const explainWithQArgs = [issue]
                     explainWithQ.command = {
                         title: 'Explain with Amazon Q',
-                        command: 'aws.amazonq.explainCode',
+                        command: 'aws.amazonq.explainIssue',
                         arguments: explainWithQArgs,
                     }
                     codeActions.push(explainWithQ)
 
                     const fixWithQ = new vscode.CodeAction('Fix with Amazon Q')
-                    const fixWithQArgs = [undefined, issue] // First arg is reserved for `data`
+                    const fixWithQArgs = [issue]
                     fixWithQ.command = {
                         title: 'Fix with Amazon Q',
-                        command: 'aws.amazonq.fixCode',
+                        command: 'aws.amazonq.fixIssue',
                         arguments: fixWithQArgs,
                     }
                     codeActions.push(fixWithQ)

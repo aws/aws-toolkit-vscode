@@ -37,16 +37,16 @@ export class SecurityIssueWebview extends VueWebview {
     }
 
     public explainWithQ() {
-        const args = [undefined, this.issue] // First arg is reserved for `data`
+        const args = [this.issue]
         void this.navigateToFile()?.then(() => {
-            void vscode.commands.executeCommand('aws.amazonq.explainCode', ...args)
+            void vscode.commands.executeCommand('aws.amazonq.explainIssue', ...args)
         })
     }
 
     public fixWithQ() {
-        const args = [undefined, this.issue] // First arg is reserved for `data`
+        const args = [this.issue]
         void this.navigateToFile()?.then(() => {
-            void vscode.commands.executeCommand('aws.amazonq.fixCode', ...args)
+            void vscode.commands.executeCommand('aws.amazonq.fixIssue', ...args)
         })
     }
 

@@ -15,12 +15,11 @@ const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
 }
 
 export function registerCommands(controllerPublishers: ChatControllerMessagePublishers) {
-    Commands.register('aws.amazonq.explainCode', async (data, issue) => {
+    Commands.register('aws.amazonq.explainCode', async data => {
         return focusAmazonQPanel().then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.explainCode',
                 triggerType: getCommandTriggerType(data),
-                codeScanIssue: issue,
             })
         })
     })
@@ -32,12 +31,11 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
-    Commands.register('aws.amazonq.fixCode', async (data, issue) => {
+    Commands.register('aws.amazonq.fixCode', async data => {
         return focusAmazonQPanel().then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.fixCode',
                 triggerType: getCommandTriggerType(data),
-                codeScanIssue: issue,
             })
         })
     })
@@ -57,6 +55,24 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
+    Commands.register('aws.amazonq.explainIssue', async issue => {
+        return focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.explainIssue',
+                triggerType: 'click',
+                issue,
+            })
+        })
+    })
+    Commands.register('aws.amazonq.fixIssue', async issue => {
+        return focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.fixIssue',
+                triggerType: 'click',
+                issue,
+            })
+        })
+    })
 }
 
 export type EditorContextCommandType =
@@ -65,21 +81,20 @@ export type EditorContextCommandType =
     | 'aws.amazonq.fixCode'
     | 'aws.amazonq.optimizeCode'
     | 'aws.amazonq.sendToPrompt'
-
-export type EditorContextCommandWithIssueType = Extract<
-    EditorContextCommandType,
-    'aws.amazonq.explainCode' | 'aws.amazonq.fixCode'
->
+    | 'aws.amazonq.explainIssue'
+    | 'aws.amazonq.fixIssue'
 
 export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | 'commandPalette' | 'click'
 
-export interface EditorContextCommand {
-    type: EditorContextCommandType
+export interface EditorContextCommandBase {
+    type: Exclude<EditorContextCommandType, 'aws.amazonq.explainIssue' | 'aws.amazonq.fixIssue'>
     triggerType: EditorContextCommandTriggerType
 }
 
 export interface EditorContextCommandWithIssue {
-    type: EditorContextCommandWithIssueType
+    type: Extract<EditorContextCommandType, 'aws.amazonq.explainIssue' | 'aws.amazonq.fixIssue'>
     triggerType: EditorContextCommandTriggerType
-    codeScanIssue: CodeScanIssue
+    issue: CodeScanIssue
 }
+
+export type EditorContextCommand = EditorContextCommandBase | EditorContextCommandWithIssue
