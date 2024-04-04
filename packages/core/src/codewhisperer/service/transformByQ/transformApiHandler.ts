@@ -544,18 +544,22 @@ export async function getTransformationStepsFixture(
                     endTime: new Date(),
                 },
             ],
+            downloadArtifacts: [
+                {
+                    downloadArtifactId: 'hil-test-artifact-id',
+                    downloadArtifactType: 'BuiltJars',
+                },
+            ],
             startTime: new Date(),
             endTime: new Date(),
         },
     ]
 }
 
-export function getArtifactIdentifiers(transformationSteps: TransformationStep[]) {
+export function getDownloadArtifactIdentifiers(transformationSteps: TransformationStep) {
     console.log('In getArtifactIdentifiers', transformationSteps)
-    // const artifactType = transformationSteps[0]?.artifactType
-    // const artifactId = transformationSteps[0]?.artifactId
-    const artifactType = 'hil'
-    const artifactId = 'test-id'
+    const artifactType = transformationSteps.downloadArtifacts?.[0]?.downloadArtifactType
+    const artifactId = transformationSteps.downloadArtifacts?.[0]?.downloadArtifactId
     return {
         artifactId,
         artifactType,
