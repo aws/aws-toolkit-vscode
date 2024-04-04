@@ -171,22 +171,34 @@ export async function activate(context: vscode.ExtensionContext) {
                 switchToAmazonQCommand.register()
                 installAmazonQExtension.register()
 
-                if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) && isPreviousQUser()) {
-                    void vscode.window
-                        .showInformationMessage(
-                            'Amazon Q has moved to its own VSCode extension.' +
-                                '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
-                            'Install',
-                            'Learn More',
-                            'Dismiss'
+                if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
+                    if (isPreviousQUser()) {
+                        void installAmazonQExtension.execute().then(
+                            void vscode.window
+                                .showInformationMessage('We have installed Amazon Q extension for you', 'Restart')
+                                .then(async resp => {
+                                    if (resp === 'Restart') {
+                                        await vscode.commands.executeCommand('workbench.action.reloadWindow')
+                                    }
+                                })
                         )
-                        .then(async resp => {
-                            if (resp === 'Learn More') {
-                                void learnMoreAmazonQCommand.execute()
-                            } else if (resp === 'Install') {
-                                void installAmazonQExtension.execute()
-                            }
-                        })
+                    } else {
+                        void vscode.window
+                            .showInformationMessage(
+                                'Amazon Q has moved to its own VSCode extension.' +
+                                    '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
+                                'Install',
+                                'Learn More',
+                                'Dismiss'
+                            )
+                            .then(async resp => {
+                                if (resp === 'Learn More') {
+                                    void learnMoreAmazonQCommand.execute()
+                                } else if (resp === 'Install') {
+                                    void installAmazonQExtension.execute()
+                                }
+                            })
+                    }
                 }
             }
             await activateApplicationComposer(context)

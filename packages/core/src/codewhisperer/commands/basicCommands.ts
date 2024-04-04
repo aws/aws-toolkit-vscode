@@ -275,7 +275,10 @@ export const installAmazonQExtension = Commands.declare(
                 location: vscode.ProgressLocation.Notification,
             },
             async () => {
-                await new Promise(r => setTimeout(r, 5000))
+                await vscode.commands.executeCommand(
+                    'workbench.extensions.installExtension',
+                    VSCODE_EXTENSION_ID.amazonq
+                )
             }
         )
     }
