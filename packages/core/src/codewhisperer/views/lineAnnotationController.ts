@@ -44,8 +44,10 @@ function fromId(id: string | undefined): AnnotationState | undefined {
 interface AnnotationState {
     id: string
     suppressWhileRunning: boolean
+
     text: () => string
-    nextState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined
+    updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined
+    isNextState(state: AnnotationState): boolean
 }
 
 /**
@@ -67,7 +69,7 @@ class AutotriggerState implements AnnotationState {
     text = () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions ([ESC] to exit)'
     static acceptedCount = 0
 
-    nextState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
+    updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
         if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
             return new ManualtriggerState()
         } else if (session.recommendations.length > 0 && RecommendationHandler.instance.isSuggestionVisible()) {
@@ -75,6 +77,10 @@ class AutotriggerState implements AnnotationState {
         } else {
             return this
         }
+    }
+
+    isNextState(state: AnnotationState): boolean {
+        return state instanceof ManualtriggerState
     }
 }
 
@@ -92,10 +98,15 @@ class PressTabState implements AnnotationState {
     id = PressTabState.id
 
     suppressWhileRunning = false
+
     text = () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept ([ESC] to exit)'
 
-    nextState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
-        return new AutotriggerState().nextState(changeSource, force)
+    updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
+        return new AutotriggerState().updateState(changeSource, force)
+    }
+
+    isNextState(state: AnnotationState): boolean {
+        return state instanceof ManualtriggerState
     }
 }
 
@@ -124,7 +135,7 @@ class ManualtriggerState implements AnnotationState {
     hasManualTrigger: boolean = false
     hasValidResponse: boolean = false
 
-    nextState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
+    updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
         if (this.hasManualTrigger && this.hasValidResponse) {
             if (changeSource !== 'codewhisperer') {
                 return new TryMoreExState()
@@ -134,6 +145,10 @@ class ManualtriggerState implements AnnotationState {
         } else {
             return this
         }
+    }
+
+    isNextState(state: AnnotationState): boolean {
+        return state instanceof TryMoreExState
     }
 }
 
@@ -153,11 +168,15 @@ class TryMoreExState implements AnnotationState {
     suppressWhileRunning = true
 
     text = () => 'CodeWhisperer Tip 3/3: For settings, open the CodeWhisperer menu from the status bar ([ESC] to exit)'
-    nextState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState {
+    updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState {
         if (force) {
             return new EndState()
         }
         return this
+    }
+
+    isNextState(state: AnnotationState): boolean {
+        return state instanceof EndState
     }
 
     static triggerCount: number = 0
@@ -170,8 +189,11 @@ class EndState implements AnnotationState {
 
     suppressWhileRunning = true
     text = () => ''
-    nextState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState {
+    updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState {
         return this
+    }
+    isNextState(state: AnnotationState): boolean {
+        return false
     }
 }
 
@@ -423,20 +445,20 @@ export class LineAnnotationController implements vscode.Disposable {
             return undefined
         }
 
-        const nextState: AnnotationState | undefined = this._currentState.nextState(source, force ?? false)
+        const updatedState: AnnotationState | undefined = this._currentState.updateState(source, force ?? false)
 
-        if (nextState === undefined) {
+        if (updatedState === undefined) {
             return undefined
         }
 
-        if (!this._seen.has(nextState.id)) {
+        if (!this._seen.has(updatedState.id)) {
             try {
                 telemetry.ui_click.emit({ elementId: this._currentState.id, passive: true })
             } catch (e) {}
         }
 
         // update state
-        this._currentState = nextState
+        this._currentState = updatedState
         this._seen.add(this._currentState.id)
         // take snapshot of accepted session so that we can compre if there is delta -> users accept 1 suggestion after seeing this state
         AutotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
