@@ -17,7 +17,7 @@ import { activate as activateCloudFormationTemplateRegistry } from './shared/clo
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     getIdeProperties,
-    getToolkitEnvironmentDetails,
+    getExtEnvironmentDetails,
     isCloud9,
     isSageMaker,
     showWelcomeMessage,
@@ -48,7 +48,7 @@ import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
-import { submitFeedback } from './feedback/vue/submitFeedback'
+import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
 import { activateShared, deactivateShared } from './extensionShared'
 import {
     learnMoreAmazonQCommand,
@@ -71,14 +71,15 @@ let localize: nls.LocalizeFunc
 export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
+    const contextPrefix = 'toolkit'
 
     try {
         // IMPORTANT: If you are doing setup that should also work in web mode (browser), it should be done in the function below
-        const extContext = await activateShared(context)
+        const extContext = await activateShared(context, contextPrefix)
 
         initializeCredentialsProviderManager()
 
-        const toolkitEnvDetails = getToolkitEnvironmentDetails()
+        const toolkitEnvDetails = getExtEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
         toolkitEnvDetails
             .split(/\r?\n/)
@@ -109,7 +110,7 @@ export async function activate(context: vscode.ExtensionContext) {
             getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }
 
-        context.subscriptions.push(submitFeedback.register(context))
+        context.subscriptions.push(registerSubmitFeedback(context, 'AWS Toolkit', contextPrefix))
 
         // do not enable codecatalyst for sagemaker
         // TODO: remove setContext if SageMaker adds the context to their IDE

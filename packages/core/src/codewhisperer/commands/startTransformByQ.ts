@@ -374,7 +374,7 @@ export async function postTransformationJob() {
             )
             .then(choice => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                    void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                 }
             })
     }
@@ -396,7 +396,7 @@ export async function transformationJobErrorHandler(error: any) {
                 )
                 .then(choice => {
                     if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                        void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                     }
                 })
         } catch {
@@ -407,7 +407,7 @@ export async function transformationJobErrorHandler(error: any) {
                 )
                 .then(choice => {
                     if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                        void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                     }
                 })
         }
@@ -424,7 +424,7 @@ export async function transformationJobErrorHandler(error: any) {
             .showErrorMessage(displayedErrorMessage, CodeWhispererConstants.amazonQFeedbackText)
             .then(choice => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                    void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                 }
             })
     }

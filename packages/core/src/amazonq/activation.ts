@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { ExtensionContext, window } from 'vscode'
 import { AmazonQChatViewProvider } from './webview/webView'
 import { init as cwChatAppInit } from '../codewhispererChat/app'
@@ -15,6 +16,7 @@ import { welcome } from './onboardingPage'
 import { activateBadge } from './util/viewBadgeHandler'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../auth/ui/vue/show'
+import { amazonQHelpUrl } from '../shared/constants'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -39,6 +41,9 @@ export async function activate(context: ExtensionContext) {
     )
 
     amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
+    Commands.register('aws.amazonq.learnMore', () => {
+        void vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
+    })
 
     await activateBadge()
 }

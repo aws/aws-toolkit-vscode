@@ -38,7 +38,6 @@ import {
     connectWithCustomization,
     applySecurityFix,
     signoutCodeWhisperer,
-    showManageCwConnections,
     fetchFeatureConfigsCmd,
     registerToolkitApiCallback,
 } from './commands/basicCommands'
@@ -106,7 +105,6 @@ export async function activate(context: ExtContext): Promise<void> {
         // register toolkit api callback
         registerToolkitApiCallback.register(),
         signoutCodeWhisperer.register(auth),
-        showManageCwConnections.register(),
         refreshToolkitQState.register(),
         /**
          * Configuration change

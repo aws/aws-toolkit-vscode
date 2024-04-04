@@ -19,7 +19,7 @@ import { amazonQDismissedKey } from '../../codewhisperer/models/constants'
 
 const localize = nls.loadMessageBundle()
 
-export const learnMoreAmazonQCommand = Commands.declare('aws.amazonq.learnMore', () => () => {
+export const learnMoreAmazonQCommand = Commands.declare('aws.toolkit.amazonq.learnMore', () => () => {
     void vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
 })
 

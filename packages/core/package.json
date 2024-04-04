@@ -37,7 +37,8 @@
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
         "./login": "./dist/src/login/webview/index.js",
-        "./utils": "./dist/src/shared/utilities/index.js"
+        "./utils": "./dist/src/shared/utilities/index.js",
+        "./feedback": "./dist/src/feedback/index.js"
     },
     "contributes": {
         "configuration": {
@@ -697,11 +698,11 @@
             },
             {
                 "label": "%AWS.generic.feedback%",
-                "id": "aws.submenu.feedback"
+                "id": "aws.toolkit.submenu.feedback"
             },
             {
                 "label": "%AWS.generic.help%",
-                "id": "aws.submenu.help"
+                "id": "aws.toolkit.submenu.help"
             }
         ],
         "menus": {
@@ -1195,7 +1196,7 @@
             ],
             "view/title": [
                 {
-                    "command": "aws.submitFeedback",
+                    "command": "aws.toolkit.submitFeedback",
                     "when": "view == aws.explorer && !aws.isWebExtHost",
                     "group": "navigation@6"
                 },
@@ -1210,7 +1211,7 @@
                     "group": "navigation@1"
                 },
                 {
-                    "command": "aws.login",
+                    "command": "aws.toolkit.login",
                     "when": "view == aws.explorer",
                     "group": "1_account@1"
                 },
@@ -1245,13 +1246,13 @@
                     "group": "3_lambda@3"
                 },
                 {
-                    "submenu": "aws.submenu.feedback",
-                    "when": "view =~ /^aws\\./",
+                    "submenu": "aws.toolkit.submenu.feedback",
+                    "when": "view =~ /^aws\\./ && view != aws.AmazonQChatView && view != aws.amazonq.AmazonCommonAuth",
                     "group": "y_toolkitMeta@1"
                 },
                 {
-                    "submenu": "aws.submenu.help",
-                    "when": "view =~ /^aws\\./",
+                    "submenu": "aws.toolkit.submenu.help",
+                    "when": "view =~ /^aws\\./ && view != aws.AmazonQChatView && view != aws.amazonq.AmazonCommonAuth",
                     "group": "y_toolkitMeta@2"
                 },
                 {
@@ -1939,33 +1940,33 @@
                     "group": "0@3"
                 }
             ],
-            "aws.submenu.feedback": [
+            "aws.toolkit.submenu.feedback": [
                 {
-                    "command": "aws.submitFeedback",
+                    "command": "aws.toolkit.submitFeedback",
                     "when": "!aws.isWebExtHost",
                     "group": "1_feedback@1"
                 },
                 {
-                    "command": "aws.createIssueOnGitHub",
+                    "command": "aws.toolkit.createIssueOnGitHub",
                     "group": "1_feedback@2"
                 }
             ],
-            "aws.submenu.help": [
+            "aws.toolkit.submenu.help": [
                 {
                     "command": "aws.quickStart",
                     "when": "isCloud9",
                     "group": "1_help@1"
                 },
                 {
-                    "command": "aws.help",
+                    "command": "aws.toolkit.help",
                     "group": "1_help@2"
                 },
                 {
-                    "command": "aws.github",
+                    "command": "aws.toolkit.github",
                     "group": "1_help@3"
                 },
                 {
-                    "command": "aws.aboutToolkit",
+                    "command": "aws.toolkit.aboutExtension",
                     "group": "1_help@4"
                 },
                 {
@@ -2021,7 +2022,7 @@
                 }
             },
             {
-                "command": "aws.login",
+                "command": "aws.toolkit.login",
                 "title": "%AWS.command.login%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
@@ -2033,7 +2034,7 @@
                 }
             },
             {
-                "command": "aws.credentials.profile.create",
+                "command": "aws.toolkit.credentials.profile.create",
                 "title": "%AWS.command.credentials.profile.create%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -2043,7 +2044,7 @@
                 }
             },
             {
-                "command": "aws.credentials.edit",
+                "command": "aws.toolkit.credentials.edit",
                 "title": "%AWS.command.credentials.edit%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -2102,7 +2103,7 @@
                 "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
-                "command": "aws.logout",
+                "command": "aws.toolkit.logout",
                 "title": "%AWS.command.logout%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -2144,7 +2145,7 @@
                 "icon": "$(question)"
             },
             {
-                "command": "aws.createIssueOnGitHub",
+                "command": "aws.toolkit.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -2684,7 +2685,7 @@
                 }
             },
             {
-                "command": "aws.submitFeedback",
+                "command": "aws.toolkit.submitFeedback",
                 "title": "%AWS.command.submitFeedback%",
                 "enablement": "!aws.isWebExtHost",
                 "category": "%AWS.title%",
@@ -2843,7 +2844,7 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.help",
+                "command": "aws.toolkit.help",
                 "title": "%AWS.command.help%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -2853,7 +2854,7 @@
                 }
             },
             {
-                "command": "aws.github",
+                "command": "aws.toolkit.github",
                 "title": "%AWS.command.github%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -2936,7 +2937,7 @@
                 "icon": "$(aws-stepfunctions-preview)"
             },
             {
-                "command": "aws.aboutToolkit",
+                "command": "aws.toolkit.aboutExtension",
                 "title": "%AWS.command.aboutToolkit%",
                 "category": "%AWS.title%"
             },
