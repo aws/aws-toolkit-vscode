@@ -22,6 +22,7 @@ import { getLogger } from '../../../shared/logger'
 import CodeWhispererUserClient, {
     CreateUploadUrlResponse,
     TransformationStep,
+    TransformationSteps,
 } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
@@ -556,12 +557,25 @@ export async function getTransformationStepsFixture(
     ]
 }
 
-export function getDownloadArtifactIdentifiers(transformationSteps: TransformationStep) {
-    console.log('In getArtifactIdentifiers', transformationSteps)
-    const artifactType = transformationSteps.downloadArtifacts?.[0]?.downloadArtifactType
-    const artifactId = transformationSteps.downloadArtifacts?.[0]?.downloadArtifactId
+export function getDownloadArtifactIdentifiers(transformationStep: TransformationStep) {
+    console.log('In getDownloadArtifactIdentifiers', transformationStep)
+    const artifactType = transformationStep.downloadArtifacts?.[0]?.downloadArtifactType
+    const artifactId = transformationStep.downloadArtifacts?.[0]?.downloadArtifactId
     return {
         artifactId,
         artifactType,
     }
+}
+
+export function findDownloadArtifactStep(transformationSteps: TransformationSteps) {
+    console.log('In findDownloadArtifactStep', transformationSteps)
+    for (let i = 0; i < transformationSteps.length; i++) {
+        if (
+            transformationSteps[i].downloadArtifacts?.[0]?.downloadArtifactType ||
+            transformationSteps[i].downloadArtifacts?.[0]?.downloadArtifactId
+        ) {
+            return transformationSteps[i]
+        }
+    }
+    return
 }

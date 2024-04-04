@@ -27,7 +27,8 @@ import {
 } from '../../shared/utilities/textUtilities'
 import {
     downloadResultArchive,
-    getArtifactIdentifiers,
+    findDownloadArtifactStep,
+    getDownloadArtifactIdentifiers,
     getTransformationPlan,
     getTransformationStepsFixture,
     pollTransformationJob,
@@ -247,7 +248,18 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
     try {
         // 1) We need to call GetTransformationPlan to get artifactId
         const transformationSteps = await getTransformationStepsFixture(jobId)
-        const { artifactId, artifactType } = getArtifactIdentifiers(transformationSteps)
+        const hilTransformationStep = findDownloadArtifactStep(transformationSteps)
+
+        if (!hilTransformationStep) {
+            throw new Error('No HIL Transformation Step found')
+        }
+
+        const { artifactId, artifactType } = getDownloadArtifactIdentifiers(hilTransformationStep)
+
+        // Early exit safeguard incase artifactId or artifactType are undefined
+        if (!artifactId || !artifactType) {
+            throw new Error('artifactId or artifactType is undefined')
+        }
 
         // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
         const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadResultArchive(

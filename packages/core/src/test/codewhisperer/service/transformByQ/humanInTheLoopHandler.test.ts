@@ -5,7 +5,10 @@
 import assert from 'assert'
 import { parseXmlDependenciesReport } from '../../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { TransformationStep } from '../../../../codewhisperer/client/codewhispereruserclient'
-import { getDownloadArtifactIdentifiers } from '../../../../codewhisperer/service/transformByQ/transformApiHandler'
+import {
+    findDownloadArtifactStep,
+    getDownloadArtifactIdentifiers,
+} from '../../../../codewhisperer/service/transformByQ/transformApiHandler'
 
 describe('Amazon Q Gumby Human In The Loop Handler', function () {
     describe('parseXmlDependenciesReport', function () {
@@ -87,6 +90,65 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
 
             assert.strictEqual(artifactId, downloadArtifactId)
             assert.strictEqual(artifactType, downloadArtifactId)
+        })
+    })
+    describe('findDownloadArtifactStep', function () {
+        it('will return downloaded artifact values from transformationStep', function () {
+            const downloadArtifactId = 'hil-test-artifact-id'
+            const downloadArtifactType = 'BuiltJars'
+            const transformationStepsFixture: TransformationStep[] = [
+                {
+                    id: 'fake-step-id-1',
+                    name: 'Building Code',
+                    description: 'Building dependencies',
+                    status: 'COMPLETED',
+                    progressUpdates: [
+                        {
+                            name: 'Status step',
+                            status: 'FAILED',
+                            description: 'This step should be hil identifier',
+                            startTime: new Date(),
+                            endTime: new Date(),
+                        },
+                    ],
+                    downloadArtifacts: [
+                        {
+                            downloadArtifactId,
+                            downloadArtifactType,
+                        },
+                    ],
+                    startTime: new Date(),
+                    endTime: new Date(),
+                },
+            ]
+            const transformationStepFound = findDownloadArtifactStep(transformationStepsFixture)
+
+            assert.strictEqual(transformationStepFound, transformationStepsFixture[0])
+        })
+        it('will return undefined if no downloadArtifactId found', function () {
+            const transformationStepsFixture: TransformationStep[] = [
+                {
+                    id: 'fake-step-id-1',
+                    name: 'Building Code',
+                    description: 'Building dependencies',
+                    status: 'COMPLETED',
+                    progressUpdates: [
+                        {
+                            name: 'Status step',
+                            status: 'FAILED',
+                            description: 'This step should be hil identifier',
+                            startTime: new Date(),
+                            endTime: new Date(),
+                        },
+                    ],
+                    downloadArtifacts: undefined,
+                    startTime: new Date(),
+                    endTime: new Date(),
+                },
+            ]
+            const transformationStepFound = findDownloadArtifactStep(transformationStepsFixture)
+
+            assert.strictEqual(transformationStepFound, undefined)
         })
     })
 })
