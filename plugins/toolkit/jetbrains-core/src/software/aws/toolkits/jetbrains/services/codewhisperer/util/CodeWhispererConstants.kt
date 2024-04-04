@@ -75,7 +75,7 @@ object CodeWhispererConstants {
     const val GO_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val CODE_SCAN_POLLING_INTERVAL_IN_SECONDS: Long = 1
     const val CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS: Long = 10
-    const val FILE_PAYLOAD_SIZE_LIMIT = 1024 * 200 // 200KB
+    const val FILE_SCAN_PAYLOAD_SIZE_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val AUTO_SCAN_DEBOUNCE_DELAY_IN_SECONDS: Long = 2
     const val TOTAL_BYTES_IN_KB = 1024
     const val TOTAL_BYTES_IN_MB = 1024 * 1024
@@ -111,9 +111,9 @@ object CodeWhispererConstants {
         const val DEACTIVATED = "Deactivated"
     }
 
-    object SecurityScanType {
-        const val FILE = "File"
-        const val PROJECT = "Project"
+    enum class SecurityScanType {
+        FILE,
+        PROJECT
     }
 
     object Config {

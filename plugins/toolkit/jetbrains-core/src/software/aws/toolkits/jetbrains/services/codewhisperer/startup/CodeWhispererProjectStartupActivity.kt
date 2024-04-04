@@ -88,7 +88,7 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
         showAccountlessNotificationIfNeeded(project)
 
         //  Run Proactive Code File Scan
-        CodeWhispererCodeScanManager.getInstance(project).debouncedCodeScan(CodeWhispererConstants.SecurityScanType.FILE)
+        CodeWhispererCodeScanManager.getInstance(project).debouncedRunCodeScan(CodeWhispererConstants.SecurityScanType.FILE)
         runOnce = true
     }
 

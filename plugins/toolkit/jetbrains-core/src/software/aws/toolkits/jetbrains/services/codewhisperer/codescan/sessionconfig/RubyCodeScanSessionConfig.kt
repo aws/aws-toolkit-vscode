@@ -15,7 +15,7 @@ import java.io.IOException
 internal class RubyCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project,
-    private val scanType: String
+    private val scanType: CodeWhispererConstants.SecurityScanType
 ) : CodeScanSessionConfig(selectedFile, project, scanType) {
 
     private val importRegex = Regex("^(require|require_relative|load|include|extend)\\s+('[^']+'|\"[^\"]+\"|\\w+)(\\s+as\\s+(\\w+))?")

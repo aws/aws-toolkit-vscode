@@ -10,13 +10,14 @@ import com.intellij.util.containers.addIfNotNull
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.PYTHON_CODE_SCAN_TIMEOUT_IN_SECONDS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.PYTHON_PAYLOAD_LIMIT_IN_BYTES
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.SecurityScanType
 import software.aws.toolkits.resources.message
 import java.io.IOException
 
 internal class PythonCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project,
-    private val scanType: String
+    private val scanType: SecurityScanType
 ) : CodeScanSessionConfig(selectedFile, project, scanType) {
 
     private val importRegex = Regex("^(?:from\\s+(\\S+)\\s+)?(?:import\\s+((?:\\S+(?:\\s+as\\s+\\S+)?\\s*[,]?\\s*)+))\$")

@@ -21,6 +21,6 @@ class ResumeCodeScans : DumbAwareAction(
         CodeWhispererExplorerActionManager.getInstance().setAutoCodeScan(project, true)
 
         //  Run Proactive Code File Scan once toggle is enabled
-        CodeWhispererCodeScanManager.getInstance(project).debouncedCodeScan(CodeWhispererConstants.SecurityScanType.FILE)
+        CodeWhispererCodeScanManager.getInstance(project).debouncedRunCodeScan(CodeWhispererConstants.SecurityScanType.FILE)
     }
 }

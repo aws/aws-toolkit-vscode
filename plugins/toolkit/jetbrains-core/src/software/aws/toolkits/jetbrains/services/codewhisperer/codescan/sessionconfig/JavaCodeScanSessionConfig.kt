@@ -16,11 +16,10 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileScanTooLarge
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLarge
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JAVA_CODE_SCAN_TIMEOUT_IN_SECONDS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JAVA_PAYLOAD_LIMIT_IN_BYTES
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.SecurityScanType
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.IOException
@@ -31,7 +30,7 @@ import java.time.Instant
 internal class JavaCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project,
-    private val scanType: String
+    private val scanType: SecurityScanType
 ) : CodeScanSessionConfig(selectedFile, project, scanType) {
 
     private val packageRegex = Regex("package\\s+([\\w.]+)\\s*;")
@@ -47,9 +46,9 @@ internal class JavaCodeScanSessionConfig(
 
     override fun createPayload(): Payload {
         // Fail fast if the selected file size is greater than the payload limit.
-        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+        if (scanType == SecurityScanType.FILE) {
             if (selectedFile.length > getFilePayloadLimitInBytes()) {
-                fileScanTooLarge(getPresentableFilePayloadLimit())
+                fileTooLarge(getPresentableFilePayloadLimit())
             }
         } else {
             if (selectedFile.length > getPayloadLimitInBytes()) {
@@ -61,7 +60,7 @@ internal class JavaCodeScanSessionConfig(
 
         LOG.debug { "Creating payload. File selected as root for the context truncation: ${selectedFile.path}" }
 
-        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+        if (scanType == SecurityScanType.FILE) {
             val payloadMetadata = getFilePayloadMetadata()
             val srcZip = zipFiles(payloadMetadata.sourceFiles.map { Path.of(it) })
             val payloadContext = PayloadContext(
@@ -159,11 +158,11 @@ internal class JavaCodeScanSessionConfig(
         } + buildExt
     }
 
-    override fun getSourceFilesUnderProjectRoot(selectedFile: VirtualFile, scanType: String): List<VirtualFile> {
+    override fun getSourceFilesUnderProjectRoot(selectedFile: VirtualFile, scanType: SecurityScanType): List<VirtualFile> {
         val files = mutableListOf<VirtualFile>()
         files.add(selectedFile)
 
-        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+        if (scanType == SecurityScanType.FILE) {
             return files
         } else {
             val sourceRoots = ProjectRootManager.getInstance(project).getModuleSourceRoots(setOf(JavaSourceRootType.SOURCE))
@@ -186,7 +185,7 @@ internal class JavaCodeScanSessionConfig(
         val files = getSourceFilesUnderProjectRoot(selectedFile, scanType)
         val queue = ArrayDeque<VirtualFile>()
 
-        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+        if (scanType == SecurityScanType.FILE) {
             return getFilePayloadMetadata()
         } else {
             files.forEach { file ->

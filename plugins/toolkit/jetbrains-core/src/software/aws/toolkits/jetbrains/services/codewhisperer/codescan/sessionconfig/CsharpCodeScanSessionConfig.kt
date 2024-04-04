@@ -9,13 +9,14 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.containers.addIfNotNull
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.SecurityScanType
 import software.aws.toolkits.resources.message
 import java.io.IOException
 
 internal class CsharpCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project,
-    private val scanType: String
+    private val scanType: SecurityScanType
 ) : CodeScanSessionConfig(selectedFile, project, scanType) {
 
     private val importRegex = Regex("^(global\\s)?using\\s(static\\s)?((\\b[A-Z][A-Za-z]+(\\.\\b[A-Z][A-Za-z]+)*)|\\w+\\s*=\\s*([\\w.]+));$")

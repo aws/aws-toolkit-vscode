@@ -16,11 +16,11 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileFormatNotSupported
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileScanTooLarge
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLarge
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.FILE_SCAN_PAYLOAD_SIZE_LIMIT_IN_BYTES
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.SecurityScanType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_BYTES_IN_KB
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_BYTES_IN_MB
 import software.aws.toolkits.telemetry.CodewhispererLanguage
@@ -34,7 +34,7 @@ import kotlin.io.path.relativeTo
 sealed class CodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project,
-    private val scanType: String
+    private val scanType: SecurityScanType
 ) {
     var projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
         private set
@@ -50,7 +50,7 @@ sealed class CodeScanSessionConfig(
 
     abstract fun getPayloadLimitInBytes(): Int
 
-    open fun getFilePayloadLimitInBytes(): Int = CodeWhispererConstants.FILE_PAYLOAD_SIZE_LIMIT
+    open fun getFilePayloadLimitInBytes(): Int = FILE_SCAN_PAYLOAD_SIZE_LIMIT_IN_BYTES
 
     protected fun willExceedPayloadLimit(currentTotalFileSize: Long, currentFileSize: Long): Boolean {
         val exceedsLimit = currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize
@@ -64,9 +64,9 @@ sealed class CodeScanSessionConfig(
 
     open fun createPayload(): Payload {
         // Fail fast if the selected file size is greater than the payload limit.
-        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+        if (scanType == SecurityScanType.FILE) {
             if (selectedFile.length > getFilePayloadLimitInBytes()) {
-                fileScanTooLarge(getPresentableFilePayloadLimit())
+                fileTooLarge(getPresentableFilePayloadLimit())
             }
         } else {
             if (selectedFile.length > getPayloadLimitInBytes()) {
@@ -117,7 +117,7 @@ sealed class CodeScanSessionConfig(
         val files = getSourceFilesUnderProjectRoot(selectedFile, scanType)
         val queue = ArrayDeque<String>()
 
-        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+        if (scanType == SecurityScanType.FILE) {
             return getFilePayloadMetadata()
         } else {
             files.forEach { pivotFile ->
@@ -203,11 +203,11 @@ sealed class CodeScanSessionConfig(
     /**
      * Returns all the source files for a given payload type.
      */
-    open fun getSourceFilesUnderProjectRoot(selectedFile: VirtualFile, scanType: String): List<VirtualFile> {
+    open fun getSourceFilesUnderProjectRoot(selectedFile: VirtualFile, scanType: SecurityScanType): List<VirtualFile> {
         //  Include the current selected file
         val files = mutableListOf(selectedFile)
         //  Include only the file if scan type is file scan.
-        if (scanType == CodeWhispererConstants.SecurityScanType.FILE) {
+        if (scanType == SecurityScanType.FILE) {
             return files
         } else {
             // Include other files only if the current file is in the project.
@@ -237,7 +237,7 @@ sealed class CodeScanSessionConfig(
         private val LOG = getLogger<CodeScanSessionConfig>()
         private const val TELEMETRY_TIMEOUT_IN_SECONDS: Long = 10
         const val FILE_SEPARATOR = '/'
-        fun create(file: VirtualFile, project: Project, scanType: String): CodeScanSessionConfig =
+        fun create(file: VirtualFile, project: Project, scanType: SecurityScanType): CodeScanSessionConfig =
             when (file.programmingLanguage().toTelemetryType()) {
                 CodewhispererLanguage.Java -> JavaCodeScanSessionConfig(file, project, scanType)
                 CodewhispererLanguage.Python -> PythonCodeScanSessionConfig(file, project, scanType)

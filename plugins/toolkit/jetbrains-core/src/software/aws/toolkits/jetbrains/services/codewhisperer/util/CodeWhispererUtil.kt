@@ -11,6 +11,10 @@ import com.intellij.openapi.editor.impl.EditorImpl
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
 import software.amazon.awssdk.services.codewhispererruntime.model.OptOutPreference
@@ -290,6 +294,21 @@ object CodeWhispererUtil {
         } else {
             OptOutPreference.OPTOUT
         }
+
+    fun <T> debounce(
+        waitMs: Long = 300L,
+        coroutineScope: CoroutineScope,
+        destinationFunction: (T) -> Unit
+    ): (T) -> Unit {
+        var debounceJob: Job? = null
+        return { param: T ->
+            debounceJob?.cancel()
+            debounceJob = coroutineScope.launch {
+                delay(waitMs)
+                destinationFunction(param)
+            }
+        }
+    }
 }
 
 enum class CaretMovement {
