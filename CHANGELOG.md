@@ -1,3 +1,9 @@
+## 2.18.0 2024-04-04
+
+- **Bug Fix** Amazon Q Feature Dev: Fix followups after hitting iteration limit
+- **Bug Fix** Amazon Q Code Transformation: remove Transform button from side panel, use /transform in chat now
+- **Bug Fix** Amazon Q Code Transformation: allow "Start a new transformation" button in chat to work after job fails
+
 ## 2.17.0 2024-03-28
 
 - **Bug Fix** CodeWhisperer: Infinite loop of logging if users' editor focus is on OUTPUT tab
