@@ -35,7 +35,6 @@ object SsoPrompt : SsoLoginCallback {
             ).showAndGet()
 
             if (result) {
-                AwsTelemetry.loginWithBrowser(project = null, result = Result.Succeeded, credentialType = CredentialType.SsoProfile)
                 BrowserUtil.browse(authorization.verificationUriComplete)
             } else {
                 AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = CredentialType.SsoProfile)
@@ -44,10 +43,13 @@ object SsoPrompt : SsoLoginCallback {
         }
     }
 
-    override fun tokenRetrieved() {}
+    override fun tokenRetrieved() {
+        AwsTelemetry.loginWithBrowser(project = null, result = Result.Succeeded, credentialType = CredentialType.SsoProfile)
+    }
 
     override fun tokenRetrievalFailure(e: Exception) {
         e.notifyError(message("credentials.sso.login.failed"))
+        AwsTelemetry.loginWithBrowser(project = null, result = Result.Failed, credentialType = CredentialType.SsoProfile)
     }
 }
 
@@ -61,7 +63,6 @@ object BearerTokenPrompt : SsoLoginCallback {
             ).showAndGet()
 
             if (codeCopied) {
-                AwsTelemetry.loginWithBrowser(project = null, result = Result.Succeeded, credentialType = CredentialType.BearerToken)
                 BrowserUtil.browse(authorization.verificationUriComplete)
             } else {
                 AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = CredentialType.BearerToken)
@@ -69,7 +70,11 @@ object BearerTokenPrompt : SsoLoginCallback {
         }
     }
 
-    override fun tokenRetrieved() {}
+    override fun tokenRetrieved() {
+        AwsTelemetry.loginWithBrowser(project = null, result = Result.Succeeded, credentialType = CredentialType.BearerToken)
+    }
 
-    override fun tokenRetrievalFailure(e: Exception) {}
+    override fun tokenRetrievalFailure(e: Exception) {
+        AwsTelemetry.loginWithBrowser(project = null, result = Result.Failed, credentialType = CredentialType.BearerToken)
+    }
 }
