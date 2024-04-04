@@ -37,7 +37,8 @@ const val BUILD_LOG_PATH = "build-logs.txt"
 const val MAVEN_CONFIGURATION_FILE_NAME = "pom.xml"
 const val MAVEN_DEFAULT_BUILD_DIRECTORY_NAME = "target"
 const val IDEA_DIRECTORY_NAME = ".idea"
-
+const val INVALID_SUFFIX_SHA = "sha1"
+const val INVALID_SUFFIX_REPOSITORIES = "repositories"
 data class CodeModernizerSessionContext(
     val project: Project,
     val configurationFile: VirtualFile,
@@ -45,6 +46,7 @@ data class CodeModernizerSessionContext(
     val targetJavaVersion: JavaSdkVersion,
 ) {
     private val mapper = jacksonObjectMapper()
+    private val ignoredDependencyFileExtensions = setOf(INVALID_SUFFIX_SHA, INVALID_SUFFIX_REPOSITORIES)
 
     fun File.isMavenTargetFolder(): Boolean {
         val hasPomSibling = this.resolveSibling(MAVEN_CONFIGURATION_FILE_NAME).exists()
@@ -164,16 +166,18 @@ data class CodeModernizerSessionContext(
         }
     }
 
-    private fun iterateThroughDependencies(depDirectory: File): MutableList<File> {
+    private fun Path.isIgnoredDependency() = this.toFile().extension in ignoredDependencyFileExtensions
+
+    fun iterateThroughDependencies(depDirectory: File): MutableList<File> {
         val dependencyfiles = mutableListOf<File>()
         Files.walkFileTree(
             depDirectory.toPath(),
             setOf(FileVisitOption.FOLLOW_LINKS),
             Int.MAX_VALUE,
             object : SimpleFileVisitor<Path>() {
-                override fun visitFile(file: Path?, attrs: BasicFileAttributes?): FileVisitResult {
-                    if (file != null) {
-                        dependencyfiles.add(file.toFile())
+                override fun visitFile(path: Path, attrs: BasicFileAttributes?): FileVisitResult {
+                    if (!path.isIgnoredDependency()) {
+                        dependencyfiles.add(path.toFile())
                     }
                     return FileVisitResult.CONTINUE
                 }
