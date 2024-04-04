@@ -21,7 +21,6 @@ phases:
         commands:
             # --unsafe-perm is needed because we run as root
             - npm ci --unsafe-perm
-            - cp ./README.quickstart.vscode.md ./README.md
             - npm run package
 
 artifacts:
