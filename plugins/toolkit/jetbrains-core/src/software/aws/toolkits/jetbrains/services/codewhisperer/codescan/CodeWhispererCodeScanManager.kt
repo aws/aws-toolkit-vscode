@@ -75,6 +75,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.Result
 import java.time.Duration
 import java.time.Instant
@@ -146,12 +147,12 @@ class CodeWhispererCodeScanManager(val project: Project) {
 
         //  If scanType is project
         if (scanType == CodeWhispererConstants.SecurityScanType.PROJECT) {
+            // Prepare for a project code scan
+            beforeCodeScan()
             // launch code scan coroutine
             codeScanJob = launchCodeScanCoroutine(CodeWhispererConstants.SecurityScanType.PROJECT)
         } else {
             if (CodeWhispererExplorerActionManager.getInstance().isAutoEnabledForCodeScan()) {
-                // Prepare for a code scan
-                beforeCodeScan()
                 //  Add File Scan
                 codeScanJob = launchCodeScanCoroutine(CodeWhispererConstants.SecurityScanType.FILE)
             }
@@ -214,38 +215,47 @@ class CodeWhispererCodeScanManager(val project: Project) {
             }
             val codeScanSessionConfig = CodeScanSessionConfig.create(file, project, scanType)
             language = codeScanSessionConfig.getSelectedFile().programmingLanguage()
-            withTimeout(Duration.ofSeconds(codeScanSessionConfig.overallJobTimeoutInSeconds())) {
-                // 1. Generate truncation (zip files) based on the current editor.
-                LOG.debug { "Creating context truncation for file ${file.path}" }
-                val sessionContext = CodeScanSessionContext(project, codeScanSessionConfig)
-                val session = CodeWhispererCodeScanSession(sessionContext)
-                val codeScanResponse = session.run()
-                codeScanResponseContext = codeScanResponse.responseContext
-                codeScanJobId = codeScanResponseContext.codeScanJobId
-                when (codeScanResponse) {
-                    is CodeScanResponse.Success -> {
-                        val issues = codeScanResponse.issues
-                        coroutineContext.ensureActive()
-                        renderResponseOnUIThread(
-                            issues,
-                            codeScanResponse.responseContext.payloadContext.scannedFiles,
-                            codeScanSessionConfig.isProjectTruncated(),
-                            scanType
-                        )
-                        codeScanStatus = Result.Succeeded
-                    }
-
-                    is CodeScanResponse.Failure -> {
-                        if (codeScanResponse.failureReason !is TimeoutCancellationException && codeScanResponse.failureReason is CancellationException) {
-                            codeScanStatus = Result.Cancelled
+            if (scanType == CodeWhispererConstants.SecurityScanType.FILE &&
+                (language == CodeWhispererUnknownLanguage.INSTANCE || language.toTelemetryType() == CodewhispererLanguage.Plaintext)
+            ) {
+                LOG.info { "Language is unknown or plaintext, skipping code scan." }
+                isCodeScanInProgress.set(false)
+                codeScanStatus = Result.Cancelled
+                return@launch
+            } else {
+                withTimeout(Duration.ofSeconds(codeScanSessionConfig.overallJobTimeoutInSeconds())) {
+                    // 1. Generate truncation (zip files) based on the current editor.
+                    LOG.debug { "Creating context truncation for file ${file.path}" }
+                    val sessionContext = CodeScanSessionContext(project, codeScanSessionConfig)
+                    val session = CodeWhispererCodeScanSession(sessionContext)
+                    val codeScanResponse = session.run()
+                    codeScanResponseContext = codeScanResponse.responseContext
+                    codeScanJobId = codeScanResponseContext.codeScanJobId
+                    when (codeScanResponse) {
+                        is CodeScanResponse.Success -> {
+                            val issues = codeScanResponse.issues
+                            coroutineContext.ensureActive()
+                            renderResponseOnUIThread(
+                                issues,
+                                codeScanResponse.responseContext.payloadContext.scannedFiles,
+                                codeScanSessionConfig.isProjectTruncated(),
+                                scanType
+                            )
+                            codeScanStatus = Result.Succeeded
                         }
-                        throw codeScanResponse.failureReason
+
+                        is CodeScanResponse.Failure -> {
+                            if (codeScanResponse.failureReason !is TimeoutCancellationException && codeScanResponse.failureReason is CancellationException) {
+                                codeScanStatus = Result.Cancelled
+                            }
+                            throw codeScanResponse.failureReason
+                        }
                     }
+                    LOG.info { "Security scan completed for jobID: $codeScanJobId." }
                 }
-                LOG.info { "Security scan completed for jobID: $codeScanJobId." }
-            }
-            getProjectSize = async {
-                codeScanSessionConfig.getTotalProjectSizeInBytes()
+                getProjectSize = async {
+                    codeScanSessionConfig.getTotalProjectSizeInBytes()
+                }
             }
         } catch (e: Exception) {
             isCodeScanInProgress.set(false)
