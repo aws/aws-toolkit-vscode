@@ -270,7 +270,7 @@ export const installAmazonQExtension = Commands.declare(
     () => async () => {
         await vscode.window.withProgress(
             {
-                title: 'Installing Amazon Q... (placeholder)',
+                title: 'Installing Amazon Q...',
                 cancellable: true,
                 location: vscode.ProgressLocation.Notification,
             },
