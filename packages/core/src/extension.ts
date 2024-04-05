@@ -175,9 +175,12 @@ export async function activate(context: vscode.ExtensionContext) {
                     if (isPreviousQUser()) {
                         await installAmazonQExtension.execute()
                         void vscode.window
-                            .showInformationMessage('We have installed Amazon Q extension for you', 'Restart')
+                            .showInformationMessage(
+                                'Amazon Q has moved to its own VSCode extension, which has been automatically installed',
+                                'Reload Now'
+                            )
                             .then(async resp => {
-                                if (resp === 'Restart') {
+                                if (resp === 'Reload Now') {
                                     await vscode.commands.executeCommand('workbench.action.reloadWindow')
                                 }
                             })
