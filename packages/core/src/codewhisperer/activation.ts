@@ -233,6 +233,9 @@ export async function activate(context: ExtContext): Promise<void> {
          * On recommendation acceptance
          */
         acceptSuggestion.register(context),
+
+        connectWithCustomization()?.register() ?? { dispose() {} },
+
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
             if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
@@ -264,11 +267,6 @@ export async function activate(context: ExtContext): Promise<void> {
             SecurityIssueCodeActionProvider.instance
         )
     )
-
-    const connectWithCustomizationCommand = connectWithCustomization()
-    if (connectWithCustomizationCommand) {
-        context.extensionContext.subscriptions.push(connectWithCustomizationCommand.register())
-    }
 
     await auth.restore()
 

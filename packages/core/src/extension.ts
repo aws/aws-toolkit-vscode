@@ -227,10 +227,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
         // Register the aws.CodeWhisperer.connect command if Amazon Q is not active
         if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) || !isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
-            const connectWithCustomizationCommand = connectWithCustomization()
-            if (connectWithCustomizationCommand) {
-                context.subscriptions.push(connectWithCustomizationCommand.register())
-            }
+            context.subscriptions.push(connectWithCustomization()?.register() ?? { dispose() {} })
         }
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
