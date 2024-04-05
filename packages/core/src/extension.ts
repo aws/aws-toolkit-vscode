@@ -171,22 +171,30 @@ export async function activate(context: vscode.ExtensionContext) {
                 switchToAmazonQCommand.register()
                 installAmazonQExtension.register()
 
-                if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) && isPreviousQUser()) {
-                    void vscode.window
-                        .showInformationMessage(
-                            'Amazon Q has moved to its own VSCode extension.' +
-                                '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
-                            'Install',
-                            'Learn More',
-                            'Dismiss'
+                if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
+                    if (isPreviousQUser()) {
+                        await installAmazonQExtension.execute()
+                        await vscode.window.showInformationMessage(
+                            'Amazon Q has moved to its own VSCode extension, which has been automatically installed.',
+                            'OK'
                         )
-                        .then(async resp => {
-                            if (resp === 'Learn More') {
-                                void learnMoreAmazonQCommand.execute()
-                            } else if (resp === 'Install') {
-                                void installAmazonQExtension.execute()
-                            }
-                        })
+                    } else {
+                        await vscode.window
+                            .showInformationMessage(
+                                'Amazon Q has moved to its own VSCode extension.' +
+                                    '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
+                                'Install',
+                                'Learn More'
+                            )
+                            .then(async resp => {
+                                if (resp === 'Learn More') {
+                                    // Clicking learn more will open the q extension page
+                                    await qExtensionPageCommand.execute()
+                                } else if (resp === 'Install') {
+                                    await installAmazonQExtension.execute()
+                                }
+                            })
+                    }
                 }
             }
             await activateApplicationComposer(context)

@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { Command, Commands, placeholder } from '../../shared/vscode/commands2'
 import { codicon, getIcon } from '../../shared/icons'
-import { reconnect } from '../../codewhisperer/commands/basicCommands'
+import { installAmazonQExtension, reconnect } from '../../codewhisperer/commands/basicCommands'
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -24,16 +24,16 @@ export const learnMoreAmazonQCommand = Commands.declare('aws.toolkit.amazonq.lea
 })
 
 export const qExtensionPageCommand = Commands.declare('aws.toolkit.amazonq.extensionpage', () => () => {
-    void vscode.env.openExternal(vscode.Uri.parse(`vscode:extension/${VSCODE_EXTENSION_ID.awstoolkit}`))
+    void vscode.env.openExternal(vscode.Uri.parse(`vscode:extension/${VSCODE_EXTENSION_ID.amazonq}`))
 })
 
 export const dismissQTree = Commands.declare('aws.toolkit.amazonq.dismiss', () => async () => {
     await globals.context.globalState.update(amazonQDismissedKey, true)
     await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
 })
-
+// Learn more button of Amazon Q now opens the Amazon Q marketplace page.
 export const createLearnMoreNode = () =>
-    learnMoreAmazonQCommand.build().asTreeNode({
+    qExtensionPageCommand.build().asTreeNode({
         label: localize('AWS.amazonq.learnMore', 'Learn More About Amazon Q (Preview)'),
         iconPath: getIcon('vscode-question'),
         contextValue: 'awsAmazonQLearnMoreNode',
@@ -103,7 +103,7 @@ export function createSignIn(type: 'item' | 'tree'): any {
 }
 
 export function createInstallQNode() {
-    return qExtensionPageCommand.build().asTreeNode({
+    return installAmazonQExtension.build().asTreeNode({
         label: 'Install the Amazon Q Extension', // TODO: localize
         iconPath: getIcon('vscode-extensions'),
     })
