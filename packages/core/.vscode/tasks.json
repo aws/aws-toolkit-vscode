@@ -6,21 +6,21 @@
         {
             // Single build task to enable parallel tasks
             "label": "build",
-            "dependsOn": ["watch", "serve"]
+            "dependsOn": ["watch", "webpackWatch"]
         },
         {
             "label": "watch",
             "type": "npm",
             "script": "watch",
             "problemMatcher": "$tsc-watch",
-            "isBackground": true
+            "isBackground": true,
         },
         {
-            "label": "serve",
-            "type": "npm",
-            "script": "serve",
+            "label": "webpackWatch",
+            "command": "npm run webpackDevelopment -- --watch",
+            "type": "shell",
             "isBackground": true,
-            "problemMatcher": "$ts-webpack-watch"
+            "problemMatcher": "$ts-webpack-watch",
         },
         {
             "label": "webWatch",

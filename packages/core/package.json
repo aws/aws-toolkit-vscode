@@ -4218,8 +4218,10 @@
         "clean": "ts-node ../../scripts/clean.ts dist/",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run copyFiles",
-        "compile": "npm run clean && npm run buildScripts && tsc -p ./ && webpack --mode development",
-        "compileLite": "tsc -p ./",
+        "compile": "npm run clean && npm run buildScripts && tsc -p ./ && webpack",
+        "compilePartial": "tsc -p ./",
+        "webpackDevelopment": "webpack --mode development",
+        "serveVue": "webpack serve --config-name vue --mode development",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "testCompile": "npm run clean && npm run buildScripts && tsc -p ./",
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
@@ -4233,8 +4235,13 @@
         "lint": "ts-node ./scripts/lint/testLint.ts && npm run format",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
         "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
-        "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
-        "serve": "webpack serve --config-name vue-hmr --mode development"
+        "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts"
+    },
+    "scriptsComments": {
+        "compile": "Builds EVERYTHING we would need for a final production-ready package",
+        "compilePartial": "Only compiles the `core` source code. Consumers of `core` must additionally build any other required artifacts.",
+        "webpackDevelopment": "Webpack for everything else that compilePartial does not handle",
+        "serveVue": "Local server for Vue.js code for development purposes. Provides faster iteration when updating Vue files"
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
