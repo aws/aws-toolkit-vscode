@@ -28,6 +28,7 @@ import software.aws.toolkits.jetbrains.core.compileProjectAndWait
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.JavaCodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PayloadMetadata
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
@@ -42,6 +43,7 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
     private lateinit var test1Java: VirtualFile
     private lateinit var test2Java: VirtualFile
     private lateinit var sessionConfigSpy: JavaCodeScanSessionConfig
+    private lateinit var sessionConfigSpy2: JavaCodeScanSessionConfig
 
     private var totalSize: Long = 0
     private var totalLines: Long = 0
@@ -50,8 +52,11 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
     override fun setup() {
         super.setup()
         setupJavaProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(utilsJava, project) as JavaCodeScanSessionConfig)
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(utilsJava, project, CodeWhispererConstants.SecurityScanType.PROJECT) as JavaCodeScanSessionConfig)
         setupResponse(utilsJava.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
+
+        sessionConfigSpy2 = spy(CodeScanSessionConfig.create(utilsJava, project, CodeWhispererConstants.SecurityScanType.FILE) as JavaCodeScanSessionConfig)
+        setupResponse(utilsJava.toNioPath().relativeTo(sessionConfigSpy2.projectRoot.toNioPath()))
 
         mockClient.stub {
             onGeneric { createUploadUrl(any()) }.thenReturn(fakeCreateUploadUrlResponse)
@@ -86,6 +91,11 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
     @Test
     fun `test getSourceFilesUnderProjectRoot`() {
         getSourceFilesUnderProjectRoot(sessionConfigSpy, utilsJava, 3)
+    }
+
+    @Test
+    fun `test getSourceFilesUnderProjectRootForFileScan`() {
+        getSourceFilesUnderProjectRootForFileScan(sessionConfigSpy2, utilsJava)
     }
 
     @Test

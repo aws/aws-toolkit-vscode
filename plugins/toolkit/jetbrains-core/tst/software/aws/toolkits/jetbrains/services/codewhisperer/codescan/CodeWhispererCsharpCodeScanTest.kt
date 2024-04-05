@@ -12,6 +12,7 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CsharpCodeScanSessionConfig
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
@@ -24,6 +25,7 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
     private lateinit var utilsCs: VirtualFile
     private lateinit var helperCs: VirtualFile
     private lateinit var sessionConfigSpy: CsharpCodeScanSessionConfig
+    private lateinit var sessionConfigSpy2: CsharpCodeScanSessionConfig
 
     private var totalSize: Long = 0
     private var totalLines: Long = 0
@@ -32,8 +34,11 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
     override fun setup() {
         super.setup()
         setupCsharpProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testCs, project) as CsharpCodeScanSessionConfig)
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(testCs, project, CodeWhispererConstants.SecurityScanType.PROJECT) as CsharpCodeScanSessionConfig)
         setupResponse(testCs.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
+
+        sessionConfigSpy2 = spy(CodeScanSessionConfig.create(testCs, project, CodeWhispererConstants.SecurityScanType.FILE) as CsharpCodeScanSessionConfig)
+        setupResponse(testCs.toNioPath().relativeTo(sessionConfigSpy2.projectRoot.toNioPath()))
 
         mockClient.stub {
             onGeneric { createUploadUrl(any()) }.thenReturn(fakeCreateUploadUrlResponse)
@@ -70,6 +75,11 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
     @Test
     fun `test getSourceFilesUnderProjectRoot`() {
         getSourceFilesUnderProjectRoot(sessionConfigSpy, testCs, 3)
+    }
+
+    @Test
+    fun `test getSourceFilesUnderProjectRootForFileScan`() {
+        getSourceFilesUnderProjectRootForFileScan(sessionConfigSpy2, testCs)
     }
 
     @Test

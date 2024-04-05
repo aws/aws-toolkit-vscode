@@ -9,6 +9,7 @@ import com.intellij.util.containers.addIfNotNull
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JS_CODE_SCAN_TIMEOUT_IN_SECONDS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JS_PAYLOAD_LIMIT_IN_BYTES
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.SecurityScanType
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.IOException
@@ -17,8 +18,9 @@ import java.nio.file.Path
 internal class JavaScriptCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project,
-    private val language: CodewhispererLanguage
-) : CodeScanSessionConfig(selectedFile, project) {
+    private val language: CodewhispererLanguage,
+    private val scanType: SecurityScanType
+) : CodeScanSessionConfig(selectedFile, project, scanType) {
 
     private val importRegex = Regex("^import.*(?:[\"'](.+)[\"']);?\$")
     private val requireRegex = Regex("^.+require\\(['\"](.+)['\"]\\)[ \\t]*;?")
