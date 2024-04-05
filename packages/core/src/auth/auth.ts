@@ -173,10 +173,10 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile.type === 'sso') {
             const provider = this.getSsoTokenProvider(id, profile)
 
-            // We create our own span with run() since we want to
-            // set the isReAuth attribute
+            // We cannot easily set isReAuth inside the createToken() call,
+            // so we need to set it here.
             await telemetry.aws_loginWithBrowser.run(async span => {
-                span.record({ isReAuth: true })
+                span.record({ isReAuth: true, credentialStartUrl: profile.startUrl })
                 await this.authenticate(id, () => provider.createToken())
             })
 
@@ -551,7 +551,6 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async handleSsoTokenError(id: Connection['id'], err: unknown) {
-        // Bubble-up networking issues so we don't treat the session as invalid
         this.throwOnNetworkError(err)
 
         this.#validationErrors.set(id, UnknownError.cast(err))
@@ -726,7 +725,6 @@ export class Auth implements AuthService, ConnectionManager {
     private readonly getToken = keyedDebounce(this._getToken.bind(this))
     private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
         const token = await provider.getToken().catch(err => {
-            // Bubble-up networking issues so we don't treat the session as invalid
             this.throwOnNetworkError(err)
 
             this.#validationErrors.set(id, err)
@@ -736,11 +734,11 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
-     * Auth processes can fail if there are network issues, and we do not
-     * want to intepret these failures as invalid/expired auth tokens.
+     * Auth processes can fail due to reasons outside of authentication actually being expired.
+     * We do not want to intepret these failures as invalid/expired auth tokens.
      *
-     * We use this to check if the given error is network related and then
-     * throw, expecting the caller to not change the state of the connection.
+     * We use this to check if the given error is unanticipated. If it is we throw,
+     * expecting the caller to not change the state of the connection.
      */
     private throwOnNetworkError(e: unknown) {
         if (isNetworkError(e)) {

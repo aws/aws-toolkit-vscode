@@ -13,7 +13,7 @@ import { Messenger } from './chat/controller/messenger/messenger'
 import { UIMessageListener } from './chat/views/actions/uiMessageListener'
 import { debounce } from 'lodash'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
-import { showTransformByQ, showTransformationHub } from './commands'
+import { showTransformationHub } from './commands'
 import { transformByQState } from '../codewhisperer/models/model'
 
 export function init(appContext: AmazonQAppInitContext) {
@@ -66,7 +66,6 @@ export function init(appContext: AmazonQAppInitContext) {
         return debouncedEvent()
     })
 
-    showTransformByQ.register(gumbyChatControllerEventEmitters)
     showTransformationHub.register()
 
     transformByQState.setChatControllers(gumbyChatControllerEventEmitters)

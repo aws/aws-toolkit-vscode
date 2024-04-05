@@ -11,7 +11,13 @@ import { EventEmitter } from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 import { featureDevScheme } from '../../constants'
-import { ContentLengthError, SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
+import {
+    CodeIterationLimitError,
+    ContentLengthError,
+    PlanIterationLimitError,
+    SelectedFolderNotInWorkspaceFolderError,
+    createUserFacingErrorMessage,
+} from '../../errors'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureName } from '../../constants'
@@ -233,6 +239,38 @@ export class FeatureDevController {
                             pillText: 'Select files for context',
                             type: 'ModifyDefaultSourceFolder',
                             status: 'info',
+                        },
+                    ],
+                })
+            } else if (err instanceof PlanIterationLimitError) {
+                this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: message.tabID,
+                    followUps: [
+                        {
+                            pillText: 'Discuss a new plan',
+                            type: FollowUpTypes.NewTask,
+                            status: 'info',
+                        },
+                        {
+                            pillText: 'Generate code',
+                            type: FollowUpTypes.GenerateCode,
+                            status: 'info',
+                        },
+                    ],
+                })
+            } else if (err instanceof CodeIterationLimitError) {
+                this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: message.tabID,
+                    followUps: [
+                        {
+                            pillText: 'Insert code',
+                            type: FollowUpTypes.InsertCode,
+                            icon: 'ok' as MynahIcons,
+                            status: 'success',
                         },
                     ],
                 })
