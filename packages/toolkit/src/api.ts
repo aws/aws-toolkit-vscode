@@ -9,6 +9,7 @@ import { getLogger } from 'aws-core-vscode/shared'
 export const awsToolkitApi = {
     /**
      * Creating API object for external extensions.
+     * @param extensionId Extension id that identifies the caller.
      */
     getApi(extensionId: string) {
         return {
@@ -41,6 +42,7 @@ export const awsToolkitApi = {
 
             /**
              * Exposing setConnection API for other extension to push its connection state to aws toolkit
+             * @param connection The AWS connection of the source extension that is intended to be shared with toolkit
              */
             async setConnection(connection: AwsConnection): Promise<void> {
                 getLogger().debug(`setConnection: extension ${extensionId}, connection id ${connection.id}`)
@@ -48,7 +50,8 @@ export const awsToolkitApi = {
             },
 
             /**
-             * Exposing deleteConnection API for other extension to push connection deletion event to aws toolkit
+             * Exposing deleteConnection API for other extension to push connection deletion event to AWS toolkit
+             * @param id The connection id of the to be deleted connection in aws toolkit
              */
             async deleteConnection(id: string): Promise<void> {
                 getLogger().debug(`deleteConnection: extension ${extensionId}, connection id ${id}`)
@@ -57,6 +60,8 @@ export const awsToolkitApi = {
 
             /**
              * Exposing onDidChangeConnection API for other extension to know when aws toolkit connection changed
+             * @param onConnectionStateChange The callback that toolkit invokes when toolkit connection state changes
+             * @param onConnectionDeletion The callback that toolkit invokes when toolkit connection is deleted.
              */
             async onDidChangeConnection(
                 onConnectionStateChange: (c: AwsConnection) => Promise<void>,
