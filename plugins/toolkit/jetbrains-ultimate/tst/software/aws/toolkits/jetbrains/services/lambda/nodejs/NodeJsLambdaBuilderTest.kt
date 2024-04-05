@@ -78,7 +78,7 @@ class NodeJsLambdaBuilderTest {
         val buildDir = sut.getBuildDirectory(projectRule.module)
 
         val logicalId = "SomeFunction"
-        val template = projectRule.fixture.addSamTemplate(logicalId, codeUri.toString(), "app.handle", LambdaRuntime.NODEJS14_X)
+        val template = projectRule.fixture.addSamTemplate(logicalId, codeUri.toString(), "app.handle", LambdaRuntime.NODEJS20_X)
         val templatePath = Paths.get(template.virtualFile.path)
 
         val actualMappings = sut.defaultPathMappings(templatePath, logicalId, buildDir)

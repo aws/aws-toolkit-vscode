@@ -317,7 +317,7 @@ class LambdaConfigPanelTest {
             LambdaConfigPanel(projectRule.project, isUpdate = isUpdate).also {
                 it.dockerFile.text = temporaryFolder.newFile().absolutePath
                 it.handlerPanel.handler.text = "com.example.LambdaHandler::handleRequest"
-                it.runtime.selectedItem = Runtime.JAVA8
+                it.runtime.selectedItem = Runtime.JAVA21
                 it.timeoutSlider.value = 30
                 it.memorySlider.value = 512
             }

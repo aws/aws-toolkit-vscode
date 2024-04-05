@@ -14,20 +14,11 @@ env:
 phases:
   install:
     commands:
-      - sed -i 's/latest\/download/download\/v1.98.0/g' /usr/local/bin/installSam.sh
-      - installSam.sh --update
-      - goenv versions --bare | xargs -I'{}' goenv uninstall -f '{}'
-      - goenv install 1.21.3
-      - goenv global 1.21.3
       - startDocker.sh
       # login to DockerHub so we don't get throttled
       - export DOCKER_USERNAME=`echo $DOCKER_HUB_TOKEN | jq -r '.username'`
       - export DOCKER_PASSWORD=`echo $DOCKER_HUB_TOKEN | jq -r '.password'`
       - docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD || true
-      - DOTNET_ROOT="/root/.dotnet" /usr/local/bin/dotnet-install.sh --channel 6.0
-      - export PATH="${PATH}:${DOTNET_ROOT}"
-      - export PATH="$PATH:$HOME/.dotnet/tools"
-      - dotnet codeartifact-creds install
       # should probably be managed as an extension/rule in any tests that need a screen available
       - /usr/bin/Xvfb :22 -screen 0 1920x1080x24 &
 

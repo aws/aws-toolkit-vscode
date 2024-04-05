@@ -157,7 +157,7 @@ class UpdateFunctionCodePanelTest {
             )
 
             UpdateFunctionCodePanel(projectRule.project, PackageType.ZIP).apply {
-                handlerPanel.setRuntime(Runtime.JAVA8)
+                handlerPanel.setRuntime(Runtime.JAVA21)
                 handlerPanel.handler.text = "com.example.LambdaHandler::handleRequest"
                 codeStorage.sourceBucket.selectedItem = bucketName
             }

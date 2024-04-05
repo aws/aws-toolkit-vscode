@@ -129,7 +129,7 @@ Resources:
     Properties:
       CodeUri: foo
       Handler: com.example.UsefulUtils::upperCase
-      Runtime: java8
+      Runtime: java21
 """
         )
 
@@ -164,7 +164,7 @@ Resources:
 Globals:
   Function:
     Handler: com.example.UsefulUtils::upperCase
-    Runtime: java8
+    Runtime: java21
 Resources:
   UpperCase:
     Type: AWS::Serverless::Function

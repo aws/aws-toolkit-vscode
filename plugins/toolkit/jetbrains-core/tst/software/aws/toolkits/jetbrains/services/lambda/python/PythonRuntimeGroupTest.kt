@@ -18,14 +18,6 @@ class PythonRuntimeGroupTest {
     private val sut = PythonRuntimeGroup()
 
     @Test
-    fun testRuntimeDetection37() {
-        val module = projectRule.module
-        projectRule.setModuleSdk(module, PyTestSdk.create("3.7.0"))
-
-        assertThat(sut.determineRuntime(module)).isEqualTo(LambdaRuntime.PYTHON3_7)
-    }
-
-    @Test
     fun testRuntimeDetection38() {
         val module = projectRule.module
         projectRule.setModuleSdk(module, PyTestSdk.create("3.8.0"))
@@ -55,5 +47,14 @@ class PythonRuntimeGroupTest {
         projectRule.setModuleSdk(module, PyTestSdk.create("3.11.0"))
 
         assertThat(sut.determineRuntime(module)).isEqualTo(LambdaRuntime.PYTHON3_11)
+    }
+
+    @Test
+    fun testRuntimeDetection312() {
+        val module = projectRule.module
+        // PythonCodeInsightTestFixtureRule already sets SDK to 3.12
+        // projectRule.setModuleSdk(module, PyTestSdk.create("3.12.0"))
+
+        assertThat(sut.determineRuntime(module)).isEqualTo(LambdaRuntime.PYTHON3_12)
     }
 }

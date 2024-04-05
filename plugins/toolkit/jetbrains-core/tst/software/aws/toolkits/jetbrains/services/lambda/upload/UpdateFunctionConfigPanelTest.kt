@@ -45,7 +45,7 @@ class UpdateFunctionConfigPanelTest {
         runInEdtAndWait {
             sut = UpdateFunctionConfigPanel(project)
             sut.configSettings.handlerPanel.handler.text = "com.example.LambdaHandler::handleRequest"
-            sut.configSettings.runtime.selectedItem = Runtime.JAVA8
+            sut.configSettings.runtime.selectedItem = Runtime.JAVA21
         }
 
         sut.configSettings.iamRole.waitToLoad()

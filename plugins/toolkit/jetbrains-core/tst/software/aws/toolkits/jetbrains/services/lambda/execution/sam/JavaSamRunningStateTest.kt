@@ -58,7 +58,7 @@ class JavaSamRunningStateTest {
         val template = projectRule.fixture.addSamTemplate(
             logicalName = logicalId,
             codeUri = "/some/dummy/code/location",
-            runtime = LambdaRuntime.JAVA8,
+            runtime = LambdaRuntime.JAVA8_AL2,
             handler = "com.example.LambdaHandler::handleRequest"
         )
 
@@ -96,7 +96,7 @@ class JavaSamRunningStateTest {
 
         val runConfig = createHandlerBasedRunConfiguration(
             project = projectRule.project,
-            runtime = LambdaRuntime.JAVA8.toSdkRuntime(),
+            runtime = LambdaRuntime.JAVA8_AL2.toSdkRuntime(),
             input = "\"Hello World\"",
             credentialsProviderId = mockCredsId
         )

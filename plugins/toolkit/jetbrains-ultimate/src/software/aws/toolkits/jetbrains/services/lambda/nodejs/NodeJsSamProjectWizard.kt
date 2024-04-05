@@ -22,6 +22,12 @@ import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 import javax.swing.JLabel
 
+private val nodeJsTemplateRuntimes = setOf(
+    LambdaRuntime.NODEJS16_X,
+    LambdaRuntime.NODEJS18_X,
+    LambdaRuntime.NODEJS20_X,
+)
+
 class NodeJsSamProjectWizard : SamProjectWizard {
     override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector? = NodeJsSdkSelectionPanel()
 
@@ -60,17 +66,9 @@ class SamHelloWorldNodeJs : SamAppTemplateBased() {
 
     override fun description() = message("sam.init.template.hello_world.description")
 
-    override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(
-        LambdaRuntime.NODEJS14_X,
-        LambdaRuntime.NODEJS16_X,
-        LambdaRuntime.NODEJS18_X
-    )
+    override fun supportedZipRuntimes(): Set<LambdaRuntime> = nodeJsTemplateRuntimes
 
-    override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(
-        LambdaRuntime.NODEJS14_X,
-        LambdaRuntime.NODEJS16_X,
-        LambdaRuntime.NODEJS18_X
-    )
+    override fun supportedImageRuntimes(): Set<LambdaRuntime> = nodeJsTemplateRuntimes
 
     override val appTemplateName: String = "hello-world"
 
@@ -82,17 +80,9 @@ class SamHelloWorldNodeJsTypeScript : SamAppTemplateBased() {
 
     override fun description() = message("sam.init.template.hello_world_typescript.description")
 
-    override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(
-        LambdaRuntime.NODEJS14_X,
-        LambdaRuntime.NODEJS16_X,
-        LambdaRuntime.NODEJS18_X
-    )
+    override fun supportedZipRuntimes(): Set<LambdaRuntime> = nodeJsTemplateRuntimes
 
-    override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(
-        LambdaRuntime.NODEJS14_X,
-        LambdaRuntime.NODEJS16_X,
-        LambdaRuntime.NODEJS18_X
-    )
+    override fun supportedImageRuntimes(): Set<LambdaRuntime> = nodeJsTemplateRuntimes
 
     override val appTemplateName: String = "hello-world-typescript"
 

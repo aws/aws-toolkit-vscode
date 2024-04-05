@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/nodejs:14
+FROM public.ecr.aws/lambda/nodejs:20
 
 COPY app.js package.json ./
 

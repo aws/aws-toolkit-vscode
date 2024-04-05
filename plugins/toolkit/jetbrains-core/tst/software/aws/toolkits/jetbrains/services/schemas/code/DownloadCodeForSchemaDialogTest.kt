@@ -229,7 +229,7 @@ class DownloadCodeForSchemaDialogTest {
     }
 
     private fun initPythonSdk() {
-        val sdk = PyTestSdk.create("3.7.0")
+        val sdk = PyTestSdk.create("3.12.0")
         runInEdtAndWait {
             runWriteAction {
                 ProjectJdkTable.getInstance().addJdk(sdk, projectRule.fixture.projectDisposable)

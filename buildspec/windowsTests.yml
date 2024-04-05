@@ -18,9 +18,6 @@ phases:
         }
       - dotnet --list-sdks
       - |
-        Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1';
-        ./dotnet-install.ps1 -Verbose -InstallDir 'C:\Program Files\dotnet' -Channel '5.0'
-      - |
         $DOTNET_ROOT = "$Env:USERPROFILE\.dotnet"
         $Env:PATH = "$Env:PATH;$DOTNET_ROOT;$DOTNET_ROOT\tools"
         dotnet tool install -g AWS.CodeArtifact.NuGet.CredentialProvider

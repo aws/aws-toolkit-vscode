@@ -10,9 +10,9 @@
         <builder id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsLambdaBuilder"/>
         <handlerResolver id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsLambdaHandlerResolver"/>
         <sam.runtimeDebugSupport id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsRuntimeDebugSupport"/>
-        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJs14ImageDebug"/>
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJs16ImageDebug"/>
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJs18ImageDebug"/>
+        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJs20ImageDebug"/>
         <sam.projectWizard id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsSamProjectWizard"/>
     </extensions>
     <extensions defaultExtensionNs="aws.toolkit.codewhisperer">

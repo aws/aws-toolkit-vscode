@@ -56,14 +56,12 @@ class LocalLambdaRunConfigurationTest {
 
     private val mockId = "MockCredsId"
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
-    private val runtime = Runtime.JAVA8
+    private val runtime = Runtime.JAVA21
     private val defaultHandler = "com.example.LambdaHandler::handleRequest"
 
     @Before
     fun setUp() {
-        val validSam = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getMinVersionAsJson())
-        preWarmSamVersionCache(validSam.toString())
-        ExecutableManager.getInstance().setExecutablePath(SamExecutable(), validSam).value
+        setSamVersion("1.999.0")
 
         credentialManager.addCredentials(mockId, mockCreds)
 
@@ -106,7 +104,6 @@ class LocalLambdaRunConfigurationTest {
 
     @Test
     fun `Valid image configuration`() {
-        setupMinSamImage()
         val project = projectRule.project
         preWarmLambdaHandlerValidation(project)
 
@@ -130,7 +127,6 @@ class LocalLambdaRunConfigurationTest {
 
     @Test
     fun `Invalid image-based configuration, no runtime set`() {
-        setupMinSamImage()
         runInEdtAndWait {
             val runConfiguration = createTemplateRunConfiguration(
                 project = projectRule.project,
@@ -150,7 +146,6 @@ class LocalLambdaRunConfigurationTest {
 
     @Test
     fun `Invalid image-based configuration, unsupported runtime set`() {
-        setupMinSamImage()
         runInEdtAndWait {
             val runConfiguration = createTemplateRunConfiguration(
                 project = projectRule.project,
@@ -415,7 +410,7 @@ class LocalLambdaRunConfigurationTest {
                     Properties:
                       Handler: com.example.LambdaHandler::handleRequest
                       CodeUri: /some/dummy/code/location
-                      Runtime: java8
+                      Runtime: java21
                       Architectures:
                         - FAKE
                       Timeout: 900
@@ -876,8 +871,8 @@ class LocalLambdaRunConfigurationTest {
         )
     }.canonicalPath
 
-    private fun setupMinSamImage() {
-        val validSam = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getVersionAsJson(SamCommon.minImageVersion.toString()))
+    private fun setSamVersion(version: String) {
+        val validSam = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getVersionAsJson(version))
         preWarmSamVersionCache(validSam.toString())
         ExecutableManager.getInstance().setExecutablePath(SamExecutable(), validSam).value
     }

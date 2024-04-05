@@ -30,7 +30,7 @@ class SamInvokeRunnerTest {
     @Test
     fun canRunSupportedRuntimeHandler() {
         val runConfig =
-            createHandlerBasedRunConfiguration(project = projectRule.project, runtime = Runtime.JAVA8)
+            createHandlerBasedRunConfiguration(project = projectRule.project, runtime = Runtime.JAVA21)
 
         runInEdtAndWait {
             assertThat(SamInvokeRunner().canRun(DefaultRunExecutor.EXECUTOR_ID, runConfig)).isTrue()
@@ -58,7 +58,7 @@ class SamInvokeRunnerTest {
     @Test
     fun canDebugSupportedRuntimeHandler() {
         val runConfig =
-            createHandlerBasedRunConfiguration(project = projectRule.project, runtime = Runtime.JAVA8)
+            createHandlerBasedRunConfiguration(project = projectRule.project, runtime = Runtime.JAVA21)
 
         runInEdtAndWait {
             assertThat(SamInvokeRunner().canRun(DefaultDebugExecutor.EXECUTOR_ID, runConfig)).isTrue()
@@ -85,7 +85,7 @@ class SamInvokeRunnerTest {
                     Properties:
                       Handler: com.example.LambdaHandler::handleRequest
                       CodeUri: /some/dummy/code/location
-                      Runtime: java8
+                      Runtime: java21
             """.trimIndent()
         )
 
@@ -185,7 +185,7 @@ class SamInvokeRunnerTest {
                     Properties:
                       Handler: com.example.LambdaHandler::handleRequest
                       CodeUri: /some/dummy/code/location
-                      Runtime: java8
+                      Runtime: java21
             """.trimIndent()
         )
 

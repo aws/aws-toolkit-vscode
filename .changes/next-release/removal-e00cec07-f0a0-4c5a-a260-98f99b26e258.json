@@ -1,0 +1,4 @@
+{
+  "type" : "removal",
+  "description" : "Drop support for the Java 8 (AL2012) Lambda runtime"
+}
