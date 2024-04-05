@@ -13,12 +13,23 @@ phases:
         commands:
             # Check for implicit env vars passed from the release pipeline.
             - test -n "${TOOLKITS_GITHUB_REPO_OWNER}"
+            - test -n "${TARGET_BRANCH}"
 
     build:
         commands:
             - git clone https://github.com/${TOOLKITS_GITHUB_REPO_OWNER}/aws-toolkit-vscode.git aws-toolkit-vscode
-            # checkout master as we want to commit to it later
-            - cd aws-toolkit-vscode && git checkout master
+            # checkout the target branch as we want to commit to it later to update versions
+            - cd aws-toolkit-vscode && git checkout ${TARGET_BRANCH}
+
+            # Since we don't have a manual gate on the amazon q release pipeline, we must make sure we aren't
+            # releasing off of a commit from another release, i.e. infinite loop.
+            # This will be removed prior to standalone extension release.
+            - |
+                AUTHOR_AUTOMATION="aws-toolkit-automation"
+                if [[ $(git log -1 --pretty=%an) = $AUTHOR_AUTOMATION && $(git log -1 --pretty=%B) != "Merge master into feature/standalone" ]]; then
+                    echo "Last commit was from the last pipeline release (${AUTHOR_AUTOMATION}). Skipping release."
+                    exit 100
+                fi
 
 artifacts:
     base-directory: aws-toolkit-vscode
