@@ -422,11 +422,11 @@ export const registerToolkitApiCallback = Commands.declare(
             getLogger().info(`Trying to register toolkit callback. Toolkit is installed.`)
             if (toolkitApi) {
                 // when this command is executed by AWS Toolkit activation
-                _toolkitApi = toolkitApi
+                _toolkitApi = toolkitApi.getApi(VSCODE_EXTENSION_ID.amazonq)
             } else {
                 // when this command is executed by Amazon Q activation
                 const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-                _toolkitApi = toolkitExt?.exports
+                _toolkitApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
             }
             if (_toolkitApi) {
                 await registerToolkitApiCallbackOnce()
