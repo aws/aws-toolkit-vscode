@@ -7,9 +7,9 @@
     <version>1.0</version>
 
     <!-- delete when fully split -->
-    <content>
-        <module name="aws.toolkit.core"/>
-    </content>
+    <xi:include href="/META-INF/plugin-shim.xml">
+        <xi:fallback/>
+    </xi:include>
 
     <description><![CDATA[
 <h3><a href="https://aws.amazon.com/q">Amazon Q (preview)</a></h3>
@@ -131,9 +131,6 @@
         <xi:fallback/>
     </xi:include>
 
-    <!-- delete when fully split -->
-    <xi:include href="/META-INF/module-core.xml" />
-
     <!-- global optional dependencies here, otherwise in their respective optional includes -->
     <depends optional="true">org.jetbrains.idea.maven</depends>
     <depends optional="true">org.jetbrains.plugins.gradle</depends>
@@ -220,9 +217,6 @@
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
-
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.EcsExecCommandSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamDisplayDevModeWarningSettings"/>
 
@@ -376,7 +370,6 @@
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
-        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory"/>
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.metadataservice.ContainerCredentialProviderFactory"/>
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.metadataservice.InstanceRoleCredentialProviderFactory"/>
 

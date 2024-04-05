@@ -13,11 +13,7 @@ intellijToolkit {
 }
 
 intellij {
-    plugins.set(
-        listOf(
-            project(":plugin-core")
-        )
-    )
+    plugins.add(project(":plugin-core"))
 }
 
 dependencies {

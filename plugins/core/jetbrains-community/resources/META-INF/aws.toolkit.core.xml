@@ -1,9 +1,7 @@
 <!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-<idea-plugin package="aws.toolkit.core">
-    <id>aws.toolkit.core</id>
-
+<idea-plugin>
     <extensionPoints>
         <extensionPoint qualifiedName="aws.toolkit.connection.pinned.feature" interface="software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection"
                         dynamic="true"/>

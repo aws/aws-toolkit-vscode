@@ -22,18 +22,34 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.GW)
 }
 
-val gatewayRunOnly by configurations.creating {
+sourceSets {
+    create("gatewayOnly") {
+        java {
+            resources {
+                srcDir("resources-gatewayOnly")
+            }
+        }
+    }
+}
+
+val gatewayOnlyRuntimeOnly by configurations.getting {
     extendsFrom(configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME))
-    isCanBeResolved = true
+}
+
+val gatewayOnlyRuntimeClasspath by configurations.existing
+val processGatewayOnlyResources by tasks.existing
+val gatewayOnlyResourcesJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("gatewayOnlyResources")
+    from(processGatewayOnlyResources)
 }
 
 dependencies {
     // link against :j-c: and rely on :intellij:buildPlugin to pull in :j-c:instrumentedJar, but gateway variant when runIde/buildPlugin from :jetbrains-gateway
     compileOnly(project(":plugin-toolkit:jetbrains-core"))
-    gatewayRunOnly(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
+    gatewayOnlyRuntimeOnly(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
 
     // delete when fully split
-    implementation(project(":plugin-core:jetbrains-community"))
+    gatewayOnlyRuntimeOnly(project(":plugin-core:jetbrains-community"))
 
     testImplementation(project(path = ":plugin-toolkit:core", configuration = "testArtifacts"))
     testCompileOnly(project(":plugin-toolkit:jetbrains-core"))
@@ -105,8 +121,17 @@ tasks.withType<PrepareSandboxTask>().all {
         .from(gatewayResourcesDir)
 }
 
-tasks.prepareSandbox {
-    runtimeClasspathFiles.set(gatewayRunOnly)
+listOf(
+    tasks.prepareSandbox,
+    tasks.prepareTestingSandbox
+).forEach {
+    it.configure {
+        runtimeClasspathFiles.set(gatewayOnlyRuntimeClasspath)
+
+        dependsOn(gatewayOnlyResourcesJar)
+        intoChild(pluginName.map { "$it/lib" })
+            .from(gatewayOnlyResourcesJar)
+    }
 }
 
 tasks.buildPlugin {

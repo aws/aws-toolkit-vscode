@@ -11,6 +11,10 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.IC)
 }
 
+intellij {
+    plugins.add(project(":plugin-core"))
+}
+
 dependencies {
     implementation(project(":plugin-amazonq:shared:jetbrains-community"))
 
