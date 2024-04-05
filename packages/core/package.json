@@ -29,8 +29,8 @@
     "main": "./dist/src/extension.js",
     "browser": "./dist/src/extensionWeb",
     "exports": {
-        ".": "./dist/src/index.js",
-        "./web": "./dist/src/indexWeb.js",
+        ".": "./dist/src/extension.js",
+        "./web": "./dist/src/extensionWeb.js",
         "./auth": "./dist/src/auth/index.js"
     },
     "contributes": {
