@@ -4,12 +4,12 @@
  */
 
 import type { ExtensionContext } from 'vscode'
-import { awsToolkitWebActivate, awsToolkitWebDeactivate } from 'aws-core-vscode/web'
+import { activate as activateWeb, deactivate as deactivateWeb } from 'aws-core-vscode/web'
 
 export async function activate(context: ExtensionContext) {
-    return awsToolkitWebActivate(context)
+    return activateWeb(context)
 }
 
 export async function deactivate() {
-    await awsToolkitWebDeactivate()
+    await deactivateWeb()
 }
