@@ -45,8 +45,6 @@ packages/toolkit/resources
 packages/amazonq/package.nls.json
 packages/amazonq/resources
 
-!packages/amazonq/README.md
-
 # Icons
 packages/*/resources/icons/cloud9/generated/**
 packages/*/resources/fonts/aws-toolkit-icons.woff
