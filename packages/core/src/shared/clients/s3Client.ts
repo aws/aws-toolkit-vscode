@@ -48,7 +48,7 @@ export interface ListBucketsResponse {
 
 export interface ListFilesRequest {
     readonly bucketName: string
-    readonly folderPath: string
+    readonly folderPath?: string
     readonly continuationToken?: string
     readonly maxResults?: number // Defaults to DEFAULT_MAX_KEYS
 }
