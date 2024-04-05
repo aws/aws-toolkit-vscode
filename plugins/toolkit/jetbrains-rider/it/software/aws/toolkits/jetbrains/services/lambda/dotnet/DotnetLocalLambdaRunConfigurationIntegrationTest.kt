@@ -24,9 +24,6 @@ import software.aws.toolkits.jetbrains.utils.jsonToMap
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import java.nio.file.Files
 
-class Dotnet50LocalLambdaImageRunConfigurationIntegrationTest :
-    DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda5X", LambdaRuntime.DOTNET5_0)
-
 class Dotnet60LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda6X", LambdaRuntime.DOTNET6_0)
 
 class Dotnet60LocalLambdaImageRunConfigurationIntegrationTest :

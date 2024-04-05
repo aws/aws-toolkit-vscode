@@ -82,7 +82,7 @@ class PythonCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
         }
 
         PsiTestUtil.addContentRoot(module, projectRoot)
-        val sdk = PyTestSdk.create("3.6.0")
+        val sdk = PyTestSdk.create("3.12.0")
         setModuleSdk(module, sdk)
 
         return newFixture

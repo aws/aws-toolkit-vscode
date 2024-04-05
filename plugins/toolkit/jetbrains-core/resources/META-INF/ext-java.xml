@@ -17,10 +17,10 @@
         <runtimeGroup implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaRuntimeGroup"/>
         <builder id="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaBuilder"/>
         <sam.runtimeDebugSupport id="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.java.JavaRuntimeDebugSupport"/>
-        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.java.Java8ImageDebugSupport"/>
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.java.Java8Al2ImageDebugSupport"/>
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.java.Java11ImageDebugSupport"/>
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.java.Java17ImageDebugSupport"/>
+        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.java.Java21ImageDebugSupport"/>
         <handlerResolver id="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaHandlerResolver"/>
         <sam.projectWizard id="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.java.JavaSamProjectWizard"/>
     </extensions>

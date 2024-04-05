@@ -1,0 +1,4 @@
+{
+  "type" : "removal",
+  "description" : "Drop support for the Node.js14 Lambda runtime"
+}

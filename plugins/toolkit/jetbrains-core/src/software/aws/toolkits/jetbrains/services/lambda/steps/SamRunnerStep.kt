@@ -38,6 +38,12 @@ class SamRunnerStep(val environment: ExecutionEnvironment, val settings: LocalLa
                     withParameters("--debug")
                 }
 
+                if (System.getenv("CI") == "true") {
+                    //  --container-host $(docker network inspect bridge | jq -r '.[0].IPAM.Config[0].Gateway')  --container-host-interface 0.0.0.0
+                    withParameters("--container-host", "172.18.0.1")
+                    withParameters("--container-host-interface", "0.0.0.0")
+                }
+
                 if (settings is TemplateSettings) {
                     withParameters(settings.logicalId)
                 }

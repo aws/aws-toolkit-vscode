@@ -41,8 +41,8 @@ class JavaSamProjectWizard : SamProjectWizard {
 }
 
 abstract class JavaSamProjectTemplate : SamAppTemplateBased() {
-    override fun supportedZipRuntimes() = setOf(LambdaRuntime.JAVA8, LambdaRuntime.JAVA8_AL2, LambdaRuntime.JAVA11, LambdaRuntime.JAVA17)
-    override fun supportedImageRuntimes() = setOf(LambdaRuntime.JAVA8, LambdaRuntime.JAVA8_AL2, LambdaRuntime.JAVA11, LambdaRuntime.JAVA17)
+    override fun supportedZipRuntimes() = setOf(LambdaRuntime.JAVA8_AL2, LambdaRuntime.JAVA11, LambdaRuntime.JAVA17, LambdaRuntime.JAVA21)
+    override fun supportedImageRuntimes() = setOf(LambdaRuntime.JAVA8_AL2, LambdaRuntime.JAVA11, LambdaRuntime.JAVA17, LambdaRuntime.JAVA21)
 
     // Helper method to locate the build file, such as pom.xml in the project content root.
     protected fun locateBuildFile(contentRoot: VirtualFile, buildFileName: String): VirtualFile? {
