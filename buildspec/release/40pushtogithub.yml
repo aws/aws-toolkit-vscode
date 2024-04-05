@@ -14,21 +14,23 @@ phases:
             # Check for implicit env vars passed from the release pipeline.
             - test -n "${TOOLKITS_GITHUB_REPO_OWNER}"
             - test -n "${GITHUB_TOKEN}"
+            - test -n "${TARGET_EXTENSION}"
             - REPO_URL="https://$GITHUB_TOKEN@github.com/${TOOLKITS_GITHUB_REPO_OWNER}/aws-toolkit-vscode.git"
 
     build:
         commands:
             - |
+                echo "TARGET_EXTENSION=${TARGET_EXTENSION}"
                 git config --global user.name "aws-toolkit-automation"
                 git config --global user.email "<>"
                 git remote add originWithCreds "$REPO_URL"
                 echo "Adding SNAPSHOT to next version string"
                 # Increase minor version
-                npm version --no-git-tag-version minor -w packages/toolkit
-                VERSION=$(node -e "console.log(require('./packages/toolkit/package.json').version);")
+                npm version --no-git-tag-version minor -w packages/${TARGET_EXTENSION}
+                VERSION=$(node -e "console.log(require('./packages/${TARGET_EXTENSION}/package.json').version);")
                 # Append -SNAPSHOT
-                npm version --no-git-tag-version "${VERSION}-SNAPSHOT" -w packages/toolkit
-                git add packages/toolkit/package.json
+                npm version --no-git-tag-version "${VERSION}-SNAPSHOT" -w packages/${TARGET_EXTENSION}
+                git add packages/${TARGET_EXTENSION}/package.json
                 git add package-lock.json
                 git commit -m "Update version to snapshot version: ${VERSION}-SNAPSHOT"
             - |
