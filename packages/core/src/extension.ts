@@ -188,7 +188,8 @@ export async function activate(context: vscode.ExtensionContext) {
                             )
                             .then(async resp => {
                                 if (resp === 'Learn More') {
-                                    void learnMoreAmazonQCommand.execute()
+                                    // Clicking learn more will open the q extension page
+                                    void qExtensionPageCommand.execute()
                                 } else if (resp === 'Install') {
                                     void installAmazonQExtension.execute()
                                 }
