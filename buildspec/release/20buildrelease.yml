@@ -29,6 +29,12 @@ phases:
                 fi
             - npm run package -w packages/${TARGET_EXTENSION}
             - cp packages/${TARGET_EXTENSION}/package.json ./package.json
+            - NUM_VSIX=$(ls -1q *.vsix | wc -l)
+            - |
+                if [ "$NUM_VSIX" != "1" ]; then
+                  echo "Number of .vsix to release is not exactly 1, it is: ${NUM_VSIX}"
+                  exit 1
+                fi
 
 artifacts:
     files:
