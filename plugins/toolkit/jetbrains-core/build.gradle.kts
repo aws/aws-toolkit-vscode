@@ -32,10 +32,6 @@ tasks.jar {
     from(changelog) {
         into("META-INF")
     }
-
-    // delete when fully split
-    // module loader can't figure out paths across jars
-    from(project(":plugin-core").file("src/main/resources/aws.toolkit.core.xml"))
 }
 
 val gatewayPluginXml = tasks.create<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXmlForGateway") {
@@ -56,7 +52,7 @@ val gatewayArtifacts by configurations.creating {
 val gatewayJar = tasks.create<Jar>("gatewayJar") {
     // META-INF/plugin.xml is a duplicate?
     // unclear why the exclude() statement didn't work
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    duplicatesStrategy = DuplicatesStrategy.WARN
 
     dependsOn(tasks.instrumentedJar)
 
@@ -97,31 +93,41 @@ tasks.processTestResources {
     // TODO how can we remove this. Fails due to:
     // "customerUploadedEventSchemaMultipleTypes.json.txt is a duplicate but no duplicate handling strategy has been set"
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    // delete when fully split
+    // pull in shim to make tests pass
+    from(project(":plugin-toolkit:intellij").file("src/main/resources"))
 }
 
 dependencies {
-    api(project(":plugin-toolkit:core"))
-    api(libs.aws.apacheClient)
-    api(libs.aws.apprunner)
-    api(libs.aws.cloudcontrol)
-    api(libs.aws.cloudformation)
-    api(libs.aws.cloudwatchlogs)
-    api(libs.aws.codecatalyst)
-    api(libs.aws.dynamodb)
-    api(libs.aws.ec2)
-    api(libs.aws.ecr)
-    api(libs.aws.ecs)
-    api(libs.aws.iam)
-    api(libs.aws.lambda)
-    api(libs.aws.nettyClient)
-    api(libs.aws.rds)
-    api(libs.aws.redshift)
-    api(libs.aws.s3)
-    api(libs.aws.schemas)
-    api(libs.aws.secretsmanager)
-    api(libs.aws.sns)
-    api(libs.aws.sqs)
-    api(libs.aws.services)
+    listOf(
+        libs.aws.apprunner,
+        libs.aws.cloudcontrol,
+        libs.aws.cloudformation,
+        libs.aws.cloudwatchlogs,
+        libs.aws.codecatalyst,
+        libs.aws.dynamodb,
+        libs.aws.ec2,
+//        libs.aws.ecr,
+//        libs.aws.ecs,
+//        libs.aws.iam,
+//        libs.aws.lambda,
+        libs.aws.rds,
+        libs.aws.redshift,
+//        libs.aws.s3,
+        libs.aws.schemas,
+        libs.aws.secretsmanager,
+        libs.aws.sns,
+        libs.aws.sqs,
+        libs.aws.services,
+    ).forEach { api(it) { isTransitive = false } }
+
+    listOf(
+        libs.aws.apacheClient,
+        libs.aws.nettyClient,
+    ).forEach { compileOnlyApi(it) { isTransitive = false } }
+
+    compileOnlyApi(project(":plugin-toolkit:core"))
     compileOnlyApi(project(":plugin-core:jetbrains-community"))
 
     // TODO: remove Q dependency when split is fully done
