@@ -46,6 +46,7 @@ module.exports = (env, argv) => {
         name: 'vue',
         target: 'web',
         output: {
+            // IMPORTANT: This path influences `VueWebview.constructor` as it updates `VueWebview.source` paths relative to this
             path: path.resolve(currentDir, 'dist', 'vue'),
             libraryTarget: 'this',
         },

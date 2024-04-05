@@ -4,7 +4,11 @@
  */
 
 /**
- * This is the final webpack config that collects all webpack configs.
+ * This webpack config is used for everything else that the TypeScript transpilation does not do.
+ *
+ * Some things include:
+ *   - Building the Web toolkit (Web extensions must be a single file, hence webpack)
+ *   - Building Vue.js files for webviews
  */
 
 const baseConfigFactory = require('../webpack.base.config')
@@ -27,6 +31,7 @@ module.exports = (env, argv) => {
         // Inject entry point into all configs.
         entry: {
             ...baseVueConfig.utils.createVueEntries(),
+            // The above `createVueEntries` path pattern match does not catch this:
             'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
         },
     }
