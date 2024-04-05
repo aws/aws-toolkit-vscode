@@ -24,7 +24,7 @@ export const learnMoreAmazonQCommand = Commands.declare('aws.toolkit.amazonq.lea
 })
 
 export const qExtensionPageCommand = Commands.declare('aws.toolkit.amazonq.extensionpage', () => () => {
-    void vscode.env.openExternal(vscode.Uri.parse(`vscode:extension/${VSCODE_EXTENSION_ID.awstoolkit}`))
+    void vscode.env.openExternal(vscode.Uri.parse(`vscode:extension/${VSCODE_EXTENSION_ID.amazonq}`))
 })
 
 export const dismissQTree = Commands.declare('aws.toolkit.amazonq.dismiss', () => async () => {
