@@ -9,7 +9,6 @@ import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
-import software.aws.toolkits.gradle.withCurrentProfileName
 import java.nio.file.Path
 
 buildscript {
@@ -62,21 +61,9 @@ dependencies {
 /**
  * RESHARPER
  */
-// FIX_WHEN_MIN_IS_232
-withCurrentProfileName {
-    when (it) {
-        "2022.2", "2022.3", "2023.1" -> {
-            // rdgen <= 2023.1.2 doesn't work with gradle 8.0
-            apply(from = "rdgen.gradle.kts")
-        }
-
-        else -> {
-            // Not published to gradle plugin portal, use old syntax
-            apply<RdGenPlugin>()
-            tasks.register<RdGenTask>("generateModels")
-        }
-    }
-}.get()
+// Not published to gradle plugin portal, use old syntax
+apply<RdGenPlugin>()
+tasks.register<RdGenTask>("generateModels")
 
 val resharperPluginPath = File(projectDir, "ReSharper.AWS")
 val resharperBuildPath = File(project.buildDir, "dotnetBuild")
