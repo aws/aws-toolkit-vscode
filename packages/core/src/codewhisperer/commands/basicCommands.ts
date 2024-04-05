@@ -395,7 +395,6 @@ const registerToolkitApiCallbackOnce = once(async () => {
     // when toolkit connection changes
     if (_toolkitApi && 'onDidChangeConnection' in _toolkitApi) {
         _toolkitApi.onDidChangeConnection(
-            VSCODE_EXTENSION_ID.amazonq,
             async (connection: AwsConnection) => {
                 getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
                 await AuthUtil.instance.onUpdateConnection(connection)
