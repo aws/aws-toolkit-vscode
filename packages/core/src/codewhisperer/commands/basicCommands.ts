@@ -372,7 +372,7 @@ const registerToolkitApiCallbackOnce = once(async () => {
             const conn = await auth.getConnection({ id })
             if (conn && conn.type === 'sso') {
                 getLogger().info(`toolkitApi: set connection ${id}`)
-                await _toolkitApi.setConnection(VSCODE_EXTENSION_ID.amazonq, {
+                await _toolkitApi.setConnection({
                     type: conn.type,
                     ssoRegion: conn.ssoRegion,
                     scopes: conn.scopes,
@@ -388,7 +388,7 @@ const registerToolkitApiCallbackOnce = once(async () => {
     auth.onDidDeleteConnection(async id => {
         if (_toolkitApi && 'deleteConnection' in _toolkitApi) {
             getLogger().info(`toolkitApi: delete connection ${id}`)
-            await _toolkitApi.deleteConnection(VSCODE_EXTENSION_ID.amazonq, id)
+            await _toolkitApi.deleteConnection(id)
         }
     })
 
