@@ -7,7 +7,7 @@
 export const enterJavaHomeMessage = 'Enter the path to JDK '
 
 export const windowsJavaHomeHelpMessage =
-    'To find the JAVA_HOME path, run the following command in a new IDE terminal: `cd "C:Program FilesJava" && dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
+    'To find the JAVA_HOME path, run the following command in a new IDE terminal: `cd "C:\\Program Files\\Java" && dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
 
 export const nonWindowsJava8HomeHelpMessage =
     'To find the JAVA_HOME path, run the following command in a new IDE terminal:  `/usr/libexec/java_home -v 1.8`'
