@@ -20,9 +20,9 @@ describe('Amazon Q Feature Dev', function () {
     let tab: Messenger
 
     const maxTestDuration = 600000
-    const prompt = 'Implement fibonacci in typescript'
-    const iterateApproachPrompt = prompt + ' and add tests'
-    const codegenApproachPrompt = prompt + ' and add even more tests'
+    const prompt = 'Implement fibonacci in python'
+    const iterateApproachPrompt = prompt + ' and add a unit test'
+    const codegenApproachPrompt = prompt + ' and add a readme that describes the changes'
     const tooManyRequestsWaitTime = 100000
 
     before(async function () {
