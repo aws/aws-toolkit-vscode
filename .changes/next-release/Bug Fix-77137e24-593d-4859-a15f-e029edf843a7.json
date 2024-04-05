@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Resource Explorer: S3 tree view now shows bucket contents correctly, even when restricted to root prefix."
+}

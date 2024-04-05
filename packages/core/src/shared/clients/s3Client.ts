@@ -18,6 +18,7 @@ import { toStream } from '../utilities/collectionUtils'
 
 export const DEFAULT_MAX_KEYS = 300 // eslint-disable-line @typescript-eslint/naming-convention
 export const DEFAULT_DELIMITER = '/' // eslint-disable-line @typescript-eslint/naming-convention
+export const DEFAULT_PREFIX = '' // eslint-disable-line @typescript-eslint/naming-convention
 
 export type Bucket = InterfaceNoSymbol<DefaultBucket>
 export type Folder = InterfaceNoSymbol<DefaultFolder>
@@ -47,7 +48,7 @@ export interface ListBucketsResponse {
 
 export interface ListFilesRequest {
     readonly bucketName: string
-    readonly folderPath?: string
+    readonly folderPath: string
     readonly continuationToken?: string
     readonly maxResults?: number // Defaults to DEFAULT_MAX_KEYS
 }
@@ -450,7 +451,7 @@ export class DefaultS3Client {
                 Bucket: bucket.name,
                 Delimiter: DEFAULT_DELIMITER,
                 MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
-                Prefix: request.folderPath,
+                Prefix: request.folderPath ?? DEFAULT_PREFIX,
                 ContinuationToken: request.continuationToken,
             })
             .promise()
