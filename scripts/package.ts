@@ -66,7 +66,7 @@ function parseArgs() {
  * is a prerelease/nightly/edge/preview build.
  */
 function isRelease(): boolean {
-    const tag = child_process.execSync('git tag -l --contains HEAD').toString()
+    const tag = child_process.execFileSync('git', ['tag', '-l', '--contains', 'HEAD']).toString()
     return !!tag?.match(/v\d+\.\d+\.\d+/)
 }
 
@@ -98,7 +98,7 @@ function getVersionSuffix(feature: string, debug: boolean): string {
     }
     const debugSuffix = debug ? '-debug' : ''
     const featureSuffix = feature === '' ? '' : `-${feature}`
-    const commitId = child_process.execSync('git rev-parse --short=7 HEAD').toString().trim()
+    const commitId = child_process.execFileSync('git', ['rev-parse', '--short=7', 'HEAD']).toString().trim()
     const commitSuffix = commitId ? `-${commitId}` : ''
     return `${debugSuffix}${featureSuffix}${commitSuffix}`
 }
@@ -155,7 +155,9 @@ function main() {
         fs.copyFileSync('../../CHANGELOG.md', 'CHANGELOG.md')
 
         fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
-        child_process.execSync(`vsce package --ignoreFile '../.vscodeignore.packages'`, { stdio: 'inherit' })
+        child_process.execFileSync('vsce', ['package', '--ignoreFile', '../.vscodeignore.packages'], {
+            stdio: 'inherit',
+        })
 
         console.log(`VSIX Version: ${packageJson.version}`)
 
