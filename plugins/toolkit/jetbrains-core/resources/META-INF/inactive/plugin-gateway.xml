@@ -1,7 +1,7 @@
 <!-- Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-<idea-plugin>
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
     <depends>com.intellij.modules.platform</depends>
     <!-- doesn't actually work
     <depends>com.jetbrains.gateway</depends> -->

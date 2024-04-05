@@ -55,6 +55,8 @@ dependencies {
     compileOnlyApi(project(":plugin-core:sdk-codegen"))
     compileOnlyApi(libs.aws.apacheClient)
 
+    api(libs.aws.iam)
+
     testFixturesApi(project(path = ":plugin-toolkit:core", configuration = "testArtifacts"))
     testFixturesApi(libs.mockk)
     testFixturesApi(libs.kotlin.coroutinesTest)

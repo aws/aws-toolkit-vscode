@@ -8,7 +8,4 @@
     <incompatible-with>com.intellij.cwm.guest</incompatible-with>
     <incompatible-with>com.intellij.jetbrains.client</incompatible-with>
     <incompatible-with>com.intellij.gateway</incompatible-with>
-
-    <!-- delete when fully split -->
-    <xi:include href="/META-INF/module-amazonq.xml"/>
 </idea-plugin>

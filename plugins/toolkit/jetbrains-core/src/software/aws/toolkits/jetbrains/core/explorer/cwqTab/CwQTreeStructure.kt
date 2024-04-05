@@ -18,7 +18,7 @@ class CwQTreeStructure(project: Project) : AbstractTreeStructureBase(project) {
     override fun hasSomethingToCommit(): Boolean = false
 
     companion object {
-        private val EP_NAME = ExtensionPointName.create<CwQRootNodeProvider>("aws.toolkit.cwq.rootNode")
+        internal val EP_NAME = ExtensionPointName.create<CwQRootNodeProvider>("aws.toolkit.cwq.rootNode")
     }
 }
 

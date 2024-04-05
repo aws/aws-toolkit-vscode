@@ -2,17 +2,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
-    <id>core</id>
-    <name>core</name>
-    <description>corecorecorecorecorecorecorecorecorecore</description>
-    <vendor email="a@example.com">vendor</vendor>
-    <version>1.0</version>
-    <idea-version since-build="231" until-build="999"/>
-
     <xi:include href="/META-INF/module-core.xml" />
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- each plugin needs its own instance of these -->
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
     </extensions>
