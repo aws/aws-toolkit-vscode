@@ -76,26 +76,41 @@ function getBrowserAlternatives() {
 }
 
 /**
- * Why was the following implemented this way?
+ * XXX: Web-mode tests (as opposed to Node.js tests) don't see changes to exported module variables.
  *
- * With the introduction of browser support + setting up browser unit tests,
- * it was discovered that variables declared at the global scope were not available
- * between the actual extension code and the unit tests. Though for the regular desktop/node
- * tests, global scope variables WERE shared and the following was not required.
- *
- * So as a solution, any global scoped objects must be stored in `globalThis` so that if defined
- * in Browser-compatible extension code, it shares the same context/scope as the Browser unit test code.
+ * Workaround: store variables in `globalThis` so that web-mode tests can share them.
  *
  * See `web.md` for more info.
+ *
  */
-function resolveGlobalsObject() {
+function resolveGlobalsObject(): ToolkitGlobals {
     if ((globalThis as any).globals === undefined) {
         ;(globalThis as any).globals = { clock: copyClock() } as ToolkitGlobals
     }
     return (globalThis as any).globals
 }
 
-const globals: ToolkitGlobals = resolveGlobalsObject()
+/**
+ * Throw a more intuitive error if any code tries to use `globals` before `initialize()` was called.
+ */
+function proxyGlobals(globals_: ToolkitGlobals): ToolkitGlobals {
+    return new Proxy(globals_, {
+        get: (target, prop) => {
+            const propName = String(prop)
+            const val = (target as any)[propName]
+            if (
+                val !== undefined ||
+                propName.includes('Symbol') || // hack for sinon.stub
+                'isWeb' === propName
+            ) {
+                return val
+            }
+            throw new Error(`ToolkitGlobals.${propName} accessed before initialize()`)
+        },
+    })
+}
+
+const globals = proxyGlobals(resolveGlobalsObject())
 
 export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
