@@ -187,8 +187,7 @@ export async function activate(context: vscode.ExtensionContext) {
                                 'Amazon Q has moved to its own VSCode extension.' +
                                     '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
                                 'Install',
-                                'Learn More',
-                                'Dismiss'
+                                'Learn More'
                             )
                             .then(async resp => {
                                 if (resp === 'Learn More') {
