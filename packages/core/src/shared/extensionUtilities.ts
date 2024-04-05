@@ -255,20 +255,19 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
 /**
  * Shows info about the extension and its environment.
  */
-export async function aboutToolkit(): Promise<void> {
-    const toolkitEnvDetails = getToolkitEnvironmentDetails()
+export async function aboutExtension(): Promise<void> {
+    const extEnvDetails = getExtEnvironmentDetails()
     const copyButtonLabel = localize('AWS.message.prompt.copyButtonLabel', 'Copy')
-    const result = await vscode.window.showInformationMessage(toolkitEnvDetails, { modal: true }, copyButtonLabel)
+    const result = await vscode.window.showInformationMessage(extEnvDetails, { modal: true }, copyButtonLabel)
     if (result === copyButtonLabel) {
-        void vscode.env.clipboard.writeText(toolkitEnvDetails)
+        void vscode.env.clipboard.writeText(extEnvDetails)
     }
 }
 
 /**
- * Returns a string that includes the OS, AWS Toolkit,
- * and VS Code versions.
+ * Returns a string that includes the OS, extension, and VS Code versions.
  */
-export function getToolkitEnvironmentDetails(): string {
+export function getExtEnvironmentDetails(): string {
     const osType = os.type()
     const osArch = os.arch()
     const osRelease = os.release()

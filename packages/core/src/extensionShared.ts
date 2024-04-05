@@ -15,10 +15,9 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { getIdeProperties, aboutToolkit, isCloud9 } from './shared/extensionUtilities'
+import { getIdeProperties, aboutExtension, isCloud9 } from './shared/extensionUtilities'
 import { telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
-import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
 import { activateViewsShared } from './awsexplorer/activationShared'
 
 import { activate as activateLogger } from './shared/logger/activation'
@@ -60,8 +59,9 @@ let localize: nls.LocalizeFunc
  * Activation/setup code that is shared by the regular (nodejs) extension AND web mode extension.
  * Most setup code should live here, unless there is a reason not to.
  */
-export async function activateShared(context: vscode.ExtensionContext): Promise<ExtContext> {
+export async function activateShared(context: vscode.ExtensionContext, contextPrefix: string): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
+    globals.contextPrefix = '' //todo: disconnect supplied argument
 
     // some "initialize" functions
     await initializeComputeRegion()
@@ -78,8 +78,10 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
 
     // Setup the logger
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
-    await activateLogger(context, toolkitOutputChannel)
+    const toolkitLogChannel = vscode.window.createOutputChannel('AWS Toolkit Logs', { log: true })
+    await activateLogger(context, contextPrefix, toolkitOutputChannel, toolkitLogChannel)
     globals.outputChannel = toolkitOutputChannel
+    globals.logOutputChannel = toolkitLogChannel
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
@@ -115,14 +117,30 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
     await activateTelemetry(context, globals.awsContext, Settings.instance)
 
     // auth
-    await initializeAuth(context, globals.awsContext, globals.loginManager)
+    await initializeAuth(context, globals.awsContext, globals.loginManager, contextPrefix)
     await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 
     // Create this now, but don't call vscode.window.registerUriHandler() until after all
     // Toolkit services have a chance to register their path handlers. #4105
     globals.uriHandler = new UriHandler()
 
-    registerCommands(context)
+    // Generic extension commands
+    registerCommands(context, contextPrefix)
+
+    // Toolkit specific commands
+    context.subscriptions.push(
+        // No-op command used for decoration-only codelenses.
+        vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
+        // "Show AWS Commands..."
+        Commands.register('aws.listCommands', () =>
+            vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
+        ),
+        // register URLs in extension menu
+        Commands.register(`aws.toolkit.help`, async () => {
+            void openUrl(vscode.Uri.parse(documentationUrl))
+            telemetry.aws_help.emit()
+        })
+    )
 
     const extContext: ExtContext = {
         extensionContext: context,
@@ -138,42 +156,29 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
 
     await activateViewsShared(extContext.extensionContext)
 
-    await activateCodeWhisperer(extContext)
-
     return extContext
 }
 
 /** Deactivation code that is shared between nodejs and web implementations */
 export async function deactivateShared() {
     await globals.telemetry.shutdown()
-    await codewhispererShutdown()
 }
 /**
  * Registers generic commands used by both web and node versions of the toolkit.
  */
-export function registerCommands(extensionContext: vscode.ExtensionContext) {
+export function registerCommands(extensionContext: vscode.ExtensionContext, contextPrefix: string) {
     extensionContext.subscriptions.push(
-        // No-op command used for decoration-only codelenses.
-        vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
-        // "Show AWS Commands..."
-        Commands.register('aws.listCommands', () =>
-            vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
-        ),
         // register URLs in extension menu
-        Commands.register('aws.help', async () => {
-            void openUrl(vscode.Uri.parse(documentationUrl))
-            telemetry.aws_help.emit()
-        }),
-        Commands.register('aws.github', async () => {
+        Commands.register(`aws.${contextPrefix}.github`, async () => {
             void openUrl(vscode.Uri.parse(githubUrl))
             telemetry.aws_showExtensionSource.emit()
         }),
-        Commands.register('aws.createIssueOnGitHub', async () => {
+        Commands.register(`aws.${contextPrefix}.createIssueOnGitHub`, async () => {
             void openUrl(vscode.Uri.parse(githubCreateIssueUrl))
             telemetry.aws_reportPluginIssue.emit()
         }),
-        Commands.register('aws.aboutToolkit', async () => {
-            await aboutToolkit()
+        Commands.register(`aws.${contextPrefix}.aboutExtension`, async () => {
+            await aboutExtension()
         })
     )
 }
@@ -214,7 +219,7 @@ async function logAndShowError(error: unknown, topic: string, defaultMessage: st
     } else {
         await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
             if (resp === logsItem) {
-                await Logging.declared.viewLogsAtMessage.execute(logId)
+                await Logging.instance.viewLogsAtMessage.execute(logId)
             }
         })
     }
@@ -243,7 +248,7 @@ function logAndShowWebviewError(err: unknown, webviewId: string, command: string
  *
  * https://docs.aws.amazon.com/general/latest/gr/rande.html
  */
-function makeEndpointsProvider() {
+export function makeEndpointsProvider() {
     let localManifestFetcher: ResourceFetcher
     let remoteManifestFetcher: ResourceFetcher
     if (isWeb()) {

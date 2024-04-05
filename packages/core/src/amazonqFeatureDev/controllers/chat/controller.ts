@@ -24,7 +24,7 @@ import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { FollowUpTypes, SessionStatePhase } from '../../types'
 import { Messenger } from './messenger/messenger'
-import { AuthUtil, getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
@@ -212,7 +212,7 @@ export class FeatureDevController {
 
             session = await this.sessionStorage.getSession(message.tabID)
 
-            const authState = await getChatAuthState()
+            const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
@@ -705,7 +705,7 @@ export class FeatureDevController {
             session = await this.sessionStorage.getSession(message.tabID)
             getLogger().debug(`${featureName}: Session created with id: ${session.tabID}`)
 
-            const authState = await getChatAuthState()
+            const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
@@ -772,7 +772,7 @@ export class FeatureDevController {
     }
 
     private sendFeedback() {
-        void submitFeedback.execute(placeholder, 'Amazon Q')
+        void submitFeedback(placeholder, 'Amazon Q')
     }
 
     private processLink(message: any) {

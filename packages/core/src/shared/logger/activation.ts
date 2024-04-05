@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { Logger, LogLevel, getLogger } from '.'
 import { setLogger } from './logger'
-import { logOutputChannel } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import { waitUntil } from '../utilities/timeoutUtils'
 import { cleanLogFiles } from './util'
@@ -17,19 +16,21 @@ import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
 import { isWeb } from '../../common/webUtils'
 import { fsCommon } from '../../srcShared/fs'
+import globals from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
-const defaultLogLevel: LogLevel = 'info'
+export const defaultLogLevel: LogLevel = 'debug'
 
 /**
  * Activate Logger functionality for the extension.
  */
 export async function activate(
     extensionContext: vscode.ExtensionContext,
-    outputChannel: vscode.LogOutputChannel
+    contextPrefix: string,
+    outputChannel: vscode.LogOutputChannel,
+    logChannel: vscode.LogOutputChannel
 ): Promise<void> {
-    const chan = logOutputChannel
     const settings = Settings.instance.getSection('aws')
     const devLogfile = settings.get('dev.logfile', '')
     const logUri = devLogfile
@@ -41,7 +42,7 @@ export async function activate(
     const mainLogger = makeLogger(
         {
             logPaths: [logUri],
-            outputChannels: [chan],
+            outputChannels: [logChannel],
             useConsoleLog: isWeb(),
         },
         extensionContext.subscriptions
@@ -55,7 +56,7 @@ export async function activate(
         makeLogger(
             {
                 logPaths: [logUri],
-                outputChannels: [outputChannel, chan],
+                outputChannels: [outputChannel, logChannel],
             },
             extensionContext.subscriptions
         ),
@@ -67,7 +68,7 @@ export async function activate(
         makeLogger(
             {
                 staticLogLevel: 'debug',
-                outputChannels: [outputChannel, chan],
+                outputChannels: [outputChannel, logChannel],
                 useDebugConsole: true,
             },
             extensionContext.subscriptions
@@ -77,8 +78,8 @@ export async function activate(
 
     getLogger().debug(`Logging started: ${logUri}`)
 
-    const commands = new Logging(logUri, mainLogger)
-    extensionContext.subscriptions.push(...Object.values(Logging.declared).map(c => c.register(commands)))
+    Logging.init(logUri, mainLogger, contextPrefix)
+    extensionContext.subscriptions.push(Logging.instance.viewLogs, Logging.instance.viewLogsAtMessage)
 
     createLogWatcher(logUri)
         .then(sub => {
@@ -147,7 +148,7 @@ export function makeLogger(
 
 function getLogLevel(): LogLevel {
     const configuration = Settings.instance.getSection('aws')
-    return configuration.get('logLevel', defaultLogLevel)
+    return configuration.get(`${globals.contextPrefix}logLevel`, defaultLogLevel)
 }
 
 /**

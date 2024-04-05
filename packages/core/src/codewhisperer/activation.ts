@@ -38,8 +38,8 @@ import {
     connectWithCustomization,
     applySecurityFix,
     signoutCodeWhisperer,
-    showManageCwConnections,
     fetchFeatureConfigsCmd,
+    registerToolkitApiCallback,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -52,7 +52,7 @@ import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2
 import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
-import { AuthUtil } from './util/authUtil'
+import { AuthUtil, refreshToolkitQState } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
@@ -69,6 +69,8 @@ export async function activate(context: ExtContext): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
     const auth = AuthUtil.instance
+    auth.initCodeWhispererHooks()
+
     /**
      * Enable essential intellisense default settings for AWS C9 IDE
      */
@@ -100,8 +102,10 @@ export async function activate(context: ExtContext): Promise<void> {
     ImportAdderProvider.instance
 
     context.extensionContext.subscriptions.push(
+        // register toolkit api callback
+        registerToolkitApiCallback.register(),
         signoutCodeWhisperer.register(auth),
-        showManageCwConnections.register(),
+        refreshToolkitQState.register(),
         /**
          * Configuration change
          */
@@ -457,6 +461,7 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
+    await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
     container.ready()
 }
 

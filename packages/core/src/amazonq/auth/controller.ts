@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { reconnect, showManageCwConnections } from '../../codewhisperer/commands/basicCommands'
+import * as vscode from 'vscode'
+import { reconnect } from '../../codewhisperer/commands/basicCommands'
 import { amazonQChatSource } from '../../codewhisperer/commands/types'
 import { recordTelemetryChatRunCommand } from '../../codewhispererChat/controllers/chat/telemetryHelper'
 import { placeholder } from '../../shared/vscode/commands2'
@@ -26,7 +27,8 @@ export class AuthController {
     }
 
     private handleFullAuth() {
-        void showManageCwConnections.execute(placeholder, amazonQChatSource)
+        void vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', true)
+        void vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
     }
 
     private handleReAuth() {

@@ -8,7 +8,6 @@ import {
     createOpenReferenceLog,
     createSecurityScan,
     createLearnMore,
-    createSignIn,
     createFreeTierLimitMet,
     createSelectCustomization,
     createReconnect,
@@ -32,13 +31,20 @@ import { once } from '../../shared/utilities/functionUtils'
 import { getLogger } from '../../shared/logger'
 
 function getAmazonQCodeWhispererNodes() {
+    // TODO: Remove when web is supported for amazonq
+    let amazonq
+    if (!isWeb()) {
+        amazonq = require('../../amazonq/explorer/amazonQChildrenNodes')
+    }
+
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
+
     if (AuthUtil.instance.isConnectionExpired()) {
         return [createReconnect('item'), createLearnMore()]
     }
 
     if (!AuthUtil.instance.isConnected()) {
-        return [createSignIn('item'), createLearnMore()]
+        return [amazonq.createSignIn('item'), createLearnMore()]
     }
 
     if (vsCodeState.isFreeTierLimitReached) {
@@ -55,12 +61,6 @@ function getAmazonQCodeWhispererNodes() {
 
     if (hasVendedIamCredentials()) {
         return [createAutoSuggestions(autoTriggerEnabled), createOpenReferenceLog()]
-    }
-
-    // TODO: Remove when web is supported for amazonq
-    let amazonq
-    if (!isWeb()) {
-        amazonq = require('../../amazonq/explorer/amazonQChildrenNodes')
     }
 
     return [

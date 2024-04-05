@@ -366,3 +366,13 @@ export async function* loadLinkedProfilesIntoStore(
 // The true connection state can only be known after trying to use the connection
 // So it is not exposed on the `Connection` interface
 export type StatefulConnection = Connection & { readonly state: ProfileMetadata['connectionState'] }
+
+export interface AwsConnection {
+    readonly id: string
+    readonly label: string
+    readonly type: string
+    readonly ssoRegion: string
+    readonly startUrl: string
+    readonly scopes?: string[]
+    readonly state: ProfileMetadata['connectionState']
+}

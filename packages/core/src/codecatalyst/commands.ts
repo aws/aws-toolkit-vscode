@@ -25,7 +25,7 @@ import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { Auth } from '../auth/auth'
 import { SsoConnection } from '../auth/connection'
-import { showManageConnections } from '../auth/ui/vue/show'
+import { getShowManageConnections } from '../auth/ui/vue/show'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -288,7 +288,7 @@ export class CodeCatalystCommands {
         if (connection !== undefined) {
             await this.authProvider.tryConnectTo(connection)
         } else if (!this.authProvider.isConnectionValid()) {
-            void showManageConnections.execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
+            void getShowManageConnections().execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
             return
         }
 

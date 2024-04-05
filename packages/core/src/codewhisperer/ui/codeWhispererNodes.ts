@@ -17,7 +17,6 @@ import {
     reconnect,
     selectCustomizationPrompt,
     signoutCodeWhisperer,
-    showManageCwConnections,
     showIntroduction,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
@@ -63,28 +62,6 @@ export function createSecurityScan(): DataQuickPickItem<'securityScan'> {
         label: codicon`${icon} ${label}`,
         onClick: () => showSecurityScan.execute(placeholder, cwQuickPickSource),
     } as DataQuickPickItem<'securityScan'>
-}
-
-export function createSignIn(type: 'item'): DataQuickPickItem<'signIn'>
-export function createSignIn(type: 'tree'): TreeNode<Command>
-export function createSignIn(type: 'item' | 'tree'): DataQuickPickItem<'signIn'> | TreeNode<Command>
-export function createSignIn(type: 'item' | 'tree'): any {
-    const label = localize('AWS.codewhisperer.signInNode.label', 'Sign in to get started')
-    const icon = getIcon('vscode-account')
-
-    switch (type) {
-        case 'tree':
-            return showManageCwConnections.build(placeholder, cwTreeNodeSource).asTreeNode({
-                label: label,
-                iconPath: icon,
-            })
-        case 'item':
-            return {
-                data: 'signIn',
-                label: codicon`${icon} ${label}`,
-                onClick: () => showManageCwConnections.execute(placeholder, cwQuickPickSource),
-            } as DataQuickPickItem<'signIn'>
-    }
 }
 
 export function createReconnect(type: 'item'): DataQuickPickItem<'reconnect'>
@@ -206,7 +183,7 @@ export function createFeedbackNode(): DataQuickPickItem<'sendFeedback'> {
         data: 'sendFeedback',
         label: 'Send Feedback',
         iconPath: getIcon('vscode-thumbsup'),
-        onClick: () => submitFeedback.execute(placeholder, 'CodeWhisperer'),
+        onClick: () => submitFeedback(placeholder, 'CodeWhisperer'),
     } as DataQuickPickItem<'sendFeedback'>
 }
 
@@ -215,7 +192,7 @@ export function createGitHubNode(): DataQuickPickItem<'visitGithub'> {
         data: 'visitGithub',
         label: 'Connect with us on Github',
         iconPath: getIcon('vscode-github-alt'),
-        onClick: () => Commands.tryExecute('aws.github'),
+        onClick: () => Commands.tryExecute('aws.amazonq.github'),
     } as DataQuickPickItem<'visitGithub'>
 }
 

@@ -36,6 +36,5 @@ export async function connectToEnterpriseSso(startUrl: string, region: Region['i
         })
     }
     vsCodeState.isFreeTierLimitReached = false
-    await Commands.tryExecute('aws.amazonq.refresh')
     await Commands.tryExecute('aws.codeWhisperer.enableCodeSuggestions')
 }
