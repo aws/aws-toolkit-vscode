@@ -106,6 +106,7 @@ class InteractiveBearerTokenProviderTest {
                 )
 
         MockClientManager.useRealImplementations(disposableRule.disposable)
+        oidcClient.close()
         oidcClient = spy(buildUnmanagedSsoOidcClientForTests("us-east-1"))
         val registerClientResponse = oidcClient.registerClient {
             it.clientType("public")
@@ -125,6 +126,34 @@ class InteractiveBearerTokenProviderTest {
                 it.grantType("urn:ietf:params:oauth:grant-type:device_code")
             }
         }
+    }
+
+    @Test
+    fun `oidcClient has detailed error message on InvalidGrantException failure`() {
+        fun buildUnmanagedSsoOidcClientForTests(region: String): SsoOidcClient =
+            AwsClientManager.getInstance()
+                .createUnmanagedClient(
+                    AnonymousCredentialsProvider.create(),
+                    Region.of(region),
+                    clientCustomizer = { _, _, _, _, configuration ->
+                        ssoOidcClientConfigurationBuilder(configuration)
+                    }
+                )
+
+        MockClientManager.useRealImplementations(disposableRule.disposable)
+        oidcClient.close()
+        oidcClient = spy(buildUnmanagedSsoOidcClientForTests("us-east-1"))
+        val exception = assertThrows<InvalidGrantException> {
+            oidcClient.createToken {
+                it.clientId("test")
+                it.clientSecret("test")
+                it.deviceCode("invalid for test")
+                it.grantType("urn:ietf:params:oauth:grant-type:device_code")
+            }
+        }
+
+        assertThat(exception.message)
+            .isEqualTo("invalid_grant: Invalid device code provided (Service: SsoOidc, Status Code: 400, Request ID: ${exception.requestId()})")
     }
 
     @Test
