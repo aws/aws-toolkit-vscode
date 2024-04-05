@@ -15,7 +15,6 @@ import * as crypto from 'crypto'
 import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import { ArtifactMap, CreateUploadUrlRequest, CreateUploadUrlResponse } from '../client/codewhispereruserclient'
-import { Truncation } from '../util/dependencyGraph/dependencyGraph'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import request from '../../common/request'
 import { ZipMetadata } from '../util/zipUtil'
@@ -128,36 +127,6 @@ export async function pollScanJobStatus(
     return status
 }
 
-// TODO: Remove this
-export async function pollScanJobStatusOld(client: DefaultCodeWhispererClient, jobId: string) {
-    getLogger().verbose(`Polling scan job status...`)
-    let status: string = 'Pending'
-    let timer: number = 0
-    while (true) {
-        throwIfCancelledOld()
-        const req: codewhispererClient.GetCodeScanRequest = {
-            jobId: jobId,
-        }
-        const resp = await client.getCodeScan(req)
-        getLogger().verbose(`Request id: ${resp.$response.requestId}`)
-        if (resp.status !== 'Pending') {
-            status = resp.status
-            getLogger().verbose(`Scan job status: ${status}`)
-            getLogger().verbose(`Complete Polling scan job status.`)
-            break
-        }
-        throwIfCancelledOld()
-        await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
-        timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
-        if (timer > CodeWhispererConstants.codeScanJobTimeoutSeconds) {
-            getLogger().verbose(`Scan job status: ${status}`)
-            getLogger().verbose(`Scan job timeout.`)
-            throw new Error('Scan job timeout.')
-        }
-    }
-    return status
-}
-
 export async function createScanJob(
     client: DefaultCodeWhispererClient,
     artifactMap: codewhispererClient.ArtifactMap,
@@ -197,28 +166,6 @@ export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClien
     return artifactMap
 }
 
-// TODO: Remove this
-export async function getPresignedUrlAndUploadOld(client: DefaultCodeWhispererClient, truncation: Truncation) {
-    if (truncation.zipFilePath === '') {
-        throw new Error("Truncation failure: can't find valid source zip.")
-    }
-    const srcReq: CreateUploadUrlRequest = {
-        contentMd5: getMd5(truncation.zipFilePath),
-        artifactType: 'SourceCode',
-    }
-    getLogger().verbose(`Prepare for uploading src context...`)
-    const srcResp = await client.createUploadUrl(srcReq)
-    getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
-    getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
-    getLogger().verbose(`Uploading src context...`)
-    await uploadArtifactToS3(truncation.zipFilePath, srcResp)
-    getLogger().verbose(`Complete uploading src context.`)
-    const artifactMap: ArtifactMap = {
-        SourceCode: srcResp.uploadId,
-    }
-    return artifactMap
-}
-
 function getMd5(fileName: string) {
     const hasher = crypto.createHash('md5')
     hasher.update(readFileSync(fileName))
@@ -240,13 +187,6 @@ export function throwIfCancelled(scanType: CodeWhispererConstants.SecurityScanTy
         default:
             getLogger().warn(`Unknown scan type: ${scanType}`)
             break
-    }
-}
-
-// TODO: Remove this
-export function throwIfCancelledOld() {
-    if (codeScanState.isCancelling()) {
-        throw new CodeScanStoppedError()
     }
 }
 
