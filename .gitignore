@@ -21,7 +21,7 @@ unload-*
 jetbrains-core/bin/
 jetbrains-ultimate/bin/
 resources/bin/
-jetbrains-rider/**/NuGet.config
+**/jetbrains-rider/**/NuGet.config
 RiderSdkPackageVersion.props
 *.Generated.cs
 core/bin
