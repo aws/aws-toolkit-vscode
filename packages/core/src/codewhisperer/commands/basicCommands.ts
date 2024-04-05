@@ -268,7 +268,7 @@ export const fetchFeatureConfigsCmd = Commands.declare(
 export const installAmazonQExtension = Commands.declare(
     { id: 'aws.toolkit.installAmazonQExtension', logging: true },
     () => async () => {
-        void vscode.window.withProgress(
+        await vscode.window.withProgress(
             {
                 title: 'Installing Amazon Q... (placeholder)',
                 cancellable: true,
