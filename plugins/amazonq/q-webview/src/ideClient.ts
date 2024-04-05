@@ -26,4 +26,9 @@ export class IdeClient {
     reset() {
         this.store.commit('reset')
     }
+
+    cancelLogin(): void {
+        this.reset()
+        window.ideApi.postMessage({ command: 'cancelLogin' })
+    }
 }

@@ -38,6 +38,9 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
 import software.aws.toolkits.jetbrains.services.amazonq.webview.AssetResourceHandler
+import software.aws.toolkits.telemetry.AwsTelemetry
+import software.aws.toolkits.telemetry.CredentialType
+import software.aws.toolkits.telemetry.Result
 import java.awt.event.ActionListener
 import java.io.IOException
 import java.util.function.Function
@@ -175,6 +178,12 @@ class WebviewBrowser(val project: Project) {
                             0
                         )
                     }
+                }
+
+                "cancelLogin" -> {
+                    println("cancel login........")
+                    // TODO: BearerToken vs. SsoProfile
+                    AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = CredentialType.BearerToken)
                 }
 
                 else -> {

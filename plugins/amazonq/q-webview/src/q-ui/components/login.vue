@@ -100,6 +100,7 @@ export default defineComponent({
             this.mutateStage('START')
         },
         handleCancelButton() {
+            window.ideClient.cancelLogin()
             this.mutateStage('START')
         },
         changeTheme(darkMode: boolean) {
