@@ -78,7 +78,7 @@ class LambdaServiceNodeTest {
             .functionArn("arn:aws:lambda:us-west-2:0123456789:function:$functionName")
             .lastModified("A ways back")
             .handler("blah:blah")
-            .runtime(Runtime.JAVA8)
+            .runtime(Runtime.JAVA21)
             .role("SomeRoleArn")
             .environment { it.variables(emptyMap()) }
             .timeout(60)

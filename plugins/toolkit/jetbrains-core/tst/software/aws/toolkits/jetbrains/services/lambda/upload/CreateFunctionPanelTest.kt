@@ -68,7 +68,7 @@ class CreateFunctionPanelTest {
             sut.name.text = "name"
             sut.description.text = "description"
             sut.configSettings.handlerPanel.handler.text = "com.example.LambdaHandler::handleRequest"
-            sut.configSettings.runtime.selectedItem = Runtime.JAVA8
+            sut.configSettings.runtime.selectedItem = Runtime.JAVA21
             sut.configSettings.timeoutSlider.value = 30
             sut.configSettings.memorySlider.value = 512
         }

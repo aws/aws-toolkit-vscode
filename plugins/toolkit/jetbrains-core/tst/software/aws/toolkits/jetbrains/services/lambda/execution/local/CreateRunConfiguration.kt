@@ -58,7 +58,7 @@ fun createTemplateRunConfiguration(
 
 fun createHandlerBasedRunConfiguration(
     project: Project,
-    runtime: Runtime? = Runtime.JAVA8,
+    runtime: Runtime? = Runtime.JAVA21,
     handler: String? = "com.example.LambdaHandler::handleRequest",
     input: String? = "inputText",
     inputIsFile: Boolean = false,

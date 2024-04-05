@@ -54,7 +54,8 @@ class JavaRuntimeGroupTest(
             arrayOf<Any?>("Java 11", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_11.toJavaVersion()) }, LambdaRuntime.JAVA11),
             arrayOf<Any?>("Java 12", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_12.toJavaVersion()) }, LambdaRuntime.JAVA17),
             arrayOf<Any?>("Java 17", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_17.toJavaVersion()) }, LambdaRuntime.JAVA17),
-            arrayOf<Any?>("Java 18", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_18.toJavaVersion()) }, null)
+            arrayOf<Any?>("Java 18", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_18.toJavaVersion()) }, LambdaRuntime.JAVA21),
+            arrayOf<Any?>("Java 21", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_21.toJavaVersion()) }, LambdaRuntime.JAVA21),
         )
     }
 }

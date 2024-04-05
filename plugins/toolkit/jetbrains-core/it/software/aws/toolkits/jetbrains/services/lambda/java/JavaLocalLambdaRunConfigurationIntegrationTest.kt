@@ -37,10 +37,10 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun data() = listOf(
-            arrayOf(LambdaRuntime.JAVA8),
             arrayOf(LambdaRuntime.JAVA8_AL2),
             arrayOf(LambdaRuntime.JAVA11),
-            arrayOf(LambdaRuntime.JAVA17)
+            arrayOf(LambdaRuntime.JAVA17),
+            arrayOf(LambdaRuntime.JAVA21),
         )
     }
 
@@ -72,9 +72,11 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
         )
 
         val compatibility = when (runtime) {
-            LambdaRuntime.JAVA8, LambdaRuntime.JAVA8_AL2 -> "1.8"
+            LambdaRuntime.JAVA8_AL2 -> "1.8"
             LambdaRuntime.JAVA11 -> "11"
             LambdaRuntime.JAVA17 -> "17"
+            // don't feel like trying to figure out how to make sure the test is run with Gradle JDK21 instead of JDK17
+            LambdaRuntime.JAVA21 -> "17"
             else -> throw NotImplementedError()
         }
 

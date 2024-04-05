@@ -18,7 +18,7 @@ class JavaHandlerCompletionProviderTest {
 
     @Test
     fun completionIsNotSupportedJava8() {
-        val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.JAVA8)
+        val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.JAVA8_AL2)
         assertFalse(provider.isCompletionSupported)
     }
 
