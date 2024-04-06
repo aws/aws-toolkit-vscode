@@ -10,7 +10,7 @@
 const path = require('path')
 const glob = require('glob')
 const { VueLoaderPlugin } = require('vue-loader')
-const baseConfig = require('./webpack.base.config')
+const baseConfigFactory = require('./webpack.base.config')
 const { merge } = require('webpack-merge')
 const currentDir = process.cwd()
 
@@ -37,66 +37,65 @@ const createVueEntries = (targetPattern = 'index.ts') => {
         .reduce((a, b) => ((a[b.name] = b.path), a), {})
 }
 
-/** @type WebpackConfig */
-const vueConfig = merge(baseConfig, {
-    name: 'vue',
-    target: 'web',
-    output: {
-        path: path.resolve(currentDir, 'dist', 'vue'),
-        libraryTarget: 'this',
-    },
-    module: {
-        rules: [
-            {
-                test: /\.vue$/,
-                loader: 'vue-loader',
-            },
-            {
-                test: /\.css$/,
-                use: ['vue-style-loader', 'css-loader'],
-            },
-            {
-                test: /\.(png|jpg|gif|svg)$/,
-                use: 'file-loader',
-            },
-            // sass loaders for Mynah
-            { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'] },
-        ],
-    },
-    plugins: [new VueLoaderPlugin()],
-})
+module.exports = (env, argv) => {
+    const isDevelopment = argv.mode === 'development'
+    const baseConfig = baseConfigFactory(env, argv)
 
-/** @type WebpackConfig */
-const vueHotReloadConfig = {
-    ...vueConfig,
-    name: 'vue-hmr',
-    output: {
-        path: path.resolve(currentDir, 'dist', 'vuehr'),
-        libraryTarget: 'this',
-    },
-    devServer: {
-        static: {
-            directory: path.resolve(currentDir, 'dist'),
+    /** @type WebpackConfig */
+    let vueConfig = merge(baseConfig, {
+        name: 'vue',
+        target: 'web',
+        output: {
+            path: path.resolve(currentDir, 'dist', 'vue'),
+            libraryTarget: 'this',
         },
-        headers: {
-            'Access-Control-Allow-Origin': '*',
+        module: {
+            rules: [
+                {
+                    test: /\.vue$/,
+                    loader: 'vue-loader',
+                },
+                {
+                    test: /\.css$/,
+                    use: ['vue-style-loader', 'css-loader'],
+                },
+                {
+                    test: /\.(png|jpg|gif|svg)$/,
+                    use: 'file-loader',
+                },
+                // sass loaders for Mynah
+                { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'] },
+            ],
         },
-        // This is not ideal, but since we're only running the server locally it's not too bad
-        // The webview debugger tries to establish a websocket with a GUID as its origin, so not much of a workaround
-        allowedHosts: 'all',
-    },
-    // Normally we want to exclude Vue from the bundle, but for hot reloads we need it
-    externals: {
-        vscode: 'commonjs vscode',
-    },
-}
+        plugins: [new VueLoaderPlugin()],
+    })
 
-module.exports = {
-    configs: {
-        vue: vueConfig,
-        vueHotReload: vueHotReloadConfig,
-    },
-    utils: {
-        createVueEntries,
-    },
+    if (isDevelopment) {
+        // add development specific vue config settings
+        vueConfig = {
+            ...vueConfig,
+            devServer: {
+                static: {
+                    directory: path.resolve(currentDir, 'dist'),
+                },
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                },
+                // This is not ideal, but since we're only running the server locally it's not too bad
+                // The webview debugger tries to establish a websocket with a GUID as its origin, so not much of a workaround
+                allowedHosts: 'all',
+            },
+            // Normally we want to exclude Vue from the bundle, but for hot reloads we need it
+            externals: {
+                vscode: 'commonjs vscode',
+            },
+        }
+    }
+
+    return {
+        config: vueConfig,
+        utils: {
+            createVueEntries,
+        },
+    }
 }

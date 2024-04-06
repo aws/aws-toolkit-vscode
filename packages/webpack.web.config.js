@@ -12,7 +12,8 @@
 const webpack = require('webpack')
 const { merge } = require('webpack-merge')
 
-const baseConfig = require('./webpack.base.config')
+const baseConfigFactory = require('./webpack.base.config')
+const baseConfig = baseConfigFactory()
 
 /** @type WebpackConfig */
 const webConfig = merge(baseConfig, {

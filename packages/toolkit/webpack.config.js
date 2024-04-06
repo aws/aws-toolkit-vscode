@@ -6,8 +6,10 @@
 const path = require('path')
 const currentDir = process.cwd()
 
-const baseConfig = require('../webpack.base.config')
+const baseConfigFactory = require('../webpack.base.config')
 const baseWebConfig = require('../webpack.web.config')
+
+const baseConfig = baseConfigFactory()
 
 const devServer = {
     static: {
