@@ -231,7 +231,6 @@ class CodeCatalystClientInternal {
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T> {
         const log = this.log
         const bearerToken = (await this.connection.getToken()).accessToken
-        req.httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
         const perflog = new PerfLog('API request')
 
         return new Promise<T>((resolve, reject) => {
