@@ -1,0 +1,213 @@
+name: Prerelease
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for release'
+        required: false
+        default: prerelease
+  push:
+    branches: [ main, feature/* ]
+
+
+jobs:
+  generate_artifact_toolkit:
+    strategy:
+      matrix:
+        supported_versions: [ '2023.3', '2023.2', '2024.1' ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: remove unwanted dependencies
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.x'
+      - name: Generate artifact
+        run: |
+          ./gradlew -PideProfileName=${{ matrix.supported_versions }} :plugin-toolkit:intellij:buildPlugin
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-toolkit-${{ matrix.supported_versions }}
+          path: ./plugins/toolkit/intellij/build/distributions/*.zip
+          retention-days: 1
+  generate_artifact_toolkit_standalone:
+    strategy:
+      matrix:
+        supported_versions: [ '2023.3', '2023.2', '2024.1' ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: remove unwanted dependencies
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.x'
+      - name: Generate artifact
+        run: |
+          ./gradlew -PideProfileName=${{ matrix.supported_versions }} :plugin-toolkit:intellij-standalone:buildPlugin
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-standalone-${{ matrix.supported_versions }}
+          path: ./plugins/toolkit/intellij-standalone/build/distributions/*.zip
+          retention-days: 1
+
+  generate_artifact_q:
+    strategy:
+      matrix:
+        supported_versions: [ '2023.3', '2023.2', '2024.1' ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: remove unwanted dependencies
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+      - name: Generate artifact
+        run: |
+          ./gradlew -PideProfileName=${{ matrix.supported_versions }} :plugin-amazonq:buildPlugin --exclude-task buildResharperPlugin
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-amazonq-${{ matrix.supported_versions }}
+          path: ./plugins/amazonq/build/distributions/*.zip
+          retention-days: 1
+
+  generate_artifact_core:
+    strategy:
+      matrix:
+        supported_versions: [ '2023.3', '2023.2', '2024.1' ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: remove unwanted dependencies
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+
+      - name: Generate artifact
+        run: |
+
+          ./gradlew -PideProfileName=${{ matrix.supported_versions }} :plugin-core:buildPlugin
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-core-${{ matrix.supported_versions }}
+          path: ./plugins/core/build/distributions/*.zip
+          retention-days: 1
+
+  generate_changelog:
+    runs-on: ubuntu-latest
+    outputs:
+      feature: ${{ steps.assign_output.outputs.feature }}
+      tagname: ${{ steps.assign_output.outputs.tagname }}
+      version: ${{ steps.assign_output.outputs.version }}
+      changes: ${{ steps.assign_output.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+
+      - if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "TAG_NAME=${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
+      - if: github.ref_name != 'main'
+        run: |
+          TAG_NAME=${{ github.ref_name }}
+          FEAT_NAME=$(echo $TAG_NAME | sed 's/feature\///')
+          echo "FEAT_NAME=$FEAT_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=pre-$FEAT_NAME" >> $GITHUB_ENV
+      - if: github.ref_name == 'main'
+        run: |
+          echo "FEAT_NAME=" >> $GITHUB_ENV
+          echo "TAG_NAME=prerelease" >> $GITHUB_ENV
+      - name: Generate changelog
+        id: changelog
+        run: |
+          ./gradlew :createRelease :generateChangelog
+      - name: Provide the metadata to output
+        id: assign_output
+        run: |
+          echo "feature=$FEAT_NAME" >> $GITHUB_OUTPUT
+          echo "tagname=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$(cat gradle.properties | grep toolkitVersion | cut -d'=' -f2)" >> $GITHUB_OUTPUT
+          echo 'changes<<EOF' >> $GITHUB_OUTPUT
+          cat CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print; exit if $. == 1' >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+  publish:
+    needs: [ generate_artifact_toolkit, generate_artifact_toolkit_standalone, generate_artifact_core, generate_artifact_q, generate_changelog ]
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      FEAT_NAME: ${{ needs.generate_changelog.outputs.feature }}
+      TAG_NAME: ${{ needs.generate_changelog.outputs.tagname }}
+      AWS_TOOLKIT_VERSION: ${{ needs.generate_changelog.outputs.version }}
+      BRANCH: ${{ github.ref_name }}
+      AWS_TOOLKIT_CHANGES: ${{ needs.generate_changelog.outputs.changes }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+      - name: Delete existing prerelease
+        # "prerelease" (main branch) or "pre-<feature>"
+        if: "env.TAG_NAME == 'prerelease' || startsWith(env.TAG_NAME, 'pre-')"
+        run: |
+          echo "SUBJECT=AWS Toolkit ${AWS_TOOLKIT_VERSION}: ${FEAT_NAME:-${TAG_NAME}}" >> $GITHUB_ENV
+          gh release delete "$TAG_NAME" --cleanup-tag --yes || true
+      - name: Publish to GitHub Releases
+        run: |
+          envsubst < "$GITHUB_WORKSPACE/.github/workflows/prerelease_notes.md" > "$RUNNER_TEMP/prerelease_notes.md"
+          gh release create $TAG_NAME --prerelease --notes-file "$RUNNER_TEMP/prerelease_notes.md" --title "$SUBJECT" --target $GITHUB_SHA plugin-toolkit-*/*.zip
+      - name: Publish core
+        run: |
+          gh release upload $TAG_NAME plugin-core-*/*.zip
+      - name: Publish Q
+        run: |
+          gh release upload $TAG_NAME plugin-amazonq-*/*.zip
+      - name: Publish Toolkit Standalone
+        run: |
+          gh release upload $TAG_NAME plugin-standalone-*/*.zip

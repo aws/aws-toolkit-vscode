@@ -6,5 +6,6 @@ plugins {
 }
 
 intellij {
+    pluginName.set("aws-toolkit-jetbrains-standalone")
     plugins.add(project(":plugin-core"))
 }
