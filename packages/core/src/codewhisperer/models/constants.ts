@@ -241,7 +241,7 @@ export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
 export const autoScanDebounceDelaySeconds = 2
 
-export const codewhispererDiagnosticSourceLabel = 'CodeWhisperer '
+export const codewhispererDiagnosticSourceLabel = 'Amazon Q '
 
 // use vscode languageId here / Supported languages
 export const securityScanLanguageIds = [

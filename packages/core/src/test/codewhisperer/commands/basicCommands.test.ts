@@ -336,9 +336,9 @@ describe('CodeWhisperer-basicCommands', function () {
                     createAutoSuggestions(false),
                     createOpenReferenceLog(),
                     createGettingStarted(),
-                    switchToAmazonQNode('item'),
                     createAutoScans(false),
                     createSecurityScan(),
+                    switchToAmazonQNode('item'),
                     ...genericItems(),
                     createSettingsNode(),
                     createSignout()
@@ -361,9 +361,9 @@ describe('CodeWhisperer-basicCommands', function () {
                     createSelectCustomization(),
                     createOpenReferenceLog(),
                     createGettingStarted(),
-                    switchToAmazonQNode('item'),
                     createAutoScans(false),
                     createSecurityScan(),
+                    switchToAmazonQNode('item'),
                     ...genericItems(),
                     createSettingsNode(),
                     createSignout()
