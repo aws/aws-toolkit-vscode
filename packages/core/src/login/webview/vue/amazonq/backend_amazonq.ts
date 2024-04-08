@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { SsoConnection, scopesCodeWhispererChat, AwsConnection } from '../../../../auth/connection'
+import { scopesCodeWhispererChat, AwsConnection } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
@@ -22,18 +22,28 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         super(AmazonQLoginWebview.sourcePath)
     }
 
-    async fetchConnections(): Promise<SsoConnection[] | undefined> {
+    async fetchConnections(): Promise<AwsConnection[] | undefined> {
         if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
             return undefined
         }
         await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
         const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
         const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
-        const connections: SsoConnection[] = []
+        const connections: AwsConnection[] = []
         if (importedApi && 'listConnections' in importedApi) {
             return await importedApi?.listConnections()
         }
         return connections
+    }
+
+    // Prioritize reusing a valid connection that has Amazon Q scopes
+    selectConnection(connections: AwsConnection[]): AwsConnection | undefined {
+        const score = (c: AwsConnection) =>
+            Number(c.scopes?.includes(scopesCodeWhispererChat[0])) * 10 + Number(c.state === 'valid')
+        connections.sort(function (a, b) {
+            return score(b) - score(a)
+        })
+        return connections[0]
     }
 
     async useConnection(connectionId: string): Promise<AuthError | undefined> {

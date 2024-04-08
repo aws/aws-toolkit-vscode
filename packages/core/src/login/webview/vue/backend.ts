@@ -12,7 +12,7 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { trustedDomainCancellation } from '../../../auth/sso/model'
 import { handleWebviewError } from '../../../webviews/server'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
-import { Connection, SsoConnection } from '../../../auth/connection'
+import { AwsConnection, Connection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 
@@ -105,9 +105,11 @@ export abstract class CommonAuthWebview extends VueWebview {
         await vscode.commands.executeCommand('aws.explorer.focus')
     }
 
-    abstract fetchConnections(): Promise<SsoConnection[] | undefined>
+    abstract fetchConnections(): Promise<AwsConnection[] | undefined>
 
     abstract useConnection(connectionId: string): Promise<AuthError | undefined>
+
+    abstract selectConnection(connections: AwsConnection[]): AwsConnection | undefined
 
     abstract errorNotification(e: AuthError): void
 
