@@ -15,6 +15,9 @@ import { createSessionConfig } from '../../amazonqFeatureDev/session/sessionConf
 import { Session } from '../../amazonqFeatureDev/session/session'
 import { SessionState } from '../../amazonqFeatureDev/types'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
+import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
+import path from 'path'
+import { featureDevScheme } from '../../amazonqFeatureDev/constants'
 
 export function createMessenger(): Messenger {
     return new Messenger(
@@ -68,6 +71,23 @@ export async function createSession({
     sinon.stub(session, 'uploadId').get(() => uploadID)
 
     return session
+}
+
+export async function sessionRegisterProvider(session: Session, uri: vscode.Uri, fileContents: Uint8Array) {
+    session.config.fs.registerProvider(uri, new VirtualMemoryFile(fileContents))
+}
+
+export function generateVirtualMemoryUri(uploadID: string, filePath: string) {
+    const generationFilePath = path.join(uploadID, filePath)
+    const uri = vscode.Uri.from({ scheme: featureDevScheme, path: generationFilePath })
+    return uri
+}
+
+export async function sessionWriteFile(session: Session, uri: vscode.Uri, encodedContent: Uint8Array) {
+    await session.config.fs.writeFile(uri, encodedContent, {
+        create: true,
+        overwrite: true,
+    })
 }
 
 export async function createController(): Promise<ControllerSetup> {

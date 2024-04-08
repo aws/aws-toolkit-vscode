@@ -35,7 +35,7 @@ export function fakeMetric(metric: Partial<Metric> = {}): ClientTelemetry.Metric
     }
 }
 
-describe('DefaultTelemetryService', function () {
+describe('TelemetryService', function () {
     const testFlushPeriod = 10
     let clock: FakeTimers.InstalledClock
     let sandbox: sinon.SinonSandbox

@@ -614,7 +614,7 @@ export class FeatureDevController {
         }
 
         if (uri && uri instanceof vscode.Uri) {
-            session.config.sourceRoots = [uri.fsPath]
+            session.config.workspaceRoots = [uri.fsPath]
             this.messenger.sendAnswer({
                 message: `Changed source root to: ${uri.fsPath}`,
                 type: 'answer',

@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
-import { assertTelemetry, captureEventOnce } from '../testUtil'
+import { assertTelemetry, captureEventOnce, getMetrics } from '../testUtil'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from './testUtil'
 import { toCollection } from '../../shared/utilities/asyncCollection'
 import globals from '../../shared/extensionGlobals'
@@ -257,7 +257,12 @@ describe('Auth', function () {
         it('reauthentication is indicated in metric', async function () {
             const conn = await auth.createInvalidSsoConnection(ssoProfile)
             await auth.reauthenticate(conn)
-            assertTelemetry('aws_loginWithBrowser', { isReAuth: true })
+            assertTelemetry('aws_loginWithBrowser', {
+                result: 'Succeeded',
+                isReAuth: true,
+                credentialStartUrl: ssoProfile.startUrl,
+            })
+            assert.strictEqual(getMetrics('aws_loginWithBrowser').length, 1)
         })
     })
 

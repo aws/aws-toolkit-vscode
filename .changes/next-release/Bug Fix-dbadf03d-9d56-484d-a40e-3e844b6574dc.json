@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q Code Transformation: allow \"Start a new transformation\" button in chat to work after job fails"
-}

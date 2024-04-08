@@ -199,16 +199,25 @@ export class SsoAccessTokenProvider {
             return await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
         }
 
-        let token: ReturnType<typeof openBrowserAndWaitUntilComplete>
-        if (telemetry.spans.map(s => s.name).includes('aws_loginWithBrowser')) {
-            // During certain flows, eg reauthentication, we are already running within a span (run())
-            // so we don't need to create a new one.
-            token = openBrowserAndWaitUntilComplete()
-        } else {
-            token = telemetry.aws_loginWithBrowser.run(async () => openBrowserAndWaitUntilComplete())
-        }
+        const token = this.withBrowserLoginTelemetry(() => openBrowserAndWaitUntilComplete())
 
         return this.formatToken(await token, registration)
+    }
+
+    /**
+     * Wraps the given function with telemetry related to the browser login.
+     */
+    private withBrowserLoginTelemetry<T extends (...args: any[]) => any>(func: T): ReturnType<T> {
+        if (telemetry.spans.some(s => s.name === 'aws_loginWithBrowser')) {
+            // During certain flows, eg reauthentication, we are already running within a span (run())
+            // so we don't need to create a new one.
+            return func()
+        }
+
+        return telemetry.aws_loginWithBrowser.run(span => {
+            span.record({ credentialStartUrl: this.profile.startUrl })
+            return func()
+        })
     }
 
     /**
