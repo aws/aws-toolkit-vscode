@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q Code Feature Development: fix the welcome message for /dev command"
+}

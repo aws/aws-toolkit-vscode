@@ -47,7 +47,7 @@ export class TabDataGenerator {
             'featuredev',
             `Welcome to /dev. 
 
-Here I can provide code suggestions across files in your current project by looking at /src, if it exists.
+Here I can provide code suggestions across files in your current project.
 
 Before I begin generating code, let's agree on an implementation plan. What change would you like to make?
 `,
