@@ -54,7 +54,6 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.toVirtualFile
 import software.aws.toolkits.jetbrains.services.codemodernizer.tryGetJdk
 import software.aws.toolkits.jetbrains.services.cwc.messages.ChatMessageType
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodeTransformStartSrcComponents
 
 class CodeTransformChatController(
     private val context: AmazonQAppInitContext,
@@ -62,7 +61,6 @@ class CodeTransformChatController(
 ) : InboundAppMessagesHandler {
     private val authController = AuthController()
     private val messagePublisher = context.messagesFromAppToUi
-    private val telemetry = CodeTransformTelemetryManager.getInstance(context.project)
     private val codeModernizerManager = CodeModernizerManager.getInstance(context.project)
     private val codeTransformChatHelper = CodeTransformChatHelper(context.messagesFromAppToUi, chatSessionStorage)
     private val artifactHandler = ArtifactHandler(context.project, GumbyClient.getInstance(context.project))
@@ -72,9 +70,6 @@ class CodeTransformChatController(
             return
         }
 
-        CodeTransformTelemetryManager.getInstance(context.project).jobIsStartedFromChatPrompt()
-
-        telemetry.sendUserClickedTelemetry(CodeTransformStartSrcComponents.ChatPrompt)
         codeTransformChatHelper.setActiveCodeTransformTabId(message.tabId)
 
         if (!message.startNewTransform) {
@@ -107,6 +102,8 @@ class CodeTransformChatController(
         )
 
         delay(500)
+
+        CodeTransformTelemetryManager.getInstance(context.project).jobIsStartedFromChatPrompt()
 
         codeTransformChatHelper.addNewMessage(
             buildUserInputChatContent(context.project, validationResult)
