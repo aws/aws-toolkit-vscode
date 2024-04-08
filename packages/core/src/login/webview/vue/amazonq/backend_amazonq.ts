@@ -35,15 +35,22 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         }
         return connections
     }
-
-    // Prioritize reusing a valid connection that has Amazon Q scopes
+    /**
+     * Select a connection for Amazon Q to use
+     * @param connections List of AWS Toolkit Connections
+     * @returns A connection that has Amazon Q scopes. It will return a valid connection if exists.
+     * Returns undefined if no connection has Q scopes.
+     */
     selectConnection(connections: AwsConnection[]): AwsConnection | undefined {
-        const score = (c: AwsConnection) =>
-            Number(c.scopes?.includes(scopesCodeWhispererChat[0])) * 10 + Number(c.state === 'valid')
+        const hasQScopes = (c: AwsConnection) => amazonQScopes.every(s => c.scopes?.includes(s))
+        const score = (c: AwsConnection) => Number(hasQScopes(c)) * 10 + Number(c.state === 'valid')
         connections.sort(function (a, b) {
             return score(b) - score(a)
         })
-        return connections[0]
+        if (hasQScopes(connections[0])) {
+            return connections[0]
+        }
+        return undefined
     }
 
     async useConnection(connectionId: string): Promise<AuthError | undefined> {
