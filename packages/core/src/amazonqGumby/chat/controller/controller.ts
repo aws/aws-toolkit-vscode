@@ -13,7 +13,7 @@ import * as vscode from 'vscode'
 import { ConversationState, Session } from '../session/session'
 import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
-import { AuthUtil, getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import {
     compileProject,
     getValidCandidateProjects,
@@ -25,7 +25,7 @@ import {
 import { JDKVersion, transformByQState } from '../../../codewhisperer/models/model'
 import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
-import { TransformationCandidateProject } from '../../../codewhisperer/service/transformByQHandler'
+import { TransformationCandidateProject, getAuthType } from '../../../codewhisperer/service/transformByQHandler'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import fs from 'fs'
 import path from 'path'
@@ -33,7 +33,6 @@ import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { codeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
-import { CredentialSourceId } from '../../../shared/telemetry/telemetry'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -233,12 +232,7 @@ export class GumbyController {
 
     // prompt user to pick project and specify source JDK version
     private async initiateTransformationOnProject(message: any) {
-        let authType: CredentialSourceId | undefined = undefined
-        if (AuthUtil.instance.isEnterpriseSsoInUse() && AuthUtil.instance.isConnectionValid()) {
-            authType = 'iamIdentityCenter'
-        } else if (AuthUtil.instance.isBuilderIdInUse() && AuthUtil.instance.isConnectionValid()) {
-            authType = 'awsId'
-        }
+        const authType = await getAuthType()
         telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             credentialSourceId: authType,

@@ -28,6 +28,7 @@ import globals from '../../shared/extensionGlobals'
 import {
     CodeTransformJavaSourceVersionsAllowed,
     CodeTransformMavenBuildCommand,
+    CredentialSourceId,
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
@@ -51,6 +52,7 @@ import {
     NoOpenProjectsError,
     ZipExceedsSizeLimitError,
 } from '../../amazonqGumby/errors'
+import { AuthUtil } from '../util/authUtil'
 
 export interface TransformationCandidateProject {
     name: string
@@ -61,6 +63,16 @@ export interface TransformationCandidateProject {
 export interface FolderInfo {
     path: string
     name: string
+}
+
+export async function getAuthType() {
+    let authType: CredentialSourceId | undefined = undefined
+    if (AuthUtil.instance.isEnterpriseSsoInUse() && AuthUtil.instance.isConnectionValid()) {
+        authType = 'iamIdentityCenter'
+    } else if (AuthUtil.instance.isBuilderIdInUse() && AuthUtil.instance.isConnectionValid()) {
+        authType = 'awsId'
+    }
+    return authType
 }
 
 // log project details silently
