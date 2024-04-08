@@ -138,7 +138,6 @@ interface ToolkitGlobals {
     readonly context: ExtensionContext
     // TODO: make the rest of these readonly (or delete them)
     outputChannel: OutputChannel
-    invokeOutputChannel: OutputChannel
     loginManager: LoginManager
     awsContextCommands: AwsContextCommands
     awsContext: AwsContext
