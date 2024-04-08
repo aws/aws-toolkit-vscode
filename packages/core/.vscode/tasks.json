@@ -23,13 +23,11 @@
             "problemMatcher": "$ts-webpack-watch"
         },
         {
-            "label": "webWatch",
-            "type": "npm",
-            "script": "webWatch",
-            "detail": "Webpacks our toolkit code (with --watch) in preparation to be run in the browser",
+            "label": "testsBuildWatch",
+            "command": "npm run testsWebWatch",
+            "detail": "Build that is sufficient for Web mode tests",
+            "type": "shell",
             "isBackground": true,
-            // Since `webpack --watch` never terminates (but finishes packaging at some point),
-            // VS Code uses this to parse the CLI output to pattern match something that indicates it is done
             "problemMatcher": "$ts-webpack-watch"
         },
         /**

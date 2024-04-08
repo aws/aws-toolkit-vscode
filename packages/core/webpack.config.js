@@ -13,7 +13,7 @@
 
 const baseConfigFactory = require('../webpack.base.config')
 const baseVueConfigFactory = require('../webpack.vue.config')
-const baseWebConfig = require('../webpack.web.config')
+const baseWebConfigsFactory = require('../webpack.web.config')
 
 module.exports = (env, argv) => {
     const baseVueConfig = baseVueConfigFactory(env, argv)
@@ -30,19 +30,27 @@ module.exports = (env, argv) => {
         ...baseVueConfig.config,
         // Inject entry point into all configs.
         entry: {
-            ...baseVueConfig.utils.createVueEntries(),
+            ...baseVueConfig.createVueEntries(),
             // The above `createVueEntries` path pattern match does not catch this:
             'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
         },
     }
 
-    const WebConfig = {
-        ...baseWebConfig,
-        entry: {
-            'src/extensionWeb': './src/extensionWeb.ts',
-            'src/testWeb/testRunner': './src/testWeb/testRunner.ts',
-        },
-    }
+    // We only need Web `core` to be webpacked/bundled for tests.
+    // Separately, for Web `toolkit` we don't need the webpacked Web `core` code, so the following
+    // will not return a Web `core` config.
+    const webConfig =
+        env.IS_WEB_CORE_TESTS === 'true'
+            ? [
+                  {
+                      ...baseWebConfigsFactory(env, argv),
+                      entry: {
+                          'src/extensionWeb': './src/extensionWeb.ts',
+                          'src/testWeb/testRunner': './src/testWeb/testRunner.ts',
+                      },
+                  },
+              ]
+            : []
 
-    return [config, vueConfig, WebConfig]
+    return [config, vueConfig, ...webConfig]
 }

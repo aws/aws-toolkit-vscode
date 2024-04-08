@@ -42,11 +42,7 @@
             a file in `Developer Tools` > `Sources`.
             I was inspired by this: https://github.com/microsoft/vscode-test-web/blob/897bca4907a87a6bc564efc242ce6794e5da3232/.vscode/launch.json#L28
             **/
-            "resolveSourceMapLocations": [
-                // "!**/node_modules/**", // TODO: Removing this makes it slow again, but debugging in VSCode won't work without it :(
-                "!**/vs/**",
-                "!**/extensions/**"
-            ],
+            "resolveSourceMapLocations": ["!**/node_modules/**", "!**/vs/**", "!**/extensions/**"],
             "preLaunchTask": "webRun",
             "postDebugTask": "webRunTerminate"
         },

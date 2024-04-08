@@ -42,7 +42,7 @@ module.exports = (env, argv) => {
     const baseConfig = baseConfigFactory(env, argv)
 
     /** @type WebpackConfig */
-    let vueConfig = merge(baseConfig, {
+    let config = merge(baseConfig, {
         name: 'vue',
         target: 'web',
         output: {
@@ -73,8 +73,8 @@ module.exports = (env, argv) => {
 
     if (isDevelopment) {
         // add development specific vue config settings
-        vueConfig = {
-            ...vueConfig,
+        config = {
+            ...config,
             devServer: {
                 static: {
                     directory: path.resolve(currentDir, 'dist'),
@@ -94,9 +94,7 @@ module.exports = (env, argv) => {
     }
 
     return {
-        config: vueConfig,
-        utils: {
-            createVueEntries,
-        },
+        config,
+        createVueEntries,
     }
 }
