@@ -52,6 +52,7 @@ import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMe
 import { CodeScansState, CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 import { switchToAmazonQNode } from '../../../amazonq/explorer/amazonQChildrenNodes'
+import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -216,7 +217,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
 
-            assert.ok(vscode.window.activeTextEditor === undefined)
+            assert.ok(!vscode.window.activeTextEditor || !isTextEditor(vscode.window.activeTextEditor))
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(getTestWindow().shownMessages[0].message, 'Open a valid file to scan.')
         })
