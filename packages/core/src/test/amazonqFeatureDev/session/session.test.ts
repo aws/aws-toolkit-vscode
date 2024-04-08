@@ -72,7 +72,7 @@ describe('session', () => {
             const testConfig = {
                 conversationId: conversationID,
                 proxyClient: {} as unknown as FeatureDevClient,
-                sourceRoots: [''],
+                workspaceRoots: [''],
                 uploadId: uploadID,
                 workspaceFolders,
             }
