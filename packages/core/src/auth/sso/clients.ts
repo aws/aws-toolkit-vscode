@@ -33,6 +33,12 @@ import { DevSettings } from '../../shared/settings'
 import { SdkError } from '@aws-sdk/types'
 import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
 import { StandardRetryStrategy, defaultRetryDecider } from '@aws-sdk/middleware-retry'
+import OidcClientPKCE from './oidcclientpkce'
+import { toSnakeCase } from '../../shared/utilities/textUtilities'
+import { Credentials, Service } from 'aws-sdk'
+import apiConfig = require('./service-2.json')
+import { ServiceOptions } from '../../shared/awsClientBuilder'
+import { ClientRegistration } from './model'
 
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
@@ -91,6 +97,82 @@ export class OidcClient {
 
         addLoggingMiddleware(client)
         return new this(client, globals.clock)
+    }
+}
+
+export class OidcClientV2 {
+    public constructor(private readonly region: string, private readonly clock: { Date: typeof Date }) {}
+
+    /**
+     * TODO remove this when the real client gets created.
+     *
+     * Creating a new client is required because the old sdk seems to drop unknown parameters from requests
+     */
+    private async createNewClient() {
+        return (await globals.sdkClientBuilder.createAwsService(
+            Service,
+            {
+                apiConfig,
+                region: this.region,
+                credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
+            } as ServiceOptions,
+            undefined
+        )) as OidcClientPKCE
+    }
+
+    public async registerClient(request: OidcClientPKCE.RegisterClientRequest): Promise<ClientRegistration> {
+        const client = await this.createNewClient()
+        const response = await client.makeUnauthenticatedRequest('registerClient', request).promise()
+        assertHasProps(response, 'clientId', 'clientSecret', 'clientSecretExpiresAt')
+
+        return {
+            scopes: request.scopes,
+            clientId: response.clientId,
+            clientSecret: response.clientSecret,
+            expiresAt: new this.clock.Date(response.clientSecretExpiresAt * 1000),
+            flow: 'auth code',
+        }
+    }
+
+    public async authorize(request: OidcClientPKCE.AuthorizeRequest) {
+        // aws sdk doesn't convert to url params until right before you make the request, so we have to do
+        // it manually ahead of time
+        const params = toSnakeCase(request)
+
+        const joinedParams = Object.entries(params)
+            .map(x => `${x[0]}=${x[1]}`)
+            .join('&')
+        return `https://oidc.${this.region}.amazonaws.com/authorize?${joinedParams}`
+    }
+
+    public async startDeviceAuthorization(request: StartDeviceAuthorizationRequest): Promise<{
+        expiresAt: Date
+        interval: number | undefined
+        deviceCode: string
+        userCode: string
+        verificationUri: string
+    }> {
+        throw new Error('OidcClientV2 does not support device authorization')
+    }
+
+    public async createToken(request: OidcClientPKCE.CreateTokenRequest): Promise<{
+        accessToken: string
+        expiresAt: Date
+        tokenType?: string | undefined
+        refreshToken?: string | undefined
+    }> {
+        const client = await this.createNewClient()
+        const response = await client.makeUnauthenticatedRequest('createToken', request).promise()
+        assertHasProps(response, 'accessToken', 'expiresIn')
+
+        return {
+            ...selectFrom(response, 'accessToken', 'refreshToken', 'tokenType'),
+            expiresAt: new this.clock.Date(response.expiresIn * 1000 + this.clock.Date.now()),
+        }
+    }
+
+    public static create(region: string) {
+        return new this(region, globals.clock)
     }
 }
 
