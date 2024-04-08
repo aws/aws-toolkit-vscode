@@ -27,6 +27,12 @@ val changelog = tasks.register<GeneratePluginChangeLog>("pluginChangeLog") {
     changeLogFile.set(project.file("$buildDir/changelog/change-notes.xml"))
 }
 
+tasks.compileJava {
+    // https://github.com/gradle/gradle/issues/26006
+    // consistently saves 6+ minutes in CI. we do not need incremental compilation for 2 java files
+    options.isIncremental = false
+}
+
 tasks.jar {
     dependsOn(changelog)
     from(changelog) {
