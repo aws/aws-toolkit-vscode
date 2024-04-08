@@ -24,7 +24,7 @@ import {
     globals,
     RegionProvider,
 } from 'aws-core-vscode/shared'
-import { initializeAuth } from 'aws-core-vscode/auth'
+import { initializeAuth, CredentialsStore, LoginManager } from 'aws-core-vscode/auth'
 import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
@@ -51,6 +51,7 @@ export async function activateShared(context: vscode.ExtensionContext) {
     await activateLogger(context, contextPrefix, qOutputChannel, qLogChannel)
     globals.outputChannel = qOutputChannel
     globals.logOutputChannel = qLogChannel
+    globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 
     await activateTelemetry(context, globals.awsContext, Settings.instance)
 
