@@ -51,7 +51,7 @@ const mockSessionStateConfig = ({
     uploadId: string
     workspaceFolder: vscode.WorkspaceFolder
 }): SessionStateConfig => ({
-    sourceRoots: ['fake-source'],
+    workspaceRoots: ['fake-source'],
     workspaceFolders: [workspaceFolder],
     conversationId,
     proxyClient: {

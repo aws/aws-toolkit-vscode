@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
     "description": "Including Amazon Q, CodeWhisperer, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
-    "version": "2.18.0-SNAPSHOT",
+    "version": "2.19.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -59,7 +59,7 @@
         "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles",
         "generateNonCodeFiles": "ts-node ./scripts/build/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* README* CHANGELOG.md",
+        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* CHANGELOG.md",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development",
         "webWatch": "npm run clean && npm run copyFiles --vueHr && webpack --config-name web --watch",
         "webCompile": "npm run clean && npm run buildScripts -- --vueHr && webpack --config-name web",

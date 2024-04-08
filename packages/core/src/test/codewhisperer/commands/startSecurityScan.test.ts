@@ -20,11 +20,7 @@ import { HttpResponse } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { cancel } from '../../../shared/localizedText'
-import {
-    codeScanLogsOutputChannelId,
-    showScannedFilesMessage,
-    stopScanMessage,
-} from '../../../codewhisperer/models/constants'
+import { showScannedFilesMessage, stopScanMessage } from '../../../codewhisperer/models/constants'
 import * as model from '../../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.gen'
 import { getFetchStubWithResponse } from '../../common/request.test'
@@ -246,7 +242,6 @@ describe('startSecurityScan', function () {
         if (semver.lt(vscode.version, '1.78.0')) {
             this.skip()
         }
-        const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const testWindow = getTestWindow()
         testWindow.onDidShowMessage(message => {
@@ -260,7 +255,6 @@ describe('startSecurityScan', function () {
             createClient(),
             extensionContext
         )
-        assert.ok(commandSpy.calledWith(codeScanLogsOutputChannelId))
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererLanguage: 'python',
             codewhispererCodeScanTotalIssues: 1,
