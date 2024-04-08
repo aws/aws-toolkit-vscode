@@ -13,7 +13,7 @@ import * as vscode from 'vscode'
 import { ConversationState, Session } from '../session/session'
 import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
-import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil, getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import {
     compileProject,
     getValidCandidateProjects,
@@ -30,6 +30,10 @@ import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import fs from 'fs'
 import path from 'path'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
+import { codeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
+import { CredentialSourceId } from '../../../shared/telemetry/telemetry'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -227,9 +231,19 @@ export class GumbyController {
         }
     }
 
-    // Any given project could have multiple candidate projects to transform --
-    // The user gets prompted to pick a specific one
+    // prompt user to pick project and specify source JDK version
     private async initiateTransformationOnProject(message: any) {
+        let authType: CredentialSourceId | undefined = undefined
+        if (AuthUtil.instance.isEnterpriseSsoInUse() && AuthUtil.instance.isConnectionValid()) {
+            authType = 'iamIdentityCenter'
+        } else if (AuthUtil.instance.isBuilderIdInUse() && AuthUtil.instance.isConnectionValid()) {
+            authType = 'awsId'
+        }
+        telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            credentialSourceId: authType,
+            result: MetadataResult.Pass,
+        })
         const pathToProject: string = message.formSelectedValues['GumbyTransformProjectForm']
         const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
         const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
