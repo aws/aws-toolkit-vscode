@@ -28,6 +28,8 @@
     </extensions>
 
     <actions>
+        <action id="aws.toolkit.open.q.window" class="software.aws.toolkits.jetbrains.services.amazonq.OpenAmazonQAction"/>
+
         <group id="aws.toolkit.q.idc.signed.in">
             <action
                 id="q.openchat"
