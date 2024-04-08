@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Amazon Q Feature Dev: Upload workspaces' root directories instead of /src folder"
+	"description": "Amazon Q Feature Dev: Use project context from workspace root directory instead of the /src folder"
 }
