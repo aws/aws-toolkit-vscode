@@ -264,15 +264,6 @@ export const connectionExpired = `Connection expired. To continue using Amazon Q
 
 export const DoNotShowAgain = `Don\'t Show Again`
 
-// Not const so that tests can set replace this with aws-core-vscode dummy extension name.
-// Temporary until we can move this out of the core library.
-export let codeScanLogsOutputChannelId =
-    'workbench.action.output.show.extension-output-amazonwebservices.aws-toolkit-vscode-#1-CodeWhisperer Security Scan Logs'
-
-export function setCodeScanLogsOutputChannelId(val: string) {
-    codeScanLogsOutputChannelId = val
-}
-
 export const stopScanMessage =
     'Stop security scan? This scan will be counted as one complete scan towards your monthly security scan limits.'
 

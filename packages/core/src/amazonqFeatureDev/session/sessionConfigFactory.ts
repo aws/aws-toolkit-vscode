@@ -9,11 +9,10 @@ import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { WorkspaceFolderNotFoundError } from '../errors'
 import { CurrentWsFolders } from '../types'
-import { getSourceCodePath } from '../util/files'
 
 export interface SessionConfig {
     // The paths on disk to where the source code lives
-    sourceRoots: string[]
+    workspaceRoots: string[]
     readonly fs: VirtualFileSystem
     readonly workspaceFolders: CurrentWsFolders
 }
@@ -29,7 +28,7 @@ export async function createSessionConfig(): Promise<SessionConfig> {
         throw new WorkspaceFolderNotFoundError()
     }
 
-    const sourceRoots = await Promise.all(workspaceFolders.map(f => getSourceCodePath(f.uri.fsPath, 'src')))
+    const workspaceRoots = workspaceFolders.map(f => f.uri.fsPath)
 
     const fs = new VirtualFileSystem()
 
@@ -39,5 +38,5 @@ export async function createSessionConfig(): Promise<SessionConfig> {
         new VirtualMemoryFile(new Uint8Array())
     )
 
-    return Promise.resolve({ sourceRoots, fs, workspaceFolders: [firstFolder, ...workspaceFolders.slice(1)] })
+    return Promise.resolve({ workspaceRoots, fs, workspaceFolders: [firstFolder, ...workspaceFolders.slice(1)] })
 }
