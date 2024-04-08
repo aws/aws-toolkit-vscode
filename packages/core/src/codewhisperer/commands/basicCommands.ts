@@ -34,6 +34,7 @@ import { FeatureConfigProvider } from '../service/featureConfigProvider'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
+import { isTextEditor } from '../../shared/utilities/editorUtilities'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -87,7 +88,7 @@ export const showSecurityScan = Commands.declare(
                 await AuthUtil.instance.notifyReauthenticate()
             }
             const editor = vscode.window.activeTextEditor
-            if (editor) {
+            if (editor && isTextEditor(editor)) {
                 if (codeScanState.isNotStarted()) {
                     // User intends to start as "Start Security Scan" is shown in the explorer tree
                     codeScanState.setToRunning()

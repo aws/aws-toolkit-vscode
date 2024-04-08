@@ -141,7 +141,6 @@ interface ToolkitGlobals {
     // TODO: make the rest of these readonly (or delete them)
     outputChannel: OutputChannel
     logOutputChannel: OutputChannel
-    invokeOutputChannel: OutputChannel
     loginManager: LoginManager
     awsContextCommands: AwsContextCommands
     awsContext: AwsContext

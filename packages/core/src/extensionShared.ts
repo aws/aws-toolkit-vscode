@@ -96,10 +96,6 @@ export async function activateShared(context: vscode.ExtensionContext, contextPr
         )
     }
 
-    globals.invokeOutputChannel = vscode.window.createOutputChannel(
-        localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
-    )
-
     //setup globals
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
@@ -148,7 +144,6 @@ export async function activateShared(context: vscode.ExtensionContext, contextPr
         samCliContext: getSamCliContext,
         regionProvider: globals.regionProvider,
         outputChannel: globals.outputChannel,
-        invokeOutputChannel: globals.invokeOutputChannel,
         telemetryService: globals.telemetry,
         uriHandler: globals.uriHandler,
         credentialsStore: globals.loginManager.store,
