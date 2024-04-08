@@ -57,8 +57,8 @@ import {
     switchToAmazonQCommand,
 } from './amazonq/explorer/amazonQChildrenNodes'
 import { AuthUtil, isPreviousQUser } from './codewhisperer/util/authUtil'
-import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
-import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
+import { connectWithCustomization, installAmazonQExtension } from './codewhisperer/commands/basicCommands'
+import { isExtensionActive, isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
 
 let localize: nls.LocalizeFunc
 
@@ -224,6 +224,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
         if (!isReleaseVersion()) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        }
+        // Register the aws.CodeWhisperer.connect command if Amazon Q is not active
+        if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) || !isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
+            context.subscriptions.push(connectWithCustomization()?.register() ?? { dispose() {} })
         }
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')

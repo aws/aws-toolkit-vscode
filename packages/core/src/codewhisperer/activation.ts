@@ -189,8 +189,6 @@ export async function activate(context: ExtContext): Promise<void> {
         }),
         // show introduction
         showIntroduction.register(),
-        // direct CodeWhisperer connection setup with customization
-        connectWithCustomization.register(),
         // toggle code suggestions
         toggleCodeSuggestions.register(CodeSuggestionsState.instance),
         // enable code suggestions
@@ -235,6 +233,9 @@ export async function activate(context: ExtContext): Promise<void> {
          * On recommendation acceptance
          */
         acceptSuggestion.register(context),
+
+        connectWithCustomization()?.register() ?? { dispose() {} },
+
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
             if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
