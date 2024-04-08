@@ -56,7 +56,7 @@
             ],
             "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
             "preLaunchTask": "webWatch",
-            "postDebugTask": "webRunTerminate"
+            "postDebugTask": "webRunTerminateCore"
         },
         {
             "name": "Integration Tests",
