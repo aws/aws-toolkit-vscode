@@ -20,7 +20,6 @@ import { CurrentWsFolders } from '../types'
 import { ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Metric } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from './telemetryHelper'
-import { FileSystemCommon } from '../../srcShared/fs'
 import { sanitizeFilename } from '../../shared/utilities/textUtilities'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
@@ -319,18 +318,5 @@ export function getPathsFromZipFilePath(
         absolutePath: path.join(workspaceFolder.uri.fsPath, zipFilePath.substring(prefix.length + 1)),
         relativePath: zipFilePath.substring(prefix.length + 1),
         workspaceFolder,
-    }
-}
-
-export async function getSourceCodePath(workspaceRoot: string, projectRoot: string) {
-    const srcRoot = path.join(workspaceRoot, projectRoot)
-    try {
-        const srcFound = await FileSystemCommon.instance.stat(srcRoot)
-        return srcFound !== undefined ? srcRoot : workspaceRoot
-    } catch (error) {
-        if ((error as { code: string }).code === 'FileNotFound') {
-            return workspaceRoot
-        }
-        throw error
     }
 }

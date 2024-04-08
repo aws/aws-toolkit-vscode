@@ -53,7 +53,7 @@ export interface SessionState {
 }
 
 export interface SessionStateConfig {
-    sourceRoots: string[]
+    workspaceRoots: string[]
     workspaceFolders: CurrentWsFolders
     conversationId: string
     proxyClient: FeatureDevClient
