@@ -36,7 +36,7 @@ phases:
             - echo "posting $VERSION with sha384 hash $HASH to GitHub"
             - RELEASE_MESSAGE="AWS Toolkit for VS Code $VERSION"
             - |
-                if [ $STAGE = "prod" || $TARGET_EXTENSION != 'toolkit' ]; then
+                if [[ $STAGE = "prod" && $TARGET_EXTENSION = "toolkit" ]]; then
                   gh release create --repo $REPO --title "$VERSION" --notes "$RELEASE_MESSAGE" -- "v$VERSION" "$UPLOAD_TARGET" "$HASH_UPLOAD_TARGET"
                 else
                   echo "SKIPPED: 'gh release create --repo $REPO'"
