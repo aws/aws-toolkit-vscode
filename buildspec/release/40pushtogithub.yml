@@ -15,6 +15,7 @@ phases:
             - test -n "${TOOLKITS_GITHUB_REPO_OWNER}"
             - test -n "${GITHUB_TOKEN}"
             - test -n "${TARGET_EXTENSION}"
+            - test -n "${TARGET_BRANCH}"
             - REPO_URL="https://$GITHUB_TOKEN@github.com/${TOOLKITS_GITHUB_REPO_OWNER}/aws-toolkit-vscode.git"
 
     build:
@@ -40,4 +41,4 @@ phases:
                 fi
                 echo "pushing to github"
                 git push originWithCreds --tags
-                git push originWithCreds master
+                git push originWithCreds ${TARGET_BRANCH}
