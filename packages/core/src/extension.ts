@@ -173,12 +173,12 @@ export async function activate(context: vscode.ExtensionContext) {
                 if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
                     if (isPreviousQUser()) {
                         await installAmazonQExtension.execute()
-                        await vscode.window.showInformationMessage(
+                        void vscode.window.showInformationMessage(
                             'Amazon Q has moved to its own VSCode extension, which has been automatically installed.',
                             'OK'
                         )
                     } else {
-                        await vscode.window
+                        void vscode.window
                             .showInformationMessage(
                                 'Amazon Q has moved to its own VSCode extension.' +
                                     '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
