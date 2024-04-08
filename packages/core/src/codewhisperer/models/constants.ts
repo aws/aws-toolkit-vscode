@@ -501,7 +501,7 @@ export const utgConfig = {
 
 export const transformTreeNode = 'qTreeNode'
 
-export enum SecurityScanType {
-    File = 'File',
-    Project = 'Project',
+export enum CodeAnalysisScope {
+    FILE = 'FILE',
+    PROJECT = 'PROJECT',
 }

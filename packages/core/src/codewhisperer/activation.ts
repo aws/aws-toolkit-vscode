@@ -298,7 +298,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 editor,
                 client,
                 context.extensionContext,
-                CodeWhispererConstants.SecurityScanType.File
+                CodeWhispererConstants.CodeAnalysisScope.FILE
             )
         }
 
@@ -325,7 +325,7 @@ export async function activate(context: ExtContext): Promise<void> {
                             editor,
                             client,
                             context.extensionContext,
-                            CodeWhispererConstants.SecurityScanType.File
+                            CodeWhispererConstants.CodeAnalysisScope.FILE
                         )
                     }
                 }
@@ -345,7 +345,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         editor,
                         client,
                         context.extensionContext,
-                        CodeWhispererConstants.SecurityScanType.File
+                        CodeWhispererConstants.CodeAnalysisScope.FILE
                     )
                 }
             })
@@ -365,7 +365,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     editor,
                     client,
                     context.extensionContext,
-                    CodeWhispererConstants.SecurityScanType.File
+                    CodeWhispererConstants.CodeAnalysisScope.FILE
                 )
             }
         })

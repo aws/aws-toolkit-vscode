@@ -30,7 +30,7 @@ def execute_input_noncompliant():
     module_version = request.args.get("module_version")
     # Noncompliant: executes unsanitized inputs.
     exec("import urllib%s as urllib" % module_version)
-        
+
 def execute_input_compliant():
     from flask import request
     module_version = request.args.get("module_version")
@@ -41,7 +41,7 @@ const largePrompt = 'a'.repeat(CodeWhispererConstants.codeScanPythonPayloadSizeL
 
 const javaPromptNoBuild = `class HelloWorld {
     public static void main(String[] args) {
-        System.out.println("Hello World!"); 
+        System.out.println("Hello World!");
     }
 }`
 
@@ -80,7 +80,7 @@ describe('CodeWhisperer security scan', async function () {
 
     /*
     securityJobSetup: combines steps 1 and 2 in startSecurityScan:
-    
+
         Step 1: Generate context truncations
         Step 2: Get presigned Url and upload
 
@@ -91,7 +91,7 @@ describe('CodeWhisperer security scan', async function () {
         const uri = editor.document.uri
 
         const projectPath = zipUtil.getProjectPath(editor.document.uri)
-        const zipMetadata = await zipUtil.generateZip(uri, CodeWhispererConstants.SecurityScanType.Project)
+        const zipMetadata = await zipUtil.generateZip(uri, CodeWhispererConstants.CodeAnalysisScope.PROJECT)
 
         let artifactMap
         try {
@@ -116,13 +116,11 @@ describe('CodeWhisperer security scan', async function () {
         const artifactMap = securityJobSetupResult.artifactMap
         const projectPath = securityJobSetupResult.projectPath
 
+        const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
+
         //get job status and result
-        const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
-        const jobStatus = await pollScanJobStatus(
-            client,
-            scanJob.jobId,
-            CodeWhispererConstants.SecurityScanType.Project
-        )
+        const scanJob = await createScanJob(client, artifactMap, editor.document.languageId, scope)
+        const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope)
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
@@ -141,18 +139,16 @@ describe('CodeWhisperer security scan', async function () {
         await testutil.toFile(filePromptWithSecurityIssues, tempFile)
         const editor = await openTestFile(tempFile)
 
+        const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
+
         //run security scan
         const securityJobSetupResult = await securityJobSetup(editor)
         const artifactMap = securityJobSetupResult.artifactMap
         const projectPath = securityJobSetupResult.projectPath
-        const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
+        const scanJob = await createScanJob(client, artifactMap, editor.document.languageId, scope)
 
         //get job status and result
-        const jobStatus = await pollScanJobStatus(
-            client,
-            scanJob.jobId,
-            CodeWhispererConstants.SecurityScanType.Project
-        )
+        const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope)
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,

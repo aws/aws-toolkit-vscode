@@ -9,7 +9,7 @@ import sinon from 'sinon'
 import { join } from 'path'
 import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
 import { ZipUtil } from '../../../codewhisperer/util/zipUtil'
-import { SecurityScanType } from '../../../codewhisperer/models/constants'
+import { CodeAnalysisScope } from '../../../codewhisperer/models/constants'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { ToolkitError } from '../../../shared/errors'
 
@@ -42,7 +42,7 @@ describe('zipUtil', function () {
         })
 
         it('Should generate zip for file scan and return expected metadata', async function () {
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.File)
+            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE)
             assert.strictEqual(zipMetadata.lines, 49)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
@@ -56,13 +56,13 @@ describe('zipUtil', function () {
             sinon.stub(zipUtil, 'reachSizeLimit').returns(true)
 
             await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.File),
+                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE),
                 new ToolkitError('Payload size limit reached.')
             )
         })
 
         it('Should generate zip for project scan and return expected metadata', async function () {
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
+            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT)
             assert.ok(zipMetadata.lines > 0)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
@@ -76,7 +76,7 @@ describe('zipUtil', function () {
             sinon.stub(zipUtil, 'reachSizeLimit').returns(true)
 
             await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project),
+                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
                 new ToolkitError('Payload size limit reached.')
             )
         })
@@ -85,7 +85,7 @@ describe('zipUtil', function () {
             sinon.stub(zipUtil, 'willReachSizeLimit').returns(true)
 
             await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project),
+                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
                 new ToolkitError('Payload size limit reached.')
             )
         })
@@ -101,7 +101,7 @@ describe('zipUtil', function () {
                     return zipUtil.isJavaClassFile(...args)
                 })
 
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), SecurityScanType.Project)
+            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT)
             assert.ok(zipMetadata.lines > 0)
             assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
@@ -113,8 +113,8 @@ describe('zipUtil', function () {
 
         it('Should throw error if scan type is invalid', async function () {
             await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), 'unknown' as SecurityScanType),
-                new ToolkitError('Unknown scan type: unknown')
+                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), 'unknown' as CodeAnalysisScope),
+                new ToolkitError('Unknown code analysis scope: unknown')
             )
         })
     })

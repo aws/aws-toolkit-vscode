@@ -405,6 +405,10 @@
             "type": "string",
             "enum": ["codeanalysis/findings/1.0"]
         },
+        "CodeAnalysisScope": {
+            "type": "string",
+            "enum": ["FILE", "PROJECT"]
+        },
         "CodeAnalysisStatus": {
             "type": "string",
             "enum": ["Completed", "Pending", "Failed"]
@@ -1210,6 +1214,7 @@
             "members": {
                 "artifacts": { "shape": "ArtifactMap" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "scope": { "shape": "CodeAnalysisScope" },
                 "clientToken": {
                     "shape": "StartCodeAnalysisRequestClientTokenString",
                     "idempotencyToken": true
