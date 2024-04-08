@@ -538,7 +538,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
     let environment = process.env
     // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
     if (transformByQState.getJavaHome() !== undefined) {
-        environment = { ...process.env, JAVA_HOME: `"${transformByQState.getJavaHome()}"` }
+        environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
     }
     const spawnResult = spawnSync(baseCommand, args, {
         cwd: modulePath,
