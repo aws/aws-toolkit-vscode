@@ -143,19 +143,13 @@ class CodeModernizerSession(
                 LOG.warn { "Job was cancelled by user before start job was called" }
                 CodeModernizerStartJobResult.Cancelled
             } else {
-                val errorMessage = "Failed to start job"
-                LOG.error(e) { errorMessage }
                 state.putJobHistory(sessionContext, TransformationStatus.FAILED)
                 state.currentJobStatus = TransformationStatus.FAILED
-                telemetry.error(errorMessage)
                 CodeModernizerStartJobResult.UnableToStartJob(e.message.toString())
             }
         } catch (e: Exception) {
-            val errorMessage = "Failed to start job"
-            LOG.error(e) { errorMessage }
             state.putJobHistory(sessionContext, TransformationStatus.FAILED)
             state.currentJobStatus = TransformationStatus.FAILED
-            telemetry.error(errorMessage)
             CodeModernizerStartJobResult.UnableToStartJob(e.message.toString())
         } finally {
             deleteUploadArtifact(payload)
@@ -273,6 +267,8 @@ class CodeModernizerSession(
             ) { shouldStop.get() }
         } catch (e: Exception) {
             val errorMessage = "Unexpected error when uploading artifact to S3: ${e.localizedMessage}"
+            LOG.error { errorMessage }
+            // emit this metric here manually since we don't use callApi(), which emits its own metric
             telemetry.apiError(errorMessage, CodeTransformApiNames.UploadZip, createUploadUrlResponse.uploadId())
             throw e // pass along error to callee
         }
