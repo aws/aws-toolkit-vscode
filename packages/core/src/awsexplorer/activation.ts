@@ -41,7 +41,6 @@ export async function activate(args: {
     context: ExtContext
     regionProvider: RegionProvider
     toolkitOutputChannel: vscode.OutputChannel
-    remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
     const awsExplorer = new AwsExplorer(globals.context, args.regionProvider)
 

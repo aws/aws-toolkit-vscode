@@ -121,14 +121,13 @@ export async function activate(context: vscode.ExtensionContext) {
             context: extContext,
             regionProvider: globals.regionProvider,
             toolkitOutputChannel: globals.outputChannel,
-            remoteInvokeOutputChannel: globals.invokeOutputChannel,
         })
 
         await activateAppRunner(extContext)
 
         await activateApiGateway({
             extContext: extContext,
-            outputChannel: globals.invokeOutputChannel,
+            outputChannel: globals.outputChannel,
         })
 
         await activateLambda(extContext)
