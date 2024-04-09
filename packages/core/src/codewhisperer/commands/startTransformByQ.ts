@@ -191,12 +191,6 @@ export async function preTransformationUploadCode() {
     } catch (err) {
         const errorMessage = `Failed to upload code due to ${(err as Error).message}`
         getLogger().error(errorMessage)
-        telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            result: MetadataResult.Fail,
-            reason: 'UploadArchiveFailed',
-        })
         throw err
     }
 
@@ -212,12 +206,6 @@ export async function startTransformationJob(uploadId: string) {
         jobId = await startJob(uploadId)
     } catch (error) {
         const errorMessage = CodeWhispererConstants.failedToStartJobMessage
-        telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            result: MetadataResult.Fail,
-            reason: 'StartJobFailed',
-        })
         transformByQState.setJobFailureErrorMessage(errorMessage)
         throw new Error('Start job failed')
     }
