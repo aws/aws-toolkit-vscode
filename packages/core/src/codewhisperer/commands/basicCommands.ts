@@ -273,15 +273,15 @@ export const fetchFeatureConfigsCmd = Commands.declare(
 
 /**
  * Actually install Amazon Q.
- * Reload VS Code window after installation is necessary
- * to properly activate extension.
+ * Sometimes reload VS Code window after installation is necessary
+ * to properly activate extension. In that case, VS Code will prompt user to reload.
  */
 export const installAmazonQExtension = Commands.declare(
     { id: 'aws.toolkit.installAmazonQExtension', logging: true },
     () => async () => {
         await vscode.commands.executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.amazonq)
         // jump to Amazon Q extension view after install.
-        // this command won't work without a small delay post install
+        // this command won't work without a small delay after install
         setTimeout(() => {
             void vscode.commands.executeCommand('workbench.view.extension.amazonq')
         }, 1000)
