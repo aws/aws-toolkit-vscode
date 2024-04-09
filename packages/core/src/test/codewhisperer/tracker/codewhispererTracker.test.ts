@@ -17,8 +17,11 @@ import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletio
 
 describe('codewhispererTracker', function () {
     describe('enqueue', function () {
-        beforeEach(async function () {
+        before(async function () {
             tryRegister(refreshStatusBar)
+        })
+
+        beforeEach(async function () {
             await resetCodeWhispererGlobalVariables()
             await CodeWhispererTracker.getTracker().shutdown()
         })
@@ -45,8 +48,11 @@ describe('codewhispererTracker', function () {
     })
 
     describe('flush', function () {
-        beforeEach(async function () {
+        before(async function () {
             tryRegister(refreshStatusBar)
+        })
+
+        beforeEach(async function () {
             await resetCodeWhispererGlobalVariables()
             await CodeWhispererTracker.getTracker().shutdown()
         })

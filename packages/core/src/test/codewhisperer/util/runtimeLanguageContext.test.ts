@@ -15,6 +15,10 @@ import { tryRegister } from '../../testUtil'
 describe('runtimeLanguageContext', function () {
     const languageContext = new RuntimeLanguageContext()
 
+    before(async function () {
+        tryRegister(refreshStatusBar)
+    })
+
     describe('test isLanguageSupported', function () {
         const cases: [string, boolean][] = [
             ['java', true],

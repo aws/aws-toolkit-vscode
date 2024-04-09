@@ -56,8 +56,11 @@ import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletio
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
 
-    beforeEach(async function () {
+    before(async function () {
         tryRegister(refreshStatusBar)
+    })
+
+    beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()
     })
 

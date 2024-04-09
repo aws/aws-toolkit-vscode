@@ -15,6 +15,10 @@ import { tryRegister } from '../../testUtil'
 describe('globalStateUtil', function () {
     let loggerSpy: sinon.SinonSpy
 
+    before(async function () {
+        tryRegister(refreshStatusBar)
+    })
+
     beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()
         vsCodeState.isIntelliSenseActive = true
@@ -26,8 +30,6 @@ describe('globalStateUtil', function () {
     })
 
     it('Should skip when CodeWhisperer is turned off', async function () {
-        tryRegister(refreshStatusBar)
-
         const isManualTriggerEnabled = false
         const isAutomatedTriggerEnabled = false
         resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled, true)

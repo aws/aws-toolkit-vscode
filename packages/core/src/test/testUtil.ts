@@ -476,10 +476,12 @@ export function shuffleList<T>(list: T[]): T[] {
 }
 
 /**
- * Try to register a command for tests, since some commands are only registered during
- * extension activation. This criteria may not apply for unit tests, so they may need to be
- * manually activated. Swallow already exists exceptions because these commands can persist
+ * Try to register a command for tests since some commands are only registered during
+ * extension activation. These commands will need to be manually activated here.
+ *
+ * Swallows 'already exists' exceptions because these commands can persist
  * across tests.
+ *
  * TODO: Support arguments if needed.
  */
 export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {

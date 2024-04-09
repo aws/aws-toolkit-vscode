@@ -15,6 +15,10 @@ import { tryRegister } from '../../testUtil'
 describe('editorContext', function () {
     let telemetryEnabledDefault: boolean
 
+    before(async function () {
+        tryRegister(refreshStatusBar)
+    })
+
     beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()
         telemetryEnabledDefault = globals.telemetry.telemetryEnabled
@@ -26,8 +30,6 @@ describe('editorContext', function () {
 
     describe('extractContextForCodeWhisperer', function () {
         it('Should return expected context', function () {
-            tryRegister(refreshStatusBar)
-
             const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
             const expected: codewhispererClient.FileContext = {
