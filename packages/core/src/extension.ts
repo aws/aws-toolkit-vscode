@@ -178,7 +178,6 @@ export async function activate(context: vscode.ExtensionContext) {
                             'Amazon Q has moved to its own VSCode extension, which has been automatically installed.',
                             'OK'
                         )
-                        void vscode.commands.executeCommand(`workbench.view.extension.${VSCODE_EXTENSION_ID.amazonq}`)
                     } else {
                         const dismissedInstall = globals.context.globalState.get<boolean>(amazonQInstallDismissedKey)
                         if (!dismissedInstall) {
@@ -195,10 +194,7 @@ export async function activate(context: vscode.ExtensionContext) {
                                         await qExtensionPageCommand.execute()
                                     } else if (resp === 'Install') {
                                         await installAmazonQExtension.execute()
-                                        void vscode.commands.executeCommand(
-                                            `workbench.view.extension.${VSCODE_EXTENSION_ID.amazonq}`
-                                        )
-                                    } else {
+                                    } else if (resp === undefined) {
                                         // when user click x button to dismiss it
                                         await globals.context.globalState.update(amazonQInstallDismissedKey, true)
                                     }

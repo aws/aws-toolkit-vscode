@@ -280,6 +280,11 @@ export const installAmazonQExtension = Commands.declare(
     { id: 'aws.toolkit.installAmazonQExtension', logging: true },
     () => async () => {
         await vscode.commands.executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.amazonq)
+        // jump to Amazon Q extension view after install.
+        // this command won't work without a small delay post install
+        setTimeout(() => {
+            void vscode.commands.executeCommand('workbench.view.extension.amazonq')
+        }, 1000)
     }
 )
 
