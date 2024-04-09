@@ -408,10 +408,12 @@ const registerToolkitApiCallbackOnce = once(async () => {
         )
     }
 
-    // when toolkit activate i
-    if (_toolkitApi && 'onX' in _toolkitApi) {
+    // when toolkit activates, let toolkit use Q client id if possible.
+    if (_toolkitApi && 'setTelemetryClientId' in _toolkitApi) {
         const clientId = globals.context.globalState.get<string>('telemetryClientId')
-        _toolkitApi.onX(clientId)
+        if (clientId) {
+            _toolkitApi.setTelemetryClientId(clientId)
+        }
     }
 })
 export const registerToolkitApiCallback = Commands.declare(
@@ -448,6 +450,6 @@ export const setupAmazonQTelemetryClientId = once(async () => {
         if (!clientId) {
             clientId = randomUUID()
         }
-        await globals.extensionContext.globalStates.update('telemetryClientId', clientId)
+        await globals.context.globalState.update('telemetryClientId', clientId)
     }
 })

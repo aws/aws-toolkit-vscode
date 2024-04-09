@@ -5,7 +5,12 @@
 
 import { Auth, Connection, AwsConnection } from 'aws-core-vscode/auth'
 import { getLogger, globals } from 'aws-core-vscode/shared'
+import { once } from 'aws-core-vscode/shared'
 import { randomUUID } from 'crypto'
+
+const _setClientId = once(async (clientId: string) => {
+    await globals.context.globalState.update('telemetryClientId', clientId)
+})
 
 export const awsToolkitApi = {
     /**
@@ -93,6 +98,7 @@ export const awsToolkitApi = {
              * This function does not return client ids for test automation or disabled telemetry clients
              */
             async getTelemetryClientId(): Promise<string | undefined> {
+                getLogger().debug(`getTelemetryClientId: extension ${extensionId}`)
                 try {
                     let clientId = globals.context.globalState.get<string>('telemetryClientId')
                     if (!clientId) {
@@ -105,8 +111,14 @@ export const awsToolkitApi = {
                     return undefined
                 }
             },
-
-            async onCreateTelemetryClientId() {},
+            /**
+             * Exposing set telemetry client id of aws toolkit.
+             * Amazon Q should set toolkit client id if Q is activated before toolkit.
+             */
+            async setTelemetryClientId(clientId: string) {
+                getLogger().debug(`setTelemetryClientId: client id ${clientId}, extension ${extensionId}`)
+                await _setClientId(clientId)
+            },
         }
     },
 }
