@@ -24,8 +24,6 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 describe('recommendationHandler', function () {
     const config: ConfigurationEntry = {
         isShowMethodsEnabled: true,
