@@ -272,26 +272,14 @@ export const fetchFeatureConfigsCmd = Commands.declare(
 )
 
 /**
- * TODO: Actually install Amazon Q.
- *
- * For now, it just has a fake progress bar to simulate that it is installing.
+ * Actually install Amazon Q.
+ * Reload VS Code window after installation is necessary
+ * to properly activate extension.
  */
 export const installAmazonQExtension = Commands.declare(
     { id: 'aws.toolkit.installAmazonQExtension', logging: true },
     () => async () => {
-        await vscode.window.withProgress(
-            {
-                title: 'Installing Amazon Q...',
-                cancellable: true,
-                location: vscode.ProgressLocation.Notification,
-            },
-            async () => {
-                await vscode.commands.executeCommand(
-                    'workbench.extensions.installExtension',
-                    VSCODE_EXTENSION_ID.amazonq
-                )
-            }
-        )
+        await vscode.commands.executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.amazonq)
     }
 )
 
