@@ -106,7 +106,7 @@ export class AuthSSOServer {
                 resolve()
             })
 
-            this.server.listen(60821)
+            this.server.listen()
         })
     }
 

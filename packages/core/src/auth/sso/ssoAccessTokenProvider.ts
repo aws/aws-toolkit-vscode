@@ -391,8 +391,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
             clientType: clientRegistrationType,
             scopes: this.profile.scopes,
             grantTypes: [authorizationGrantType, refreshGrantType],
-            // TODO don't hardcode the uri port
-            redirectUris: ['http://127.0.0.1:60821'],
+            redirectUris: ['http://127.0.0.1'],
             issuerUrl: this.profile.startUrl,
         })
     }
