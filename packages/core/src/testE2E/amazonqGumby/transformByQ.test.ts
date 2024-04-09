@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
-import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQ/transformApiHandler'
-import request from '../../common/request'
-import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
-import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs-extra'
+import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
+import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
+import assert from 'assert'
+import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQ/transformApiHandler'
+import request from '../../common/request'
 import AdmZip from 'adm-zip'
 import { setValidConnection } from '../util/amazonQUtil'
 import { transformByQState } from '../../codewhisperer/models/model'

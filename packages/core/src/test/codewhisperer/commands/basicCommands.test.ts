@@ -51,6 +51,7 @@ import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMe
 import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 import { switchToAmazonQNode } from '../../../amazonq/explorer/amazonQChildrenNodes'
+import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -215,7 +216,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
 
-            assert.ok(vscode.window.activeTextEditor === undefined)
+            assert.ok(!vscode.window.activeTextEditor || !isTextEditor(vscode.window.activeTextEditor))
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(getTestWindow().shownMessages[0].message, 'Open a valid file to scan.')
         })
@@ -298,13 +299,16 @@ describe('CodeWhisperer-basicCommands', function () {
     })
 
     describe('listCodeWhispererCommands()', function () {
-        const genericItems = [createFeedbackNode(), createGitHubNode(), createDocumentationNode()]
+        function genericItems() {
+            return [createFeedbackNode(), createGitHubNode(), createDocumentationNode()]
+        }
+
         it('shows expected items when not connected', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertContainsItems(createSignIn('item'), createLearnMore(), ...genericItems)
+                e.assertContainsItems(createSignIn('item'), createLearnMore(), ...genericItems())
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -316,7 +320,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertContainsItems(createReconnect('item'), createLearnMore(), ...genericItems, createSignout())
+                e.assertContainsItems(createReconnect('item'), createLearnMore(), ...genericItems(), createSignout())
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -333,7 +337,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     createGettingStarted(),
                     switchToAmazonQNode('item'),
                     createSecurityScan(),
-                    ...genericItems,
+                    ...genericItems(),
                     createSettingsNode(),
                     createSignout()
                 )
@@ -356,7 +360,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     createGettingStarted(),
                     switchToAmazonQNode('item'),
                     createSecurityScan(),
-                    ...genericItems,
+                    ...genericItems(),
                     createSettingsNode(),
                     createSignout()
                 )
