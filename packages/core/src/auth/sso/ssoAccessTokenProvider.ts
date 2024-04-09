@@ -191,6 +191,22 @@ export abstract class SsoAccessTokenProvider {
         return { region: this.profile.region, scopes: this.profile.scopes }
     }
 
+    /**
+     * Wraps the given function with telemetry related to the browser login.
+     */
+    protected withBrowserLoginTelemetry<T extends (...args: any[]) => any>(func: T): ReturnType<T> {
+        if (telemetry.spans.some(s => s.name === 'aws_loginWithBrowser')) {
+            // During certain flows, eg reauthentication, we are already running within a span (run())
+            // so we don't need to create a new one.
+            return func()
+        }
+
+        return telemetry.aws_loginWithBrowser.run(span => {
+            span.record({ credentialStartUrl: this.profile.startUrl })
+            return func()
+        })
+    }
+
     protected abstract authorize(registration: ClientRegistration): Promise<{
         token: SsoToken
         registration: ClientRegistration
@@ -342,22 +358,6 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
     }
 
     /**
-     * Wraps the given function with telemetry related to the browser login.
-     */
-    private withBrowserLoginTelemetry<T extends (...args: any[]) => any>(func: T): ReturnType<T> {
-        if (telemetry.spans.some(s => s.name === 'aws_loginWithBrowser')) {
-            // During certain flows, eg reauthentication, we are already running within a span (run())
-            // so we don't need to create a new one.
-            return func()
-        }
-
-        return telemetry.aws_loginWithBrowser.run(span => {
-            span.record({ credentialStartUrl: this.profile.startUrl })
-            return func()
-        })
-    }
-
-    /**
      * If the registration already exists locally, it
      * will be validated before being returned. Otherwise, a client registration is
      * created and returned.
@@ -404,37 +404,41 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
 
         try {
             await authServer.start()
-            const redirectUri = authServer.redirectUri
 
-            const codeVerifier = randomBytes(32).toString('base64url')
-            const codeChallenge = createHash('sha256').update(codeVerifier).digest().toString('base64url')
+            const token = await this.withBrowserLoginTelemetry(async () => {
+                const redirectUri = authServer.redirectUri
 
-            const location = await this.oidc.authorize({
-                responseType: 'code',
-                clientId: registration.clientId,
-                redirectUri: redirectUri,
-                scopes: this.profile.scopes ?? [],
-                state,
-                codeChallenge,
-                codeChallengeMethod: 'S256',
+                const codeVerifier = randomBytes(32).toString('base64url')
+                const codeChallenge = createHash('sha256').update(codeVerifier).digest().toString('base64url')
+
+                const location = await this.oidc.authorize({
+                    responseType: 'code',
+                    clientId: registration.clientId,
+                    redirectUri: redirectUri,
+                    scopes: this.profile.scopes ?? [],
+                    state,
+                    codeChallenge,
+                    codeChallengeMethod: 'S256',
+                })
+
+                if (!(await openSsoUrl(vscode.Uri.parse(location)))) {
+                    throw new CancellationError('user')
+                }
+
+                const authorizationCode = await authServer.waitForAuthorization()
+
+                const tokenRequest: OidcClientPKCE.CreateTokenRequest = {
+                    clientId: registration.clientId,
+                    clientSecret: registration.clientSecret,
+                    grantType: authorizationGrantType,
+                    redirectUri,
+                    codeVerifier,
+                    code: authorizationCode,
+                }
+
+                return this.oidc.createToken(tokenRequest)
             })
 
-            if (!(await openSsoUrl(vscode.Uri.parse(location)))) {
-                throw new CancellationError('user')
-            }
-
-            const authorizationCode = await authServer.waitForAuthorization()
-
-            const tokenRequest: OidcClientPKCE.CreateTokenRequest = {
-                clientId: registration.clientId,
-                clientSecret: registration.clientSecret,
-                grantType: authorizationGrantType,
-                redirectUri,
-                codeVerifier,
-                code: authorizationCode,
-            }
-
-            const token = await this.oidc.createToken(tokenRequest)
             return this.formatToken(token, registration)
         } finally {
             await authServer.close()
