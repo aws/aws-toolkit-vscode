@@ -252,7 +252,13 @@ export class TelemetryTracer extends TelemetryBase {
         const frame = this.switchContext(span)
 
         try {
-            const result = this.#context.run(frame, fn, span)
+            //
+            // TODO: Since updating to `@types/node@16`, typescript flags this code with error:
+            //
+            //      Error: npm ERR! src/shared/telemetry/spans.ts(255,57): error TS2345: Argument of type
+            //      'TelemetrySpan<MetricBase>' is not assignable to parameter of type 'Metric<MetricShapes[U]>'.
+            //
+            const result = this.#context.run(frame, fn, span as any)
 
             if (result instanceof Promise) {
                 return result

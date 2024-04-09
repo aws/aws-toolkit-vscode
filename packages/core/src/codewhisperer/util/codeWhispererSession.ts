@@ -14,8 +14,6 @@ import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendat
 import { Position } from 'vscode'
 import { CodeWhispererSupplementalContext } from '../models/model'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 class CodeWhispererSession {
     static #instance: CodeWhispererSession
 

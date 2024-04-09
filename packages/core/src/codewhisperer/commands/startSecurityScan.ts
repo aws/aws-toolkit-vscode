@@ -36,7 +36,6 @@ import { DependencyGraphConstants } from '../util/dependencyGraph/dependencyGrap
 import path from 'path'
 import { once } from '../../shared/utilities/functionUtils'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
 
