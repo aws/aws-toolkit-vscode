@@ -21,8 +21,6 @@ import { noSuggestions } from '../models/constants'
 import { Commands } from '../../shared/vscode/commands2'
 import { listCodeWhispererCommandsId } from '../ui/statusBarMenu'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 export class InlineCompletionService {
     private maxPage = 100
     private statusBar: CodeWhispererStatusBar

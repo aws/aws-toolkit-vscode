@@ -17,8 +17,6 @@ import { ClassifierTrigger } from './classifierTrigger'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { RecommendationService } from './recommendationService'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 /**
  * This class is for CodeWhisperer auto trigger
  */
