@@ -9,7 +9,7 @@ import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.util.xmlb.annotations.Property
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
-import software.aws.toolkits.jetbrains.services.codemodernizer.toVirtualFile
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.toVirtualFile
 
 enum class JobDetails {
     LAST_JOB_ID,

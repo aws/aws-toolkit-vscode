@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.codemodernizer.constants
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC
-import software.aws.toolkits.jetbrains.services.codemodernizer.getModuleOrProjectNameForFile
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.Button
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformButtonId
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformChatMessageContent
@@ -16,6 +15,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.messages.FormItem
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.FormItemOption
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getModuleOrProjectNameForFile
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.FollowUpType
 import software.aws.toolkits.jetbrains.services.cwc.messages.FollowUp
 import software.aws.toolkits.resources.message

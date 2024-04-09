@@ -17,6 +17,10 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.calculateTotalLatency
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getJavaVersionFromProjectSetting
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getMavenVersion
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.tryGetJdk
 import software.aws.toolkits.telemetry.CodeTransformApiNames
 import software.aws.toolkits.telemetry.CodeTransformCancelSrcComponents
 import software.aws.toolkits.telemetry.CodeTransformJavaSourceVersionsAllowed
@@ -89,7 +93,10 @@ class CodeTransformTelemetryManager(private val project: Project) {
         codeTransformJobId = jobId?.toString(),
         codeTransformSessionId = sessionId,
         codeTransformResultStatusMessage = codeTransformResultStatusMessage,
-        codeTransformRunTimeLatency = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime(), Instant.now()),
+        codeTransformRunTimeLatency = calculateTotalLatency(
+            CodeTransformTelemetryState.instance.getStartTime(),
+            Instant.now()
+        ),
         codeTransformLocalJavaVersion = getJavaVersionFromProjectSetting(project),
         codeTransformLocalMavenVersion = getMavenVersion(project),
     )

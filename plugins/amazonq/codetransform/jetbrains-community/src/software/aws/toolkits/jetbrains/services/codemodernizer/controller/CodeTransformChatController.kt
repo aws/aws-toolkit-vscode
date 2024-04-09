@@ -38,7 +38,6 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildUs
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildUserInputChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildUserSelectionSummaryChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildUserStopTransformChatContent
-import software.aws.toolkits.jetbrains.services.codemodernizer.getModuleOrProjectNameForFile
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.AuthenticationNeededExceptionMessage
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformChatMessage
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformCommandMessage
@@ -50,8 +49,9 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCo
 import software.aws.toolkits.jetbrains.services.codemodernizer.session.ChatSessionStorage
 import software.aws.toolkits.jetbrains.services.codemodernizer.session.Session
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
-import software.aws.toolkits.jetbrains.services.codemodernizer.toVirtualFile
-import software.aws.toolkits.jetbrains.services.codemodernizer.tryGetJdk
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getModuleOrProjectNameForFile
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.toVirtualFile
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.tryGetJdk
 import software.aws.toolkits.jetbrains.services.cwc.messages.ChatMessageType
 import software.aws.toolkits.resources.message
 
