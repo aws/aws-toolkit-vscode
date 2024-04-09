@@ -47,44 +47,45 @@
             "postDebugTask": "webRunTerminate"
         },
         {
-            "name": "Extension (webpack)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
-            "preLaunchTask": "npm: compile",
-            "postDebugTask": "terminate"
-        },
-        {
             "name": "Test Lint",
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/scripts/lint/testLint.ts",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Attach to ASL Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6009,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
-        },
-        {
-            "name": "Attach to SSM Document Language Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6010,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
         }
+        // ---- We do not need the following currently, and we want to reduce clutter. Re-enable if necessary ----
+        // {
+        //     "name": "Extension (webpack)",
+        //     "type": "extensionHost",
+        //     "request": "launch",
+        //     "runtimeExecutable": "${execPath}",
+        //     "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+        //     "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+        //     "preLaunchTask": "npm: compile",
+        //     "postDebugTask": "terminate"
+        // },
+        // {
+        //     "name": "Attach to ASL Server",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 6009,
+        //     "restart": true,
+        //     "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
+        // },
+        // {
+        //     "name": "Attach to SSM Document Language Server",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 6010,
+        //     "restart": true,
+        //     "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"],
+        // }
     ],
     "compounds": [
-        {
-            "name": "Extension + Attach to SSM Document Language Server",
-            "configurations": ["Extension", "Attach to SSM Document Language Server"]
-        }
+        // {
+        //     "name": "Extension + Attach to SSM Document Language Server",
+        //     "configurations": ["Extension", "Attach to SSM Document Language Server"]
+        // }
     ]
 }

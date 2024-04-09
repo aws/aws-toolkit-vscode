@@ -120,28 +120,30 @@
             "program": "${workspaceFolder}/scripts/lint/testLint.ts",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "build"
-        },
-        {
-            "name": "Attach to ASL Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6009,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
-        },
-        {
-            "name": "Attach to SSM Document Language Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6010,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
         }
+        // ---- We do not need the following currently, and we want to reduce clutter. Re-enable if necessary ----
+        // {
+        //     "name": "Attach to ASL Server",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 6009,
+        //     "restart": true,
+        //     "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
+        // },
+        // {
+        //     "name": "Attach to SSM Document Language Server",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 6010,
+        //     "restart": true,
+        //     "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
+        // }
     ],
     "compounds": [
-        {
-            "name": "Extension + Attach to SSM Document Language Server",
-            "configurations": ["Extension", "Attach to SSM Document Language Server"]
-        }
+        // ---- We do not need the following currently, and we want to reduce clutter. Re-enable if necessary ----
+        // {
+        //     "name": "Extension + Attach to SSM Document Language Server",
+        //     "configurations": ["Extension", "Attach to SSM Document Language Server"]
+        // }
     ]
 }
