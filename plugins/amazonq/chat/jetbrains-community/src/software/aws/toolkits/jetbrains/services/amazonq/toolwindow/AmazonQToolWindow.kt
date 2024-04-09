@@ -31,9 +31,8 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.utils.isCodeTrans
 import javax.swing.JComponent
 
 fun isQConnected(project: Project): Boolean {
-    val connQ = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance())
-    val connCW = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
-    return connQ != null && connCW != null
+    val manager = ToolkitConnectionManager.getInstance(project)
+    return manager.isFeatureEnabled(QConnection.getInstance()) && manager.isFeatureEnabled(CodeWhispererConnection.getInstance())
 }
 
 class AmazonQToolWindow @NonInjectable constructor(
@@ -52,6 +51,8 @@ class AmazonQToolWindow @NonInjectable constructor(
         } else {
             loginPanel.component
         }
+
+    val loginBrowser = loginPanel.browser?.jcefBrowser?.cefBrowser
 
     private val appConnections = mutableListOf<AppConnection>()
 

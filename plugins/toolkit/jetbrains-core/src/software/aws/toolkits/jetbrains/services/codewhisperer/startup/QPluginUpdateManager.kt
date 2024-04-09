@@ -1,7 +1,7 @@
-// Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.core.plugins
+package software.aws.toolkits.jetbrains.services.codewhisperer.startup
 
 import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.ide.plugins.InstalledPluginsState
@@ -31,7 +31,8 @@ import software.aws.toolkits.telemetry.Component
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.ToolkitTelemetry
 
-class ToolkitUpdateManager {
+// TODO: Still need to keep one for toolkit standalone
+class QPluginUpdateManager {
     private val alarm = Alarm(Alarm.ThreadToUse.SWING_THREAD)
 
     init {
@@ -68,12 +69,12 @@ class ToolkitUpdateManager {
         // Note: This will need to handle exceptions and ensure thread-safety
         try {
             // wasUpdatedWithRestart means that, it was an update and it needs to restart to apply
-            if (InstalledPluginsState.getInstance().wasUpdatedWithRestart(PluginId.getId(AwsToolkit.PLUGIN_ID))) {
+            if (InstalledPluginsState.getInstance().wasUpdatedWithRestart(PluginId.getId(AwsToolkit.Q_PLUGIN_ID))) {
                 LOG.debug { "AWS Toolkit was recently updated and needed restart, not performing auto-update again" }
                 return
             }
 
-            val toolkitPlugin = AwsToolkit.DESCRIPTOR as IdeaPluginDescriptor? ?: return
+            val toolkitPlugin = AwsToolkit.Q_DESCRIPTOR as IdeaPluginDescriptor? ?: return
             if (toolkitPlugin.version.contains("SNAPSHOT", ignoreCase = true)) {
                 LOG.debug { "AWS Toolkit is a SNAPSHOT version, not performing auto-update" }
                 return
@@ -175,8 +176,8 @@ class ToolkitUpdateManager {
     internal fun getUpdateInfo(): Collection<PluginDownloader> = UpdateChecker.getPluginUpdates() ?: emptyList()
 
     companion object {
-        fun getInstance(): ToolkitUpdateManager = service()
-        private val LOG = getLogger<ToolkitUpdateManager>()
+        fun getInstance(): QPluginUpdateManager = service()
+        private val LOG = getLogger<QPluginUpdateManager>()
         private const val UPDATE_CHECK_INTERVAL_IN_MS = 4 * 60 * 60 * 1000 // 4 hours
         private const val SOURCE_AUTO_UPDATE_FINISH_NOTIFY = "autoUpdateFinishNotification"
         const val SOURCE_AUTO_UPDATE_FEATURE_INTRO_NOTIFY = "autoUpdateFeatureIntroNotification"

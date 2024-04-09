@@ -112,10 +112,10 @@ export default defineComponent({
 /* Theme specific styles */
 body.jb-dark {
     .item-container {
-        border: 0.5px solid white;
+        border: 1px solid white;
     }
     .selected {
-        border: 0.5px solid #29a7ff;
+        border: 1px solid #29a7ff;
     }
     .icon > svg > path {
         fill: white;
@@ -124,10 +124,10 @@ body.jb-dark {
 
 body.jb-light {
     .item-container {
-        border: 0.5px solid black;
+        border: 1px solid black;
     }
     .selected {
-        border: 0.5px solid #3574f0;
+        border: 1px solid #3574f0;
     }
     .icon > svg > path {
         fill: black;

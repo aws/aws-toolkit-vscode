@@ -12,7 +12,6 @@ import com.intellij.ui.jcef.JBCefApp
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsForQ
 import software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.openMeetQPage
 import software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory
@@ -40,12 +39,10 @@ abstract class SignInToQActionBase(actionName: String) : DumbAwareAction(actionN
         UiTelemetry.click(project, "auth_start_Q")
         val connectionManager = ToolkitConnectionManager.getInstance(project)
         connectionManager.activeConnectionForFeature(QConnection.getInstance())?.let {
-            project.refreshCwQTree()
             reauthConnectionIfNeeded(project, it)
         } ?: run {
             runInEdt {
                 if (requestCredentialsForQ(project)) {
-                    project.refreshCwQTree()
                     if (!openMeetQPage(project)) {
                         return@runInEdt
                     }

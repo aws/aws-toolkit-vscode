@@ -23,7 +23,6 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererCon
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererLoginLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererSsoLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.ConnectWithAwsToContinueActionError
@@ -210,7 +209,6 @@ object CodeWhispererUtil {
         val tokenProvider = tokenProvider(project) ?: return false
         return maybeReauthProviderIfNeeded(project, tokenProvider) {
             runInEdt {
-                project.refreshCwQTree()
                 if (!CodeWhispererService.hasReAuthPromptBeenShown()) {
                     notifyConnectionExpiredRequestReauth(project)
                 }

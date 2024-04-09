@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.amazonq.toolwindow
 
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
@@ -17,7 +18,7 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val contentManager = toolWindow.contentManager
 
-        project.messageBus.connect(project).subscribe(
+        project.messageBus.connect().subscribe(
             ToolkitConnectionManagerListener.TOPIC,
             object : ToolkitConnectionManagerListener {
                 override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
@@ -26,8 +27,16 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
                         it.isPinnable = true
                     }
 
-                    contentManager.removeAllContents(true)
-                    contentManager.addContent(content)
+                    val loginBrowser = AmazonQToolWindow.getInstance(project).loginBrowser
+
+                    if (newConnection == null && loginBrowser != null) {
+                        loginBrowser.executeJavaScript("window.ideClient.reset()", loginBrowser.url, 0)
+                    }
+
+                    runInEdt {
+                        contentManager.removeAllContents(true)
+                        contentManager.addContent(content)
+                    }
                 }
             }
         )

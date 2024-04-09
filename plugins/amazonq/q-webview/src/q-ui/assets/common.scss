@@ -44,7 +44,7 @@
 
 /* Theme specific css */
 body.jb-dark {
-    .login-flow-button, .title, .text, .back-button, .confirmation-code {
+    .login-flow-button, .title, .text, .back-button, .confirmation-code, .url-part {
         color: white;
     }
     .cancel-button {
@@ -57,7 +57,7 @@ body.jb-dark {
 }
 
 body.jb-light {
-    .title, .text, .back-button, .confirmation-code {
+    .title, .text, .back-button, .confirmation-code, .url-part {
         color: black;
     }
     .login-flow-button {

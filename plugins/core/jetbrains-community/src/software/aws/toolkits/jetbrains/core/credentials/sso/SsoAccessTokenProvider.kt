@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials.sso
 
 import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressManager
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
@@ -120,7 +121,8 @@ class SsoAccessTokenProvider(
             Instant.now(clock).plusSeconds(authorizationResponse.expiresIn().toLong()),
             authorizationResponse.interval()?.toLong()
                 ?: DEFAULT_INTERVAL_SECS,
-            authorizationCreationTime
+            authorizationCreationTime,
+            false
         )
     }
 
@@ -139,6 +141,11 @@ class SsoAccessTokenProvider(
 
         while (true) {
             try {
+                if (this.authorization.get()?.isCanceled == true) {
+                    this.authorization.set(null)
+                    throw ProcessCanceledException(IllegalStateException("Login canceled by user"))
+                }
+
                 val tokenResponse = client.createToken {
                     it.clientId(registration.clientId)
                     it.clientSecret(registration.clientSecret)
@@ -154,6 +161,9 @@ class SsoAccessTokenProvider(
                 backOffTime = backOffTime.plusSeconds(SLOW_DOWN_DELAY_SECS)
             } catch (e: AuthorizationPendingException) {
                 // Do nothing, keep polling
+            } catch (e: ProcessCanceledException) {
+                // Don't want to notify this in tokenRetrievalFailure
+                throw e
             } catch (e: Exception) {
                 onPendingToken.tokenRetrievalFailure(e)
                 throw e

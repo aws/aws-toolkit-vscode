@@ -78,7 +78,6 @@ export default defineComponent({
                 window.ideApi.postMessage({ command: 'loginBuilderId' })
             } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                 this.$emit('stageChanged', 'SSO_FORM')
-                window.ideApi.postMessage({ command: 'fetchSsoRegion' })
             } else if (this.selectedLoginOption === LoginOption.EXISTING_LOGINS) {
                 this.$emit('stageChanged', 'START')
             } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {

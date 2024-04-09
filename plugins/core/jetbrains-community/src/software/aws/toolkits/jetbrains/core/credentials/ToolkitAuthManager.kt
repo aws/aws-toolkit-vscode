@@ -4,10 +4,11 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.MessageDialogBuilder
 import org.jetbrains.annotations.VisibleForTesting
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.ClientConnectionSettings
@@ -15,17 +16,16 @@ import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
+import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialsIdentifierSso
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.SSO_SESSION_SECTION_NAME
-import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
-import software.aws.toolkits.jetbrains.utils.computeOnEdt
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
 
@@ -101,6 +101,11 @@ interface ToolkitAuthManager {
 
     fun getConnection(connectionId: String): ToolkitConnection?
 
+    /*
+     * The info user used last time to log in to IdC for prefilling the form.
+     */
+    fun getLastLoginIdcInfo(): LastLoginIdcInfo
+
     companion object {
         fun getInstance() = service<ToolkitAuthManager>()
     }
@@ -110,6 +115,8 @@ interface ToolkitConnectionManager : Disposable {
     fun activeConnection(): ToolkitConnection?
 
     fun activeConnectionForFeature(feature: FeatureWithPinnedConnection): ToolkitConnection?
+
+    fun isFeatureEnabled(feature: FeatureWithPinnedConnection): Boolean
 
     fun switchConnection(newConnection: ToolkitConnection?)
 
@@ -131,31 +138,13 @@ fun loginSso(project: Project?, startUrl: String, region: String, requestedScope
     val allScopes = requestedScopes.toMutableSet()
     return manager.getConnection(connectionId)?.let { connection ->
         val logger = getLogger<ToolkitAuthManager>()
-        // requested Builder ID, but one already exists
-        // TBD: do we do this for regular SSO too?
-        if (connection.isSono() && connection is AwsBearerTokenConnection && requestedScopes.all { it in connection.scopes }) {
-            val signOut = computeOnEdt {
-                MessageDialogBuilder.yesNo(
-                    message("toolkit.login.aws_builder_id.already_connected.title"),
-                    message("toolkit.login.aws_builder_id.already_connected.message")
-                )
-                    .yesText(message("toolkit.login.aws_builder_id.already_connected.reconnect"))
-                    .noText(message("toolkit.login.aws_builder_id.already_connected.cancel"))
-                    .ask(project)
-            }
 
-            if (signOut) {
-                logger.info {
-                    "Forcing reauth on ${connection.id} since user requested Builder ID while already connected to Builder ID"
-                }
-
-                logoutFromSsoConnection(project, connection)
-                return@let null
-            }
+        if (connection !is AwsBearerTokenConnection) {
+            return@let null
         }
 
         // There is an existing connection we can use
-        if (connection is AwsBearerTokenConnection && !requestedScopes.all { it in connection.scopes }) {
+        if (!requestedScopes.all { it in connection.scopes }) {
             allScopes.addAll(connection.scopes)
 
             logger.info {
@@ -170,11 +159,7 @@ fun loginSso(project: Project?, startUrl: String, region: String, requestedScope
         }
 
         // For the case when the existing connection is in invalid state, we need to re-auth
-        if (connection is AwsBearerTokenConnection) {
-            return reauthConnection(project, connection)
-        }
-
-        null
+        return reauthConnection(project, connection)
     } ?: run {
         // No existing connection, start from scratch
         val connection = manager.createConnection(
@@ -195,13 +180,8 @@ fun loginSso(project: Project?, startUrl: String, region: String, requestedScope
 }
 
 @VisibleForTesting
-internal fun reauthConnection(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
-    val provider = reauthConnectionIfNeeded(project, connection)
-
-    ToolkitConnectionManager.getInstance(project).switchConnection(connection)
-
-    return provider
-}
+internal fun reauthConnection(project: Project?, connection: ToolkitConnection): BearerTokenProvider =
+    reauthConnectionIfNeeded(project, connection)
 
 @Suppress("UnusedParameter")
 fun logoutFromSsoConnection(project: Project?, connection: AwsBearerTokenConnection, callback: () -> Unit = {}) {
@@ -239,14 +219,18 @@ fun AwsBearerTokenConnection.lazyIsUnauthedBearerConnection(): Boolean {
 
 fun reauthConnectionIfNeeded(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
     val tokenProvider = (connection.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider
-    return reauthProviderIfNeeded(project, tokenProvider)
-}
-
-fun reauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider): BearerTokenProvider {
-    maybeReauthProviderIfNeeded(project, tokenProvider) {
-        runUnderProgressIfNeeded(project, message("credentials.pending.title"), true) {
-            tokenProvider.reauthenticate()
+    val needReAuth = maybeReauthProviderIfNeeded(project, tokenProvider) {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                tokenProvider.reauthenticate()
+                ToolkitConnectionManager.getInstance(project).switchConnection(connection)
+            } catch (e: ProcessCanceledException) {
+                getLogger<ToolkitAuthManager>().debug { "User canceled the login flow" }
+            }
         }
+    }
+    if (!needReAuth) {
+        ToolkitConnectionManager.getInstance(project).switchConnection(connection)
     }
 
     return tokenProvider

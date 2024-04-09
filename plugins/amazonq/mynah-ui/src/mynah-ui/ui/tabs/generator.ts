@@ -39,7 +39,7 @@ export class TabDataGenerator {
         ],
         [
             'cwc',
-            `Hi, I'm Amazon Q (Preview). I can answer your software development questions. 
+            `Hi, I'm Amazon Q. I can answer your software development questions.
         Ask me to explain, debug, or optimize your code. 
         You can enter \`/\` to see a list of quick actions.`,
         ],

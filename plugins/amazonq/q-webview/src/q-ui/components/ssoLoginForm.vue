@@ -23,21 +23,25 @@
                 v-model="ssoProfile"
                 tabindex="0"
                 v-autofocus
+                spellcheck="false"
             />
         </div>
         <br/>
         <div>
             <div class="title no-bold">Start URL</div>
             <div class="hint">URL for your organization, provided by an admin or help desk</div>
+            <div class="url-part">https://</div>
             <input
-                class="url-input font-amazon"
+                class="url-input font-amazon url-part"
                 type="text"
                 id="startUrl"
                 name="startUrl"
-                @input="handleUrlInput"
-                v-model="startUrl"
+                v-model="directoryId"
+                @change="handleUrlInput"
                 tabindex="0"
+                spellcheck="false"
             />
+            <div class="url-part">.awsapps.com/start</div>
         </div>
         <br/>
         <div>
@@ -59,7 +63,7 @@
         <br/><br/>
         <button
             class="login-flow-button continue-button font-amazon"
-            :disabled="!inputValid"
+            :disabled="!isInputValid"
             v-on:click="handleContinueClick()"
             tabindex="-1"
         >
@@ -72,41 +76,75 @@
 import {defineComponent} from 'vue'
 import {Region} from "../../model";
 
-function validateSsoUrlFormat(url: string) {
-    const regex = /^https?:\/\/(.+)\.awsapps\.com\/start$/
-    return regex.test(url)
-}
-
 export default defineComponent({
     name: "ssoForm",
-    data() {
-        return {
-            ssoProfile: "",
-            startUrl: "",
-            selectedRegion: "",
-            inputValid: false,
-        }
-    },
     computed: {
         regions(): Region[] {
             return this.$store.state.ssoRegions
         },
+        ssoProfile: {
+            get() {
+                return this.$store.state.lastLoginIdcInfo.profileName;
+            },
+            set(value: string) {
+                window.ideClient.updateLastLoginIdcInfo({
+                    ...this.$store.state.lastLoginIdcInfo,
+                    profileName: value
+                })
+            }
+        },
+        directoryId: {
+            get() {
+                return this.$store.state.lastLoginIdcInfo.directoryId;
+            },
+            set(value: string) {
+                window.ideClient.updateLastLoginIdcInfo({
+                    ...this.$store.state.lastLoginIdcInfo,
+                    directoryId: value
+                })
+            }
+        },
+        selectedRegion: {
+            get() {
+                return this.$store.state.lastLoginIdcInfo.region;
+            },
+            set(value: string) {
+                window.ideClient.updateLastLoginIdcInfo({
+                    ...this.$store.state.lastLoginIdcInfo,
+                    region: value
+                })
+            }
+        },
+        isInputValid:  {
+            get() {
+                return this.directoryId != "" && this.selectedRegion != ""
+            },
+            set() {}
+        }
     },
     methods: {
         handleUrlInput() {
-            this.inputValid = !!(this.startUrl && validateSsoUrlFormat(this.startUrl) && this.selectedRegion != "");
+            this.isInputValid = this.directoryId != "" && this.selectedRegion != "";
         },
         handleBackButtonClick() {
             this.$emit('backToMenu')
         },
         async handleContinueClick() {
-            if (!this.inputValid) return
-            window.ideApi.postMessage({command: 'loginIdC', url: this.startUrl, region: this.selectedRegion})
+            if (!this.isInputValid) return
+            const startUrl = "https://" + this.directoryId + ".awsapps.com/start"
+            window.ideApi.postMessage({
+                command: 'loginIdC',
+                url: startUrl,
+                region: this.selectedRegion,
+                profileName: this.ssoProfile
+            })
             this.$emit('stageChanged', 'AUTHENTICATING')
         },
     },
     mounted() {
         document.getElementById("ssoProfile")?.focus()
+        window.ideApi.postMessage({ command: 'fetchSsoRegion' })
+        window.ideApi.postMessage({ command: 'fetchLastLoginIdcInfo' })
     }
 })
 </script>
@@ -120,14 +158,30 @@ export default defineComponent({
 }
 
 .sso-profile, .url-input, .region-select {
-    width: 100%;
-    height: 40px;
+    height: 37px;
     border-radius: 4px;
+}
+
+.sso-profile, .region-select {
+    width: 100%;
+}
+
+.url-input {
+    width: 29%;
 }
 
 .sso-profile, .url-input {
     padding-left: 10px;
     box-sizing: border-box;
+}
+
+.url-input {
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+.url-part {
+    display: inline-block;
 }
 
 .region-select {

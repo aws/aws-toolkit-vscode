@@ -97,7 +97,13 @@ class SetupAuthenticationDialogTest {
         }
 
         verify {
-            authAndUpdateConfig(projectExtension.project, UserConfigSsoSessionProfile("", region.id, startUrl, scopes), configFacade, any())
+            authAndUpdateConfig(
+                projectExtension.project,
+                UserConfigSsoSessionProfile("", region.id, startUrl, scopes),
+                configFacade,
+                any(),
+                any()
+            )
         }
     }
 
@@ -149,6 +155,7 @@ class SetupAuthenticationDialogTest {
                 projectExtension.project,
                 UserConfigSsoSessionProfile("", region.id, startUrl, scopes + "sso:account:access"),
                 configFacade,
+                any(),
                 any()
             )
         }

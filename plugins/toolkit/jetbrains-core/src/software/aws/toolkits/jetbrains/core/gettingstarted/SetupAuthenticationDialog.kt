@@ -303,7 +303,7 @@ class SetupAuthenticationDialog(
                     scopes = scopes
                 )
 
-                val connection = authAndUpdateConfig(project, profile, configFilesFacade) {
+                val connection = authAndUpdateConfig(project, profile, configFilesFacade, {}) {
                     Messages.showErrorDialog(project, it, title)
                     AuthTelemetry.addConnection(
                         project,

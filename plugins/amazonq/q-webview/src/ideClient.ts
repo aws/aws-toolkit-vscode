@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {Store} from "vuex";
-import {State} from "./q-ui";
+import {IdcInfo, State} from "./q-ui";
 import {Region} from "./model";
 
 export class IdeClient {
@@ -21,6 +21,10 @@ export class IdeClient {
     updateAuthorization(code: string) {
         console.log('authorization code: ', code)
         this.store.commit('setAuthorizationCode', code)
+    }
+
+    updateLastLoginIdcInfo(idcInfo: IdcInfo) {
+        this.store.commit('setLastLoginIdcInfo', idcInfo)
     }
 
     reset() {

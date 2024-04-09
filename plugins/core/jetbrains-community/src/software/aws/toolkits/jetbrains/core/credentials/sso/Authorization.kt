@@ -19,7 +19,8 @@ data class Authorization(
     val verificationUriComplete: String,
     val expiresAt: Instant,
     val pollInterval: Long,
-    val createdAt: Instant
+    val createdAt: Instant,
+    var isCanceled: Boolean
 ) {
     override fun toString(): String = redactedString(this)
 }

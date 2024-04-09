@@ -17,7 +17,6 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.AwaitModernizationPlanResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerException
@@ -186,7 +185,6 @@ class CodeModernizerSession(
         ) { old, new, plan ->
             LOG.info { "Waiting for Transformation Plan for Modernization Job [$jobId]. State changed: $old -> $new" }
             state.currentJobStatus = new
-            sessionContext.project.refreshCwQTree()
             val instant = Instant.now()
             state.updateJobHistory(sessionContext, new, instant)
             setCurrentJobStopTime(new, instant)
@@ -341,7 +339,6 @@ class CodeModernizerSession(
                 // Always refresh the dev tool tree so status will be up-to-date
                 state.currentJobStatus = new
                 state.transformationPlan = plan
-                sessionContext.project.refreshCwQTree()
                 if (new == TransformationStatus.PARTIALLY_COMPLETED) {
                     isPartialSuccess = true
                 }

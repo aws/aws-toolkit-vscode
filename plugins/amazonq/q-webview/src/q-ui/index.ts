@@ -17,10 +17,17 @@ declare global {
     }
 }
 
+export interface IdcInfo {
+    profileName: string,
+    directoryId: string,
+    region: string,
+}
+
 export interface State {
     stage: Stage,
     ssoRegions: Region[],
-    authorizationCode: string
+    authorizationCode: string,
+    lastLoginIdcInfo: IdcInfo
 }
 
 declare module '@vue/runtime-core' {
@@ -34,7 +41,12 @@ const store = createStore<State>({
     state: {
         stage: 'START' as Stage,
         ssoRegions: [] as Region[],
-        authorizationCode: ''
+        authorizationCode: '',
+        lastLoginIdcInfo: {
+            profileName: '',
+            directoryId: '',
+            region: '',
+        }
     },
     getters: {},
     mutations: {
@@ -47,10 +59,21 @@ const store = createStore<State>({
         setAuthorizationCode(state: State, code: string) {
             state.authorizationCode = code
         },
+        setLastLoginIdcInfo(state: State, idcInfo: IdcInfo) {
+            console.log('state idc info is updated')
+            state.lastLoginIdcInfo.profileName = idcInfo.profileName
+            state.lastLoginIdcInfo.directoryId = idcInfo.directoryId
+            state.lastLoginIdcInfo.region = idcInfo.region
+        },
         reset(state: State) {
             state.stage = 'START'
             state.ssoRegions = []
             state.authorizationCode = ''
+            state.lastLoginIdcInfo = {
+                profileName: '',
+                directoryId: '',
+                region: ''
+            }
         }
     },
     actions: {},

@@ -21,7 +21,6 @@ import com.intellij.util.xmlb.annotations.Property
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.calculateIfIamIdentityCenterConnection
@@ -51,9 +50,8 @@ private fun notifyNewCustomization(project: Project) {
         content = message("codewhisperer.notification.custom.new_customization"),
         project = project,
         notificationActions = listOf(
-            NotificationAction.create(message("codewhisperer.notification.custom.simple.button.select_customization")) { _, notification ->
+            NotificationAction.createSimpleExpiring(message("codewhisperer.notification.custom.simple.button.select_customization")) {
                 CodeWhispererModelConfigurator.getInstance().showConfigDialog(project)
-                notification.expire()
             }
         )
     )
@@ -229,9 +227,7 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
 
                 null -> run {
                     ApplicationManager.getApplication().executeOnPooledThread {
-                        // will update devTool tree
                         listCustomizations(project, passive = true)
-                        project.refreshCwQTree()
                     }
 
                     false
@@ -240,11 +236,7 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
                 false -> run {
                     if (forceUpdate) {
                         ApplicationManager.getApplication().executeOnPooledThread {
-                            // will update devTool tree
-                            val updatedValue = listCustomizations(project, passive = true) != null
-                            if (updatedValue != cachedValue) {
-                                project.refreshCwQTree()
-                            }
+                            listCustomizations(project, passive = true)
                         }
                     }
 
