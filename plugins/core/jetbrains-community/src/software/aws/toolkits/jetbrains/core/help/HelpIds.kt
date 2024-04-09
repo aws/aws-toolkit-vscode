@@ -127,5 +127,7 @@ enum class HelpIds(shortId: String, val url: String) {
     )
     ;
 
-    val id = "aws.toolkit.$shortId"
+    val id = "$HELP_ID_PREFIX.$shortId"
 }
+
+const val HELP_ID_PREFIX = "aws.toolkit"
