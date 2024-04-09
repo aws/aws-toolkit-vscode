@@ -27,7 +27,7 @@
         "onCommand:aws.codeWhisperer.accept"
     ],
     "main": "./dist/src/extension.js",
-    "browser": "./dist/src/extensionWeb",
+    "browser": "./dist/src/extensionWebTest",
     "exports": {
         ".": "./dist/src/extension.js",
         "./web": "./dist/src/extensionWeb.js",

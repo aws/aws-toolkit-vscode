@@ -45,7 +45,11 @@ module.exports = (env, argv) => {
                   {
                       ...baseWebConfigsFactory(env, argv),
                       entry: {
-                          'src/extensionWeb': './src/extensionWeb.ts',
+                          // We need a different name (different from the file source file) since
+                          // typescript compilation and webpack produce the same named file from the same source.
+                          // If we don't do this, then one process will overwrite the others output.
+                          // The following is used for testing purposes only.
+                          'src/extensionWebTest': './src/extensionWeb.ts',
                           'src/testWeb/testRunner': './src/testWeb/testRunner.ts',
                       },
                   },
