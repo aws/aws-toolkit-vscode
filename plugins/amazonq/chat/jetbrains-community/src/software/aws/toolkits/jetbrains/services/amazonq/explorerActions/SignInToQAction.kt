@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.ui.jcef.JBCefApp
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
@@ -22,7 +23,12 @@ class SignInToQAction : SignInToQActionBase(message("q.sign.in")) {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         UiTelemetry.click(project, "auth_start_Q")
-        ToolWindowManager.getInstance(project).getToolWindow(AmazonQToolWindowFactory.WINDOW_ID)?.show()
+
+        if (!JBCefApp.isSupported()) {
+            requestCredentialsForQ(project)
+        } else {
+            ToolWindowManager.getInstance(project).getToolWindow(AmazonQToolWindowFactory.WINDOW_ID)?.show()
+        }
     }
 }
 
