@@ -24,14 +24,13 @@ import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
 import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { calculateTotalLatency, JDKToTelemetryValue } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
 import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
-import { getOpenProjects } from './transformProjectValidationHandler'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
