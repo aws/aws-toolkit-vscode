@@ -109,7 +109,7 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract useConnection(connectionId: string): Promise<AuthError | undefined>
 
-    abstract selectConnection(connections: AwsConnection[]): AwsConnection | undefined
+    abstract findConnection(connections: AwsConnection[]): AwsConnection | undefined
 
     abstract errorNotification(e: AuthError): void
 
