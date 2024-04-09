@@ -17,6 +17,8 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.whenever
+import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
+import software.amazon.awssdk.awscore.util.AwsHeader
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeGenerationStatus
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssistConversationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
@@ -30,6 +32,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.GenerateTaskAssistPlanResult
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
@@ -50,26 +53,36 @@ open class FeatureDevTestBase(
     internal lateinit var clientAdaptorSpy: FeatureDevClient
     internal lateinit var toolkitConnectionManager: ToolkitConnectionManager
 
+    internal val testRequestId = "test_aws_request_id"
     internal val testConversationId = "1234"
+    internal val userMessage = "test-user-message"
+    internal val testChecksumSha = "test-sha"
+    internal val testContentLength: Long = 40
 
     internal val exampleCreateTaskAssistConversationResponse = CreateTaskAssistConversationResponse.builder()
         .conversationId(testConversationId)
+        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
         .build() as CreateTaskAssistConversationResponse
 
     internal val exampleCreateUploadUrlResponse = CreateUploadUrlResponse.builder()
         .uploadUrl("https://smth.com")
         .uploadId("1234")
         .kmsKeyArn("0000000000000000000000000000000000:key/1234abcd")
+        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
         .build() as CreateUploadUrlResponse
+
+    internal val exampleGenerateTaskAssistPlanResult = GenerateTaskAssistPlanResult(approach = "Generated approach for plan", succeededPlanning = true)
 
     internal val exampleStartTaskAssistConversationResponse = StartTaskAssistCodeGenerationResponse.builder()
         .conversationId(testConversationId)
         .codeGenerationId("1234")
+        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
         .build() as StartTaskAssistCodeGenerationResponse
 
     internal val exampleGetTaskAssistConversationResponse = GetTaskAssistCodeGenerationResponse.builder()
         .conversationId(testConversationId)
         .codeGenerationStatus(CodeGenerationStatus.builder().status("InitialCodeGeneration").currentStage("InProgress").build())
+        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
         .build() as GetTaskAssistCodeGenerationResponse
 
     internal val exampleExportResultArchiveResponse = mutableListOf(byteArrayOf(100))
