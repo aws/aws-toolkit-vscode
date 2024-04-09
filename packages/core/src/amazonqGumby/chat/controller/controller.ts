@@ -28,6 +28,10 @@ import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFound
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
+import { codeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
+import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -225,9 +229,14 @@ export class GumbyController {
         }
     }
 
-    // Any given project could have multiple candidate projects to transform --
-    // The user gets prompted to pick a specific one
+    // prompt user to pick project and specify source JDK version
     private async initiateTransformationOnProject(message: any) {
+        const authType = await getAuthType()
+        telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            credentialSourceId: authType,
+            result: MetadataResult.Pass,
+        })
         const pathToProject: string = message.formSelectedValues['GumbyTransformProjectForm']
         const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
         const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
