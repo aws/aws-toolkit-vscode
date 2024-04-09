@@ -138,11 +138,8 @@ export class OidcClientV2 {
         // aws sdk doesn't convert to url params until right before you make the request, so we have to do
         // it manually ahead of time
         const params = toSnakeCase(request)
-
-        const joinedParams = Object.entries(params)
-            .map(x => `${x[0]}=${x[1]}`)
-            .join('&')
-        return `https://oidc.${this.region}.amazonaws.com/authorize?${joinedParams}`
+        const searchParams = new URLSearchParams(params).toString()
+        return `https://oidc.${this.region}.amazonaws.com/authorize?${searchParams}`
     }
 
     public async startDeviceAuthorization(request: StartDeviceAuthorizationRequest): Promise<{
