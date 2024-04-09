@@ -9,6 +9,8 @@ import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { createMockTextEditor, createMockClientRequest, resetCodeWhispererGlobalVariables } from '../testUtil'
 import globals from '../../../shared/extensionGlobals'
 import { GenerateCompletionsRequest } from '../../../codewhisperer/client/codewhispereruserclient'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
+import { tryRegister } from '../../testUtil'
 
 describe('editorContext', function () {
     let telemetryEnabledDefault: boolean
@@ -24,6 +26,8 @@ describe('editorContext', function () {
 
     describe('extractContextForCodeWhisperer', function () {
         it('Should return expected context', function () {
+            tryRegister(refreshStatusBar)
+
             const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
             const expected: codewhispererClient.FileContext = {

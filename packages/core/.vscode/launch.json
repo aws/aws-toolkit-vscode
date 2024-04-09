@@ -21,7 +21,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "watch"
         },
         {
             "name": "Extension Tests (current file)",
@@ -40,7 +40,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "watch"
         },
         {
             "name": "Extension Tests (web)",
@@ -74,7 +74,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "watch"
         },
         {
             "name": "Integration Tests (current file)",
@@ -93,7 +93,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "watch"
         },
         {
             "name": "E2E Test (current file)",
@@ -112,7 +112,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "watch"
         },
         {
             "name": "Test Lint",
@@ -120,7 +120,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/scripts/lint/testLint.ts",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "watch"
         },
         {
             "name": "Attach to ASL Server",

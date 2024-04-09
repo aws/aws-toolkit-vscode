@@ -235,7 +235,9 @@ describe('Settings', function () {
             instance = new ProfileSettings(settings)
         })
 
-        it('throws if the setting does not exist', function () {
+        // TODO: fromExtensionManifest setting checks are disable as part of the standalone refactor.
+        // We should enable this test once setting validation can be re-introduced.
+        it.skip('throws if the setting does not exist', function () {
             assert.throws(() => fromExtensionManifest('aws', { foo: Boolean }))
         })
 

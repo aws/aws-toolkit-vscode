@@ -6,17 +6,19 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import globals from '../../../shared/extensionGlobals'
-import { assertTelemetryCurried } from '../../testUtil'
+import { assertTelemetryCurried, tryRegister } from '../../testUtil'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { resetCodeWhispererGlobalVariables, createAcceptedSuggestionEntry } from '../testUtil'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
 
 describe('codewhispererTracker', function () {
     describe('enqueue', function () {
         beforeEach(async function () {
+            tryRegister(refreshStatusBar)
             await resetCodeWhispererGlobalVariables()
             await CodeWhispererTracker.getTracker().shutdown()
         })
@@ -44,6 +46,7 @@ describe('codewhispererTracker', function () {
 
     describe('flush', function () {
         beforeEach(async function () {
+            tryRegister(refreshStatusBar)
             await resetCodeWhispererGlobalVariables()
             await CodeWhispererTracker.getTracker().shutdown()
         })

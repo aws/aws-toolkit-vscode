@@ -37,7 +37,7 @@ describe('tech debt', function () {
     })
 
     it('feature/standalone branch temporary debug log level for testing', async function () {
-        if ((process.env.GITHUB_HEAD_REF ?? '').includes('standalone')) {
+        if (!(process.env.GITHUB_BASE_REF ?? '').includes('master')) {
             this.skip()
         }
 
