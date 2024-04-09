@@ -40,6 +40,7 @@ import {
     signoutCodeWhisperer,
     fetchFeatureConfigsCmd,
     registerToolkitApiCallback,
+    setupAmazonQTelemetryClientId,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -463,6 +464,7 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
+    await setupAmazonQTelemetryClientId()
     container.ready()
 }
 

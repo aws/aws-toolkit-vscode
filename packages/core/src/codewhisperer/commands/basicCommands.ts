@@ -35,6 +35,8 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
+import { globals } from '../../shared'
+import { randomUUID } from 'crypto'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -405,6 +407,12 @@ const registerToolkitApiCallbackOnce = once(async () => {
             }
         )
     }
+
+    // when toolkit activate i
+    if (_toolkitApi && 'onX' in _toolkitApi) {
+        const clientId = globals.context.globalState.get<string>('telemetryClientId')
+        _toolkitApi.onX(clientId)
+    }
 })
 export const registerToolkitApiCallback = Commands.declare(
     { id: 'aws.amazonq.refreshConnectionCallback' },
@@ -428,3 +436,18 @@ export const registerToolkitApiCallback = Commands.declare(
         }
     }
 )
+// when starting Amazon Q, try to use the existing telemetry client id in AWS toolkit
+export const setupAmazonQTelemetryClientId = once(async () => {
+    if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
+        const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+        const _toolkitApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
+        let clientId: string | undefined = undefined
+        if (_toolkitApi && 'getTelemetryClientId' in _toolkitApi) {
+            clientId = await _toolkitApi.getTelemetryClientId()
+        }
+        if (!clientId) {
+            clientId = randomUUID()
+        }
+        await globals.extensionContext.globalStates.update('telemetryClientId', clientId)
+    }
+})

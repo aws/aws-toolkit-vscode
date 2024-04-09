@@ -4,7 +4,8 @@
  */
 
 import { Auth, Connection, AwsConnection } from 'aws-core-vscode/auth'
-import { getLogger } from 'aws-core-vscode/shared'
+import { getLogger, globals } from 'aws-core-vscode/shared'
+import { randomUUID } from 'crypto'
 
 export const awsToolkitApi = {
     /**
@@ -86,6 +87,26 @@ export const awsToolkitApi = {
                     await onConnectionDeletion(id)
                 })
             },
+            /**
+             * Exposing telemetry client id of aws toolkit.
+             * It sets a client if it does not exist.
+             * This function does not return client ids for test automation or disabled telemetry clients
+             */
+            async getTelemetryClientId(): Promise<string | undefined> {
+                try {
+                    let clientId = globals.context.globalState.get<string>('telemetryClientId')
+                    if (!clientId) {
+                        clientId = randomUUID()
+                        await globals.context.globalState.update('telemetryClientId', clientId)
+                    }
+                    return clientId
+                } catch (error) {
+                    getLogger().error('Could not create a client id. Reason: %O ', error)
+                    return undefined
+                }
+            },
+
+            async onCreateTelemetryClientId() {},
         }
     },
 }
