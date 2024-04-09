@@ -5,11 +5,12 @@
  * This class is responsible for responding to UI events by calling
  * the Gumby extension.
  */
-
+import fs from 'fs'
+import path from 'path'
+import * as vscode from 'vscode'
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatSessionManager } from '../storages/chatSession'
-import * as vscode from 'vscode'
 import { ConversationState, Session } from '../session/session'
 import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
@@ -22,17 +23,15 @@ import {
     stopTransformByQ,
     validateCanCompileProject,
 } from '../../../codewhisperer/commands/startTransformByQ'
-import { JDKVersion, transformByQState } from '../../../codewhisperer/models/model'
+import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
 import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
-import { TransformationCandidateProject, getAuthType } from '../../../codewhisperer/service/transformByQHandler'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
-import fs from 'fs'
-import path from 'path'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { codeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
+import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
