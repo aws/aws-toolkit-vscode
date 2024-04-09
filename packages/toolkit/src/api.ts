@@ -5,12 +5,7 @@
 
 import { Auth, Connection, AwsConnection } from 'aws-core-vscode/auth'
 import { getLogger, globals } from 'aws-core-vscode/shared'
-import { once } from 'aws-core-vscode/shared'
 import { randomUUID } from 'crypto'
-
-const _setClientId = once(async (clientId: string) => {
-    await globals.context.globalState.update('telemetryClientId', clientId)
-})
 
 export const awsToolkitApi = {
     /**
@@ -117,7 +112,7 @@ export const awsToolkitApi = {
              */
             async setTelemetryClientId(clientId: string) {
                 getLogger().debug(`setTelemetryClientId: client id ${clientId}, extension ${extensionId}`)
-                await _setClientId(clientId)
+                await globals.context.globalState.update('telemetryClientId', clientId)
             },
         }
     },
