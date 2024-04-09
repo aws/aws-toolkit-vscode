@@ -24,34 +24,26 @@ import { checkBuildSystem } from './transformFileHandler'
 
 // log project details silently
 export async function validateAndLogProjectDetails() {
-    let reason,
-        result,
-        codeTransformLocalJavaVersion,
-        codeTransformPreValidationError = undefined
+    let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
+    let errorCode = undefined
     try {
         const openProjects = await getOpenProjects()
         const validProjects = await validateOpenProjects(openProjects, true)
         if (validProjects.length > 0) {
-            const firstProjectJavaVersion = validProjects[0].JDKVersion!
-            codeTransformLocalJavaVersion = JDKToTelemetryValue(
-                firstProjectJavaVersion
-            ) as CodeTransformJavaSourceVersionsAllowed
+            // validProjects[0].JDKVersion will be undefined if javap errors out or no .class files found, so call it UNSUPPORTED
+            const javaVersion = validProjects[0].JDKVersion ?? JDKVersion.UNSUPPORTED
+            telemetryJavaVersion = JDKToTelemetryValue(javaVersion) as CodeTransformJavaSourceVersionsAllowed
         }
     } catch (err: any) {
-        result = MetadataResult.Fail
-        reason = err?.code
-        codeTransformPreValidationError = err?.name
+        errorCode = err.code
     } finally {
-        if (result || reason || codeTransformLocalJavaVersion || codeTransformPreValidationError) {
-            telemetry.codeTransform_projectDetails.emit({
-                passive: true,
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformLocalJavaVersion,
-                codeTransformPreValidationError,
-                result: result ?? MetadataResult.Pass,
-                reason,
-            })
-        }
+        telemetry.codeTransform_projectDetails.emit({
+            passive: true,
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformLocalJavaVersion: telemetryJavaVersion,
+            result: errorCode ? MetadataResult.Fail : MetadataResult.Pass,
+            reason: errorCode,
+        })
     }
 }
 
