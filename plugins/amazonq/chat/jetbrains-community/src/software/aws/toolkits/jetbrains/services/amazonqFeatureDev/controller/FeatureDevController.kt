@@ -67,10 +67,10 @@ import java.util.UUID
 
 class FeatureDevController(
     private val context: AmazonQAppInitContext,
-    private val chatSessionStorage: ChatSessionStorage
+    private val chatSessionStorage: ChatSessionStorage,
+    private val authController: AuthController = AuthController()
 ) : InboundAppMessagesHandler {
 
-    private val authController = AuthController()
     private val messenger = context.messagesFromAppToUi
     private val toolWindow = ToolWindowManager.getInstance(context.project).getToolWindow(AmazonQToolWindowFactory.WINDOW_ID)
 
