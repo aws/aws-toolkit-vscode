@@ -111,9 +111,10 @@ class AmazonQToolWindow @NonInjectable constructor(
     }
 
     private fun connectUi() {
-        val browser = chatPanel.browser ?: return
+        val chatBrowser = chatPanel.browser ?: return
+        val loginBrowser = loginPanel.browser ?: return
 
-        browser.init(
+        chatBrowser.init(
             isCodeTransformAvailable = isCodeTransformAvailable(project),
             isFeatureDevAvailable = isFeatureDevAvailable(project)
         )
@@ -121,7 +122,7 @@ class AmazonQToolWindow @NonInjectable constructor(
         scope.launch {
             // Pipe messages from the UI to the relevant apps and vice versa
             browserConnector.connect(
-                browser = browser,
+                browser = chatBrowser,
                 connections = appConnections,
             )
         }
@@ -129,8 +130,8 @@ class AmazonQToolWindow @NonInjectable constructor(
         scope.launch {
             // Update the theme in the UI when the IDE theme changes
             browserConnector.connectTheme(
-                chatBrowser = browser.jcefBrowser.cefBrowser,
-                loginBrowser = loginPanel.browser.jcefBrowser.cefBrowser,
+                chatBrowser = chatBrowser.jcefBrowser.cefBrowser,
+                loginBrowser = loginBrowser.jcefBrowser.cefBrowser,
                 themeSource = editorThemeAdapter.onThemeChange(),
             )
         }

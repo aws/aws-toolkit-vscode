@@ -11,10 +11,12 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.JBColor
+import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.gridLayout.HorizontalAlign
 import com.intellij.ui.dsl.gridLayout.VerticalAlign
+import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefJSQuery
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -75,34 +77,43 @@ class QWebviewDialog(private val project: Project) : DialogWrapper(project) {
 
 class WebviewPanel(val project: Project) {
     private val webviewContainer = Wrapper()
-    val browser: WebviewBrowser = WebviewBrowser(project).apply {
-        this.init()
-    }.also {
-        webviewContainer.add(it.component())
-    }
+    var browser: WebviewBrowser? = null
+        private set
 
     val component = panel {
         row {
-            val wrapper = Wrapper().also {
-                it.add(browser.component())
-            }
-            cell(wrapper)
+            cell(webviewContainer)
                 .horizontalAlign(HorizontalAlign.FILL)
                 .verticalAlign(VerticalAlign.FILL)
         }.resizableRow()
 
-        row {
-            cell(
-                JButton("Show Web Debugger").apply {
-                    addActionListener(
-                        ActionListener {
-                            browser.jcefBrowser.openDevtools()
-                        },
-                    )
-                },
-            )
-                .horizontalAlign(HorizontalAlign.CENTER)
-                .verticalAlign(VerticalAlign.BOTTOM)
+        if (isDeveloperMode()) {
+            row {
+                cell(
+                    JButton("Show Web Debugger").apply {
+                        addActionListener(
+                            ActionListener {
+                                browser?.jcefBrowser?.openDevtools()
+                            },
+                        )
+                    },
+                )
+                    .horizontalAlign(HorizontalAlign.CENTER)
+                    .verticalAlign(VerticalAlign.BOTTOM)
+            }
+        }
+    }
+
+    init {
+        if (!JBCefApp.isSupported()) {
+            // Fallback to an alternative browser-less solution
+            webviewContainer.add(JBTextArea("JCEF not supported"))
+            browser = null
+        } else {
+            browser = WebviewBrowser(project).also {
+                webviewContainer.add(it.component())
+                it.init()
+            }
         }
     }
 }
