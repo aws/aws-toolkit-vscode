@@ -50,8 +50,6 @@ import path from 'path'
  * It does not contain UI/UX related logic
  */
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 // below commands override VS Code inline completion commands
 const prevCommand = Commands.declare('editor.action.inlineSuggest.showPrevious', () => async () => {
     await RecommendationHandler.instance.showRecommendation(-1)

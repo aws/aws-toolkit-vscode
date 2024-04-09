@@ -106,7 +106,7 @@ describe('Controller', () => {
             const newFileLocation = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'foo', 'fi', 'mynewfile.js')
             await toFile('', newFileLocation)
             sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(controllerSetup.workspaceFolder)
-            session.config.sourceRoots = [path.join(controllerSetup.workspaceFolder.uri.fsPath, 'foo', 'fi')]
+            session.config.workspaceRoots = [path.join(controllerSetup.workspaceFolder.uri.fsPath, 'foo', 'fi')]
             const executedDiff = await openDiff(path.join('foo', 'fi', 'mynewfile.js'))
             assert.strictEqual(
                 executedDiff.calledWith(
@@ -167,8 +167,8 @@ describe('Controller', () => {
             sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(controllerSetup.workspaceFolder)
             const expectedSourceRoot = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'src')
             const modifiedSession = await modifyDefaultSourceFolder(expectedSourceRoot)
-            assert.strictEqual(modifiedSession.config.sourceRoots.length, 1)
-            assert.strictEqual(modifiedSession.config.sourceRoots[0], expectedSourceRoot)
+            assert.strictEqual(modifiedSession.config.workspaceRoots.length, 1)
+            assert.strictEqual(modifiedSession.config.workspaceRoots[0], expectedSourceRoot)
         })
     })
 
@@ -178,7 +178,7 @@ describe('Controller', () => {
                 {
                     conversationId: conversationID,
                     proxyClient: new FeatureDevClient(),
-                    sourceRoots: [''],
+                    workspaceRoots: [''],
                     workspaceFolders: [controllerSetup.workspaceFolder],
                 },
                 '',
@@ -260,7 +260,7 @@ describe('Controller', () => {
                     getCodeGeneration: () => mockGetCodeGeneration(),
                     exportResultArchive: () => sinon.stub(),
                 } as unknown as FeatureDevClient,
-                sourceRoots: [''],
+                workspaceRoots: [''],
                 uploadId: uploadID,
                 workspaceFolders,
             }

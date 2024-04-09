@@ -7,8 +7,6 @@ import { getLogger } from '../../shared/logger/logger'
 import { AmazonqApproachInvoke, AmazonqCodeGenerationInvoke, Metric } from '../../shared/telemetry/telemetry'
 import { LLMResponseType } from '../types'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 export class TelemetryHelper {
     public generateApproachIteration: number
     public generateApproachLastInvocationTime: number

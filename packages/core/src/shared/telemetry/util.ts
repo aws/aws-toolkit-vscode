@@ -8,7 +8,7 @@ import { getLogger } from '../logger'
 import { fromExtensionManifest } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { extensionVersion, isAutomation } from '../vscode/env'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'crypto'
 import { addTypeName } from '../utilities/typeConstructors'
 import globals from '../extensionGlobals'
 import { mapMetadata } from './telemetryLogger'
@@ -55,7 +55,7 @@ export const getClientId = shared(
         try {
             let clientId = globalState.get<string>('telemetryClientId')
             if (!clientId) {
-                clientId = uuidv4()
+                clientId = randomUUID()
                 await globalState.update('telemetryClientId', clientId)
             }
             return clientId
