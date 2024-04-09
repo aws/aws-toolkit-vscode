@@ -36,8 +36,6 @@ import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewh
 import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
     if (isAwsError(error)) {
