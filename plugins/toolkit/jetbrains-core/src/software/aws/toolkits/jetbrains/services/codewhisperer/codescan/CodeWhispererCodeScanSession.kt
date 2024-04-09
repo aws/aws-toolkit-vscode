@@ -55,6 +55,8 @@ import java.time.Instant
 import java.util.Base64
 import java.util.UUID
 import kotlin.coroutines.coroutineContext
+import kotlin.math.max
+import kotlin.math.min
 
 class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
     private val clientToken: UUID = UUID.randomUUID()
@@ -308,7 +310,8 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
                     runReadAction {
                         FileDocumentManager.getInstance().getDocument(file)
                     }?.let { document ->
-                        val endCol = document.getLineEndOffset(it.endLine - 1) - document.getLineStartOffset(it.endLine - 1) + 1
+                        val endLineInDocument = min(max(0, it.endLine - 1), document.lineCount - 1)
+                        val endCol = document.getLineEndOffset(endLineInDocument) - document.getLineStartOffset(endLineInDocument) + 1
                         CodeWhispererCodeScanIssue(
                             startLine = it.startLine,
                             startCol = 1,
