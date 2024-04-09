@@ -22,6 +22,8 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClien
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.summary.CodeModernizerSummaryEditorProvider
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.TROUBLESHOOTING_URL_DOWNLOAD_DIFF
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.openTroubleshootingGuideNotificationAction
 import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.jetbrains.utils.notifyStickyWarn
 import software.aws.toolkits.resources.message
@@ -152,7 +154,11 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
             message("codemodernizer.notification.warn.view_diff_failed.title"),
             message("codemodernizer.notification.warn.view_diff_failed.content"),
             project,
-            listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_DOWNLOAD_DIFF)),
+            listOf(
+                openTroubleshootingGuideNotificationAction(
+                    TROUBLESHOOTING_URL_DOWNLOAD_DIFF
+                )
+            ),
         )
     }
 
@@ -162,7 +168,11 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
             message("codemodernizer.notification.warn.view_summary_failed.title"),
             message("codemodernizer.notification.warn.view_summary_failed.content"),
             project,
-            listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_DOWNLOAD_DIFF)),
+            listOf(
+                openTroubleshootingGuideNotificationAction(
+                    TROUBLESHOOTING_URL_DOWNLOAD_DIFF
+                )
+            ),
         )
     }
 
