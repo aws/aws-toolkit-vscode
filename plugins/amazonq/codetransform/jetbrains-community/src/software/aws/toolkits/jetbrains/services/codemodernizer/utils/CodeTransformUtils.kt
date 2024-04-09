@@ -14,7 +14,6 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.resources.message
-import java.time.Instant
 
 val STATES_WHERE_PLAN_EXIST = setOf(
     TransformationStatus.PLANNED,
@@ -50,8 +49,6 @@ const val TROUBLESHOOTING_URL_MAVEN_COMMANDS =
     "https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19b7"
 const val TROUBLESHOOTING_URL_PREREQUISITES =
     "https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites"
-
-fun calculateTotalLatency(startTime: Instant, endTime: Instant) = (endTime.toEpochMilli() - startTime.toEpochMilli()).toInt()
 
 fun refreshToken(project: Project) {
     val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance())

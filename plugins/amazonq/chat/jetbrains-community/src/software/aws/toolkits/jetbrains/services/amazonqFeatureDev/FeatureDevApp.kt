@@ -16,7 +16,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller.Fea
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.AuthenticationUpdateMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.IncomingFeatureDevMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
-import software.aws.toolkits.jetbrains.services.codemodernizer.auth.isCodeTransformAvailable
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.isCodeTransformAvailable
 
 class FeatureDevApp : AmazonQApp {
 

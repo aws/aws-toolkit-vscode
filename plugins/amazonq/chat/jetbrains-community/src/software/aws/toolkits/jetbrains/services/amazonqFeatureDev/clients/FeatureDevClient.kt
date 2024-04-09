@@ -35,7 +35,7 @@ import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
-import software.aws.toolkits.jetbrains.services.codemodernizer.calculateTotalLatency
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.calculateTotalLatency
 import java.time.Instant
 import software.amazon.awssdk.services.codewhispererruntime.model.ChatTriggerType as SyncChatTriggerType
 
