@@ -13,7 +13,7 @@ import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.codemodernizer.TransformationSummary
-import software.aws.toolkits.jetbrains.services.codemodernizer.unzipFile
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.unzipFile
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
 import kotlin.io.path.isDirectory
