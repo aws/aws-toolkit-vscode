@@ -76,6 +76,7 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
     internal lateinit var fakeCreateCodeScanResponseFailed: CreateCodeScanResponse
     internal lateinit var fakeCreateCodeScanResponsePending: CreateCodeScanResponse
     internal lateinit var fakeListCodeScanFindingsResponse: ListCodeScanFindingsResponse
+    internal lateinit var fakeListCodeScanFindingsOutOfBoundsIndexResponse: ListCodeScanFindingsResponse
     internal lateinit var fakeGetCodeScanResponse: GetCodeScanResponse
     internal lateinit var fakeGetCodeScanResponsePending: GetCodeScanResponse
     internal lateinit var fakeGetCodeScanResponseFailed: GetCodeScanResponse
@@ -108,52 +109,41 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         )
     }
 
+    private fun setupCodeScanFinding(filePath: Path, startLine: Int, endLine: Int) = """
+        {
+            "filePath": "${filePath.systemIndependentPath}",
+            "startLine": $startLine,
+            "endLine": $endLine,
+            "title": "test",
+            "description": {
+                "text": "global variable",
+                "markdown": "### global variable"
+            },
+            "detectorId": "detectorId",
+            "detectorName": "detectorName",
+            "findingId": "findingId",
+            "relatedVulnerabilities": [],
+            "severity": "severity",
+            "remediation": {
+                "recommendation": {
+                    "text": "recommendationText",
+                    "url": "recommendationUrl"
+                },
+                "suggestedFixes": []
+            }
+        }
+    """.trimIndent()
+
     private fun setupCodeScanFindings(filePath: Path) = """
         [
-            {
-                "filePath": "${filePath.systemIndependentPath}",
-                "startLine": 1,
-                "endLine": 2,
-                "title": "test",
-                "description": {
-                    "text": "global variable",
-                    "markdown": "### global variable"
-                },
-                "detectorId": "detectorId",
-                "detectorName": "detectorName",
-                "findingId": "findingId",
-                "relatedVulnerabilities": [],
-                "severity": "severity",
-                "remediation": {
-                    "recommendation": {
-                        "text": "recommendationText",
-                        "url": "recommendationUrl"
-                    },
-                    "suggestedFixes": []
-                }
-            },
-            {
-                "filePath": "${filePath.systemIndependentPath}",
-                "startLine": 1,
-                "endLine": 2,
-                "title": "test",
-                "description": {
-                    "text": "global variable",
-                    "markdown": "### global variable"
-                },
-                "detectorId": "detectorId",
-                "detectorName": "detectorName",
-                "findingId": "findingId",
-                "relatedVulnerabilities": [],
-                "severity": "severity",
-                "remediation": {
-                    "recommendation": {
-                        "text": "recommendationText",
-                        "url": "recommendationUrl"
-                    },
-                    "suggestedFixes": []
-                }
-            }
+            ${setupCodeScanFinding(filePath, 1, 2)},
+            ${setupCodeScanFinding(filePath, 1, 2)}
+        ]
+    """
+
+    private fun setupCodeScanFindingsOutOfBounds(filePath: Path) = """
+        [
+            ${setupCodeScanFinding(filePath, 99999, 99999)}
         ]
     """
 
@@ -184,6 +174,11 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
 
         fakeListCodeScanFindingsResponse = ListCodeScanFindingsResponse.builder()
             .codeScanFindings(setupCodeScanFindings(filePath))
+            .responseMetadata(metadata)
+            .build() as ListCodeScanFindingsResponse
+
+        fakeListCodeScanFindingsOutOfBoundsIndexResponse = ListCodeScanFindingsResponse.builder()
+            .codeScanFindings(setupCodeScanFindingsOutOfBounds(filePath))
             .responseMetadata(metadata)
             .build() as ListCodeScanFindingsResponse
 

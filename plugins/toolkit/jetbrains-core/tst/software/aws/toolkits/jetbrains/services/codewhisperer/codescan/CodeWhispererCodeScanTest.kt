@@ -125,6 +125,15 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
     }
 
     @Test
+    fun `test mapToCodeScanIssues - handles index out of bounds`() {
+        val recommendations = listOf(
+            fakeListCodeScanFindingsOutOfBoundsIndexResponse.codeScanFindings(),
+        )
+        val res = codeScanSessionSpy.mapToCodeScanIssues(recommendations)
+        assertThat(res).hasSize(1)
+    }
+
+    @Test
     fun `test run() - happypath`() {
         assertNotNull(sessionConfigSpy)
         runBlocking {
