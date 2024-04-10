@@ -14,7 +14,12 @@ import { RawCodeScanIssue } from '../models/model'
 import * as crypto from 'crypto'
 import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
-import { ArtifactMap, CreateUploadUrlRequest, CreateUploadUrlResponse } from '../client/codewhispereruserclient'
+import {
+    ArtifactMap,
+    CreateUploadUrlRequest,
+    CreateUploadUrlResponse,
+    UploadIntent,
+} from '../client/codewhispereruserclient'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import request from '../../common/request'
 import { ZipMetadata } from '../util/zipUtil'
@@ -147,13 +152,18 @@ export async function createScanJob(
     return resp
 }
 
-export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClient, zipMetadata: ZipMetadata) {
+export async function getPresignedUrlAndUpload(
+    client: DefaultCodeWhispererClient,
+    zipMetadata: ZipMetadata,
+    scope: CodeWhispererConstants.CodeAnalysisScope
+) {
     if (zipMetadata.zipFilePath === '') {
         throw new Error("Zip failure: can't find valid source zip.")
     }
     const srcReq: CreateUploadUrlRequest = {
         contentMd5: getMd5(zipMetadata.zipFilePath),
         artifactType: 'SourceCode',
+        uploadIntent: getUploadIntent(scope),
     }
     getLogger().verbose(`Prepare for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq)
@@ -166,6 +176,12 @@ export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClien
         SourceCode: srcResp.uploadId,
     }
     return artifactMap
+}
+
+function getUploadIntent(scope: CodeWhispererConstants.CodeAnalysisScope): UploadIntent {
+    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+        ? CodeWhispererConstants.fileScanUploadIntent
+        : CodeWhispererConstants.projectScanUploadIntent
 }
 
 function getMd5(fileName: string) {

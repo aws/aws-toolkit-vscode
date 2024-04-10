@@ -134,7 +134,7 @@ export async function startSecurityScan(
         let artifactMap: ArtifactMap = {}
         const uploadStartTime = performance.now()
         try {
-            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata)
+            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope)
         } catch (error) {
             getLogger().error('Failed to upload code artifacts', error)
             throw error

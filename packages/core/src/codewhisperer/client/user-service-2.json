@@ -1556,7 +1556,12 @@
         },
         "UploadIntent": {
             "type": "string",
-            "enum": ["TRANSFORMATION", "TASK_ASSIST_PLANNING"]
+            "enum": [
+                "TRANSFORMATION",
+                "TASK_ASSIST_PLANNING",
+                "AUTOMATIC_FILE_SECURITY_SCAN",
+                "FULL_PROJECT_SECURITY_SCAN"
+            ]
         },
         "UserContext": {
             "type": "structure",

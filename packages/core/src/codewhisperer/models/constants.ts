@@ -221,7 +221,11 @@ export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 
 
 export const fileScanPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
+export const fileScanUploadIntent = 'AUTOMATIC_FILE_SECURITY_SCAN'
+
 export const projectScanPayloadSizeLimitBytes = 5 * Math.pow(2, 30) // 5 GB
+
+export const projectScanUploadIntent = 'FULL_PROJECT_SECURITY_SCAN'
 
 export const codeScanTruncDirPrefix = 'codewhisperer_scan'
 

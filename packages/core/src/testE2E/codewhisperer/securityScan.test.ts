@@ -91,11 +91,12 @@ describe('CodeWhisperer security scan', async function () {
         const uri = editor.document.uri
 
         const projectPath = zipUtil.getProjectPath(editor.document.uri)
-        const zipMetadata = await zipUtil.generateZip(uri, CodeWhispererConstants.CodeAnalysisScope.PROJECT)
+        const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
+        const zipMetadata = await zipUtil.generateZip(uri, scope)
 
         let artifactMap
         try {
-            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata)
+            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope)
         } finally {
             await zipUtil.removeTmpFiles(zipMetadata)
         }
