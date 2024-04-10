@@ -41,7 +41,6 @@
         "onUri"
     ],
     "main": "./dist/src/extension",
-    "browser": "./dist/src/extensionWeb",
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run compile && webpack --mode production",
         "clean": "ts-node ../../scripts/clean.ts dist/",

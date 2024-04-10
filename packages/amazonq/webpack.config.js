@@ -28,12 +28,5 @@ module.exports = (env, argv) => {
         },
     }
 
-    const webConfig = {
-        ...baseWebConfigFactory(env, argv),
-        entry: {
-            'src/extensionWeb': './src/extensionWeb.ts',
-        },
-    }
-
-    return [config, vueConfig, webConfig]
+    return [config, vueConfig]
 }
