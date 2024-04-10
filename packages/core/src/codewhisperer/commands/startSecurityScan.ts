@@ -70,7 +70,7 @@ export function startSecurityScanWithProgress(
                 editor,
                 client,
                 context,
-                CodeWhispererConstants.SecurityScanType.Project
+                CodeWhispererConstants.CodeAnalysisScope.PROJECT
             )
         }
     )
@@ -86,7 +86,7 @@ export async function startSecurityScan(
     editor: vscode.TextEditor,
     client: DefaultCodeWhispererClient,
     context: vscode.ExtensionContext,
-    scanType: CodeWhispererConstants.SecurityScanType
+    scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
     /**
      * Step 0: Initial Code Scan telemetry
@@ -115,9 +115,9 @@ export async function startSecurityScan(
         /**
          * Step 1: Generate zip
          */
-        throwIfCancelled(scanType)
+        throwIfCancelled(scope)
         const zipUtil = new ZipUtil()
-        const zipMetadata = await zipUtil.generateZip(editor.document.uri, scanType)
+        const zipMetadata = await zipUtil.generateZip(editor.document.uri, scope)
         const projectPath = zipUtil.getProjectPath(editor.document.uri)
 
         const contextTruncationStartTime = performance.now()
@@ -131,7 +131,7 @@ export async function startSecurityScan(
         /**
          * Step 2: Get presigned Url, upload and clean up
          */
-        throwIfCancelled(scanType)
+        throwIfCancelled(scope)
         let artifactMap: ArtifactMap = {}
         const uploadStartTime = performance.now()
         try {
@@ -147,9 +147,9 @@ export async function startSecurityScan(
         /**
          * Step 3:  Create scan job
          */
-        throwIfCancelled(scanType)
+        throwIfCancelled(scope)
         serviceInvocationStartTime = performance.now()
-        const scanJob = await createScanJob(client, artifactMap, codeScanTelemetryEntry.codewhispererLanguage)
+        const scanJob = await createScanJob(client, artifactMap, codeScanTelemetryEntry.codewhispererLanguage, scope)
         if (scanJob.status === 'Failed') {
             throw new Error(scanJob.errorMessage)
         }
@@ -159,8 +159,8 @@ export async function startSecurityScan(
         /**
          * Step 4:  Polling mechanism on scan job status
          */
-        throwIfCancelled(scanType)
-        const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scanType)
+        throwIfCancelled(scope)
+        const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope)
         if (jobStatus === 'Failed') {
             throw new Error('Security scan job failed.')
         }
@@ -168,7 +168,7 @@ export async function startSecurityScan(
         /**
          * Step 5: Process and render scan results
          */
-        throwIfCancelled(scanType)
+        throwIfCancelled(scope)
         getLogger().verbose(`Security scan job succeeded and start processing result.`)
         const securityRecommendationCollection = await listScanResults(
             client,
@@ -185,7 +185,7 @@ export async function startSecurityScan(
         )
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
         codeScanTelemetryEntry.codewhispererCodeScanIssuesWithFixes = withFixes
-        throwIfCancelled(scanType)
+        throwIfCancelled(scope)
         getLogger().verbose(`Security scan totally found ${total} issues. ${withFixes} of them have fixes.`)
         if (codeScanStartTime > securityScanRender.lastUpdated) {
             showSecurityScanResults(
@@ -193,7 +193,7 @@ export async function startSecurityScan(
                 securityRecommendationCollection,
                 editor,
                 context,
-                scanType,
+                scope,
                 zipMetadata,
                 total,
                 codeScanStartTime
@@ -236,7 +236,7 @@ export function showSecurityScanResults(
     securityRecommendationCollection: AggregatedCodeScanIssue[],
     editor: vscode.TextEditor,
     context: vscode.ExtensionContext,
-    scanType: CodeWhispererConstants.SecurityScanType,
+    scope: CodeWhispererConstants.CodeAnalysisScope,
     zipMetadata: ZipMetadata,
     totalIssues: number,
     codeScanStartTime: number
@@ -245,13 +245,13 @@ export function showSecurityScanResults(
         securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
         void vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
     } else {
-        initSecurityScanRender(securityRecommendationCollection, context, editor, scanType, codeScanStartTime)
-        if (scanType === CodeWhispererConstants.SecurityScanType.Project) {
+        initSecurityScanRender(securityRecommendationCollection, context, editor, scope, codeScanStartTime)
+        if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
             void vscode.commands.executeCommand('workbench.action.problems.focus')
         }
     }
     populateCodeScanLogStream(zipMetadata.scannedFiles)
-    if (scanType === CodeWhispererConstants.SecurityScanType.Project) {
+    if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
         showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles, false)
     }
 }

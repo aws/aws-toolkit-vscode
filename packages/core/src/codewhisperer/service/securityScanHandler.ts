@@ -97,13 +97,13 @@ function mapToAggregatedList(
 export async function pollScanJobStatus(
     client: DefaultCodeWhispererClient,
     jobId: string,
-    scanType: CodeWhispererConstants.SecurityScanType
+    scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
     getLogger().verbose(`Polling scan job status...`)
     let status: string = 'Pending'
     let timer: number = 0
     while (true) {
-        throwIfCancelled(scanType)
+        throwIfCancelled(scope)
         const req: codewhispererClient.GetCodeScanRequest = {
             jobId: jobId,
         }
@@ -115,7 +115,7 @@ export async function pollScanJobStatus(
             getLogger().verbose(`Complete Polling scan job status.`)
             break
         }
-        throwIfCancelled(scanType)
+        throwIfCancelled(scope)
         await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
         timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
         if (timer > CodeWhispererConstants.codeScanJobTimeoutSeconds) {
@@ -130,7 +130,8 @@ export async function pollScanJobStatus(
 export async function createScanJob(
     client: DefaultCodeWhispererClient,
     artifactMap: codewhispererClient.ArtifactMap,
-    languageId: string
+    languageId: string,
+    scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
     getLogger().verbose(`Creating scan job...`)
     const req: codewhispererClient.CreateCodeScanRequest = {
@@ -138,6 +139,7 @@ export async function createScanJob(
         programmingLanguage: {
             languageName: languageId,
         },
+        scope: scope,
     }
     const resp = await client.createCodeScan(req)
     getLogger().verbose(`Request id: ${resp.$response.requestId}`)
@@ -172,20 +174,20 @@ function getMd5(fileName: string) {
     return hasher.digest('base64')
 }
 
-export function throwIfCancelled(scanType: CodeWhispererConstants.SecurityScanType) {
-    switch (scanType) {
-        case CodeWhispererConstants.SecurityScanType.Project:
+export function throwIfCancelled(scope: CodeWhispererConstants.CodeAnalysisScope) {
+    switch (scope) {
+        case CodeWhispererConstants.CodeAnalysisScope.PROJECT:
             if (codeScanState.isCancelling()) {
                 throw new CodeScanStoppedError()
             }
             break
-        case CodeWhispererConstants.SecurityScanType.File:
+        case CodeWhispererConstants.CodeAnalysisScope.FILE:
             if (!CodeScansState.instance.isScansEnabled()) {
                 throw new CodeScanStoppedError()
             }
             break
         default:
-            getLogger().warn(`Unknown scan type: ${scanType}`)
+            getLogger().warn(`Unknown code analysis scope: ${scope}`)
             break
     }
 }

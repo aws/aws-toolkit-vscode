@@ -20,7 +20,7 @@ import { HttpResponse } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { cancel } from '../../../shared/localizedText'
-import { showScannedFilesMessage, stopScanMessage, SecurityScanType } from '../../../codewhisperer/models/constants'
+import { showScannedFilesMessage, stopScanMessage, CodeAnalysisScope } from '../../../codewhisperer/models/constants'
 import * as model from '../../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.gen'
 import { getFetchStubWithResponse } from '../../common/request.test'
@@ -167,7 +167,7 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            SecurityScanType.Project
+            CodeAnalysisScope.PROJECT
         )
         assert.ok(commandSpy.calledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
@@ -186,7 +186,7 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            SecurityScanType.File
+            CodeAnalysisScope.FILE
         )
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
@@ -210,7 +210,7 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            SecurityScanType.Project
+            CodeAnalysisScope.PROJECT
         )
         await startSecurityScan.confirmStopSecurityScan()
         await scanPromise
@@ -236,7 +236,7 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            SecurityScanType.Project
+            CodeAnalysisScope.PROJECT
         )
         await startSecurityScan.confirmStopSecurityScan()
         await scanPromise
@@ -257,7 +257,7 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            SecurityScanType.File
+            CodeAnalysisScope.FILE
         )
         await model.CodeScansState.instance.setScansEnabled(false)
         await scanPromise
@@ -284,7 +284,7 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            SecurityScanType.Project
+            CodeAnalysisScope.PROJECT
         )
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererLanguage: 'python',
@@ -305,7 +305,7 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            SecurityScanType.File
+            CodeAnalysisScope.FILE
         )
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.notCalled)

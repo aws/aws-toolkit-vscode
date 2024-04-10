@@ -75,8 +75,8 @@ export class ZipUtil {
         return uri.fsPath.endsWith(ZipConstants.javaBuildExt)
     }
 
-    public reachSizeLimit(size: number, scanType: CodeWhispererConstants.SecurityScanType): boolean {
-        if (scanType === CodeWhispererConstants.SecurityScanType.File) {
+    public reachSizeLimit(size: number, scope: CodeWhispererConstants.CodeAnalysisScope): boolean {
+        if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE) {
             return size > this.getFileScanPayloadSizeLimitInBytes()
         } else {
             return size > this.getProjectScanPayloadSizeLimitInBytes()
@@ -102,7 +102,7 @@ export class ZipUtil {
         this._totalSize += (await fsCommon.stat(uri.fsPath)).size
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
-        if (this.reachSizeLimit(this._totalSize, CodeWhispererConstants.SecurityScanType.File)) {
+        if (this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.FILE)) {
             throw new ToolkitError('Payload size limit reached.')
         }
 
@@ -129,7 +129,7 @@ export class ZipUtil {
                 this._totalBuildSize += fileSize
             } else {
                 if (
-                    this.reachSizeLimit(this._totalSize, CodeWhispererConstants.SecurityScanType.Project) ||
+                    this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
                     this.willReachSizeLimit(this._totalSize, fileSize)
                 ) {
                     throw new ToolkitError('Payload size limit reached.')
@@ -156,16 +156,16 @@ export class ZipUtil {
         return this._zipDir
     }
 
-    public async generateZip(uri: vscode.Uri, scanType: CodeWhispererConstants.SecurityScanType): Promise<ZipMetadata> {
+    public async generateZip(uri: vscode.Uri, scope: CodeWhispererConstants.CodeAnalysisScope): Promise<ZipMetadata> {
         try {
             const zipDirPath = this.getZipDirPath()
             let zipFilePath: string
-            if (scanType === CodeWhispererConstants.SecurityScanType.File) {
+            if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE) {
                 zipFilePath = await this.zipFile(uri)
-            } else if (scanType === CodeWhispererConstants.SecurityScanType.Project) {
+            } else if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
                 zipFilePath = await this.zipProject(uri)
             } else {
-                throw new ToolkitError(`Unknown scan type: ${scanType}`)
+                throw new ToolkitError(`Unknown code analysis scope: ${scope}`)
             }
 
             getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
