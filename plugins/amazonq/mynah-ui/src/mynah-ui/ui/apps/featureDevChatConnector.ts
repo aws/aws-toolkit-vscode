@@ -8,6 +8,8 @@ import { ExtensionMessage } from '../commands'
 import { TabType, TabsStorage } from '../storages/tabsStorage'
 import { CodeReference } from './amazonqCommonsConnector'
 import { FollowUpGenerator } from '../followUps/generator'
+import { getActions } from '../diffTree/actions'
+import { DiffTreeFileInfo } from '../diffTree/types'
 
 interface ChatPayload {
     chatMessage: string
@@ -26,6 +28,7 @@ export interface ConnectorProps {
     onUpdateAuthentication: (featureDevEnabled: boolean, codeTransformEnabled: boolean, authenticatingTabIDs: string[]) => void
     onNewTab: (tabType: TabType) => void
     tabsStorage: TabsStorage
+    onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => void
 }
 
 export class Connector {
@@ -39,6 +42,7 @@ export class Connector {
     private readonly onUpdateAuthentication
     private readonly followUpGenerator: FollowUpGenerator
     private readonly onNewTab
+    private readonly onFileComponentUpdate
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -51,6 +55,7 @@ export class Connector {
         this.onUpdateAuthentication = props.onUpdateAuthentication
         this.followUpGenerator = new FollowUpGenerator()
         this.onNewTab = props.onNewTab
+        this.onFileComponentUpdate = props.onFileComponentUpdate
     }
 
     onCodeInsertToCursorPosition = (
@@ -112,6 +117,17 @@ export class Connector {
             })
         })
 
+    onFileActionClick = (tabID: string, messageId: string, filePath: string, actionName: string): void => {
+        this.sendMessageToExtension({
+            command: 'file-click',
+            tabID,
+            messageId,
+            filePath,
+            actionName,
+            tabType: 'featuredev',
+        })
+    }
+
     private processChatMessage = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived !== undefined) {
             const answer: ChatItem = {
@@ -137,6 +153,10 @@ export class Connector {
 
     private processCodeResultMessage = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived !== undefined) {
+            const actions = getActions([
+                ...messageData.filePaths,
+                ...messageData.deletedFiles,
+            ])
             const answer: ChatItem = {
                 type: ChatItemType.CODE_RESULT,
                 relatedContent: undefined,
@@ -146,8 +166,9 @@ export class Connector {
                 // TODO get the backend to store a message id in addition to conversationID
                 messageId: messageData.messageID ?? messageData.triggerID ?? messageData.conversationID,
                 fileList: {
-                    filePaths: messageData.filePaths,
-                    deletedFiles: messageData.deletedFiles,
+                    filePaths: (messageData.filePaths as DiffTreeFileInfo[]).map(path => path.zipFilePath),
+                    deletedFiles: (messageData.deletedFiles as DiffTreeFileInfo[]).map(path => path.zipFilePath),
+                    actions,
                 },
                 body: '',
             }
@@ -178,6 +199,10 @@ export class Connector {
     }
 
     handleMessageReceive = async (messageData: any): Promise<void> => {
+        if (messageData.type === 'updateFileComponent') {
+            this.onFileComponentUpdate(messageData.tabID, messageData.filePaths, messageData.deletedFiles)
+            return
+        }
         if (messageData.type === 'errorMessage') {
             this.onError(messageData.tabID, messageData.message, messageData.title)
             return

@@ -92,10 +92,11 @@ private suspend fun CodeGenerationState.generateCode(codeGenerationId: String): 
                 )
 
                 val newFileInfo = registerNewFiles(newFileContents = codeGenerationStreamResult.new_file_contents)
+                val deletedFileInfo = registerDeletedFiles(deletedFiles = codeGenerationStreamResult.deleted_files)
 
                 return CodeGenerationResult(
                     newFiles = newFileInfo,
-                    deletedFiles = codeGenerationStreamResult.deleted_files,
+                    deletedFiles = deletedFileInfo,
                     references = codeGenerationStreamResult.references
                 )
             }
@@ -109,5 +110,16 @@ private suspend fun CodeGenerationState.generateCode(codeGenerationId: String): 
 }
 
 fun registerNewFiles(newFileContents: Map<String, String>): List<NewFileZipInfo> = newFileContents.map {
-    NewFileZipInfo(zipFilePath = it.key, fileContent = it.value)
+    NewFileZipInfo(
+        zipFilePath = it.key,
+        fileContent = it.value,
+        rejected = false
+    )
+}
+
+fun registerDeletedFiles(deletedFiles: List<String>): List<DeletedFileInfo> = deletedFiles.map {
+    DeletedFileInfo(
+        zipFilePath = it,
+        rejected = false
+    )
 }

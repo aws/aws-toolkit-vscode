@@ -15,6 +15,8 @@ import { FollowUpInteractionHandler } from './followUps/handler'
 import { QuickActionHandler } from './quickActions/handler'
 import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
+import {getActions, getDetails} from "./diffTree/actions";
+import {DiffTreeFileInfo} from "./diffTree/types";
 
 export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeTransformInitEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
@@ -97,6 +99,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                 }
             }
         },
+        onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
         onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
             return messageController.sendMessageToTab(message, 'cwc')
         },
@@ -262,6 +265,18 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
             mynahUI.updateStore(tabID, messageData)
         },
+        onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => {
+            const updateWith: Partial<ChatItem> = {
+                type: ChatItemType.CODE_RESULT,
+                fileList: {
+                    filePaths: filePaths.map(i => i.zipFilePath),
+                    deletedFiles: deletedFiles.map(i => i.zipFilePath),
+                    details: getDetails(filePaths),
+                    actions: getActions([...filePaths, ...deletedFiles]),
+                },
+            }
+            mynahUI.updateLastChatAnswer(tabID, updateWith)
+        },
         onWarning: (tabID: string, message: string, title: string) => {
             mynahUI.notify({
                 title: title,
@@ -407,6 +422,9 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
         onResetStore: () => {},
         onFollowUpClicked: (tabID, messageId, followUp) => {
             followUpsInteractionHandler.onFollowUpClicked(tabID, messageId, followUp)
+        },
+        onFileActionClick: async (tabID: string, messageId: string, filePath: string, actionName: string) => {
+            connector.onFileActionClick(tabID, messageId, filePath, actionName)
         },
         onOpenDiff: connector.onOpenDiff,
         tabs: {
