@@ -35,6 +35,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
+import { globals } from '../../shared'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -404,6 +405,13 @@ const registerToolkitApiCallbackOnce = once(async () => {
                 await refreshToolkitQState.execute(false)
             }
         )
+    }
+    // use the same client id as aws toolkit if it is available
+    if (_toolkitApi && 'getTelemetryClientId' in _toolkitApi) {
+        const clientId = await _toolkitApi.getTelemetryClientId()
+        if (clientId) {
+            await globals.context.globalState.update('telemetryClientId', clientId)
+        }
     }
 })
 export const registerToolkitApiCallback = Commands.declare(

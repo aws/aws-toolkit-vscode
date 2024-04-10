@@ -4,7 +4,7 @@
  */
 
 import { Auth, Connection, AwsConnection } from 'aws-core-vscode/auth'
-import { getLogger } from 'aws-core-vscode/shared'
+import { getLogger, globals } from 'aws-core-vscode/shared'
 
 export const awsToolkitApi = {
     /**
@@ -85,6 +85,11 @@ export const awsToolkitApi = {
                 Auth.instance.onDidDeleteConnection(async id => {
                     await onConnectionDeletion(id)
                 })
+            },
+            /* Exposing the telemetry client id of AWS Toolkit
+             */
+            getTelemetryClientId(): string | undefined {
+                return globals.context.globalState.get<string>('telemetryClientId')
             },
         }
     },
