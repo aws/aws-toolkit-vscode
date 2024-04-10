@@ -51,7 +51,7 @@
                 "--disable-extension=amazonwebservices.aws-toolkit-vscode",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionDevelopmentKind=web",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testWeb/testRunner",
+                "--extensionTestsPath=${workspaceFolder}/dist/src/testWeb/webTestRunnerCore",
                 "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
