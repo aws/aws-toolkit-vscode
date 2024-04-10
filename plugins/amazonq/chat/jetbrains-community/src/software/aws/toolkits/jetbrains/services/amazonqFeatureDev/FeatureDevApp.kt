@@ -39,7 +39,8 @@ class FeatureDevApp : AmazonQApp {
             "chat-item-voted" to IncomingFeatureDevMessage.ChatItemVotedMessage::class,
             "response-body-link-click" to IncomingFeatureDevMessage.ClickedLink::class,
             "insert_code_at_cursor_position" to IncomingFeatureDevMessage.InsertCodeAtCursorPosition::class,
-            "open-diff" to IncomingFeatureDevMessage.OpenDiff::class
+            "open-diff" to IncomingFeatureDevMessage.OpenDiff::class,
+            "file-click" to IncomingFeatureDevMessage.FileClicked::class
         )
 
         scope.launch {
@@ -78,6 +79,7 @@ class FeatureDevApp : AmazonQApp {
             is IncomingFeatureDevMessage.ClickedLink -> inboundAppMessagesHandler.processLinkClick(message)
             is IncomingFeatureDevMessage.InsertCodeAtCursorPosition -> inboundAppMessagesHandler.processInsertCodeAtCursorPosition(message)
             is IncomingFeatureDevMessage.OpenDiff -> inboundAppMessagesHandler.processOpenDiff(message)
+            is IncomingFeatureDevMessage.FileClicked -> inboundAppMessagesHandler.processFileClicked(message)
         }
     }
 

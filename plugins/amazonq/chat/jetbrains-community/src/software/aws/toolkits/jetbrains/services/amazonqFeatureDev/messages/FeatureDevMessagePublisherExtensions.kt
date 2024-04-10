@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages
 
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthNeededState
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.DeletedFileInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.NewFileZipInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.licenseText
@@ -54,6 +55,15 @@ suspend fun MessagePublisher.sendSystemPrompt(
         messageType = FeatureDevMessageType.SystemPrompt,
         followUp = followUp
     )
+}
+
+suspend fun MessagePublisher.updateFileComponent(tabId: String, filePaths: List<NewFileZipInfo>, deletedFiles: List<DeletedFileInfo>) {
+    val fileComponentMessage = FileComponent(
+        tabId = tabId,
+        filePaths = filePaths,
+        deletedFiles = deletedFiles,
+    )
+    this.publish(fileComponentMessage)
 }
 
 suspend fun MessagePublisher.sendAsyncEventProgress(tabId: String, inProgress: Boolean, message: String? = null) {
@@ -171,7 +181,7 @@ suspend fun MessagePublisher.sendCodeResult(
     tabId: String,
     uploadId: String,
     filePaths: List<NewFileZipInfo>,
-    deletedFiles: List<String>,
+    deletedFiles: List<DeletedFileInfo>,
     references: List<CodeReference>
 ) {
     // It is being done this mapping as featureDev currently doesn't support fully references.
@@ -183,7 +193,7 @@ suspend fun MessagePublisher.sendCodeResult(
         CodeResultMessage(
             tabId = tabId,
             conversationId = uploadId,
-            filePaths = filePaths.map { it.zipFilePath },
+            filePaths = filePaths,
             deletedFiles = deletedFiles,
             references = refs
         )

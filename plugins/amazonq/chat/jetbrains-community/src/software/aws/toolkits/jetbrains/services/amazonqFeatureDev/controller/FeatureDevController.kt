@@ -53,6 +53,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendC
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendSystemPrompt
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendUpdatePlaceholder
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.DeletedFileInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.NewFileZipInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.PrepareCodeGenerationState
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Session
@@ -207,6 +208,31 @@ class FeatureDevController(
         }
     }
 
+    override suspend fun processFileClicked(message: IncomingFeatureDevMessage.FileClicked) {
+        val fileToUpdate = message.filePath
+        val session = getSessionInfo(message.tabId)
+
+        var filePaths: List<NewFileZipInfo> = emptyList()
+        var deletedFiles: List<DeletedFileInfo> = emptyList()
+        when (val state = session.sessionState) {
+            is PrepareCodeGenerationState -> {
+                filePaths = state.filePaths
+                deletedFiles = state.deletedFiles
+            }
+        }
+
+        // Mark the file as rejected or not depending on the previous state
+        filePaths.find { it.zipFilePath == fileToUpdate }?.let { it.rejected = !it.rejected }
+        deletedFiles.find { it.zipFilePath == fileToUpdate }?.let { it.rejected = !it.rejected }
+
+        session.updateFilesPaths(
+            messenger = messenger,
+            tabId = message.tabId,
+            filePaths = filePaths,
+            deletedFiles = deletedFiles
+        )
+    }
+
     private suspend fun newTabOpened(tabId: String) {
         var session: Session? = null
         try {
@@ -256,7 +282,7 @@ class FeatureDevController(
             session = getSessionInfo(tabId)
 
             var filePaths: List<NewFileZipInfo> = emptyList()
-            var deletedFiles: List<String> = emptyList()
+            var deletedFiles: List<DeletedFileInfo> = emptyList()
             var references: List<CodeReference> = emptyList()
 
             when (val state = session.sessionState) {
@@ -268,7 +294,7 @@ class FeatureDevController(
             }
             AmazonqTelemetry.isAcceptedCodeChanges(
                 project = null,
-                amazonqNumberOfFilesAccepted = (filePaths.size + deletedFiles.size) * 1.0,
+                amazonqNumberOfFilesAccepted = (filePaths.filterNot { it.rejected }.size + deletedFiles.filterNot { it.rejected }.size) * 1.0,
                 amazonqConversationId = session.conversationId,
                 enabled = true
             )
@@ -497,7 +523,7 @@ class FeatureDevController(
             val state = session.sessionState
 
             var filePaths: List<NewFileZipInfo> = emptyList()
-            var deletedFiles: List<String> = emptyList()
+            var deletedFiles: List<DeletedFileInfo> = emptyList()
             var references: List<CodeReference> = emptyList()
             var uploadId = ""
 

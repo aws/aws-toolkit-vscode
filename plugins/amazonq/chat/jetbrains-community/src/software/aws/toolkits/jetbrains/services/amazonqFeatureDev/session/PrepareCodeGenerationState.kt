@@ -18,7 +18,7 @@ class PrepareCodeGenerationState(
     override var approach: String,
     private var config: SessionStateConfig,
     val filePaths: List<NewFileZipInfo>,
-    val deletedFiles: List<String>,
+    val deletedFiles: List<DeletedFileInfo>,
     val references: List<CodeReference>,
     var uploadId: String,
     private val currentIteration: Int,
