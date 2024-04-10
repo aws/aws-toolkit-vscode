@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q Code Transform: Handle whitespaces in manually entered JAVA_HOME"
+}
