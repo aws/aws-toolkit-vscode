@@ -39,11 +39,17 @@ data class SessionStateConfig(
 data class NewFileZipInfo(
     val zipFilePath: String,
     val fileContent: String,
+    var rejected: Boolean
+)
+
+data class DeletedFileInfo(
+    val zipFilePath: String, // The string is the path of the file to be deleted
+    var rejected: Boolean
 )
 
 data class CodeGenerationResult(
     var newFiles: List<NewFileZipInfo>,
-    var deletedFiles: List<String>, // The string is the path of the file to be deleted
+    var deletedFiles: List<DeletedFileInfo>,
     var references: List<CodeReference>,
 )
 
