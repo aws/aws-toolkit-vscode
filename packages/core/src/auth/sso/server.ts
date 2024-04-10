@@ -170,16 +170,15 @@ export class AuthSSOServer {
         }
 
         this.deferred?.resolve(code)
+        res.setHeader('Content-Type', 'text/html')
         res.writeHead(200)
         res.end(`
             <html>
-                <head>
+                <body>
+                    <p>Authenticated successfully. You may now close this window.</p>
                     <script>
                         window.location.replace('${this.vscodeUriPath}')
                     </script>
-                </head>
-                <body>
-                    Authenticated successfully. You may now close this window.
                 </body>
             </html>`)
     }
