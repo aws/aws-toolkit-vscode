@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { SsoConnection, scopesCodeWhispererChat, AwsConnection } from '../../../../auth/connection'
+import { scopesCodeWhispererChat, AwsConnection } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
@@ -22,18 +22,35 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         super(AmazonQLoginWebview.sourcePath)
     }
 
-    async fetchConnections(): Promise<SsoConnection[] | undefined> {
+    async fetchConnections(): Promise<AwsConnection[] | undefined> {
         if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
             return undefined
         }
         await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
         const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
         const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
-        const connections: SsoConnection[] = []
+        const connections: AwsConnection[] = []
         if (importedApi && 'listConnections' in importedApi) {
             return await importedApi?.listConnections()
         }
         return connections
+    }
+    /**
+     * Gets a connection that is usable by Amazon Q.
+     *
+     * @param connections List of AWS Toolkit Connections
+     * @returns Amazon Q connection, or undefined if none of the given connections have scopes required for Amazon Q.
+     */
+    findConnection(connections: AwsConnection[]): AwsConnection | undefined {
+        const hasQScopes = (c: AwsConnection) => amazonQScopes.every(s => c.scopes?.includes(s))
+        const score = (c: AwsConnection) => Number(hasQScopes(c)) * 10 + Number(c.state === 'valid')
+        connections.sort(function (a, b) {
+            return score(b) - score(a)
+        })
+        if (hasQScopes(connections[0])) {
+            return connections[0]
+        }
+        return undefined
     }
 
     async useConnection(connectionId: string): Promise<AuthError | undefined> {

@@ -411,6 +411,16 @@ export default defineComponent({
                     this.existingConnectionStartUrls.push(connection.startUrl)
                 }
             })
+
+            // If Amazon Q has no connections while Toolkit has connections
+            // Auto connect Q using toolkit connection.
+            if (connections.length === 0 && toolkitConnections && toolkitConnections.length > 0) {
+                const conn = await client.findConnection(toolkitConnections)
+                if (conn) {
+                    await client.useConnection(conn.id)
+                }
+            }
+
             this.$forceUpdate()
         },
     },

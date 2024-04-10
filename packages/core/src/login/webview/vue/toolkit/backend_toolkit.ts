@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
 import { AuthError, CommonAuthWebview } from '../backend'
-import { SsoConnection, createSsoProfile } from '../../../../auth/connection'
+import { AwsConnection, createSsoProfile } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 
@@ -76,12 +76,16 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         await vscode.window.showInformationMessage(`${e.text}`)
     }
 
-    async fetchConnections(): Promise<SsoConnection[] | undefined> {
+    async fetchConnections(): Promise<AwsConnection[] | undefined> {
         //This does not need to be implement in aws toolkit vue backend
         return undefined
     }
 
     async useConnection(connectionId: string): Promise<AuthError | undefined> {
+        return undefined
+    }
+
+    findConnection(connections: AwsConnection[]): AwsConnection | undefined {
         return undefined
     }
 
