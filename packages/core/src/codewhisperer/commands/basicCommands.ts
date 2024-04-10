@@ -18,7 +18,7 @@ import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil, refreshToolkitQState } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
-import { isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
+import { isExtensionActive, isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
     getPersistedCustomizations,
     notifyNewCustomizations,
@@ -423,11 +423,12 @@ export const registerToolkitApiCallback = Commands.declare(
         // we need to do it manually here because the Toolkit would have been unable to call
         // this API if the Q/CW extension started afterwards (and this code block is running).
         if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
-            getLogger().info(`Trying to register toolkit callback. Toolkit is installed.`)
+            getLogger().info(`Trying to register toolkit callback. Toolkit is installed, 
+                        toolkit activated = ${isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)}`)
             if (toolkitApi) {
                 // when this command is executed by AWS Toolkit activation
                 _toolkitApi = toolkitApi.getApi(VSCODE_EXTENSION_ID.amazonq)
-            } else {
+            } else if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
                 // when this command is executed by Amazon Q activation
                 const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
                 _toolkitApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
@@ -440,16 +441,19 @@ export const registerToolkitApiCallback = Commands.declare(
 )
 // when starting Amazon Q, try to use the existing telemetry client id in AWS toolkit
 export const setupAmazonQTelemetryClientId = once(async () => {
-    if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
+    let clientId: string | undefined = undefined
+    if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit) && isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
         const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
         const _toolkitApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
-        let clientId: string | undefined = undefined
         if (_toolkitApi && 'getTelemetryClientId' in _toolkitApi) {
             clientId = await _toolkitApi.getTelemetryClientId()
         }
         if (!clientId) {
             clientId = randomUUID()
+            getLogger().debug(`Set client id from new: ${clientId}`)
+        } else {
+            getLogger().debug(`Set client id from toolkit: ${clientId}`)
         }
-        await globals.context.globalState.update('telemetryClientId', clientId)
     }
+    await globals.context.globalState.update('telemetryClientId', clientId)
 })
