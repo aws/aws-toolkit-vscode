@@ -192,12 +192,12 @@ export async function activate(context: vscode.ExtensionContext) {
                                     if (resp === 'Learn More') {
                                         // Clicking learn more will open the q extension page
                                         await qExtensionPageCommand.execute()
+                                        return
                                     } else if (resp === 'Install') {
                                         await installAmazonQExtension.execute()
-                                    } else if (resp === undefined) {
-                                        // when user click x button to dismiss it
-                                        await globals.context.globalState.update(amazonQInstallDismissedKey, true)
                                     }
+                                    // If user dismisses, then we jump to here.
+                                    await globals.context.globalState.update(amazonQInstallDismissedKey, true)
                                 })
                         }
                     }
