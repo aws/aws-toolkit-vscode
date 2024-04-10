@@ -139,70 +139,62 @@ export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => asy
 // It can optionally set a customization too based on given values to match on
 
 // This command is only declared and registered in Amazon Q if Q exists
-export const connectWithCustomization = () => {
-    let cmd = undefined
-    try {
-        cmd = Commands.declare(
-            { id: 'aws.codeWhisperer.connect', compositeKey: { 0: 'source' } },
-            /**
-             * This command supports the following arguments:
-             * @param source - an identifier for who used this command. This value is not explicitly used in the function, but is used elsewhere.
-             * startUrl and region. If both arguments are provided they will be used, otherwise
-             *  the command prompts for them interactively.
-             * customizationArn: select customization by ARN. If provided, `customizationNamePrefix` is ignored.
-             * customizationNamePrefix: select customization by prefix, if `customizationArn` is `undefined`.
-             */
-            () =>
-                async (
-                    source: string,
-                    startUrl?: string,
-                    region?: string,
-                    customizationArn?: string,
-                    customizationNamePrefix?: string
-                ) => {
-                    if (startUrl && region) {
-                        await connectToEnterpriseSso(startUrl, region)
-                    } else {
-                        await getStartUrl()
-                    }
+export const connectWithCustomization = Commands.declare(
+    { id: 'aws.codeWhisperer.connect', compositeKey: { 0: 'source' } },
+    /**
+     * This command supports the following arguments:
+     * @param source - an identifier for who used this command. This value is not explicitly used in the function, but is used elsewhere.
+     * startUrl and region. If both arguments are provided they will be used, otherwise
+     *  the command prompts for them interactively.
+     * customizationArn: select customization by ARN. If provided, `customizationNamePrefix` is ignored.
+     * customizationNamePrefix: select customization by prefix, if `customizationArn` is `undefined`.
+     */
+    () =>
+        async (
+            source: string,
+            startUrl?: string,
+            region?: string,
+            customizationArn?: string,
+            customizationNamePrefix?: string
+        ) => {
+            if (startUrl && region) {
+                await connectToEnterpriseSso(startUrl, region)
+            } else {
+                await getStartUrl()
+            }
 
-                    // No customization match information given, exit early.
-                    if (!customizationArn && !customizationNamePrefix) {
-                        return
-                    }
+            // No customization match information given, exit early.
+            if (!customizationArn && !customizationNamePrefix) {
+                return
+            }
 
-                    let persistedCustomizations = getPersistedCustomizations()
+            let persistedCustomizations = getPersistedCustomizations()
 
-                    // Check if any customizations have already been persisted.
-                    // If not, call `notifyNewCustomizations` to handle it then recheck.
-                    if (persistedCustomizations.length === 0) {
-                        await notifyNewCustomizations()
-                        persistedCustomizations = getPersistedCustomizations()
-                    }
+            // Check if any customizations have already been persisted.
+            // If not, call `notifyNewCustomizations` to handle it then recheck.
+            if (persistedCustomizations.length === 0) {
+                await notifyNewCustomizations()
+                persistedCustomizations = getPersistedCustomizations()
+            }
 
-                    // If given an ARN, assume a specific customization is desired and find an entry that matches it. Ignores the prefix logic.
-                    // Otherwise if only a prefix is given, find an entry that matches it.
-                    // Backwards compatible with previous implementation.
-                    const match = customizationArn
-                        ? persistedCustomizations.find(c => c.arn === customizationArn)
-                        : persistedCustomizations.find(c => c.name?.startsWith(customizationNamePrefix as string))
+            // If given an ARN, assume a specific customization is desired and find an entry that matches it. Ignores the prefix logic.
+            // Otherwise if only a prefix is given, find an entry that matches it.
+            // Backwards compatible with previous implementation.
+            const match = customizationArn
+                ? persistedCustomizations.find(c => c.arn === customizationArn)
+                : persistedCustomizations.find(c => c.name?.startsWith(customizationNamePrefix as string))
 
-                    // If no match is found, nothing to do :)
-                    if (!match) {
-                        getLogger().error(
-                            `No customization match found: arn=${customizationArn} prefix=${customizationNamePrefix}`
-                        )
-                        return
-                    }
-                    // Since we selected based on a match, we'll reuse the persisted values.
-                    await selectCustomization(match)
-                }
-        )
-    } catch (e) {
-        getLogger().error(`Failed to declare command aws.codeWhisperer.connect ${e}`)
-    }
-    return cmd
-}
+            // If no match is found, nothing to do :)
+            if (!match) {
+                getLogger().error(
+                    `No customization match found: arn=${customizationArn} prefix=${customizationNamePrefix}`
+                )
+                return
+            }
+            // Since we selected based on a match, we'll reuse the persisted values.
+            await selectCustomization(match)
+        }
+)
 
 export const showLearnMore = Commands.declare(
     { id: 'aws.codeWhisperer.learnMore', compositeKey: { 0: 'source' } },
@@ -272,26 +264,19 @@ export const fetchFeatureConfigsCmd = Commands.declare(
 )
 
 /**
- * TODO: Actually install Amazon Q.
- *
- * For now, it just has a fake progress bar to simulate that it is installing.
+ * Actually install Amazon Q.
+ * Sometimes reload VS Code window after installation is necessary
+ * to properly activate extension. In that case, VS Code will prompt user to reload.
  */
 export const installAmazonQExtension = Commands.declare(
     { id: 'aws.toolkit.installAmazonQExtension', logging: true },
     () => async () => {
-        await vscode.window.withProgress(
-            {
-                title: 'Installing Amazon Q...',
-                cancellable: true,
-                location: vscode.ProgressLocation.Notification,
-            },
-            async () => {
-                await vscode.commands.executeCommand(
-                    'workbench.extensions.installExtension',
-                    VSCODE_EXTENSION_ID.amazonq
-                )
-            }
-        )
+        await vscode.commands.executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.amazonq)
+        // jump to Amazon Q extension view after install.
+        // this command won't work without a small delay after install
+        setTimeout(() => {
+            void vscode.commands.executeCommand('workbench.view.extension.amazonq')
+        }, 1000)
     }
 )
 

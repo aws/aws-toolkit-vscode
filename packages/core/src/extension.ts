@@ -57,8 +57,9 @@ import {
     switchToAmazonQCommand,
 } from './amazonq/explorer/amazonQChildrenNodes'
 import { AuthUtil, isPreviousQUser } from './codewhisperer/util/authUtil'
-import { connectWithCustomization, installAmazonQExtension } from './codewhisperer/commands/basicCommands'
-import { isExtensionActive, isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
+import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
+import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
+import { amazonQInstallDismissedKey } from './codewhisperer/models/constants'
 
 let localize: nls.LocalizeFunc
 
@@ -178,21 +179,27 @@ export async function activate(context: vscode.ExtensionContext) {
                             'OK'
                         )
                     } else {
-                        void vscode.window
-                            .showInformationMessage(
-                                'Amazon Q has moved to its own VSCode extension.' +
-                                    '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
-                                'Install',
-                                'Learn More'
-                            )
-                            .then(async resp => {
-                                if (resp === 'Learn More') {
-                                    // Clicking learn more will open the q extension page
-                                    await qExtensionPageCommand.execute()
-                                } else if (resp === 'Install') {
-                                    await installAmazonQExtension.execute()
-                                }
-                            })
+                        const dismissedInstall = globals.context.globalState.get<boolean>(amazonQInstallDismissedKey)
+                        if (!dismissedInstall) {
+                            void vscode.window
+                                .showInformationMessage(
+                                    'Amazon Q has moved to its own VSCode extension.' +
+                                        '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
+                                    'Install',
+                                    'Learn More'
+                                )
+                                .then(async resp => {
+                                    if (resp === 'Learn More') {
+                                        // Clicking learn more will open the q extension page
+                                        await qExtensionPageCommand.execute()
+                                        return
+                                    } else if (resp === 'Install') {
+                                        await installAmazonQExtension.execute()
+                                    }
+                                    // If user dismisses, then we jump to here.
+                                    await globals.context.globalState.update(amazonQInstallDismissedKey, true)
+                                })
+                        }
                     }
                 }
             }
@@ -224,10 +231,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         if (!isReleaseVersion()) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
-        }
-        // Register the aws.CodeWhisperer.connect command if Amazon Q is not active
-        if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) || !isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
-            context.subscriptions.push(connectWithCustomization()?.register() ?? { dispose() {} })
         }
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')

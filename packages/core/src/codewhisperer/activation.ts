@@ -233,7 +233,8 @@ export async function activate(context: ExtContext): Promise<void> {
          */
         acceptSuggestion.register(context),
 
-        connectWithCustomization()?.register() ?? { dispose() {} },
+        // direct CodeWhisperer connection setup with customization
+        connectWithCustomization.register(),
 
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
