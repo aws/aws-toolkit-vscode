@@ -581,7 +581,7 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
 }
 
 const prompts = settingsProps['aws.suppressPrompts'].properties
-export type PromptName = keyof typeof prompts
+type PromptName = keyof typeof prompts
 
 /**
  * Controls flags for prompts that allow the user to hide them. Usually this is presented as
