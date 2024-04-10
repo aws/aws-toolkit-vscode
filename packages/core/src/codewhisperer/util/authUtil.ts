@@ -9,7 +9,6 @@ import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../auth/secondaryAuth'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
-import { PromptSettings } from '../../shared/settings'
 import {
     scopesCodeWhispererCore,
     createBuilderIdProfile,
@@ -33,6 +32,7 @@ import { GlobalState } from '../../shared/globalState'
 import { vsCodeState } from '../models/model'
 import { onceChanged } from '../../shared/utilities/functionUtils'
 import { indent } from '../../shared/utilities/textUtilities'
+import { showReauthenticateMessage } from '../../shared/utilities/messages'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -362,25 +362,20 @@ export class AuthUtil {
     }
 
     public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
-        const settings = PromptSettings.instance
-        const shouldShow = await settings.isPromptEnabled('codeWhispererConnectionExpired')
-        if (!shouldShow || (isAutoTrigger && this.reauthenticatePromptShown)) {
+        if (isAutoTrigger && this.reauthenticatePromptShown) {
             return
         }
 
-        await vscode.window
-            .showInformationMessage(
-                CodeWhispererConstants.connectionExpired,
-                CodeWhispererConstants.connectWithAWSBuilderId,
-                CodeWhispererConstants.DoNotShowAgain
-            )
-            .then(async resp => {
-                if (resp === CodeWhispererConstants.connectWithAWSBuilderId) {
-                    await this.reauthenticate()
-                } else if (resp === CodeWhispererConstants.DoNotShowAgain) {
-                    await settings.disablePrompt('codeWhispererConnectionExpired')
-                }
-            })
+        await showReauthenticateMessage({
+            message: CodeWhispererConstants.connectionExpired,
+            connect: CodeWhispererConstants.connectWithAWSBuilderId,
+            doNotShow: CodeWhispererConstants.DoNotShowAgain,
+            suppressId: 'codeWhispererConnectionExpired',
+            reauthFunc: async () => {
+                await this.reauthenticate()
+            },
+        })
+
         if (isAutoTrigger) {
             this.reauthenticatePromptShown = true
         }
@@ -457,7 +452,7 @@ export const AuthStates = {
     /**
      * The current connection exists, but needs to be reauthenticated for this feature to work
      *
-     * Look to use {@link AuthUtil.reauthenticate}
+     * Look to use {@link AuthUtil.reauthenticate()}
      */
     expired: 'expired',
     /**

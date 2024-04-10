@@ -44,7 +44,18 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
         iconPath: getIcon('vscode-question'),
     })
 
-    if (!auth.activeConnection || !auth.isConnectionValid()) {
+    // There is a connection, but it is expired, or CodeCatalyst scopes are expired.
+    if (auth.activeConnection && !auth.isConnectionValid()) {
+        return [
+            reauth.build(auth.activeConnection, auth).asTreeNode({
+                label: 'Re-authenticate to connect',
+                iconPath: addColor(getIcon('vscode-debug-disconnect'), 'notificationsErrorIcon.foreground'),
+            }),
+            learnMoreNode,
+        ]
+    }
+
+    if (!auth.activeConnection) {
         return [
             showManageConnections.build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst').asTreeNode({
                 label: 'Sign in to get started',
@@ -129,10 +140,9 @@ export class CodeCatalystRootNode implements TreeNode {
 
     public constructor(private readonly authProvider: CodeCatalystAuthenticationProvider) {
         this.addRefreshEmitter(() => this.onDidChangeEmitter.fire())
-        this.authProvider.onDidChangeActiveConnection(() => {
-            for (const fire of this.refreshEmitters) {
-                fire()
-            }
+
+        this.authProvider.onDidChange(() => {
+            this.refreshEmitters.forEach(fire => fire())
         })
     }
 

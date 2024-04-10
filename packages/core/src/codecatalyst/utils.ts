@@ -7,7 +7,6 @@ import { Ides } from 'aws-sdk/clients/codecatalyst'
 import * as vscode from 'vscode'
 import { CodeCatalystResource, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { pushIf } from '../shared/utilities/collectionUtils'
-import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getLogger } from '../shared/logger'
 
 /**
@@ -58,11 +57,4 @@ export function openCodeCatalystUrl(o: CodeCatalystResource) {
 /** Returns true if the dev env has a "vscode" IDE runtime. */
 export function isDevenvVscode(ides: Ides | undefined): boolean {
     return ides !== undefined && ides.findIndex(ide => ide.name === 'VSCode') !== -1
-}
-
-/**
- * Returns true if we are in a dev env
- */
-export function isInDevEnv(): boolean {
-    return !!getCodeCatalystDevEnvId()
 }
