@@ -342,11 +342,18 @@ export class GumbyController {
     }
 }
 
+/**
+ * Examples:
+ * ```
+ * extractPath("./some/path/here") => "C:/some/root/some/path/here"
+ * extractPath("C:/some/nonexistent/path/here") => undefined
+ * extractPath("C:/some/filepath/.txt") => undefined
+ * ```
+ *
+ * @param text
+ * @returns the absolute path if path points to existing folder, otherwise undefined
+ */
 function extractPath(text: string): string | undefined {
-    const words = text.split(/\s+/) // Split text into words by whitespace
-
-    // Filter words that are formatted like paths and do exist as local directories
-    const paths = words.find(word => fs.existsSync(word) && fs.lstatSync(word).isDirectory())
-
-    return paths
+    const resolvedPath = path.resolve(text)
+    return fs.existsSync(resolvedPath) && fs.lstatSync(resolvedPath).isDirectory() ? resolvedPath : undefined
 }
