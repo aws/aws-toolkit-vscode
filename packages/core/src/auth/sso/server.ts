@@ -46,7 +46,7 @@ export class AuthError extends ToolkitError {
 export class AuthSSOServer {
     public baseUrl = `http://127.0.0.1`
     private oauthCallback = '/'
-    private authenticationTimeoutInMs = 300000
+    private authenticationTimeoutInMs = 600000
 
     private readonly authenticationPromise: Promise<string>
     private deferred: { resolve: (result: string) => void; reject: (reason: any) => void } | undefined
@@ -198,7 +198,11 @@ export class AuthSSOServer {
             this.authenticationPromise,
             new Promise<string>((_, reject) => {
                 globals.clock.setTimeout(() => {
-                    reject(new ToolkitError('AuthSSOServer: Timeout waiting for authorization'))
+                    reject(
+                        new ToolkitError('Timed-out waiting for browser login flow to complete', {
+                            code: 'TimedOut',
+                        })
+                    )
                 }, this.authenticationTimeoutInMs)
             }),
         ])
