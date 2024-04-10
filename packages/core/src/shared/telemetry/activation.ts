@@ -13,7 +13,7 @@ import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
-import { openSettings, Settings } from '../settings'
+import { openSettings, Settings, TelemetryIdSettings } from '../settings'
 import { TelemetryConfig } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
 import { randomUUID } from 'crypto'
@@ -32,6 +32,7 @@ export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionA
 // Version 2 states that there is metrics gathering, which can be adjusted in the options
 const CURRENT_TELEMETRY_NOTICE_VERSION = 2 // eslint-disable-line @typescript-eslint/naming-convention
 
+const telemetryClientIdKey = 'aws.telemetry.clientId'
 /**
  * Sets up the Metrics system and initializes globals.telemetry
  */
@@ -134,23 +135,23 @@ export async function handleTelemetryNoticeResponse(
 async function setupTelemetryClientId(extensionId: string) {
     try {
         let clientId = globals.context.globalState.get<string>('telemetryClientId')
-        const sharedClientId = Settings.instance.get<string>('aws.telemetryClientId', String, '')
+        const sharedClientId = TelemetryIdSettings.instance.get<string>(telemetryClientIdKey, '')
         if (clientId && sharedClientId) {
             if (clientId !== sharedClientId) {
                 if (extensionId === VSCODE_EXTENSION_ID.awstoolkit) {
-                    await Settings.instance.update('aws.telemetryClientId', clientId)
+                    await TelemetryIdSettings.instance.update(telemetryClientIdKey, clientId)
                 } else if (extensionId === VSCODE_EXTENSION_ID.amazonq) {
                     await globals.context.globalState.update('telemetryClientId', sharedClientId)
                 }
             }
         } else if (clientId && !sharedClientId) {
-            await Settings.instance.update('aws.telemetryClientId', sharedClientId)
+            await TelemetryIdSettings.instance.update(telemetryClientIdKey, sharedClientId)
         } else if (!clientId && sharedClientId) {
             await globals.context.globalState.update('telemetryClientId', sharedClientId)
         } else {
             clientId = randomUUID()
             await globals.context.globalState.update('telemetryClientId', clientId)
-            await Settings.instance.update('aws.telemetryClientId', clientId)
+            await TelemetryIdSettings.instance.update(telemetryClientIdKey, clientId)
         }
     } catch (error) {
         getLogger().error('Could not setup a client id. Reason: %O ', error)

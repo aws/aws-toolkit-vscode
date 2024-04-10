@@ -671,6 +671,20 @@ const experiments = settingsProps['aws.experiments'].properties
 type ExperimentName = keyof typeof experiments
 
 /**
+ * A virtual settings to share telemetry client id between
+ * Amazon Q and AWS Toolkit
+ */
+export class TelemetryIdSettings extends Settings.define(
+    'aws.telemetry.clientId',
+    toRecord(typeof '', () => String)
+) {
+    static #instance: TelemetryIdSettings
+
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+}
+/**
  * "Experiments" are for features that users must opt-in to use. Experimental implementations
  * should use this class to gate relevant functionality. Certain features, like adding a new
  * node to the tree view, may require notifications based on changes. Use the `onDidChange` event
