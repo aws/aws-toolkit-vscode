@@ -27,7 +27,7 @@
         "onCommand:aws.codeWhisperer.accept"
     ],
     "main": "./dist/src/extension.js",
-    "browser": "./dist/src/extensionWebTest",
+    "browser": "./dist/src/extensionWebCore.js",
     "exports": {
         ".": "./dist/src/extension.js",
         "./web": "./dist/src/extensionWeb.js",
@@ -4223,7 +4223,7 @@
         "webpackDevelopment": "webpack --mode development",
         "serveVue": "webpack serve --config-name vue --mode development",
         "watch": "npm run testCompile -- -- --watch",
-        "testsWebWatch": "npm run clean && npm run buildScripts && npm run webpackDevelopment -- --watch --env IS_WEB_CORE_TESTS=true",
+        "testsWebWatch": "npm run clean && npm run buildScripts && npm run webpackDevelopment -- --watch",
         "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
         "webDevelopmentCompile": "npm run compile -- --mode development",
