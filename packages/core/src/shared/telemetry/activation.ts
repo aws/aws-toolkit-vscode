@@ -52,6 +52,7 @@ export async function activate(extensionContext: vscode.ExtensionContext, awsCon
         if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
             showTelemetryNotice(extensionContext)
         }
+
         await globals.telemetry.start()
     } catch (e) {
         // Only throw in a production build because:
