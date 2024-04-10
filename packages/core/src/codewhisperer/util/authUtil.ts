@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as CodeWhispererConstants from '../models/constants'
+import * as localizedText from '../../shared/localizedText'
 import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../auth/secondaryAuth'
@@ -367,9 +367,8 @@ export class AuthUtil {
         }
 
         await showReauthenticateMessage({
-            message: CodeWhispererConstants.connectionExpired,
-            connect: CodeWhispererConstants.connectWithAWSBuilderId,
-            doNotShow: CodeWhispererConstants.DoNotShowAgain,
+            message: localizedText.connectionExpired('Amazon Q/CodeWhisperer'),
+            connect: localizedText.connect,
             suppressId: 'codeWhispererConnectionExpired',
             reauthFunc: async () => {
                 await this.reauthenticate()
