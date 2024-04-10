@@ -37,7 +37,7 @@ describe('AuthSSOServer', function () {
         return url.toString()
     }
 
-    async function createRequest(params: Record<string, string>, expectedErrorMsg?: string) {
+    async function assertRequestError(params: Record<string, string>, expectedErrorMsg: string) {
         const url = createURL(server.redirectUri, params)
         try {
             const response = await request.fetch('GET', url).response
@@ -57,7 +57,7 @@ describe('AuthSSOServer', function () {
     })
 
     it('handles authentication error', async function () {
-        await createRequest(
+        await assertRequestError(
             {
                 error,
                 error_description: errorDescription,
@@ -67,7 +67,7 @@ describe('AuthSSOServer', function () {
     })
 
     it('handles missing code param', async function () {
-        await createRequest(
+        await assertRequestError(
             {
                 state,
             },
@@ -76,7 +76,7 @@ describe('AuthSSOServer', function () {
     })
 
     it('handles missing state param', async function () {
-        await createRequest(
+        await assertRequestError(
             {
                 code,
             },
@@ -85,7 +85,7 @@ describe('AuthSSOServer', function () {
     })
 
     it('handles invalid state param', async function () {
-        await createRequest(
+        await assertRequestError(
             {
                 code,
                 state: 'someInvalidState',
