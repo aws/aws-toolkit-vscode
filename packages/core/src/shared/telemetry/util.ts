@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as os from 'os'
 import { env, Memento, version } from 'vscode'
 import { getLogger } from '../logger'
 import { fromExtensionManifest } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { extensionVersion, isAutomation } from '../vscode/env'
-import { randomUUID } from 'crypto'
+import * as crypto from 'crypto'
 import { addTypeName } from '../utilities/typeConstructors'
 import globals from '../extensionGlobals'
 import { mapMetadata } from './telemetryLogger'
@@ -43,6 +44,20 @@ export function convertLegacy(value: unknown): boolean {
         throw new TypeError(`Unknown telemetry setting: ${value}`)
     }
 }
+/**
+ * Generate a unique identifier for the user in the form of a UUID.
+ * This identifier is unique to to the machine id and OS user name.
+ */
+function generateTelemetryClientId(): string {
+    const userId = `${env.machineId}-${os.userInfo({ encoding: 'utf-8' }).username}`
+    const shasum = crypto.createHash('sha256')
+    const mid = shasum.update(userId).digest('hex')
+    const uid = `${mid.substring(0, 8)}-${mid.substring(8, 12)}-${mid.substring(12, 16)}-${mid.substring(
+        16,
+        20
+    )}-${mid.substring(20, 32)}}`
+    return uid
+}
 
 export const getClientId = shared(
     async (globalState: Memento, isTelemetryEnabled = new TelemetryConfig().isEnabled(), isTest?: false) => {
@@ -55,7 +70,7 @@ export const getClientId = shared(
         try {
             let clientId = globalState.get<string>('telemetryClientId')
             if (!clientId) {
-                clientId = randomUUID()
+                clientId = generateTelemetryClientId()
                 await globalState.update('telemetryClientId', clientId)
             }
             return clientId
