@@ -133,6 +133,7 @@ describe('startSecurityScan', function () {
         appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
         appCodePath = join(appRoot, 'hello_world', 'app.py')
         editor = await openTestFile(appCodePath)
+        await model.CodeScansState.instance.setScansEnabled(false)
     })
     afterEach(function () {
         sinon.restore()
@@ -278,7 +279,6 @@ describe('startSecurityScan', function () {
                 message.selectItem(showScannedFilesMessage)
             }
         })
-        await model.CodeScansState.instance.setScansEnabled(false)
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
