@@ -5,6 +5,7 @@
 
 import globals from '../extensionGlobals'
 
+import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -162,8 +163,14 @@ export interface CodeCatalystClient extends ClassToInterfaceType<CodeCatalystCli
     readonly identity: { readonly id: string; readonly name: string }
 }
 
-export type CodeCatalystClientFactory = () => Promise<CodeCatalystClient>
+const onAccessDeniedExceptionEmitter = new vscode.EventEmitter<boolean>()
+export const onAccessDeniedException = onAccessDeniedExceptionEmitter.event
 
+interface AuthOptions {
+    showReauthPrompt?: boolean
+}
+
+export type CodeCatalystClientFactory = () => Promise<CodeCatalystClient>
 /**
  * Factory to create a new `CodeCatalystClient`. Call `onCredentialsChanged()` before making requests.
  */
@@ -171,11 +178,22 @@ export async function createClient(
     connection: SsoConnection,
     regionCode = getCodeCatalystConfig().region,
     endpoint = getCodeCatalystConfig().endpoint,
-    retryOptions: RetryOptions = {}
+    retryOptions: RetryOptions = {},
+    authOptions: AuthOptions = {}
 ): Promise<CodeCatalystClient> {
     const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint, retryOptions)
     const c = new CodeCatalystClientInternal(connection, sdkClient)
-    await c.verifySession()
+    try {
+        await c.verifySession()
+    } catch (e) {
+        if (!(e instanceof ToolkitError) || e.code !== 'AccessDeniedException') {
+            throw e
+        }
+        onAccessDeniedExceptionEmitter.fire(authOptions.showReauthPrompt ?? true)
+
+        // Throw a "cancel" error to prevent further execution.
+        throw new ToolkitError('CodeCatalyst scope is expired', { code: 'ScopeExpiration', cancelled: true })
+    }
 
     return c
 }

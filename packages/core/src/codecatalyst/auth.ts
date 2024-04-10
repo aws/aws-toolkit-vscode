@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeCatalystClient, createClient } from '../shared/clients/codecatalystClient'
+import { onAccessDeniedException, CodeCatalystClient, createClient } from '../shared/clients/codecatalystClient'
 import { Auth } from '../auth/auth'
 import { getSecondaryAuth } from '../auth/secondaryAuth'
 import { getLogger } from '../shared/logger'
@@ -24,6 +24,9 @@ import {
 } from '../auth/connection'
 import { createBuilderIdConnection } from '../auth/utils'
 import { builderIdStartUrl } from '../auth/sso/model'
+import { codeWhispererClient } from '../codewhisperer/client/codewhisperer'
+import { AuthUtil as CodeWhispererAuth } from '../codewhisperer/util/authUtil'
+import { showReauthenticateMessage } from '../shared/utilities/messages'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -51,12 +54,23 @@ export function setCodeCatalystConnectedContext(isConnected: boolean) {
     return vscode.commands.executeCommand('setContext', 'aws.codecatalyst.connected', isConnected)
 }
 
+type ConnectionState = {
+    onboarded: boolean
+    scopeExpired: boolean
+}
+
 export class CodeCatalystAuthenticationProvider {
     public readonly onDidChangeActiveConnection = this.secondaryAuth.onDidChangeActiveConnection
+    public readonly onAccessDeniedException = onAccessDeniedException
+    private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChange = this.onDidChangeEmitter.event
+
+    private readonly mementoKey = 'codecatalyst.connections'
 
     public constructor(
         protected readonly storage: CodeCatalystAuthStorage,
         protected readonly memento: vscode.Memento,
+
         public readonly auth = Auth.instance,
         public readonly secondaryAuth = getSecondaryAuth(
             auth,
@@ -65,8 +79,17 @@ export class CodeCatalystAuthenticationProvider {
             isValidCodeCatalystConnection
         )
     ) {
-        this.secondaryAuth.onDidChangeActiveConnection(async () => {
+        this.onDidChangeActiveConnection(async () => {
+            if (this.activeConnection) {
+                await this.setScopeExpired(this.activeConnection, false)
+            }
             await setCodeCatalystConnectedContext(this.isConnectionValid())
+            this.onDidChangeEmitter.fire()
+        })
+
+        this.onAccessDeniedException(async (showReauthPrompt: boolean) => {
+            await this.accessDeniedExceptionHandler(showReauthPrompt)
+            this.onDidChangeEmitter.fire()
         })
 
         // set initial context in case event does not trigger
@@ -81,8 +104,27 @@ export class CodeCatalystAuthenticationProvider {
         return this.secondaryAuth.hasSavedConnection
     }
 
+    public async setScopeExpired(conn: SsoConnection, isExpired: boolean) {
+        await this.updateConnectionState(conn, { scopeExpired: isExpired })
+    }
+
+    public isScopeExpired(conn: SsoConnection): boolean {
+        return this.getConnectionState(conn).scopeExpired
+    }
+
+    public isSharedConn(): boolean {
+        return (
+            this.secondaryAuth.activeConnection !== undefined &&
+            this.secondaryAuth.activeConnection?.id === CodeWhispererAuth.instance.secondaryAuth.activeConnection?.id
+        )
+    }
+
     public isConnectionValid(): boolean {
-        return this.activeConnection !== undefined && !this.secondaryAuth.isConnectionExpired
+        return (
+            this.activeConnection !== undefined &&
+            !this.secondaryAuth.isConnectionExpired &&
+            !this.isScopeExpired(this.activeConnection)
+        )
     }
 
     // Get rid of this? Not sure where to put PAT code.
@@ -116,6 +158,57 @@ export class CodeCatalystAuthenticationProvider {
 
     public async restore() {
         await this.secondaryAuth.restoreConnection()
+    }
+
+    private async accessDeniedExceptionHandler(showReauthPrompt: boolean = true) {
+        if (!this.isConnectionValid()) {
+            return
+        }
+
+        // Check if CodeWhisper and CodeCatalyst share the same connection
+        const isSharedConn = this.isSharedConn()
+
+        if (isSharedConn) {
+            await codeWhispererClient.listAvailableCustomizations()
+        }
+
+        /*
+         * Partial Expiration occurs when CodeWhisperer and CodeCatalyst are using
+         * the same SSO connection, but CodeCatalyst scopes have expired before CodeWhisperer.
+         */
+        const isPartialExpiration = isSharedConn && !CodeWhispererAuth.instance.isConnectionExpired()
+
+        getLogger().info(
+            'auth: CodeCatalyst scopes are expired. shared=%s, partialExpiration=%s, showReauthPrompt=%s',
+            isSharedConn,
+            isPartialExpiration,
+            showReauthPrompt
+        )
+
+        await this.setScopeExpired(this.activeConnection!, true)
+        await setCodeCatalystConnectedContext(this.isConnectionValid())
+
+        // showReauthPrompt is true primarily when a user interaction triggered the ADE
+        if (showReauthPrompt) {
+            void this.showReauthenticationPrompt(this.activeConnection!, isPartialExpiration)
+        }
+    }
+
+    public async showReauthenticationPrompt(conn: Connection, isPartialExpiration?: boolean): Promise<void> {
+        const expiredMessage =
+            'Connection expired. To continue using CodeCatalyst, connect with AWS Builder ID or AWS IAM Identity center.'
+        const partiallyExpiredMessage =
+            'CodeCatalyst connection has expired. Amazon Q/CodeWhisperer is still connected.'
+
+        await showReauthenticateMessage({
+            message: isPartialExpiration ? partiallyExpiredMessage : expiredMessage,
+            connect: 'Connect with AWS',
+            doNotShow: "Don't Show Again",
+            suppressId: 'codeCatalystConnectionExpired',
+            reauthFunc: async () => {
+                await this.auth.reauthenticate(conn)
+            },
+        })
     }
 
     public async promptOnboarding(): Promise<void> {
@@ -280,28 +373,40 @@ export class CodeCatalystAuthenticationProvider {
         }
     }
 
-    public async isConnectionOnboarded(conn: SsoConnection, recheck = false) {
-        const mementoKey = 'codecatalyst.connections'
-        const getState = () => this.memento.get(mementoKey, {} as Record<string, { onboarded: boolean }>)
-        const updateState = (state: { onboarded: boolean }) =>
-            this.memento.update(mementoKey, {
-                ...getState(),
-                [conn.id]: state,
-            })
+    private getState(): Record<string, ConnectionState> {
+        return this.memento.get(this.mementoKey, {} as Record<string, ConnectionState>)
+    }
 
-        const state = getState()[conn.id]
+    public getConnectionState(conn: SsoConnection): ConnectionState {
+        return this.getState()[conn.id]
+    }
+
+    private async setConnectionState(conn: SsoConnection, state: ConnectionState) {
+        await this.memento.update(this.mementoKey, {
+            ...this.getState(),
+            [conn.id]: state,
+        })
+    }
+
+    private async updateConnectionState(conn: SsoConnection, state: Partial<ConnectionState>) {
+        const initial = this.getConnectionState(conn)
+        await this.setConnectionState(conn, { ...initial, ...state })
+    }
+
+    public async isConnectionOnboarded(conn: SsoConnection, recheck = false) {
+        const state = this.getConnectionState(conn)
         if (state !== undefined && !recheck) {
             return state.onboarded
         }
 
         try {
             await createClient(conn)
-            await updateState({ onboarded: true })
+            await this.updateConnectionState(conn, { onboarded: true })
 
             return true
         } catch (e) {
             if (isOnboardingException(e) && this.auth.getConnectionState(conn) === 'valid') {
-                await updateState({ onboarded: false })
+                await this.updateConnectionState(conn, { onboarded: false })
 
                 return false
             }
