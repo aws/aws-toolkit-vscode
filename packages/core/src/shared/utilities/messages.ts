@@ -15,7 +15,7 @@ import { addCodiconToString } from './textUtilities'
 import { getIcon, codicon } from '../icons'
 import globals from '../extensionGlobals'
 import { openUrl } from './vsCodeUtils'
-import { PromptSettings, PromptName } from '../../shared/settings'
+import { PromptSettings } from '../../shared/settings'
 
 export const messages = {
     editCredentials(icon: boolean) {
@@ -145,21 +145,18 @@ export async function showConfirmationMessage({
  *
  * @param message the line informing the user that they need to reauthenticate
  * @param connect the text to display on the "connect" button
- * @param doNotShow the text to display on the "do not show again" button
  * @param suppressId the ID of the prompt in
  * @param reauthFunc the function called if the "connect" button is clicked
  */
 export async function showReauthenticateMessage({
     message,
     connect,
-    doNotShow,
     suppressId,
     reauthFunc,
 }: {
     message: string
     connect: string
-    doNotShow: string
-    suppressId: PromptName
+    suppressId: Parameters<PromptSettings['isPromptEnabled']>[0]
     reauthFunc: () => Promise<void>
 }) {
     const settings = PromptSettings.instance
@@ -168,10 +165,10 @@ export async function showReauthenticateMessage({
         return
     }
 
-    await vscode.window.showInformationMessage(message, connect, doNotShow).then(async resp => {
+    await vscode.window.showInformationMessage(message, connect, localizedText.dontShow).then(async resp => {
         if (resp === connect) {
             await reauthFunc()
-        } else if (resp === doNotShow) {
+        } else if (resp === localizedText.dontShow) {
             await settings.disablePrompt(suppressId)
         }
     })

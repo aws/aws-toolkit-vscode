@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { onAccessDeniedException, CodeCatalystClient, createClient } from '../shared/clients/codecatalystClient'
 import { Auth } from '../auth/auth'
+import * as localizedText from '../shared/localizedText'
 import { getSecondaryAuth } from '../auth/secondaryAuth'
 import { getLogger } from '../shared/logger'
 import { ToolkitError, isAwsError } from '../shared/errors'
@@ -195,15 +196,12 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public async showReauthenticationPrompt(conn: Connection, isPartialExpiration?: boolean): Promise<void> {
-        const expiredMessage =
-            'Connection expired. To continue using CodeCatalyst, connect with AWS Builder ID or AWS IAM Identity center.'
         const partiallyExpiredMessage =
             'CodeCatalyst connection has expired. Amazon Q/CodeWhisperer is still connected.'
 
         await showReauthenticateMessage({
-            message: isPartialExpiration ? partiallyExpiredMessage : expiredMessage,
-            connect: 'Connect with AWS',
-            doNotShow: "Don't Show Again",
+            message: isPartialExpiration ? partiallyExpiredMessage : localizedText.connectionExpired('CodeCatalyst'),
+            connect: localizedText.connect,
             suppressId: 'codeCatalystConnectionExpired',
             reauthFunc: async () => {
                 await this.auth.reauthenticate(conn)
