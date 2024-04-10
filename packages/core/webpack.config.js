@@ -39,18 +39,13 @@ module.exports = (env, argv) => {
     // We only need Web `core` to be webpacked/bundled for tests.
     // Separately, for Web `toolkit` we don't need the webpacked Web `core` code, so the following
     // will not return a Web `core` config.
-    const webConfig =
-        env.IS_WEB_CORE_TESTS === 'true'
-            ? [
-                  {
-                      ...baseWebConfigsFactory(env, argv),
-                      entry: {
-                          'src/extensionWeb': './src/extensionWeb.ts',
-                          'src/testWeb/testRunner': './src/testWeb/testRunner.ts',
-                      },
-                  },
-              ]
-            : []
+    const webConfig = {
+        ...baseWebConfigsFactory(env, argv),
+        entry: {
+            'src/extensionWeb': './src/extensionWeb.ts',
+            'src/testWeb/testRunner': './src/testWeb/testRunner.ts',
+        },
+    }
 
-    return [config, vueConfig, ...webConfig]
+    return [config, vueConfig, webConfig]
 }
