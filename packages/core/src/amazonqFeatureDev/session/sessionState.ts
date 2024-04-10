@@ -62,7 +62,7 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
                 credentialStartUrl: AuthUtil.instance.startUrl,
             })
             const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-                this.config.sourceRoots,
+                this.config.workspaceRoots,
                 this.config.workspaceFolders,
                 action.telemetry,
                 span
@@ -461,7 +461,7 @@ export class PrepareCodeGenState implements SessionState {
 
         const uploadId = await telemetry.amazonq_createUpload.run(async span => {
             const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-                this.config.sourceRoots,
+                this.config.workspaceRoots,
                 this.config.workspaceFolders,
                 action.telemetry,
                 span

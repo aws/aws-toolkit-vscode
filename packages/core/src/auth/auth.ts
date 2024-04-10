@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
-import * as uuid from 'uuid' // TODO: use crypto.randomUUID when C9 is on node16
+import { randomUUID } from 'crypto'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
@@ -281,7 +281,7 @@ export class Auth implements AuthService, ConnectionManager {
             throw new Error('Creating IAM connections is not supported')
         }
 
-        const id = uuid.v4()
+        const id = randomUUID()
         const tokenProvider = this.getSsoTokenProvider(id, {
             ...profile,
             metadata: { connectionState: 'unauthenticated' },
@@ -834,7 +834,7 @@ export class Auth implements AuthService, ConnectionManager {
                     // an issue, it should be possible to use the actual key here However, this
                     // would require deleting existing profiles to avoid inserting duplicates.
                     const [_dangerousDiscardActualKey, devEnvProfile] = await this.createCodeCatalystDevEnvProfile()
-                    const key = uuid.v4()
+                    const key = randomUUID()
                     await this.store.addProfile(key, devEnvProfile)
                     await this.store.setCurrentProfileId(key)
                 } catch (err) {

@@ -12,8 +12,6 @@ import { ToolkitError } from '../../../shared/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext } from '../../models/model'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 export async function fetchSupplementalContext(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken

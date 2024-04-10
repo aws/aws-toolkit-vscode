@@ -14,15 +14,6 @@ import * as CodeWhispererConstants from '../../../codewhisperer/models/constants
 import { getTestWindow } from '../../shared/vscode/window'
 import { stopTransformByQMessage } from '../../../codewhisperer/models/constants'
 import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
-import {
-    throwIfCancelled,
-    stopJob,
-    pollTransformationJob,
-    validateOpenProjects,
-    getOpenProjects,
-    getHeadersObj,
-    TransformationCandidateProject,
-} from '../../../codewhisperer/service/transformByQHandler'
 import path from 'path'
 import { createTestWorkspaceFolder, toFile } from '../../testUtil'
 import {
@@ -30,6 +21,17 @@ import {
     NoMavenJavaProjectsFoundError,
     NoOpenProjectsError,
 } from '../../../amazonqGumby/errors'
+import {
+    stopJob,
+    pollTransformationJob,
+    getHeadersObj,
+    throwIfCancelled,
+} from '../../../codewhisperer/service/transformByQ/transformApiHandler'
+import {
+    validateOpenProjects,
+    getOpenProjects,
+} from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
+import { TransformationCandidateProject } from '../../../codewhisperer/models/model'
 
 describe('transformByQ', function () {
     afterEach(function () {
