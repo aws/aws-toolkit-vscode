@@ -1,5 +1,5 @@
 {
-    "name": "q-webview",
+    "name": "webview",
     "version": "1.0.0",
     "description": "",
     "main": "webpack.config.js",

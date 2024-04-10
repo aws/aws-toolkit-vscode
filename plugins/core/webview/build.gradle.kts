@@ -30,6 +30,6 @@ tasks.processResources {
 
 tasks.jar {
     from(buildGetStartUI) {
-        into("q-webview")
+        into("webview")
     }
 }

@@ -34,7 +34,6 @@ dependencies {
     implementation(project(":plugin-amazonq:codetransform"))
     implementation(project(":plugin-amazonq:codewhisperer"))
     implementation(project(":plugin-amazonq:mynah-ui"))
-    implementation(project(":plugin-amazonq:q-webview"))
     implementation(project(":plugin-amazonq:shared"))
 }
 

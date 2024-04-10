@@ -138,7 +138,6 @@ dependencies {
 
     // TODO: remove Q dependency when split is fully done
     implementation(project(":plugin-amazonq:mynah-ui"))
-    implementation(project(":plugin-amazonq:q-webview"))
     implementation(libs.bundles.jackson)
     implementation(libs.zjsonpatch)
     implementation(libs.commonmark)

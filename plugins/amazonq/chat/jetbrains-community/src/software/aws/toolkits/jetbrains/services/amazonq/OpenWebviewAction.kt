@@ -22,10 +22,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.cef.CefApp
-import org.cef.browser.CefBrowser
-import org.cef.browser.CefFrame
-import org.cef.network.CefRequest
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
+import software.aws.toolkits.jetbrains.core.WebviewResourceHandlerFactory
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
@@ -40,12 +38,10 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBe
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
-import software.aws.toolkits.jetbrains.services.amazonq.webview.AssetResourceHandler
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.CredentialType
 import software.aws.toolkits.telemetry.Result
 import java.awt.event.ActionListener
-import java.io.IOException
 import java.util.function.Function
 import javax.swing.JButton
 import javax.swing.JComponent
@@ -126,8 +122,11 @@ class WebviewBrowser(val project: Project) {
         CefApp.getInstance()
             .registerSchemeHandlerFactory(
                 "http",
-                "q-webview",
-                MyAssetResourceHandler.MyAssetResourceHandlerFactory(),
+                WebviewBrowser.DOMAIN,
+                WebviewResourceHandlerFactory(
+                    domain = "http://${WebviewBrowser.DOMAIN}/",
+                    assetUri = "/webview/assets/"
+                ),
             )
 
         loadWebView()
@@ -325,38 +324,7 @@ class WebviewBrowser(val project: Project) {
     }
 
     companion object {
-        private const val WEB_SCRIPT_URI = "http://q-webview/js/getStart.js"
-    }
-}
-
-class MyAssetResourceHandler(data: ByteArray) : AssetResourceHandler(data) {
-    class MyAssetResourceHandlerFactory : AssetResourceHandler.AssetResourceHandlerFactory() {
-        override fun create(
-            browser: CefBrowser?,
-            frame: CefFrame?,
-            schemeName: String?,
-            request: CefRequest?,
-        ): MyAssetResourceHandler? {
-            val resourceUri = request?.url ?: return null
-            if (!resourceUri.startsWith(LOCAL_RESOURCE_URL_PREFIX)) return null
-
-            val resource = resourceUri.replace(LOCAL_RESOURCE_URL_PREFIX, "/q-webview/assets/")
-            val resourceInputStream = this.javaClass.getResourceAsStream(resource)
-
-            try {
-                resourceInputStream.use {
-                    if (resourceInputStream != null) {
-                        return MyAssetResourceHandler(resourceInputStream.readAllBytes())
-                    }
-                    return null
-                }
-            } catch (e: IOException) {
-                throw RuntimeException(e)
-            }
-        }
-    }
-
-    companion object {
-        private const val LOCAL_RESOURCE_URL_PREFIX = "http://q-webview/"
+        private const val WEB_SCRIPT_URI = "http://webview/js/getStart.js"
+        private const val DOMAIN = "webview"
     }
 }
