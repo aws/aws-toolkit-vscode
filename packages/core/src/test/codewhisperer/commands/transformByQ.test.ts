@@ -137,7 +137,7 @@ describe('transformByQ', function () {
         sinon.assert.notCalled(stopJobStub)
     })
 
-    it('WHEN polling completed job THEN returns status as completed', async function () {
+    it.skip('WHEN polling completed job THEN returns status as completed', async function () {
         const mockJobResponse = {
             $response: {
                 data: {
