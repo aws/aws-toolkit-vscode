@@ -1,5 +1,5 @@
 * @aws/aws-ides-team
 packages/core/src/codewhisperer/ @aws/codewhisperer-team
 packages/core/src/amazonqFeatureDev/ @aws/earlybird
-packages/core/src/codewhispererChat/ @aws/aws-mynah
-packages/core/src/amazonq/ @aws/aws-mynah
+packages/core/src/codewhispererChat/ @aws/dexp
+packages/core/src/amazonq/ @aws/dexp
