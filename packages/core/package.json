@@ -27,10 +27,10 @@
         "onCommand:aws.codeWhisperer.accept"
     ],
     "main": "./dist/src/extension.js",
-    "browser": "./dist/src/extensionWeb",
+    "browser": "./dist/src/extensionWebCore.js",
     "exports": {
-        ".": "./dist/src/index.js",
-        "./web": "./dist/src/indexWeb.js",
+        ".": "./dist/src/extension.js",
+        "./web": "./dist/src/extensionWeb.js",
         "./auth": "./dist/src/auth/index.js"
     },
     "contributes": {
@@ -4218,14 +4218,15 @@
         "clean": "ts-node ../../scripts/clean.ts dist/",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run copyFiles",
-        "compile": "npm run clean && npm run buildScripts && tsc -p ./ && webpack --mode development",
-        "compileLite": "tsc -p ./",
-        "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
-        "testCompile": "npm run clean && npm run buildScripts && tsc -p ./",
+        "compile": "npm run testCompile && webpack",
+        "compileOnly": "tsc -p ./",
+        "compileDev": "npm run compile -- --mode development",
+        "webpackDev": "webpack --mode development",
+        "serveVue": "webpack serve --config-name vue --mode development",
+        "watch": "npm run testCompile -- -- --watch",
+        "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
-        "webCompile": "npm run clean && npm run buildScripts && webpack --config-name web",
-        "webWatch": "npm run webCompile -- --watch",
-        "testWeb": "npm run webCompile && c8 ts-node ./scripts/test/testWeb.ts",
+        "testWeb": "npm run compileDev && c8 ts-node ./scripts/test/testWeb.ts",
         "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts",
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
@@ -4233,8 +4234,14 @@
         "lint": "ts-node ./scripts/lint/testLint.ts && npm run format",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
         "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
-        "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
-        "serve": "webpack serve --config-name vue-hmr --mode development"
+        "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts"
+    },
+    "scriptsComments": {
+        "compile": "Builds EVERYTHING we would need for a final production-ready package",
+        "compileOnly": "Only compiles the `core` source code.",
+        "compileDev": "Same as compile, but in `development` mode",
+        "webpackDev": "Webpacks using all configs, but in development mode",
+        "serveVue": "Local server for Vue.js code for development purposes. Provides faster iteration when updating Vue files"
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
