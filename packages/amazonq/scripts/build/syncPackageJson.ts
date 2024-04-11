@@ -26,7 +26,7 @@ function main() {
 
     const coreSettings = coreLibPackageJson.contributes.configuration.properties
     Object.keys(coreSettings).forEach(key => {
-        if (key.startsWith('aws.amazonQ') || key.startsWith('aws.codeWhisperer')) {
+        if (key.startsWith('aws.amazonQ')) {
             packageJson.contributes.configuration.properties[key] = coreSettings[key]
         }
     })
