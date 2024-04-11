@@ -196,6 +196,18 @@ export async function uploadPayload(payloadFileName: string) {
 }
 
 /**
+ * Maven adds certain metadata to the dependencies in the local repository which are checked during compile time.
+ * If any `*.repositories` or `*.sha1` files are found in the local repository, maven will verify if the source repository is available from the machine.
+ * If it is not available, then Maven will attempt to redownload dependencies again even if dependencies are available locally.
+ * This behaviour cannot be disabled when invoking maven except for by removing these metadata files.
+ * @param fileEntry
+ * @returns
+ */
+function isExcludedDependencyFile(path: string): boolean {
+    return path.endsWith('.repositories') || path.endsWith('.sha1')
+}
+
+/**
  * Gets all files in dir. We use this method to get the source code, then we run a mvn command to
  * copy over dependencies into their own folder, then we use this method again to get those
  * dependencies. If isDependenciesFolder is true, then we are getting all the files
@@ -252,6 +264,9 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
 
         if (dependencyFiles.length > 0) {
             for (const file of dependencyFiles) {
+                if (isExcludedDependencyFile(file)) {
+                    continue
+                }
                 const relativePath = path.relative(dependenciesFolder.path, file)
                 const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
