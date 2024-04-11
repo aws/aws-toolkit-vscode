@@ -46,7 +46,8 @@ export class AuthError extends ToolkitError {
 export class AuthSSOServer {
     public baseUrl = `http://127.0.0.1`
     private oauthCallback = '/'
-    private authenticationTimeoutInMs = 600000
+    private authenticationFlowTimeoutInMs = 600000
+    private authenticationWarningTimeoutInMs = 60000
 
     private readonly authenticationPromise: Promise<string>
     private deferred: { resolve: (result: string) => void; reject: (reason: any) => void } | undefined
@@ -202,7 +203,15 @@ export class AuthSSOServer {
                             code: 'TimedOut',
                         })
                     )
-                }, this.authenticationTimeoutInMs)
+                }, this.authenticationFlowTimeoutInMs)
+
+                const warningTimeout = globals.clock.setTimeout(() => {
+                    getLogger().warn('AuthSSOServer: Authentication is taking a long time')
+                }, this.authenticationWarningTimeoutInMs)
+
+                void this.authenticationPromise.then(() => {
+                    clearTimeout(warningTimeout)
+                })
             }),
         ])
     }
