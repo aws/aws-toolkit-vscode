@@ -241,8 +241,6 @@ export const ssoConfigAlertMessageShareData = `This setting doesn\’t apply, si
 
 export const settingsLearnMore = 'Learn More about CodeWhisperer Settings'
 
-export const connectWithAWSBuilderId = `Connect with AWS`
-
 export const freeTierLimitReached = 'You have reached the monthly fair use limit of code recommendations.'
 
 export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
@@ -259,10 +257,6 @@ export const invalidCustomizationMessage = `You are not authorized to access`
 export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
-
-export const connectionExpired = `Connection expired. To continue using Amazon Q/CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
-
-export const DoNotShowAgain = `Don\'t Show Again`
 
 export const stopScanMessage =
     'Stop security scan? This scan will be counted as one complete scan towards your monthly security scan limits.'

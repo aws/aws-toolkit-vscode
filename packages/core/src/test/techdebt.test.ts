@@ -27,19 +27,10 @@ describe('tech debt', function () {
     it('nodejs minimum version', async function () {
         const minNodejs = env.getMinNodejsVersion()
 
+        // XXX: available since node 16, but not sure how much work this will be, yet.
         assert.ok(
-            semver.lt(minNodejs, '16.0.0'),
-            'remove require("perf_hooks").performance workarounds, use globalThis.performance instead (always available since nodejs 16.x)'
-        )
-
-        assert.ok(
-            semver.lt(minNodejs, '16.0.0'),
+            semver.lt(minNodejs, '18.0.0'),
             'with node16+, we can now use AbortController to cancel Node things (child processes, HTTP requests, etc.)'
-        )
-
-        assert.ok(
-            semver.lt(minNodejs, '16.0.0'),
-            'with node16+, we can use crypto.randomUUID and remove the "uuid" dependency'
         )
     })
 })

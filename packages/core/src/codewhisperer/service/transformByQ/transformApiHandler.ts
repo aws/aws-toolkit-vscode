@@ -27,7 +27,7 @@ import CodeWhispererUserClient, {
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
-import { telemetry } from '../../../shared/telemetry/telemetry'
+import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemetry'
 import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
@@ -35,11 +35,22 @@ import request from '../../../common/request'
 import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
+import { AuthUtil } from '../../util/authUtil'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
     hasher.update(buffer)
     return hasher.digest('base64')
+}
+
+export async function getAuthType() {
+    let authType: CredentialSourceId | undefined = undefined
+    if (AuthUtil.instance.isEnterpriseSsoInUse() && AuthUtil.instance.isConnectionValid()) {
+        authType = 'iamIdentityCenter'
+    } else if (AuthUtil.instance.isBuilderIdInUse() && AuthUtil.instance.isConnectionValid()) {
+        authType = 'awsId'
+    }
+    return authType
 }
 
 export function throwIfCancelled() {
@@ -90,7 +101,7 @@ export async function uploadArtifactToS3(
         })
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
-        const errorMessage = (e as Error).message ?? 'Error in S3 UploadZip API call'
+        const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: UploadZip error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
@@ -126,7 +137,7 @@ export async function stopJob(jobId: string) {
                 }
             }
         } catch (e: any) {
-            const errorMessage = (e as Error).message ?? 'Error stopping job'
+            const errorMessage = (e as Error).message
             getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'StopTransformation',
@@ -167,7 +178,7 @@ export async function uploadPayload(payloadFileName: string) {
             result: MetadataResult.Pass,
         })
     } catch (e: any) {
-        const errorMessage = (e as Error).message ?? 'Error in CreateUploadUrl API call'
+        const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'CreateUploadUrl',
@@ -182,7 +193,7 @@ export async function uploadPayload(payloadFileName: string) {
     try {
         await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
-        const errorMessage = (e as Error).message ?? 'Error in uploadArtifactToS3 call'
+        const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
         throw new Error('S3 upload failed')
     }
@@ -219,57 +230,69 @@ function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string
 }
 
 export async function zipCode(dependenciesFolder: FolderInfo) {
-    const modulePath = transformByQState.getProjectPath()
-    throwIfCancelled()
-    const zipStartTime = Date.now()
-    const sourceFolder = modulePath
-    const sourceFiles = getFilesRecursively(sourceFolder, false)
+    let tempFilePath = undefined
+    let zipStartTime = undefined
+    try {
+        const modulePath = transformByQState.getProjectPath()
+        throwIfCancelled()
+        zipStartTime = Date.now()
+        const sourceFolder = modulePath
+        const sourceFiles = getFilesRecursively(sourceFolder, false)
 
-    const zip = new AdmZip()
-    const zipManifest = new ZipManifest()
+        const zip = new AdmZip()
+        const zipManifest = new ZipManifest()
 
-    for (const file of sourceFiles) {
-        const relativePath = path.relative(sourceFolder, file)
-        const paddedPath = path.join('sources', relativePath)
-        zip.addLocalFile(file, path.dirname(paddedPath))
-    }
-
-    throwIfCancelled()
-
-    let dependencyFiles: string[] = []
-    if (fs.existsSync(dependenciesFolder.path)) {
-        dependencyFiles = getFilesRecursively(dependenciesFolder.path, true)
-    }
-
-    if (dependencyFiles.length > 0) {
-        for (const file of dependencyFiles) {
-            const relativePath = path.relative(dependenciesFolder.path, file)
-            const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
+        for (const file of sourceFiles) {
+            const relativePath = path.relative(sourceFolder, file)
+            const paddedPath = path.join('sources', relativePath)
             zip.addLocalFile(file, path.dirname(paddedPath))
         }
-        zipManifest.dependenciesRoot += `${dependenciesFolder.name}/`
-        telemetry.codeTransform_dependenciesCopied.emit({
+
+        throwIfCancelled()
+
+        let dependencyFiles: string[] = []
+        if (fs.existsSync(dependenciesFolder.path)) {
+            dependencyFiles = getFilesRecursively(dependenciesFolder.path, true)
+        }
+
+        if (dependencyFiles.length > 0) {
+            for (const file of dependencyFiles) {
+                const relativePath = path.relative(dependenciesFolder.path, file)
+                const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
+                zip.addLocalFile(file, path.dirname(paddedPath))
+            }
+            zipManifest.dependenciesRoot += `${dependenciesFolder.name}/`
+            telemetry.codeTransform_dependenciesCopied.emit({
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                result: MetadataResult.Pass,
+            })
+        } else {
+            zipManifest.dependenciesRoot = undefined
+        }
+
+        zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest)), 'utf-8')
+
+        throwIfCancelled()
+
+        // add text file with logs from mvn clean install and mvn copy-dependencies
+        const logFilePath = await writeLogs()
+        zip.addLocalFile(logFilePath)
+
+        tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
+        fs.writeFileSync(tempFilePath, zip.toBuffer())
+        if (fs.existsSync(dependenciesFolder.path)) {
+            fs.rmSync(dependenciesFolder.path, { recursive: true, force: true })
+        }
+        fs.rmSync(logFilePath) // will always exist here
+    } catch (e: any) {
+        telemetry.codeTransform_logGeneralError.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            result: MetadataResult.Pass,
+            codeTransformApiErrorMessage: 'Failed to zip project',
+            result: MetadataResult.Fail,
+            reason: 'ZipCreationFailed',
         })
-    } else {
-        zipManifest.dependenciesRoot = undefined
+        throw Error('Failed to zip project')
     }
-
-    zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest)), 'utf-8')
-
-    throwIfCancelled()
-
-    // add text file with logs from mvn clean install and mvn copy-dependencies
-    const logFilePath = await writeLogs()
-    zip.addLocalFile(logFilePath)
-
-    const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
-    fs.writeFileSync(tempFilePath, zip.toBuffer())
-    if (fs.existsSync(dependenciesFolder.path)) {
-        fs.rmSync(dependenciesFolder.path, { recursive: true, force: true })
-    }
-    fs.rmSync(logFilePath) // will always exist here
 
     const zipSize = (await fs.promises.stat(tempFilePath)).size
 
@@ -322,7 +345,7 @@ export async function startJob(uploadId: string) {
         })
         return response.transformationJobId
     } catch (e: any) {
-        const errorMessage = (e as Error).message ?? 'Error in StartTransformation API call'
+        const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: StartTransformation error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'StartTransformation',
@@ -375,7 +398,7 @@ export async function getTransformationPlan(jobId: string) {
 
         return plan
     } catch (e: any) {
-        const errorMessage = (e as Error).message ?? 'Error in GetTransformationPlan API call'
+        const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
@@ -412,7 +435,7 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         })
         return response.transformationPlan.transformationSteps
     } catch (e: any) {
-        const errorMessage = (e as Error).message ?? 'Error in GetTransformationPlan API call'
+        const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
@@ -492,7 +515,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 throw new Error('Job timed out')
             }
         } catch (e: any) {
-            let errorMessage = (e as Error).message ?? 'Error in GetTransformation API call'
+            let errorMessage = (e as Error).message
             errorMessage += ` -- ${transformByQState.getJobFailureMetadata()}`
             getLogger().error(`CodeTransformation: GetTransformation error = ${errorMessage}`)
             telemetry.codeTransform_logApiError.emit({

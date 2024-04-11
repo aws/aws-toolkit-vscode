@@ -9,7 +9,6 @@ import fs from 'fs-extra'
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
-
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { TransformByQReviewStatus, transformByQState } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
@@ -294,19 +293,15 @@ export class ProposedTransformationExplorer {
                 'gumby.reviewState',
                 TransformByQReviewStatus.PreparingReview
             )
-            telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
 
-            // This metric is emitted when user clicks Download Proposed Changes button
-            telemetry.codeTransform_vcsViewerClicked.emit({
-                codeTransformVCSViewerSrcComponents: 'toastNotification',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-            })
             const pathToArchive = path.join(
                 ProposedTransformationExplorer.TmpDir,
                 transformByQState.getJobId(),
                 'ExportResultsArchive.zip'
             )
+
+            let downloadErrorMessage = undefined
+
             const cwStreamingClient = await createCodeWhispererChatStreamingClient()
             try {
                 await downloadExportResultArchive(
@@ -318,6 +313,7 @@ export class ProposedTransformationExplorer {
                     pathToArchive
                 )
             } catch (e: any) {
+                downloadErrorMessage = (e as Error).message
                 // This allows the customer to retry the download
                 void vscode.window.showErrorMessage(
                     CodeWhispererConstants.errorDownloadingDiffMessage.replace(
@@ -330,18 +326,26 @@ export class ProposedTransformationExplorer {
                     'gumby.reviewState',
                     TransformByQReviewStatus.NotStarted
                 )
-                const errorMessage = CodeWhispererConstants.errorDownloadingDiffMessage
-                getLogger().error(`CodeTransformation: ExportResultArchive error = ${errorMessage}`)
+                getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 telemetry.codeTransform_logApiError.emit({
                     codeTransformApiNames: 'ExportResultArchive',
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformApiErrorMessage: (e as Error).message ?? errorMessage,
+                    codeTransformApiErrorMessage: downloadErrorMessage,
                     codeTransformRequestId: e.requestId ?? '',
                     result: MetadataResult.Fail,
                     reason: 'ExportResultArchiveFailed',
                 })
                 throw new Error('Error downloading diff')
+            } finally {
+                // This metric is emitted when user clicks Download Proposed Changes button
+                telemetry.codeTransform_vcsViewerClicked.emit({
+                    codeTransformVCSViewerSrcComponents: 'toastNotification',
+                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformJobId: transformByQState.getJobId(),
+                    result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
+                    reason: downloadErrorMessage,
+                })
             }
 
             const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
@@ -381,7 +385,7 @@ export class ProposedTransformationExplorer {
                 void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
-                deserializeErrorMessage = (e as Error).message ?? CodeWhispererConstants.errorDeserializingDiffMessage
+                deserializeErrorMessage = (e as Error).message
                 getLogger().error(`CodeTransformation: ParseDiff error = ${deserializeErrorMessage}`)
                 void vscode.window.showErrorMessage(CodeWhispererConstants.errorDeserializingDiffMessage)
             } finally {

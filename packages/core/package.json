@@ -27,10 +27,10 @@
         "onCommand:aws.codeWhisperer.accept"
     ],
     "main": "./dist/src/extension.js",
-    "browser": "./dist/src/extensionWeb",
+    "browser": "./dist/src/extensionWebCore.js",
     "exports": {
-        ".": "./dist/src/index.js",
-        "./web": "./dist/src/indexWeb.js",
+        ".": "./dist/src/extension.js",
+        "./web": "./dist/src/extensionWeb.js",
         "./auth": "./dist/src/auth/index.js"
     },
     "contributes": {
@@ -207,6 +207,10 @@
                             "default": false
                         },
                         "amazonQWelcomePage": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "codeCatalystConnectionExpired": {
                             "type": "boolean",
                             "default": false
                         }
@@ -4214,14 +4218,15 @@
         "clean": "ts-node ../../scripts/clean.ts dist/",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run copyFiles",
-        "compile": "npm run clean && npm run buildScripts && tsc -p ./ && webpack --mode development",
-        "compileLite": "tsc -p ./",
-        "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
-        "testCompile": "npm run clean && npm run buildScripts && tsc -p ./",
+        "compile": "npm run testCompile && webpack",
+        "compileOnly": "tsc -p ./",
+        "compileDev": "npm run compile -- --mode development",
+        "webpackDev": "webpack --mode development",
+        "serveVue": "webpack serve --config-name vue --mode development",
+        "watch": "npm run testCompile -- -- --watch",
+        "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
-        "webCompile": "npm run clean && npm run buildScripts && webpack --config-name web",
-        "webWatch": "npm run webCompile -- --watch",
-        "testWeb": "npm run webCompile && c8 ts-node ./scripts/test/testWeb.ts",
+        "testWeb": "npm run compileDev && c8 ts-node ./scripts/test/testWeb.ts",
         "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts",
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
@@ -4229,12 +4234,18 @@
         "lint": "ts-node ./scripts/lint/testLint.ts && npm run format",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
         "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
-        "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
-        "serve": "webpack serve --config-name vue-hmr --mode development"
+        "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts"
+    },
+    "scriptsComments": {
+        "compile": "Builds EVERYTHING we would need for a final production-ready package",
+        "compileOnly": "Only compiles the `core` source code.",
+        "compileDev": "Same as compile, but in `development` mode",
+        "webpackDev": "Webpacks using all configs, but in development mode",
+        "serveVue": "Local server for Vue.js code for development purposes. Provides faster iteration when updating Vue files"
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.196",
+        "@aws-toolkits/telemetry": "^1.0.201",
         "@aws/fully-qualified-names": "^2.1.4",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
@@ -4253,7 +4264,7 @@
         "@types/markdown-it": "^13.0.2",
         "@types/mime-types": "^2.1.4",
         "@types/mocha": "^10.0.6",
-        "@types/node": "^14.18.63",
+        "@types/node": "^16.18.95",
         "@types/node-fetch": "^2.6.8",
         "@types/prismjs": "^1.26.0",
         "@types/readline-sync": "^1.4.3",
@@ -4304,7 +4315,7 @@
         "@aws-sdk/property-provider": "3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "4.4.3",
+        "@aws/mynah-ui": "4.5.4",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@smithy/shared-ini-file-loader": "^2.2.8",
@@ -4336,7 +4347,6 @@
         "stream-buffers": "^3.0.2",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "uuid": "^9.0.0",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-protocol": "^3.15.3",

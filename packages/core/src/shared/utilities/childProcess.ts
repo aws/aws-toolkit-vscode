@@ -296,6 +296,9 @@ export class ChildProcess {
         options?: ChildProcessOptions
     ): void {
         const pid = process.pid
+        if (pid === undefined) {
+            return
+        }
         ChildProcess.#runningProcesses.set(pid, this)
 
         const timeoutListener = options?.timeout?.token.onCancellationRequested(({ agent }) => {

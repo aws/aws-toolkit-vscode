@@ -5,5 +5,5 @@
 
 import { runToolkitTests } from './launchTestUtilities'
 void (async () => {
-    await runToolkitTests('web', 'dist/src/testWeb/testRunner.js')
+    await runToolkitTests('web', 'dist/src/testWeb/testRunnerWebCore.js')
 })()

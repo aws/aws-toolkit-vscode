@@ -28,8 +28,6 @@ import { CodeWhispererSupplementalContext } from '../models/model'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
 import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 export class TelemetryHelper {
     // Some variables for client component latency
     private sdkApiCallEndTime = 0
