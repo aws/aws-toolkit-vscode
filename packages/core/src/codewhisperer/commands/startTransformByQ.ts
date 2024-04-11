@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as fs from 'fs'
 import * as os from 'os'
+import path from 'path'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import {
@@ -15,28 +16,22 @@ import {
     TransformByQReviewStatus,
     JDKVersion,
     sessionPlanProgress,
+    FolderInfo,
+    TransformationCandidateProject,
 } from '../models/model'
-import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
+import { convertToTimeString, convertDateToTimestamp, encodeHTML } from '../../shared/utilities/textUtilities'
 import {
-    throwIfCancelled,
+    getTransformationPlan,
+    pollTransformationJob,
     startJob,
     stopJob,
+    throwIfCancelled,
     uploadPayload,
-    getTransformationPlan,
     zipCode,
-    pollTransformationJob,
-    getOpenProjects,
-    getVersionData,
-    validateOpenProjects,
-    writeLogs,
-    TransformationCandidateProject,
-    getDependenciesFolderInfo,
-    FolderInfo,
-    prepareProjectDependencies,
-} from '../service/transformByQHandler'
-import path from 'path'
-import { sleep } from '../../shared/utilities/timeoutUtils'
-import { encodeHTML, getStringHash } from '../../shared/utilities/textUtilities'
+} from '../service/transformByQ/transformApiHandler'
+import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
+import { getVersionData, prepareProjectDependencies } from '../service/transformByQ/transformMavenHandler'
+import { getStringHash } from '../../shared/utilities/textUtilities'
 import {
     CodeTransformCancelSrcComponents,
     CodeTransformJavaSourceVersionsAllowed,
@@ -55,6 +50,8 @@ import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
+import { getDependenciesFolderInfo, writeLogs } from '../service/transformByQ/transformFileHandler'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -190,12 +187,6 @@ export async function preTransformationUploadCode() {
     } catch (err) {
         const errorMessage = `Failed to upload code due to ${(err as Error).message}`
         getLogger().error(errorMessage)
-        telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            result: MetadataResult.Fail,
-            reason: 'UploadArchiveFailed',
-        })
         throw err
     }
 
@@ -211,12 +202,6 @@ export async function startTransformationJob(uploadId: string) {
         jobId = await startJob(uploadId)
     } catch (error) {
         const errorMessage = CodeWhispererConstants.failedToStartJobMessage
-        telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            result: MetadataResult.Fail,
-            reason: 'StartJobFailed',
-        })
         transformByQState.setJobFailureErrorMessage(errorMessage)
         throw new Error('Start job failed')
     }

@@ -11,7 +11,7 @@ import { fromString } from './providers/credentials'
 import { getLogger } from '../shared/logger'
 import { ExtensionUse, initAuthCommands } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { isInDevEnv } from '../codecatalyst/utils'
+import { isInDevEnv } from '../shared/vscode/env'
 import { registerCommands, getShowManageConnections } from './ui/vue/show'
 import { isWeb } from '../common/webUtils'
 
