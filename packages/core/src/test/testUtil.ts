@@ -482,7 +482,9 @@ export function shuffleList<T>(list: T[]): T[] {
  * Swallows 'already exists' exceptions because these commands can persist
  * across tests.
  *
- * TODO: Support arguments if needed.
+ * TODO: This is a workaround because some code being tested exists in multiple extensions.
+ * Activating/debugging multiple extensions at once is currently not functional.
+ * To avoid this, we should drop tests/code down to their respective extensions.
  */
 export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {
     try {
