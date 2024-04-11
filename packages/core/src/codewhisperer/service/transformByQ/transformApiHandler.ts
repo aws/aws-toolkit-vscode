@@ -480,7 +480,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 })
             }
             transformByQState.setPolledJobStatus(status)
-            await vscode.commands.executeCommand('aws.amazonq.refresh')
             if (validStates.includes(status)) {
                 break
             }
