@@ -11,6 +11,8 @@ import { createMockDocument, resetCodeWhispererGlobalVariables } from '../testUt
 import { Recommendation } from '../../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
+import { tryRegister } from '../../testUtil'
 
 describe('completionProviderService', function () {
     beforeEach(async function () {
@@ -19,6 +21,8 @@ describe('completionProviderService', function () {
 
     describe('getLabel', function () {
         it('should return correct label given recommendation longer than Constants.LABEL_LENGTH', function () {
+            tryRegister(refreshStatusBar)
+
             const mockLongRecommendation = `
             const metaDataFile = path.join(__dirname, 'nls.metadata.json');
             const locale = getUserDefinedLocale(argvConfig);`

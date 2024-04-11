@@ -6,6 +6,8 @@ import assert from 'assert'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
 import { LicenseUtil } from '../../../codewhisperer/util/licenseUtil'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
+import { tryRegister } from '../../testUtil'
 
 describe('referenceLogViewProvider', function () {
     beforeEach(async function () {
@@ -13,6 +15,8 @@ describe('referenceLogViewProvider', function () {
     })
     describe('getReferenceLog', async function () {
         it('Should return expected reference log string with link to license if there is no url', function () {
+            tryRegister(refreshStatusBar)
+
             const currentTime = new Date()
             const currentTimeString = currentTime.toLocaleString()
             currentTime.setSeconds(currentTime.getSeconds() + 1)

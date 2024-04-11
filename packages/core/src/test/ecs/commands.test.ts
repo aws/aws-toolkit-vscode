@@ -7,13 +7,13 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import { DefaultEcsClient } from '../../shared/clients/ecsClient'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
-import { PromptSettings } from '../../shared/settings'
+import { ToolkitPromptSettings } from '../../shared/settings'
 import { Service } from '../../ecs/model'
 import { stub } from '../utilities/stubber'
 import { EcsRunCommandPrompt, toggleExecuteCommandFlag } from '../../ecs/commands'
 
 describe('toggleExecuteCommandFlag', async function () {
-    const settings = new PromptSettings(new TestSettings())
+    const settings = new ToolkitPromptSettings(new TestSettings())
 
     before(async function () {
         await settings.disablePrompt(EcsRunCommandPrompt.Enable)
@@ -50,7 +50,7 @@ describe('toggleExecuteCommandFlag', async function () {
 })
 
 describe('openTaskInTerminal', async function () {
-    const settings = new PromptSettings(new TestSettings())
+    const settings = new ToolkitPromptSettings(new TestSettings())
 
     before(async function () {
         await settings.disablePrompt(EcsRunCommandPrompt.Enable)

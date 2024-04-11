@@ -9,7 +9,7 @@ import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../auth/secondaryAuth'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
-import { PromptSettings } from '../../shared/settings'
+import { AmazonQPromptSettings } from '../../shared/settings'
 import {
     scopesCodeWhispererCore,
     createBuilderIdProfile,
@@ -387,7 +387,7 @@ export class AuthUtil {
     }
 
     public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
-        const settings = PromptSettings.instance
+        const settings = AmazonQPromptSettings.instance
         const shouldShow = await settings.isPromptEnabled('codeWhispererConnectionExpired')
         if (!shouldShow || (isAutoTrigger && this.reauthenticatePromptShown)) {
             return

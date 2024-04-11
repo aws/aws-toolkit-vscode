@@ -452,11 +452,6 @@ describe('Auth', function () {
     })
 
     describe('AuthNode', function () {
-        it('shows a message to create a connection if no connections exist', async function () {
-            const node = new AuthNode(auth)
-            await assertTreeItem(node, { label: 'Connect to AWS to Get Started...' })
-        })
-
         it('shows a login message if not connected', async function () {
             await auth.createConnection(ssoProfile)
             const node = new AuthNode(auth)

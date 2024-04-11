@@ -10,7 +10,7 @@ import {
     DevSettings,
     Experiments,
     fromExtensionManifest,
-    PromptSettings,
+    ToolkitPromptSettings,
     Settings,
     testSetting,
 } from '../../shared/settings'
@@ -425,15 +425,15 @@ describe('DevSetting', function () {
 })
 
 describe('PromptSetting', function () {
-    const promptSettingKey = 'aws.toolkit.suppressPrompts'
+    const promptSettingKey = 'aws.suppressPrompts'
     const target = vscode.ConfigurationTarget.Workspace
 
     let settings: Settings
-    let sut: PromptSettings
+    let sut: ToolkitPromptSettings
 
     beforeEach(async function () {
         settings = new Settings(target)
-        sut = new PromptSettings(settings)
+        sut = new ToolkitPromptSettings(settings)
         await sut.reset()
     })
 

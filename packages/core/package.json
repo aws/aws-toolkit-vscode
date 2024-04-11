@@ -156,7 +156,7 @@
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": false
                 },
-                "aws.toolkit.suppressPrompts": {
+                "aws.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
                     "default": {},
@@ -233,6 +233,85 @@
                     "type": "object",
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
+                },
+                "aws.amazonq.logLevel": {
+                    "type": "string",
+                    "default": "debug",
+                    "enum": [
+                        "error",
+                        "warn",
+                        "info",
+                        "verbose",
+                        "debug"
+                    ],
+                    "enumDescriptions": [
+                        "Errors Only",
+                        "Errors and Warnings",
+                        "Errors, Warnings, and Info",
+                        "Errors, Warnings, Info, and Verbose",
+                        "Errors, Warnings, Info, Verbose, and Debug"
+                    ],
+                    "markdownDescription": "%AWS.configuration.description.logLevel%",
+                    "cloud9": {
+                        "cn": {
+                            "markdownDescription": "%AWS.configuration.description.logLevel.cn%"
+                        }
+                    }
+                },
+                "aws.amazonq.telemetry": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%AWS.configuration.description.telemetry%",
+                    "cloud9": {
+                        "cn": {
+                            "markdownDescription": "%AWS.configuration.description.telemetry.cn%"
+                        }
+                    }
+                },
+                "aws.amazonq.suppressPrompts": {
+                    "type": "object",
+                    "description": "%AWS.configuration.description.suppressPrompts%",
+                    "default": {},
+                    "properties": {
+                        "createCredentialsProfile": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "codeWhispererNewWelcomeMessage": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "codeWhispererConnectionExpired": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "amazonQWelcomePage": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "aws.codeWhisperer.includeSuggestionsWithCodeReferences": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.codewhisperer%",
+                    "default": true
+                },
+                "aws.codeWhisperer.importRecommendation": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.codewhisperer.importRecommendation%",
+                    "default": true
+                },
+                "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.codewhisperer.shareCodeWhispererContentWithAWS%",
+                    "default": true,
+                    "scope": "application"
+                },
+                "aws.codeWhisperer.javaCompilationOutput": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Provide the ABSOLUTE path which is used to store java project compilation results."
                 }
             }
         },
