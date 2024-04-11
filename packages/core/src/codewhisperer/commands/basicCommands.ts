@@ -410,6 +410,7 @@ const registerToolkitApiCallbackOnce = once(async () => {
     if (_toolkitApi && 'getTelemetryClientId' in _toolkitApi) {
         const clientId = await _toolkitApi.getTelemetryClientId()
         if (clientId) {
+            getLogger().debug(`Adopting telemetry client id ${clientId}`)
             await globals.context.globalState.update('telemetryClientId', clientId)
         }
     }
