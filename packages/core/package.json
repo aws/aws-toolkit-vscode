@@ -4220,14 +4220,13 @@
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run copyFiles",
         "compile": "npm run testCompile && webpack",
         "compileOnly": "tsc -p ./",
-        "webpackDevelopment": "webpack --mode development",
+        "compileDev": "npm run compile -- --mode development",
+        "webpackDev": "webpack --mode development",
         "serveVue": "webpack serve --config-name vue --mode development",
         "watch": "npm run testCompile -- -- --watch",
-        "testsWebWatch": "npm run clean && npm run buildScripts && npm run webpackDevelopment -- --watch",
         "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
-        "webDevelopmentCompile": "npm run compile -- --mode development",
-        "testWeb": "npm run webDevelopmentCompile && c8 ts-node ./scripts/test/testWeb.ts",
+        "testWeb": "npm run compileDev && c8 ts-node ./scripts/test/testWeb.ts",
         "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts",
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
@@ -4240,9 +4239,9 @@
     "scriptsComments": {
         "compile": "Builds EVERYTHING we would need for a final production-ready package",
         "compileOnly": "Only compiles the `core` source code.",
-        "webpackDevelopment": "Webpacks using all configs, but in development mode",
-        "serveVue": "Local server for Vue.js code for development purposes. Provides faster iteration when updating Vue files",
-        "webDevelopmentCompile": "Builds everything required for web mode to work during development"
+        "compileDev": "Same as compile, but in `development` mode",
+        "webpackDev": "Webpacks using all configs, but in development mode",
+        "serveVue": "Local server for Vue.js code for development purposes. Provides faster iteration when updating Vue files"
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",

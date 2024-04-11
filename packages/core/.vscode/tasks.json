@@ -17,14 +17,14 @@
         },
         {
             "label": "webpackWatch",
-            "command": "npm run webpackDevelopment -- --watch",
+            "command": "npm run webpackDev -- --watch",
             "type": "shell",
             "isBackground": true,
             "problemMatcher": "$ts-webpack-watch"
         },
         {
             "label": "testsBuildWatch",
-            "command": "npm run testsWebWatch",
+            "command": "npm run compileDev -- --watch",
             "detail": "Build that is sufficient for Web mode tests",
             "type": "shell",
             "isBackground": true,
