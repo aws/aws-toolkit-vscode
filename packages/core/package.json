@@ -234,41 +234,7 @@
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
                 },
-                "aws.amazonq.logLevel": {
-                    "type": "string",
-                    "default": "debug",
-                    "enum": [
-                        "error",
-                        "warn",
-                        "info",
-                        "verbose",
-                        "debug"
-                    ],
-                    "enumDescriptions": [
-                        "Errors Only",
-                        "Errors and Warnings",
-                        "Errors, Warnings, and Info",
-                        "Errors, Warnings, Info, and Verbose",
-                        "Errors, Warnings, Info, Verbose, and Debug"
-                    ],
-                    "markdownDescription": "%AWS.configuration.description.logLevel%",
-                    "cloud9": {
-                        "cn": {
-                            "markdownDescription": "%AWS.configuration.description.logLevel.cn%"
-                        }
-                    }
-                },
-                "aws.amazonq.telemetry": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%AWS.configuration.description.telemetry%",
-                    "cloud9": {
-                        "cn": {
-                            "markdownDescription": "%AWS.configuration.description.telemetry.cn%"
-                        }
-                    }
-                },
-                "aws.amazonq.suppressPrompts": {
+                "aws.amazonQ.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
                     "default": {},

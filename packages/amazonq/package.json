@@ -48,14 +48,14 @@
     "contributes": {
         "configuration": {
             "type": "object",
-            "title": "%AWS.productName%",
+            "title": "%AWS.amazonq.productName%",
             "cloud9": {
                 "cn": {
-                    "title": "%AWS.productName.cn%"
+                    "title": "%AWS.amazonq.productName.cn%"
                 }
             },
             "properties": {
-                "aws.amazonq.logLevel": {
+                "aws.logLevel": {
                     "type": "string",
                     "default": "debug",
                     "enum": [
@@ -79,7 +79,7 @@
                         }
                     }
                 },
-                "aws.amazonq.telemetry": {
+                "aws.telemetry": {
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "%AWS.configuration.description.telemetry%",
@@ -89,7 +89,7 @@
                         }
                     }
                 },
-                "aws.amazonq.suppressPrompts": {
+                "aws.amazonQ.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
                     "default": {},
