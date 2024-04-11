@@ -11,8 +11,8 @@ import { CodeTransformMavenBuildCommand, telemetry } from '../../../shared/telem
 import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { ToolkitError } from '../../../shared/errors'
-import { throwIfCancelled } from '../securityScanHandler'
 import { writeLogs } from './transformFileHandler'
+import { throwIfCancelled } from './transformApiHandler'
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 function installProjectDependencies(dependenciesFolder: FolderInfo) {

@@ -48,31 +48,6 @@ export async function getAuthType() {
     return authType
 }
 
-// log project details silently
-export async function validateAndLogProjectDetails() {
-    let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
-    let errorCode = undefined
-    try {
-        const openProjects = await getOpenProjects()
-        const validProjects = await validateOpenProjects(openProjects, true)
-        if (validProjects.length > 0) {
-            // validProjects[0].JDKVersion will be undefined if javap errors out or no .class files found, so call it UNSUPPORTED
-            const javaVersion = validProjects[0].JDKVersion ?? JDKVersion.UNSUPPORTED
-            telemetryJavaVersion = JDKToTelemetryValue(javaVersion) as CodeTransformJavaSourceVersionsAllowed
-        }
-    } catch (err: any) {
-        errorCode = err.code
-    } finally {
-        telemetry.codeTransform_projectDetails.emit({
-            passive: true,
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            codeTransformLocalJavaVersion: telemetryJavaVersion,
-            result: errorCode ? MetadataResult.Fail : MetadataResult.Pass,
-            reason: errorCode,
-        })
-    }
-}
-
 export function throwIfCancelled() {
     if (transformByQState.isCancelled()) {
         throw new TransformByQStoppedError()

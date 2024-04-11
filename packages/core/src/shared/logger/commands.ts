@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Logger } from '.'
+import { Logger, showLogOutputChannel } from '.'
 import { telemetry } from '../telemetry/telemetry'
 import { Commands } from '../vscode/commands2'
 import { getLogger } from './logger'
@@ -25,18 +25,28 @@ function clearSelection(editor: vscode.TextEditor): void {
 
 export class Logging {
     public static readonly declared = {
+        // Calls openLogUri().
         viewLogs: Commands.from(this).declareOpenLogUri('aws.viewLogs'),
+        // Calls openLogId().
         viewLogsAtMessage: Commands.from(this).declareOpenLogId('aws.viewLogsAtMessage'),
     }
 
-    public constructor(private readonly logUri: vscode.Uri, private readonly logger: Logger) {}
+    public constructor(private readonly logUri: vscode.Uri | undefined, private readonly logger: Logger) {}
 
     public async openLogUri(): Promise<vscode.TextEditor | undefined> {
+        if (!this.logUri) {
+            showLogOutputChannel()
+            return undefined
+        }
         telemetry.toolkit_viewLogs.emit({ result: 'Succeeded' })
         return vscode.window.showTextDocument(this.logUri)
     }
 
     public async openLogId(logId: number) {
+        if (!this.logUri) {
+            showLogOutputChannel()
+            return
+        }
         const msg = this.logger.getLogById(logId, this.logUri)
         const editor = await this.openLogUri()
         if (!msg || !editor) {

@@ -21,11 +21,11 @@ import {
     NoMavenJavaProjectsFoundError,
     NoOpenProjectsError,
 } from '../../../amazonqGumby/errors'
-import { throwIfCancelled } from '../../../codewhisperer/service/securityScanHandler'
 import {
     stopJob,
     pollTransformationJob,
     getHeadersObj,
+    throwIfCancelled,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import {
     validateOpenProjects,
