@@ -480,7 +480,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 })
             }
             transformByQState.setPolledJobStatus(status)
-            await vscode.commands.executeCommand('aws.amazonq.refresh')
             if (validStates.includes(status)) {
                 break
             }
@@ -512,8 +511,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Fail,
                 reason: 'GetTransformationFailed',
             })
-            console.log('Error = ', e)
-            console.log('Error messsage + metadata = ', errorMessage)
             throw new Error('Error while polling job status')
         }
     }
