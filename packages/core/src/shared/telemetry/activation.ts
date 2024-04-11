@@ -16,6 +16,8 @@ import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilit
 import { openSettings, Settings } from '../settings'
 import { TelemetryConfig } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
+import { VSCODE_EXTENSION_ID } from '../utilities'
+import { randomUUID } from 'crypto'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -52,7 +54,7 @@ export async function activate(extensionContext: vscode.ExtensionContext, awsCon
         if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
             showTelemetryNotice(extensionContext)
         }
-
+        await setupTelemetryId(extensionContext)
         await globals.telemetry.start()
     } catch (e) {
         // Only throw in a production build because:
@@ -118,5 +120,43 @@ export async function handleTelemetryNoticeResponse(
         }
     } catch (err) {
         getLogger().error('Error while handling response from telemetry notice: %O', err as Error)
+    }
+}
+
+/**
+ * Setup the telemetry client id at extension activation.
+ * This function is designed to let AWS Toolkit and Amazon Q share
+ * the same telemetry client id.
+ */
+
+export async function setupTelemetryId(extensionContext: vscode.ExtensionContext) {
+    const key = 'telemetryClientId'
+    try {
+        const currentClientId = globals.context.globalState.get<string>(key)
+        const storedClientId = extensionContext.workspaceState.get<string>(key)
+        if (currentClientId && storedClientId) {
+            if (extensionContext.extension.id === VSCODE_EXTENSION_ID.awstoolkit) {
+                getLogger().debug(`Store telemetry client id to workspace state ${currentClientId}`)
+                await extensionContext.workspaceState.update(key, currentClientId)
+            } else if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
+                getLogger().debug(`Set telemetry client id to ${currentClientId}`)
+                await globals.context.globalState.update(key, currentClientId)
+            } else {
+                getLogger().error(`Unexpected extension id ${extensionContext.extension.id}`)
+            }
+        } else if (!currentClientId && storedClientId) {
+            getLogger().debug(`Persist telemetry client id to global state ${storedClientId}`)
+            await globals.context.globalState.update(key, storedClientId)
+        } else if (currentClientId && !storedClientId) {
+            getLogger().debug(`Persist telemetry client id to workspace state ${currentClientId}`)
+            await extensionContext.workspaceState.update(key, currentClientId)
+        } else {
+            const clientId = randomUUID()
+            getLogger().debug(`Setup telemetry client id ${clientId}`)
+            await globals.context.globalState.update(key, clientId)
+            await extensionContext.workspaceState.update(key, clientId)
+        }
+    } catch (err) {
+        getLogger().error(`Erro while setting up telemetry id ${err}`)
     }
 }
