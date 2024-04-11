@@ -101,8 +101,8 @@
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
                     :itemId="LoginOption.BUILDER_ID"
-                    :itemText="'Create or sign-in using AWS Builder ID'"
-                    :itemTitle="'Personal'"
+                    :itemText="'No AWS account required'"
+                    :itemTitle="'Use For Free'"
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem
@@ -110,7 +110,7 @@
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Single sign-on with AWS IAM Identity Center'"
-                    :itemTitle="'Workforce'"
+                    :itemTitle="'Use professional license'"
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem

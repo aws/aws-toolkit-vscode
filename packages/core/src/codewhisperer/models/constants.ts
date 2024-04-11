@@ -99,13 +99,13 @@ export type PlatformLanguageId = (typeof platformLanguageIds)[number]
 /**
  * Prompt
  */
-export const pendingResponse = 'Waiting for CodeWhisperer...'
+export const pendingResponse = 'Waiting for Amazon Q...'
 
 export const runningSecurityScan = 'Scanning active file and its dependencies...'
 
-export const noSuggestions = 'No suggestions from CodeWhisperer'
+export const noSuggestions = 'No suggestions from Amazon Q'
 
-export const licenseFilter = 'CodeWhisperer suggestions were filtered due to reference setting'
+export const licenseFilter = 'Amazon Q suggestions were filtered due to reference setting'
 
 /**
  * Beta landing page file
@@ -188,7 +188,7 @@ export const referenceLogText = (
     `with code ${code} provided with reference under ${license} from repository ${repository}. Added to ${filePath} ${lineInfo}.`
 
 export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in 
-    <a href="#" onclick="openSettings();return false;">CodeWhisperer Settings</a>`
+    <a href="#" onclick="openSettings();return false;">Amazon Q Settings</a>`
 
 export const referenceLogPromptTextEnterpriseSSO =
     'Your organization controls whether suggestions include code with references. To update these settings, please contact your admin.'
@@ -233,13 +233,13 @@ export const vsCodeCursorUpdateDelay = 10
 export const reloadWindow = 'Reload Now'
 
 export const reloadWindowPrompt =
-    'Inline suggestion settings changed. The current window needs to be reloaded for CodeWhisperer to use these changes.'
+    'Inline suggestion settings changed. The current window needs to be reloaded for Amazon Q to use these changes.'
 
 export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s admin and has been reset to the value they\’ve specified.`
 
 export const ssoConfigAlertMessageShareData = `This setting doesn\’t apply, since you are in Professional tier`
 
-export const settingsLearnMore = 'Learn More about CodeWhisperer Settings'
+export const settingsLearnMore = 'Learn More about Amazon Q Settings'
 
 export const connectWithAWSBuilderId = `Connect with AWS`
 
@@ -251,7 +251,7 @@ export const throttlingLearnMore = `Learn More`
 
 export const throttlingMessage = `Maximum recommendation count reached for this month`
 
-export const connectionChangeMessage = `Keep using CodeWhisperer with `
+export const connectionChangeMessage = `Keep using Amazon Q with `
 
 // TODO: align this text with service side
 export const invalidCustomizationMessage = `You are not authorized to access`
@@ -260,7 +260,7 @@ export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
 
-export const connectionExpired = `Connection expired. To continue using Amazon Q/CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
+export const connectionExpired = `Connection expired. To continue using Amazon Q, connect with AWS Builder ID or AWS IAM Identity center.`
 
 export const DoNotShowAgain = `Don\'t Show Again`
 
@@ -273,7 +273,7 @@ export const userGroupKey = 'CODEWHISPERER_USER_GROUP'
 
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
-export const newCustomizationMessage = 'You have access to new CodeWhisperer customizations.'
+export const newCustomizationMessage = 'You have access to new Amazon Q customizations.'
 
 export const newCustomizationsAvailableKey = 'aws.amazonq.codewhisperer.newCustomizations'
 
@@ -445,7 +445,7 @@ export enum UserGroup {
 
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 
-export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
+export const supplemetalContextFetchingTimeoutMsg = 'Amazon Q supplemental context fetching timeout'
 
 export const codeFixAppliedSuccessMessage = 'Code fix was applied. Run a security scan to validate the fix.'
 
