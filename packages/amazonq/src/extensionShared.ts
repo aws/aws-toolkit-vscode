@@ -55,7 +55,7 @@ export async function activateShared(context: vscode.ExtensionContext) {
 
     await activateTelemetry(context, globals.awsContext, Settings.instance)
 
-    await initializeAuth(context, globals.awsContext, globals.loginManager, contextPrefix)
+    await initializeAuth(context, globals.loginManager, contextPrefix, undefined)
 
     await activateCodeWhisperer(extContext as ExtContext)
     await activateCWChat(context)

@@ -20,7 +20,7 @@ export async function initialize(
     extensionContext: vscode.ExtensionContext,
     loginManager: LoginManager,
     contextPrefix: string,
-    uriHandler: UriHandler,
+    uriHandler?: UriHandler
 ): Promise<void> {
     Auth.instance.onDidChangeActiveConnection(async conn => {
         // This logic needs to be moved to `Auth.useConnection` to correctly record `passive`
@@ -38,7 +38,7 @@ export async function initialize(
 
     await showManageConnectionsOnStartup()
 
-    uriHandler.onPath(`/${authenticationPath}`, () => {
+    uriHandler?.onPath(`/${authenticationPath}`, () => {
         // TODO emit telemetry
         getLogger().info('authenticated')
     })
