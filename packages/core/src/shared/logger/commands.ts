@@ -8,6 +8,7 @@ import { Logger } from '.'
 import { telemetry } from '../telemetry/telemetry'
 import { Commands } from '../vscode/commands2'
 import { getLogger } from './logger'
+import globals from '../extensionGlobals'
 
 function revealLines(editor: vscode.TextEditor, start: number, end: number): void {
     const startPos = editor.document.lineAt(start).range.start
@@ -36,21 +37,41 @@ export class Logging {
         return this.#instance
     }
 
-    public static init(logUri: vscode.Uri, logger: Logger, contextPrefix: string) {
+    /**
+     * @param logUri (optional) Log file path, only used for "developer mode" (`aws.dev.logfile` setting).
+     * @param logger
+     * @param contextPrefix Decided the command name based on the extension context.
+     */
+    public static init(logUri: vscode.Uri | undefined, logger: Logger, contextPrefix: string) {
         this.#instance = new Logging(logUri, logger, contextPrefix)
     }
 
-    constructor(private readonly logUri: vscode.Uri, private readonly logger: Logger, contextPrefix: string) {
+    /**
+     * @see {@link init}
+     */
+    constructor(
+        private readonly logUri: vscode.Uri | undefined,
+        private readonly logger: Logger,
+        contextPrefix: string
+    ) {
         this.viewLogs = Commands.register(`aws.${contextPrefix}.viewLogs`, () => this.openLogUri())
         this.viewLogsAtMessage = Commands.register(`aws.${contextPrefix}.viewLogsAtMessage`, id => this.openLogId(id))
     }
 
     public async openLogUri(): Promise<vscode.TextEditor | undefined> {
+        if (!this.logUri) {
+            globals.logOutputChannel.show(true)
+            return undefined
+        }
         telemetry.toolkit_viewLogs.emit({ result: 'Succeeded' })
         return vscode.window.showTextDocument(this.logUri)
     }
 
     public async openLogId(logId: number) {
+        if (!this.logUri) {
+            globals.logOutputChannel.show(true)
+            return
+        }
         const msg = this.logger.getLogById(logId, this.logUri)
         const editor = await this.openLogUri()
         if (!msg || !editor) {

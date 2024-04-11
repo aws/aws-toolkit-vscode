@@ -3,22 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
 import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
 import { Logger, LogLevel, getLogger } from '.'
 import { setLogger } from './logger'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
-import { waitUntil } from '../utilities/timeoutUtils'
-import { cleanLogFiles } from './util'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
 import { isWeb } from '../../common/webUtils'
 import { fsCommon } from '../../srcShared/fs'
 import globals from '../extensionGlobals'
-
-const localize = nls.loadMessageBundle()
 
 export const defaultLogLevel: LogLevel = 'debug'
 
@@ -33,15 +27,13 @@ export async function activate(
 ): Promise<void> {
     const settings = Settings.instance.getSection('aws')
     const devLogfile = settings.get('dev.logfile', '')
-    const logUri = devLogfile
-        ? vscode.Uri.file(resolvePath(devLogfile))
-        : vscode.Uri.joinPath(extensionContext.logUri, makeLogFilename())
+    const logUri = devLogfile ? vscode.Uri.file(resolvePath(devLogfile)) : undefined
 
     await fsCommon.mkdir(extensionContext.logUri)
 
     const mainLogger = makeLogger(
         {
-            logPaths: [logUri],
+            logPaths: logUri ? [logUri] : undefined,
             outputChannels: [logChannel],
             useConsoleLog: isWeb(),
         },
@@ -55,7 +47,7 @@ export async function activate(
     setLogger(
         makeLogger(
             {
-                logPaths: [logUri],
+                logPaths: logUri ? [logUri] : undefined,
                 outputChannels: [outputChannel, logChannel],
             },
             extensionContext.subscriptions
@@ -80,18 +72,6 @@ export async function activate(
 
     Logging.init(logUri, mainLogger, contextPrefix)
     extensionContext.subscriptions.push(Logging.instance.viewLogs, Logging.instance.viewLogsAtMessage)
-
-    createLogWatcher(logUri)
-        .then(sub => {
-            extensionContext.subscriptions.push(sub)
-        })
-        .catch(err => {
-            getLogger().warn('Failed to start log file watcher: %s', err)
-        })
-
-    cleanLogFiles(path.dirname(logUri.fsPath)).catch(err => {
-        getLogger().warn('Failed to clean-up old logs: %s', err)
-    })
 }
 
 /**
@@ -149,61 +129,4 @@ export function makeLogger(
 function getLogLevel(): LogLevel {
     const configuration = Settings.instance.getSection('aws')
     return configuration.get(`${globals.contextPrefix}logLevel`, defaultLogLevel)
-}
-
-/**
- * Creates a name for the toolkit's logfile.
- * Essentially an ISO string, but in the local timezone and without the trailing "Z"
- * @returns Log filename
- */
-function makeLogFilename(): string {
-    const now = new Date()
-    // local to machine: use getMonth/Date instead of UTC equivalent
-    // month is zero-terminated: offset by 1
-    const m = (now.getMonth() + 1).toString().padStart(2, '0')
-    const d = now.getDate().toString().padStart(2, '0')
-    const h = now.getHours().toString().padStart(2, '0')
-    const mn = now.getMinutes().toString().padStart(2, '0')
-    const s = now.getSeconds().toString().padStart(2, '0')
-    const dt = `${now.getFullYear()}${m}${d}T${h}${mn}${s}`
-
-    return `aws_toolkit_${dt}.log`
-}
-
-/**
- * Watches for renames on the log file and notifies the user.
- */
-async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable> {
-    if (isWeb()) {
-        getLogger().debug(`Not watching log file since we are in Browser.`)
-        return { dispose: () => {} }
-    }
-
-    const exists = await waitUntil(() => fsCommon.existsFile(logFile), { interval: 1000, timeout: 60000 })
-
-    if (!exists) {
-        getLogger().warn(`Log file ${logFile.path} does not exist!`)
-        return { dispose: () => {} }
-    }
-
-    let checking = false
-    // TODO: fs.watch() has many problems, consider instead:
-    //   - https://github.com/paulmillr/chokidar
-    //   - https://www.npmjs.com/package/fb-watchman
-    const fs = await import('fs')
-    const watcher = fs.watch(logFile.fsPath, async eventType => {
-        if (checking || eventType !== 'rename') {
-            return
-        }
-        checking = true
-        if (!(await fsCommon.existsFile(logFile))) {
-            await vscode.window.showWarningMessage(
-                localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
-            )
-            watcher.close()
-        }
-        checking = false
-    })
-
-    return { dispose: () => watcher.close() }
 }
