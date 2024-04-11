@@ -48,14 +48,14 @@ export function convertLegacy(value: unknown): boolean {
  * Generate a unique identifier for the user in the form of a UUID.
  * This identifier is unique to to the machine id and OS user name.
  */
-function generateTelemetryClientId(): string {
+export function generateTelemetryClientId(): string {
     const userId = `${env.machineId}-${os.userInfo({ encoding: 'utf-8' }).username}`
     const shasum = crypto.createHash('sha256')
     const mid = shasum.update(userId).digest('hex')
     const uid = `${mid.substring(0, 8)}-${mid.substring(8, 12)}-${mid.substring(12, 16)}-${mid.substring(
         16,
         20
-    )}-${mid.substring(20, 32)}}`
+    )}-${mid.substring(20, 32)}`
     return uid
 }
 
