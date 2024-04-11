@@ -124,7 +124,7 @@ describe('AuthUtil', async function () {
         assert.strictEqual(warningMessage.length, 1)
         assert.strictEqual(
             warningMessage[0].message,
-            'Connection expired. To continue using Amazon Q/CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.'
+            'Connection expired. To continue using Amazon Q, connect with AWS Builder ID or AWS IAM Identity center.'
         )
     })
 
