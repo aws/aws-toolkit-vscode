@@ -1,7 +1,7 @@
 {
     "name": "aws-toolkit-vscode",
-    "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
-    "description": "Including Amazon Q, CodeWhisperer, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
+    "displayName": "AWS Toolkit - Amazon Q and more",
+    "description": "Including Amazon Q, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
     "version": "2.19.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
