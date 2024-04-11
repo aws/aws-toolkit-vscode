@@ -4,46 +4,30 @@
     "version": "2.0.0",
     "tasks": [
         {
+            // Single build task to enable parallel tasks
+            "label": "build",
+            "dependsOn": ["watch", "webpackWatch"]
+        },
+        {
             "label": "watch",
             "type": "npm",
             "script": "watch",
             "problemMatcher": "$tsc-watch",
-            "isBackground": true,
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "dependsOn": ["serve"]
+            "isBackground": true
         },
         {
-            "label": "serve",
-            "type": "npm",
-            "script": "serve",
-            "group": "build",
+            "label": "webpackWatch",
+            "command": "npm run webpackDev -- --watch",
+            "type": "shell",
             "isBackground": true,
-            "problemMatcher": {
-                "owner": "custom",
-                "pattern": {
-                    "regexp": ".",
-                    "file": 1,
-                    "location": 2,
-                    "message": 3
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "Project is running at",
-                    "endsPattern": "compiled successfully"
-                }
-            }
+            "problemMatcher": "$ts-webpack-watch"
         },
         {
-            "label": "webWatch",
-            "type": "npm",
-            "script": "webWatch",
-            "detail": "Webpacks our toolkit code (with --watch) in preparation to be run in the browser",
+            "label": "testsBuildWatch",
+            "command": "npm run compileDev -- --watch",
+            "detail": "Build that is sufficient for Web mode tests",
+            "type": "shell",
             "isBackground": true,
-            // Since `webpack --watch` never terminates (but finishes packaging at some point),
-            // VS Code uses this to parse the CLI output to pattern match something that indicates it is done
             "problemMatcher": "$ts-webpack-watch"
         },
         /**
@@ -53,8 +37,8 @@
         From: https://stackoverflow.com/a/60330174
         **/
         {
-            "label": "webRunTerminate",
-            "command": "echo ${input:webRunTerminate}",
+            "label": "webRunTerminateCore",
+            "command": "echo ${input:webRunTerminateCore}",
             "type": "shell"
         },
         {
@@ -94,7 +78,7 @@
             "args": "terminateAll"
         },
         {
-            "id": "webRunTerminate",
+            "id": "webRunTerminateCore",
             "type": "command",
             "command": "workbench.action.tasks.terminate",
             "args": "webRun"

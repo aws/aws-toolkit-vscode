@@ -42,23 +42,9 @@
             a file in `Developer Tools` > `Sources`.
             I was inspired by this: https://github.com/microsoft/vscode-test-web/blob/897bca4907a87a6bc564efc242ce6794e5da3232/.vscode/launch.json#L28
             **/
-            "resolveSourceMapLocations": [
-                // "!**/node_modules/**", // TODO: Removing this makes it slow again, but debugging in VSCode won't work without it :(
-                "!**/vs/**",
-                "!**/extensions/**"
-            ],
+            "resolveSourceMapLocations": ["!**/node_modules/**", "!**/vs/**", "!**/extensions/**"],
             "preLaunchTask": "webRun",
             "postDebugTask": "webRunTerminate"
-        },
-        {
-            "name": "Extension (webpack)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
-            "preLaunchTask": "npm: compile",
-            "postDebugTask": "terminate"
         },
         {
             "name": "Test Lint",
@@ -67,28 +53,39 @@
             "program": "${workspaceFolder}/scripts/lint/testLint.ts",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Attach to ASL Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6009,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
-        },
-        {
-            "name": "Attach to SSM Document Language Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6010,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
         }
+        // ---- We do not need the following currently, and we want to reduce clutter. Re-enable if necessary ----
+        // {
+        //     "name": "Extension (webpack)",
+        //     "type": "extensionHost",
+        //     "request": "launch",
+        //     "runtimeExecutable": "${execPath}",
+        //     "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+        //     "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+        //     "preLaunchTask": "npm: compile",
+        //     "postDebugTask": "terminate"
+        // },
+        // {
+        //     "name": "Attach to ASL Server",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 6009,
+        //     "restart": true,
+        //     "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
+        // },
+        // {
+        //     "name": "Attach to SSM Document Language Server",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 6010,
+        //     "restart": true,
+        //     "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"],
+        // }
     ],
     "compounds": [
-        {
-            "name": "Extension + Attach to SSM Document Language Server",
-            "configurations": ["Extension", "Attach to SSM Document Language Server"]
-        }
+        // {
+        //     "name": "Extension + Attach to SSM Document Language Server",
+        //     "configurations": ["Extension", "Attach to SSM Document Language Server"]
+        // }
     ]
 }

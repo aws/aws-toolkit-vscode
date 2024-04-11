@@ -4,14 +4,14 @@
  */
 
 import type { ExtensionContext } from 'vscode'
-import { awsToolkitActivate, awsToolkitDeactivate } from 'aws-core-vscode'
+import { activate as activateCore, deactivate as deactivateCore } from 'aws-core-vscode'
 import { awsToolkitApi } from './api'
 
 export async function activate(context: ExtensionContext) {
-    await awsToolkitActivate(context)
+    await activateCore(context)
     return awsToolkitApi
 }
 
 export async function deactivate() {
-    await awsToolkitDeactivate()
+    await deactivateCore()
 }
