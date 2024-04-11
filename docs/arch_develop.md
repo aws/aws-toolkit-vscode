@@ -59,6 +59,19 @@ Additional quirks introduced by creating a core library from the original extens
 -   Extension tests run from the core lib. Since some of the tests require an extension context/sandbox, we initiate a "fake" extension to run these tests. This is also why there are vscode extensionproperties in the package.json
 -   Some of original extension code (that now lives in `packages/core`) depends on the package.json, specifically the contributes section. This section is very large AND needs to be present in both the core library and toolkit extension package.jsons. The core library code needs access to this section to create types, set up SAM debuggers, etc. The toolkit needs this section during packaging/debugging so that the extension can run in vscode. The short term solution was to creat a [build script](../packages/toolkit/scripts/build/handlePackageJson.ts) to copy necessary fields over to the toolkit extension during packaging and debugging.
 
+### Contributes and Settings
+
+Some components of the core library depend on the `package.json`s of the extensions. One example of this is compile time checking of the extension's settings values. However, VSCode also requires a complete local `package.json` for the individual extensions during packaging. As a temporary workaround to this, we are using scripts to auto-populate the `package.json`s for the individual extensions from the core `package.json`.
+
+-   [`packages/toolkit/../handlePackageJson.ts`](../packages/toolkit/scripts/build/handlePackageJson.ts)
+    -   Copies the entirety of the `contributes` and `engine` sections, except for `configuration.properties` relating to `packages/amazon`.
+    -   Restores to the original barebones `package.json` after packaging/debugging, to avoid a large amount of duplicate code.
+    -   To develop for the Toolkit extension: add all changes to `packages/core/package.json`
+-   [`packages/amazonq/../syncPackageJson.ts`](../packages/amazonq/scripts/build/syncPackageJson.ts)
+    -   Moves all Amazon Q related `configuration.properties` to the local `package.json` only, overwriting anything that exists with the same name locally.
+    -   Does not restore, it is a superset of what exists in `packages/core` for `configuration.properties`.
+    -   To develop for the Amazon Q extension: add all changes to `packages/amazonq/package.json`, EXCEPT for settings that are references by code in the core library, or settings that already exist in the core `package.json`
+
 ## Commands
 
 Many parts of the VS Code API relies on the use of 'commands' which are simply functions bound to a global ID. For small projects, this simplicity is great. But the base API doesn't offer a lot of common functionality that a large project might want: logging, error handling, etc.

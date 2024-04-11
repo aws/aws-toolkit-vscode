@@ -582,6 +582,8 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
 }
 
 /**
+ * PromptSettings
+ *
  * Controls flags for prompts that allow the user to hide them. Usually this is presented as
  * some variation of "Don't show again".
  *
@@ -597,8 +599,14 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  *     }
  * }
  * ```
+ *
+ * There are individual implementations for the Toolkit extension and Amazon Q extension.
+ * This is a temporary workaround to get compile time checking and runtime fetching
+ * of settings working.
+ *
+ * TODO: Settings should be defined in individual extensions, and passed to the
+ * core lib as necessary.
  */
-
 export const toolkitPrompts = settingsProps['aws.suppressPrompts'].properties
 type toolkitPromptName = keyof typeof toolkitPrompts
 export class ToolkitPromptSettings extends Settings.define(

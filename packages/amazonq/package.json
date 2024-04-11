@@ -23,9 +23,10 @@
     "main": "./dist/src/extension",
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
-        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles",
+        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles && npm run syncPackageJson",
         "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
+        "syncPackageJson": "ts-node ./scripts/build/syncPackageJson.ts",
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE CHANGELOG.md",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development",
         "package": "ts-node ../../scripts/package.ts",
@@ -39,6 +40,11 @@
         "aws-core-vscode": "file:../core/"
     },
     "devDependencies": {},
+    "contributesComments": {
+        "configuration": {
+            "properties": "Any settings also defined in packages/core/package.json will override same-named settings in this file."
+        }
+    },
     "contributes": {
         "configuration": {
             "type": "object",
