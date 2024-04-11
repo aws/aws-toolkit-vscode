@@ -244,7 +244,7 @@ export class JavaDependencyGraph extends DependencyGraph {
     }
 
     private autoDetectClasspath(projectPath: string, projectName: string, extension: string) {
-        const compileOutput = vscode.workspace.getConfiguration('aws.codeWhisperer').get('javaCompilationOutput')
+        const compileOutput = vscode.workspace.getConfiguration('aws.amazonQ').get('javaCompilationOutput')
         if (compileOutput && typeof compileOutput === 'string') {
             this._outputDirs.add(compileOutput)
         }

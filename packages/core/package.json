@@ -292,23 +292,23 @@
                     },
                     "additionalProperties": false
                 },
-                "aws.codeWhisperer.includeSuggestionsWithCodeReferences": {
+                "aws.amazonQ.includeSuggestionsWithCodeReferences": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.codewhisperer%",
                     "default": true
                 },
-                "aws.codeWhisperer.importRecommendation": {
+                "aws.amazonQ.importRecommendation": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.codewhisperer.importRecommendation%",
                     "default": true
                 },
-                "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {
+                "aws.amazonQ.shareCodeWhispererContentWithAWS": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.codewhisperer.shareCodeWhispererContentWithAWS%",
                     "default": true,
                     "scope": "application"
                 },
-                "aws.codeWhisperer.javaCompilationOutput": {
+                "aws.amazonQ.javaCompilationOutput": {
                     "type": "string",
                     "default": "",
                     "description": "Provide the ABSOLUTE path which is used to store java project compilation results."
