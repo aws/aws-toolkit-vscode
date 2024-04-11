@@ -25,7 +25,7 @@ const TelemetryFlag = addTypeName('boolean', convertLegacy)
 
 export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: TelemetryFlag }) {
     public isEnabled(): boolean {
-        return this.get(`${globals.contextPrefix}telemetry`, true)
+        return this.get(`${globals.contextPrefix}telemetry` as any, true)
     }
 }
 

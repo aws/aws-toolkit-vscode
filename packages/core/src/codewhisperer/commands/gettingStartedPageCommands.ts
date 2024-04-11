@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { CommandDeclarations, Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
 import { showCodeWhispererWebview } from '../vue/backend'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { PromptSettings } from '../../shared/settings'
+import { AmazonQPromptSettings } from '../../shared/settings'
 import { CodeWhispererSource } from './types'
 /**
  * The methods with backend logic for the Codewhisperer Getting Started Page commands.
@@ -18,7 +18,7 @@ export class CodeWhispererCommandBackend {
             source = 'vscodeComponent'
         }
 
-        const prompts = PromptSettings.instance
+        const prompts = AmazonQPromptSettings.instance
         //To check the condition If the user has already seen the welcome message
         if (!(await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage'))) {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_ButtonClick', passive: true })

@@ -10,7 +10,7 @@ import {
     DevSettings,
     Experiments,
     fromExtensionManifest,
-    PromptSettings,
+    ToolkitPromptSettings,
     Settings,
     testSetting,
 } from '../../shared/settings'
@@ -235,9 +235,7 @@ describe('Settings', function () {
             instance = new ProfileSettings(settings)
         })
 
-        // TODO: fromExtensionManifest setting checks are disable as part of the standalone refactor.
-        // We should enable this test once setting validation can be re-introduced.
-        it.skip('throws if the setting does not exist', function () {
+        it('throws if the setting does not exist', function () {
             assert.throws(() => fromExtensionManifest('aws', { foo: Boolean }))
         })
 
@@ -427,15 +425,15 @@ describe('DevSetting', function () {
 })
 
 describe('PromptSetting', function () {
-    const promptSettingKey = 'aws.toolkit.suppressPrompts'
+    const promptSettingKey = 'aws.suppressPrompts'
     const target = vscode.ConfigurationTarget.Workspace
 
     let settings: Settings
-    let sut: PromptSettings
+    let sut: ToolkitPromptSettings
 
     beforeEach(async function () {
         settings = new Settings(target)
-        sut = new PromptSettings(settings)
+        sut = new ToolkitPromptSettings(settings)
         await sut.reset()
     })
 
