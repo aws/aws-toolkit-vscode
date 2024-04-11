@@ -512,6 +512,8 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Fail,
                 reason: 'GetTransformationFailed',
             })
+            console.log('Error = ', e)
+            console.log('Error messsage + metadata = ', errorMessage)
             throw new Error('Error while polling job status')
         }
     }
