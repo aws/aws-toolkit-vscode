@@ -4,10 +4,10 @@
 			"path": "."
 		},
 		{
-			"path": "packages/core"
+			"path": "packages/toolkit"
 		},
 		{
-			"path": "packages/toolkit"
+			"path": "packages/core"
 		},
 		{
 			"path": "packages/amazonq"

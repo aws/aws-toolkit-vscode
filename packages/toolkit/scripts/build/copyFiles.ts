@@ -7,13 +7,9 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 
 // Copies various dependencies into "dist/".
-//
-// Options:
-//  `--vueHr`: controls whether files are copied from "node_modules/aws-core-vscode/dist/vuehr/" (Vue Hot Reload) or "…/vue/"
 
 const projectRoot = process.cwd()
 const outRoot = path.join(projectRoot, 'dist')
-let vueHr = false
 
 // The target file or directory must exist, otherwise we should fail the whole build.
 interface CopyTask {
@@ -75,7 +71,7 @@ const tasks: CopyTask[] = [
         destination: path.join('libs', 'vue.min.js'),
     },
     {
-        target: path.join('../../node_modules/aws-core-vscode/dist', vueHr ? 'vuehr' : 'vue'),
+        target: path.join('../../node_modules/aws-core-vscode/dist', 'vue'),
         destination: 'vue/',
     },
 
@@ -112,12 +108,6 @@ async function copy(task: CopyTask): Promise<void> {
 }
 
 void (async () => {
-    const args = process.argv.slice(2)
-    if (args.includes('--vueHr')) {
-        vueHr = true
-        console.log('Using Vue Hot Reload webpacks from core/')
-    }
-
     try {
         await Promise.all(tasks.map(copy))
     } catch (error) {
