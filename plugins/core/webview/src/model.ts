@@ -10,3 +10,16 @@ export interface Region {
     category: string,
     displayName: string
 }
+
+export interface IdcInfo {
+    profileName: string,
+    directoryId: string,
+    region: string,
+}
+
+export interface State {
+    stage: Stage,
+    ssoRegions: Region[],
+    authorizationCode: string,
+    lastLoginIdcInfo: IdcInfo
+}

@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {Store} from "vuex";
-import {IdcInfo, State} from "./q-ui";
-import {Region} from "./model";
+import {IdcInfo, Region, State} from "./model";
 
 export class IdeClient {
     constructor(private readonly store: Store<State>) {}

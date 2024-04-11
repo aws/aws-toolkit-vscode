@@ -2,14 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // eslint-disable-next-line header/header
-import { createApp } from 'vue'
+import {createApp} from 'vue'
 import {createStore, Store} from 'vuex'
-import HelloWorld from './components/root.vue'
+import root from './components/root.vue'
 import {IdcInfo, Region, Stage, State} from "../model";
 import {IdeClient} from "../ideClient";
 import './assets/common.scss'
 
-const app = createApp(HelloWorld, { app: 'AMAZONQ' })
+const app = createApp(root, { app: 'TOOLKIT' })
+
+// const app = createApp({
+//     data() {
+//         return {
+//             message: 'Hello World!'
+//         }
+//     },
+//     template: '<h1>{{ message }}</h1>'
+//
+// })
+
 const store = createStore<State>({
     state: {
         stage: 'START' as Stage,

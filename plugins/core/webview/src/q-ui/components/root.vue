@@ -6,7 +6,7 @@
         <!-- Body -->
         <div class="body">
             <!-- Functionality -->
-            <Login :disabled="false" :app="'AMAZONQ'"></Login>
+            <Login :disabled="false" :app="app"></Login>
         </div>
     </div>
 </template>
@@ -17,6 +17,9 @@ export default defineComponent({
     name: 'auth',
     components: {
         Login,
+    },
+    props: {
+        app: String
     },
     data() {
         return {}

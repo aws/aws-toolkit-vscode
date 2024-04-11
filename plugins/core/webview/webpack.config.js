@@ -71,4 +71,64 @@ const vueConfig = {
         new VueLoaderPlugin()
     ],
 };
-module.exports = vueConfig;
+
+const toolkitVueConfig = {
+    name: 'vue',
+    target: 'web',
+    entry: './src/q-ui/toolkit.ts',
+    output: {
+        path: path.resolve(__dirname, 'build/assets/js'),
+        filename: 'toolkitGetStart.js',
+        library: 'toolkitGetStart',
+        libraryTarget: 'var',
+        devtoolModuleFilenameTemplate: '../[resource-path]',
+    },
+    devtool: 'source-map',
+    resolve: {
+        extensions: ['.ts', '.js', '.vue'],
+        fallback: {
+            fs: false,
+            path: false,
+            util: false
+        },
+        alias: {
+            'vue': 'vue/dist/vue.esm-bundler.js',
+            '@': path.resolve(__dirname, "./src/")
+        }
+    },
+    experiments: {asyncWebAssembly: true},
+    module: {
+        rules: [
+            {test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader']},
+            {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                loader: 'ts-loader',
+                options: {
+                    appendTsSuffixTo: [/\.vue$/]
+                }
+            },
+            {
+                test: /\.vue$/,
+                loader: 'vue-loader',
+            },
+            {
+                test: /\.css$/,
+                use: ['vue-style-loader', 'css-loader'],
+            },
+            {
+                test: /\.(png|jpg|gif|svg)$/,
+                use: 'file-loader',
+            }
+        ]
+    },
+    plugins: [
+        new CopyWebpackPlugin({
+            patterns: [
+                {from: './node_modules/web-tree-sitter/tree-sitter.wasm', to: ''}
+            ]
+        }),
+        new VueLoaderPlugin()
+    ],
+};
+module.exports = [vueConfig, toolkitVueConfig];
