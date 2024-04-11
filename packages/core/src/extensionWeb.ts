@@ -39,6 +39,3 @@ function patchOsVersion() {
 export async function deactivate() {
     await deactivateShared()
 }
-
-export const awsToolkitWebActivate = activate
-export const awsToolkitWebDeactivate = deactivate

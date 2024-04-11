@@ -174,7 +174,8 @@ export abstract class VueWebview {
 
         this.protocol = commands
 
-        // Will be sent to the dist/vue folder by webpack
+        // All vue files defined by `source` are collected in to `dist/vue`
+        // so we must update the relative paths to point here
         const sourcePath = vscode.Uri.joinPath(vscode.Uri.parse('vue/'), source).path
         this.source = sourcePath[0] === '/' ? sourcePath.slice(1) : sourcePath // VSCode URIs like to create root paths...
     }
