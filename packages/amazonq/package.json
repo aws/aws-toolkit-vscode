@@ -404,36 +404,36 @@
             {
                 "command": "aws.amazonq.explainCode",
                 "title": "%AWS.command.amazonq.explainCode%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.refactorCode",
                 "title": "%AWS.command.amazonq.refactorCode%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.fixCode",
                 "title": "%AWS.command.amazonq.fixCode%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.optimizeCode",
                 "title": "%AWS.command.amazonq.optimizeCode%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.sendToPrompt",
                 "title": "%AWS.command.amazonq.sendToPrompt%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.login",
                 "title": "%AWS.command.login%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "cloud9": {
                     "cn": {
                         "title": "%AWS.command.login.cn%",
-                        "category": "%AWS.title.cn%"
+                        "category": "%AWS.amazonq.productName.cn%"
                     }
                 },
                 "enablement": "false"
@@ -441,10 +441,10 @@
             {
                 "command": "aws.amazonq.credentials.profile.create",
                 "title": "%AWS.command.credentials.profile.create%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.title.cn%"
+                        "category": "%AWS.amazonq.productName.cn%"
                     }
                 },
                 "enablement": "false"
@@ -452,10 +452,10 @@
             {
                 "command": "aws.amazonq.credentials.edit",
                 "title": "%AWS.command.credentials.edit%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.title.cn%"
+                        "category": "%AWS.amazonq.productName.cn%"
                     }
                 },
                 "enablement": "false"
@@ -463,10 +463,10 @@
             {
                 "command": "aws.amazonq.logout",
                 "title": "%AWS.command.logout%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.title.cn%"
+                        "category": "%AWS.amazonq.productName.cn%"
                     }
                 },
                 "enablement": "false"
@@ -474,22 +474,22 @@
             {
                 "command": "aws.amazonq.auth.addConnection",
                 "title": "%AWS.command.auth.addConnection%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.auth.manageConnections",
                 "title": "%AWS.command.auth.showConnectionsPage%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.reconnect",
                 "title": "%AWS.command.codewhisperer.reconnect%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.openReferencePanel",
                 "title": "%AWS.command.codewhisperer.openReferencePanel%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.transformationHub.reviewChanges.acceptChanges",
@@ -517,27 +517,27 @@
             {
                 "command": "aws.amazonq.auth.switchConnections",
                 "title": "%AWS.command.auth.switchConnections%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.auth.signout",
                 "title": "%AWS.command.auth.signout%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "enablement": "!isCloud9"
             },
             {
                 "command": "aws.amazonq.auth.help",
                 "title": "%AWS.generic.viewDocs%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "icon": "$(question)"
             },
             {
                 "command": "aws.amazonq.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.title.cn%"
+                        "category": "%AWS.amazonq.productName.cn%"
                     }
                 }
             },
@@ -545,76 +545,76 @@
                 "command": "aws.amazonq.submitFeedback",
                 "title": "%AWS.command.submitFeedback%",
                 "enablement": "!aws.isWebExtHost",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "icon": "$(comment)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.title.cn%"
+                        "category": "%AWS.amazonq.productName.cn%"
                     }
                 }
             },
             {
                 "command": "aws.amazonq.viewLogs",
                 "title": "%AWS.command.viewLogs%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.github",
                 "title": "%AWS.command.github%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.title.cn%"
+                        "category": "%AWS.amazonq.productName.cn%"
                     }
                 }
             },
             {
                 "command": "aws.amazonq.aboutExtension",
                 "title": "%AWS.command.aboutToolkit%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.invokeInlineCompletion",
                 "title": "%AWS.command.codewhisperer.title%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.configure",
                 "title": "%AWS.command.codewhisperer.configure%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "icon": "$(gear)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.title.cn%"
+                        "category": "%AWS.amazonq.productName.cn%"
                     }
                 }
             },
             {
                 "command": "aws.amazonq.introduction",
                 "title": "%AWS.command.codewhisperer.introduction%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "icon": "$(question)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.title.cn%"
+                        "category": "%AWS.amazonq.productName.cn%"
                     }
                 }
             },
             {
                 "command": "aws.amazonq.signout",
                 "title": "%AWS.command.codewhisperer.signout%",
-                "category": "%AWS.title%",
+                "category": "%AWS.amazonq.productName%",
                 "icon": "$(debug-disconnect)"
             },
             {
                 "command": "aws.amazonq.learnMore",
                 "title": "%AWS.amazonq.learnMore%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.amazonq.welcome",
                 "title": "%AWS.command.q.welcome%",
-                "category": "%AWS.title%"
+                "category": "%AWS.amazonq.productName%"
             },
             {
                 "command": "aws.dev.openMenu",
