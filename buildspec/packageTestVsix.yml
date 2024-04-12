@@ -26,7 +26,7 @@ phases:
         commands:
             - export HOME=/home/codebuild-user
             # Generate CHANGELOG.md
-            - npm run createRelease
+            - npm run createRelease -w packages/toolkit -w packages/amazonq
             - npm run package -w packages/toolkit -w packages/amazonq
 
 artifacts:

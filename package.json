@@ -30,8 +30,6 @@
         "testE2E": "npm run testE2E -w packages/ --if-present",
         "testInteg": "npm run testInteg -w packages/ --if-present",
         "package": "npm run package -w packages/toolkit",
-        "newChange": "ts-node ./scripts/newChange.ts",
-        "createRelease": "ts-node ./scripts/createRelease.ts",
         "format": "prettier --check plugins && npm run format -w packages/ --if-present",
         "formatfix": "prettier --write plugins && npm run formatfix -w packages/ --if-present",
         "lint": "npm run lint -w packages/ --if-present && npm run format",

@@ -27,14 +27,16 @@
         "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "syncPackageJson": "ts-node ./scripts/build/syncPackageJson.ts",
-        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE CHANGELOG.md",
+        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development",
         "package": "ts-node ../../scripts/package.ts",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "echo 'Nothing to lint yet!'",
         "watch": "npm run clean && npm run buildScripts -- --vueHr && tsc -watch -p ./",
-        "serve": "webpack serve --config-name mainServe --mode development"
+        "serve": "webpack serve --config-name mainServe --mode development",
+        "newChange": "ts-node ../../scripts/newChange.ts",
+        "createRelease": "ts-node ../../scripts/createRelease.ts"
     },
     "dependencies": {
         "aws-core-vscode": "file:../core/"

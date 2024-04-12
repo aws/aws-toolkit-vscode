@@ -10,12 +10,16 @@
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { version } from '../packages/toolkit/package.json'
 
+// Must run from a subproject root folder, e.g packages/toolkit
 const cwd = process.cwd()
+
+const packageJsonFile = './package.json'
+const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
+
 const changesDirectory = path.join(cwd, '.changes')
 const nextReleaseDirectory = path.join(changesDirectory, 'next-release')
-const changesFile = path.join(changesDirectory, `${version}.json`)
+const changesFile = path.join(changesDirectory, `${packageJson.version}.json`)
 
 fs.mkdirpSync(nextReleaseDirectory)
 
@@ -35,7 +39,7 @@ try {
 const timestamp = new Date().toISOString().split('T')[0]
 const changelog: any = {
     date: timestamp,
-    version: version,
+    version: packageJson.version,
     entries: [],
 }
 
@@ -49,7 +53,7 @@ changelog.entries.sort((x: { type: string }, y: { type: string }) => x.type.loca
 // Write changelog file
 fs.writeFileSync(changesFile, JSON.stringify(changelog, undefined, '\t'))
 const fileData = fs.readFileSync(path.join(cwd, 'CHANGELOG.md'))
-let append = `## ${version} ${timestamp}\n\n`
+let append = `## ${packageJson.version} ${timestamp}\n\n`
 for (const file of changelog.entries) {
     append += `- **${file.type}** ${file.description}\n`
 }
