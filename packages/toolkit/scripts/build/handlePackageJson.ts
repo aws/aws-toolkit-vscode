@@ -41,7 +41,7 @@ function main() {
 
         // Remove Amazon Q extension settings stored in core
         Object.keys(coreSettings).forEach(key => {
-            if (key.startsWith('aws.amazonq') || key.startsWith('aws.codeWhisperer')) {
+            if (key.startsWith('aws.amazonQ')) {
                 delete coreSettings[key]
             }
         })

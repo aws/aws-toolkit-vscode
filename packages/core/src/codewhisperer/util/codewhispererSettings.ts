@@ -9,7 +9,7 @@ const description = {
     importRecommendation: Boolean,
     shareCodeWhispererContentWithAWS: Boolean,
 }
-export class CodeWhispererSettings extends fromExtensionManifest('aws.codeWhisperer', description) {
+export class CodeWhispererSettings extends fromExtensionManifest('aws.amazonQ', description) {
     public isSuggestionsWithCodeReferencesEnabled(): boolean {
         return this.get(`includeSuggestionsWithCodeReferences`, false)
     }

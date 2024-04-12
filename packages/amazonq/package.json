@@ -48,14 +48,14 @@
     "contributes": {
         "configuration": {
             "type": "object",
-            "title": "%AWS.productName%",
+            "title": "%AWS.amazonq.productName%",
             "cloud9": {
                 "cn": {
-                    "title": "%AWS.productName.cn%"
+                    "title": "%AWS.amazonq.productName.cn%"
                 }
             },
             "properties": {
-                "aws.amazonq.logLevel": {
+                "aws.logLevel": {
                     "type": "string",
                     "default": "debug",
                     "enum": [
@@ -79,7 +79,7 @@
                         }
                     }
                 },
-                "aws.amazonq.telemetry": {
+                "aws.telemetry": {
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "%AWS.configuration.description.telemetry%",
@@ -89,7 +89,7 @@
                         }
                     }
                 },
-                "aws.amazonq.suppressPrompts": {
+                "aws.amazonQ.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
                     "default": {},
@@ -113,23 +113,23 @@
                     },
                     "additionalProperties": false
                 },
-                "aws.codeWhisperer.includeSuggestionsWithCodeReferences": {
+                "aws.amazonQ.includeSuggestionsWithCodeReferences": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.codewhisperer%",
                     "default": true
                 },
-                "aws.codeWhisperer.importRecommendation": {
+                "aws.amazonQ.importRecommendation": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.codewhisperer.importRecommendation%",
                     "default": true
                 },
-                "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {
+                "aws.amazonQ.shareCodeWhispererContentWithAWS": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.codewhisperer.shareCodeWhispererContentWithAWS%",
                     "default": true,
                     "scope": "application"
                 },
-                "aws.codeWhisperer.javaCompilationOutput": {
+                "aws.amazonQ.javaCompilationOutput": {
                     "type": "string",
                     "default": "",
                     "description": "Provide the ABSOLUTE path which is used to store java project compilation results."

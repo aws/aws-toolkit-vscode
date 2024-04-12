@@ -263,7 +263,7 @@ export function errorPromptHelper(error: Error) {
             )
             .then(async resp => {
                 if (resp === viewSettings) {
-                    openSettings('aws.codeWhisperer.javaCompilationOutput').catch(e => {
+                    openSettings('aws.amazonQ.javaCompilationOutput').catch(e => {
                         getLogger().error('openSettings failed: %s', (e as Error).message)
                     })
                 }
