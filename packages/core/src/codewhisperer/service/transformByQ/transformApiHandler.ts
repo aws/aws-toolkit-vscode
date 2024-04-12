@@ -566,12 +566,12 @@ export async function getTransformationStepsFixture(
                     description: 'This step should be hil identifier',
                     startTime: new Date(),
                     endTime: new Date(),
-                },
-            ],
-            downloadArtifacts: [
-                {
-                    downloadArtifactId: 'hil-test-artifact-id',
-                    downloadArtifactType: 'BuiltJars',
+                    downloadArtifacts: [
+                        {
+                            downloadArtifactId: 'hil-test-artifact-id',
+                            downloadArtifactType: 'BuiltJars',
+                        },
+                    ],
                 },
             ],
             startTime: new Date(),
@@ -582,8 +582,8 @@ export async function getTransformationStepsFixture(
 
 export function getDownloadArtifactIdentifiers(transformationStep: TransformationStep) {
     console.log('In getDownloadArtifactIdentifiers', transformationStep)
-    const artifactType = transformationStep.downloadArtifacts?.[0]?.downloadArtifactType
-    const artifactId = transformationStep.downloadArtifacts?.[0]?.downloadArtifactId
+    const artifactType = transformationStep.progressUpdates?.[0].downloadArtifacts?.[0]?.downloadArtifactType
+    const artifactId = transformationStep.progressUpdates?.[0].downloadArtifacts?.[0]?.downloadArtifactId
     return {
         artifactId,
         artifactType,
@@ -594,8 +594,8 @@ export function findDownloadArtifactStep(transformationSteps: TransformationStep
     console.log('In findDownloadArtifactStep', transformationSteps)
     for (let i = 0; i < transformationSteps.length; i++) {
         if (
-            transformationSteps[i].downloadArtifacts?.[0]?.downloadArtifactType ||
-            transformationSteps[i].downloadArtifacts?.[0]?.downloadArtifactId
+            transformationSteps[i].progressUpdates?.[0].downloadArtifacts?.[0]?.downloadArtifactType ||
+            transformationSteps[i].progressUpdates?.[0].downloadArtifacts?.[0]?.downloadArtifactId
         ) {
             return transformationSteps[i]
         }

@@ -74,12 +74,12 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
                             description: 'This step should be hil identifier',
                             startTime: new Date(),
                             endTime: new Date(),
-                        },
-                    ],
-                    downloadArtifacts: [
-                        {
-                            downloadArtifactId,
-                            downloadArtifactType,
+                            downloadArtifacts: [
+                                {
+                                    downloadArtifactId,
+                                    downloadArtifactType,
+                                },
+                            ],
                         },
                     ],
                     startTime: new Date(),
@@ -109,12 +109,12 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
                             description: 'This step should be hil identifier',
                             startTime: new Date(),
                             endTime: new Date(),
-                        },
-                    ],
-                    downloadArtifacts: [
-                        {
-                            downloadArtifactId,
-                            downloadArtifactType,
+                            downloadArtifacts: [
+                                {
+                                    downloadArtifactId,
+                                    downloadArtifactType,
+                                },
+                            ],
                         },
                     ],
                     startTime: new Date(),
@@ -139,9 +139,9 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
                             description: 'This step should be hil identifier',
                             startTime: new Date(),
                             endTime: new Date(),
+                            downloadArtifacts: undefined,
                         },
                     ],
-                    downloadArtifacts: undefined,
                     startTime: new Date(),
                     endTime: new Date(),
                 },
