@@ -67,7 +67,7 @@ jobs:
                       PKG_DISPLAY_NAME=$(grep -m 1 displayName packages/${PKG_NAME}/package.json | grep -o '[a-zA-z][^\"]\+' | tail -n1)
                       echo "version=$(grep -m 1 version packages/${PKG_NAME}/package.json | grep -o '[0-9][^\"]\+' | sed 's/-SNAPSHOT//')" >> $GITHUB_OUTPUT
                       echo "${PKG_NAME}_changes<<EOF" >> $GITHUB_OUTPUT
-                      # The following line adds extension display name to the topmost changelog section.
+                      # Add extension display name to the topmost changelog section.
                       cat packages/${PKG_NAME}/CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print; exit if $. == 2' | sed -e "1 s/## /## ${PKG_DISPLAY_NAME} - /" >> $GITHUB_OUTPUT
                   }
                   echo "feature=$FEAT_NAME" >> $GITHUB_OUTPUT
