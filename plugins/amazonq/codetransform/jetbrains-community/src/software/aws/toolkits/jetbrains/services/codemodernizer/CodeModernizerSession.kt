@@ -19,7 +19,6 @@ import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
-import software.aws.toolkits.jetbrains.services.codemodernizer.model.AwaitModernizationPlanResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerException
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
@@ -31,8 +30,6 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.plan.CodeModerniz
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.STATES_AFTER_INITIAL_BUILD
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.STATES_AFTER_STARTED
-import software.aws.toolkits.jetbrains.services.codemodernizer.utils.STATES_WHERE_JOB_STOPPED_PRE_PLAN_READY
-import software.aws.toolkits.jetbrains.services.codemodernizer.utils.STATES_WHERE_PLAN_EXIST
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getModuleOrProjectNameForFile
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.pollTransformationStatusAndPlan
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.toTransformationLanguage
@@ -169,51 +166,6 @@ class CodeModernizerSession(
         }
     }
 
-    private suspend fun awaitModernizationPlan(
-        jobId: JobId,
-        jobTransitionHandler: (currentStatus: TransformationStatus, migrationPlan: TransformationPlan?) -> Unit,
-    ): AwaitModernizationPlanResult {
-        var passedBuild = false
-        var passedStart = false
-        val result = jobId.pollTransformationStatusAndPlan(
-            succeedOn = STATES_WHERE_PLAN_EXIST,
-            failOn = STATES_WHERE_JOB_STOPPED_PRE_PLAN_READY,
-            clientAdaptor,
-            initialPollingSleepDurationMillis,
-            totalPollingSleepDurationMillis,
-            isDisposed,
-            sessionContext.project,
-        ) { old, new, plan ->
-            LOG.info { "Waiting for Transformation Plan for Modernization Job [$jobId]. State changed: $old -> $new" }
-            state.currentJobStatus = new
-            sessionContext.project.refreshCwQTree()
-            val instant = Instant.now()
-            state.updateJobHistory(sessionContext, new, instant)
-            setCurrentJobStopTime(new, instant)
-            setCurrentJobSummary(new)
-            jobTransitionHandler(new, plan)
-            if (!passedStart && new in STATES_AFTER_STARTED) {
-                passedStart = true
-            }
-            if (!passedBuild && new in STATES_AFTER_INITIAL_BUILD) {
-                passedBuild = true
-            }
-        }
-        return when {
-            result.succeeded && result.transformationPlan != null -> AwaitModernizationPlanResult.Success(result.transformationPlan)
-            result.state == TransformationStatus.UNKNOWN_TO_SDK_VERSION -> AwaitModernizationPlanResult.UnknownStatusWhenPolling
-            !passedStart && result.state == TransformationStatus.FAILED -> AwaitModernizationPlanResult.Failure(
-                result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_start_failure")
-            )
-
-            !passedBuild && result.state == TransformationStatus.FAILED -> AwaitModernizationPlanResult.BuildFailed(
-                result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_build_failure")
-            )
-            result.state == TransformationStatus.STOPPED -> AwaitModernizationPlanResult.Stopped
-            else -> AwaitModernizationPlanResult.Failure(message("codemodernizer.notification.warn.unknown_status_response"))
-        }
-    }
-
     private fun startJob(uploadId: String): StartTransformationResponse {
         val sourceLanguage = sessionContext.sourceJavaVersion.name.toTransformationLanguage()
         val targetLanguage = sessionContext.targetJavaVersion.name.toTransformationLanguage()
@@ -300,31 +252,14 @@ class CodeModernizerSession(
 
             // add delay to avoid the throttling error
             delay(1000)
-            val modernizationResult = clientAdaptor.getCodeModernizationJob(jobId.id)
-            state.currentJobCreationTime = modernizationResult.transformationJob().creationTime()
 
-            val modernizationPlan = when (val result = awaitModernizationPlan(jobId, jobTransitionHandler)) {
-                is AwaitModernizationPlanResult.Success -> result.plan
-                is AwaitModernizationPlanResult.BuildFailed -> return CodeModernizerJobCompletedResult.JobFailedInitialBuild(jobId, result.failureReason)
-                is AwaitModernizationPlanResult.Failure -> return CodeModernizerJobCompletedResult.JobFailed(
-                    jobId,
-                    result.failureReason,
-                )
-                is AwaitModernizationPlanResult.Stopped -> return CodeModernizerJobCompletedResult.Stopped
-                is AwaitModernizationPlanResult.UnknownStatusWhenPolling -> return CodeModernizerJobCompletedResult.JobFailed(
-                    jobId,
-                    message("codemodernizer.notification.warn.unknown_status_response"),
-                )
-            }
+            var isTransformationPlanEditorOpened = false
+            var passedBuild = false
+            var passedStart = false
 
-            state.transformationPlan = modernizationPlan
-            tryOpenTransformationPlanEditor()
-
-            var isPartialSuccess = false
             val result = jobId.pollTransformationStatusAndPlan(
                 succeedOn = setOf(
                     TransformationStatus.COMPLETED,
-                    TransformationStatus.STOPPING,
                     TransformationStatus.STOPPED,
                     TransformationStatus.PARTIALLY_COMPLETED,
                 ),
@@ -342,24 +277,58 @@ class CodeModernizerSession(
                 state.currentJobStatus = new
                 state.transformationPlan = plan
                 sessionContext.project.refreshCwQTree()
-                if (new == TransformationStatus.PARTIALLY_COMPLETED) {
-                    isPartialSuccess = true
+                // Open the transformation plan detail panel once transformation plan is available
+                if (state.transformationPlan != null && !isTransformationPlanEditorOpened) {
+                    tryOpenTransformationPlanEditor()
+                    isTransformationPlanEditorOpened = true
                 }
                 val instant = Instant.now()
+                // Set the job start time
+                if (state.currentJobCreationTime == Instant.MIN) {
+                    state.currentJobCreationTime = instant
+                }
                 state.updateJobHistory(sessionContext, new, instant)
                 setCurrentJobStopTime(new, instant)
+                setCurrentJobSummary(new)
+
+                if (!passedStart && new in STATES_AFTER_STARTED) {
+                    passedStart = true
+                }
+                if (!passedBuild && new in STATES_AFTER_INITIAL_BUILD) {
+                    passedBuild = true
+                }
+
                 jobTransitionHandler(new, plan)
                 LOG.info { "Waiting for Modernization Job [$jobId] to complete. State changed for job: $old -> $new" }
             }
             return when {
                 result.state == TransformationStatus.STOPPED -> CodeModernizerJobCompletedResult.Stopped
-                isPartialSuccess -> CodeModernizerJobCompletedResult.JobPartiallySucceeded(jobId, sessionContext.targetJavaVersion)
-                result.succeeded -> CodeModernizerJobCompletedResult.JobCompletedSuccessfully(jobId)
                 result.state == TransformationStatus.UNKNOWN_TO_SDK_VERSION -> CodeModernizerJobCompletedResult.JobFailed(
                     jobId,
                     message("codemodernizer.notification.warn.unknown_status_response")
                 )
 
+                result.state == TransformationStatus.PARTIALLY_COMPLETED -> CodeModernizerJobCompletedResult.JobPartiallySucceeded(
+                    jobId,
+                    sessionContext.targetJavaVersion
+                )
+
+                result.state == TransformationStatus.FAILED -> {
+                    if (!passedStart) {
+                        val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_start_failure")
+                        return CodeModernizerJobCompletedResult.JobFailed(jobId, failureReason)
+                    } else if (!passedBuild) {
+                        val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_build_failure")
+                        return CodeModernizerJobCompletedResult.JobFailedInitialBuild(jobId, failureReason)
+                    } else {
+                        val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_status_response")
+                        return CodeModernizerJobCompletedResult.JobFailed(jobId, failureReason)
+                    }
+                }
+
+                result.succeeded -> CodeModernizerJobCompletedResult.JobCompletedSuccessfully(jobId)
+
+                // Should not happen
                 else -> CodeModernizerJobCompletedResult.JobFailed(jobId, result.jobDetails?.reason())
             }
         } catch (e: Exception) {
