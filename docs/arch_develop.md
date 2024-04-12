@@ -35,7 +35,7 @@ Current quirks of the current monorepo status that should be resolved/evaluated 
 -   The [root package.json](../package.json) contains common dependencies for subprojects, and workspace
     entries for each of the subprojects.
     -   This package contains shortcuts to some of the `npm` scripts found in the subproject(s).
-    -   Other scripts, like `createRelease` and `newChange` run at the root level.
+    -   `createRelease` and `newChange` run at the subproject level only, e.g. from root level, try npm run createRelease -w packages/toolkit
     -   To run a script not present in the root `package.json`, use `npm run -w packages/toolkit <script>`
 -   `coverage/`, `.test-reports/`, `node_modules/` are hoisted to the project root. As more subprojects are added,
     we will need to evaluate how to merge and publish coverage reports.
