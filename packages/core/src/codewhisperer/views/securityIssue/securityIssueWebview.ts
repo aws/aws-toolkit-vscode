@@ -33,7 +33,7 @@ export class SecurityIssueWebview extends VueWebview {
 
     public applyFix() {
         const args: [CodeScanIssue | undefined, string | undefined, Component] = [this.issue, this.filePath, 'webview']
-        void vscode.commands.executeCommand('aws.codeWhisperer.applySecurityFix', ...args)
+        void vscode.commands.executeCommand('aws.amazonq.applySecurityFix', ...args)
     }
 
     public getRelativePath() {

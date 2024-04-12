@@ -77,7 +77,7 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
             codeLens.command = {
                 title: this.refs[i],
                 tooltip: 'Reference code',
-                command: 'aws.codeWhisperer.openReferencePanel',
+                command: 'aws.amazonq.openReferencePanel',
                 arguments: [placeholder, 'codelens'],
             }
             codeLenses.push(codeLens)

@@ -73,7 +73,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
 
         const args = [issue, filePath]
         const viewDetailsCommand = vscode.Uri.parse(
-            `command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(JSON.stringify(args))}`
+            `command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(JSON.stringify(args))}`
         )
 
         markdownString.appendMarkdown(
@@ -83,7 +83,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         if (suggestedFix) {
             const args: [CodeScanIssue, string, Component] = [issue, filePath, 'hover']
             const applyFixCommand = vscode.Uri.parse(
-                `command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(JSON.stringify(args))}`
+                `command:aws.amazonq.applySecurityFix?${encodeURIComponent(JSON.stringify(args))}`
             )
             markdownString.appendMarkdown(` | [$(wrench) Apply Fix](${applyFixCommand} "Apply suggested fix")\n`)
             markdownString.appendMarkdown('### Suggested Fix Preview\n')

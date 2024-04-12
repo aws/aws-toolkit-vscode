@@ -48,7 +48,7 @@
         "onLanguage:yaml",
         "onFileSystem:s3",
         "onFileSystem:s3-readonly",
-        "onCommand:aws.codeWhisperer.accept"
+        "onCommand:aws.amazonq.accept"
     ],
     "main": "./dist/src/main",
     "browser": "./dist/src/mainWeb",

@@ -36,8 +36,7 @@ export class CodeWhispererCommandDeclarations implements CommandDeclarations<Cod
         return (this.#instance ??= new CodeWhispererCommandDeclarations())
     }
     public readonly declared = {
-        showGettingStartedPage: Commands.from(CodeWhispererCommandBackend).declareShowGettingStartedPage(
-            'aws.codeWhisperer.gettingStarted'
-        ),
+        showGettingStartedPage:
+            Commands.from(CodeWhispererCommandBackend).declareShowGettingStartedPage('aws.amazonq.gettingStarted'),
     } as const
 }

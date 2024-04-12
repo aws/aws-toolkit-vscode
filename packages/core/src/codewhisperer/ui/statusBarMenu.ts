@@ -99,10 +99,10 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
     return children
 }
 
-export const listCodeWhispererCommandsId = 'aws.codewhisperer.listCommands'
+export const listCodeWhispererCommandsId = 'aws.amazonq.listCommands'
 export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispererCommandsId }, () => () => {
     once(() => telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' }))()
-    Commands.tryExecute('aws.codewhisperer.refreshAnnotation', true)
+    Commands.tryExecute('aws.amazonq.refreshAnnotation', true)
         .then()
         .catch(e => {
             getLogger().debug(

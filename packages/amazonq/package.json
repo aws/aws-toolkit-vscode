@@ -229,15 +229,15 @@
         "menus": {
             "commandPalette": [
                 {
-                    "command": "aws.codewhisperer.signout",
+                    "command": "aws.amazonq.signout",
                     "when": "false"
                 },
                 {
-                    "command": "aws.codewhisperer.reconnect",
+                    "command": "aws.amazonq.reconnect",
                     "when": "false"
                 },
                 {
-                    "command": "aws.codeWhisperer.openReferencePanel",
+                    "command": "aws.amazonq.openReferencePanel",
                     "when": "false"
                 },
                 {
@@ -313,7 +313,7 @@
                     "group": "navigation@2"
                 },
                 {
-                    "command": "aws.codeWhisperer.openReferencePanel",
+                    "command": "aws.amazonq.openReferencePanel",
                     "when": "view == aws.AmazonQChatView",
                     "group": "0_topAmazonQ@1"
                 },
@@ -323,12 +323,12 @@
                     "group": "1_amazonQ@1"
                 },
                 {
-                    "command": "aws.codewhisperer.signout",
+                    "command": "aws.amazonq.signout",
                     "when": "(view == aws.AmazonQChatView) && aws.codewhisperer.connected",
                     "group": "2_amazonQ@4"
                 },
                 {
-                    "command": "aws.codewhisperer.reconnect",
+                    "command": "aws.amazonq.reconnect",
                     "when": "(view == aws.AmazonQChatView) && aws.codewhisperer.connectionExpired",
                     "group": "2_amazonQ@3"
                 },
@@ -480,12 +480,12 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.codewhisperer.reconnect",
+                "command": "aws.amazonq.reconnect",
                 "title": "%AWS.command.codewhisperer.reconnect%",
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.codeWhisperer.openReferencePanel",
+                "command": "aws.amazonq.openReferencePanel",
                 "title": "%AWS.command.codewhisperer.openReferencePanel%",
                 "category": "%AWS.title%"
             },
@@ -572,12 +572,12 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.codeWhisperer",
+                "command": "aws.amazonq.invokeInlineCompletion",
                 "title": "%AWS.command.codewhisperer.title%",
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.codeWhisperer.configure",
+                "command": "aws.amazonq.configure",
                 "title": "%AWS.command.codewhisperer.configure%",
                 "category": "%AWS.title%",
                 "icon": "$(gear)",
@@ -588,7 +588,7 @@
                 }
             },
             {
-                "command": "aws.codeWhisperer.introduction",
+                "command": "aws.amazonq.introduction",
                 "title": "%AWS.command.codewhisperer.introduction%",
                 "category": "%AWS.title%",
                 "icon": "$(question)",
@@ -599,7 +599,7 @@
                 }
             },
             {
-                "command": "aws.codewhisperer.signout",
+                "command": "aws.amazonq.signout",
                 "title": "%AWS.command.codewhisperer.signout%",
                 "category": "%AWS.title%",
                 "icon": "$(debug-disconnect)"
@@ -689,19 +689,19 @@
                 "linux": "meta+alt+q"
             },
             {
-                "command": "aws.codeWhisperer",
+                "command": "aws.amazonq.invokeInlineCompletion",
                 "key": "alt+c",
                 "mac": "alt+c",
                 "when": "editorTextFocus && aws.codewhisperer.connected || isCloud9 && editorTextFocus"
             },
             {
-                "command": "aws.codeWhisperer.rejectCodeSuggestion",
+                "command": "aws.amazonq.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected || isCloud9 && suggestWidgetVisible && !editorReadonly"
             },
             {
-                "command": "aws.codeWhisperer.dismissTutorial",
+                "command": "aws.amazonq.dismissTutorial",
                 "key": "escape",
                 "mac": "escape",
                 "when": "aws.codewhisperer.tutorial.workInProgress && !inlineSuggestionVisible && !suggestWidgetVisible"
