@@ -10,7 +10,7 @@
 
     <resource-bundle>software.aws.toolkits.resources.MessagesBundle</resource-bundle>
 
-    <depends>core</depends>
+    <depends>aws.toolkit.core</depends>
     <xi:include href="/META-INF/module-amazonq.xml" />
 
     <extensions defaultExtensionNs="com.intellij">
