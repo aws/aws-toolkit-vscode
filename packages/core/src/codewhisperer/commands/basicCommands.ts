@@ -197,7 +197,7 @@ export const connectWithCustomization = Commands.declare(
 )
 
 export const showLearnMore = Commands.declare(
-    { id: 'aws.amazonq.learnMore', compositeKey: { 0: 'source' } },
+    { id: 'aws.amazonq._learnMore', compositeKey: { 0: 'source' } },
     () => async (source: CodeWhispererSource) => {
         telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
         void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))

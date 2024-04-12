@@ -18,7 +18,9 @@
     "qna": false,
     "activationEvents": [
         "onStartupFinished",
-        "onUri"
+        "onUri",
+        "onCommand:aws.amazonq.accept",
+        "onView:aws.codeWhisperer.securityPanel"
     ],
     "main": "./dist/src/extension",
     "scripts": {
