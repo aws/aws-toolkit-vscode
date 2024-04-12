@@ -91,7 +91,7 @@ export default defineComponent({
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .logoIcon {
     display: flex;
     flex-direction: row;
@@ -99,5 +99,13 @@ export default defineComponent({
     align-items: flex-start;
     padding-top: 75px;
     height: auto;
+}
+
+body.jb-dark #logo-text {
+    fill: white;
+}
+
+body.jb-light #logo-text {
+    fill: #232f3e; /* squid ink */
 }
 </style>
