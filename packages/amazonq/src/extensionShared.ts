@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as semver from 'semver'
 import { join } from 'path'
 import {
     CodeSuggestionsState,
@@ -35,6 +36,19 @@ import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 export async function activateShared(context: vscode.ExtensionContext) {
     const contextPrefix = 'amazonq'
     globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
+
+    // Avoid activation if older toolkit is installed
+    // Amazon Q is only compatible with AWS Toolkit >= 3.0.0
+    const toolkit = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+    if (toolkit) {
+        const toolkitVersion = semver.coerce(toolkit.packageJSON.version)
+        if (toolkitVersion && toolkitVersion.major < 3) {
+            await vscode.window.showInformationMessage(
+                `Amazon Q is not compatible with AWS Toolkit ${toolkit.packageJSON.version}. Please upgrade your AWS Toolkit extension to the latest version.`
+            )
+            return
+        }
+    }
 
     await initializeComputeRegion()
     initialize(context)
