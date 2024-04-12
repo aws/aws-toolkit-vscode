@@ -39,7 +39,6 @@
         "onStartupFinished",
         "onUri",
         "onDebugResolve:aws-sam",
-        "onView:aws.codeWhisperer.securityPanel",
         "onDebugInitialConfigurations",
         "onLanguage:javascript",
         "onLanguage:java",
@@ -47,8 +46,7 @@
         "onLanguage:csharp",
         "onLanguage:yaml",
         "onFileSystem:s3",
-        "onFileSystem:s3-readonly",
-        "onCommand:aws.amazonq.accept"
+        "onFileSystem:s3-readonly"
     ],
     "main": "./dist/src/main",
     "browser": "./dist/src/mainWeb",
