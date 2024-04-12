@@ -53,6 +53,9 @@ configurations {
     }
 
     all {
+        // IDE provides netty
+        exclude("io.netty")
+
         if (name.startsWith("detekt")) {
             return@all
         }
