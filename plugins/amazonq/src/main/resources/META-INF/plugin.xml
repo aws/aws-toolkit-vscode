@@ -2,9 +2,11 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
-    <id>plugin-amazonq</id>
+    <id>amazon.q</id>
     <version>1.0</version>
-    <idea-version since-build="231" until-build="999"/>
+    <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
+    <idea-version since-build="231" />
+    <depends>com.intellij.modules.platform</depends>
 
     <resource-bundle>software.aws.toolkits.resources.MessagesBundle</resource-bundle>
 
