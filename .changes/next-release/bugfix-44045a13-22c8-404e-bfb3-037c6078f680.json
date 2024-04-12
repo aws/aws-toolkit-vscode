@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "CodeWhisperer: handle exception when code scan service returns out of bounds line numbers"
-}
