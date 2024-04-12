@@ -11,16 +11,6 @@ import './assets/common.scss'
 
 const app = createApp(root, { app: 'TOOLKIT' })
 
-// const app = createApp({
-//     data() {
-//         return {
-//             message: 'Hello World!'
-//         }
-//     },
-//     template: '<h1>{{ message }}</h1>'
-//
-// })
-
 const store = createStore<State>({
     state: {
         stage: 'START' as Stage,
