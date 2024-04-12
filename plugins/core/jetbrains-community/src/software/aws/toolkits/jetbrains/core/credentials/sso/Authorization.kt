@@ -21,7 +21,6 @@ data class Authorization(
     val expiresAt: Instant,
     val pollInterval: Long,
     val createdAt: Instant,
-    var isCanceled: Boolean
 ) {
     override fun toString(): String = redactedString(this)
 }

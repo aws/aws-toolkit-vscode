@@ -34,9 +34,9 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.diskCache
 import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
-import software.aws.toolkits.jetbrains.core.credentials.sso.Authorization
 import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceAuthorizationGrantToken
 import software.aws.toolkits.jetbrains.core.credentials.sso.DiskCache
+import software.aws.toolkits.jetbrains.core.credentials.sso.PendingAuthorization
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoAccessTokenProvider
 import java.time.Duration
 import java.time.Instant
@@ -110,8 +110,8 @@ class InteractiveBearerTokenProvider(
 
     private val supplier = CachedSupplier.builder { refreshToken() }.prefetchStrategy(NonBlocking("AWS SSO bearer token refresher")).build()
     private val lastToken = AtomicReference<AccessToken?>()
-    val pendingAuthorization: Authorization?
-        get() = accessTokenProvider.authorization.get()
+    val pendingAuthorization: PendingAuthorization?
+        get() = accessTokenProvider.authorization
 
     init {
         lastToken.set(accessTokenProvider.loadAccessToken())

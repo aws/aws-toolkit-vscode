@@ -19,7 +19,7 @@
                 <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Authenticating...</div>
                 <div v-else>
                     <div class="title bottom-small-gap">Authenticating in browser...</div>
-                    <div v-if="authorizationCode.length > 0" class="confirmation-code-container bottom-small-gap">
+                    <div v-if="authorizationCode?.length !== 0" class="confirmation-code-container bottom-small-gap">
                         <div class="hint">CONFIRMATION CODE</div>
                         <div class="confirmation-code">{{ this.authorizationCode }}</div>
                     </div>
@@ -86,11 +86,11 @@ export default defineComponent({
         stage(): Stage {
             return this.$store.state.stage
         },
-        authorizationCode(): string {
+        authorizationCode(): string | undefined {
             return this.$store.state.authorizationCode
         },
         isAuthorizationInProgress(): boolean {
-            return this.authorizationCode != ""
+            return this.authorizationCode !== undefined
         }
     },
     methods: {

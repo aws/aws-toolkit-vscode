@@ -20,6 +20,6 @@ export interface IdcInfo {
 export interface State {
     stage: Stage,
     ssoRegions: Region[],
-    authorizationCode: string,
+    authorizationCode?: string,
     lastLoginIdcInfo: IdcInfo
 }
