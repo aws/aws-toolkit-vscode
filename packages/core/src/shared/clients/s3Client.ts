@@ -452,10 +452,11 @@ export class DefaultS3Client {
                 Delimiter: DEFAULT_DELIMITER,
                 MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
                 /**
-                 * Set '' as the default prefix to ensure that the bucket's content will be displayed 
+                 * Set '' as the default prefix to ensure that the bucket's content will be displayed
                  * when the user has at least list access to the root of the bucket.
                  * https://github.com/aws/aws-toolkit-vscode/issues/4643
-                 */ 
+                 * @default '' 
+                 */
                 Prefix: request.folderPath ?? defaultPrefix,
                 ContinuationToken: request.continuationToken,
             })
