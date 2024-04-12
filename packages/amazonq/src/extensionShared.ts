@@ -44,7 +44,8 @@ export async function activateShared(context: vscode.ExtensionContext) {
         const toolkitVersion = semver.coerce(toolkit.packageJSON.version)
         if (toolkitVersion && toolkitVersion.major < 3) {
             await vscode.window.showInformationMessage(
-                `Amazon Q is not compatible with AWS Toolkit ${toolkit.packageJSON.version}. Please upgrade your AWS Toolkit extension to the latest version.`
+                `Amazon Q is not compatible with AWS Toolkit ${toolkit.packageJSON.version}. Please upgrade your AWS Toolkit extension to the latest version and then restart VS Code.`,
+                'OK'
             )
             return
         }
