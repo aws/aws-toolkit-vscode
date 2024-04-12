@@ -1,3 +1,16 @@
+# _2.18_ (2024-04-12)
+- **(Feature)** Add support for Lambda runtime Java 21
+- **(Feature)** Add support for Lambda runtime Node.js 20
+- **(Feature)** Add support for Lambda runtime Python 3.12
+- **(Bug Fix)** CodeWhisperer: handle exception when code scan service returns out of bounds line numbers
+- **(Bug Fix)** Amazon Q Code Feature Development: fix the welcome message for /dev command
+- **(Removal)** Drop support for the Python 3.7 Lambda runtime
+- **(Removal)** Drop support for the Node.js14 Lambda runtime
+- **(Removal)** Drop support for the .NET 5.0 Lambda runtime
+- **(Removal)** Removed support for Gateway 2023.3
+- **(Removal)** Removed support for 2023.1.x IDEs
+- **(Removal)** Drop support for the Java 8 (AL2012) Lambda runtime
+
 # _2.17_ (2024-04-04)
 - **(Bug Fix)** Fix "null" appearing in feedback dialog prompts
 - **(Bug Fix)** Amazon Q Code Transformation - Omit Maven metadata files when uploading dependencies to fix certain build failures in backend.

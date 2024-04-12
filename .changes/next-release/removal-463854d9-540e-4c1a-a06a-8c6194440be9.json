@@ -1,4 +1,0 @@
-{
-  "type" : "removal",
-  "description" : "Drop support for the Python 3.7 Lambda runtime"
-}
