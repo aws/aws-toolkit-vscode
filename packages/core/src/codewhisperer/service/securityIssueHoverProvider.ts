@@ -76,9 +76,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
             `command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(JSON.stringify(args))}`
         )
 
-        markdownString.appendMarkdown(
-            `[$(eye) View Details](${viewDetailsCommand} 'Open "CodeWhisperer Security Issue"')\n`
-        )
+        markdownString.appendMarkdown(`[$(eye) View Details](${viewDetailsCommand} 'Open "Amazon Q Security Issue"')\n`)
 
         if (suggestedFix) {
             const args: [CodeScanIssue, string, Component] = [issue, filePath, 'hover']

@@ -48,7 +48,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     const openIssue = new vscode.CodeAction(`View details for "${issue.title}"`)
                     const args: [CodeScanIssue, string] = [issue, group.filePath]
                     openIssue.command = {
-                        title: 'Open "CodeWhisperer Security Issue"',
+                        title: 'Open "Amazon Q Security Issue"',
                         command: 'aws.amazonq.openSecurityIssuePanel',
                         arguments: args,
                     }

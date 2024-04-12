@@ -72,7 +72,7 @@ export async function showSecurityIssueWebview(ctx: vscode.ExtensionContext, iss
     activePanel.server.setFilePath(filePath)
 
     const webviewPanel = await activePanel.show({
-        title: 'CodeWhisperer Security Issue',
+        title: 'Amazon Q Security Issue',
         viewColumn: vscode.ViewColumn.Beside,
         cssFiles: ['securityIssue.css'],
     })

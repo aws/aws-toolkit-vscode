@@ -47,7 +47,7 @@ describe('securityIssueHoverProvider', () => {
                 'fix\n\n' +
                 `[$(eye) View Details](command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName])
-                )} 'Open "CodeWhisperer Security Issue"')\n` +
+                )} 'Open "Amazon Q Security Issue"')\n` +
                 ` | [$(wrench) Apply Fix](command:aws.amazonq.applySecurityFix?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
                 )} "Apply suggested fix")\n` +
