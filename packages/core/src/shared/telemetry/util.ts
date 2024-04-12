@@ -23,6 +23,8 @@ const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
 
 const TelemetryFlag = addTypeName('boolean', convertLegacy)
+const telemetryClientIdGlobalStatekey = 'telemetryClientId'
+const telemetryClientIdEnvKey = '__TELEMETRY_CLIENT_ID'
 
 export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: TelemetryFlag }) {
     public isEnabled(): boolean {
@@ -54,10 +56,10 @@ export const getClientId = shared(
             return '11111111-1111-1111-1111-111111111111'
         }
         try {
-            let clientId = globalState.get<string>('telemetryClientId')
+            let clientId = globalState.get<string>(telemetryClientIdGlobalStatekey)
             if (!clientId) {
                 clientId = randomUUID()
-                await globalState.update('telemetryClientId', clientId)
+                await globalState.update(telemetryClientIdGlobalStatekey, clientId)
             }
             return clientId
         } catch (error) {
@@ -164,32 +166,30 @@ export function validateMetricEvent(event: MetricDatum, fatal: boolean) {
  */
 
 export async function setupTelemetryId(extensionContext: vscode.ExtensionContext) {
-    const globalStatekey = 'telemetryClientId'
-    const envKey = '__TELEMETRY_CLIENT_ID'
     try {
-        const currentClientId = globals.context.globalState.get<string>(globalStatekey)
-        const storedClientId = process.env[envKey]
+        const currentClientId = globals.context.globalState.get<string>(telemetryClientIdGlobalStatekey)
+        const storedClientId = process.env[telemetryClientIdEnvKey]
         if (currentClientId && storedClientId) {
             if (extensionContext.extension.id === VSCODE_EXTENSION_ID.awstoolkit) {
                 getLogger().debug(`telemetry: Store telemetry client id to env ${currentClientId}`)
-                process.env[envKey] = currentClientId
+                process.env[telemetryClientIdEnvKey] = currentClientId
             } else if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
                 getLogger().debug(`telemetry: Set telemetry client id to ${currentClientId}`)
-                await globals.context.globalState.update(globalStatekey, currentClientId)
+                await globals.context.globalState.update(telemetryClientIdGlobalStatekey, currentClientId)
             } else {
                 getLogger().error(`Unexpected extension id ${extensionContext.extension.id}`)
             }
         } else if (!currentClientId && storedClientId) {
             getLogger().debug(`telemetry: Write telemetry client id to global state ${storedClientId}`)
-            await globals.context.globalState.update(globalStatekey, storedClientId)
+            await globals.context.globalState.update(telemetryClientIdGlobalStatekey, storedClientId)
         } else if (currentClientId && !storedClientId) {
             getLogger().debug(`telemetry: Write telemetry client id to env ${currentClientId}`)
-            process.env[envKey] = currentClientId
+            process.env[telemetryClientIdEnvKey] = currentClientId
         } else {
             const clientId = randomUUID()
             getLogger().debug(`telemetry: Setup telemetry client id ${clientId}`)
-            await globals.context.globalState.update(globalStatekey, clientId)
-            process.env[envKey] = clientId
+            await globals.context.globalState.update(telemetryClientIdGlobalStatekey, clientId)
+            process.env[telemetryClientIdEnvKey] = clientId
         }
     } catch (err) {
         getLogger().error(`Erro while setting up telemetry id ${err}`)
