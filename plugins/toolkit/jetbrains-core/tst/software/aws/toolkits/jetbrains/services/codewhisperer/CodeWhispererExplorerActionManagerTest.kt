@@ -26,8 +26,8 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererCon
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
-import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
-import software.aws.toolkits.jetbrains.core.credentials.sso.AccessTokenCacheKey
+import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceAuthorizationGrantToken
+import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceGrantAccessTokenCacheKey
 import software.aws.toolkits.jetbrains.core.credentials.sso.DiskCache
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
@@ -184,12 +184,12 @@ class CodeWhispererExplorerActionManagerTest {
         expectedIsCwExpired: Boolean
     ) {
         testDiskCache.saveAccessToken(
-            AccessTokenCacheKey(
+            DeviceGrantAccessTokenCacheKey(
                 connectionId = "us-east-1",
                 startUrl = startUrl,
                 scopes = CODEWHISPERER_SCOPES
             ),
-            AccessToken(
+            DeviceAuthorizationGrantToken(
                 startUrl = startUrl,
                 region = "us-east-1",
                 accessToken = aString(),

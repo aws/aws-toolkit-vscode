@@ -104,7 +104,7 @@ class DiskCacheTest {
         assertThat(sut.loadClientRegistration(ssoRegion))
             .usingRecursiveComparison()
             .isEqualTo(
-                ClientRegistration(
+                DeviceAuthorizationClientRegistration(
                     "DummyId",
                     "DummySecret",
                     expirationTime
@@ -114,7 +114,7 @@ class DiskCacheTest {
 
     @Test
     fun `valid scoped client registration loads correctly`() {
-        val key = ClientRegistrationCacheKey(
+        val key = DeviceAuthorizationClientRegistrationCacheKey(
             startUrl = ssoUrl,
             scopes = scopes,
             region = ssoRegion
@@ -134,7 +134,7 @@ class DiskCacheTest {
         assertThat(sut.loadClientRegistration(key))
             .usingRecursiveComparison()
             .isEqualTo(
-                ClientRegistration(
+                DeviceAuthorizationClientRegistration(
                     "DummyId",
                     "DummySecret",
                     expirationTime,
@@ -148,7 +148,7 @@ class DiskCacheTest {
         val expirationTime = DateTimeFormatter.ISO_INSTANT.parse("2020-04-07T21:31:33Z")
         sut.saveClientRegistration(
             ssoRegion,
-            ClientRegistration(
+            DeviceAuthorizationClientRegistration(
                 "DummyId",
                 "DummySecret",
                 Instant.from(expirationTime)
@@ -173,7 +173,7 @@ class DiskCacheTest {
 
     @Test
     fun `scoped client registration saves correctly`() {
-        val key = ClientRegistrationCacheKey(
+        val key = DeviceAuthorizationClientRegistrationCacheKey(
             startUrl = ssoUrl,
             scopes = scopes,
             region = ssoRegion
@@ -181,7 +181,7 @@ class DiskCacheTest {
         val expirationTime = DateTimeFormatter.ISO_INSTANT.parse("2020-04-07T21:31:33Z")
         sut.saveClientRegistration(
             key,
-            ClientRegistration(
+            DeviceAuthorizationClientRegistration(
                 "DummyId",
                 "DummySecret",
                 Instant.from(expirationTime),
@@ -203,6 +203,155 @@ class DiskCacheTest {
                     "scopes": ["scope1","scope2"]
                 }       
                 """.trimIndent()
+            )
+    }
+
+    @Test
+    fun `PKCE client registration loads correctly`() {
+        val key = PKCEClientRegistrationCacheKey(
+            issuerUrl = ssoUrl,
+            scopes = scopes,
+            region = ssoRegion,
+            clientType = "public",
+            grantTypes = listOf("authorization_code", "refresh_token"),
+            redirectUris = listOf("http://127.0.0.1/oauth/callback")
+        )
+        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
+        cacheLocation.resolve("646d06bb78960f8aea2e8efd07c7655f602e9c62.json")
+            .writeText(
+                """
+                {
+                  "clientId": "DummyId",
+                  "clientSecret": "DummySecret",
+                  "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}",
+                  "scopes": [
+                    "scope1",
+                    "scope2"
+                  ],
+                  "issuerUrl": "$ssoUrl",
+                  "region": "$ssoRegion",
+                  "clientType": "public",
+                  "grantTypes": [
+                    "authorization_code",
+                    "refresh_token"
+                  ],
+                  "redirectUris": [
+                    "http://127.0.0.1/oauth/callback"
+                  ]
+                }
+                """.trimIndent()
+            )
+
+        assertThat(sut.loadClientRegistration(key))
+            .usingRecursiveComparison()
+            .isEqualTo(
+                PKCEClientRegistration(
+                    "DummyId",
+                    "DummySecret",
+                    Instant.from(expirationTime),
+                    scopes,
+                    ssoUrl,
+                    ssoRegion,
+                    "public",
+                    listOf("authorization_code", "refresh_token"),
+                    listOf("http://127.0.0.1/oauth/callback")
+                )
+            )
+    }
+
+    @Test
+    fun `PKCE client registration saves correctly`() {
+        val key = PKCEClientRegistrationCacheKey(
+            issuerUrl = ssoUrl,
+            scopes = scopes,
+            region = ssoRegion,
+            clientType = "public",
+            grantTypes = listOf("authorization_code", "refresh_token"),
+            redirectUris = listOf("http://127.0.0.1/oauth/callback")
+        )
+        val expirationTime = DateTimeFormatter.ISO_INSTANT.parse("2020-04-07T21:31:33Z")
+        sut.saveClientRegistration(
+            key,
+            PKCEClientRegistration(
+                "DummyId",
+                "DummySecret",
+                Instant.from(expirationTime),
+                scopes,
+                ssoUrl,
+                ssoRegion,
+                "public",
+                listOf("authorization_code", "refresh_token"),
+                listOf("http://127.0.0.1/oauth/callback")
+            )
+        )
+
+        val clientRegistration = cacheLocation.resolve("646d06bb78960f8aea2e8efd07c7655f602e9c62.json")
+        if (SystemInfo.isUnix) {
+            assertPosixPermissions(clientRegistration, "rw-------")
+        }
+        assertThat(clientRegistration.readText())
+            .isEqualToIgnoringWhitespace(
+                """
+                {
+                  "clientId": "DummyId",
+                  "clientSecret": "DummySecret",
+                  "expiresAt": "2020-04-07T21:31:33Z",
+                  "scopes": [
+                    "scope1",
+                    "scope2"
+                  ],
+                  "issuerUrl": "$ssoUrl",
+                  "region": "$ssoRegion",
+                  "clientType": "public",
+                  "grantTypes": [
+                    "authorization_code",
+                    "refresh_token"
+                  ],
+                  "redirectUris": [
+                    "http://127.0.0.1/oauth/callback"
+                  ]
+                }
+                """.trimIndent()
+            )
+    }
+
+    @Test
+    fun `PKCE client registration cache key is not dependent on list order`() {
+        val key1 = PKCEClientRegistrationCacheKey(
+            issuerUrl = ssoUrl,
+            scopes = scopes,
+            region = ssoRegion,
+            clientType = "public",
+            grantTypes = listOf("refresh_token", "authorization_code"),
+            redirectUris = listOf("http://127.0.0.1/oauth/callback", "callback2")
+        )
+        val key2 = PKCEClientRegistrationCacheKey(
+            issuerUrl = ssoUrl,
+            scopes = scopes,
+            region = ssoRegion,
+            clientType = "public",
+            grantTypes = listOf("authorization_code", "refresh_token"),
+            redirectUris = listOf("callback2", "http://127.0.0.1/oauth/callback")
+        )
+        sut.saveClientRegistration(
+            key1,
+            PKCEClientRegistration(
+                "DummyId",
+                "DummySecret",
+                Instant.EPOCH,
+                scopes,
+                ssoUrl,
+                ssoRegion,
+                "public",
+                listOf("authorization_code", "refresh_token"),
+                listOf("http://127.0.0.1/oauth/callback", "callback2")
+            )
+        )
+
+        assertThat(sut.loadClientRegistration(key1))
+            .usingRecursiveComparison()
+            .isEqualTo(
+                sut.loadClientRegistration(key2)
             )
     }
 
@@ -242,7 +391,7 @@ class DiskCacheTest {
             """.trimIndent()
         )
 
-        val key = ClientRegistrationCacheKey(
+        val key = DeviceAuthorizationClientRegistrationCacheKey(
             startUrl = ssoUrl,
             scopes = scopes,
             region = ssoRegion
@@ -335,7 +484,7 @@ class DiskCacheTest {
         assertThat(sut.loadAccessToken(ssoUrl))
             .usingRecursiveComparison()
             .isEqualTo(
-                AccessToken(
+                DeviceAuthorizationGrantToken(
                     ssoUrl,
                     ssoRegion,
                     "DummyAccessToken",
@@ -360,7 +509,7 @@ class DiskCacheTest {
         assertThat(sut.loadAccessToken(ssoUrl))
             .usingRecursiveComparison()
             .isEqualTo(
-                AccessToken(
+                DeviceAuthorizationGrantToken(
                     ssoUrl,
                     ssoRegion,
                     "DummyAccessToken",
@@ -374,7 +523,7 @@ class DiskCacheTest {
         val expirationTime = DateTimeFormatter.ISO_INSTANT.parse("2020-04-07T21:31:33Z")
         sut.saveAccessToken(
             ssoUrl,
-            AccessToken(
+            DeviceAuthorizationGrantToken(
                 ssoUrl,
                 ssoRegion,
                 "DummyAccessToken",
@@ -404,11 +553,11 @@ class DiskCacheTest {
 
     @Test
     fun `scoped access token saves correctly`() {
-        val key = AccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
+        val key = DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
         val expirationTime = DateTimeFormatter.ISO_INSTANT.parse("2020-04-07T21:31:33Z")
         sut.saveAccessToken(
             key,
-            AccessToken(
+            DeviceAuthorizationGrantToken(
                 ssoUrl,
                 ssoRegion,
                 "DummyAccessToken",
@@ -465,7 +614,7 @@ class DiskCacheTest {
     fun `invalidate scoped access token deletes file`() {
         val expirationTime = now.plus(20, ChronoUnit.MINUTES)
         val cacheFile = cacheLocation.resolve("72286fb950f12c77c840239851fd64ac60275c5c.json")
-        val key = AccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
+        val key = DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
 
         cacheFile.writeText(
             """
@@ -491,8 +640,8 @@ class DiskCacheTest {
     fun `scope order does not matter for scoped access token cache`() {
         val expirationTime = now.plus(20, ChronoUnit.MINUTES)
         val cacheFile = cacheLocation.resolve("72286fb950f12c77c840239851fd64ac60275c5c.json")
-        val key1 = AccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
-        val key2 = AccessTokenCacheKey("connectionId", ssoUrl, listOf("scope2", "scope1"))
+        val key1 = DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
+        val key2 = DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope2", "scope1"))
 
         cacheFile.writeText(
             """
@@ -522,7 +671,7 @@ class DiskCacheTest {
 
         sut.saveClientRegistration(
             ssoRegion,
-            ClientRegistration(
+            DeviceAuthorizationClientRegistration(
                 "DummyId",
                 "DummySecret",
                 Instant.now()
@@ -545,7 +694,7 @@ class DiskCacheTest {
         val registration = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
         sut.saveClientRegistration(
             ssoRegion,
-            ClientRegistration(
+            DeviceAuthorizationClientRegistration(
                 "DummyId",
                 "DummySecret",
                 Instant.now()
@@ -557,7 +706,7 @@ class DiskCacheTest {
 
         sut.saveClientRegistration(
             ssoRegion,
-            ClientRegistration(
+            DeviceAuthorizationClientRegistration(
                 "DummyId",
                 "DummySecret",
                 Instant.now()
@@ -572,7 +721,7 @@ class DiskCacheTest {
     fun `handles reading client registration when file is owned but not readable`() {
         sut.saveClientRegistration(
             ssoRegion,
-            ClientRegistration(
+            DeviceAuthorizationClientRegistration(
                 "DummyId",
                 "DummySecret",
                 Instant.MAX
@@ -585,6 +734,96 @@ class DiskCacheTest {
         assertThat(sut.loadClientRegistration(ssoRegion)).isNotNull()
 
         assertPosixPermissions(registration, "rw-------")
+    }
+
+    @Test
+    fun `PKCE access token saves correctly`() {
+        val key = PKCEAccessTokenCacheKey(ssoUrl, "us-fake-1", listOf("scope1", "scope2"))
+        val expirationTime = DateTimeFormatter.ISO_INSTANT.parse("2020-04-07T21:31:33Z")
+        sut.saveAccessToken(
+            key,
+            PKCEAuthorizationGrantToken(
+                ssoUrl,
+                ssoRegion,
+                "DummyAccessToken",
+                "RefreshToken",
+                expiresAt = Instant.from(expirationTime),
+                createdAt = Instant.EPOCH
+            )
+        )
+
+        val accessTokenCache = cacheLocation.resolve("e5df41d83e4b011b7b6eedf9cc051db6989a3bca.json")
+        if (SystemInfo.isUnix) {
+            assertPosixPermissions(accessTokenCache, "rw-------")
+        }
+
+        assertThat(accessTokenCache.readText())
+            .isEqualToIgnoringWhitespace(
+                """
+                {
+                  "issuerUrl": "https://123456.awsapps.com/start",
+                  "region": "us-fake-1",
+                  "accessToken": "DummyAccessToken",
+                  "refreshToken": "RefreshToken",
+                  "expiresAt": "2020-04-07T21:31:33Z",
+                  "createdAt": "1970-01-01T00:00:00Z"
+                }
+                """.trimIndent()
+            )
+    }
+
+    @Test
+    fun `PKCE access token returns correctly`() {
+        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
+        val key = PKCEAccessTokenCacheKey(ssoUrl, ssoRegion, listOf("scope1", "scope2"))
+        cacheLocation.resolve("e5df41d83e4b011b7b6eedf9cc051db6989a3bca.json").writeText(
+            """
+            {
+              "issuerUrl": "$ssoUrl",
+              "region": "$ssoRegion",
+              "accessToken": "DummyAccessToken",
+              "refreshToken": "RefreshToken",
+              "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}",
+              "createdAt": "1970-01-01T00:00:00Z"
+            }
+            """.trimIndent()
+        )
+
+        assertThat(sut.loadAccessToken(key))
+            .usingRecursiveComparison()
+            .isEqualTo(
+                PKCEAuthorizationGrantToken(
+                    ssoUrl,
+                    ssoRegion,
+                    "DummyAccessToken",
+                    "RefreshToken",
+                    expiresAt = Instant.from(expirationTime),
+                    createdAt = Instant.EPOCH
+                )
+            )
+    }
+
+    @Test
+    fun `PKCE access token cache key not dependent on scope order`() {
+        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
+        val key1 = PKCEAccessTokenCacheKey(ssoUrl, ssoRegion, listOf("scope1", "scope2"))
+        val key2 = PKCEAccessTokenCacheKey(ssoUrl, ssoRegion, listOf("scope2", "scope1"))
+        cacheLocation.resolve("e5df41d83e4b011b7b6eedf9cc051db6989a3bca.json").writeText(
+            """
+            {
+              "issuerUrl": "$ssoUrl",
+              "region": "$ssoRegion",
+              "accessToken": "DummyAccessToken",
+              "refreshToken": "RefreshToken",
+              "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}",
+              "createdAt": "1970-01-01T00:00:00Z"
+            }
+            """.trimIndent()
+        )
+
+        assertThat(sut.loadAccessToken(key1))
+            .usingRecursiveComparison()
+            .isEqualTo(sut.loadAccessToken(key2))
     }
 
     private fun assertPosixPermissions(path: Path, expected: String) {
