@@ -1,0 +1,38 @@
+{
+  "date" : "2024-04-12",
+  "version" : "2.18",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add support for Lambda runtime Java 21"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for Lambda runtime Node.js 20"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for Lambda runtime Python 3.12"
+  }, {
+    "type" : "bugfix",
+    "description" : "CodeWhisperer: handle exception when code scan service returns out of bounds line numbers"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Code Feature Development: fix the welcome message for /dev command"
+  }, {
+    "type" : "removal",
+    "description" : "Drop support for the Python 3.7 Lambda runtime"
+  }, {
+    "type" : "removal",
+    "description" : "Drop support for the Node.js14 Lambda runtime"
+  }, {
+    "type" : "removal",
+    "description" : "Drop support for the .NET 5.0 Lambda runtime"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for Gateway 2023.3"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for 2023.1.x IDEs"
+  }, {
+    "type" : "removal",
+    "description" : "Drop support for the Java 8 (AL2012) Lambda runtime"
+  } ]
+}

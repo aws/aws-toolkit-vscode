@@ -1,4 +1,0 @@
-{
-  "type" : "removal",
-  "description" : "Drop support for the .NET 5.0 Lambda runtime"
-}
