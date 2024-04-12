@@ -2,5 +2,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
-    <depends>core</depends>
+    <depends>aws.toolkit.core</depends>
 </idea-plugin>
