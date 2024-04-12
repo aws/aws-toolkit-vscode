@@ -13,10 +13,7 @@ import * as path from 'path'
 
 // Must run from a subproject root folder, e.g packages/toolkit
 const cwd = process.cwd()
-
-const packageJsonFile = './package.json'
-const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
-
+const packageJson = JSON.parse(fs.readFileSync('./package.json', { encoding: 'utf-8' }))
 const changesDirectory = path.join(cwd, '.changes')
 const nextReleaseDirectory = path.join(changesDirectory, 'next-release')
 const changesFile = path.join(changesDirectory, `${packageJson.version}.json`)
