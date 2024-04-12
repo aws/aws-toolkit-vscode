@@ -1,7 +1,3 @@
-## 2.19.0-SNAPSHOT 2024-04-10
-
-- **Feature** Amazon Q Feature Dev: Use project context from workspace root directory instead of the /src folder
-
 ## 2.18.0 2024-04-04
 
 - **Bug Fix** Amazon Q Feature Dev: Fix followups after hitting iteration limit

@@ -26,8 +26,9 @@ phases:
                 npm version --no-git-tag-version "$VERSION" -w packages/${TARGET_EXTENSION}
                 # Call npm ci because 'createRelease' uses ts-node
                 npm ci
+            # TODO: fix createRelease (generates CHANGELOG) for "amazonq".
             - |
-                npm run createRelease
+                echo "$CODEBUILD_WEBHOOK_HEAD_REF" | >/dev/null grep master && npm run createRelease || true
             - |
                 git add packages/${TARGET_EXTENSION}/package.json
                 git add package-lock.json
