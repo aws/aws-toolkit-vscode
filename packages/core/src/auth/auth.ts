@@ -16,7 +16,7 @@ import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
-import { createFactoryFunction, isNonNullable, Mutable } from '../shared/utilities/tsUtils'
+import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
@@ -141,7 +141,7 @@ export class Auth implements AuthService, ConnectionManager {
         private readonly store: ProfileStore,
         private readonly iamProfileProvider = CredentialsProviderManager.getInstance(),
         private readonly createSsoClient = SsoClient.create.bind(SsoClient),
-        private readonly createSsoTokenProvider = createFactoryFunction(SsoAccessTokenProvider)
+        private readonly createSsoTokenProvider = SsoAccessTokenProvider.create.bind(SsoAccessTokenProvider)
     ) {}
 
     #activeConnection: Mutable<StatefulConnection> | undefined

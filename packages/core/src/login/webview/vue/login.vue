@@ -243,7 +243,7 @@ enum LoginOption {
 }
 
 function validateSsoUrlFormat(url: string) {
-    const regex = /^https?:\/\/(.+)\.awsapps\.com\/start$/
+    const regex = /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-.*)$/
     return regex.test(url)
 }
 

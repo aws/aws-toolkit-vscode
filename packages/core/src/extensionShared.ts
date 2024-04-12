@@ -112,10 +112,6 @@ export async function activateShared(context: vscode.ExtensionContext, contextPr
     // telemetry
     await activateTelemetry(context, globals.awsContext, Settings.instance)
 
-    // auth
-    await initializeAuth(context, globals.awsContext, globals.loginManager, contextPrefix)
-    await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
-
     // Create this now, but don't call vscode.window.registerUriHandler() until after all
     // Toolkit services have a chance to register their path handlers. #4105
     globals.uriHandler = new UriHandler()
@@ -137,6 +133,10 @@ export async function activateShared(context: vscode.ExtensionContext, contextPr
             telemetry.aws_help.emit()
         })
     )
+
+    // auth
+    await initializeAuth(context, globals.loginManager, contextPrefix, globals.uriHandler)
+    await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 
     const extContext: ExtContext = {
         extensionContext: context,
