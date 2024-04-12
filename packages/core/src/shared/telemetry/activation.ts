@@ -137,23 +137,23 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
         const storedClientId = process.env[envKey]
         if (currentClientId && storedClientId) {
             if (extensionContext.extension.id === VSCODE_EXTENSION_ID.awstoolkit) {
-                getLogger().debug(`Store telemetry client id to env ${currentClientId}`)
+                getLogger().debug(`telemetry: Store telemetry client id to env ${currentClientId}`)
                 process.env[envKey] = currentClientId
             } else if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
-                getLogger().debug(`Set telemetry client id to ${currentClientId}`)
+                getLogger().debug(`telemetry: Set telemetry client id to ${currentClientId}`)
                 await globals.context.globalState.update(globalStatekey, currentClientId)
             } else {
                 getLogger().error(`Unexpected extension id ${extensionContext.extension.id}`)
             }
         } else if (!currentClientId && storedClientId) {
-            getLogger().debug(`Persist telemetry client id to global state ${storedClientId}`)
+            getLogger().debug(`telemetry: Write telemetry client id to global state ${storedClientId}`)
             await globals.context.globalState.update(globalStatekey, storedClientId)
         } else if (currentClientId && !storedClientId) {
-            getLogger().debug(`Persist telemetry client id to workspace state ${currentClientId}`)
+            getLogger().debug(`telemetry: Write telemetry client id to env ${currentClientId}`)
             process.env[envKey] = currentClientId
         } else {
             const clientId = randomUUID()
-            getLogger().debug(`Setup telemetry client id ${clientId}`)
+            getLogger().debug(`telemetry: Setup telemetry client id ${clientId}`)
             await globals.context.globalState.update(globalStatekey, clientId)
             process.env[envKey] = clientId
         }
