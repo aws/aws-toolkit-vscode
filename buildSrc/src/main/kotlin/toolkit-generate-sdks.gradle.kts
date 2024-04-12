@@ -19,7 +19,7 @@ sourceSets {
         }
 
         java {
-            setSrcDirs(listOf(sdkGenerator.srcDir()))
+            setSrcDirs(listOf(sdkGenerator.srcDir(), "src"))
         }
     }
 

@@ -11,6 +11,8 @@
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
+        <httpRequestHandler implementation="software.aws.toolkits.jetbrains.core.credentials.sso.pkce.ToolkitOAuthCallbackHandler"/>
+
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.AwsSettings"
                             serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultAwsSettings"
                             testServiceImplementation="software.aws.toolkits.jetbrains.settings.MockAwsSettings"/>
@@ -52,6 +54,8 @@
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultToolkitConnectionManager"/>
 
+        <registryKey key="aws.dev.pkceAuth" description="True if new authorization requests should be using the PKCE grant flow"
+                     defaultValue="false" restartRequired="false"/>
         <registryKey key="aws.telemetry.endpoint" description="Endpoint to use for publishing AWS client-side telemetry"
                      defaultValue="https://client-telemetry.us-east-1.amazonaws.com" restartRequired="true"/>
         <registryKey key="aws.telemetry.identityPool" description="Cognito identity pool to use for publishing AWS client-side telemetry"

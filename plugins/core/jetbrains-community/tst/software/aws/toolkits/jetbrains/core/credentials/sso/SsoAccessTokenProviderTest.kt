@@ -69,7 +69,7 @@ class SsoAccessTokenProviderTest {
 
     @Test
     fun getAccessTokenWithAccessTokenCache() {
-        val accessToken = AccessToken(ssoUrl, ssoRegion, "dummyToken", expiresAt = clock.instant())
+        val accessToken = DeviceAuthorizationGrantToken(ssoUrl, ssoRegion, "dummyToken", expiresAt = clock.instant())
         ssoCache.stub {
             on(
                 ssoCache.loadAccessToken(ssoUrl)
@@ -99,12 +99,12 @@ class SsoAccessTokenProviderTest {
         val accessToken = runBlocking { sut.accessToken() }
         assertThat(accessToken).usingRecursiveComparison()
             .isEqualTo(
-                AccessToken(
+                DeviceAuthorizationGrantToken(
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
                     expiresAt = clock.instant().plusSeconds(180),
-                    createdAt = sut.authorizationCreationTime
+                    createdAt = clock.instant()
 
                 )
             )
@@ -145,12 +145,12 @@ class SsoAccessTokenProviderTest {
         val accessToken = runBlocking { sut.accessToken() }
         assertThat(accessToken).usingRecursiveComparison()
             .isEqualTo(
-                AccessToken(
+                DeviceAuthorizationGrantToken(
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
                     expiresAt = clock.instant().plusSeconds(180),
-                    createdAt = sut.authorizationCreationTime
+                    createdAt = clock.instant()
                 )
             )
 
@@ -183,11 +183,11 @@ class SsoAccessTokenProviderTest {
         val startTime = Instant.now()
         val accessToken = runBlocking { sut.accessToken() }
         val callDuration = Duration.between(startTime, Instant.now())
-        val creationTime = sut.authorizationCreationTime
+        val creationTime = clock.instant()
 
         assertThat(accessToken).usingRecursiveComparison()
             .isEqualTo(
-                AccessToken(
+                DeviceAuthorizationGrantToken(
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
@@ -210,7 +210,7 @@ class SsoAccessTokenProviderTest {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
         setupCacheStub(expirationClientRegistration)
 
-        val accessToken = AccessToken(ssoUrl, ssoRegion, "dummyToken", "refreshToken", clock.instant())
+        val accessToken = DeviceAuthorizationGrantToken(ssoUrl, ssoRegion, "dummyToken", "refreshToken", clock.instant())
         ssoCache.stub {
             on(
                 ssoCache.loadAccessToken(ssoUrl)
@@ -277,12 +277,12 @@ class SsoAccessTokenProviderTest {
 
         assertThat(accessToken).usingRecursiveComparison()
             .isEqualTo(
-                AccessToken(
+                DeviceAuthorizationGrantToken(
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
                     expiresAt = clock.instant().plusSeconds(180),
-                    createdAt = sut.authorizationCreationTime
+                    createdAt = clock.instant()
                 )
             )
 
@@ -341,7 +341,7 @@ class SsoAccessTokenProviderTest {
     }
 
     private fun setupCacheStub(expirationClientRegistration: Instant) {
-        setupCacheStub(ClientRegistration(clientId, clientSecret, expirationClientRegistration))
+        setupCacheStub(DeviceAuthorizationClientRegistration(clientId, clientSecret, expirationClientRegistration))
     }
 
     private fun setupCacheStub(returnValue: ClientRegistration?) {
