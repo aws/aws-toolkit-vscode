@@ -13,6 +13,7 @@ import {
 } from '../../../auth/sso/server'
 import request, { RequestError } from '../../../common/request'
 import { URLSearchParams } from 'url'
+import { ToolkitError } from '../../../shared/errors'
 
 describe('AuthSSOServer', function () {
     const code = 'zfhgaiufgsbdfigsdfg'
@@ -39,13 +40,25 @@ describe('AuthSSOServer', function () {
 
     async function assertRequestError(params: Record<string, string>, expectedErrorMsg: string) {
         const url = createURL(server.redirectUri, params)
+        const authorizationPromise = server.waitForAuthorization()
         try {
             const response = await request.fetch('GET', url).response
             assert.fail(`Expected error but found ${response.body}`)
         } catch (err: unknown) {
-            if (err instanceof RequestError) {
-                assert.strictEqual(err.code, 400)
-                assert.deepStrictEqual(err.body, expectedErrorMsg)
+            if (!(err instanceof RequestError)) {
+                assert.fail('Unknown error')
+            }
+
+            const e = err as RequestError
+            assert.strictEqual(e.code, 400)
+            assert.deepStrictEqual(e.body, expectedErrorMsg)
+        }
+
+        try {
+            await authorizationPromise
+        } catch (err: unknown) {
+            if (err instanceof ToolkitError) {
+                assert.deepStrictEqual(err.message, expectedErrorMsg)
                 return
             }
             assert.fail('Unknown error')
