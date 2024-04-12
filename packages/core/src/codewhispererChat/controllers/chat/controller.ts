@@ -33,7 +33,6 @@ import { EditorContentController } from '../../../amazonq/commons/controllers/co
 import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
-import { randomUUID } from 'crypto'
 import {
     CodeWhispererStreamingServiceException,
     GenerateAssistantResponseCommandOutput,
@@ -46,6 +45,7 @@ import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { randomUUID } from '../../../common/crypto'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
