@@ -1,0 +1,30 @@
+{
+	"date": "2024-04-15",
+	"version": "2.19.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: Fixed quick action command list inconsistency between Q tabs"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Code Transform: Handle whitespaces in manually entered JAVA_HOME"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: Fixed cursor not focuses to prompt input when code is sent to Q Chat"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: Fixed newly opening tabs have all quick actions disabled."
+		},
+		{
+			"type": "Feature",
+			"description": "Support extended CodeWhisperer session durations when using CodeCatalyst on the same SSO connection"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Feature Dev: Use project context from workspace root directory instead of the /src folder"
+		}
+	]
+}
