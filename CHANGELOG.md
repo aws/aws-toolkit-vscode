@@ -1,3 +1,12 @@
+## 2.19.0 2024-04-15
+
+- **Bug Fix** Amazon Q: Fixed quick action command list inconsistency between Q tabs
+- **Bug Fix** Amazon Q Code Transform: Handle whitespaces in manually entered JAVA_HOME
+- **Bug Fix** Amazon Q: Fixed cursor not focuses to prompt input when code is sent to Q Chat
+- **Bug Fix** Amazon Q: Fixed newly opening tabs have all quick actions disabled.
+- **Feature** Support extended CodeWhisperer session durations when using CodeCatalyst on the same SSO connection
+- **Feature** Amazon Q Feature Dev: Use project context from workspace root directory instead of the /src folder
+
 ## 2.18.0 2024-04-04
 
 - **Bug Fix** Amazon Q Feature Dev: Fix followups after hitting iteration limit

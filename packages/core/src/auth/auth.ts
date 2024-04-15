@@ -10,7 +10,6 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
-import { randomUUID } from 'crypto'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
@@ -61,6 +60,7 @@ import {
 } from './connection'
 import { isSageMaker, isCloud9 } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { randomUUID } from '../common/crypto'
 
 interface AuthService {
     /**
