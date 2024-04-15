@@ -41,7 +41,6 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator"
                             serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.customization.DefaultCodeWhispererModelConfigurator"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererFeatureConfigService"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.startup.QPluginUpdateManager"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager"/>
         <projectService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor"

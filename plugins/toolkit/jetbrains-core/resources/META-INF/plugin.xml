@@ -286,10 +286,10 @@
 
         <!-- plugin configurables -->
         <applicationConfigurable
-            id="aws"
+            id="aws.old"
             groupId="tools"
             bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="aws.settings.title"
+            key="aws.settings.title.old"
             instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"
         />
         <projectConfigurable

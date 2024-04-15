@@ -26,11 +26,10 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import software.aws.toolkits.jetbrains.AwsToolkit.PLUGIN_ID
-import software.aws.toolkits.jetbrains.services.codewhisperer.startup.QPluginUpdateManager
+import software.aws.toolkits.jetbrains.AwsToolkit.TOOLKIT_PLUGIN_ID
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 
-class QPluginUpdateManagerTest {
+class PluginUpdateManagerTest {
     @Rule
     @JvmField
     val applicationRule = ApplicationRule()
@@ -39,14 +38,14 @@ class QPluginUpdateManagerTest {
     @JvmField
     val disposableRule = DisposableRule()
 
-    private lateinit var sut: QPluginUpdateManager
-    private val testIdeaPluginDescriptorToolkit = getPluginDescriptorForIdAndVersion(PLUGIN_ID, "1.84")
+    private lateinit var sut: PluginUpdateManager
+    private val testIdeaPluginDescriptorToolkit = getPluginDescriptorForIdAndVersion(TOOLKIT_PLUGIN_ID, "1.84")
     private var isAutoUpdateEnabledDefault: Boolean = false
 
     @Before
     fun setup() {
         assumeTrue("hangs in 2023.2?", ApplicationInfo.getInstance().build.baselineVersion != 232)
-        sut = spy(QPluginUpdateManager.getInstance())
+        sut = spy(PluginUpdateManager.getInstance())
         sut.stub {
             on {
                 getUpdateInfo()
@@ -67,7 +66,7 @@ class QPluginUpdateManagerTest {
             }
         }
         ApplicationManager.getApplication().replaceService(
-            QPluginUpdateManager::class.java,
+            PluginUpdateManager::class.java,
             sut,
             disposableRule.disposable
         )
@@ -87,33 +86,33 @@ class QPluginUpdateManagerTest {
 
     @Test
     fun `test getUpdate() should return null if current version is same or newer`() {
-        var testPluginDescriptorCurrentVersion = getPluginDescriptorForIdAndVersion(PLUGIN_ID, "1.84")
+        var testPluginDescriptorCurrentVersion = getPluginDescriptorForIdAndVersion(TOOLKIT_PLUGIN_ID, "1.84")
         assertThat(sut.getUpdate(testPluginDescriptorCurrentVersion)).isNull()
-        testPluginDescriptorCurrentVersion = getPluginDescriptorForIdAndVersion(PLUGIN_ID, "1.85")
+        testPluginDescriptorCurrentVersion = getPluginDescriptorForIdAndVersion(TOOLKIT_PLUGIN_ID, "1.85")
         assertThat(sut.getUpdate(testPluginDescriptorCurrentVersion)).isNull()
     }
 
     @Test
     fun `test getUpdate() should return toolkit if current version is older`() {
-        val testPluginDescriptorCurrentVersion = getPluginDescriptorForIdAndVersion(PLUGIN_ID, "1.83")
+        val testPluginDescriptorCurrentVersion = getPluginDescriptorForIdAndVersion(TOOLKIT_PLUGIN_ID, "1.83")
         val update = sut.getUpdate(testPluginDescriptorCurrentVersion)
         assertThat(update).isNotNull
         assertThat(update?.pluginVersion).isEqualTo("1.84")
-        assertThat(update?.id.toString()).isEqualTo(PLUGIN_ID)
+        assertThat(update?.id.toString()).isEqualTo(TOOLKIT_PLUGIN_ID)
     }
 
     @Test
     fun `test auto update feature respects user setting`() {
         AwsSettings.getInstance().isAutoUpdateEnabled = false
-        sut.runTask()
+        sut.scheduleAutoUpdate()
         runInEdt {
-            verify(sut, never()).checkForUpdates(any())
+            verify(sut, never()).checkForUpdates(any(), any())
         }
 
         AwsSettings.getInstance().isAutoUpdateEnabled = true
-        sut.runTask()
+        sut.scheduleAutoUpdate()
         runInEdt {
-            verify(sut).checkForUpdates(any())
+            verify(sut).checkForUpdates(any(), any())
         }
     }
 
