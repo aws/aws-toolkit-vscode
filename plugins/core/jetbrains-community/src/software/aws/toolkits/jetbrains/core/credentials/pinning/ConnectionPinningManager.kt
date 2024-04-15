@@ -15,8 +15,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
-import software.aws.toolkits.jetbrains.utils.notifyInfo
-import software.aws.toolkits.resources.message
 import java.util.concurrent.ConcurrentHashMap
 
 interface FeatureWithPinnedConnection {
@@ -103,16 +101,12 @@ class DefaultConnectionPinningManager :
         }
 
         val pinConnections = { featuresToPin: List<FeatureWithPinnedConnection>, connectionToPin: ToolkitConnection ->
-            val featuresString = if (featuresToPin.size == 1) {
-                featuresToPin.first().featureName
-            } else {
-                "${featuresToPin.dropLast(1).joinToString(",") { it.featureName }} and ${featuresToPin.last().featureName}"
-            }
-
             featuresToPin.forEach {
                 setPinnedConnection(it, connectionToPin)
             }
-            notifyInfo(message("credentials.switch.notification.title", featuresString, connectionToPin.label))
+
+            // TODO: don't know if we still want to keep this for CodeCatalyst
+//            notifyInfo(message("credentials.switch.notification.title", featuresString, connectionToPin.label))
         }
 
         if (newConnectionFeatures.isNotEmpty()) {

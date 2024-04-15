@@ -11,6 +11,8 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 
 // TODO: unify with AwsConnectionManager
@@ -76,6 +78,16 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
             }
 
             null
+        }
+    }
+
+    override fun isFeatureEnabled(feature: FeatureWithPinnedConnection): Boolean {
+        val conn = activeConnectionForFeature(feature) as? AwsBearerTokenConnection? ?: return false
+        val provider = conn.getConnectionSettings().tokenProvider.delegate as? BearerTokenProvider ?: return false
+        return when (provider.state()) {
+            BearerTokenAuthState.AUTHORIZED -> true
+            BearerTokenAuthState.NEEDS_REFRESH -> true
+            BearerTokenAuthState.NOT_AUTHENTICATED -> false
         }
     }
 

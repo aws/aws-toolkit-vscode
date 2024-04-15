@@ -35,6 +35,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getConnectionCount
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getEnabledConnections
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getSourceOfEntry
@@ -70,7 +71,7 @@ fun rolePopupFromConnection(
                     scopes = scopes
                 )
 
-                authAndUpdateConfig(project, profile, configFilesFacade) {
+                authAndUpdateConfig(project, profile, configFilesFacade, {}) {
                     Messages.showErrorDialog(project, it, message("gettingstarted.explorer.iam.add"))
                 } ?: return@runInEdt
             } else {
@@ -169,6 +170,7 @@ fun requestCredentialsForCodeWhisperer(
     return isAuthenticationSuccessful
 }
 
+@Deprecated("pending moving to Q package")
 fun requestCredentialsForQ(
     project: Project,
     initialConnectionCount: Int = getConnectionCount(),
@@ -446,15 +448,19 @@ internal fun ssoErrorMessageFromException(e: Exception) = when (e) {
     }
 }
 
-internal fun authAndUpdateConfig(
+fun authAndUpdateConfig(
     project: Project?,
     profile: UserConfigSsoSessionProfile,
     configFilesFacade: ConfigFilesFacade,
+    onPendingToken: (InteractiveBearerTokenProvider) -> Unit,
     onError: (String) -> Unit
 ): AwsBearerTokenConnection? {
     val connection = try {
-        ToolkitAuthManager.getInstance().tryCreateTransientSsoConnection(profile) {
-            reauthConnectionIfNeeded(project, it)
+        ToolkitAuthManager.getInstance().tryCreateTransientSsoConnection(profile) { connection ->
+            (connection.getConnectionSettings().tokenProvider.delegate as? InteractiveBearerTokenProvider)?.let {
+                onPendingToken(it)
+            }
+            reauthConnectionIfNeeded(project, connection)
         }
     } catch (e: Exception) {
         val message = ssoErrorMessageFromException(e)

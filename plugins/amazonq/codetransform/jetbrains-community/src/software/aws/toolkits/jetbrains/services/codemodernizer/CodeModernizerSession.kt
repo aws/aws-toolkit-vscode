@@ -17,7 +17,6 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerException
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
@@ -276,7 +275,7 @@ class CodeModernizerSession(
                 // Always refresh the dev tool tree so status will be up-to-date
                 state.currentJobStatus = new
                 state.transformationPlan = plan
-                sessionContext.project.refreshCwQTree()
+
                 // Open the transformation plan detail panel once transformation plan is available
                 if (state.transformationPlan != null && !isTransformationPlanEditorOpened) {
                     tryOpenTransformationPlanEditor()

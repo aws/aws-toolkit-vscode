@@ -11,6 +11,7 @@ import java.nio.file.Paths
 
 object AwsToolkit {
     const val PLUGIN_ID = "aws.toolkit"
+    const val Q_PLUGIN_ID = "aws.amazonq"
     const val GITHUB_URL = "https://github.com/aws/aws-toolkit-jetbrains"
     const val AWS_DOCS_URL = "https://docs.aws.amazon.com/console/toolkit-for-jetbrains"
 
@@ -20,6 +21,10 @@ object AwsToolkit {
 
     val DESCRIPTOR: PluginDescriptor? by lazy {
         PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))
+    }
+
+    val Q_DESCRIPTOR: PluginDescriptor? by lazy {
+        PluginManagerCore.getPlugin(PluginId.getId(Q_PLUGIN_ID))
     }
 
     fun pluginPath() = if (ApplicationManager.getApplication().isUnitTestMode) {

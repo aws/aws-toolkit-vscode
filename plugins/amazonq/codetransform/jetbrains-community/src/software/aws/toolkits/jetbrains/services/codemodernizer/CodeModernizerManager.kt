@@ -27,7 +27,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformMessageListener
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerException
@@ -203,8 +202,6 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
      */
     fun initModernizationJobUI(shouldOpenBottomWindowOnStart: Boolean = true, moduleOrProjectNameForFile: String) {
         isModernizationInProgress.set(true)
-        // Refresh CodeWhisperer Explorer tree node to reflect scan in progress.
-        project.refreshCwQTree()
         // Initialize the bottom toolkit window with content
         addCodeModernizeUI(shouldOpenBottomWindowOnStart, moduleOrProjectNameForFile)
         codeModernizerBottomWindowPanelManager.setJobStartingUI()
@@ -415,7 +412,6 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         // https://plugins.jetbrains.com/docs/intellij/general-threading-rules.html#write-access
         ApplicationManager.getApplication().invokeLater {
             setJobNotOngoing()
-            project.refreshCwQTree()
             if (!transformationStoppedByUsr.get()) {
                 informUserOfCompletion(result)
                 codeModernizerBottomWindowPanelManager.setJobFinishedUI(result)

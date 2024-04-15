@@ -53,7 +53,6 @@ import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners.CodeWhispererCodeScanDocumentListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners.CodeWhispererCodeScanEditorMouseMotionListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
@@ -385,8 +384,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
     }
 
     private fun beforeCodeScan() {
-        // Refresh CodeWhisperer Explorer tree node to reflect scan in progress.
-        project.refreshCwQTree()
         addCodeScanUI(setSelected = true)
         // Show in progress indicator
         codeScanResultsPanel.showInProgressIndicator()
@@ -396,7 +393,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
 
     private fun afterCodeScan() {
         isCodeScanInProgress.set(false)
-        project.refreshCwQTree()
     }
 
     private fun sendCodeScanTelemetryToServiceAPI(

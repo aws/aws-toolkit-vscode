@@ -249,8 +249,6 @@
                             serviceImplementation="software.aws.toolkits.jetbrains.core.tools.DefaultToolManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.tools.MockToolManager"/>
 
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.plugins.ToolkitUpdateManager"/>
-
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes"/>
 
@@ -265,6 +263,7 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow"/>
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider"/>
@@ -392,6 +391,7 @@
 
         <!-- DevTools nodes-->
         <devTools.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.CawsServiceNode"/>
+        <cwq.rootNode implementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQRootNodeProviderImpl"/>
 
         <!-- Experiments -->
         <experiment implementation="software.aws.toolkits.jetbrains.services.ecs.EcsExecExperiment"/>
@@ -403,6 +403,7 @@
     </extensions>
 
     <actions resource-bundle="software.aws.toolkits.resources.MessagesBundle">
+        <action id="aws.toolkit.open.toolkit.webview" class="software.aws.toolkits.jetbrains.core.explorer.webview.OpenToolkitWebviewAction"/>
         <action id="aws.toolkit.open.telemetry.viewer" class="software.aws.toolkits.jetbrains.services.telemetry.OpenTelemetryAction"/>
         <action id="aws.settings.refresh" class="software.aws.toolkits.jetbrains.core.credentials.RefreshConnectionAction"/>
         <action id="aws.toolkit.showFeedback" class="software.aws.toolkits.jetbrains.ui.feedback.ShowFeedbackDialogAction"/>

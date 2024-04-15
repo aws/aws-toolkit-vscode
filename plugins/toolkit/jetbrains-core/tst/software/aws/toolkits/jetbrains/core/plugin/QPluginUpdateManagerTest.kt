@@ -27,10 +27,10 @@ import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import software.aws.toolkits.jetbrains.AwsToolkit.PLUGIN_ID
-import software.aws.toolkits.jetbrains.core.plugins.ToolkitUpdateManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.startup.QPluginUpdateManager
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 
-class ToolkitUpdateManagerTest {
+class QPluginUpdateManagerTest {
     @Rule
     @JvmField
     val applicationRule = ApplicationRule()
@@ -39,14 +39,14 @@ class ToolkitUpdateManagerTest {
     @JvmField
     val disposableRule = DisposableRule()
 
-    private lateinit var sut: ToolkitUpdateManager
+    private lateinit var sut: QPluginUpdateManager
     private val testIdeaPluginDescriptorToolkit = getPluginDescriptorForIdAndVersion(PLUGIN_ID, "1.84")
     private var isAutoUpdateEnabledDefault: Boolean = false
 
     @Before
     fun setup() {
         assumeTrue("hangs in 2023.2?", ApplicationInfo.getInstance().build.baselineVersion != 232)
-        sut = spy(ToolkitUpdateManager.getInstance())
+        sut = spy(QPluginUpdateManager.getInstance())
         sut.stub {
             on {
                 getUpdateInfo()
@@ -67,7 +67,7 @@ class ToolkitUpdateManagerTest {
             }
         }
         ApplicationManager.getApplication().replaceService(
-            ToolkitUpdateManager::class.java,
+            QPluginUpdateManager::class.java,
             sut,
             disposableRule.disposable
         )

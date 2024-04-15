@@ -11,37 +11,6 @@ on:
 
 
 jobs:
-  generate_artifact_toolkit:
-    strategy:
-      matrix:
-        supported_versions: [ '2023.3', '2023.2', '2024.1' ]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: remove unwanted dependencies
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'corretto'
-          java-version: '17'
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '6.x'
-      - name: Generate artifact
-        run: |
-          ./gradlew -PideProfileName=${{ matrix.supported_versions }} :plugin-toolkit:intellij:buildPlugin
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: plugin-toolkit-${{ matrix.supported_versions }}
-          path: ./plugins/toolkit/intellij/build/distributions/*.zip
-          retention-days: 1
   generate_artifact_toolkit_standalone:
     strategy:
       matrix:
@@ -95,7 +64,7 @@ jobs:
           java-version: '17'
       - name: Generate artifact
         run: |
-          ./gradlew -PideProfileName=${{ matrix.supported_versions }} :plugin-amazonq:buildPlugin --exclude-task buildResharperPlugin
+          ./gradlew -PideProfileName=${{ matrix.supported_versions }} :plugin-amazonq:buildPlugin
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -177,7 +146,7 @@ jobs:
           echo 'EOF' >> $GITHUB_OUTPUT
 
   publish:
-    needs: [ generate_artifact_toolkit, generate_artifact_toolkit_standalone, generate_artifact_core, generate_artifact_q, generate_changelog ]
+    needs: [  generate_artifact_toolkit_standalone, generate_artifact_core, generate_artifact_q, generate_changelog ]
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
@@ -201,16 +170,13 @@ jobs:
       - name: Publish to GitHub Releases
         run: |
           envsubst < "$GITHUB_WORKSPACE/.github/workflows/prerelease_notes.md" > "$RUNNER_TEMP/prerelease_notes.md"
-          gh release create "$TAG_NAME" --prerelease --notes-file "$RUNNER_TEMP/prerelease_notes.md" --title "$SUBJECT" --target $GITHUB_SHA plugin-toolkit-*/*.zip
+          gh release create "$TAG_NAME" --prerelease --notes-file "$RUNNER_TEMP/prerelease_notes.md" --title "$SUBJECT" --target $GITHUB_SHA plugin-standalone-*/*.zip
       - name: Publish core
         run: |
           gh release upload "$TAG_NAME" plugin-core-*/*.zip
       - name: Publish Q
         run: |
           gh release upload "$TAG_NAME" plugin-amazonq-*/*.zip
-      - name: Publish Toolkit Standalone
-        run: |
-          gh release upload "$TAG_NAME" plugin-standalone-*/*.zip
       - name: Publish XML manifest
         run: |
           gh release view "$TAG_NAME" --repo aws/aws-toolkit-jetbrains --json assets | python3 "$GITHUB_WORKSPACE/.github/workflows/generateUpdatesXml.py" - > updatePlugins.xml

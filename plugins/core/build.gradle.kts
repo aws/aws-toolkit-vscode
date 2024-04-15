@@ -28,9 +28,15 @@ dependencies {
     implementation(project(":plugin-core:sdk-codegen"))
     implementation(project(":plugin-core:jetbrains-community"))
     implementation(project(":plugin-core:jetbrains-ultimate"))
+    implementation(project(":plugin-core:webview"))
 }
 
 configurations {
+    all {
+        // IDE provides netty
+        exclude("io.netty")
+    }
+
     // Make sure we exclude stuff we either A) ships with IDE, B) we don't use to cut down on size
     runtimeClasspath {
         exclude(group = "org.slf4j")

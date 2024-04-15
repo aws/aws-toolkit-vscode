@@ -14,11 +14,8 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
-import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererActivationChangedListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
@@ -30,8 +27,7 @@ class CodeWhispererProjectStartupSettingsListener(private val project: Project) 
     CodeWhispererActivationChangedListener,
     ToolWindowManagerListener,
     ToolkitConnectionManagerListener,
-    BearerTokenProviderListener,
-    CodeWhispererCustomizationListener {
+    BearerTokenProviderListener {
     override fun activationChanged(value: Boolean) {
         project.service<StatusBarWidgetsManager>().updateWidget(CodeWhispererStatusBarWidgetFactory::class.java)
         CodeWhispererCodeReferenceManager.getInstance(project).toolWindow?.isAvailable = value
@@ -65,18 +61,6 @@ class CodeWhispererProjectStartupSettingsListener(private val project: Project) 
         ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())?.let {
             // re-check the allowlist status
             CodeWhispererModelConfigurator.getInstance().shouldDisplayCustomNode(project, forceUpdate = true)
-        }
-
-        project.refreshCwQTree()
-    }
-
-    override fun refreshUi() {
-        ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())?.let { curConnection ->
-            if (curConnection.isSono()) {
-                return
-            }
-
-            project.refreshCwQTree()
         }
     }
 }

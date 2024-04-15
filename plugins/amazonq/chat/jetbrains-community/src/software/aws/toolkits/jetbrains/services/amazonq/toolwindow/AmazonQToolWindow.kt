@@ -12,6 +12,10 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.serviceContainer.NonInjectable
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
+import software.aws.toolkits.jetbrains.services.amazonq.WebviewPanel
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AppConnection
 import software.aws.toolkits.jetbrains.services.amazonq.commands.MessageTypeRegistry
@@ -26,6 +30,11 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.auth.isFeature
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.isCodeTransformAvailable
 import javax.swing.JComponent
 
+fun isQConnected(project: Project): Boolean {
+    val manager = ToolkitConnectionManager.getInstance(project)
+    return manager.isFeatureEnabled(QConnection.getInstance()) && manager.isFeatureEnabled(CodeWhispererConnection.getInstance())
+}
+
 class AmazonQToolWindow @NonInjectable constructor(
     private val project: Project,
     private val appSource: AppSource,
@@ -33,10 +42,17 @@ class AmazonQToolWindow @NonInjectable constructor(
     private val editorThemeAdapter: EditorThemeAdapter,
 ) : Disposable {
 
-    private val panel = AmazonQPanel(parent = this)
+    private val chatPanel = AmazonQPanel(parent = this)
+    private val loginPanel = WebviewPanel(project = project)
 
     val component: JComponent
-        get() = panel.component
+        get() = if (isQConnected(project)) {
+            chatPanel.component
+        } else {
+            loginPanel.component
+        }
+
+    val loginBrowser = loginPanel.browser?.jcefBrowser?.cefBrowser
 
     private val appConnections = mutableListOf<AppConnection>()
 
@@ -76,7 +92,7 @@ class AmazonQToolWindow @NonInjectable constructor(
     }
 
     private fun connectApps() {
-        val browser = panel.browser ?: return
+        val browser = chatPanel.browser ?: return
 
         val fqnWebviewAdapter = FqnWebviewAdapter(browser.jcefBrowser, browserConnector)
 
@@ -96,9 +112,10 @@ class AmazonQToolWindow @NonInjectable constructor(
     }
 
     private fun connectUi() {
-        val browser = panel.browser ?: return
+        val chatBrowser = chatPanel.browser ?: return
+        val loginBrowser = loginPanel.browser ?: return
 
-        browser.init(
+        chatBrowser.init(
             isCodeTransformAvailable = isCodeTransformAvailable(project),
             isFeatureDevAvailable = isFeatureDevAvailable(project)
         )
@@ -106,7 +123,7 @@ class AmazonQToolWindow @NonInjectable constructor(
         scope.launch {
             // Pipe messages from the UI to the relevant apps and vice versa
             browserConnector.connect(
-                browser = browser,
+                browser = chatBrowser,
                 connections = appConnections,
             )
         }
@@ -114,7 +131,8 @@ class AmazonQToolWindow @NonInjectable constructor(
         scope.launch {
             // Update the theme in the UI when the IDE theme changes
             browserConnector.connectTheme(
-                browser = browser,
+                chatBrowser = chatBrowser.jcefBrowser.cefBrowser,
+                loginBrowser = loginBrowser.jcefBrowser.cefBrowser,
                 themeSource = editorThemeAdapter.onThemeChange(),
             )
         }
