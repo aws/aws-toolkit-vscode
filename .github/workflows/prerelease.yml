@@ -201,13 +201,17 @@ jobs:
       - name: Publish to GitHub Releases
         run: |
           envsubst < "$GITHUB_WORKSPACE/.github/workflows/prerelease_notes.md" > "$RUNNER_TEMP/prerelease_notes.md"
-          gh release create $TAG_NAME --prerelease --notes-file "$RUNNER_TEMP/prerelease_notes.md" --title "$SUBJECT" --target $GITHUB_SHA plugin-toolkit-*/*.zip
+          gh release create "$TAG_NAME" --prerelease --notes-file "$RUNNER_TEMP/prerelease_notes.md" --title "$SUBJECT" --target $GITHUB_SHA plugin-toolkit-*/*.zip
       - name: Publish core
         run: |
-          gh release upload $TAG_NAME plugin-core-*/*.zip
+          gh release upload "$TAG_NAME" plugin-core-*/*.zip
       - name: Publish Q
         run: |
-          gh release upload $TAG_NAME plugin-amazonq-*/*.zip
+          gh release upload "$TAG_NAME" plugin-amazonq-*/*.zip
       - name: Publish Toolkit Standalone
         run: |
-          gh release upload $TAG_NAME plugin-standalone-*/*.zip
+          gh release upload "$TAG_NAME" plugin-standalone-*/*.zip
+      - name: Publish XML manifest
+        run: |
+          gh release view "$TAG_NAME" --repo aws/aws-toolkit-jetbrains --json assets | python3 "$GITHUB_WORKSPACE/.github/workflows/generateUpdatesXml.py" - > updatePlugins.xml
+          gh release upload "$TAG_NAME" updatePlugins.xml
