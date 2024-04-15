@@ -142,13 +142,12 @@ class WebviewBrowser(val project: Project) {
 
                     val profileName = lastLoginIdcInfo.profileName
                     val startUrl = lastLoginIdcInfo.startUrl
-                    val directoryId = extractDirectoryIdFromStartUrl(startUrl)
                     val region = lastLoginIdcInfo.region
 
                     jcefBrowser.cefBrowser.executeJavaScript(
                         "window.ideClient.updateLastLoginIdcInfo({" +
                             "profileName: \"$profileName\"," +
-                            "directoryId: \"$directoryId\"," +
+                            "startUrl: \"$startUrl\"," +
                             "region: \"$region\"})",
                         jcefBrowser.cefBrowser.url,
                         0
@@ -256,11 +255,6 @@ class WebviewBrowser(val project: Project) {
     private fun userCodeFromAuthorization(authorization: PendingAuthorization) = when (authorization) {
         is PendingAuthorization.DAGAuthorization -> authorization.authorization.userCode
         else -> ""
-    }
-
-    private fun extractDirectoryIdFromStartUrl(startUrl: String): String {
-        val pattern = "https://(.*?).awsapps.com/start.*".toRegex()
-        return pattern.matchEntire(startUrl)?.groupValues?.get(1).orEmpty()
     }
 
     fun component(): JComponent? = jcefBrowser.component

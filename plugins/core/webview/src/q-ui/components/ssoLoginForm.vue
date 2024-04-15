@@ -30,18 +30,16 @@
         <div>
             <div class="title no-bold">Start URL</div>
             <div class="hint">URL for your organization, provided by an admin or help desk</div>
-            <div class="url-part">https://</div>
             <input
                 class="url-input font-amazon url-part"
                 type="text"
                 id="startUrl"
                 name="startUrl"
-                v-model="directoryId"
+                v-model="startUrl"
                 @change="handleUrlInput"
                 tabindex="0"
                 spellcheck="false"
             />
-            <div class="url-part">.awsapps.com/start</div>
         </div>
         <br/>
         <div>
@@ -93,14 +91,14 @@ export default defineComponent({
                 })
             }
         },
-        directoryId: {
+        startUrl: {
             get() {
-                return this.$store.state.lastLoginIdcInfo.directoryId;
+                return this.$store.state.lastLoginIdcInfo.startUrl;
             },
             set(value: string) {
                 window.ideClient.updateLastLoginIdcInfo({
                     ...this.$store.state.lastLoginIdcInfo,
-                    directoryId: value
+                    startUrl: value
                 })
             }
         },
@@ -117,24 +115,23 @@ export default defineComponent({
         },
         isInputValid:  {
             get() {
-                return this.directoryId != "" && this.selectedRegion != ""
+                return this.startUrl != "" && this.selectedRegion != ""
             },
             set() {}
         }
     },
     methods: {
         handleUrlInput() {
-            this.isInputValid = this.directoryId != "" && this.selectedRegion != "";
+            this.isInputValid = this.startUrl != "" && this.selectedRegion != "";
         },
         handleBackButtonClick() {
             this.$emit('backToMenu')
         },
         async handleContinueClick() {
             if (!this.isInputValid) return
-            const startUrl = "https://" + this.directoryId + ".awsapps.com/start"
             window.ideApi.postMessage({
                 command: 'loginIdC',
-                url: startUrl,
+                url: this.startUrl,
                 region: this.selectedRegion,
                 profileName: this.ssoProfile
             })
@@ -162,12 +159,8 @@ export default defineComponent({
     border-radius: 4px;
 }
 
-.sso-profile, .region-select {
+.url-input, .sso-profile, .region-select {
     width: 100%;
-}
-
-.url-input {
-    width: 29%;
 }
 
 .sso-profile, .url-input {
@@ -178,10 +171,6 @@ export default defineComponent({
 .url-input {
     margin-left: 3px;
     margin-right: 3px;
-}
-
-.url-part {
-    display: inline-block;
 }
 
 .region-select {
