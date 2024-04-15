@@ -83,8 +83,8 @@ export class QuickActionGenerator {
                 unavailableItems: ['/dev', '/transform'],
             },
             unknown: {
-                description: "This command isn't available",
-                unavailableItems: ['/dev', '/transform', '/help', '/clear'],
+                description: '',
+                unavailableItems: [],
             },
         }
 
