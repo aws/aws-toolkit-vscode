@@ -9,10 +9,9 @@ import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resour
 import { AuthState, AuthUtil, isPreviousQUser } from '../../codewhisperer/util/authUtil'
 import {
     createLearnMoreNode,
-    switchToAmazonQNode,
     createInstallQNode,
     createDismissNode,
-    createSignIn,
+    toolkitSwitchToAmazonQCommand,
 } from './amazonQChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
 import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
@@ -21,6 +20,7 @@ import { vsCodeState } from '../../codewhisperer/models/model'
 import { isExtensionActive, isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { getLogger } from '../../shared/logger'
+import { createSignIn, switchToAmazonQNode } from './commonNodes'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -89,11 +89,13 @@ export class AmazonQNode implements TreeNode {
             }
 
             if (AmazonQNode.amazonQState !== 'connected') {
-                return [createSignIn('tree'), createLearnMoreNode()]
+                return [createSignIn('tree', toolkitSwitchToAmazonQCommand), createLearnMoreNode()]
             }
 
             return [
-                vsCodeState.isFreeTierLimitReached ? createFreeTierLimitMet('tree') : switchToAmazonQNode('tree'),
+                vsCodeState.isFreeTierLimitReached
+                    ? createFreeTierLimitMet('tree')
+                    : switchToAmazonQNode('tree', toolkitSwitchToAmazonQCommand),
                 createNewMenuButton(),
             ]
         }
