@@ -286,6 +286,17 @@
             "name": "codewhispererUserInputDetails",
             "type": "string",
             "description": "A JSON serialized string of user input details."
+        },
+        {
+            "name": "action",
+            "type": "string",
+            "description": "Name of an action that was taken, displayed, etc."
+        },
+        {
+            "name": "authStatus",
+            "type": "string",
+            "allowedValues": ["connected", "notConnected", "expired"],
+            "description": "Status of the an auth connection."
         }
     ],
     "metrics": [
@@ -1050,6 +1061,65 @@
                 }
             ],
             "passive": true
+        },
+        {
+            "name": "auth_userState",
+            "description": "The state of the user's authentication.",
+            "metadata": [
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "authStatus",
+                    "required": true
+                },
+                {
+                    "type": "enabledAuthConnections",
+                    "required": true
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "auth_signInPageOpened",
+            "description": "When the sign in page was opened to add new credentials.",
+            "metadata": [
+                {
+                    "type": "source",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "toolkit_invokeAction",
+            "description": "A user invoked an action. Source represents the notification that produced the action",
+            "metadata": [
+                {
+                    "type": "result",
+                    "required": true
+                },
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "component",
+                    "required": true
+                },
+                {
+                    "type": "action",
+                    "required": true
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                }
+            ]
         }
     ]
 }
