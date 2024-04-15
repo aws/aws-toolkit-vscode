@@ -39,7 +39,6 @@ import { randomUUID, randomBytes, createHash } from 'crypto'
 import { UriHandler } from '../../shared/vscode/uriHandler'
 import { DevSettings } from '../../shared/settings'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { VSCODE_EXTENSION_ID } from '../../shared/utilities'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -222,20 +221,6 @@ export abstract class SsoAccessTokenProvider {
      */
     protected abstract getValidatedClientRegistration(): Promise<ClientRegistration>
     protected abstract registerClient(): Promise<ClientRegistration>
-
-    public getClientNameForRegistration(): string {
-        const companyName = getIdeProperties().company
-        if (isCloud9()) {
-            return `${companyName} Cloud9`
-        } else if (globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq) {
-            return 'Amazon Q'
-        } else if (globals.context.extension.id === VSCODE_EXTENSION_ID.awstoolkit) {
-            return `${companyName} Toolkit for VSCode`
-        }
-        throw new ToolkitError(`Unsupported extension for client registration ${globals.context.extension.id}`, {
-            code: 'UnsupportedExtension',
-        })
-    }
 
     public static create(
         profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
