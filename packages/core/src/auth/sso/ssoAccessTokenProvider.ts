@@ -334,8 +334,9 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
     }
 
     override async registerClient(): Promise<ClientRegistration> {
+        const companyName = getIdeProperties().company
         return this.oidc.registerClient({
-            clientName: this.getClientNameForRegistration(),
+            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
             clientType: clientRegistrationType,
             scopes: this.profile.scopes,
         })
@@ -399,8 +400,9 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
     }
 
     override async registerClient(): Promise<ClientRegistration> {
+        const companyName = getIdeProperties().company
         return this.oidc.registerClient({
-            clientName: this.getClientNameForRegistration(),
+            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
             clientType: clientRegistrationType,
             scopes: this.profile.scopes,
             grantTypes: [authorizationGrantType, refreshGrantType],

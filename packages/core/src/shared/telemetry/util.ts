@@ -16,6 +16,7 @@ import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { VSCODE_EXTENSION_ID } from '../utilities'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -77,7 +78,10 @@ export async function getUserAgent(
     opt?: { includePlatform?: boolean; includeClientId?: boolean },
     globalState = globals.context.globalState
 ): Promise<string> {
-    const pairs = [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
+    const pairs =
+        globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq
+            ? [`AmazonQ-For-VSCode/${extensionVersion}`]
+            : [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
 
     if (opt?.includePlatform) {
         pairs.push(platformPair())
