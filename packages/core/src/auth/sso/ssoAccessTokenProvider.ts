@@ -321,7 +321,7 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
     override async registerClient(): Promise<ClientRegistration> {
         const companyName = getIdeProperties().company
         return this.oidc.registerClient({
-            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} Toolkit for VSCode`,
+            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
             clientType: clientRegistrationType,
             scopes: this.profile.scopes,
         })
@@ -387,7 +387,8 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
     override async registerClient(): Promise<ClientRegistration> {
         const companyName = getIdeProperties().company
         return this.oidc.registerClient({
-            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} Toolkit for VSCode`,
+            // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
+            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
             clientType: clientRegistrationType,
             scopes: this.profile.scopes,
             grantTypes: [authorizationGrantType, refreshGrantType],
