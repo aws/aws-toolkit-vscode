@@ -163,16 +163,13 @@ export async function startTransformByQ() {
     // Set the default state variables for our store and the UI
     await setTransformationToRunningState()
 
-    await completeHumanInTheLoopWork('fake-job-id', 0)
-    await postTransformationJob()
-    await cleanupTransformationJob(intervalId)
-
-    const quickExit = true
-    if (quickExit) {
-        return
-    }
-
     try {
+        const earlyExit = await completeHumanInTheLoopWork('fake-job-id', 0)
+
+        if (earlyExit) {
+            throw Error('Fake error for human in the loop')
+        }
+
         // Set web view UI to poll for progress
         intervalId = setInterval(() => {
             void vscode.commands.executeCommand(
@@ -319,14 +316,14 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         // catch them here and determine what to do with in parent function
         console.log('Error in completeHumanInTheLoopWork', err)
     } finally {
-        // 1) TODO Always delete items off disk manifest.json and pom.xml
-
         // Always delete the dependency output
         console.log('Deleting temporary dependency output', tmpDependencyListDir)
         fs.rmdirSync(tmpDependencyListDir, { recursive: true })
         console.log('Deleting temporary dependency output', userDependencyUpdateDir)
         fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
     }
+
+    return true
 }
 
 export async function startTransformationJob(uploadId: string) {
