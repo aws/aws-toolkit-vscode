@@ -52,6 +52,9 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
         }
 
         if (!isCodeWhispererEnabled(project)) return
+
+        // ---- Everything below will be triggered only when CW is enabled, everything above will be triggered once per project ----
+
         if (runOnce) return
 
         // Reconnect CodeWhisperer on startup

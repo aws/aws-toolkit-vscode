@@ -241,6 +241,7 @@
 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.executables.ExecutableLoader"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.startup.QMigrationActivity"/>
 
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.executables.ExecutableManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
@@ -691,6 +692,9 @@
 
         <action id="aws.toolkit.connection.pinning.unpin"
                 class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.UnpinConnectionAction"/>
+
+        <action id="aws.toolkit.cwQRootNode.installQ"
+                class="software.aws.toolkits.jetbrains.core.explorer.actions.InstallAmazonQAction"/>
 
     </actions>
 

@@ -30,27 +30,12 @@
     <actions>
         <action id="aws.toolkit.open.q.window" class="software.aws.toolkits.jetbrains.services.amazonq.OpenAmazonQAction"/>
 
-        <group id="aws.toolkit.q.idc.signed.in">
-            <action
-                id="q.openchat"
-                class="software.aws.toolkits.jetbrains.services.amazonq.QOpenPanelAction"/>
-            <action
-                id="q.migrate"
-                class="software.aws.toolkits.jetbrains.services.amazonq.QMigrationNotificationAction"/>
-        </group>
+        <!-- TODO: q.openchat will eventually be in amazonq, aws.toolkit.q.sign.in will eventually be in core. -->
+        <action id="q.openchat" class="software.aws.toolkits.jetbrains.services.amazonq.QOpenPanelAction"/>
 
         <group id="aws.toolkit.q.sign.in">
             <action id="q.sign.in" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.SignInToQAction"/>
             <action id="q.learn.more" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.QLearnMoreAction"/>
-        </group>
-
-        <group id="aws.toolkit.q.enable">
-            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.EnableQAction"/>
-            <reference id="q.learn.more"/>
-        </group>
-
-        <group id="aws.toolkit.q.expired">
-            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.ReauthenticateWithQ"/>
         </group>
 
         <group
