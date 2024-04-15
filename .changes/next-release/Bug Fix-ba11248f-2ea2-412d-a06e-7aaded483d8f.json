@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q: Fixed cursor not focuses to prompt input when code is sent to Q Chat"
-}
