@@ -51,7 +51,6 @@ function getAmazonQCodeWhispererNodes() {
             createFreeTierLimitMet('item'),
             createOpenReferenceLog(),
             createSeparator('Other Features'),
-            createAutoScans(autoScansEnabled),
             createSecurityScan(),
         ]
     }
@@ -66,6 +65,26 @@ function getAmazonQCodeWhispererNodes() {
         amazonq = require('../../amazonq/explorer/amazonQChildrenNodes')
     }
 
+    if (AuthUtil.instance.isBuilderIdInUse()) {
+        return [
+            // CodeWhisperer
+            createSeparator('Inline Suggestions'),
+            createAutoSuggestions(autoTriggerEnabled),
+            ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled
+                ? [createSelectCustomization()]
+                : []),
+            createOpenReferenceLog(),
+            createGettingStarted(), // "Learn" node : opens Learn CodeWhisperer page
+    
+            // Security scans
+            createSeparator('Security Scans'),
+            createSecurityScan(),
+    
+            // Amazon Q + others
+            createSeparator('Other Features'),
+            ...(amazonq ? [amazonq.switchToAmazonQNode('item')] : []),
+        ]
+    }
     return [
         // CodeWhisperer
         createSeparator('Inline Suggestions'),
