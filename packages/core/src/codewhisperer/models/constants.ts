@@ -345,38 +345,38 @@ export const buildSucceededChatMessage = 'I was able to build your project and w
 export const buildSucceededNotification =
     'Amazon Q was able to build your project and will start transforming your code soon.'
 
-export const unsupportedJavaVersionSelectedChatMessage =
+export const unsupportedJavaVersionChatMessage =
     'Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites).'
 
 export const failedToStartJobChatMessage =
-    "Sorry, I couldn't begin the transformation. Try starting the transformation again."
+    "Sorry, I couldn't begin the transformation. Please try starting the transformation again."
 
 export const failedToStartJobNotification =
-    "Amazon Q couldn't begin the transformation. Try starting the transformation again."
+    "Amazon Q couldn't begin the transformation. Please try starting the transformation again."
 
 export const failedToStartJobTooManyJobsChatMessage =
-    "Sorry, I couldn't begin the transformation. You have too many active running jobs. Please try again after several minutes."
+    'Sorry, I couldn’t begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
 
 export const failedToStartJobTooManyJobsNotification =
-    "Amazon Q couldn't begin the transformation. You have too many active running jobs. Please try again after several minutes."
+    "Amazon Q couldn't begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed."
 
 export const failedToUploadProjectChatMessage =
-    "Sorry, I couldn't upload your project. Try starting the transformation again."
+    "Sorry, I couldn't upload your project. Please try starting the transformation again."
 
 export const failedToUploadProjectNotification =
-    "Amazon Q couldn't upload your project. Try starting the transformation again."
+    "Amazon Q couldn't upload your project. Please try starting the transformation again."
 
 export const failedToGetPlanChatMessage =
-    "Sorry, I couldn't create the transformation plan to upgrade your project. Try starting the transformation again."
+    "Sorry, I couldn't create the transformation plan to upgrade your project. Please try starting the transformation again."
 
 export const failedToGetPlanNotification =
-    "Amazon Q couldn't create the transformation plan to upgrade your project. Try starting the transformation again."
+    "Amazon Q couldn't create the transformation plan to upgrade your project. Please try starting the transformation again."
 
 export const failedToCompleteJobChatMessage =
-    "Sorry, I couldn't complete the transformation. Try starting the transformation again."
+    "Sorry, I couldn't complete the transformation. Please try starting the transformation again."
 
 export const failedToCompleteJobNotification =
-    "Amazon Q couldn't complete the transformation. Try starting the transformation again."
+    "Amazon Q couldn't complete the transformation. Please try starting the transformation again."
 
 export const genericErrorMessage =
     "Sorry, I'm experiencing technical issues at the moment. Please try again in a few minutes."
@@ -412,16 +412,16 @@ export const errorStoppingJobChatMessage = "Sorry, I couldn't stop the transform
 export const errorStoppingJobNotification = "Amazon Q couldn't stop the transformation."
 
 export const errorDownloadingDiffChatMessage =
-    "Sorry, I couldn't download the diff with your upgraded code. Try downloading it again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit)."
+    "Sorry, I couldn't download the diff with your upgraded code. Please try downloading it again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit)."
 
 export const errorDownloadingDiffNotification =
-    "Amazon Q couldn't download the diff with your upgraded code. Try downloading it again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit)."
+    "Amazon Q couldn't download the diff with your upgraded code. Please try downloading it again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit)."
 
 export const errorDeserializingDiffChatMessage =
-    "Sorry, I couldn't parse the diff with your upgraded code. Try starting the transformation again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit)."
+    "Sorry, I couldn't parse the diff with your upgraded code. Please try starting the transformation again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit)."
 
 export const errorDeserializingDiffNotification =
-    "Amazon Q couldn't parse the diff with your upgraded code. Try starting the transformation again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit)."
+    "Amazon Q couldn't parse the diff with your upgraded code. Please try starting the transformation again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit)."
 
 export const viewProposedChangesChatMessage =
     'Download complete. You can view a summary of the transformation and accept or reject the proposed changes in the Transformation Hub.'

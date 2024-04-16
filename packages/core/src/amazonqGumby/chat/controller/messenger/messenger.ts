@@ -306,7 +306,7 @@ export class Messenger {
                 message = CodeWhispererConstants.noJavaHomeFoundChatMessage
                 break
             case 'unsupported-source-jdk-version':
-                message = CodeWhispererConstants.unsupportedJavaVersionSelectedChatMessage
+                message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
         }
 
         const buttons: ChatItemButton[] = []
