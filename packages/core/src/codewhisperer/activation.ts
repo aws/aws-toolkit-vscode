@@ -283,7 +283,7 @@ export async function activate(context: ExtContext): Promise<void> {
         await notifyNewCustomizations()
     }
     if (auth.isBuilderIdInUse()) {
-        CodeScansState.instance.setScansEnabled(false)
+        await CodeScansState.instance.setScansEnabled(false)
     }
 
     function setSubscriptionsForAutoScans() {
