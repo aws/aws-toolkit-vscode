@@ -40,7 +40,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                         const args: [CodeScanIssue, string, Component] = [issue, group.filePath, 'quickfix']
                         fixIssue.command = {
                             title: 'Apply suggested fix',
-                            command: 'aws.codeWhisperer.applySecurityFix',
+                            command: 'aws.amazonq.applySecurityFix',
                             arguments: args,
                         }
                         codeActions.push(fixIssue)
@@ -48,8 +48,8 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     const openIssue = new vscode.CodeAction(`View details for "${issue.title}"`)
                     const args: [CodeScanIssue, string] = [issue, group.filePath]
                     openIssue.command = {
-                        title: 'Open "CodeWhisperer Security Issue"',
-                        command: 'aws.codeWhisperer.openSecurityIssuePanel',
+                        title: 'Open "Amazon Q Security Issue"',
+                        command: 'aws.amazonq.openSecurityIssuePanel',
                         arguments: args,
                     }
                     codeActions.push(openIssue)

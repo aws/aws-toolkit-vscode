@@ -47,7 +47,7 @@ export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan'
  * @returns Logger and OutputChannel created on the first invocation.
  */
 const getLogOutputChan = once(() => {
-    const codeScanOutpuChan = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
+    const codeScanOutpuChan = vscode.window.createOutputChannel('Amazon Q Security Scan Logs')
     const codeScanLogger = makeLogger({
         outputChannels: [codeScanOutpuChan],
     })

@@ -71,7 +71,7 @@ export function createReconnect(type: 'item'): DataQuickPickItem<'reconnect'>
 export function createReconnect(type: 'tree'): TreeNode<Command>
 export function createReconnect(type: 'item' | 'tree'): DataQuickPickItem<'reconnect'> | TreeNode<Command>
 export function createReconnect(type: 'item' | 'tree'): any {
-    const label = localize('AWS.codewhisperer.reconnectNode.label', 'Re-authenticate to connect')
+    const label = localize('aws.amazonq.reconnectNode.label', 'Re-authenticate to connect')
     const icon = addColor(getIcon('vscode-debug-disconnect'), 'notificationsErrorIcon.foreground')
 
     switch (type) {
@@ -177,7 +177,7 @@ export function createSettingsNode(): DataQuickPickItem<'openCodeWhispererSettin
         data: 'openCodeWhispererSettings',
         label: 'Open Settings',
         iconPath: getIcon('vscode-settings-gear'),
-        onClick: () => Commands.tryExecute('aws.codeWhisperer.configure'),
+        onClick: () => Commands.tryExecute('aws.amazonq.configure'),
     } as DataQuickPickItem<'openCodeWhispererSettings'>
 }
 

@@ -165,7 +165,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * Open Configuration
          */
-        Commands.register('aws.codeWhisperer.configure', async id => {
+        Commands.register('aws.amazonq.configure', async id => {
             if (id === 'codewhisperer') {
                 await vscode.commands.executeCommand(
                     'workbench.action.openSettings',
@@ -175,7 +175,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 await vscode.commands.executeCommand('workbench.action.openSettings', `aws.amazonQ`)
             }
         }),
-        Commands.register('aws.codewhisperer.refreshAnnotation', async (forceProceed: boolean = false) => {
+        Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean = false) => {
             const editor = vscode.window.activeTextEditor
             if (editor) {
                 if (forceProceed) {
@@ -214,7 +214,7 @@ export async function activate(context: ExtContext): Promise<void> {
         // switch to Q node for status bar menu
         switchToAmazonQCommand.register(),
         // manual trigger
-        Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
+        Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             invokeRecommendation(
                 vscode.window.activeTextEditor as vscode.TextEditor,
                 client,

@@ -61,7 +61,7 @@ describe('completionProviderService', function () {
                 insertText: new vscode.SnippetString("\n\t\tconsole.log('Hello world!');\n\t}"),
                 keepWhitespace: true,
                 command: {
-                    command: 'aws.codeWhisperer.accept',
+                    command: 'aws.amazonq.accept',
                     title: 'On acceptance',
                     arguments: [
                         new vscode.Range(0, 0, 0, 0),
