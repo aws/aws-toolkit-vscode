@@ -107,20 +107,20 @@ object IdeVersions {
             ),
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,
-                sdkVersion = "241.14494-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "2024.1",
                 plugins = commonPlugins + listOf(
                     "java",
                     "com.intellij.gradle",
                     "org.jetbrains.idea.maven",
                     // transitive for python
-                    "org.toml.lang:241.14494.33",
-                    "PythonCore:241.14494.17",
-                    "Docker:241.14494.28"
+                    "org.toml.lang:241.14494.150",
+                    "PythonCore:241.14494.240",
+                    "Docker:241.14494.251"
                 )
             ),
             ultimate = ProductProfile(
                 sdkFlavor = IdeFlavor.IU,
-                sdkVersion = "241.14494-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "2024.1",
                 plugins = commonPlugins + listOf(
                     "JavaScript",
                     // Transitive dependency needed for javascript
@@ -130,21 +130,21 @@ object IdeVersions {
                     "com.intellij.database",
                     "com.jetbrains.codeWithMe",
                     // transitive for python
-                    "org.toml.lang:241.14494.33",
-                    "Pythonid:241.14494.17",
-                    "org.jetbrains.plugins.go:241.14494.17",
+                    "org.toml.lang:241.14494.150",
+                    "Pythonid:241.14494.314",
+                    "org.jetbrains.plugins.go:241.14494.240",
                     // https://github.com/JetBrains/gradle-intellij-plugin/issues/1056
                     "org.intellij.intelliLang"
                 )
             ),
             rider = RiderProfile(
-                sdkVersion = "2024.1-EAP8-SNAPSHOT",
+                sdkVersion = "2024.1",
                 plugins = commonPlugins + listOf(
                     "rider-plugins-appender" // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
                 ),
                 netFrameworkTarget = "net472",
                 rdGenVersion = "2024.1.1",
-                nugetVersion = "2024.1.0-eap08"
+                nugetVersion = "2024.1.0"
             )
         ),
 
