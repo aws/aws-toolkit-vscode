@@ -115,6 +115,43 @@ export async function uploadArtifactToS3(
     }
 }
 
+export async function restartJob(jobId: string) {
+    if (jobId !== '') {
+        try {
+            const apiStartTime = Date.now()
+            const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
+                transformationJobId: jobId,
+                userActionStatus: 'RESUMED', // can be "RESUMED" or "REJECTED"
+            })
+            if (response !== undefined) {
+                // telemetry.codeTransform_logApiLatency.emit({
+                //     codeTransformApiNames: 'StopTransformation',
+                //     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                //     codeTransformJobId: jobId,
+                //     codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+                //     codeTransformRequestId: response.$response.requestId,
+                //     result: MetadataResult.Pass,
+                // })
+                // always store request ID, but it will only show up in a notification if an error occurs
+                console.log('Resume transformation success', apiStartTime, response)
+            }
+        } catch (e: any) {
+            const errorMessage = (e as Error).message
+            getLogger().error(`CodeTransformation: ResumeTransformation error = ${errorMessage}`)
+            // telemetry.codeTransform_logApiError.emit({
+            //     codeTransformApiNames: 'StopTransformation',
+            //     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            //     codeTransformJobId: jobId,
+            //     codeTransformApiErrorMessage: errorMessage,
+            //     codeTransformRequestId: e.requestId ?? '',
+            //     result: MetadataResult.Fail,
+            //     reason: 'StopTransformationFailed',
+            // })
+            throw new Error('Resume transformation job failed')
+        }
+    }
+}
+
 export async function stopJob(jobId: string) {
     if (jobId !== '') {
         try {
@@ -415,9 +452,10 @@ export async function getTransformationPlan(jobId: string) {
 
 export async function getTransformationSteps(jobId: string, handleThrottleFlag: boolean) {
     try {
+        // prevent ThrottlingException
         if (handleThrottleFlag) {
             await sleep(2000)
-        } // prevent ThrottlingException
+        }
         const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
@@ -491,6 +529,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             if (validStates.includes(status)) {
                 break
             }
+            /**
+             * If we find a paused state, we need the user to take action. We will set the global
+             * state for polling status and early exit.
+             */
+            if (CodeWhispererConstants.pausedStates.includes(status)) {
+                transformByQState.setPolledJobStatus(TransformByQStatus.WaitingUserInput)
+                break
+            }
             /*
              * Below IF is only relevant for pollTransformationStatusUntilPlanReady, when pollTransformationStatusUntilComplete
              * is called, we break above on validStatesForCheckingDownloadUrl and check final status in finalizeTransformationJob
@@ -501,14 +547,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 )
                 throw new Error('Job was rejected, stopped, or failed')
             }
-            if (status === TransformByQStatus.WaitingUserInput) {
-                // break here
-                transformByQState.setPolledJobStatus(TransformByQStatus.WaitingUserInput)
-                // TODO: Either extract artifactId and artifactType here or in parent function
-                // If extracted in parent function it will be 1 extra call to codeModernizerGetCodeTransformation
-                break
-            }
-
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
             timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds
             if (timer > CodeWhispererConstants.transformationJobTimeoutSeconds) {
@@ -548,6 +586,7 @@ export async function downloadResultArchive(jobId: string, artifactId: string, a
     return { manifestFileVirtualFileReference, pomFileVirtualFileReference }
 }
 
+// TODO possibly delete
 export async function getTransformationStepsFixture(
     jobId: string
 ): Promise<CodeWhispererUserClient.TransformationSteps> {
@@ -593,11 +632,16 @@ export function getDownloadArtifactIdentifiers(transformationStep: Transformatio
 export function findDownloadArtifactStep(transformationSteps: TransformationSteps) {
     console.log('In findDownloadArtifactStep', transformationSteps)
     for (let i = 0; i < transformationSteps.length; i++) {
-        if (
-            transformationSteps[i].progressUpdates?.[0].downloadArtifacts?.[0]?.downloadArtifactType ||
-            transformationSteps[i].progressUpdates?.[0].downloadArtifacts?.[0]?.downloadArtifactId
-        ) {
-            return transformationSteps[i]
+        const progressUpdates = transformationSteps[i].progressUpdates
+        if (progressUpdates?.length) {
+            for (let j = 0; j < progressUpdates.length; j++) {
+                if (
+                    progressUpdates[j].downloadArtifacts?.[0]?.downloadArtifactType ||
+                    progressUpdates[j].downloadArtifacts?.[0]?.downloadArtifactId
+                ) {
+                    return transformationSteps[i]
+                }
+            }
         }
     }
     return

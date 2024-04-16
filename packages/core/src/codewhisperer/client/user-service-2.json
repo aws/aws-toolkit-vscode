@@ -7,7 +7,6 @@
         "protocol": "json",
         "serviceFullName": "Amazon CodeWhisperer",
         "serviceId": "CodeWhispererRuntime",
-        "signatureVersion": "bearer",
         "signingName": "amazoncodewhispererservice",
         "targetPrefix": "AmazonCodeWhispererService",
         "uid": "codewhispererruntime-2022-11-11"

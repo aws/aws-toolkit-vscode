@@ -417,6 +417,8 @@ export const validStatesForPlanGenerated = ['PLANNED', 'TRANSFORMING', 'TRANSFOR
 
 export const failureStates = ['FAILED', 'STOPPING', 'STOPPED', 'REJECTED']
 
+export const pausedStates = ['PAUSED', 'RESUMED']
+
 // if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
 export const validStatesForCheckingDownloadUrl = [
     'COMPLETED',
