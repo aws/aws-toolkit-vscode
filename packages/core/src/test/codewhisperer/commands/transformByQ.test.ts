@@ -12,7 +12,7 @@ import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { getTestWindow } from '../../shared/vscode/window'
-import { stopTransformByQMessage } from '../../../codewhisperer/models/constants'
+import { errorStoppingJobNotification } from '../../../codewhisperer/models/constants'
 import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import path from 'path'
 import { createTestWorkspaceFolder, toFile } from '../../testUtil'
@@ -69,7 +69,7 @@ describe('transformByQ', function () {
     it('WHEN job is stopped THEN status is updated to cancelled', async function () {
         const testWindow = getTestWindow()
         testWindow.onDidShowMessage(message => {
-            if (message.message === stopTransformByQMessage) {
+            if (message.message === errorStoppingJobNotification) {
                 message.selectItem(startTransformByQ.stopTransformByQButton)
             }
         })

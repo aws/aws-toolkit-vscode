@@ -27,10 +27,10 @@ import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/cod
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
-import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
+import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -302,9 +302,13 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
     })
 
     if (exceedsLimit) {
-        void vscode.window.showErrorMessage(
-            projectSizeTooLargeMessage.replace('LINK_HERE', CodeWhispererConstants.linkToUploadZipTooLarge)
-        )
+        void vscode.window.showErrorMessage(CodeWhispererConstants.projectSizeTooLargeNotification)
+        transformByQState
+            .getChatControllers()
+            ?.transformationFinished.fire({
+                message: CodeWhispererConstants.projectSizeTooLargeChatMessage,
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+            })
         throw new ZipExceedsSizeLimitError()
     }
 
@@ -350,7 +354,7 @@ export async function startJob(uploadId: string) {
             result: MetadataResult.Fail,
             reason: 'StartTransformationFailed',
         })
-        throw new Error('Start job failed')
+        throw new Error(`Start job failed: ${errorMessage}`)
     }
 }
 
@@ -481,6 +485,12 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
             transformByQState.setPolledJobStatus(status)
             await vscode.commands.executeCommand('aws.amazonq.refresh')
+            const errorMessage = response.transformationJob.reason
+            if (errorMessage !== undefined) {
+                transformByQState.setJobFailureErrorChatMessage(errorMessage)
+                transformByQState.setJobFailureErrorNotification(errorMessage)
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+            }
             if (validStates.includes(status)) {
                 break
             }
@@ -489,9 +499,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
              * is called, we break above on validStatesForCheckingDownloadUrl and check final status in finalizeTransformationJob
              */
             if (CodeWhispererConstants.failureStates.includes(status)) {
-                transformByQState.setJobFailureMetadata(
-                    `${response.transformationJob.reason} (request ID: ${response.$response.requestId})`
-                )
                 throw new Error('Job was rejected, stopped, or failed')
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
