@@ -313,12 +313,10 @@ export class ProposedTransformationExplorer {
                 downloadErrorMessage = (e as Error).message
                 // This allows the customer to retry the download
                 void vscode.window.showErrorMessage(CodeWhispererConstants.errorDownloadingDiffNotification)
-                transformByQState
-                    .getChatControllers()
-                    ?.transformationFinished.fire({
-                        message: CodeWhispererConstants.errorDownloadingDiffChatMessage,
-                        tabID: ChatSessionManager.Instance.getSession().tabID,
-                    })
+                transformByQState.getChatControllers()?.transformationFinished.fire({
+                    message: CodeWhispererConstants.errorDownloadingDiffChatMessage,
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
                 await vscode.commands.executeCommand(
                     'setContext',
                     'gumby.reviewState',
@@ -381,22 +379,18 @@ export class ProposedTransformationExplorer {
 
                 // Do not await this so that the summary reveals without user needing to close this notification
                 void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesNotification)
-                transformByQState
-                    .getChatControllers()
-                    ?.transformationFinished.fire({
-                        message: CodeWhispererConstants.viewProposedChangesChatMessage,
-                        tabID: ChatSessionManager.Instance.getSession().tabID,
-                    })
+                transformByQState.getChatControllers()?.transformationFinished.fire({
+                    message: CodeWhispererConstants.viewProposedChangesChatMessage,
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
                 deserializeErrorMessage = (e as Error).message
                 getLogger().error(`CodeTransformation: ParseDiff error = ${deserializeErrorMessage}`)
-                transformByQState
-                    .getChatControllers()
-                    ?.transformationFinished.fire({
-                        message: CodeWhispererConstants.errorDeserializingDiffChatMessage,
-                        tabID: ChatSessionManager.Instance.getSession().tabID,
-                    })
+                transformByQState.getChatControllers()?.transformationFinished.fire({
+                    message: CodeWhispererConstants.errorDeserializingDiffChatMessage,
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
                 void vscode.window.showErrorMessage(CodeWhispererConstants.errorDeserializingDiffNotification)
             } finally {
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
@@ -418,12 +412,10 @@ export class ProposedTransformationExplorer {
             await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
             await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
-            transformByQState
-                .getChatControllers()
-                ?.transformationFinished.fire({
-                    message: CodeWhispererConstants.changesAppliedChatMessage,
-                    tabID: ChatSessionManager.Instance.getSession().tabID,
-                })
+            transformByQState.getChatControllers()?.transformationFinished.fire({
+                message: CodeWhispererConstants.changesAppliedChatMessage,
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+            })
             // delete result archive and copied source code after changes accepted
             fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
             fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })

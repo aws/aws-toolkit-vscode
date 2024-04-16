@@ -303,12 +303,10 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
 
     if (exceedsLimit) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.projectSizeTooLargeNotification)
-        transformByQState
-            .getChatControllers()
-            ?.transformationFinished.fire({
-                message: CodeWhispererConstants.projectSizeTooLargeChatMessage,
-                tabID: ChatSessionManager.Instance.getSession().tabID,
-            })
+        transformByQState.getChatControllers()?.transformationFinished.fire({
+            message: CodeWhispererConstants.projectSizeTooLargeChatMessage,
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+        })
         throw new ZipExceedsSizeLimitError()
     }
 
