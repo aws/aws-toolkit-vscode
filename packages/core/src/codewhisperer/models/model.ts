@@ -261,6 +261,7 @@ export class ZipManifest {
     dependenciesRoot: string | undefined = 'dependencies/'
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
+    hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     constructor(dependencyPath?: FolderInfo) {
         if (dependencyPath) {
             this.dependenciesRoot = `dependencies/${dependencyPath.name}/`
@@ -272,19 +273,23 @@ export interface IHilZipManifestParams {
     pomGroupId: string
     pomArtifactId: string
     targetPomVersion: string
+    dependenciesRoot?: string
 }
 export class HilZipManifest {
-    dependenciesRoot: string = 'dependencies/'
-    version: string = '1.0'
     hilCapability: string = 'HIL_1pDependency_VersionUpgrade'
-    pomGroupId: string
-    pomArtifactId: string
-    targetPomVersion: string
-
-    constructor({ pomGroupId, pomArtifactId, targetPomVersion }: IHilZipManifestParams) {
-        this.pomGroupId = pomGroupId
-        this.pomArtifactId = pomArtifactId
-        this.targetPomVersion = targetPomVersion
+    hilInput: IHilZipManifestParams = {
+        pomGroupId: '',
+        pomArtifactId: '',
+        targetPomVersion: '',
+        dependenciesRoot: 'dependencies/',
+    }
+    constructor({ pomGroupId, pomArtifactId, targetPomVersion }: IHilZipManifestParams, dependencyPath?: FolderInfo) {
+        this.hilInput.pomGroupId = pomGroupId
+        this.hilInput.pomArtifactId = pomArtifactId
+        this.hilInput.targetPomVersion = targetPomVersion
+        if (dependencyPath) {
+            this.hilInput.dependenciesRoot = `dependencies/${dependencyPath.name}/`
+        }
     }
 }
 

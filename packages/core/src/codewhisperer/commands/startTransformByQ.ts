@@ -29,9 +29,9 @@ import {
 } from '../../shared/utilities/textUtilities'
 import {
     createZipManifest,
-    downloadResultArchive,
+    downloadResultArchive2,
     findDownloadArtifactStep,
-    getDownloadArtifactIdentifiers,
+    getArtifactsFromProgressUpdate,
     getTransformationPlan,
     getTransformationSteps,
     pollTransformationJob,
@@ -166,6 +166,7 @@ export async function startTransformByQ() {
     let intervalId = undefined
     // Set the default state variables for our store and the UI
     await setTransformationToRunningState()
+    console.log('Starting transformation job')
 
     try {
         // Set web view UI to poll for progress
@@ -176,8 +177,12 @@ export async function startTransformByQ() {
             )
         }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
 
+        console.log('CreateCodeUploadUrl job')
+
         // step 1: CreateCodeUploadUrl and upload code
         const uploadId = await preTransformationUploadCode()
+
+        console.log('About to call startTransformationJob job', uploadId)
 
         // step 2: StartJob and store the returned jobId in TransformByQState
         const jobId = await startTransformationJob(uploadId)
@@ -246,21 +251,23 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
 
     const osTmpDir = os.tmpdir()
+    const tmpDownloadsFolderName = 'q-hil-dependency-artifacts'
     const tmpDependencyListFolderName = 'q-pom-dependency-list'
     const userDependencyUpdateFolderName = 'q-pom-dependency-update'
+    const tmpDownloadsDir = path.join(osTmpDir, tmpDownloadsFolderName)
     const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
     const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
 
     try {
         // 1) We need to call GetTransformationPlan to get artifactId
         const transformationSteps = await getTransformationSteps(jobId, false)
-        const hilTransformationStep = findDownloadArtifactStep(transformationSteps)
+        const { transformationStep, progressUpdate } = findDownloadArtifactStep(transformationSteps)
 
-        if (!hilTransformationStep) {
+        if (!transformationStep || !progressUpdate) {
             throw new Error('No HIL Transformation Step found')
         }
 
-        const { artifactId, artifactType } = getDownloadArtifactIdentifiers(hilTransformationStep)
+        const { artifactId, artifactType } = getArtifactsFromProgressUpdate(progressUpdate)
 
         // Early exit safeguard incase artifactId or artifactType are undefined
         if (!artifactId || !artifactType) {
@@ -268,10 +275,10 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         }
 
         // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
-        const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadResultArchive(
+        const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadResultArchive2(
             jobId,
             artifactId,
-            artifactType
+            tmpDownloadsDir
         )
         const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
 
@@ -336,7 +343,8 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
                 },
             }),
         })
-        const uploadId = await uploadPayload(uploadPayloadFilePath, artifactType)
+        // TODO map `CLIENT_INSTRUCTIONS` to `ClientInstructions` through TransformationDownloadArtifactType
+        const uploadId = await uploadPayload(uploadPayloadFilePath, 'ClientInstructions')
 
         // 8) Once code has been uploaded we will restart the job
         await restartJob(jobId)

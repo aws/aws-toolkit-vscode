@@ -21,9 +21,9 @@ import {
     ZipManifest,
 } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
-import CodeWhispererUserClient, {
+import {
     CreateUploadUrlResponse,
-    TransformationStep,
+    TransformationProgressUpdate,
     TransformationSteps,
 } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
@@ -38,6 +38,9 @@ import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controlle
 import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
+import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
+import { downloadExportResultArchive } from '../../../shared/utilities/download'
+import { ExportIntent } from '@amzn/codewhisperer-streaming'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -274,17 +277,20 @@ interface IZipManifestParams {
     hilZipParams?: IHilZipManifestParams
 }
 export function createZipManifest({ dependenciesFolder, hilZipParams }: IZipManifestParams) {
-    const zipManifest = hilZipParams ? new HilZipManifest(hilZipParams) : new ZipManifest(dependenciesFolder)
+    const zipManifest = hilZipParams
+        ? new HilZipManifest(hilZipParams, dependenciesFolder)
+        : new ZipManifest(dependenciesFolder)
     return zipManifest
 }
 
 interface IZipCodeParams {
     dependenciesFolder: FolderInfo
+    humanInTheLoopFlag?: boolean
     modulePath?: string
-    humanInTheLoopWork?: boolean
     zipManifest: ZipManifest | HilZipManifest
 }
-export async function zipCode({ dependenciesFolder, modulePath, zipManifest }: IZipCodeParams) {
+export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePath, zipManifest }: IZipCodeParams) {
+    console.log('In zipCode', dependenciesFolder, modulePath, zipManifest)
     let tempFilePath = undefined
     let zipStartTime = undefined
     let logFilePath = undefined
@@ -322,7 +328,9 @@ export async function zipCode({ dependenciesFolder, modulePath, zipManifest }: I
                 result: MetadataResult.Pass,
             })
         } else {
-            zipManifest.dependenciesRoot = undefined
+            if (zipManifest instanceof ZipManifest) {
+                zipManifest.dependenciesRoot = undefined
+            }
         }
 
         zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest)), 'utf-8')
@@ -331,7 +339,11 @@ export async function zipCode({ dependenciesFolder, modulePath, zipManifest }: I
 
         // add text file with logs from mvn clean install and mvn copy-dependencies
         logFilePath = await writeLogs()
-        zip.addLocalFile(logFilePath)
+        // We don't add build-logs.txt file to the manifest if we are
+        // uploading HIL artifacts
+        if (!humanInTheLoopFlag) {
+            zip.addLocalFile(logFilePath)
+        }
 
         tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
         fs.writeFileSync(tempFilePath, zip.toBuffer())
@@ -592,58 +604,10 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     return status
 }
 
-export async function downloadResultArchive(jobId: string, artifactId: string, artifactType: string) {
-    console.log('Inside downloadResultArchive artifacts', jobId, artifactId, artifactType)
-    // /Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/manifest.json
-    // src/amazonqGumby/mock/downloadHilZip/manifest.json
-    // TODO replace API call
-    // 1) Save location on disk for downloaded results
-    const manifestFileVirtualFileReference = vscode.Uri.file(
-        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/manifest.json'
-    )
-    const pomFileVirtualFileReference = vscode.Uri.file(
-        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/pom.xml'
-    )
-    return { manifestFileVirtualFileReference, pomFileVirtualFileReference }
-}
-
-// TODO possibly delete
-export async function getTransformationStepsFixture(
-    jobId: string
-): Promise<CodeWhispererUserClient.TransformationSteps> {
-    console.log('In getTransformationStepsFixture', jobId)
-    // fake API call to get transformation steps
-    return [
-        {
-            id: 'fake-step-id-1',
-            name: 'Building Code',
-            description: 'Building dependencies',
-            status: 'COMPLETED',
-            progressUpdates: [
-                {
-                    name: 'Status step',
-                    status: 'FAILED',
-                    description: 'This step should be hil identifier',
-                    startTime: new Date(),
-                    endTime: new Date(),
-                    downloadArtifacts: [
-                        {
-                            downloadArtifactId: 'hil-test-artifact-id',
-                            downloadArtifactType: 'BuiltJars',
-                        },
-                    ],
-                },
-            ],
-            startTime: new Date(),
-            endTime: new Date(),
-        },
-    ]
-}
-
-export function getDownloadArtifactIdentifiers(transformationStep: TransformationStep) {
-    console.log('In getDownloadArtifactIdentifiers', transformationStep)
-    const artifactType = transformationStep.progressUpdates?.[0].downloadArtifacts?.[0]?.downloadArtifactType
-    const artifactId = transformationStep.progressUpdates?.[0].downloadArtifacts?.[0]?.downloadArtifactId
+export function getArtifactsFromProgressUpdate(progressUpdate: TransformationProgressUpdate) {
+    console.log('In getDownloadArtifactIdentifiers', progressUpdate)
+    const artifactType = progressUpdate.downloadArtifacts?.[0]?.downloadArtifactType
+    const artifactId = progressUpdate.downloadArtifacts?.[0]?.downloadArtifactId
     return {
         artifactId,
         artifactType,
@@ -660,10 +624,60 @@ export function findDownloadArtifactStep(transformationSteps: TransformationStep
                     progressUpdates[j].downloadArtifacts?.[0]?.downloadArtifactType ||
                     progressUpdates[j].downloadArtifacts?.[0]?.downloadArtifactId
                 ) {
-                    return transformationSteps[i]
+                    return {
+                        transformationStep: transformationSteps[i],
+                        progressUpdate: progressUpdates[j],
+                    }
                 }
             }
         }
     }
-    return
+    return {
+        transformationStep: undefined,
+        progressUpdate: undefined,
+    }
+}
+
+export async function downloadHilResultArchive(jobId: string, artifactId: string, pathToArchive: string) {
+    console.log('In downloadHilResultArchive', jobId, artifactId, pathToArchive)
+    let downloadErrorMessage = undefined
+    const cwStreamingClient = await createCodeWhispererChatStreamingClient()
+    try {
+        await downloadExportResultArchive(
+            cwStreamingClient,
+            {
+                exportId: transformByQState.getJobId(),
+                exportIntent: ExportIntent.TASK_ASSIST,
+            },
+            pathToArchive
+        )
+    } catch (e: any) {
+        downloadErrorMessage = (e as Error).message
+        // This allows the customer to retry the download
+        getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
+        telemetry.codeTransform_logApiError.emit({
+            codeTransformApiNames: 'ExportResultArchive',
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformJobId: transformByQState.getJobId(),
+            codeTransformApiErrorMessage: downloadErrorMessage,
+            codeTransformRequestId: e.requestId ?? '',
+            result: MetadataResult.Fail,
+            reason: 'ExportResultArchiveFailed',
+        })
+    }
+}
+
+export async function downloadResultArchive2(jobId: string, artifactId: string, artifactType: string) {
+    console.log('Inside downloadResultArchive artifacts', jobId, artifactId, artifactType)
+    // /Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/manifest.json
+    // src/amazonqGumby/mock/downloadHilZip/manifest.json
+    // TODO replace API call
+    // 1) Save location on disk for downloaded results
+    const manifestFileVirtualFileReference = vscode.Uri.file(
+        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/manifest.json'
+    )
+    const pomFileVirtualFileReference = vscode.Uri.file(
+        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/pom.xml'
+    )
+    return { manifestFileVirtualFileReference, pomFileVirtualFileReference }
 }

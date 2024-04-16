@@ -4,10 +4,13 @@
  */
 import assert from 'assert'
 import { parseXmlDependenciesReport } from '../../../../codewhisperer/service/transformByQ/transformFileHandler'
-import { TransformationStep } from '../../../../codewhisperer/client/codewhispereruserclient'
+import {
+    TransformationProgressUpdate,
+    TransformationStep,
+} from '../../../../codewhisperer/client/codewhispereruserclient'
 import {
     findDownloadArtifactStep,
-    getDownloadArtifactIdentifiers,
+    getArtifactsFromProgressUpdate,
 } from '../../../../codewhisperer/service/transformByQ/transformApiHandler'
 
 describe('Amazon Q Gumby Human In The Loop Handler', function () {
@@ -61,32 +64,20 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
         it('will return downloaded artifact values from transformationStep', function () {
             const downloadArtifactId = 'hil-test-artifact-id'
             const downloadArtifactType = 'BuiltJars'
-            const transformationStepsFixture: TransformationStep[] = [
-                {
-                    id: 'fake-step-id-1',
-                    name: 'Building Code',
-                    description: 'Building dependencies',
-                    status: 'COMPLETED',
-                    progressUpdates: [
-                        {
-                            name: 'Status step',
-                            status: 'FAILED',
-                            description: 'This step should be hil identifier',
-                            startTime: new Date(),
-                            endTime: new Date(),
-                            downloadArtifacts: [
-                                {
-                                    downloadArtifactId,
-                                    downloadArtifactType,
-                                },
-                            ],
-                        },
-                    ],
-                    startTime: new Date(),
-                    endTime: new Date(),
-                },
-            ]
-            const { artifactId, artifactType } = getDownloadArtifactIdentifiers(transformationStepsFixture[0])
+            const transformationStepsFixture: TransformationProgressUpdate = {
+                name: 'Status step',
+                status: 'FAILED',
+                description: 'This step should be hil identifier',
+                startTime: new Date(),
+                endTime: new Date(),
+                downloadArtifacts: [
+                    {
+                        downloadArtifactId,
+                        downloadArtifactType,
+                    },
+                ],
+            }
+            const { artifactId, artifactType } = getArtifactsFromProgressUpdate(transformationStepsFixture)
 
             assert.strictEqual(artifactId, downloadArtifactId)
             assert.strictEqual(artifactType, downloadArtifactId)
