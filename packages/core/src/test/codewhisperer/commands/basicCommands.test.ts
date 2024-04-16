@@ -49,7 +49,6 @@ import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
 import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
-import { toolkitSwitchToAmazonQCommand } from '../../../amazonq/explorer/amazonQChildrenNodes'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
 import { createSignIn, switchToAmazonQNode } from '../../../amazonq/explorer/commonNodes'
@@ -317,11 +316,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertContainsItems(
-                    createSignIn('item', toolkitSwitchToAmazonQCommand),
-                    createLearnMore(),
-                    ...genericItems()
-                )
+                e.assertContainsItems(createSignIn('item'), createLearnMore(), ...genericItems())
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -348,7 +343,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     createAutoSuggestions(false),
                     createOpenReferenceLog(),
                     createGettingStarted(),
-                    switchToAmazonQNode('item', toolkitSwitchToAmazonQCommand),
+                    switchToAmazonQNode('item'),
                     createSecurityScan(),
                     ...genericItems(),
                     createSettingsNode(),
@@ -371,7 +366,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     createSelectCustomization(),
                     createOpenReferenceLog(),
                     createGettingStarted(),
-                    switchToAmazonQNode('item', toolkitSwitchToAmazonQCommand),
+                    switchToAmazonQNode('item'),
                     createSecurityScan(),
                     ...genericItems(),
                     createSettingsNode(),

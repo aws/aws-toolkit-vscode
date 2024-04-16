@@ -35,7 +35,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
-import { _switchToAmazonQ } from '../../amazonq/explorer/commonNodes'
+import { _switchToAmazonQ, switchToAmazonQSignInCommand } from '../../amazonq/explorer/commonNodes'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -352,7 +352,7 @@ export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.amazonq.signout', compositeKey: { 1: 'source' } },
     (auth: AuthUtil) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await auth.secondaryAuth.deleteConnection()
-        return switchToAmazonQCommand.execute(cwSignOut, true)
+        return switchToAmazonQSignInCommand.execute(cwSignOut)
     }
 )
 
@@ -430,11 +430,4 @@ export const registerToolkitApiCallback = Commands.declare(
             }
         }
     }
-)
-
-export const switchToAmazonQCommand = Commands.declare(
-    { id: '_aws.amazonq.focusView', compositeKey: { 0: 'source' } },
-    () =>
-        (source: CodeWhispererSource, signIn: boolean = false) =>
-            _switchToAmazonQ(signIn)
 )

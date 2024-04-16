@@ -50,12 +50,7 @@ import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
 import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
 import { activateShared, deactivateShared } from './extensionShared'
-import {
-    learnMoreAmazonQCommand,
-    qExtensionPageCommand,
-    dismissQTree,
-    toolkitSwitchToAmazonQCommand,
-} from './amazonq/explorer/amazonQChildrenNodes'
+import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
 import { AuthUtil, isPreviousQUser } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
@@ -169,7 +164,6 @@ export async function activate(context: vscode.ExtensionContext) {
                 learnMoreAmazonQCommand.register()
                 qExtensionPageCommand.register()
                 dismissQTree.register()
-                toolkitSwitchToAmazonQCommand.register()
                 installAmazonQExtension.register()
 
                 if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {

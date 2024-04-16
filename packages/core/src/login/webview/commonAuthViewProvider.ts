@@ -41,6 +41,7 @@ import { VueWebview, VueWebviewPanel } from '../../webviews/main'
 import { AmazonQLoginWebview } from './vue/amazonq/backend_amazonq'
 import { ToolkitLoginWebview } from './vue/toolkit/backend_toolkit'
 import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
     public readonly viewType: string
@@ -80,6 +81,12 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             this.onDidChangeVisibility?.fire(webviewView.visible)
             // force webview to reload
             await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
+
+            if (webviewView.visible) {
+                telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
+            } else {
+                telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
+            }
         })
 
         const dist = Uri.joinPath(this.extensionContext.extensionUri, 'dist')

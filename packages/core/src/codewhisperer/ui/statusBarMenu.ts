@@ -29,7 +29,6 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { once } from '../../shared/utilities/functionUtils'
 import { getLogger } from '../../shared/logger'
 import { createSignIn, switchToAmazonQNode } from '../../amazonq/explorer/commonNodes'
-import { switchToAmazonQCommand } from '../commands/basicCommands'
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
@@ -39,7 +38,7 @@ function getAmazonQCodeWhispererNodes() {
     }
 
     if (!AuthUtil.instance.isConnected()) {
-        return [createSignIn('item', switchToAmazonQCommand), createLearnMore()]
+        return [createSignIn('item'), createLearnMore()]
     }
 
     if (vsCodeState.isFreeTierLimitReached) {
@@ -70,7 +69,7 @@ function getAmazonQCodeWhispererNodes() {
 
         // Amazon Q + others
         createSeparator('Other Features'),
-        switchToAmazonQNode('item', switchToAmazonQCommand),
+        switchToAmazonQNode('item'),
         createSecurityScan(),
     ]
 }
