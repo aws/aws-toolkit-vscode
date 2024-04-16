@@ -87,9 +87,16 @@ export default defineComponent({
 
 <style scoped>
 .item-container {
-    border: 1px solid var(--vscode-settings-textInputBorder);
     padding: 5px;
     display: flex;
+}
+
+.item-container.vscode-dark {
+    border: 1px solid #424242;
+}
+
+.item-container.vscode-light {
+    border: 1px solid #424242;
 }
 
 .selected.vscode-dark {

@@ -160,7 +160,6 @@
                     v-model="startUrl"
                 />
                 <h4 class="start-url-error">{{ startUrlError }}</h4>
-                <br /><br />
                 <div class="title">Region</div>
                 <div class="hint">AWS Region that hosts identity directory</div>
                 <select class="regionSelect" id="regions" name="regions" v-model="selectedRegion">
@@ -468,6 +467,7 @@ export default defineComponent({
     color: var(--vscode-button-foreground);
     width: 100%;
     height: 40px;
+    border: none;
 }
 .back-button {
     background: none;
@@ -478,21 +478,23 @@ export default defineComponent({
     font-size: 30px;
 }
 .continue-button:disabled {
-    background-color: #252526;
-    color: #6f6f6f;
+    background-color: white;
+    opacity: 0.1;
 }
 .urlInput {
-    background-color: #252526;
+    background-color: var(--vscode-input-background);
     width: 100%;
+    height: 28px;
     color: white;
 }
 .iamInput {
-    background-color: #252526;
+    background-color: var(--vscode-input-background);
     width: 100%;
+    height: 28px;
     color: white;
 }
 .regionSelect {
-    background-color: #252526;
+    background-color: var(--vscode-input-background);
     width: 100%;
     color: white;
 }
