@@ -63,6 +63,7 @@ import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActi
 import { listCodeWhispererCommands } from './ui/statusBarMenu'
 import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
+import { switchToAmazonQCommand } from './ui/codeWhispererNodes'
 
 export async function activate(context: ExtContext): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance
@@ -210,6 +211,8 @@ export async function activate(context: ExtContext): Promise<void> {
         applySecurityFix.register(),
         // quick pick with codewhisperer options
         listCodeWhispererCommands.register(),
+        // switch to Q node for status bar menu
+        switchToAmazonQCommand.register(),
         // manual trigger
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(

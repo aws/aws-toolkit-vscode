@@ -54,7 +54,7 @@ import {
     learnMoreAmazonQCommand,
     qExtensionPageCommand,
     dismissQTree,
-    switchToAmazonQCommand,
+    toolkitSwitchToAmazonQCommand,
 } from './amazonq/explorer/amazonQChildrenNodes'
 import { AuthUtil, isPreviousQUser } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
@@ -168,7 +168,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 learnMoreAmazonQCommand.register()
                 qExtensionPageCommand.register()
                 dismissQTree.register()
-                switchToAmazonQCommand.register()
+                toolkitSwitchToAmazonQCommand.register()
                 installAmazonQExtension.register()
 
                 if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
