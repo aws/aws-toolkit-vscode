@@ -637,7 +637,6 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
     try {
         if (info.autoconnect === true) {
             const prefix = globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq ? 'amazonq' : 'toolkit'
-            // HACK: this only occurs for the explorer case, which is in toolkit
             await vscode.commands.executeCommand(`_aws.${prefix}.auth.autoConnect`)
         }
 
