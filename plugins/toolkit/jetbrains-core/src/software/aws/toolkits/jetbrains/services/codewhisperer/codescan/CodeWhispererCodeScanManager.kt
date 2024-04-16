@@ -63,6 +63,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWh
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.overlaps
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isUserBuilderId
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
@@ -144,7 +145,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
             isCodeScanInProgress.set(false)
             return
         }
-
         //  If scanType is project
         if (scanType == CodeWhispererConstants.SecurityScanType.PROJECT) {
             // Prepare for a project code scan
@@ -152,7 +152,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
             // launch code scan coroutine
             codeScanJob = launchCodeScanCoroutine(CodeWhispererConstants.SecurityScanType.PROJECT)
         } else {
-            if (CodeWhispererExplorerActionManager.getInstance().isAutoEnabledForCodeScan()) {
+            if (CodeWhispererExplorerActionManager.getInstance().isAutoEnabledForCodeScan() and !isUserBuilderId(project)) {
                 //  Add File Scan
                 codeScanJob = launchCodeScanCoroutine(CodeWhispererConstants.SecurityScanType.FILE)
             }

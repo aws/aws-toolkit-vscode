@@ -8,6 +8,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isUserBuilderId
 
 interface ActionProvider<T> {
     val pause: T
@@ -49,21 +50,27 @@ fun<T> buildActionListForInlineSuggestions(project: Project, actionProvider: Act
     }
 }
 
-fun<T> buildActionListForOtherFeatures(project: Project, actionProvider: ActionProvider<T>): List<T> =
+fun<T> buildActionListForCodeScan(project: Project, actionProvider: ActionProvider<T>): List<T> =
     buildList {
-        add(actionProvider.openChatPanel)
         val codeScanManager = CodeWhispererCodeScanManager.getInstance(project)
         val manager = CodeWhispererExplorerActionManager.getInstance()
-        if (manager.isAutoEnabledForCodeScan()) {
-            add(actionProvider.pauseAutoScans)
-        } else {
-            add(actionProvider.resumeAutoScans)
+        if (!isUserBuilderId(project)) {
+            if (manager.isAutoEnabledForCodeScan()) {
+                add(actionProvider.pauseAutoScans)
+            } else {
+                add(actionProvider.resumeAutoScans)
+            }
         }
         if (codeScanManager.isCodeScanInProgress()) {
             add(actionProvider.stopScan)
         } else {
             add(actionProvider.runScan)
         }
+    }
+
+fun<T> buildActionListForOtherFeatures(actionProvider: ActionProvider<T>): List<T> =
+    buildList {
+        add(actionProvider.openChatPanel)
     }
 
 fun<T> buildActionListForConnectHelp(actionProvider: ActionProvider<T>): List<T> =

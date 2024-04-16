@@ -10,7 +10,6 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CloudFormationYamlCodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
@@ -25,7 +24,8 @@ class CodeWhispererYamlCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     private lateinit var testYaml: VirtualFile
     private lateinit var test2Yaml: VirtualFile
     private lateinit var test3Yaml: VirtualFile
-    private lateinit var sessionConfigSpy: CloudFormationYamlCodeScanSessionConfig
+    private lateinit var readMeMd: VirtualFile
+    private lateinit var sessionConfigSpy: CodeScanSessionConfig
 
     private var totalSize: Long = 0
     private var totalLines: Long = 0
@@ -39,7 +39,7 @@ class CodeWhispererYamlCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
                 testYaml,
                 project,
                 CodeWhispererConstants.SecurityScanType.PROJECT
-            ) as CloudFormationYamlCodeScanSessionConfig
+            )
         )
         setupResponse(testYaml.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
@@ -55,10 +55,10 @@ class CodeWhispererYamlCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     fun `test createPayload`() {
         val payload = sessionConfigSpy.createPayload()
         assertNotNull(payload)
-        assertThat(payload.context.totalFiles).isEqualTo(3)
+        assertThat(payload.context.totalFiles).isEqualTo(4)
 
-        assertThat(payload.context.scannedFiles.size).isEqualTo(3)
-        assertThat(payload.context.scannedFiles).containsExactly(testYaml, test3Yaml, test2Yaml)
+        assertThat(payload.context.scannedFiles.size).isEqualTo(4)
+        assertThat(payload.context.scannedFiles).containsExactly(testYaml, test3Yaml, readMeMd, test2Yaml)
 
         assertThat(payload.context.srcPayloadSize).isEqualTo(totalSize)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Yaml)
@@ -72,24 +72,17 @@ class CodeWhispererYamlCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
             filesInZip += 1
         }
 
-        assertThat(filesInZip).isEqualTo(3)
+        assertThat(filesInZip).isEqualTo(4)
     }
 
     @Test
     fun `test getSourceFilesUnderProjectRoot`() {
-        getSourceFilesUnderProjectRoot(sessionConfigSpy, testYaml, 3)
-    }
-
-    @Test
-    fun `test getImportedFiles()`() {
-        val files = sessionConfigSpy.getImportedFiles(testYaml, setOf())
-        assertNotNull(files)
-        assertThat(files).hasSize(0)
+        getSourceFilesUnderProjectRoot(sessionConfigSpy, testYaml, 4)
     }
 
     @Test
     fun `test includeDependencies()`() {
-        includeDependencies(sessionConfigSpy, 3, totalSize, this.totalLines, 0)
+        includeDependencies(sessionConfigSpy, 4, totalSize, this.totalLines, 0)
     }
 
     @Test
@@ -132,7 +125,7 @@ class CodeWhispererYamlCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
 
     @Test
     fun `e2e happy path integration test`() {
-        assertE2ERunsSuccessfully(sessionConfigSpy, projectRule.project, totalLines, 3, totalSize, 2)
+        assertE2ERunsSuccessfully(sessionConfigSpy, projectRule.project, totalLines, 4, totalSize, 2)
     }
 
     private fun setupYamlProject() {
@@ -265,6 +258,8 @@ class CodeWhispererYamlCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
         totalSize += test3Yaml.length
         totalLines += test3Yaml.toNioPath().toFile().readLines().size
 
-        projectRule.fixture.addFileToProject("/notIncluded.md", "### should NOT be included")
+        readMeMd = projectRule.fixture.addFileToProject("/ReadMe.md", "### Now included").virtualFile
+        totalSize += readMeMd.length
+        totalLines += readMeMd.toNioPath().toFile().readLines().size
     }
 }

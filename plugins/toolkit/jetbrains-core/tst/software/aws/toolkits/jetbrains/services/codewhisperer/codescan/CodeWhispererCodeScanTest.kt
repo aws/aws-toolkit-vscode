@@ -26,7 +26,6 @@ import software.aws.toolkits.core.utils.WaiterTimeoutException
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.Payload
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PayloadContext
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PythonCodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_MILLIS_IN_SECOND
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
@@ -41,7 +40,7 @@ import kotlin.test.assertNotNull
 class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsightTestFixtureRule()) {
     private lateinit var psifile: PsiFile
     private lateinit var file: File
-    private lateinit var sessionConfigSpy: PythonCodeScanSessionConfig
+    private lateinit var sessionConfigSpy: CodeScanSessionConfig
     private val payloadContext = PayloadContext(CodewhispererLanguage.Python, 1, 1, 10, listOf(), 600, 200)
     private lateinit var codeScanSessionContext: CodeScanSessionContext
     private lateinit var codeScanSessionSpy: CodeWhispererCodeScanSession
@@ -66,7 +65,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
                 psifile.virtualFile,
                 project,
                 CodeWhispererConstants.SecurityScanType.PROJECT
-            ) as PythonCodeScanSessionConfig
+            )
         )
         setupResponse(psifile.virtualFile.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 

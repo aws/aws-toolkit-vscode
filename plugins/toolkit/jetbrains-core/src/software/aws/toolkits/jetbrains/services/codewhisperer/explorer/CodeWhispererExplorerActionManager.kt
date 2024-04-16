@@ -219,6 +219,10 @@ fun isCodeWhispererEnabled(project: Project) = with(CodeWhispererExplorerActionM
     checkActiveCodeWhispererConnectionType(project) != CodeWhispererLoginType.Logout
 }
 
+fun isUserBuilderId(project: Project) = with(CodeWhispererExplorerActionManager.getInstance()) {
+    checkActiveCodeWhispererConnectionType(project) == CodeWhispererLoginType.Sono
+}
+
 /**
  * Note: please use this util with extra caution, it will return "false" for a "logout" scenario,
  *  the reasoning is we need handling specifically for a "Expired" condition thus excluding logout from here
