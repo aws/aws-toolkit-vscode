@@ -1377,6 +1377,13 @@ export const ExportIntent = {
  */
 export type ExportIntent = typeof ExportIntent[keyof typeof ExportIntent]
 
+export type TransformationExportContext = {
+    downloadArtifactId: string
+    downloadArtifactType: string
+}
+export type ExportContext = {
+    transformationExportContext: TransformationExportContext
+}
 /**
  * @public
  * Response Stream
@@ -1554,6 +1561,7 @@ export interface ExportResultArchiveRequest {
    * Export Intent
    */
   exportIntent: ExportIntent | string | undefined;
+  exportContent?: ExportContext 
 }
 
 /**
