@@ -45,10 +45,20 @@ export async function activateShared(context: vscode.ExtensionContext) {
         const toolkitVersion = semver.coerce(toolkit.packageJSON.version)
         const isDevVersion = toolkit.packageJSON.version.toString().includes('-')
         if (toolkitVersion && toolkitVersion.major < 3 && !isDevVersion) {
-            await vscode.window.showInformationMessage(
-                `The Amazon Q extension is incompatible with AWS Toolkit versions 2.9 and below. Your AWS Toolkit will be updated to version 3.0.`,
-                'OK'
-            )
+            await vscode.commands
+                .executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.awstoolkit)
+                .then(
+                    void vscode.window
+                        .showInformationMessage(
+                            `The Amazon Q extension is incompatible with AWS Toolkit versions 2.9 and below. Your AWS Toolkit was updated to version 3.0 or later.`,
+                            'Reload Now'
+                        )
+                        .then(async resp => {
+                            if (resp === 'Reload Now') {
+                                await vscode.commands.executeCommand('workbench.action.reloadWindow')
+                            }
+                        })
+                )
             return
         }
     }
