@@ -25,7 +25,7 @@ import {
     globals,
     RegionProvider,
 } from 'aws-core-vscode/shared'
-import { initializeAuth, CredentialsStore, LoginManager } from 'aws-core-vscode/auth'
+import { initializeAuth, CredentialsStore, LoginManager, ExtensionUse } from 'aws-core-vscode/auth'
 import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
@@ -120,6 +120,10 @@ export async function activateShared(context: vscode.ExtensionContext) {
 
     // enable auto suggestions on activation
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
+
+    if (ExtensionUse.instance.isFirstUse()) {
+        await vscode.commands.executeCommand('workbench.view.extension.amazonq')
+    }
 }
 
 export async function deactivateShared() {
