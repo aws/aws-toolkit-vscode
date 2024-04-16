@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import * as os from 'os'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'

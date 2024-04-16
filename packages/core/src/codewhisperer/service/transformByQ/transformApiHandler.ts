@@ -196,15 +196,24 @@ export async function uploadPayload(payloadFileName: string) {
 }
 
 /**
- * Maven adds certain metadata to the dependencies in the local repository which are checked during compile time.
- * If any `*.repositories` or `*.sha1` files are found in the local repository, maven will verify if the source repository is available from the machine.
- * If it is not available, then Maven will attempt to redownload dependencies again even if dependencies are available locally.
- * This behaviour cannot be disabled when invoking maven except for by removing these metadata files.
- * @param fileEntry
- * @returns
+ * Array of file extensions used by Maven as metadata in the local repository.
+ * Files with these extensions influence Maven's behavior during compile time,
+ * particularly in checking the availability of source repositories and potentially
+ * re-downloading dependencies if the source is not accessible. Removing these
+ * files can prevent Maven from attempting to download dependencies again.
+ */
+const MavenExcludedExtensions = ['.repositories', '.sha1']
+
+/**
+ * Determines if the specified file path corresponds to a Maven metadata file
+ * by checking against known metadata file extensions. This is used to identify
+ * files that might trigger Maven to recheck or redownload dependencies from source repositories.
+ *
+ * @param path The file path to evaluate for exclusion based on its extension.
+ * @returns {boolean} Returns true if the path ends with an extension associated with Maven metadata files; otherwise, false.
  */
 function isExcludedDependencyFile(path: string): boolean {
-    return path.endsWith('.repositories') || path.endsWith('.sha1')
+    return MavenExcludedExtensions.some(extension => path.endsWith(extension))
 }
 
 /**
