@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
 import * as fs from 'fs'
 import * as os from 'os'
 import path from 'path'
@@ -52,9 +51,6 @@ import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 import { getDependenciesFolderInfo, writeLogs } from '../service/transformByQ/transformFileHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
-
-const localize = nls.loadMessageBundle()
-export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
 
 let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
 
