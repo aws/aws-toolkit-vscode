@@ -25,6 +25,7 @@ import {
     CreateUploadUrlResponse,
     TransformationProgressUpdate,
     TransformationSteps,
+    UploadContext,
 } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
@@ -126,9 +127,9 @@ export async function restartJob(jobId: string) {
             const apiStartTime = Date.now()
             const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
                 transformationJobId: jobId,
-                userActionStatus: 'RESUMED', // can be "RESUMED" or "REJECTED"
+                userActionStatus: 'COMPLETED', // can be "COMPLETED" or "REJECTED"
             })
-            if (response !== undefined) {
+            if (response) {
                 // telemetry.codeTransform_logApiLatency.emit({
                 //     codeTransformApiNames: 'StopTransformation',
                 //     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -139,6 +140,11 @@ export async function restartJob(jobId: string) {
                 // })
                 // always store request ID, but it will only show up in a notification if an error occurs
                 console.log('Resume transformation success', apiStartTime, response)
+                // always store request ID, but it will only show up in a notification if an error occurs
+                if (response.$response.requestId) {
+                    transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+                }
+                return response.transformationStatus
             }
         } catch (e: any) {
             const errorMessage = (e as Error).message
@@ -195,7 +201,7 @@ export async function stopJob(jobId: string) {
     }
 }
 
-export async function uploadPayload(payloadFileName: string, artifactType?: string) {
+export async function uploadPayload(payloadFileName: string, uploadContext?: UploadContext) {
     const buffer = fs.readFileSync(payloadFileName)
     const sha256 = getSha256(buffer)
 
@@ -207,7 +213,7 @@ export async function uploadPayload(payloadFileName: string, artifactType?: stri
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
             uploadIntent: CodeWhispererConstants.uploadIntent,
-            artifactType,
+            uploadContext,
         })
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)

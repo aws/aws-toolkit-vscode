@@ -191,19 +191,25 @@ export async function startTransformByQ() {
         await pollTransformationStatusUntilPlanReady(jobId)
 
         // step 4: poll until artifacts are ready to download
-        for (
-            let humanInTheLoopRetries = 0;
-            humanInTheLoopRetries <= maxHumanInTheLoopAttempts;
-            humanInTheLoopRetries++
-        ) {
+        let humanInTheLoopRetries = 0
+        /**
+         *  The whileLoop condition WaitingUserInput is set inside pollTransformationStatusUntilComplete
+         *  when we see a `PAUSED` state. If this is the case once completeHumanInTheLoopWork the
+         *  WaitingUserInput should still be set until pollTransformationStatusUntilComplete is called again.
+         *  We only don't want to continue calling pollTransformationStatusUntilComplete if there is no HIL
+         *  state ever engaged or we have reached our max amount of HIL retries.
+         */
+        do {
             const status = await pollTransformationStatusUntilComplete(jobId)
-            if (status === 'PAUSED' || transformByQState.getPolledJobStatus() === TransformByQStatus.WaitingUserInput) {
+            if (status === 'PAUSED') {
                 const humanInTheLoopStatus = await completeHumanInTheLoopWork(jobId, humanInTheLoopRetries)
+                humanInTheLoopRetries++
                 console.log('Human in the loop status was: ', humanInTheLoopStatus)
-            } else {
-                humanInTheLoopRetries = maxHumanInTheLoopAttempts
             }
-        }
+        } while (
+            transformByQState.getPolledJobStatus() === TransformByQStatus.WaitingUserInput &&
+            humanInTheLoopRetries < maxHumanInTheLoopAttempts
+        )
 
         // Set the result state variables for our store and the UI
         // At this point job should be completed or partially completed
@@ -314,7 +320,6 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         const getUserInputValue = latestVersion
 
         console.log('Sleeping for 5 seconds since user has entered version')
-        await sleep(5000)
 
         // 6) We need to add user input to that pom.xml,
         // original pom.xml is intact somewhere, and run maven compile
@@ -343,12 +348,17 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
                 },
             }),
         })
-        // TODO map `CLIENT_INSTRUCTIONS` to `ClientInstructions` through TransformationDownloadArtifactType
-        const uploadId = await uploadPayload(uploadPayloadFilePath, 'ClientInstructions')
+        // TODO map `CLIENT_INSTRUCTIONS` to `ClientInstructions` through UploadArtifactType
+        const uploadId = await uploadPayload(uploadPayloadFilePath, {
+            transformationUploadContext: {
+                jobId,
+                uploadArtifactType: 'Dependencies',
+            },
+        })
 
         // 8) Once code has been uploaded we will restart the job
-        await restartJob(jobId)
-        console.log('Finished human in the loop work', uploadId)
+        const response = await restartJob(jobId)
+        console.log('Finished human in the loop work', uploadId, response)
     } catch (err) {
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function
@@ -360,6 +370,8 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         fs.rmdirSync(tmpDependencyListDir, { recursive: true })
         console.log('Deleting temporary dependency output', userDependencyUpdateDir)
         fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
+        console.log('Deleting tmpDownloadsDir', tmpDownloadsDir)
+        fs.rmdirSync(tmpDownloadsDir, { recursive: true })
     }
 
     return successfulFeedbackLoop
