@@ -13,7 +13,7 @@ import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { globals } from '../../shared'
 import { amazonQDismissedKey } from '../../codewhisperer/models/constants'
-import { switchToAmazonQ } from './commonNodes'
+import { _switchToAmazonQ } from './commonNodes'
 
 const localize = nls.loadMessageBundle()
 
@@ -30,7 +30,7 @@ export const dismissQTree = Commands.declare('aws.toolkit.amazonq.dismiss', () =
     await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
 })
 
-export const toolkitSwitchToAmazonQCommand = Commands.declare('_aws.toolkit.amazonq.focusView', () => switchToAmazonQ)
+export const toolkitSwitchToAmazonQCommand = Commands.declare('_aws.toolkit.amazonq.focusView', () => _switchToAmazonQ)
 
 // Learn more button of Amazon Q now opens the Amazon Q marketplace page.
 export const createLearnMoreNode = () =>

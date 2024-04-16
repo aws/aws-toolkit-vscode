@@ -26,9 +26,9 @@ import { cwQuickPickSource, cwTreeNodeSource } from '../commands/types'
 import { AuthUtil } from '../util/authUtil'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
-import { switchToAmazonQ } from '../../amazonq/explorer/commonNodes'
+import { _switchToAmazonQ } from '../../amazonq/explorer/commonNodes'
 
-export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => switchToAmazonQ)
+export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => _switchToAmazonQ)
 
 export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
