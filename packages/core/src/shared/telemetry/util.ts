@@ -82,7 +82,10 @@ export async function getUserAgent(
     opt?: { includePlatform?: boolean; includeClientId?: boolean },
     globalState = globals.context.globalState
 ): Promise<string> {
-    const pairs = [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
+    const pairs =
+        globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq
+            ? [`AmazonQ-For-VSCode/${extensionVersion}`]
+            : [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
 
     if (opt?.includePlatform) {
         pairs.push(platformPair())
