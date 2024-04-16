@@ -122,10 +122,7 @@ describe('AuthUtil', async function () {
 
         const warningMessage = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Information)
         assert.strictEqual(warningMessage.length, 1)
-        assert.strictEqual(
-            warningMessage[0].message,
-            'Connection expired. To continue using Amazon Q, connect with AWS Builder ID or AWS IAM Identity center.'
-        )
+        assert.strictEqual(warningMessage[0].message, `Your Amazon Q connection has expired. Please re-authenticate.`)
     })
 
     it('reauthenticate prompt reauthenticates invalid connection', async function () {

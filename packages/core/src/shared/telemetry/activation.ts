@@ -87,7 +87,7 @@ function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
 
     const telemetryNoticeText: string = localize(
         'AWS.telemetry.notificationMessage',
-        '{0} Toolkit collects anonymous usage metrics to help drive toolkit improvements. This can be changed in the settings.',
+        'AWS IDE Extensions collects anonymous usage metrics to improve the product. You can opt-out in settings.',
         getIdeProperties().company
     )
 

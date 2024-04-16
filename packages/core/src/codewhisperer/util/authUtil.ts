@@ -394,7 +394,7 @@ export class AuthUtil {
 
         await showReauthenticateMessage({
             message: localizedText.connectionExpired('Amazon Q'),
-            connect: localizedText.connect,
+            connect: localizedText.reauthenticate,
             suppressId: 'codeWhispererConnectionExpired',
             settings: AmazonQPromptSettings.instance,
             reauthFunc: async () => {
