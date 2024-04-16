@@ -261,6 +261,31 @@ export class ZipManifest {
     dependenciesRoot: string | undefined = 'dependencies/'
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
+    constructor(dependencyPath?: FolderInfo) {
+        if (dependencyPath) {
+            this.dependenciesRoot = `dependencies/${dependencyPath.name}/`
+        }
+    }
+}
+
+export interface IHilZipManifestParams {
+    pomGroupId: string
+    pomArtifactId: string
+    targetPomVersion: string
+}
+export class HilZipManifest {
+    dependenciesRoot: string = 'dependencies/'
+    version: string = '1.0'
+    hilCapability: string = 'HIL_1pDependency_VersionUpgrade'
+    pomGroupId: string
+    pomArtifactId: string
+    targetPomVersion: string
+
+    constructor({ pomGroupId, pomArtifactId, targetPomVersion }: IHilZipManifestParams) {
+        this.pomGroupId = pomGroupId
+        this.pomArtifactId = pomArtifactId
+        this.targetPomVersion = targetPomVersion
+    }
 }
 
 export enum DropdownStep {

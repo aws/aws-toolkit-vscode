@@ -19,6 +19,7 @@ import {
     FolderInfo,
     TransformationCandidateProject,
     TransformByQStatus,
+    ZipManifest,
 } from '../models/model'
 import {
     convertToTimeString,
@@ -27,6 +28,7 @@ import {
     encodeHTML,
 } from '../../shared/utilities/textUtilities'
 import {
+    createZipManifest,
     downloadResultArchive,
     findDownloadArtifactStep,
     getDownloadArtifactIdentifiers,
@@ -44,7 +46,6 @@ import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/t
 import {
     getVersionData,
     prepareProjectDependencies,
-    runMavenDependencyBuildCommands,
     runMavenDependencyUpdateCommands,
 } from '../service/transformByQ/transformMavenHandler'
 import {
@@ -218,7 +219,11 @@ export async function preTransformationUploadCode() {
     let payloadFilePath = ''
     throwIfCancelled()
     try {
-        payloadFilePath = await zipCode(transformByQState.getDependencyFolderInfo()!)
+        payloadFilePath = await zipCode({
+            dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
+            modulePath: transformByQState.getProjectPath(),
+            zipManifest: new ZipManifest(transformByQState.getDependencyFolderInfo()),
+        })
         transformByQState.setPayloadFilePath(payloadFilePath)
         uploadId = await uploadPayload(payloadFilePath)
     } catch (err) {
@@ -301,6 +306,9 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         // })
         const getUserInputValue = latestVersion
 
+        console.log('Sleeping for 5 seconds since user has entered version')
+        await sleep(5000)
+
         // 6) We need to add user input to that pom.xml,
         // original pom.xml is intact somewhere, and run maven compile
         const userInputPomFileVirtualFileReference = await createPomCopy(
@@ -315,11 +323,22 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
             name: userDependencyUpdateFolderName,
             path: userDependencyUpdateDir,
         }
-        runMavenDependencyBuildCommands(uploadFolderInfo)
-        // TODO modify code to be re-usable with current framework here
-        // TODO Update manifest.json file for upload
-        const uploadPayloadFilePath = await zipCode(uploadFolderInfo)
-        const uploadId = await uploadPayload(uploadPayloadFilePath)
+        await prepareProjectDependencies(uploadFolderInfo)
+        const uploadPayloadFilePath = await zipCode({
+            dependenciesFolder: uploadFolderInfo,
+            zipManifest: createZipManifest({
+                dependenciesFolder: uploadFolderInfo,
+                // TODO parse params from xml file directly
+                hilZipParams: {
+                    pomGroupId: 'org.projectlombok',
+                    pomArtifactId: 'lombok',
+                    targetPomVersion: getUserInputValue,
+                },
+            }),
+        })
+        const uploadId = await uploadPayload(uploadPayloadFilePath, artifactType)
+
+        // 8) Once code has been uploaded we will restart the job
         await restartJob(jobId)
         console.log('Finished human in the loop work', uploadId)
     } catch (err) {

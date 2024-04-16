@@ -11,6 +11,8 @@ import * as crypto from 'crypto'
 import * as CodeWhispererConstants from '../../models/constants'
 import {
     FolderInfo,
+    HilZipManifest,
+    IHilZipManifestParams,
     sessionPlanProgress,
     StepProgress,
     transformByQState,
@@ -190,7 +192,7 @@ export async function stopJob(jobId: string) {
     }
 }
 
-export async function uploadPayload(payloadFileName: string) {
+export async function uploadPayload(payloadFileName: string, artifactType?: string) {
     const buffer = fs.readFileSync(payloadFileName)
     const sha256 = getSha256(buffer)
 
@@ -202,6 +204,7 @@ export async function uploadPayload(payloadFileName: string) {
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
             uploadIntent: CodeWhispererConstants.uploadIntent,
+            artifactType,
         })
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
@@ -266,23 +269,39 @@ function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string
     return files
 }
 
-export async function zipCode(dependenciesFolder: FolderInfo) {
+interface IZipManifestParams {
+    dependenciesFolder: FolderInfo
+    hilZipParams?: IHilZipManifestParams
+}
+export function createZipManifest({ dependenciesFolder, hilZipParams }: IZipManifestParams) {
+    const zipManifest = hilZipParams ? new HilZipManifest(hilZipParams) : new ZipManifest(dependenciesFolder)
+    return zipManifest
+}
+
+interface IZipCodeParams {
+    dependenciesFolder: FolderInfo
+    modulePath?: string
+    humanInTheLoopWork?: boolean
+    zipManifest: ZipManifest | HilZipManifest
+}
+export async function zipCode({ dependenciesFolder, modulePath, zipManifest }: IZipCodeParams) {
     let tempFilePath = undefined
     let zipStartTime = undefined
+    let logFilePath = undefined
     try {
-        const modulePath = transformByQState.getProjectPath()
         throwIfCancelled()
         zipStartTime = Date.now()
-        const sourceFolder = modulePath
-        const sourceFiles = getFilesRecursively(sourceFolder, false)
-
         const zip = new AdmZip()
-        const zipManifest = new ZipManifest()
 
-        for (const file of sourceFiles) {
-            const relativePath = path.relative(sourceFolder, file)
-            const paddedPath = path.join('sources', relativePath)
-            zip.addLocalFile(file, path.dirname(paddedPath))
+        // If no modulePath is passed in, we are not uploaded the source folder
+        // NOTE: We only upload dependencies for human in the loop work
+        if (modulePath) {
+            const sourceFiles = getFilesRecursively(modulePath, false)
+            for (const file of sourceFiles) {
+                const relativePath = path.relative(modulePath, file)
+                const paddedPath = path.join('sources', relativePath)
+                zip.addLocalFile(file, path.dirname(paddedPath))
+            }
         }
 
         throwIfCancelled()
@@ -298,7 +317,6 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
                 const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
             }
-            zipManifest.dependenciesRoot += `${dependenciesFolder.name}/`
             telemetry.codeTransform_dependenciesCopied.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 result: MetadataResult.Pass,
@@ -312,7 +330,7 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
         throwIfCancelled()
 
         // add text file with logs from mvn clean install and mvn copy-dependencies
-        const logFilePath = await writeLogs()
+        logFilePath = await writeLogs()
         zip.addLocalFile(logFilePath)
 
         tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
@@ -320,7 +338,6 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
         if (fs.existsSync(dependenciesFolder.path)) {
             fs.rmSync(dependenciesFolder.path, { recursive: true, force: true })
         }
-        fs.rmSync(logFilePath) // will always exist here
     } catch (e: any) {
         telemetry.codeTransform_logGeneralError.emit({
             codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -329,6 +346,10 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
             reason: 'ZipCreationFailed',
         })
         throw Error('Failed to zip project')
+    } finally {
+        if (logFilePath) {
+            fs.rmSync(logFilePath)
+        }
     }
 
     const zipSize = (await fs.promises.stat(tempFilePath)).size
