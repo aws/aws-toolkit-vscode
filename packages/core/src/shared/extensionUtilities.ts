@@ -14,6 +14,7 @@ import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
 import { DevSettings } from './settings'
 import globals from './extensionGlobals'
+import { once } from './utilities/functionUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -22,6 +23,23 @@ const cloud9Appname = 'AWS Cloud9'
 const cloud9CnAppname = 'Amazon Cloud9'
 const sageMakerAppname = 'SageMaker Code Editor'
 const notInitialized = 'notInitialized'
+
+function _isAmazonQ() {
+    const id = globals.context.extension.id
+    const isToolkit = id === VSCODE_EXTENSION_ID.amazonq || id === VSCODE_EXTENSION_ID.awstoolkitcore
+    const isQ = id === VSCODE_EXTENSION_ID.amazonq
+    if (!isToolkit && !isQ) {
+        throw Error(`unexpected extension id: ${id}`) // sanity check
+    }
+    return isQ
+}
+
+/** True if the current extension is "Amazon Q", else the current extension is "AWS Toolkit". */
+export const isAmazonQ = once(_isAmazonQ)
+
+export function productName() {
+    return isAmazonQ() ? 'Amazon Q' : `${getIdeProperties().company} Toolkit`
+}
 
 export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
 
@@ -139,30 +157,6 @@ export function isCn(): boolean {
 }
 
 /**
- * Applies function `getFn` to `obj` and returns the result, or fails silently.
- *
- * Example:
- *
- *     function blah(value?: SomeObject) {
- *       safeGet(value, x => x.propertyOfSomeObject)
- *     }
- *
- * @param obj the object to attempt the get function on
- * @param getFn the function to use to determine the mapping value
- */
-export function safeGet<O, T>(obj: O | undefined, getFn: (x: O) => T): T | undefined {
-    if (obj) {
-        try {
-            return getFn(obj)
-        } catch (error) {
-            // ignore
-        }
-    }
-
-    return undefined
-}
-
-/**
  * Utility function to determine if the extension version has changed between activations
  * False (versions are identical) if version key exists in global state and matches the current version
  * True (versions are different) if any of the above aren't true
@@ -234,8 +228,8 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         void vscode.window.showWarningMessage(
             localize(
                 'AWS.startup.toastIfAlpha',
-                '{0} Toolkit PREVIEW. (To get the latest STABLE version, uninstall this version.)',
-                getIdeProperties().company
+                '{0} PREVIEW. (To get the latest STABLE version, uninstall this version.)',
+                productName()
             )
         )
         return
@@ -265,12 +259,6 @@ export async function aboutExtension(): Promise<void> {
     }
 }
 
-function getProductName(): string {
-    return globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq
-        ? 'Amazon Q Toolkit'
-        : `${getIdeProperties().company} Toolkit`
-}
-
 /**
  * Returns a string that includes the OS, extension, and VS Code versions.
  */
@@ -290,7 +278,7 @@ export function getExtEnvironmentDetails(): string {
         osRelease,
         getIdeProperties().longName,
         vsCodeVersion,
-        getProductName(),
+        productName(),
         extensionVersion,
         node,
         electron
