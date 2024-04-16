@@ -432,19 +432,6 @@ export default defineComponent({
     margin-bottom: 10px;
     margin-top: 10px;
 }
-.continue-button {
-    background-color: #29a7ff;
-    color: white;
-    width: 100%;
-    height: 40px;
-}
-.back-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: white;
-    font-size: 30px;
-}
 .logoIcon {
     display: flex;
     flex-direction: row;
@@ -465,10 +452,30 @@ export default defineComponent({
     margin-top: 5px;
     font-size: 15px;
     font-weight: bold;
+}
+.title.vscode-dark {
     color: white;
 }
+.title.vscode-light {
+    color: black;
+}
+
 .h4 {
     font-size: 10px;
+}
+.continue-button {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    width: 100%;
+    height: 40px;
+}
+.back-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    font-size: 30px;
 }
 .continue-button:disabled {
     background-color: #252526;

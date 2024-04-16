@@ -87,27 +87,38 @@ export default defineComponent({
 
 <style scoped>
 .item-container {
-    border: 2px solid white;
+    border: 1px solid var(--vscode-settings-textInputBorder);
     padding: 5px;
     display: flex;
 }
-.selected {
-    border: 2px solid #29a7ff;
+
+.selected.vscode-dark {
+    border: 1px solid #0e639c;
     user-select: none;
 }
+
+.selected.vscode-light {
+    border: 1px solid #317ac6;
+    user-select: none;
+}
+
 .title {
-    font-size: 15px;
+    font-size: 12px;
     font-weight: bold;
-    color: white;
 }
 
 .text {
     display: flex;
     flex-direction: column;
-    font-size: 15px;
-    color: white;
+    font-size: 12px;
 }
 
+.text.vscode-dark {
+    color: white;
+}
+.text.vscode-light {
+    color: black;
+}
 .icon {
     padding-right: 10px;
 }
