@@ -18,7 +18,6 @@ import {
     createFeedbackNode,
     createGitHubNode,
     createDocumentationNode,
-    switchToAmazonQCommand,
 } from './codeWhispererNodes'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
@@ -30,6 +29,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { once } from '../../shared/utilities/functionUtils'
 import { getLogger } from '../../shared/logger'
 import { createSignIn, switchToAmazonQNode } from '../../amazonq/explorer/commonNodes'
+import { switchToAmazonQCommand } from '../commands/basicCommands'
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()

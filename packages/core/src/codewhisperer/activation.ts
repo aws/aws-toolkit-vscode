@@ -40,6 +40,7 @@ import {
     signoutCodeWhisperer,
     fetchFeatureConfigsCmd,
     registerToolkitApiCallback,
+    switchToAmazonQCommand,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -63,7 +64,6 @@ import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActi
 import { listCodeWhispererCommands } from './ui/statusBarMenu'
 import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
-import { switchToAmazonQCommand } from './ui/codeWhispererNodes'
 
 export async function activate(context: ExtContext): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance

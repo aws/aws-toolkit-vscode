@@ -11,6 +11,10 @@ export const cwTreeNodeSource = 'codewhispererTreeNode'
 export const cwQuickPickSource = 'codewhispererQuickPick'
 /** Indicates a CodeWhisperer command was executed through the Amazon Q chat pane */
 export const amazonQChatSource = 'amazonQChat'
+/** Indicates a CodeWhisperer command was executed during the first start of the extension */
+export const firstStartUpSource = 'firstStartUp'
+/** Indicates a CodeWhisperer command was executed as a result of signing out */
+export const cwSignOut = 'codewhispererSignOut'
 
 /**
  * Indicates what caused the CodeWhisperer command to be executed, since a command can be executed from different "sources"
@@ -25,3 +29,5 @@ export type CodeWhispererSource =
     | typeof cwTreeNodeSource
     | typeof vscodeComponent
     | typeof amazonQChatSource
+    | typeof firstStartUpSource
+    | typeof cwSignOut

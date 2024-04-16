@@ -10,6 +10,7 @@ import { codicon, getIcon } from '../../shared/icons'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { CodeWhispererSource } from '../../codewhisperer/commands/types'
 
 const localize = nls.loadMessageBundle()
 
@@ -18,9 +19,13 @@ const localize = nls.loadMessageBundle()
  * - switchToAmazonQCommand, _aws.amazonq.focusView                   (for Amazon Q code)
  * - toolkitSwitchToAmazonQCommand, _aws.toolkit.amazonq.focusView    (for Toolkit code)
  */
-export async function _switchToAmazonQ(signIn: boolean = false) {
+export async function _switchToAmazonQ(signIn: boolean) {
     if (signIn) {
         await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', true)
+        telemetry.ui_click.emit({
+            elementId: 'amazonq_switchToQSignIn',
+            passive: false,
+        })
     } else {
         telemetry.ui_click.emit({
             elementId: 'amazonq_switchToQChat',
@@ -34,6 +39,8 @@ export async function _switchToAmazonQ(signIn: boolean = false) {
     await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
 }
 
+type SwitchToAmazonQCommand = DeclaredCommand<(source: CodeWhispererSource, signIn: boolean) => Promise<void>, any[]>
+
 /**
  * Common nodes that can be used by mutliple UIs, e.g. status bar menu, explorer tree, etc.
  * Individual extensions may register their own commands for the nodes, so it must be passed in.
@@ -42,19 +49,16 @@ export async function _switchToAmazonQ(signIn: boolean = false) {
  * and only use the one registered in Amazon Q.
  */
 
-export function switchToAmazonQNode(
-    type: 'item',
-    cmd: DeclaredCommand<typeof _switchToAmazonQ>
-): DataQuickPickItem<'openChatPanel'>
-export function switchToAmazonQNode(type: 'tree', cmd: DeclaredCommand<typeof _switchToAmazonQ>): TreeNode<Command>
+export function switchToAmazonQNode(type: 'item', cmd: SwitchToAmazonQCommand): DataQuickPickItem<'openChatPanel'>
+export function switchToAmazonQNode(type: 'tree', cmd: SwitchToAmazonQCommand): TreeNode<Command>
 export function switchToAmazonQNode(
     type: 'item' | 'tree',
-    cmd: DeclaredCommand<typeof _switchToAmazonQ>
+    cmd: SwitchToAmazonQCommand
 ): DataQuickPickItem<'openChatPanel'> | TreeNode<Command>
-export function switchToAmazonQNode(type: 'item' | 'tree', cmd: DeclaredCommand<typeof _switchToAmazonQ>): any {
+export function switchToAmazonQNode(type: 'item' | 'tree', cmd: SwitchToAmazonQCommand): any {
     switch (type) {
         case 'tree':
-            return cmd.build().asTreeNode({
+            return cmd.build('codewhispererTreeNode', false).asTreeNode({
                 label: 'Open Chat Panel',
                 iconPath: getIcon('vscode-comment'),
                 contextValue: 'awsToAmazonQChatNode',
@@ -64,24 +68,24 @@ export function switchToAmazonQNode(type: 'item' | 'tree', cmd: DeclaredCommand<
                 data: 'openChatPanel',
                 label: 'Open Chat Panel',
                 iconPath: getIcon('vscode-comment'),
-                onClick: () => cmd.execute(),
+                onClick: () => cmd.execute('codewhispererQuickPick', false),
             } as DataQuickPickItem<'openChatPanel'>
     }
 }
 
-export function createSignIn(type: 'item', cmd: DeclaredCommand<typeof _switchToAmazonQ>): DataQuickPickItem<'signIn'>
-export function createSignIn(type: 'tree', cmd: DeclaredCommand<typeof _switchToAmazonQ>): TreeNode<Command>
+export function createSignIn(type: 'item', cmd: SwitchToAmazonQCommand): DataQuickPickItem<'signIn'>
+export function createSignIn(type: 'tree', cmd: SwitchToAmazonQCommand): TreeNode<Command>
 export function createSignIn(
     type: 'item' | 'tree',
-    cmd: DeclaredCommand<typeof _switchToAmazonQ>
+    cmd: SwitchToAmazonQCommand
 ): DataQuickPickItem<'signIn'> | TreeNode<Command>
-export function createSignIn(type: 'item' | 'tree', cmd: DeclaredCommand<typeof _switchToAmazonQ>): any {
+export function createSignIn(type: 'item' | 'tree', cmd: SwitchToAmazonQCommand): any {
     const label = localize('AWS.codewhisperer.signInNode.label', 'Sign in to get started')
     const icon = getIcon('vscode-account')
 
     switch (type) {
         case 'tree':
-            return cmd.build(true).asTreeNode({
+            return cmd.build('codewhispererTreeNode', true).asTreeNode({
                 label: label,
                 iconPath: icon,
             })
@@ -89,7 +93,7 @@ export function createSignIn(type: 'item' | 'tree', cmd: DeclaredCommand<typeof 
             return {
                 data: 'signIn',
                 label: codicon`${icon} ${label}`,
-                onClick: () => cmd.execute(true),
+                onClick: () => cmd.execute('codewhispererQuickPick', true),
             } as DataQuickPickItem<'signIn'>
     }
 }

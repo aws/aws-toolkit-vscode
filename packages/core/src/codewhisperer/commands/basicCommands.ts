@@ -29,12 +29,13 @@ import { applyPatch } from 'diff'
 import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
 import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
-import { CodeWhispererSource } from './types'
+import { CodeWhispererSource, cwSignOut } from './types'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
+import { _switchToAmazonQ } from '../../amazonq/explorer/commonNodes'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -349,8 +350,9 @@ export const applySecurityFix = Commands.declare(
 
 export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.amazonq.signout', compositeKey: { 1: 'source' } },
-    (auth: AuthUtil) => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        return auth.secondaryAuth.deleteConnection()
+    (auth: AuthUtil) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        await auth.secondaryAuth.deleteConnection()
+        return switchToAmazonQCommand.execute(cwSignOut, true)
     }
 )
 
@@ -428,4 +430,11 @@ export const registerToolkitApiCallback = Commands.declare(
             }
         }
     }
+)
+
+export const switchToAmazonQCommand = Commands.declare(
+    { id: '_aws.amazonq.focusView', compositeKey: { 0: 'source' } },
+    () =>
+        (source: CodeWhispererSource, signIn: boolean = false) =>
+            _switchToAmazonQ(signIn)
 )

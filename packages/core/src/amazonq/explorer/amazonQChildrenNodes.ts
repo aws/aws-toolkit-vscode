@@ -9,7 +9,7 @@ import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
 import { installAmazonQExtension, reconnect } from '../../codewhisperer/commands/basicCommands'
 import { amazonQHelpUrl } from '../../shared/constants'
-import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
+import { CodeWhispererSource, cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { globals } from '../../shared'
 import { amazonQDismissedKey } from '../../codewhisperer/models/constants'
@@ -30,7 +30,12 @@ export const dismissQTree = Commands.declare('aws.toolkit.amazonq.dismiss', () =
     await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
 })
 
-export const toolkitSwitchToAmazonQCommand = Commands.declare('_aws.toolkit.amazonq.focusView', () => _switchToAmazonQ)
+export const toolkitSwitchToAmazonQCommand = Commands.declare(
+    { id: '_aws.toolkit.amazonq.focusView', compositeKey: { 0: 'source' } },
+    () =>
+        (source: CodeWhispererSource, signIn: boolean = false) =>
+            _switchToAmazonQ(signIn)
+)
 
 // Learn more button of Amazon Q now opens the Amazon Q marketplace page.
 export const createLearnMoreNode = () =>
