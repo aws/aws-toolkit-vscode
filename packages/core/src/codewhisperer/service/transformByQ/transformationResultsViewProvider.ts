@@ -346,6 +346,7 @@ export class ProposedTransformationExplorer {
                     result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
                     reason: downloadErrorMessage,
                 })
+                cwStreamingClient.destroy()
             }
 
             const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size

@@ -1377,10 +1377,35 @@ export const ExportIntent = {
  */
 export type ExportIntent = typeof ExportIntent[keyof typeof ExportIntent]
 
+/**
+ * @public
+ * @enum
+ */
+export const TransformationDownloadArtifactType = {
+    /**
+     * ClientInstructions
+     */
+    CLIENT_INSTRUCTIONS: "ClientInstructions"
+} as const
+/**
+ * @public
+ */
+export type TransformationDownloadArtifactType = typeof TransformationDownloadArtifactType[keyof typeof TransformationDownloadArtifactType]
+
+/**
+ * @public
+ */
+export type ArtifactId = string
+/**
+ * @public
+ */
 export type TransformationExportContext = {
-    downloadArtifactId: string
-    downloadArtifactType: string
+    downloadArtifactId: ArtifactId
+    downloadArtifactType: TransformationDownloadArtifactType
 }
+/**
+ * @public
+ */
 export type ExportContext = {
     transformationExportContext: TransformationExportContext
 }
@@ -1561,6 +1586,10 @@ export interface ExportResultArchiveRequest {
    * Export Intent
    */
   exportIntent: ExportIntent | string | undefined;
+  /**
+   * @public
+   * Export Context
+   */
   exportContext?: ExportContext 
 }
 

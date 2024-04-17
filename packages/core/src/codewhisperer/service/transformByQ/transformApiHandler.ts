@@ -41,7 +41,7 @@ import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
-import { ExportIntent } from '@amzn/codewhisperer-streaming'
+import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -122,44 +122,39 @@ export async function uploadArtifactToS3(
 }
 
 export async function restartJob(jobId: string) {
-    if (jobId !== '') {
-        try {
-            const apiStartTime = Date.now()
-            const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
-                transformationJobId: jobId,
-                userActionStatus: 'COMPLETED', // can be "COMPLETED" or "REJECTED"
-            })
-            if (response) {
-                // telemetry.codeTransform_logApiLatency.emit({
-                //     codeTransformApiNames: 'StopTransformation',
-                //     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                //     codeTransformJobId: jobId,
-                //     codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-                //     codeTransformRequestId: response.$response.requestId,
-                //     result: MetadataResult.Pass,
-                // })
-                // always store request ID, but it will only show up in a notification if an error occurs
-                console.log('Resume transformation success', apiStartTime, response)
-                // always store request ID, but it will only show up in a notification if an error occurs
-                if (response.$response.requestId) {
-                    transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-                }
-                return response.transformationStatus
-            }
-        } catch (e: any) {
-            const errorMessage = (e as Error).message
-            getLogger().error(`CodeTransformation: ResumeTransformation error = ${errorMessage}`)
-            // telemetry.codeTransform_logApiError.emit({
+    console.log('In restartJob', jobId)
+    try {
+        const apiStartTime = Date.now()
+        const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
+            transformationJobId: jobId,
+            userActionStatus: 'COMPLETED', // can be "COMPLETED" or "REJECTED"
+        })
+        if (response) {
+            // telemetry.codeTransform_logApiLatency.emit({
             //     codeTransformApiNames: 'StopTransformation',
             //     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
             //     codeTransformJobId: jobId,
-            //     codeTransformApiErrorMessage: errorMessage,
-            //     codeTransformRequestId: e.requestId ?? '',
-            //     result: MetadataResult.Fail,
-            //     reason: 'StopTransformationFailed',
+            //     codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+            //     codeTransformRequestId: response.$response.requestId,
+            //     result: MetadataResult.Pass,
             // })
-            throw new Error('Resume transformation job failed')
+            // always store request ID, but it will only show up in a notification if an error occurs
+            console.log('Resume transformation success', apiStartTime, response)
+            return response.transformationStatus
         }
+    } catch (e: any) {
+        const errorMessage = (e as Error).message
+        getLogger().error(`CodeTransformation: ResumeTransformation error = ${errorMessage}`)
+        // telemetry.codeTransform_logApiError.emit({
+        //     codeTransformApiNames: 'StopTransformation',
+        //     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        //     codeTransformJobId: jobId,
+        //     codeTransformApiErrorMessage: errorMessage,
+        //     codeTransformRequestId: e.requestId ?? '',
+        //     result: MetadataResult.Fail,
+        //     reason: 'StopTransformationFailed',
+        // })
+        throw new Error('Resume transformation job failed')
     }
 }
 
@@ -666,7 +661,7 @@ export async function downloadResultArchive({
                 exportContext: {
                     transformationExportContext: {
                         downloadArtifactId,
-                        downloadArtifactType: 'ClientInstructions',
+                        downloadArtifactType: TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS,
                     },
                 },
             },
@@ -685,28 +680,32 @@ export async function downloadResultArchive({
             result: MetadataResult.Fail,
             reason: 'ExportResultArchiveFailed',
         })
+    } finally {
+        cwStreamingClient.destroy()
     }
 }
 
 export async function downloadHilResultArchive(jobId: string, downloadArtifactId: string, pathToArchiveDir: string) {
     console.log('Inside downloadResultArchive artifacts', jobId, downloadArtifactId, pathToArchiveDir)
-    if (!fs.existsSync(pathToArchiveDir)) {
-        fs.mkdirSync(pathToArchiveDir)
-    }
-    const pathToArchive = path.join(pathToArchiveDir, 'ExportResultsArchive.zip')
-    const downloadResults = await downloadResultArchive({ jobId, downloadArtifactId, pathToArchive })
-    console.log('DownloadResults', downloadResults)
+    pathToArchiveDir =
+        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip'
+    // if (!fs.existsSync(pathToArchiveDir)) {
+    //     fs.mkdirSync(pathToArchiveDir)
+    // }
+    // const pathToArchive = path.join(pathToArchiveDir, 'ExportResultsArchive.zip')
+    // const downloadResults = await downloadResultArchive({ jobId, downloadArtifactId, pathToArchive })
+    // console.log('DownloadResults', downloadResults)
 
-    let downloadErrorMessage = undefined
-    try {
-        // Download and deserialize the zip
-        const zip = new AdmZip(pathToArchive)
-        zip.extractAllTo(pathToArchive)
-    } catch (e) {
-        downloadErrorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
-        throw new Error('Error downloading HIL artifacts')
-    }
+    // let downloadErrorMessage = undefined
+    // try {
+    //     // Download and deserialize the zip
+    //     const zip = new AdmZip(pathToArchive)
+    //     zip.extractAllTo(pathToArchive)
+    // } catch (e) {
+    //     downloadErrorMessage = (e as Error).message
+    //     getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
+    //     throw new Error('Error downloading HIL artifacts')
+    // }
     const manifestFileVirtualFileReference = vscode.Uri.file(`${pathToArchiveDir}/manifest.json`)
     const pomFileVirtualFileReference = vscode.Uri.file(`${pathToArchiveDir}/pom.xml`)
     return { manifestFileVirtualFileReference, pomFileVirtualFileReference }

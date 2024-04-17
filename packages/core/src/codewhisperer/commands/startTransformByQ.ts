@@ -368,8 +368,8 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         // Always delete the dependency output
         console.log('Deleting temporary dependency output', tmpDependencyListDir)
         fs.rmdirSync(tmpDependencyListDir, { recursive: true })
-        console.log('Deleting temporary dependency output', userDependencyUpdateDir)
-        fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
+        // console.log('Deleting temporary dependency output', userDependencyUpdateDir)
+        // fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
         console.log('Deleting tmpDownloadsDir', tmpDownloadsDir)
         fs.rmdirSync(tmpDownloadsDir, { recursive: true })
     }
