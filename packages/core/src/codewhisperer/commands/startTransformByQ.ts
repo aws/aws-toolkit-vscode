@@ -224,17 +224,19 @@ export async function preTransformationUploadCode() {
     return uploadId
 }
 
+//to-do: store this state somewhere
+let PomFileVirtualFileReference: vscode.Uri
+const osTmpDir = os.tmpdir()
+const tmpDependencyListFolderName = 'q-pom-dependency-list'
+const userDependencyUpdateFolderName = 'q-pom-dependency-update'
+const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
+const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
+const pomReplacementDelimiter = '*****'
+
 export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCount: number) {
     console.log('Entering completeHumanInTheLoopWork', jobId, userInputRetryCount)
 
-    const pomReplacementDelimiter = '*****'
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
-
-    const osTmpDir = os.tmpdir()
-    const tmpDependencyListFolderName = 'q-pom-dependency-list'
-    const userDependencyUpdateFolderName = 'q-pom-dependency-update'
-    const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
-    const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
 
     try {
         // 1) We need to call GetTransformationPlan to get artifactId
@@ -263,6 +265,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
             artifactId,
             artifactType
         )
+        PomFileVirtualFileReference = pomFileVirtualFileReference
         const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
 
         // 3) We need to replace version in pom.xml
@@ -290,17 +293,38 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         console.log(latestVersion, majorVersions, minorVersions)
 
         // 5) We need to wait for user input
+        // This is asynchronous, so we have to wait to be called to complete this loop
         transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
             tabID: ChatSessionManager.Instance.getSession().tabID,
             latestVersion: [latestVersion],
         })
-        const getUserInputValue = latestVersion
+    } catch (err) {
+        // Will probably emit different TYPES of errors from the Human in the loop engagement
+        // catch them here and determine what to do with in parent function
+        console.log('Error in completeHumanInTheLoopWork', err)
+    } finally {
+        // Always delete the dependency output
+        console.log('Deleting temporary dependency output', tmpDependencyListDir)
+        fs.rmdirSync(tmpDependencyListDir, { recursive: true })
+        console.log('Deleting temporary dependency output', userDependencyUpdateDir)
+        fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
+    }
+
+    return true
+}
+
+export async function finishHumanInTheLoop(selectedDependency: string) {
+    console.log('Entering finishHumanInTheLoop', selectedDependency)
+    const pomReplacementDelimiter = '*****'
+
+    try {
+        const getUserInputValue = selectedDependency
 
         // 6) We need to add user input to that pom.xml,
         // original pom.xml is intact somewhere, and run maven compile
         const userInputPomFileVirtualFileReference = await createPomCopy(
             userDependencyUpdateDir,
-            pomFileVirtualFileReference,
+            PomFileVirtualFileReference,
             'pom.xml'
         )
         await replacePomVersion(userInputPomFileVirtualFileReference, getUserInputValue, pomReplacementDelimiter)
@@ -327,7 +351,6 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         console.log('Deleting temporary dependency output', userDependencyUpdateDir)
         fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
     }
-
     return true
 }
 

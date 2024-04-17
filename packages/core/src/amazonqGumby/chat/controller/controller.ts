@@ -17,6 +17,7 @@ import { featureName } from '../../models/constants'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import {
     compileProject,
+    finishHumanInTheLoop,
     getValidCandidateProjects,
     processTransformFormInput,
     startTransformByQ,
@@ -236,6 +237,12 @@ export class GumbyController {
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
                 await this.transformInitiated({ ...message, tabID: message.tabId })
                 break
+            case ButtonActions.CONFIRM_DEPENDENCY_FORM:
+                // call back to hitl
+                // eslint-disable-next-line no-case-declarations
+                const selectedDependency = message.formSelectedValues['GumbyTransformDependencyForm']
+                await finishHumanInTheLoop(selectedDependency)
+                break
         }
     }
 
@@ -326,12 +333,15 @@ export class GumbyController {
     }
 
     private startHumanInTheLoopIntervention(tabID: string) {
+        // to-do: need to set chat state to something other than IDLE,
+        // as otherwise the user could start a new job in this flow
         this.messenger.sendHumanInTheLoopInitialMessage(tabID)
     }
 
     // eslint-disable-next-line id-length
-    private promptForDependencyHumanInTheLoopIntervention(tabID: string, latestVersion: string[] = []) {
-        this.messenger.sendDependenciesFoundMessage(latestVersion, tabID)
+    private promptForDependencyHumanInTheLoopIntervention(tabID: string, dependencies: string[] = []) {
+        // if dependencies.length == 0, send error message
+        this.messenger.sendDependenciesFoundMessage(dependencies, tabID)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
