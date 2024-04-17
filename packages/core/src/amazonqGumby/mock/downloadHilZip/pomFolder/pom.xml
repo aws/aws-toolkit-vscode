@@ -5,11 +5,10 @@
   <groupId>GROUP_ID</groupId>
   <artifactId>ARTIFACT_ID</artifactId>
   <version>VERSION</version>
-  
   <dependencies>
     <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
+      <groupId>org.example</groupId>
+      <artifactId>java-8-only-depdendency</artifactId>
       <version>*****</version>
     </dependency>
   </dependencies>

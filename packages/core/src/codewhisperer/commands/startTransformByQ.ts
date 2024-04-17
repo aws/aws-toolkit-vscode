@@ -67,14 +67,17 @@ import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 import {
     createPomCopy,
+    getCodeIssueSnippetFromPom,
     getDependenciesFolderInfo,
     getJsonValuesFromManifestFile,
     highlightPomIssueInProject,
-    parseXmlDependenciesReport,
+    parseVersionsListFromPomFile,
     replacePomVersion,
     writeLogs,
 } from '../service/transformByQ/transformFileHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
+import DependencyVersions from '../../amazonqGumby/models/dependencies'
+import { IManifestFile } from '../../amazonqFeatureDev/models'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -201,7 +204,7 @@ export async function humanInTheLoopRetryLogic(jobId: string) {
     try {
         const status = await pollTransformationStatusUntilComplete(jobId)
         if (status === 'PAUSED') {
-            await completeHumanInTheLoopWork(jobId)
+            await initiateHumanInTheLoopPrompt(jobId)
         } else {
             await finalizeTransformByQ(status)
         }
@@ -252,6 +255,7 @@ export async function preTransformationUploadCode() {
 
 //to-do: store this state somewhere
 let PomFileVirtualFileReference: vscode.Uri
+let manifestFileValues: IManifestFile
 const osTmpDir = os.tmpdir()
 const tmpDownloadsFolderName = 'q-hil-dependency-artifacts'
 const tmpDependencyListFolderName = 'q-pom-dependency-list'
@@ -261,7 +265,7 @@ const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderNa
 const tmpDownloadsDir = path.join(osTmpDir, tmpDownloadsFolderName)
 const pomReplacementDelimiter = '*****'
 
-export async function completeHumanInTheLoopWork(jobId: string) {
+export async function initiateHumanInTheLoopPrompt(jobId: string) {
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
 
     try {
@@ -280,11 +284,6 @@ export async function completeHumanInTheLoopWork(jobId: string) {
             throw new Error('artifactId or artifactType is undefined')
         }
 
-        // Let the user know we've entered the loop in the chat
-        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
-            tabID: ChatSessionManager.Instance.getSession().tabID,
-        })
-
         // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
         const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadHilResultArchive(
             jobId,
@@ -292,7 +291,7 @@ export async function completeHumanInTheLoopWork(jobId: string) {
             tmpDownloadsDir
         )
         PomFileVirtualFileReference = pomFileVirtualFileReference
-        const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
+        manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
 
         // 3) We need to replace version in pom.xml
         const newPomFileVirtualFileReference = await createPomCopy(
@@ -305,6 +304,14 @@ export async function completeHumanInTheLoopWork(jobId: string) {
             manifestFileValues.sourcePomVersion,
             pomReplacementDelimiter
         )
+
+        const codeSnippet = await getCodeIssueSnippetFromPom(newPomFileVirtualFileReference)
+        // Let the user know we've entered the loop in the chat
+        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+            codeSnippet,
+        })
+
         await highlightPomIssueInProject(newPomFileVirtualFileReference, manifestFileValues.sourcePomVersion)
 
         // 4) We need to run maven commands on that pom.xml to get available versions
@@ -313,10 +320,16 @@ export async function completeHumanInTheLoopWork(jobId: string) {
             path: tmpDependencyListDir,
         }
         runMavenDependencyUpdateCommands(compileFolderInfo)
-        const { latestVersion, majorVersions, minorVersions } = await parseXmlDependenciesReport(
+        const { latestVersion, majorVersions, minorVersions } = await parseVersionsListFromPomFile(
             path.join(tmpDependencyListDir, localPathToXmlDependencyList)
         )
-        const dependencies = [latestVersion, ...majorVersions, ...minorVersions]
+
+        const dependencies = new DependencyVersions(
+            latestVersion,
+            majorVersions,
+            minorVersions,
+            manifestFileValues.sourcePomVersion
+        )
 
         // 5) We need to wait for user input
         // This is asynchronous, so we have to wait to be called to complete this loop
@@ -324,6 +337,8 @@ export async function completeHumanInTheLoopWork(jobId: string) {
             tabID: ChatSessionManager.Instance.getSession().tabID,
             dependencies,
         })
+
+        await sleep(5000)
     } catch (err) {
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function
@@ -361,10 +376,9 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
             dependenciesFolder: uploadFolderInfo,
             zipManifest: createZipManifest({
                 dependenciesFolder: uploadFolderInfo,
-                // TODO parse params from xml file directly
                 hilZipParams: {
-                    pomGroupId: 'org.projectlombok',
-                    pomArtifactId: 'lombok',
+                    pomGroupId: manifestFileValues.pomGroupId,
+                    pomArtifactId: manifestFileValues.pomArtifactId,
                     targetPomVersion: getUserInputValue,
                 },
             }),

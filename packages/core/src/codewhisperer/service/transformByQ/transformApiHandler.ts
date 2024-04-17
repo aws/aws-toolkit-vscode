@@ -680,7 +680,6 @@ export async function downloadResultArchive({
 }
 
 export async function downloadHilResultArchive(jobId: string, downloadArtifactId: string, pathToArchiveDir: string) {
-    // pathToArchiveDir = '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip'
     const archivePathExists = await fsCommon.existsDir(pathToArchiveDir)
     if (!archivePathExists) {
         await fsCommon.mkdir(pathToArchiveDir)
@@ -692,7 +691,7 @@ export async function downloadHilResultArchive(jobId: string, downloadArtifactId
     try {
         // Download and deserialize the zip
         const zip = new AdmZip(pathToArchive)
-        zip.extractAllTo(pathToArchive)
+        zip.extractAllTo(pathToArchiveDir)
     } catch (e) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
@@ -701,7 +700,7 @@ export async function downloadHilResultArchive(jobId: string, downloadArtifactId
 
     // manifest.json
     // pomFolder/pom.xml or manifest has pomFolderName path
-    const manifestFileVirtualFileReference = vscode.Uri.file(`${pathToArchiveDir}/manifest.json`)
-    const pomFileVirtualFileReference = vscode.Uri.file(`${pathToArchiveDir}/pomFolder/pom.xml`)
+    const manifestFileVirtualFileReference = vscode.Uri.file(path.join(pathToArchiveDir, 'manifest.json'))
+    const pomFileVirtualFileReference = vscode.Uri.file(path.join(pathToArchiveDir, 'pomFolder', 'pom.xml'))
     return { manifestFileVirtualFileReference, pomFileVirtualFileReference }
 }

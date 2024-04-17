@@ -26,6 +26,7 @@ import {
 } from '../../views/connector/connector'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import MessengerUtils, { ButtonActions } from './messengerUtils'
+import DependencyVersions from '../../../models/dependencies'
 
 export type StaticTextResponseType =
     | 'transform'
@@ -405,7 +406,7 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
 
-    public sendHumanInTheLoopInitialMessage(tabID: string) {
+    public sendHumanInTheLoopInitialMessage(tabID: string, codeSnippet: string) {
         let message = `I ran into a dependency issue and was not able to successfully complete the transformation.`
 
         this.dispatcher.sendChatMessage(
@@ -418,25 +419,31 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
             )
         )
 
-        message = `Here is the dependency causing the error: `
+        if (codeSnippet !== '') {
+            message = `Here is the dependency causing the error: 
+\`\`\`
+${codeSnippet}
+\`\`\`
+`
 
-        const buttons: ChatItemButton[] = []
-        buttons.push({
-            keepCardAfterClick: true,
-            text: 'Open File',
-            id: ButtonActions.OPEN_FILE,
-        })
+            const buttons: ChatItemButton[] = []
+            buttons.push({
+                keepCardAfterClick: true,
+                text: 'Open File',
+                id: ButtonActions.OPEN_FILE,
+            })
 
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message,
-                    messageType: 'ai-prompt',
-                    buttons,
-                },
-                tabID
+            this.dispatcher.sendChatMessage(
+                new ChatMessage(
+                    {
+                        message,
+                        messageType: 'ai-prompt',
+                        buttons,
+                    },
+                    tabID
+                )
             )
-        )
+        }
 
         message = `I am searching for other versions available in your maven repository for this dependency...`
 
@@ -456,20 +463,20 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
         )
     }
 
-    public sendDependenciesFoundMessage(dependencies: string[], tabID: string) {
-        const message = `I found ${dependencies.length} other versions which are higher than the one in your code {CURRENT_DEPENDENCY_VERSION}.
+    public sendDependencyVersionsFoundMessage(versions: DependencyVersions, tabID: string) {
+        const message = `I found ${versions.length} other versions which are higher than the one in your code ${versions.currentVersion}.
 
-Latest major version: {LATEST_MAJOR_VERSION} {OPTIONAL_NOTE}
-Latest minor version: {LATEST_MINOR_VERSION} {OPTIONAL_NOTE}
+Latest major version: ${versions.latestVersion}
+Latest minor version: ${versions.minorVersions[0]}
 
 `
 
-        const dependencyFormOptions: { value: any; label: string }[] = []
+        const valueFormOptions: { value: any; label: string }[] = []
 
-        dependencies.forEach(dependency => {
-            dependencyFormOptions.push({
-                value: dependency,
-                label: dependency,
+        versions.allVersions.forEach(version => {
+            valueFormOptions.push({
+                value: version,
+                label: version,
             })
         })
 
@@ -480,7 +487,7 @@ Latest minor version: {LATEST_MINOR_VERSION} {OPTIONAL_NOTE}
             title: 'Please select the version to use:',
             mandatory: true,
 
-            options: dependencyFormOptions,
+            options: valueFormOptions,
         })
 
         this.dispatcher.sendChatPrompt(
@@ -496,8 +503,17 @@ Latest minor version: {LATEST_MINOR_VERSION} {OPTIONAL_NOTE}
         )
     }
 
-    public sendHILContinueMessage(tabID: string) {
-        const message = `Okay. Uploading the relevant jar and resuming the job.`
+    public sendHILContinueMessage(tabID: string, selectedDependencyVersion: string) {
+        let message = `### Resume Transformation Job
+-------------
+| | |
+| :------------------- | -------: |
+| **Dependency Version**             |   ${selectedDependencyVersion}   |
+`
+
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+
+        message = `Okay. Uploading the relevant jar and resuming the job.`
         this.sendInProgressMessage(tabID, message)
     }
 

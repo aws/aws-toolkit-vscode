@@ -15,7 +15,9 @@ export type ChatItemType =
     | 'code-result'
 
 export interface IManifestFile {
-    hilType: string
+    pomArtifactId: string
     pomFolderName: string
+    hilCapability: string
+    pomGroupId: string
     sourcePomVersion: string
 }

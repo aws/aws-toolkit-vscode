@@ -61,9 +61,11 @@ export async function getJsonValuesFromManifestFile(
     const manifestFileContents = readFileSync(manifestFileVirtualFileReference.fsPath, 'utf-8')
     const jsonValues = JSON.parse(manifestFileContents.toString())
     return {
-        hilType: jsonValues?.hilType,
+        hilCapability: jsonValues?.hilType,
         pomFolderName: jsonValues?.pomFolderName,
         sourcePomVersion: jsonValues?.sourcePomVersion,
+        pomArtifactId: jsonValues?.pomArtifactId,
+        pomGroupId: jsonValues?.pomGroupId,
     }
 }
 
@@ -74,6 +76,17 @@ export async function highlightPomIssueInProject(pomFileVirtualFileReference: vs
     // Find line number for "latestVersion" or set to first line in file
     const highlightLineNumber = findLineNumber(pomFileVirtualFileReference, currentVersion) || 1
     await setWarningIcon(highlightLineNumber)
+}
+
+export async function getCodeIssueSnippetFromPom(pomFileVirtualFileReference: vscode.Uri) {
+    // TODO[gumby]: not great that we read this file multiple times
+    const pomFileContents = readFileSync(pomFileVirtualFileReference.fsPath, 'utf8')
+
+    const dependencyRegEx = /<dependencies\b[^>]*>(.*?)<\/dependencies>/ms
+    const match = dependencyRegEx.exec(pomFileContents)
+    const snippet = match ? match[0] : ''
+
+    return snippet
 }
 
 async function setWarningIcon(lineNumber: number = 0) {
@@ -121,7 +134,9 @@ function findLineNumber(uri: vscode.Uri, searchString: string): number | undefin
     return undefined
 }
 
-export async function parseXmlDependenciesReport(pathToXmlOutput: string) {
+export async function parseVersionsListFromPomFile(
+    pathToXmlOutput: string
+): Promise<{ latestVersion: string; majorVersions: string[]; minorVersions: string[] }> {
     const xmlString = readFileSync(pathToXmlOutput, 'utf-8')
     const parser = new xml2js.Parser()
     const parsedOutput = await parser.parseStringPromise(xmlString)

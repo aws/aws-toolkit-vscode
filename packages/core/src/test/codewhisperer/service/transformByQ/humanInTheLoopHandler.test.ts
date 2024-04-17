@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
-import { parseXmlDependenciesReport } from '../../../../codewhisperer/service/transformByQ/transformFileHandler'
+import { parseVersionsListFromPomFile } from '../../../../codewhisperer/service/transformByQ/transformFileHandler'
 import {
     TransformationProgressUpdate,
     TransformationStep,
@@ -53,7 +53,7 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
                 </dependencies>
                 </DependencyUpdatesReport>
                 `
-            const { latestVersion, majorVersions, minorVersions } = await parseXmlDependenciesReport(testXmlReport)
+            const { latestVersion, majorVersions, minorVersions } = await parseVersionsListFromPomFile(testXmlReport)
 
             assert.strictEqual(latestVersion, '1.18.32')
             assert.strictEqual(minorVersions[0], '0.12.0')

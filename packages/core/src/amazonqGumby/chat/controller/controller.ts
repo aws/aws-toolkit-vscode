@@ -33,6 +33,7 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { codeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
+import DependencyVersions from '../../models/dependencies'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -102,15 +103,14 @@ export class GumbyController {
         })
 
         this.chatControllerMessageListeners.startHumanInTheLoopIntervention.event(data => {
-            return this.startHumanInTheLoopIntervention(data)
+            return this.startHILIntervention(data)
         })
 
         this.chatControllerMessageListeners.promptForDependencyHumanInTheLoopIntervention.event(data => {
-            return this.promptForDependencyHumanInTheLoopIntervention(data)
+            return this.HILPromptForDependency(data)
         })
 
         this.chatControllerMessageListeners.HILDependencySubmitted.event(data => {
-            console.log(`HILDependencySubmitted`)
             return this.HILDependencySubmitted(data)
         })
     }
@@ -224,7 +224,6 @@ export class GumbyController {
     }
 
     private async formActionClicked(message: any) {
-        console.log(`button was clicked: ${message.action}`)
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, message.action as any)
         switch (typedAction) {
             case ButtonActions.CONFIRM_TRANSFORMATION_FORM:
@@ -245,18 +244,9 @@ export class GumbyController {
                 await this.transformInitiated({ ...message, tabID: message.tabId })
                 break
             case ButtonActions.CONFIRM_DEPENDENCY_FORM:
-                await this.continueJobWithDependency(message)
+                await this.continueJobWithSelectedDependency({ ...message, tabID: message.tabId })
                 break
         }
-    }
-
-    // Note: because the message comes from a button click, it's populated directly by mynah-ui
-    // which uses tabId instead of tabID
-    private async continueJobWithDependency(message: { tabId: string; formSelectedValues: any }) {
-        const selectedDependency = message.formSelectedValues['GumbyTransformDependencyForm']
-        this.messenger.sendUserPrompt(selectedDependency, message.tabId)
-        this.messenger.sendHILContinueMessage(message.tabId)
-        await finishHumanInTheLoop(selectedDependency)
     }
 
     // prompt user to pick project and specify source JDK version
@@ -340,27 +330,24 @@ export class GumbyController {
     }
 
     private async transformationFinished(tabID: string, jobStatus: string = '') {
-        console.log(`controller.transformationFinished!`)
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
         // at this point job is either completed, partially_completed, cancelled, or failed
         this.messenger.sendJobFinishedMessage(tabID, false)
     }
 
-    private startHumanInTheLoopIntervention(data: { tabID: string }) {
+    private startHILIntervention(data: { tabID: string; codeSnippet: string }) {
         // to-do: need to set chat state to something other than IDLE,
         // as otherwise the user could start a new job in this flow
-        console.log(`messenger: startHumanInTheLoopIntervention with tabID ${data.tabID}`)
-        this.messenger.sendHumanInTheLoopInitialMessage(data.tabID)
+        this.messenger.sendHumanInTheLoopInitialMessage(data.tabID, data.codeSnippet)
     }
 
-    // eslint-disable-next-line id-length
-    private promptForDependencyHumanInTheLoopIntervention(data: { tabID: string; dependencies: string[] }) {
+    private HILPromptForDependency(data: { tabID: string; dependencies: DependencyVersions }) {
         // if dependencies does not exist or length == 0, send error message
-        this.messenger.sendDependenciesFoundMessage(data.dependencies, data.tabID)
+        this.messenger.sendDependencyVersionsFoundMessage(data.dependencies, data.tabID)
     }
 
-    private HILDependencySubmitted(data: { tabID: string }) {
-        this.messenger.sendHILContinueMessage(data.tabID)
+    private HILDependencySubmitted(data: { tabID: string; selectedDependencyVersion: string }) {
+        this.messenger.sendHILContinueMessage(data.tabID, data.selectedDependencyVersion)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
@@ -383,6 +370,12 @@ export class GumbyController {
                 }
             }
         }
+    }
+
+    private async continueJobWithSelectedDependency(message: { tabID: string; formSelectedValues: any }) {
+        const selectedDependency = message.formSelectedValues['GumbyTransformDependencyForm']
+        this.messenger.sendHILContinueMessage(message.tabID, selectedDependency)
+        await finishHumanInTheLoop(selectedDependency)
     }
 
     private openLink(message: { link: string }) {
