@@ -49,7 +49,7 @@ export interface ChatControllerEventEmitters {
     readonly linkClicked: vscode.EventEmitter<any>
     readonly startHumanInTheLoopIntervention: vscode.EventEmitter<any>
     readonly promptForDependencyHumanInTheLoopIntervention: vscode.EventEmitter<any>
-    readonly HILDependencySubmitted: vscode.EventEmitter<any>
+    readonly HILSelectionUploaded: vscode.EventEmitter<any>
 }
 
 export class GumbyController {
@@ -110,8 +110,8 @@ export class GumbyController {
             return this.HILPromptForDependency(data)
         })
 
-        this.chatControllerMessageListeners.HILDependencySubmitted.event(data => {
-            return this.HILDependencySubmitted(data)
+        this.chatControllerMessageListeners.HILSelectionUploaded.event(data => {
+            return this.HILDependencySelectionUploaded(data)
         })
     }
 
@@ -346,8 +346,8 @@ export class GumbyController {
         this.messenger.sendDependencyVersionsFoundMessage(data.dependencies, data.tabID)
     }
 
-    private HILDependencySubmitted(data: { tabID: string; selectedDependencyVersion: string }) {
-        this.messenger.sendHILContinueMessage(data.tabID, data.selectedDependencyVersion)
+    private HILDependencySelectionUploaded(data: { tabID: string }) {
+        this.messenger.sendHILResumeMessage(data.tabID)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
