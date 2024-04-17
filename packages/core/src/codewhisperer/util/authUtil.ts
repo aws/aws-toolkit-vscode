@@ -420,7 +420,7 @@ export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<Feat
         if (isValidCodeWhispererCoreConnection(currentConnection)) {
             state[Features.codewhispererCore] = AuthStates.connected
         }
-        if (isValidAmazonQConnection(currentConnection)) {
+        if (isValidCodeWhispererChatConnection(currentConnection)) {
             state[Features.codewhispererChat] = AuthStates.connected
         }
         if (isValidAmazonQConnection(currentConnection)) {
