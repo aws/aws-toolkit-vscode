@@ -328,11 +328,10 @@ export class AuthUtil {
             // Edge Case: With the addition of Amazon Q/Chat scopes we may need to add
             // the new scopes to existing pre-chat connections.
             if (addMissingScopes) {
-                if (isBuilderIdConnection(this.conn) && !isValidAmazonQConnection(this.conn)) {
-                    const conn = await this.secondaryAuth.addScopes(this.conn, codeWhispererChatScopes)
-                    await this.secondaryAuth.useNewConnection(conn)
-                    return
-                } else if (isIdcSsoConnection(this.conn) && !isValidAmazonQConnection(this.conn)) {
+                if (
+                    (isBuilderIdConnection(this.conn) || isIdcSsoConnection(this.conn)) &&
+                    !isValidAmazonQConnection(this.conn)
+                ) {
                     const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
                     await this.secondaryAuth.useNewConnection(conn)
                     return
@@ -416,17 +415,7 @@ export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<Feat
         return state
     }
 
-    if (isBuilderIdConnection(currentConnection)) {
-        if (isValidCodeWhispererCoreConnection(currentConnection)) {
-            state[Features.codewhispererCore] = AuthStates.connected
-        }
-        if (isValidCodeWhispererChatConnection(currentConnection)) {
-            state[Features.codewhispererChat] = AuthStates.connected
-        }
-        if (isValidAmazonQConnection(currentConnection)) {
-            Object.values(Features).forEach(v => (state[v as Feature] = AuthStates.connected))
-        }
-    } else if (isIdcSsoConnection(currentConnection)) {
+    if (isBuilderIdConnection(currentConnection) || isIdcSsoConnection(currentConnection)) {
         if (isValidCodeWhispererCoreConnection(currentConnection)) {
             state[Features.codewhispererCore] = AuthStates.connected
         }
