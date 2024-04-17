@@ -9,11 +9,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBScrollPane
-import software.aws.toolkits.jetbrains.services.amazonq.isQSupportedInThisVersion
 import software.aws.toolkits.jetbrains.services.codemodernizer.panels.managers.CodeModernizerBottomWindowPanelManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
-import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.isCodeTransformAvailable
 import software.aws.toolkits.resources.message
 
 class CodeModernizerBottomToolWindowFactory : ToolWindowFactory, DumbAware {
@@ -35,7 +32,7 @@ class CodeModernizerBottomToolWindowFactory : ToolWindowFactory, DumbAware {
         toolWindow.stripeTitle = message("codemodernizer.toolwindow.label_no_job")
     }
     override fun shouldBeAvailable(project: Project): Boolean =
-        isCodeWhispererEnabled(project) && !isCodeWhispererExpired(project) && !isRunningOnRemoteBackend() && isQSupportedInThisVersion()
+        isCodeTransformAvailable(project)
 
     companion object {
         const val id = "aws.codewhisperer.codetransform"
