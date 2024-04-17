@@ -15,6 +15,7 @@ import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import path from 'path'
+import AdmZip from 'adm-zip'
 import { createTestWorkspaceFolder, toFile } from '../../testUtil'
 import {
     NoJavaProjectsFoundError,
