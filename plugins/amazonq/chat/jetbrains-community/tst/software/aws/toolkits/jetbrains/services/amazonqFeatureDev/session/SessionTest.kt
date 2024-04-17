@@ -3,8 +3,16 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
+import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.replaceService
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.runs
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -17,6 +25,10 @@ import org.mockito.kotlin.whenever
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevTestBase
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.resolveAndCreateOrUpdateFile
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.resolveAndDeleteFile
+import software.aws.toolkits.jetbrains.services.cwc.controller.ReferenceLogController
+import kotlin.io.path.Path
 
 class SessionTest : FeatureDevTestBase() {
     @Rule
@@ -49,5 +61,44 @@ class SessionTest : FeatureDevTestBase() {
         assertThat(session.conversationId).isEqualTo(testConversationId)
         assertThat(session.sessionState).isInstanceOf(PrepareRefinementState::class.java)
         verify(featureDevClient, times(1)).createTaskAssistConversation()
+    }
+
+    @Test
+    fun `test initCodegen`() {
+        whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+
+        runTest {
+            session.preloader(userMessage, messenger)
+        }
+        session.initCodegen(messenger)
+
+        assertThat(session.latestMessage).isEqualTo("")
+        assertThat(session.sessionState).isInstanceOf(PrepareCodeGenerationState::class.java)
+    }
+
+    @Test
+    fun `test insertChanges`() {
+        mockkStatic("com.intellij.openapi.vfs.VfsUtil")
+        every { VfsUtil.markDirtyAndRefresh(true, true, true, any<VirtualFile>()) } just runs
+
+        mockkObject(ReferenceLogController)
+        every { ReferenceLogController.addReferenceLog(any(), any()) } just runs
+
+        mockkStatic("software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.FileUtilsKt")
+        every { resolveAndDeleteFile(any(), any()) } just runs
+        every { resolveAndCreateOrUpdateFile(any(), any(), any()) } just runs
+
+        val mockNewFile = listOf(NewFileZipInfo("test.ts", "testContent", false))
+        val mockDeletedFile = listOf(DeletedFileInfo("deletedTest.ts", false))
+
+        session.context.projectRoot = mock()
+        whenever(session.context.projectRoot.toNioPath()).thenReturn(Path(""))
+
+        session.insertChanges(mockNewFile, mockDeletedFile, emptyList())
+
+        verify(exactly = 1) { resolveAndDeleteFile(any(), "deletedTest.ts") }
+        verify(exactly = 1) { resolveAndCreateOrUpdateFile(any(), "test.ts", "testContent") }
+        verify(exactly = 1) { ReferenceLogController.addReferenceLog(emptyList(), any()) }
+        verify(exactly = 1) { VfsUtil.markDirtyAndRefresh(true, true, true, any<VirtualFile>()) }
     }
 }

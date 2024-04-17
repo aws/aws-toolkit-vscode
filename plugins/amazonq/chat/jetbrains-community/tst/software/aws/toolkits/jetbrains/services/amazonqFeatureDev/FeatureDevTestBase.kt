@@ -20,6 +20,7 @@ import org.mockito.kotlin.whenever
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.awscore.util.AwsHeader
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeGenerationStatus
+import software.amazon.awssdk.services.codewhispererruntime.model.CodeGenerationWorkflowStatus
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssistConversationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistCodeGenerationResponse
@@ -33,6 +34,8 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceAuthorizationG
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.GenerateTaskAssistPlanResult
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeGenerationStreamResult
+import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
@@ -56,6 +59,14 @@ open class FeatureDevTestBase(
     internal val testRequestId = "test_aws_request_id"
     internal val testConversationId = "1234"
     internal val userMessage = "test-user-message"
+    internal val testUploadId = "5678"
+    internal val testRepositorySize = 20.0 // Picked a random size
+    internal val testCodeGenerationId = "1234"
+    internal val otherStatus = "Other"
+    internal val testTabId = "test-tab-id"
+    internal val testFilePaths = mapOf(Pair("test.ts", "This is a comment"))
+    internal val testDeletedFiles = listOf("deleted.ts")
+    internal val testReferences = listOf(CodeReference(information = "test"))
     internal val testChecksumSha = "test-sha"
     internal val testContentLength: Long = 40
 
@@ -66,7 +77,7 @@ open class FeatureDevTestBase(
 
     internal val exampleCreateUploadUrlResponse = CreateUploadUrlResponse.builder()
         .uploadUrl("https://smth.com")
-        .uploadId("1234")
+        .uploadId(testUploadId)
         .kmsKeyArn("0000000000000000000000000000000000:key/1234abcd")
         .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
         .build() as CreateUploadUrlResponse
@@ -75,17 +86,37 @@ open class FeatureDevTestBase(
 
     internal val exampleStartTaskAssistConversationResponse = StartTaskAssistCodeGenerationResponse.builder()
         .conversationId(testConversationId)
-        .codeGenerationId("1234")
+        .codeGenerationId(testCodeGenerationId)
         .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
         .build() as StartTaskAssistCodeGenerationResponse
 
     internal val exampleGetTaskAssistConversationResponse = GetTaskAssistCodeGenerationResponse.builder()
         .conversationId(testConversationId)
-        .codeGenerationStatus(CodeGenerationStatus.builder().status("InitialCodeGeneration").currentStage("InProgress").build())
+        .codeGenerationStatus(CodeGenerationStatus.builder().status(CodeGenerationWorkflowStatus.IN_PROGRESS).currentStage("InProgress").build())
+        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
+        .build() as GetTaskAssistCodeGenerationResponse
+
+    internal val exampleCompleteGetTaskAssistCodeGenerationResponse = GetTaskAssistCodeGenerationResponse.builder()
+        .conversationId(testConversationId)
+        .codeGenerationStatus(CodeGenerationStatus.builder().status(CodeGenerationWorkflowStatus.COMPLETE).currentStage("Complete").build())
+        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
+        .build() as GetTaskAssistCodeGenerationResponse
+
+    internal val exampleFailedGetTaskAssistCodeGenerationResponse = GetTaskAssistCodeGenerationResponse.builder()
+        .conversationId(testConversationId)
+        .codeGenerationStatus(CodeGenerationStatus.builder().status(CodeGenerationWorkflowStatus.FAILED).currentStage("Failed").build())
+        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
+        .build() as GetTaskAssistCodeGenerationResponse
+
+    internal val exampleOtherGetTaskAssistCodeGenerationResponse = GetTaskAssistCodeGenerationResponse.builder()
+        .conversationId(testConversationId)
+        .codeGenerationStatus(CodeGenerationStatus.builder().status(CodeGenerationWorkflowStatus.UNKNOWN_TO_SDK_VERSION).currentStage(otherStatus).build())
         .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
         .build() as GetTaskAssistCodeGenerationResponse
 
     internal val exampleExportResultArchiveResponse = mutableListOf(byteArrayOf(100))
+
+    internal val exampleExportTaskAssistResultArchiveResponse: CodeGenerationStreamResult = CodeGenerationStreamResult(emptyMap(), emptyList(), emptyList())
 
     @Before
     open fun setup() {
