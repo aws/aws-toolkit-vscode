@@ -24,7 +24,12 @@ class AwsSdkClient : SdkClientProvider, Disposable {
     private val sdkHttpClient: SdkHttpClient by lazy {
         LOG.info { "Create new Apache client" }
         val httpClientBuilder = ApacheHttpClient.builder()
-            .proxyConfiguration(ProxyConfiguration.builder().useSystemPropertyValues(false).build())
+            .proxyConfiguration(
+                ProxyConfiguration.builder()
+                    .useSystemPropertyValues(false)
+                    .useEnvironmentVariableValues(false)
+                    .build()
+            )
             .httpRoutePlanner(SystemDefaultRoutePlanner(CommonProxy.getInstance()))
             .credentialsProvider(SystemDefaultCredentialsProvider())
             .tlsTrustManagersProvider { arrayOf(CertificateManager.getInstance().trustManager) }

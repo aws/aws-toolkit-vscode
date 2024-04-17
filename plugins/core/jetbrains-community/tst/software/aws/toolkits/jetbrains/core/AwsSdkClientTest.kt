@@ -20,6 +20,8 @@ import org.junit.Test
 import software.amazon.awssdk.http.HttpExecuteRequest
 import software.amazon.awssdk.http.SdkHttpFullRequest
 import software.amazon.awssdk.http.SdkHttpMethod
+import software.aws.toolkits.core.rules.EnvironmentVariableHelper
+import software.aws.toolkits.core.rules.SystemPropertyHelper
 import java.net.URI
 
 class AwsSdkClientTest {
@@ -30,6 +32,14 @@ class AwsSdkClientTest {
     @Rule
     @JvmField
     val wireMock = createSelfSignedServer()
+
+    @Rule
+    @JvmField
+    val sysProps = SystemPropertyHelper()
+
+    @Rule
+    @JvmField
+    val environmentVariableHelper = EnvironmentVariableHelper()
 
     @Before
     fun setUp() {
@@ -61,6 +71,43 @@ class AwsSdkClientTest {
 
         assertThat(trustManager.certificates).hasSize(initialSize + 1)
         assertThat(trustManager.containsCertificate("selfsign")).isTrue()
+    }
+
+    @Test
+    fun systemPropertyProxyConfigurationIgnored() {
+        System.setProperty("http.proxyHost", "foo.com")
+        System.setProperty("http.proxyPort", Integer.toString(8888))
+
+        val request = mockSdkRequest("https://localhost:" + wireMock.httpsPort())
+
+        val awsSdkClient = AwsSdkClient()
+        val response = try {
+            awsSdkClient.sharedSdkClient().prepareRequest(
+                HttpExecuteRequest.builder().request(request).build()
+            ).call()
+        } finally {
+            Disposer.dispose(awsSdkClient)
+        }
+
+        assertThat(response.httpResponse().isSuccessful).isTrue()
+    }
+
+    @Test
+    fun environmentVariableProxyConfigurationIgnored() {
+        environmentVariableHelper.set("HTTP_PROXY", "https://foo.com:8888")
+
+        val request = mockSdkRequest("https://localhost:" + wireMock.httpsPort())
+
+        val awsSdkClient = AwsSdkClient()
+        val response = try {
+            awsSdkClient.sharedSdkClient().prepareRequest(
+                HttpExecuteRequest.builder().request(request).build()
+            ).call()
+        } finally {
+            Disposer.dispose(awsSdkClient)
+        }
+
+        assertThat(response.httpResponse().isSuccessful).isTrue()
     }
 
     private fun mockSdkRequest(uriString: String): SdkHttpFullRequest? {

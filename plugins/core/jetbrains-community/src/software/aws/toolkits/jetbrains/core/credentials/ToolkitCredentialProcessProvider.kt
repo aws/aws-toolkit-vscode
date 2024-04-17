@@ -69,7 +69,7 @@ class ToolkitCredentialProcessProvider @TestOnly constructor(
         } catch (e: Exception) {
             handleException(message("credentials.profile.credential_process.parse_exception_prefix"), output)
         }
-        val credentials = when (val token = result.sessionToken) {
+        val credentials: AwsCredentials = when (val token = result.sessionToken) {
             null -> AwsBasicCredentials.create(result.accessKeyId, result.secretAccessKey)
             else -> AwsSessionCredentials.create(result.accessKeyId, result.secretAccessKey, token)
         }
