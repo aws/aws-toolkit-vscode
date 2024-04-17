@@ -3,12 +3,11 @@
         <div class="icon">
             <svg
                 v-if="itemTitle == 'Use For Free'"
-                width="20"
-                height="20"
+                width="16"
+                height="16"
                 viewBox="0 0 16 16"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                transform="translate(0, 20)"
             >
                 <path
                     fill-rule="evenodd"
@@ -19,12 +18,11 @@
             </svg>
             <svg
                 v-if="itemTitle == 'Workforce' || itemTitle == 'Use professional license'"
-                width="20"
-                height="20"
+                width="16"
+                height="16"
                 viewBox="0 0 16 16"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                transform="translate(0, 20)"
             >
                 <path
                     fill-rule="evenodd"
@@ -40,7 +38,6 @@
                 viewBox="0 0 16 16"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                transform="translate(0, 20)"
             >
                 <path
                     fill-rule="evenodd"

@@ -48,8 +48,8 @@
             <svg
                 v-if="app === 'TOOLKIT' && stage !== 'CONNECTED'"
                 width="100"
-                height="100"
-                viewBox="0 0 54 54"
+                height="80"
+                viewBox="0 0 54 40"
                 fill="none"
                 id="Layer_1"
                 data-name="Layer 1"
