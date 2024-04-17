@@ -220,6 +220,7 @@ export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo)
         '-DonlyProjectDependencies=true',
         '-DdependencyUpdatesReportFormats=xml',
     ]
+
     let environment = process.env
     // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
     if (transformByQState.getJavaHome() !== undefined) {

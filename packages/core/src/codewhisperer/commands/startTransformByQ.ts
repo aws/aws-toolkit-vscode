@@ -315,17 +315,24 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             codeSnippet,
         })
 
-        await highlightPomIssueInProject(newPomFileVirtualFileReference, manifestFileValues.sourcePomVersion)
-
         // 4) We need to run maven commands on that pom.xml to get available versions
         const compileFolderInfo: FolderInfo = {
             name: tmpDependencyListFolderName,
             path: tmpDependencyListDir,
         }
         runMavenDependencyUpdateCommands(compileFolderInfo)
-        const { latestVersion, majorVersions, minorVersions } = await parseVersionsListFromPomFile(
+        const { latestVersion, majorVersions, minorVersions, status } = await parseVersionsListFromPomFile(
             path.join(tmpDependencyListDir, localPathToXmlDependencyList)
         )
+
+        // TODO
+        if (status === 'no available versions') {
+            // let user know and early exit for human in the loop happened because no upgrade versions
+            // were found on their machine
+            // call resume with "REJECTED" state
+        }
+
+        await highlightPomIssueInProject(newPomFileVirtualFileReference, manifestFileValues.sourcePomVersion)
 
         const dependencies = new DependencyVersions(
             latestVersion,

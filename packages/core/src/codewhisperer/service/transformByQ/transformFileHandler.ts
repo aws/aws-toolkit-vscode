@@ -66,10 +66,17 @@ export async function getJsonValuesFromManifestFile(
         hilCapability: jsonValues?.hilType,
         pomFolderName: jsonValues?.pomFolderName,
         // TODO remove this forced version
-        sourcePomVersion: jsonValues?.sourcePomVersion || '0.11.4',
+        sourcePomVersion: jsonValues?.sourcePomVersion || '1.0',
         pomArtifactId: jsonValues?.pomArtifactId,
         pomGroupId: jsonValues?.pomGroupId,
     }
+}
+
+export interface IHighlightPomIssueParams {
+    pomFileVirtualFileReference: vscode.Uri
+    currentVersion: string
+    latestVersion: string
+    latestMajorVersion: string
 }
 
 export async function highlightPomIssueInProject(pomFileVirtualFileReference: vscode.Uri, currentVersion: string) {
@@ -78,7 +85,7 @@ export async function highlightPomIssueInProject(pomFileVirtualFileReference: vs
 
     // Find line number for "latestVersion" or set to first line in file
     const highlightLineNumber = findLineNumber(pomFileVirtualFileReference, currentVersion) || 1
-    await setWarningIcon(highlightLineNumber)
+    await setAnnotationObjectDetails(highlightLineNumber)
 }
 
 export async function getCodeIssueSnippetFromPom(pomFileVirtualFileReference: vscode.Uri) {
@@ -92,12 +99,12 @@ export async function getCodeIssueSnippetFromPom(pomFileVirtualFileReference: vs
     return snippet
 }
 
-async function setWarningIcon(lineNumber: number = 0) {
+async function setAnnotationObjectDetails(lineNumber: number = 0) {
     // Get active diff editor
     const diffEditor = vscode.window.activeTextEditor
 
     const highlightDecorationType = vscode.window.createTextEditorDecorationType({
-        backgroundColor: 'lightgreen',
+        backgroundColor: 'lightyellow',
         isWholeLine: true,
         gutterIconPath: '/packages/toolkit/resources/icons/cloud9/generated/dark/vscode-bug.svg',
         gutterIconSize: '20',
@@ -110,9 +117,8 @@ async function setWarningIcon(lineNumber: number = 0) {
         {
             range: new vscode.Range(lineNumber, 0, lineNumber, 50),
             hoverMessage: `
-            ### This version needs to be updated. Use the chat to select a version
-                - latestVersion: 1.18.32
-                - majorVersion: 1.12.2
+            ### This dependency version needs to be updated
+            Use the Q Chat to select a valid version upgrade
         `,
         },
     ])
@@ -138,18 +144,23 @@ function findLineNumber(uri: vscode.Uri, searchString: string): number | undefin
     return undefined
 }
 
-export async function parseVersionsListFromPomFile(
-    pathToXmlOutput: string
-): Promise<{ latestVersion: string; majorVersions: string[]; minorVersions: string[] }> {
+export interface IParsedXmlDependencyOutput {
+    latestVersion: string
+    majorVersions: string[]
+    minorVersions: string[]
+    status?: string
+}
+export async function parseVersionsListFromPomFile(pathToXmlOutput: string): Promise<IParsedXmlDependencyOutput> {
     const xmlString = readFileSync(pathToXmlOutput, 'utf-8')
     const parser = new xml2js.Parser()
     const parsedOutput = await parser.parseStringPromise(xmlString)
 
     const report = parsedOutput.DependencyUpdatesReport.dependencies[0].dependency[0]
 
-    const latestVersion = report.lastVersion[0]
-    const majorVersions = report.majors[0].major
-    const minorVersions = report.minors[0].minor
+    const latestVersion = report?.lastVersion?.[0]
+    const majorVersions = report?.majors?.[0]?.major || []
+    const minorVersions = report?.minors?.[0]?.minor || []
+    const status = report.status?.[0]
 
-    return { latestVersion, majorVersions, minorVersions }
+    return { latestVersion, majorVersions, minorVersions, status }
 }
