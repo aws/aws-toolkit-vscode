@@ -110,6 +110,7 @@ export class GumbyController {
         })
 
         this.chatControllerMessageListeners.HILDependencySubmitted.event(data => {
+            console.log(`HILDependencySubmitted`)
             return this.HILDependencySubmitted(data)
         })
     }
@@ -223,6 +224,7 @@ export class GumbyController {
     }
 
     private async formActionClicked(message: any) {
+        console.log(`button was clicked: ${message.action}`)
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, message.action as any)
         switch (typedAction) {
             case ButtonActions.CONFIRM_TRANSFORMATION_FORM:
@@ -243,13 +245,18 @@ export class GumbyController {
                 await this.transformInitiated({ ...message, tabID: message.tabId })
                 break
             case ButtonActions.CONFIRM_DEPENDENCY_FORM:
-                this.messenger.sendHILContinueMessage(message.tabId)
-                // call back to hitl
-                // eslint-disable-next-line no-case-declarations
-                const selectedDependency = message.formSelectedValues['GumbyTransformDependencyForm']
-                await finishHumanInTheLoop(selectedDependency)
+                await this.continueJobWithDependency(message)
                 break
         }
+    }
+
+    // Note: because the message comes from a button click, it's populated directly by mynah-ui
+    // which uses tabId instead of tabID
+    private async continueJobWithDependency(message: { tabId: string; formSelectedValues: any }) {
+        const selectedDependency = message.formSelectedValues['GumbyTransformDependencyForm']
+        this.messenger.sendUserPrompt(selectedDependency, message.tabId)
+        this.messenger.sendHILContinueMessage(message.tabId)
+        await finishHumanInTheLoop(selectedDependency)
     }
 
     // prompt user to pick project and specify source JDK version
@@ -333,21 +340,27 @@ export class GumbyController {
     }
 
     private async transformationFinished(tabID: string, jobStatus: string = '') {
+        console.log(`controller.transformationFinished!`)
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
         // at this point job is either completed, partially_completed, cancelled, or failed
         this.messenger.sendJobFinishedMessage(tabID, false)
     }
 
-    private startHumanInTheLoopIntervention(tabID: string) {
+    private startHumanInTheLoopIntervention(data: { tabID: string }) {
         // to-do: need to set chat state to something other than IDLE,
         // as otherwise the user could start a new job in this flow
-        this.messenger.sendHumanInTheLoopInitialMessage(tabID)
+        console.log(`messenger: startHumanInTheLoopIntervention with tabID ${data.tabID}`)
+        this.messenger.sendHumanInTheLoopInitialMessage(data.tabID)
     }
 
     // eslint-disable-next-line id-length
-    private promptForDependencyHumanInTheLoopIntervention(tabID: string, dependencies: string[] = []) {
-        // if dependencies.length == 0, send error message
-        this.messenger.sendDependenciesFoundMessage(dependencies, tabID)
+    private promptForDependencyHumanInTheLoopIntervention(data: { tabID: string; dependencies: string[] }) {
+        // if dependencies does not exist or length == 0, send error message
+        this.messenger.sendDependenciesFoundMessage(data.dependencies, data.tabID)
+    }
+
+    private HILDependencySubmitted(data: { tabID: string }) {
+        this.messenger.sendHILContinueMessage(data.tabID)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
@@ -370,10 +383,6 @@ export class GumbyController {
                 }
             }
         }
-    }
-
-    private HILDependencySubmitted(message: { tabID: string }) {
-        this.messenger.sendHILContinueMessage(message.tabID)
     }
 
     private openLink(message: { link: string }) {

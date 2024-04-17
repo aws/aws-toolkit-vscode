@@ -264,10 +264,8 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
     const osTmpDir = os.tmpdir()
     const tmpDownloadsFolderName = 'q-hil-dependency-artifacts'
     const tmpDependencyListFolderName = 'q-pom-dependency-list'
-    const userDependencyUpdateFolderName = 'q-pom-dependency-update'
     const tmpDownloadsDir = path.join(osTmpDir, tmpDownloadsFolderName)
     const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
-    const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
 
     try {
         // 1) We need to call GetTransformationPlan to get artifactId
@@ -330,7 +328,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         // This is asynchronous, so we have to wait to be called to complete this loop
         transformByQState.getChatControllers()?.promptForDependencyHumanInTheLoopIntervention.fire({
             tabID: ChatSessionManager.Instance.getSession().tabID,
-            latestVersion: dependencies,
+            dependencies,
         })
     } catch (err) {
         // Will probably emit different TYPES of errors from the Human in the loop engagement
