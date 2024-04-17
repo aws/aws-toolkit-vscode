@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
 import { AuthError, CommonAuthWebview } from '../backend'
-import { AwsConnection, createSsoProfile } from '../../../../auth/connection'
+import { AwsConnection, createSsoProfile, scopesCodeCatalyst } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 
@@ -96,7 +96,25 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     }
 
     async useConnection(connectionId: string): Promise<AuthError | undefined> {
-        return undefined
+        return this.ssoSetup('useConnection', async () => {
+            const conn = await Auth.instance.getConnection({ id: connectionId })
+            if (conn === undefined || conn.type !== 'sso') {
+                return
+            }
+            if (this.isCodeCatalystLogin) {
+                if (conn.scopes?.includes(scopesCodeCatalyst[0])) {
+                    getLogger().info(`auth: re-use connection from existing connection id ${connectionId}`)
+                    await this.codeCatalystAuth.secondaryAuth.useNewConnection(conn)
+                } else {
+                    getLogger().info(
+                        `auth: re-use(new scope) to connection from existing connection id ${connectionId}`
+                    )
+                    await this.codeCatalystAuth.secondaryAuth.addScopes(conn, scopesCodeCatalyst)
+                }
+            } else {
+                await Auth.instance.useConnection({ id: connectionId })
+            }
+        })
     }
 
     findConnection(connections: AwsConnection[]): AwsConnection | undefined {

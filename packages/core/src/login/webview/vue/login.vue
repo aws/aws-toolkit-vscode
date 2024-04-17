@@ -81,7 +81,7 @@
                 </svg>
             </button>
             <div class="auth-container-section">
-                <div class="existing-logins" v-if="existingLogins.length > 0 && app === 'AMAZONQ'">
+                <div class="existing-logins" v-if="existingLogins.length > 0">
                     <div class="title">Connect with an existing account:</div>
                     <div v-for="(existingLogin, index) in existingLogins" :key="index">
                         <SelectableItem
