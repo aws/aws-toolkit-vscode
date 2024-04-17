@@ -346,6 +346,7 @@ export class GumbyController {
  * Examples:
  * ```
  * extractPath("./some/path/here") => "C:/some/root/some/path/here"
+ * extractPath(" ./some/path/here\n") => "C:/some/root/some/path/here"
  * extractPath("C:/some/nonexistent/path/here") => undefined
  * extractPath("C:/some/filepath/.txt") => undefined
  * ```
@@ -354,6 +355,6 @@ export class GumbyController {
  * @returns the absolute path if path points to existing folder, otherwise undefined
  */
 function extractPath(text: string): string | undefined {
-    const resolvedPath = path.resolve(text)
+    const resolvedPath = path.resolve(text.trim())
     return fs.existsSync(resolvedPath) && fs.lstatSync(resolvedPath).isDirectory() ? resolvedPath : undefined
 }
