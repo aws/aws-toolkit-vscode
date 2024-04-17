@@ -1561,7 +1561,7 @@ export interface ExportResultArchiveRequest {
    * Export Intent
    */
   exportIntent: ExportIntent | string | undefined;
-  exportContent?: ExportContext 
+  exportContext?: ExportContext 
 }
 
 /**

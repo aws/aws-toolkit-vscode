@@ -644,16 +644,31 @@ export function findDownloadArtifactStep(transformationSteps: TransformationStep
     }
 }
 
-export async function downloadHilResultArchive(jobId: string, artifactId: string, pathToArchive: string) {
-    console.log('In downloadHilResultArchive', jobId, artifactId, pathToArchive)
+interface IDownloadResultArchiveParams {
+    jobId: string
+    downloadArtifactId: string
+    pathToArchive: string
+}
+export async function downloadResultArchive({
+    jobId,
+    downloadArtifactId,
+    pathToArchive,
+}: IDownloadResultArchiveParams) {
+    console.log('In downloadHilResultArchive', jobId, downloadArtifactId, pathToArchive)
     let downloadErrorMessage = undefined
     const cwStreamingClient = await createCodeWhispererChatStreamingClient()
     try {
         await downloadExportResultArchive(
             cwStreamingClient,
             {
-                exportId: transformByQState.getJobId(),
-                exportIntent: ExportIntent.TASK_ASSIST,
+                exportId: jobId,
+                exportIntent: ExportIntent.TRANSFORMATION,
+                exportContext: {
+                    transformationExportContext: {
+                        downloadArtifactId,
+                        downloadArtifactType: 'ClientInstructions',
+                    },
+                },
             },
             pathToArchive
         )
@@ -673,17 +688,26 @@ export async function downloadHilResultArchive(jobId: string, artifactId: string
     }
 }
 
-export async function downloadResultArchive2(jobId: string, artifactId: string, artifactType: string) {
-    console.log('Inside downloadResultArchive artifacts', jobId, artifactId, artifactType)
-    // /Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/manifest.json
-    // src/amazonqGumby/mock/downloadHilZip/manifest.json
-    // TODO replace API call
-    // 1) Save location on disk for downloaded results
-    const manifestFileVirtualFileReference = vscode.Uri.file(
-        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/manifest.json'
-    )
-    const pomFileVirtualFileReference = vscode.Uri.file(
-        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip/pom.xml'
-    )
+export async function downloadHilResultArchive(jobId: string, downloadArtifactId: string, pathToArchiveDir: string) {
+    console.log('Inside downloadResultArchive artifacts', jobId, downloadArtifactId, pathToArchiveDir)
+    if (!fs.existsSync(pathToArchiveDir)) {
+        fs.mkdirSync(pathToArchiveDir)
+    }
+    const pathToArchive = path.join(pathToArchiveDir, 'ExportResultsArchive.zip')
+    const downloadResults = await downloadResultArchive({ jobId, downloadArtifactId, pathToArchive })
+    console.log('DownloadResults', downloadResults)
+
+    let downloadErrorMessage = undefined
+    try {
+        // Download and deserialize the zip
+        const zip = new AdmZip(pathToArchive)
+        zip.extractAllTo(pathToArchive)
+    } catch (e) {
+        downloadErrorMessage = (e as Error).message
+        getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
+        throw new Error('Error downloading HIL artifacts')
+    }
+    const manifestFileVirtualFileReference = vscode.Uri.file(`${pathToArchiveDir}/manifest.json`)
+    const pomFileVirtualFileReference = vscode.Uri.file(`${pathToArchiveDir}/pom.xml`)
     return { manifestFileVirtualFileReference, pomFileVirtualFileReference }
 }

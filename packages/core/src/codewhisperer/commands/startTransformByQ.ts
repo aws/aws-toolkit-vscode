@@ -29,7 +29,7 @@ import {
 } from '../../shared/utilities/textUtilities'
 import {
     createZipManifest,
-    downloadResultArchive2,
+    downloadHilResultArchive,
     findDownloadArtifactStep,
     getArtifactsFromProgressUpdate,
     getTransformationPlan,
@@ -281,7 +281,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         }
 
         // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
-        const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadResultArchive2(
+        const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadHilResultArchive(
             jobId,
             artifactId,
             tmpDownloadsDir
