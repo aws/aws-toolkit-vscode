@@ -107,7 +107,7 @@ export class AuthSSOServer {
                 resolve()
             })
 
-            this.server.listen()
+            this.server.listen(0, '127.0.0.1')
         })
     }
 
@@ -134,8 +134,12 @@ export class AuthSSOServer {
         return `${this.baseUrl}:${this.getPort()}`
     }
 
+    public getAddress() {
+        return this.server.address()
+    }
+
     private getPort(): number {
-        const addr = this.server.address()
+        const addr = this.getAddress()
         if (addr instanceof Object) {
             return addr.port
         } else if (typeof addr === 'string') {

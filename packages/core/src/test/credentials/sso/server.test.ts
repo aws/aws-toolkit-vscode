@@ -105,4 +105,13 @@ describe('AuthSSOServer', function () {
         const token = await server.waitForAuthorization()
         assert.deepStrictEqual(code, token)
     })
+
+    it('address is bound to localhost', function () {
+        const address = server.getAddress()
+        if (address instanceof Object) {
+            assert.deepStrictEqual(address.address, '127.0.0.1')
+            return
+        }
+        assert.fail('Expected address 127.0.0.1')
+    })
 })
