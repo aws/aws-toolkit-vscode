@@ -252,6 +252,11 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
             throw new Error('artifactId or artifactType is undefined')
         }
 
+        // Let the user know we've entered the loop in the chat
+        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+        })
+
         // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
         const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadResultArchive(
             jobId,
@@ -285,10 +290,10 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         console.log(latestVersion, majorVersions, minorVersions)
 
         // 5) We need to wait for user input
-        // transformByQState.getChatControllers()?.humanInTheLoopIntervention.fire({
-        //     latestVersion,
-        //     tabID: ChatSessionManager.Instance.getSession().tabID,
-        // })
+        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+            latestVersion: [latestVersion],
+        })
         const getUserInputValue = latestVersion
 
         // 6) We need to add user input to that pom.xml,

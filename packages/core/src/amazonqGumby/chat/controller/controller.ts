@@ -45,6 +45,8 @@ export interface ChatControllerEventEmitters {
     readonly transformationFinished: vscode.EventEmitter<any>
     readonly processHumanChatMessage: vscode.EventEmitter<any>
     readonly linkClicked: vscode.EventEmitter<any>
+    readonly startHumanInTheLoopIntervention: vscode.EventEmitter<any>
+    readonly promptForDependencyHumanInTheLoopIntervention: vscode.EventEmitter<any>
 }
 
 export class GumbyController {
@@ -95,6 +97,14 @@ export class GumbyController {
 
         this.chatControllerMessageListeners.linkClicked.event(data => {
             this.openLink(data)
+        })
+
+        this.chatControllerMessageListeners.startHumanInTheLoopIntervention.event(data => {
+            return this.startHumanInTheLoopIntervention(data)
+        })
+
+        this.chatControllerMessageListeners.promptForDependencyHumanInTheLoopIntervention.event(data => {
+            return this.promptForDependencyHumanInTheLoopIntervention(data)
         })
     }
 
@@ -313,6 +323,15 @@ export class GumbyController {
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
         // at this point job is either completed, partially_completed, cancelled, or failed
         this.messenger.sendJobFinishedMessage(tabID, false)
+    }
+
+    private startHumanInTheLoopIntervention(tabID: string) {
+        this.messenger.sendHumanInTheLoopInitialMessage(tabID)
+    }
+
+    // eslint-disable-next-line id-length
+    private promptForDependencyHumanInTheLoopIntervention(tabID: string, latestVersion: string[] = []) {
+        this.messenger.sendDependenciesFoundMessage(latestVersion, tabID)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
