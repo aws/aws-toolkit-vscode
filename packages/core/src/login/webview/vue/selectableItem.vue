@@ -2,7 +2,7 @@
     <div class="item-container" :class="{ selected: isSelected }" @click="toggleSelection">
         <div class="icon">
             <svg
-                v-if="itemTitle == 'Personal'"
+                v-if="itemTitle == 'Use For Free'"
                 width="20"
                 height="20"
                 viewBox="0 0 16 16"
@@ -18,7 +18,7 @@
                 />
             </svg>
             <svg
-                v-if="itemTitle == 'Workforce'"
+                v-if="itemTitle == 'Workforce' || itemTitle == 'Use professional license'"
                 width="20"
                 height="20"
                 viewBox="0 0 16 16"
@@ -91,21 +91,12 @@ export default defineComponent({
     display: flex;
 }
 
-.item-container.vscode-dark {
-    border: 1px solid #424242;
+.item-container {
+    border: 1px solid #625f5f;
 }
 
-.item-container.vscode-light {
-    border: 1px solid #424242;
-}
-
-.selected.vscode-dark {
+.selected {
     border: 1px solid #0e639c;
-    user-select: none;
-}
-
-.selected.vscode-light {
-    border: 1px solid #317ac6;
     user-select: none;
 }
 

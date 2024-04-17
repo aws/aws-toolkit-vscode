@@ -106,11 +106,21 @@
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem
+                    v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Single sign-on with AWS IAM Identity Center'"
                     :itemTitle="'Use professional license'"
+                    class="selectable-item"
+                ></SelectableItem>
+                <SelectableItem
+                    v-if="app === 'TOOLKIT'"
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
+                    :itemId="LoginOption.ENTERPRISE_SSO"
+                    :itemText="'Sign in to AWS with single sign-on'"
+                    :itemTitle="'Workforce'"
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem
@@ -147,9 +157,8 @@
                         Using CodeCatalyst with AWS Builder ID?
                         <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
                     </div>
-                    <br /><br />
                 </div>
-                <div class="p">Start URL</div>
+                <div class="title">Start URL</div>
                 <div class="hint">URL for your organization, provided by an admin or help desk</div>
                 <input
                     class="urlInput"
@@ -167,7 +176,6 @@
                         {{ `${region.name} (${region.id})` }}
                     </option>
                 </select>
-                <br /><br />
                 <button
                     class="continue-button"
                     :disabled="startUrl.length == 0 || startUrlError.length > 0"
@@ -198,20 +206,14 @@
             </button>
             <div class="title">IAM Credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
-            <br /><br />
-            <div class="p">Profile Name</div>
+            <div style="margin-bottom: 4px"></div>
+            <div class="title">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
             <input class="iamInput" type="text" id="profileName" name="profileName" v-model="profileName" />
-
-            <br /><br />
-            <div class="p">Access Key</div>
+            <div class="title">Access Key</div>
             <input class="iamInput" type="text" id="accessKey" name="accessKey" v-model="accessKey" />
-
-            <br /><br />
-            <div class="p">Secret Key</div>
+            <div class="title">Secret Key</div>
             <input class="iamInput" type="text" id="secretKey" name="secretKey" v-model="secretKey" />
-
-            <br /><br />
             <button
                 class="continue-button"
                 :disabled="profileName.length <= 0 || accessKey.length <= 0 || secretKey.length <= 0"
@@ -436,20 +438,21 @@ export default defineComponent({
     flex-direction: row;
     justify-content: left;
     align-items: flex-start;
-    padding-top: 150px;
-    padding-bottom: 10px;
+    padding-top: 130px;
+    padding-bottom: 2px;
     padding-left: 10px;
     height: auto;
 }
 .hint {
-    color: #948a8a;
+    color: #c6c6c6;
     margin-bottom: 5px;
     margin-top: 5px;
+    font-size: 8px;
 }
 .title {
-    margin-bottom: 5px;
-    margin-top: 5px;
-    font-size: 15px;
+    margin-bottom: 3px;
+    margin-top: 3px;
+    font-size: 12px;
     font-weight: bold;
 }
 .title.vscode-dark {
@@ -460,38 +463,47 @@ export default defineComponent({
 }
 
 .h4 {
-    font-size: 10px;
+    font-size: 8px;
+    margin-bottom: 8px;
 }
 .continue-button {
     background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
+    color: white;
     width: 100%;
-    height: 40px;
+    height: 30px;
     border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    margin-bottom: 3px;
+    margin-top: 3px;
 }
 .back-button {
     background: none;
     border: none;
     cursor: pointer;
-    background-color: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
-    font-size: 30px;
+    padding: 0;
+    height: 13px;
 }
 .continue-button:disabled {
-    background-color: white;
-    opacity: 0.1;
+    background-color: var(--vscode-input-background);
+    color: #6f6f6f;
 }
 .urlInput {
     background-color: var(--vscode-input-background);
     width: 100%;
-    height: 28px;
+    height: 18px;
     color: white;
+    border: none;
 }
 .iamInput {
     background-color: var(--vscode-input-background);
     width: 100%;
     height: 28px;
     color: white;
+    border: none;
+    margin-bottom: 5px;
+    margin-top: 2px;
 }
 .regionSelect {
     background-color: var(--vscode-input-background);
@@ -500,6 +512,7 @@ export default defineComponent({
 }
 .start-url-error {
     color: #ff0000;
+    font-size: 8px;
 }
 #logo {
     fill: var(--vscode-button-foreground);
