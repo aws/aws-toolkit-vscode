@@ -64,8 +64,8 @@ class CodeGenerationState(
             messenger = messenger,
         )
 
-        // It is not needed to interact right away with the code generation state.
-        // returns a SessionStateInteraction object to be handled by the controller.
+        // It is not needed to interact right away with the PrepareCodeGeneration.
+        // returns therefore a SessionStateInteraction object to be handled by the controller.
         return SessionStateInteraction(
             nextState = nextState,
             interaction = Interaction(content = "", interactionSucceeded = true)

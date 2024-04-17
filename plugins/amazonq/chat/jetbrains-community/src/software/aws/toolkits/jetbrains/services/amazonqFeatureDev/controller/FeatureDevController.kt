@@ -9,7 +9,6 @@ import com.intellij.diff.contents.EmptyContent
 import com.intellij.diff.requests.SimpleDiffRequest
 import com.intellij.diff.util.DiffUserDataKeys
 import com.intellij.ide.BrowserUtil
-import com.intellij.notification.NotificationAction
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Caret
@@ -49,19 +48,19 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendA
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAuthNeededException
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAuthenticationInProgressMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendChatInputEnabledMessage
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendCodeResult
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendSystemPrompt
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendUpdatePlaceholder
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.updateFileComponent
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.DeletedFileInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.NewFileZipInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.PrepareCodeGenerationState
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Session
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.getFollowUpOptions
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.jetbrains.ui.feedback.FeatureDevFeedbackDialog
-import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 import java.util.UUID
@@ -72,8 +71,8 @@ class FeatureDevController(
     private val authController: AuthController = AuthController()
 ) : InboundAppMessagesHandler {
 
-    private val messenger = context.messagesFromAppToUi
-    private val toolWindow = ToolWindowManager.getInstance(context.project).getToolWindow(AmazonQToolWindowFactory.WINDOW_ID)
+    val messenger = context.messagesFromAppToUi
+    val toolWindow = ToolWindowManager.getInstance(context.project).getToolWindow(AmazonQToolWindowFactory.WINDOW_ID)
 
     override suspend fun processPromptChatMessage(message: IncomingFeatureDevMessage.ChatPrompt) {
         handleChat(
@@ -225,12 +224,7 @@ class FeatureDevController(
         filePaths.find { it.zipFilePath == fileToUpdate }?.let { it.rejected = !it.rejected }
         deletedFiles.find { it.zipFilePath == fileToUpdate }?.let { it.rejected = !it.rejected }
 
-        session.updateFilesPaths(
-            messenger = messenger,
-            tabId = message.tabId,
-            filePaths = filePaths,
-            deletedFiles = deletedFiles
-        )
+        messenger.updateFileComponent(message.tabId, filePaths, deletedFiles)
     }
 
     private suspend fun newTabOpened(tabId: String) {
@@ -292,13 +286,18 @@ class FeatureDevController(
                     references = state.references
                 }
             }
+
             AmazonqTelemetry.isAcceptedCodeChanges(
-                project = null,
                 amazonqNumberOfFilesAccepted = (filePaths.filterNot { it.rejected }.size + deletedFiles.filterNot { it.rejected }.size) * 1.0,
                 amazonqConversationId = session.conversationId,
                 enabled = true
             )
-            session.insertChanges(filePaths = filePaths, deletedFiles = deletedFiles, references = references)
+
+            session.insertChanges(
+                filePaths = filePaths.filterNot { it.rejected },
+                deletedFiles = deletedFiles.filterNot { it.rejected },
+                references = references
+            )
 
             messenger.sendAnswer(
                 tabId = tabId,
@@ -502,124 +501,6 @@ class FeatureDevController(
         messenger.sendAsyncEventProgress(tabId = tabId, inProgress = false)
     }
 
-    private suspend fun onCodeGeneration(session: Session, message: String, tabId: String) {
-        messenger.sendAsyncEventProgress(
-            tabId = tabId,
-            inProgress = true,
-            message = message("amazonqFeatureDev.chat_message.start_code_generation"),
-        )
-
-        try {
-            messenger.sendAnswer(
-                tabId = tabId,
-                message = message("amazonqFeatureDev.chat_message.requesting_changes"),
-                messageType = FeatureDevMessageType.AnswerStream,
-            )
-
-            messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.generating_code"))
-
-            session.send(message) // Trigger code generation
-
-            val state = session.sessionState
-
-            var filePaths: List<NewFileZipInfo> = emptyList()
-            var deletedFiles: List<DeletedFileInfo> = emptyList()
-            var references: List<CodeReference> = emptyList()
-            var uploadId = ""
-
-            when (state) {
-                is PrepareCodeGenerationState -> {
-                    filePaths = state.filePaths
-                    deletedFiles = state.deletedFiles
-                    references = state.references
-                    uploadId = state.uploadId
-                }
-            }
-
-            // Atm this is the only possible path as codegen is mocked to return empty.
-            if (filePaths.size or deletedFiles.size == 0) {
-                messenger.sendAnswer(
-                    tabId = tabId,
-                    messageType = FeatureDevMessageType.Answer,
-                    message = message("amazonqFeatureDev.code_generation.no_file_changes")
-                )
-                messenger.sendSystemPrompt(
-                    tabId = tabId,
-                    followUp = if (retriesRemaining(session) > 0) {
-                        listOf(
-                            FollowUp(
-                                pillText = message("amazonqFeatureDev.follow_up.retry"),
-                                type = FollowUpTypes.RETRY,
-                                status = FollowUpStatusType.Warning
-                            )
-                        )
-                    } else {
-                        emptyList()
-                    }
-                )
-                messenger.sendChatInputEnabledMessage(tabId = tabId, enabled = false) // Lock chat input until retry is clicked.
-                return
-            }
-
-            messenger.sendCodeResult(tabId = tabId, uploadId = uploadId, filePaths = filePaths, deletedFiles = deletedFiles, references = references)
-
-            messenger.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase, interactionSucceeded = true))
-
-            messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.after_code_generation"))
-        } finally {
-            messenger.sendAsyncEventProgress(tabId = tabId, inProgress = false) // Finish processing the event
-            messenger.sendChatInputEnabledMessage(tabId = tabId, enabled = false) // Lock chat input until a follow-up is clicked.
-
-            if (toolWindow != null && !toolWindow.isVisible) {
-                notifyInfo(
-                    title = message("amazonqFeatureDev.code_generation.notification_title"),
-                    content = message("amazonqFeatureDev.code_generation.notification_message"),
-                    project = context.project,
-                    notificationActions = listOf(openChatNotificationAction())
-                )
-            }
-        }
-    }
-
-    private fun openChatNotificationAction() = NotificationAction.createSimple(message("amazonqFeatureDev.code_generation.notification_open_link")) {
-        toolWindow?.show()
-    }
-
-    private fun getFollowUpOptions(phase: SessionStatePhase?, interactionSucceeded: Boolean): List<FollowUp> {
-        when (phase) {
-            SessionStatePhase.APPROACH -> {
-                return when (interactionSucceeded) {
-                    true -> listOf(
-                        FollowUp(
-                            pillText = message("amazonqFeatureDev.follow_up.generate_code"),
-                            type = FollowUpTypes.GENERATE_CODE,
-                            status = FollowUpStatusType.Info,
-                        )
-                    )
-
-                    false -> emptyList()
-                }
-            }
-            SessionStatePhase.CODEGEN -> {
-                return listOf(
-                    FollowUp(
-                        pillText = message("amazonqFeatureDev.follow_up.insert_code"),
-                        type = FollowUpTypes.INSERT_CODE,
-                        icon = FollowUpIcons.Ok,
-                        status = FollowUpStatusType.Success
-                    ),
-                    FollowUp(
-                        pillText = message("amazonqFeatureDev.follow_up.provide_feedback_and_regenerate"),
-                        type = FollowUpTypes.PROVIDE_FEEDBACK_AND_REGENERATE_CODE,
-                        icon = FollowUpIcons.Refresh,
-                        status = FollowUpStatusType.Info
-                    )
-                )
-            }
-            else -> return emptyList()
-        }
-    }
-
     private suspend fun retryRequests(tabId: String) {
         var session: Session? = null
         try {
@@ -728,9 +609,11 @@ class FeatureDevController(
         }
     }
 
+    fun getProject() = context.project
+
     private fun getSessionInfo(tabId: String) = chatSessionStorage.getSession(tabId, context.project)
 
-    private fun retriesRemaining(session: Session?): Int = session?.retries ?: DEFAULT_RETRY_LIMIT
+    fun retriesRemaining(session: Session?): Int = session?.retries ?: DEFAULT_RETRY_LIMIT
 
     companion object {
         private val logger = getLogger<FeatureDevController>()

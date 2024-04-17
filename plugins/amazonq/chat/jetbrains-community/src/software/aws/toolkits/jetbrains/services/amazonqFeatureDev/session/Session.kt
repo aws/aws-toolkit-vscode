@@ -11,14 +11,12 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.CODE_GENERATIO
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAsyncEventProgress
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.updateFileComponent
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createConversation
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.resolveAndCreateOrUpdateFile
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.resolveAndDeleteFile
 import software.aws.toolkits.jetbrains.services.cwc.controller.ReferenceLogController
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.telemetry.AmazonqTelemetry
-import kotlin.io.path.createDirectories
-import kotlin.io.path.deleteIfExists
-import kotlin.io.path.writeBytes
 
 class Session(val tabID: String, val project: Project) {
     var context: FeatureDevSessionContext
@@ -91,35 +89,15 @@ class Session(val tabID: String, val project: Project) {
         AmazonqTelemetry.isApproachAccepted(amazonqConversationId = conversationId, enabled = true)
     }
 
-    suspend fun updateFilesPaths(
-        messenger: MessagePublisher,
-        tabId: String,
-        filePaths: List<NewFileZipInfo>,
-        deletedFiles: List<DeletedFileInfo>
-    ) {
-        messenger.updateFileComponent(tabId, filePaths, deletedFiles)
-    }
-
     /**
      * Triggered by the Insert code follow-up button to apply code changes.
      */
     fun insertChanges(filePaths: List<NewFileZipInfo>, deletedFiles: List<DeletedFileInfo>, references: List<CodeReference>) {
         val projectRootPath = context.projectRoot.toNioPath()
 
-        filePaths
-            .filterNot { it.rejected }
-            .forEach {
-                val filePath = projectRootPath.resolve(it.zipFilePath)
-                filePath.parent.createDirectories() // Create directories if needed
-                filePath.writeBytes(it.fileContent.toByteArray(Charsets.UTF_8))
-            }
+        filePaths.forEach { resolveAndCreateOrUpdateFile(projectRootPath, it.zipFilePath, it.fileContent) }
 
-        deletedFiles
-            .filterNot { it.rejected }
-            .forEach {
-                val deleteFilePath = projectRootPath.resolve(it.zipFilePath)
-                deleteFilePath.deleteIfExists()
-            }
+        deletedFiles.forEach { resolveAndDeleteFile(projectRootPath, it.zipFilePath) }
 
         ReferenceLogController.addReferenceLog(references, project)
 
@@ -170,6 +148,7 @@ class Session(val tabID: String, val project: Project) {
                 return _conversationId as String
             }
         }
+
     val sessionState: SessionState
         get() {
             if (_state == null) {
