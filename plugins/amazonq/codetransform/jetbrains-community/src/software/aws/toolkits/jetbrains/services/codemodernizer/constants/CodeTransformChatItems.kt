@@ -189,7 +189,7 @@ fun buildCompileLocalFailedChatContent() = CodeTransformChatMessageContent(
     message = "${message(
         "codemodernizer.chat.message.local_build_failed"
     )}\n\n${message(
-        "codemodernizer.chat.message.doc_link_prefix",
+        "codemodernizer.chat.message.validation.error.more_info",
         CODE_TRANSFORM_TROUBLESHOOT_DOC
     )}",
 )
@@ -223,7 +223,7 @@ fun buildTransformResultChatContent(result: CodeModernizerJobCompletedResult): C
             "${message(
                 "codemodernizer.chat.message.result.zip_too_large"
             )}\n\n${message(
-                "codemodernizer.chat.message.doc_link_prefix",
+                "codemodernizer.chat.message.validation.error.more_info",
                 CODE_TRANSFORM_TROUBLESHOOT_DOC
             )}"
         }
