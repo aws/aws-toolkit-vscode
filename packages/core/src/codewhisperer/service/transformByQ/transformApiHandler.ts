@@ -25,6 +25,7 @@ import {
     CreateUploadUrlResponse,
     TransformationProgressUpdate,
     TransformationSteps,
+    TransformationUserActionStatus,
     UploadContext,
 } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
@@ -122,11 +123,11 @@ export async function uploadArtifactToS3(
     }
 }
 
-export async function restartJob(jobId: string) {
+export async function restartJob(jobId: string, userActionStatus: TransformationUserActionStatus) {
     try {
         const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
             transformationJobId: jobId,
-            userActionStatus: 'COMPLETED', // can be "COMPLETED" or "REJECTED"
+            userActionStatus, // can be "COMPLETED" or "REJECTED"
         })
         if (response) {
             // telemetry.codeTransform_logApiLatency.emit({

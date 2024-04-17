@@ -78,6 +78,7 @@ import {
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import DependencyVersions from '../../amazonqGumby/models/dependencies'
 import { IManifestFile } from '../../amazonqFeatureDev/models'
+import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -204,7 +205,12 @@ export async function humanInTheLoopRetryLogic(jobId: string) {
     try {
         const status = await pollTransformationStatusUntilComplete(jobId)
         if (status === 'PAUSED') {
-            await initiateHumanInTheLoopPrompt(jobId)
+            const hilStatusFailure = await initiateHumanInTheLoopPrompt(jobId)
+            if (hilStatusFailure) {
+                // We rejected the changes and resumed the job and should
+                // try to resume normal polling asynchronously
+                void humanInTheLoopRetryLogic(jobId)
+            }
         } else {
             await finalizeTransformByQ(status)
         }
@@ -325,15 +331,14 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             path.join(tmpDependencyListDir, localPathToXmlDependencyList)
         )
 
-        // TODO
-        if (status === 'no available versions') {
-            // let user know and early exit for human in the loop happened because no upgrade versions
-            // were found on their machine
-            // call resume with "REJECTED" state
+        if (status === dependencyNoAvailableVersions) {
+            // let user know and early exit for human in the loop happened because no upgrade versions available
+            throw new Error('No available versions for update')
         }
 
         await highlightPomIssueInProject(newPomFileVirtualFileReference, manifestFileValues.sourcePomVersion)
 
+        // todo filter duplicates
         const dependencies = new DependencyVersions(
             latestVersion,
             majorVersions,
@@ -347,12 +352,13 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             tabID: ChatSessionManager.Instance.getSession().tabID,
             dependencies,
         })
-
-        await sleep(5000)
     } catch (err) {
-        // Will probably emit different TYPES of errors from the Human in the loop engagement
-        // catch them here and determine what to do with in parent function
-        console.log('Error in completeHumanInTheLoopWork', err)
+        // Call resume with "REJECTED" state which will put our service
+        // back into the normal flow and will not trigger HIL again for this step
+        await restartJob(jobId, 'REJECTED')
+        return false
+    } finally {
+        await sleep(5000)
     }
 
     return true
@@ -401,14 +407,14 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
             },
         })
 
-        // inform user of job resume status in chat
-        transformByQState.getChatControllers()?.HILSelectionUploaded.fire({
+        // inform user in chat
+        transformByQState.getChatControllers()?.HILDependencySubmitted.fire({
             tabID: ChatSessionManager.Instance.getSession().tabID,
         })
 
         // 8) Once code has been uploaded we will restart the job
         // TODO response returns "RESUMED"
-        await restartJob(jobId)
+        await restartJob(jobId, 'COMPLETED')
 
         await sleep(1500)
 
