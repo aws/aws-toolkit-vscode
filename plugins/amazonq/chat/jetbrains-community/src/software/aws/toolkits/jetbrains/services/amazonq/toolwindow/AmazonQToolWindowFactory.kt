@@ -15,8 +15,6 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
-import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES_UNAVAILABLE_BUILDER_ID
-import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.services.amazonq.WebviewPanel
 import software.aws.toolkits.jetbrains.services.amazonq.isQSupportedInThisVersion
@@ -69,11 +67,7 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
         val contentManager = toolWindow.contentManager
         val isQConnection = newConnection?.let {
             (it as? AwsBearerTokenConnection)?.let { conn ->
-                val scopeShouldHave = if (it.isSono()) {
-                    Q_SCOPES + CODEWHISPERER_SCOPES - Q_SCOPES_UNAVAILABLE_BUILDER_ID
-                } else {
-                    Q_SCOPES + CODEWHISPERER_SCOPES
-                }
+                val scopeShouldHave = Q_SCOPES + CODEWHISPERER_SCOPES
 
                 LOG.debug { "newConnection: ${conn.id}; scope: ${conn.scopes}; scope must-have: $scopeShouldHave" }
 

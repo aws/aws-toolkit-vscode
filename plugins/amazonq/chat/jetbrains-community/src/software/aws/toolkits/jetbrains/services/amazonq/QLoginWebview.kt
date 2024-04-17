@@ -26,7 +26,6 @@ import software.aws.toolkits.jetbrains.core.credentials.Login
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
-import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES_UNAVAILABLE_BUILDER_ID
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.core.webview.LoginBrowser
@@ -130,7 +129,7 @@ class WebviewBrowser(val project: Project) : LoginBrowser(project, WebviewBrowse
             }
 
             "loginBuilderId" -> {
-                val scope = CODEWHISPERER_SCOPES + Q_SCOPES - Q_SCOPES_UNAVAILABLE_BUILDER_ID.toSet()
+                val scope = CODEWHISPERER_SCOPES + Q_SCOPES
                 runInEdt {
                     Login.BuilderId(scope, onPendingAwsId).loginBuilderId(project)
                     // TODO: telemetry
