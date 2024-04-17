@@ -299,13 +299,6 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         PomFileVirtualFileReference = pomFileVirtualFileReference
         const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
 
-        const codeSnippet = await getCodeIssueSnippetFromPom(pomFileVirtualFileReference)
-        // Let the user know we've entered the loop in the chat
-        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
-            tabID: ChatSessionManager.Instance.getSession().tabID,
-            codeSnippet,
-        })
-
         // 3) We need to replace version in pom.xml
         const newPomFileVirtualFileReference = await createPomCopy(
             tmpDependencyListDir,
@@ -317,6 +310,14 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             manifestFileValues.sourcePomVersion,
             pomReplacementDelimiter
         )
+
+        const codeSnippet = await getCodeIssueSnippetFromPom(newPomFileVirtualFileReference)
+        // Let the user know we've entered the loop in the chat
+        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+            codeSnippet,
+        })
+
         await highlightPomIssueInProject(newPomFileVirtualFileReference, manifestFileValues.sourcePomVersion)
 
         // 4) We need to run maven commands on that pom.xml to get available versions
@@ -329,7 +330,12 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             path.join(tmpDependencyListDir, localPathToXmlDependencyList)
         )
 
-        const dependencies = new DependencyVersions(latestVersion, majorVersions, minorVersions)
+        const dependencies = new DependencyVersions(
+            latestVersion,
+            majorVersions,
+            minorVersions,
+            manifestFileValues.sourcePomVersion
+        )
 
         // 5) We need to wait for user input
         // This is asynchronous, so we have to wait to be called to complete this loop

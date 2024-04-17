@@ -464,7 +464,7 @@ ${codeSnippet}
     }
 
     public sendDependencyVersionsFoundMessage(versions: DependencyVersions, tabID: string) {
-        const message = `I found ${versions.length} other versions which are higher than the one in your code {CURRENT_DEPENDENCY_VERSION}.
+        const message = `I found ${versions.length} other versions which are higher than the one in your code ${versions.currentVersion}.
 
 Latest major version: ${versions.majorVersions[0]}
 Latest minor version: ${versions.minorVersions[0]}
@@ -503,8 +503,17 @@ Latest minor version: ${versions.minorVersions[0]}
         )
     }
 
-    public sendHILContinueMessage(tabID: string) {
-        const message = `Okay. Uploading the relevant jar and resuming the job.`
+    public sendHILContinueMessage(tabID: string, selectedDependencyVersion: string) {
+        let message = `### Resume Transformation Job
+-------------
+| | |
+| :------------------- | -------: |
+| **Dependency Version**             |   ${selectedDependencyVersion}   |
+`
+
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+
+        message = `Okay. Uploading the relevant jar and resuming the job.`
         this.sendInProgressMessage(tabID, message)
     }
 

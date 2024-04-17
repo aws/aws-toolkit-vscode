@@ -111,7 +111,6 @@ export class GumbyController {
         })
 
         this.chatControllerMessageListeners.HILDependencySubmitted.event(data => {
-            console.log(`HILDependencySubmitted`)
             return this.HILDependencySubmitted(data)
         })
     }
@@ -347,8 +346,8 @@ export class GumbyController {
         this.messenger.sendDependencyVersionsFoundMessage(data.dependencies, data.tabID)
     }
 
-    private HILDependencySubmitted(data: { tabID: string }) {
-        this.messenger.sendHILContinueMessage(data.tabID)
+    private HILDependencySubmitted(data: { tabID: string; selectedDependencyVersion: string }) {
+        this.messenger.sendHILContinueMessage(data.tabID, data.selectedDependencyVersion)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
@@ -375,8 +374,7 @@ export class GumbyController {
 
     private async continueJobWithSelectedDependency(message: { tabID: string; formSelectedValues: any }) {
         const selectedDependency = message.formSelectedValues['GumbyTransformDependencyForm']
-        this.messenger.sendUserPrompt(selectedDependency, message.tabID)
-        this.messenger.sendHILContinueMessage(message.tabID)
+        this.messenger.sendHILContinueMessage(message.tabID, selectedDependency)
         await finishHumanInTheLoop(selectedDependency)
     }
 
