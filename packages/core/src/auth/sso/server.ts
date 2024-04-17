@@ -8,6 +8,7 @@ import { getLogger } from '../../shared/logger'
 import { ToolkitError } from '../../shared/errors'
 import { Socket } from 'net'
 import globals from '../../shared/extensionGlobals'
+import { Result } from '../../shared/utilities/result'
 
 export class MissingPortError extends ToolkitError {
     constructor() {
@@ -49,14 +50,14 @@ export class AuthSSOServer {
     private authenticationFlowTimeoutInMs = 600000
     private authenticationWarningTimeoutInMs = 60000
 
-    private readonly authenticationPromise: Promise<string>
-    private deferred: { resolve: (result: string) => void; reject: (reason: any) => void } | undefined
+    private readonly authenticationPromise: Promise<Result<string>>
+    private deferred: { resolve: (result: Result<string>) => void } | undefined
     private server: http.Server
     private connections: Socket[]
 
     constructor(private readonly state: string, private readonly vscodeUriPath: string) {
-        this.authenticationPromise = new Promise<string>((resolve, reject) => {
-            this.deferred = { resolve, reject }
+        this.authenticationPromise = new Promise<Result<string>>(resolve => {
+            this.deferred = { resolve }
         })
 
         this.connections = []
@@ -107,7 +108,7 @@ export class AuthSSOServer {
                 resolve()
             })
 
-            this.server.listen()
+            this.server.listen(0, '127.0.0.1')
         })
     }
 
@@ -134,8 +135,12 @@ export class AuthSSOServer {
         return `${this.baseUrl}:${this.getPort()}`
     }
 
+    public getAddress() {
+        return this.server.address()
+    }
+
     private getPort(): number {
-        const addr = this.server.address()
+        const addr = this.getAddress()
         if (addr instanceof Object) {
             return addr.port
         } else if (typeof addr === 'string') {
@@ -170,7 +175,7 @@ export class AuthSSOServer {
             return
         }
 
-        this.deferred?.resolve(code)
+        this.deferred?.resolve(Result.ok(code))
         res.setHeader('Content-Type', 'text/html')
         res.writeHead(200)
         res.end(`
@@ -190,13 +195,13 @@ export class AuthSSOServer {
         res.end(error.message)
 
         // Send the response back to the editor
-        this.deferred?.reject(error)
+        this.deferred?.resolve(Result.err(error))
     }
 
-    public waitForAuthorization(): Promise<string> {
+    public waitForAuthorization(): Promise<Result<string>> {
         return Promise.race([
             this.authenticationPromise,
-            new Promise<string>((_, reject) => {
+            new Promise<Result<string>>((_, reject) => {
                 globals.clock.setTimeout(() => {
                     reject(
                         new ToolkitError('Timed-out waiting for browser login flow to complete', {
