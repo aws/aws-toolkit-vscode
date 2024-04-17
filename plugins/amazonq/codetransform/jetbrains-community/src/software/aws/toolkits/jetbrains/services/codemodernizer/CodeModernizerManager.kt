@@ -231,12 +231,11 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         CodeModernizerSessionState.getInstance(project).currentJobStopTime = Instant.MIN
     }
 
-    private fun notifyJobFailure(failureReason: String?, retryable: Boolean) {
+    private fun notifyJobFailure(failureReason: String?) {
         val reason = failureReason ?: message("codemodernizer.notification.info.modernize_failed.unknown_failure_reason") // should not happen
-        val retryablestring = if (retryable) message("codemodernizer.notification.info.modernize_failed.failure_is_retryable") else ""
         notifyStickyInfo(
             message("codemodernizer.notification.info.modernize_failed.title"),
-            message("codemodernizer.notification.info.modernize_failed.description", reason, retryablestring),
+            message("codemodernizer.notification.info.modernize_failed.description", reason),
             project,
             listOf(displayFeedbackNotificationAction())
         )
@@ -552,18 +551,15 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         var jobId: JobId? = null
         when (result) {
             is CodeModernizerJobCompletedResult.UnableToCreateJob -> notifyJobFailure(
-                result.failureReason,
-                result.retryable,
+                result.failureReason
             )
 
             is CodeModernizerJobCompletedResult.RetryableFailure -> notifyJobFailure(
-                result.failureReason,
-                true,
+                result.failureReason
             )
 
             is CodeModernizerJobCompletedResult.JobFailed -> notifyJobFailure(
-                result.failureReason,
-                false,
+                result.failureReason
             )
 
             is CodeModernizerJobCompletedResult.JobFailedInitialBuild -> notifyStickyInfo(
@@ -682,18 +678,6 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         managerState.lastJobContext.putAll(state.lastJobContext)
         managerState.flags.clear()
         managerState.flags.putAll(state.flags)
-    }
-
-    fun warnUnsupportedProject(reason: String?) {
-        addCodeModernizeUI(true)
-        val maybeUnknownReason = reason ?: message("codemodernizer.notification.warn.invalid_project.description.reason.unknown")
-        codeModernizerBottomWindowPanelManager.setProjectInvalidUI(maybeUnknownReason)
-        notifyStickyInfo(
-            message("codemodernizer.validationerrordialog.description.title"),
-            message("codemodernizer.validationerrordialog.description.main"),
-            project,
-            listOf(openTroubleshootingGuideNotificationAction(TROUBLESHOOTING_URL_PREREQUISITES)),
-        )
     }
 
     fun getTransformationPlan(): TransformationPlan? = codeTransformationSession?.getTransformationPlan()
