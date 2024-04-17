@@ -196,6 +196,27 @@ export async function uploadPayload(payloadFileName: string) {
 }
 
 /**
+ * Array of file extensions used by Maven as metadata in the local repository.
+ * Files with these extensions influence Maven's behavior during compile time,
+ * particularly in checking the availability of source repositories and potentially
+ * re-downloading dependencies if the source is not accessible. Removing these
+ * files can prevent Maven from attempting to download dependencies again.
+ */
+const MavenExcludedExtensions = ['.repositories', '.sha1']
+
+/**
+ * Determines if the specified file path corresponds to a Maven metadata file
+ * by checking against known metadata file extensions. This is used to identify
+ * files that might trigger Maven to recheck or redownload dependencies from source repositories.
+ *
+ * @param path The file path to evaluate for exclusion based on its extension.
+ * @returns {boolean} Returns true if the path ends with an extension associated with Maven metadata files; otherwise, false.
+ */
+function isExcludedDependencyFile(path: string): boolean {
+    return MavenExcludedExtensions.some(extension => path.endsWith(extension))
+}
+
+/**
  * Gets all files in dir. We use this method to get the source code, then we run a mvn command to
  * copy over dependencies into their own folder, then we use this method again to get those
  * dependencies. If isDependenciesFolder is true, then we are getting all the files
@@ -252,6 +273,9 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
 
         if (dependencyFiles.length > 0) {
             for (const file of dependencyFiles) {
+                if (isExcludedDependencyFile(file)) {
+                    continue
+                }
                 const relativePath = path.relative(dependenciesFolder.path, file)
                 const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
