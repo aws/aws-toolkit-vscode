@@ -131,7 +131,7 @@ describe('AuthUtil', async function () {
         )
         await auth.useConnection(conn)
         getTestWindow().onDidShowMessage(m => {
-            m.selectItem('Connect with AWS')
+            m.selectItem('Re-authenticate')
         })
         assert.strictEqual(auth.getConnectionState(conn), 'invalid')
 
