@@ -114,6 +114,7 @@ export class ThrottlingException extends __BaseException {
  * @enum
  */
 export const ValidationExceptionReason = {
+  CONTENT_LENGTH_EXCEEDS_THRESHOLD: "CONTENT_LENGTH_EXCEEDS_THRESHOLD",
   INVALID_CONVERSATION_ID: "INVALID_CONVERSATION_ID",
 } as const
 /**
@@ -854,6 +855,185 @@ export const EditorStateFilterSensitiveLog = (obj: EditorState): any => ({
 
 /**
  * @public
+ * An environment variable
+ */
+export interface EnvironmentVariable {
+  /**
+   * @public
+   * The key of an environment variable
+   */
+  key?: string;
+
+  /**
+   * @public
+   * The value of an environment variable
+   */
+  value?: string;
+}
+
+/**
+ * @internal
+ */
+export const EnvironmentVariableFilterSensitiveLog = (obj: EnvironmentVariable): any => ({
+  ...obj,
+  ...(obj.key && { key:
+    SENSITIVE_STRING
+  }),
+  ...(obj.value && { value:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
+ * State related to the user's environment
+ */
+export interface EnvState {
+  /**
+   * @public
+   * The name of the operating system in use
+   */
+  operatingSystem?: string;
+
+  /**
+   * @public
+   * The current working directory of the environment
+   */
+  currentWorkingDirectory?: string;
+
+  /**
+   * @public
+   * The environment variables set in the current environment
+   */
+  environmentVariables?: (EnvironmentVariable)[];
+}
+
+/**
+ * @internal
+ */
+export const EnvStateFilterSensitiveLog = (obj: EnvState): any => ({
+  ...obj,
+  ...(obj.currentWorkingDirectory && { currentWorkingDirectory:
+    SENSITIVE_STRING
+  }),
+  ...(obj.environmentVariables && { environmentVariables:
+    obj.environmentVariables.map(
+      item =>
+      EnvironmentVariableFilterSensitiveLog(item)
+    )
+  }),
+})
+
+/**
+ * @public
+ * State related to the Git VSC
+ */
+export interface GitState {
+  /**
+   * @public
+   * The output of the command `git status --porcelain=v1 -b`
+   */
+  status?: string;
+}
+
+/**
+ * @internal
+ */
+export const GitStateFilterSensitiveLog = (obj: GitState): any => ({
+  ...obj,
+  ...(obj.status && { status:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
+ * An single entry in the shell history
+ */
+export interface ShellHistoryEntry {
+  /**
+   * @public
+   * The shell command that was run
+   */
+  command: string | undefined;
+
+  /**
+   * @public
+   * The directory the command was ran in
+   */
+  directory?: string;
+
+  /**
+   * @public
+   * The exit code of the command after it finished
+   */
+  exitCode?: number;
+
+  /**
+   * @public
+   * The stdout from the command
+   */
+  stdout?: string;
+
+  /**
+   * @public
+   * The stderr from the command
+   */
+  stderr?: string;
+}
+
+/**
+ * @internal
+ */
+export const ShellHistoryEntryFilterSensitiveLog = (obj: ShellHistoryEntry): any => ({
+  ...obj,
+  ...(obj.command && { command:
+    SENSITIVE_STRING
+  }),
+  ...(obj.directory && { directory:
+    SENSITIVE_STRING
+  }),
+  ...(obj.stdout && { stdout:
+    SENSITIVE_STRING
+  }),
+  ...(obj.stderr && { stderr:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
+ * Represents the state of a shell
+ */
+export interface ShellState {
+  /**
+   * @public
+   * The name of the current shell
+   */
+  shellName: string | undefined;
+
+  /**
+   * @public
+   * The history previous shell commands for the current shell
+   */
+  shellHistory?: (ShellHistoryEntry)[];
+}
+
+/**
+ * @internal
+ */
+export const ShellStateFilterSensitiveLog = (obj: ShellState): any => ({
+  ...obj,
+  ...(obj.shellHistory && { shellHistory:
+    obj.shellHistory.map(
+      item =>
+      ShellHistoryEntryFilterSensitiveLog(item)
+    )
+  }),
+})
+
+/**
+ * @public
  * Additional Chat message context associated with the Chat Message
  */
 export interface UserInputMessageContext {
@@ -862,6 +1042,24 @@ export interface UserInputMessageContext {
    * Editor state chat message context.
    */
   editorState?: EditorState;
+
+  /**
+   * @public
+   * Shell state chat message context.
+   */
+  shellState?: ShellState;
+
+  /**
+   * @public
+   * Git state chat message context.
+   */
+  gitState?: GitState;
+
+  /**
+   * @public
+   * Environment state chat messaage context.
+   */
+  envState?: EnvState;
 
   /**
    * @public
@@ -877,6 +1075,15 @@ export const UserInputMessageContextFilterSensitiveLog = (obj: UserInputMessageC
   ...obj,
   ...(obj.editorState && { editorState:
     EditorStateFilterSensitiveLog(obj.editorState)
+  }),
+  ...(obj.shellState && { shellState:
+    ShellStateFilterSensitiveLog(obj.shellState)
+  }),
+  ...(obj.gitState && { gitState:
+    GitStateFilterSensitiveLog(obj.gitState)
+  }),
+  ...(obj.envState && { envState:
+    EnvStateFilterSensitiveLog(obj.envState)
   }),
   ...(obj.diagnostic && { diagnostic:
     DiagnosticFilterSensitiveLog(obj.diagnostic)
@@ -1362,6 +1569,72 @@ export const ConversationStateFilterSensitiveLog = (obj: ConversationState): any
  * @public
  * @enum
  */
+export const TransformationDownloadArtifactType = {
+  CLIENT_INSTRUCTIONS: "ClientInstructions",
+} as const
+/**
+ * @public
+ */
+export type TransformationDownloadArtifactType = typeof TransformationDownloadArtifactType[keyof typeof TransformationDownloadArtifactType]
+
+/**
+ * @public
+ * Transformation export context
+ */
+export interface TransformationExportContext {
+  downloadArtifactId: string | undefined;
+  downloadArtifactType: TransformationDownloadArtifactType | string | undefined;
+}
+
+/**
+ * @public
+ * Export Context
+ */
+export type ExportContext =
+  | ExportContext.TransformationExportContextMember
+  | ExportContext.$UnknownMember
+
+/**
+ * @public
+ */
+export namespace ExportContext {
+
+  /**
+   * @public
+   * Transformation export context
+   */
+  export interface TransformationExportContextMember {
+    transformationExportContext: TransformationExportContext;
+    $unknown?: never;
+  }
+
+  /**
+   * @public
+   */
+  export interface $UnknownMember {
+    transformationExportContext?: never;
+    $unknown: [string, any];
+  }
+
+  export interface Visitor<T> {
+    transformationExportContext: (value: TransformationExportContext) => T;
+    _: (name: string, value: any) => T;
+  }
+
+  export const visit = <T>(
+    value: ExportContext,
+    visitor: Visitor<T>
+  ): T => {
+    if (value.transformationExportContext !== undefined) return visitor.transformationExportContext(value.transformationExportContext);
+    return visitor._(value.$unknown[0], value.$unknown[1]);
+  }
+
+}
+
+/**
+ * @public
+ * @enum
+ */
 export const ExportIntent = {
   /**
    * Code Task Assist
@@ -1377,38 +1650,6 @@ export const ExportIntent = {
  */
 export type ExportIntent = typeof ExportIntent[keyof typeof ExportIntent]
 
-/**
- * @public
- * @enum
- */
-export const TransformationDownloadArtifactType = {
-    /**
-     * ClientInstructions
-     */
-    CLIENT_INSTRUCTIONS: "ClientInstructions"
-} as const
-/**
- * @public
- */
-export type TransformationDownloadArtifactType = typeof TransformationDownloadArtifactType[keyof typeof TransformationDownloadArtifactType]
-
-/**
- * @public
- */
-export type ArtifactId = string
-/**
- * @public
- */
-export type TransformationExportContext = {
-    downloadArtifactId: ArtifactId
-    downloadArtifactType: TransformationDownloadArtifactType
-}
-/**
- * @public
- */
-export type ExportContext = {
-    transformationExportContext: TransformationExportContext
-}
 /**
  * @public
  * Response Stream
@@ -1586,11 +1827,12 @@ export interface ExportResultArchiveRequest {
    * Export Intent
    */
   exportIntent: ExportIntent | string | undefined;
+
   /**
    * @public
    * Export Context
    */
-  exportContext?: ExportContext 
+  exportContext?: ExportContext;
 }
 
 /**

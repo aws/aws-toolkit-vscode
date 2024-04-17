@@ -3,7 +3,6 @@
     "description": "@amzn/codewhisperer-streaming client",
     "version": "0.0.1",
     "scripts": {
-        "postinstall": "npm run build",
         "build": "concurrently 'npm:build:cjs' 'npm:build:es' 'npm:build:types'",
         "build:cjs": "tsc -p tsconfig.cjs.json",
         "build:docs": "typedoc",
