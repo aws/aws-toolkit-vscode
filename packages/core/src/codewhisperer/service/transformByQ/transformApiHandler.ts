@@ -42,6 +42,7 @@ import { AuthUtil } from '../../util/authUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
+import { fsCommon } from '../../../srcShared/fs'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -679,26 +680,28 @@ export async function downloadResultArchive({
 }
 
 export async function downloadHilResultArchive(jobId: string, downloadArtifactId: string, pathToArchiveDir: string) {
-    pathToArchiveDir =
-        '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip'
-    // if (!fs.existsSync(pathToArchiveDir)) {
-    //     fs.mkdirSync(pathToArchiveDir)
-    // }
-    // const pathToArchive = path.join(pathToArchiveDir, 'ExportResultsArchive.zip')
-    // const downloadResults = await downloadResultArchive({ jobId, downloadArtifactId, pathToArchive })
-    // console.log('DownloadResults', downloadResults)
+    // pathToArchiveDir = '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip'
+    const archivePathExists = await fsCommon.existsDir(pathToArchiveDir)
+    if (!archivePathExists) {
+        await fsCommon.mkdir(pathToArchiveDir)
+    }
+    const pathToArchive = path.join(pathToArchiveDir, 'ExportResultsArchive.zip')
+    await downloadResultArchive({ jobId, downloadArtifactId, pathToArchive })
 
-    // let downloadErrorMessage = undefined
-    // try {
-    //     // Download and deserialize the zip
-    //     const zip = new AdmZip(pathToArchive)
-    //     zip.extractAllTo(pathToArchive)
-    // } catch (e) {
-    //     downloadErrorMessage = (e as Error).message
-    //     getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
-    //     throw new Error('Error downloading HIL artifacts')
-    // }
+    let downloadErrorMessage = undefined
+    try {
+        // Download and deserialize the zip
+        const zip = new AdmZip(pathToArchive)
+        zip.extractAllTo(pathToArchive)
+    } catch (e) {
+        downloadErrorMessage = (e as Error).message
+        getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
+        throw new Error('Error downloading HIL artifacts')
+    }
+
+    // manifest.json
+    // pomFolder/pom.xml or manifest has pomFolderName path
     const manifestFileVirtualFileReference = vscode.Uri.file(`${pathToArchiveDir}/manifest.json`)
-    const pomFileVirtualFileReference = vscode.Uri.file(`${pathToArchiveDir}/pom.xml`)
+    const pomFileVirtualFileReference = vscode.Uri.file(`${pathToArchiveDir}/pomFolder/pom.xml`)
     return { manifestFileVirtualFileReference, pomFileVirtualFileReference }
 }

@@ -81,7 +81,6 @@ export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform
 
 let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
 let pollUIIntervalId: string | number | NodeJS.Timer | undefined = undefined
-let humanInTheLoopRetryCount = 0
 
 export async function startTransformByQWithProgress() {
     await startTransformByQ()
@@ -200,15 +199,9 @@ export async function startTransformByQ() {
  */
 export async function humanInTheLoopRetryLogic(jobId: string) {
     try {
-        // IF we reached our max attempts, stop the job
-        if (humanInTheLoopRetryCount > CodeWhispererConstants.maxHumanInTheLoopAttempts) {
-            await finalizeTransformByQ(transformByQState.getPolledJobStatus())
-        }
-
         const status = await pollTransformationStatusUntilComplete(jobId)
         if (status === 'PAUSED') {
             await completeHumanInTheLoopWork(jobId)
-            humanInTheLoopRetryCount++
         } else {
             await finalizeTransformByQ(status)
         }
@@ -261,7 +254,6 @@ export async function preTransformationUploadCode() {
 let PomFileVirtualFileReference: vscode.Uri
 const osTmpDir = os.tmpdir()
 const tmpDownloadsFolderName = 'q-hil-dependency-artifacts'
-
 const tmpDependencyListFolderName = 'q-pom-dependency-list'
 const userDependencyUpdateFolderName = 'q-pom-dependency-update'
 const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
@@ -361,6 +353,9 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
             name: userDependencyUpdateFolderName,
             path: userDependencyUpdateDir,
         }
+        // TODO maybe separate function for just install
+        // IF WE fail, do we allow user to retry? or just fail
+        // Maybe have clientside retries?
         await prepareProjectDependencies(uploadFolderInfo)
         const uploadPayloadFilePath = await zipCode({
             dependenciesFolder: uploadFolderInfo,
