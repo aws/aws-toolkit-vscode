@@ -926,10 +926,11 @@ export class Auth implements AuthService, ConnectionManager {
         } as SsoProfile
         if (profile === undefined) {
             await this.store.addProfile(id, newProfile)
+            await this.store.updateMetadata(id, { label: connection.label, connectionState: connection.state })
         } else {
             await this.store.updateProfile(connection.id, newProfile)
+            await this.updateConnectionState(id, connection.state)
         }
-        await this.updateConnectionState(id, connection.state)
     }
 
     // Used by Amazon Q to update connection status & scope when this connection is updated by AWS Toolkit

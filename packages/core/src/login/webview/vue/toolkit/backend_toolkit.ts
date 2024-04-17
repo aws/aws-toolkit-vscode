@@ -77,8 +77,22 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     }
 
     async fetchConnections(): Promise<AwsConnection[] | undefined> {
-        //This does not need to be implement in aws toolkit vue backend
-        return undefined
+        const connections: AwsConnection[] = []
+        const _connections = await Auth.instance.listConnections()
+        _connections.forEach(c => {
+            const status = Auth.instance.getConnectionState({ id: c.id })
+            if (c.label.startsWith('AmazonQ') && c.type === 'sso' && status) {
+                connections.push({
+                    id: c.id,
+                    label: c.label,
+                    type: c.type,
+                    ssoRegion: c.ssoRegion,
+                    startUrl: c.startUrl,
+                    state: status,
+                } as AwsConnection)
+            }
+        })
+        return connections
     }
 
     async useConnection(connectionId: string): Promise<AuthError | undefined> {
