@@ -82,6 +82,8 @@ const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
 
 let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
+let pollUIIntervalId: string | number | NodeJS.Timer | undefined = undefined
+let humanInTheLoopRetries = 0
 
 export async function startTransformByQWithProgress() {
     await startTransformByQ()
@@ -163,14 +165,13 @@ export async function compileProject() {
 }
 
 export async function startTransformByQ() {
-    let intervalId = undefined
     // Set the default state variables for our store and the UI
     await setTransformationToRunningState()
     console.log('Starting transformation job')
 
     try {
         // Set web view UI to poll for progress
-        intervalId = setInterval(() => {
+        pollUIIntervalId = setInterval(() => {
             void vscode.commands.executeCommand(
                 'aws.amazonq.showPlanProgressInHub',
                 codeTransformTelemetryState.getStartTime()
@@ -191,7 +192,21 @@ export async function startTransformByQ() {
         await pollTransformationStatusUntilPlanReady(jobId)
 
         // step 4: poll until artifacts are ready to download
-        let humanInTheLoopRetries = 0
+        await humanInTheLoopRetryLogic(jobId)
+
+        // If not HUMAN in the loop, then go to finish the job directly
+        // otherwise we are waiting on userInput
+        const status = transformByQState.getPolledJobStatus()
+        if (status !== TransformByQStatus.WaitingUserInput) {
+            await finalizeTransformByQ(status)
+        }
+    } catch (error: any) {
+        await transformationJobErrorHandler(error)
+    }
+}
+
+export async function humanInTheLoopRetryLogic(jobId: string) {
+    try {
         /**
          *  The whileLoop condition WaitingUserInput is set inside pollTransformationStatusUntilComplete
          *  when we see a `PAUSED` state. If this is the case once completeHumanInTheLoopWork the
@@ -199,18 +214,20 @@ export async function startTransformByQ() {
          *  We only don't want to continue calling pollTransformationStatusUntilComplete if there is no HIL
          *  state ever engaged or we have reached our max amount of HIL retries.
          */
-        do {
-            const status = await pollTransformationStatusUntilComplete(jobId)
-            if (status === 'PAUSED') {
-                const humanInTheLoopStatus = await completeHumanInTheLoopWork(jobId, humanInTheLoopRetries)
-                humanInTheLoopRetries++
-                console.log('Human in the loop status was: ', humanInTheLoopStatus)
-            }
-        } while (
-            transformByQState.getPolledJobStatus() === TransformByQStatus.WaitingUserInput &&
-            humanInTheLoopRetries < maxHumanInTheLoopAttempts
-        )
-
+        const status = await pollTransformationStatusUntilComplete(jobId)
+        if (status === 'PAUSED') {
+            const humanInTheLoopStatus = await completeHumanInTheLoopWork(jobId, humanInTheLoopRetries)
+            humanInTheLoopRetries++
+            console.log('Human in the loop status was: ', humanInTheLoopStatus)
+        }
+        return status
+    } catch (error) {
+        await transformationJobErrorHandler(error)
+    }
+}
+export async function finalizeTransformByQ(status: string) {
+    console.log('finalizeTransformByQ')
+    try {
         // Set the result state variables for our store and the UI
         // At this point job should be completed or partially completed
         await finalizeTransformationJob(status)
@@ -218,7 +235,7 @@ export async function startTransformByQ() {
         await transformationJobErrorHandler(error)
     } finally {
         await postTransformationJob()
-        await cleanupTransformationJob(intervalId)
+        await cleanupTransformationJob()
     }
 }
 
@@ -252,23 +269,18 @@ export async function preTransformationUploadCode() {
 //to-do: store this state somewhere
 let PomFileVirtualFileReference: vscode.Uri
 const osTmpDir = os.tmpdir()
+const tmpDownloadsFolderName = 'q-hil-dependency-artifacts'
+
 const tmpDependencyListFolderName = 'q-pom-dependency-list'
 const userDependencyUpdateFolderName = 'q-pom-dependency-update'
 const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
 const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
+const tmpDownloadsDir = path.join(osTmpDir, tmpDownloadsFolderName)
 const pomReplacementDelimiter = '*****'
 
 export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCount: number) {
     console.log('Entering completeHumanInTheLoopWork', jobId, userInputRetryCount)
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
-
-    const osTmpDir = os.tmpdir()
-    const tmpDownloadsFolderName = 'q-hil-dependency-artifacts'
-    const tmpDependencyListFolderName = 'q-pom-dependency-list'
-    const userDependencyUpdateFolderName = 'q-pom-dependency-update'
-    const tmpDownloadsDir = path.join(osTmpDir, tmpDownloadsFolderName)
-    const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
-    const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
 
     try {
         // 1) We need to call GetTransformationPlan to get artifactId
@@ -338,8 +350,6 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         // Always delete the dependency output
         console.log('Deleting temporary dependency output', tmpDependencyListDir)
         fs.rmdirSync(tmpDependencyListDir, { recursive: true })
-        console.log('Deleting temporary dependency output', userDependencyUpdateDir)
-        fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
     }
 
     return true
@@ -347,13 +357,10 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
 
 export async function finishHumanInTheLoop(selectedDependency: string) {
     console.log('Entering finishHumanInTheLoop', selectedDependency)
-    const pomReplacementDelimiter = '*****'
     let successfulFeedbackLoop = true
     const jobId = transformByQState.getJobId()
     try {
         const getUserInputValue = selectedDependency
-
-        console.log('Sleeping for 5 seconds since user has entered version')
 
         // 6) We need to add user input to that pom.xml,
         // original pom.xml is intact somewhere, and run maven compile
@@ -393,6 +400,15 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         // 8) Once code has been uploaded we will restart the job
         const response = await restartJob(jobId)
         console.log('Finished human in the loop work', uploadId, response)
+
+        await sleep(1500)
+
+        if (humanInTheLoopRetries > maxHumanInTheLoopAttempts) {
+            // TODO mov maxHumanInTheLoopAttempts into humanInTheLoopRetryLogic
+            void finalizeTransformByQ('Done')
+        } else {
+            void humanInTheLoopRetryLogic(jobId)
+        }
     } catch (err) {
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function
@@ -400,8 +416,8 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         successfulFeedbackLoop = false
     } finally {
         // Always delete the dependency output
-        console.log('Deleting temporary dependency output', tmpDependencyListDir)
-        fs.rmdirSync(tmpDependencyListDir, { recursive: true })
+        console.log('Deleting temporary dependency output', userDependencyUpdateDir)
+        fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
     }
 
     return successfulFeedbackLoop
@@ -615,8 +631,8 @@ export async function transformationJobErrorHandler(error: any) {
     getLogger().error(`CodeTransformation: ${error.message}`)
 }
 
-export async function cleanupTransformationJob(intervalId: NodeJS.Timeout | undefined) {
-    clearInterval(intervalId)
+export async function cleanupTransformationJob() {
+    clearInterval(pollUIIntervalId)
     transformByQState.setJobDefaults()
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
     await vscode.commands.executeCommand('aws.amazonq.refresh')
