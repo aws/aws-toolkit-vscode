@@ -7,6 +7,7 @@
         "workspace"
     ],
     "publisher": "amazonwebservices",
+    "icon": "resources/marketplace/amazonq-icon-256x256.png",
     "license": "Apache-2.0",
     "galleryBanner": {
         "color": "#FF9900",
