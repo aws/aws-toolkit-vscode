@@ -206,7 +206,7 @@
             </button>
             <div class="title">IAM Credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
-            <div style="margin-bottom: 4px"></div>
+            <div style="margin-bottom: 8px"></div>
             <div class="title">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
             <input class="iamInput" type="text" id="profileName" name="profileName" v-model="profileName" />
@@ -449,6 +449,13 @@ export default defineComponent({
     margin-top: 5px;
     font-size: 8px;
 }
+.vscode-light .hint {
+    color: #3d3a3a;
+}
+.vscode-dark .hint {
+    color: #c6c6c6;
+}
+
 .title {
     margin-bottom: 3px;
     margin-top: 3px;
@@ -496,6 +503,12 @@ export default defineComponent({
     color: white;
     border: none;
 }
+.vscode-light .urlInput {
+    color: black;
+}
+.vscode-dark .urlInput {
+    color: white;
+}
 .iamInput {
     background-color: var(--vscode-input-background);
     width: 100%;
@@ -505,12 +518,24 @@ export default defineComponent({
     margin-bottom: 5px;
     margin-top: 2px;
 }
+.vscode-light .iamInput {
+    color: black;
+}
+.vscode-dark .iamInput {
+    color: white;
+}
 .regionSelect {
     background-color: var(--vscode-input-background);
     width: 100%;
     color: white;
     margin-bottom: 5px;
     margin-top: 2px;
+}
+.vscode-light .regionSelect {
+    color: black;
+}
+.vscode-dark .regionSelect {
+    color: white;
 }
 .start-url-error {
     color: #ff0000;
