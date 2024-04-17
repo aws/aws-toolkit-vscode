@@ -16,6 +16,7 @@ import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amaz
 import { activateBadge } from './util/viewBadgeHandler'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
+import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -31,6 +32,8 @@ export async function activate(context: ExtensionContext) {
 
     const cwcWebViewToAppsPublisher = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!
 
+    await TryChatCodeLensProvider.register()
+
     context.subscriptions.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
             webviewOptions: {
@@ -38,7 +41,8 @@ export async function activate(context: ExtensionContext) {
             },
         }),
         focusAmazonQPanel.register(),
-        focusAmazonQPanelKeybinding.register()
+        focusAmazonQPanelKeybinding.register(),
+        tryChatCodeLensCommand.register()
     )
 
     amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
