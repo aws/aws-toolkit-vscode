@@ -26,6 +26,7 @@ import {
 } from '../../views/connector/connector'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import MessengerUtils, { ButtonActions } from './messengerUtils'
+import DependencyVersions from '../../../models/dependencies'
 
 export type StaticTextResponseType =
     | 'transform'
@@ -418,7 +419,11 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
             )
         )
 
-        message = `Here is the dependency causing the error: `
+        message = `Here is the dependency causing the error: 
+
+'''
+{CODE_SNIPPET}
+'''`
 
         const buttons: ChatItemButton[] = []
         buttons.push({
@@ -456,20 +461,20 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
         )
     }
 
-    public sendDependenciesFoundMessage(dependencies: string[], tabID: string) {
-        const message = `I found ${dependencies.length} other versions which are higher than the one in your code {CURRENT_DEPENDENCY_VERSION}.
+    public sendDependencyVersionsFoundMessage(versions: DependencyVersions, tabID: string) {
+        const message = `I found ${versions.length} other versions which are higher than the one in your code {CURRENT_DEPENDENCY_VERSION}.
 
-Latest major version: {LATEST_MAJOR_VERSION} {OPTIONAL_NOTE}
-Latest minor version: {LATEST_MINOR_VERSION} {OPTIONAL_NOTE}
+Latest major version: ${versions.majorVersions[0]} {OPTIONAL_NOTE}
+Latest minor version: ${versions.minorVersions[0]} {OPTIONAL_NOTE}
 
 `
 
-        const dependencyFormOptions: { value: any; label: string }[] = []
+        const valueFormOptions: { value: any; label: string }[] = []
 
-        dependencies.forEach(dependency => {
-            dependencyFormOptions.push({
-                value: dependency,
-                label: dependency,
+        versions.allVersions.forEach(version => {
+            valueFormOptions.push({
+                value: version,
+                label: version,
             })
         })
 
@@ -480,7 +485,7 @@ Latest minor version: {LATEST_MINOR_VERSION} {OPTIONAL_NOTE}
             title: 'Please select the version to use:',
             mandatory: true,
 
-            options: dependencyFormOptions,
+            options: valueFormOptions,
         })
 
         this.dispatcher.sendChatPrompt(

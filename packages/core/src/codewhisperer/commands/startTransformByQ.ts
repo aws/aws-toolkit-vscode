@@ -75,6 +75,7 @@ import {
     writeLogs,
 } from '../service/transformByQ/transformFileHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
+import DependencyVersions from '../../amazonqGumby/models/dependencies'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -207,7 +208,7 @@ export async function humanInTheLoopRetryLogic(jobId: string) {
 
         const status = await pollTransformationStatusUntilComplete(jobId)
         if (status === 'PAUSED') {
-            await completeHumanInTheLoopWork(jobId)
+            await initiateHumanInTheLoopPrompt(jobId)
             humanInTheLoopRetryCount++
         } else {
             await finalizeTransformByQ(status)
@@ -269,7 +270,7 @@ const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderNa
 const tmpDownloadsDir = path.join(osTmpDir, tmpDownloadsFolderName)
 const pomReplacementDelimiter = '*****'
 
-export async function completeHumanInTheLoopWork(jobId: string) {
+export async function initiateHumanInTheLoopPrompt(jobId: string) {
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
 
     try {
@@ -324,7 +325,8 @@ export async function completeHumanInTheLoopWork(jobId: string) {
         const { latestVersion, majorVersions, minorVersions } = await parseXmlDependenciesReport(
             path.join(tmpDependencyListDir, localPathToXmlDependencyList)
         )
-        const dependencies = [latestVersion, ...majorVersions, ...minorVersions]
+
+        const dependencies = new DependencyVersions(latestVersion, majorVersions, minorVersions)
 
         // 5) We need to wait for user input
         // This is asynchronous, so we have to wait to be called to complete this loop
@@ -332,6 +334,8 @@ export async function completeHumanInTheLoopWork(jobId: string) {
             tabID: ChatSessionManager.Instance.getSession().tabID,
             dependencies,
         })
+
+        await sleep(5000)
     } catch (err) {
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function

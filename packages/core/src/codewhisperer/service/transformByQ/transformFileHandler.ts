@@ -121,7 +121,9 @@ function findLineNumber(uri: vscode.Uri, searchString: string): number | undefin
     return undefined
 }
 
-export async function parseXmlDependenciesReport(pathToXmlOutput: string) {
+export async function parseXmlDependenciesReport(
+    pathToXmlOutput: string
+): Promise<{ latestVersion: string; majorVersions: string[]; minorVersions: string[] }> {
     const xmlString = readFileSync(pathToXmlOutput, 'utf-8')
     const parser = new xml2js.Parser()
     const parsedOutput = await parser.parseStringPromise(xmlString)
