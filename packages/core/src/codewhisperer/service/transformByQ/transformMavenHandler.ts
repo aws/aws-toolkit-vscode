@@ -209,12 +209,9 @@ export async function getVersionData() {
 }
 
 // run maven 'versions:dependency-updates-aggregate-report' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
-// osTmpDir  -> /user/var/tmp/q2312341234/q-pom-dependency-list/pom.xml
 export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo) {
     // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
-    const baseCommand = 'mvn' || transformByQState.getMavenName()
-
-    // transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
+    const baseCommand = transformByQState.getMavenName() // will be one of: 'mvnw.cmd', './mvnw', 'mvn'
 
     // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
     const args = [

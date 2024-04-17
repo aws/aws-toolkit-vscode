@@ -209,7 +209,10 @@ export async function humanInTheLoopRetryLogic(jobId: string) {
             await finalizeTransformByQ(status)
         }
     } catch (error) {
-        await transformationJobErrorHandler(error)
+        // TODO if we encounter error in HIL, do we stop job?
+        await finalizeTransformByQ(status)
+        // bubble up error to callee function
+        throw error
     }
 }
 

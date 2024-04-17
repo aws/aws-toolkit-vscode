@@ -8,9 +8,10 @@ import * as path from 'path'
 import * as os from 'os'
 import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
+import { fsCommon } from '../../../srcShared/fs'
 
 export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
@@ -41,11 +42,12 @@ export async function createPomCopy(
     fileName: string
 ): Promise<vscode.Uri> {
     const newFilePath = path.join(dirname, fileName)
-    const pomFileContents = readFileSync(pomFileVirtualFileReference.fsPath)
-    if (!existsSync(dirname)) {
-        mkdirSync(dirname)
+    const pomFileContents = await fsCommon.readFileAsString(pomFileVirtualFileReference.fsPath)
+    const directoryExits = await fsCommon.exists(dirname)
+    if (!directoryExits) {
+        await fsCommon.mkdir(dirname)
     }
-    writeFileSync(newFilePath, pomFileContents)
+    await fsCommon.writeFile(newFilePath, pomFileContents)
     return vscode.Uri.file(newFilePath)
 }
 
@@ -63,7 +65,8 @@ export async function getJsonValuesFromManifestFile(
     return {
         hilCapability: jsonValues?.hilType,
         pomFolderName: jsonValues?.pomFolderName,
-        sourcePomVersion: jsonValues?.sourcePomVersion,
+        // TODO remove this forced version
+        sourcePomVersion: jsonValues?.sourcePomVersion || '0.11.4',
         pomArtifactId: jsonValues?.pomArtifactId,
         pomGroupId: jsonValues?.pomGroupId,
     }
@@ -106,7 +109,8 @@ async function setWarningIcon(lineNumber: number = 0) {
     diffEditor?.setDecorations(highlightDecorationType, [
         {
             range: new vscode.Range(lineNumber, 0, lineNumber, 50),
-            hoverMessage: `### This version needs to be updated. Please see the full list details in the chat
+            hoverMessage: `
+            ### This version needs to be updated. Use the chat to select a version
                 - latestVersion: 1.18.32
                 - majorVersion: 1.12.2
         `,
