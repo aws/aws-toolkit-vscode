@@ -191,6 +191,11 @@ export async function startTransformByQ() {
         await humanInTheLoopRetryLogic(jobId)
     } catch (error: any) {
         await transformationJobErrorHandler(error)
+    } finally {
+        if (transformByQState.isCancelled()) {
+            await postTransformationJob()
+            await cleanupTransformationJob()
+        }
     }
 }
 
@@ -348,7 +353,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
 
         // 5) We need to wait for user input
         // This is asynchronous, so we have to wait to be called to complete this loop
-        transformByQState.getChatControllers()?.promptForDependencyHumanInTheLoopIntervention.fire({
+        transformByQState.getChatControllers()?.promptForDependencyHIL.fire({
             tabID: ChatSessionManager.Instance.getSession().tabID,
             dependencies,
         })
@@ -698,6 +703,7 @@ export async function stopTransformByQ(
                     }
                 })
         } catch {
+            console.log('error stopping job')
             void vscode.window
                 .showErrorMessage(
                     CodeWhispererConstants.errorStoppingJobMessage,

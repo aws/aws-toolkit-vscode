@@ -48,7 +48,7 @@ export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: vscode.EventEmitter<any>
     readonly linkClicked: vscode.EventEmitter<any>
     readonly startHumanInTheLoopIntervention: vscode.EventEmitter<any>
-    readonly promptForDependencyHumanInTheLoopIntervention: vscode.EventEmitter<any>
+    readonly promptForDependencyHIL: vscode.EventEmitter<any>
     readonly HILSelectionUploaded: vscode.EventEmitter<any>
 }
 
@@ -106,7 +106,7 @@ export class GumbyController {
             return this.startHILIntervention(data)
         })
 
-        this.chatControllerMessageListeners.promptForDependencyHumanInTheLoopIntervention.event(data => {
+        this.chatControllerMessageListeners.promptForDependencyHIL.event(data => {
             return this.HILPromptForDependency(data)
         })
 
