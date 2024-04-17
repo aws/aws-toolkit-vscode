@@ -30,6 +30,7 @@ export function init(appContext: AmazonQAppInitContext) {
         startHumanInTheLoopIntervention: new vscode.EventEmitter<any>(),
         // eslint-disable-next-line id-length
         promptForDependencyHumanInTheLoopIntervention: new vscode.EventEmitter<any>(),
+        HILDependencySubmitted: new vscode.EventEmitter<any>(),
     }
 
     const dispatcher = new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher())
