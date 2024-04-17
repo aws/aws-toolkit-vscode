@@ -102,7 +102,7 @@ export async function activateShared(context: vscode.ExtensionContext) {
         } else if (AuthUtils.ExtensionUse.instance.wasUpdated()) {
             telemetry.record({ source: 'update' })
         } else {
-            telemetry.record({ source: 'reloaded' })
+            telemetry.record({ source: 'reload' })
         }
 
         const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat
