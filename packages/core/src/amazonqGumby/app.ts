@@ -28,8 +28,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processHumanChatMessage: new vscode.EventEmitter<any>(),
         linkClicked: new vscode.EventEmitter<any>(),
         startHumanInTheLoopIntervention: new vscode.EventEmitter<any>(),
-        // eslint-disable-next-line id-length
-        promptForDependencyHumanInTheLoopIntervention: new vscode.EventEmitter<any>(),
+        promptForDependencyHIL: new vscode.EventEmitter<any>(),
         HILSelectionUploaded: new vscode.EventEmitter<any>(),
     }
 
