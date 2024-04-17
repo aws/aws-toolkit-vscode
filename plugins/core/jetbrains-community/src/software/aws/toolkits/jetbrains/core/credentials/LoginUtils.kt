@@ -31,13 +31,13 @@ import java.io.IOException
 
 private val LOG = LoggerFactory.getLogger("LoginUtils")
 
-sealed class Login {
-    abstract val id: CredentialSourceId
+sealed interface Login {
+    val id: CredentialSourceId
 
     data class BuilderId(
         val scopes: List<String>,
         val onPendingToken: () -> Unit
-    ) : Login() {
+    ) : Login {
         override val id: CredentialSourceId = CredentialSourceId.AwsId
 
         fun loginBuilderId(project: Project): Boolean {
@@ -55,7 +55,7 @@ sealed class Login {
         val scopes: List<String>,
         val onPendingToken: (InteractiveBearerTokenProvider) -> Unit,
         val onError: (String) -> Unit
-    ) : Login() {
+    ) : Login {
         override val id: CredentialSourceId = CredentialSourceId.IamIdentityCenter
         private val configFilesFacade = DefaultConfigFilesFacade()
 
@@ -93,7 +93,7 @@ sealed class Login {
         val profileName: String,
         val accessKey: String,
         val secretKey: String
-    ) : Login() {
+    ) : Login {
         override val id: CredentialSourceId = CredentialSourceId.SharedCredentials
         private val configFilesFacade = DefaultConfigFilesFacade()
 

@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.explorer.webview
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
@@ -44,7 +43,7 @@ import java.util.function.Function
 import javax.swing.JButton
 import javax.swing.JComponent
 
-// This action is used to open the Q webview  development mode.
+// TODO: remove by 4/30, only needed for dev purpose, and action registered in plugin.xml
 class OpenToolkitWebviewAction : DumbAwareAction("View Toolkit Webview") {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
@@ -59,6 +58,7 @@ class OpenToolkitWebviewAction : DumbAwareAction("View Toolkit Webview") {
     }
 }
 
+// TODO: remove by 4/30, only needed for dev purpose
 private class WebviewDialog(private val project: Project) : DialogWrapper(project) {
 
     init {
@@ -115,6 +115,7 @@ class ToolkitWebviewPanel(val project: Project) {
 
 // TODO: STILL WIP thus duplicate code / pending move to plugins/toolkit
 class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, ToolkitWebviewBrowser.DOMAIN) {
+    // TODO: confirm if we need such configuration or the default is fine
     override val jcefBrowser: JBCefBrowserBase by lazy {
         val client = JBCefApp.getInstance().createClient()
         Disposer.register(project, client)
@@ -127,10 +128,12 @@ class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, Toolki
     override val query: JBCefJSQuery = JBCefJSQuery.create(jcefBrowser)
 
     override val handler = Function<String, JBCefJSQuery.Response> {
-        val command = jacksonObjectMapper().readTree(it).get("command").asText()
-        getLogger<ToolkitWebviewBrowser>().debug { "Command received from the browser: $command" }
+        val jsonTree = objectMapper.readTree(it)
+        val command = jsonTree.get("command").asText()
+        LOG.debug { "Data received from Toolkit browser: ${jsonTree.asText()}" }
 
         when (command) {
+            // TODO: handler functions could live in parent class
             "prepareUi" -> {
                 this.prepareBrowser(BrowserState(FeatureId.AwsExplorer))
             }
@@ -142,12 +145,13 @@ class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, Toolki
             }
 
             "loginIdC" -> {
-                val profileName = jacksonObjectMapper().readTree(it).get("profileName").asText()
-                val url = jacksonObjectMapper().readTree(it).get("url").asText()
-                val region = jacksonObjectMapper().readTree(it).get("region").asText()
-                val awsRegion = AwsRegionProvider.getInstance()[region] ?: return@Function null
+                // TODO: make it type safe, maybe (de)serialize into a data class
+                val profileName = jsonTree.get("profileName").asText()
+                val url = jsonTree.get("url").asText()
+                val region = jsonTree.get("region").asText()
+                val awsRegion = AwsRegionProvider.getInstance()[region] ?: error("unknown region returned from Toolkit browser")
 
-                val feature: String = jacksonObjectMapper().readTree(it).get("feature").asText()
+                val feature: String = jsonTree.get("feature").asText()
 
                 val onError: (String) -> Unit = { _ ->
                     Messages.showErrorDialog(project, it, "Toolkit Idc Login Failed")
@@ -181,12 +185,12 @@ class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, Toolki
             }
 
             "loginIAM" -> {
-                // TODO: not type safe
-                val profileName = jacksonObjectMapper().readTree(it).get("profileName").asText()
-                val accessKey = jacksonObjectMapper().readTree(it).get("accessKey").asText()
-                val secretKey = jacksonObjectMapper().readTree(it).get("secretKey").asText()
+                // TODO: make it type safe, maybe (de)serialize into a data class
+                val profileName = jsonTree.get("profileName").asText()
+                val accessKey = jsonTree.get("accessKey").asText()
+                val secretKey = jsonTree.get("secretKey").asText()
 
-                // TODO:
+                // TODO: telemetry, callbacks
                 runInEdt {
                     Login.LongLivedIAM(
                         profileName,
@@ -201,8 +205,7 @@ class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, Toolki
             }
 
             "cancelLogin" -> {
-                // TODO: BearerToken vs. SsoProfile
-//                  TODO:   AwsTelemetry.loginWithBrowser
+                // TODO:   AwsTelemetry.loginWithBrowser
 
                 // Essentially Authorization becomes a mutable that allows browser and auth to communicate canceled
                 // status. There might be a risk of race condition here by changing this global, for which effort
@@ -239,22 +242,19 @@ class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, Toolki
     override fun prepareBrowser(state: BrowserState) {
         // previous login
         val lastLoginIdcInfo = ToolkitAuthManager.getInstance().getLastLoginIdcInfo()
-        val profileName = lastLoginIdcInfo.profileName
-        val startUrl = lastLoginIdcInfo.startUrl
-        val region = lastLoginIdcInfo.region
 
         // available regions
         val regions = AwsRegionProvider.getInstance().allRegionsForService("sso").values
-        val regionJson = jacksonObjectMapper().writeValueAsString(regions)
+        val regionJson = objectMapper.writeValueAsString(regions)
 
         val jsonData = """
             {
                 stage: 'START',
                 regions: $regionJson,
                 idcInfo: {
-                    profileName: '$profileName',
-                    startUrl: '$startUrl',
-                    region: '$region'
+                    profileName: '${lastLoginIdcInfo.profileName}',
+                    startUrl: '${lastLoginIdcInfo.startUrl}',
+                    region: '${lastLoginIdcInfo.region}'
                 },
                 cancellable: ${state.browserCancellable},
                 feature: '${state.feature}'
@@ -297,6 +297,7 @@ class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, Toolki
     }
 
     companion object {
+        private val LOG = getLogger<ToolkitWebviewBrowser>()
         private const val WEB_SCRIPT_URI = "http://webview/js/toolkitGetStart.js"
         private const val DOMAIN = "webview"
     }
