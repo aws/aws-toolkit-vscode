@@ -188,9 +188,9 @@ export async function activate(context: vscode.ExtensionContext) {
                                     )
                                     .then(async resp => {
                                         await telemetry.toolkit_invokeAction.run(async () => {
-                                            if (ExtensionUse.instance.isFirstUse()) {
-                                                telemetry.record({ source: 'FirstStartUp' })
-                                            }
+                                            telemetry.record({
+                                                source: ExtensionUse.instance.isFirstUse() ? 'firstStartUp' : 'none',
+                                            })
 
                                             if (resp === 'Learn More') {
                                                 // Clicking learn more will open the q extension page
@@ -203,7 +203,7 @@ export async function activate(context: vscode.ExtensionContext) {
                                                 telemetry.record({ action: 'installAmazonQ' })
                                                 await installAmazonQExtension.execute()
                                             } else {
-                                                telemetry.record({ action: 'dismiss' })
+                                                telemetry.record({ action: 'dismissQNotification' })
                                             }
 
                                             await globals.context.globalState.update(amazonQInstallDismissedKey, true)
