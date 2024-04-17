@@ -310,9 +310,6 @@ export const transformByQPartiallyCompletedMessage =
 export const noPomXmlFoundMessage =
     'None of your open Java projects are supported by Amazon Q Code Transformation. Currently, Amazon Q can only upgrade Java projects built on Maven. A pom.xml must be present in the root of your project to upgrade it. For more information, see the [Amazon Q documentation](LINK_HERE).'
 
-export const noActiveIdCMessage =
-    'Amazon Q Code Transformation requires an active IAM Identity Center connection. For more information, see the [Code Transformation documentation](LINK_HERE).'
-
 export const noOngoingJobMessage = 'No job is in-progress at the moment'
 
 export const jobInProgressMessage = 'Job is already in-progress'
