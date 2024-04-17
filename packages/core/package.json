@@ -36,7 +36,8 @@
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
         "./login": "./dist/src/login/webview/index.js",
         "./utils": "./dist/src/shared/utilities/index.js",
-        "./feedback": "./dist/src/feedback/index.js"
+        "./feedback": "./dist/src/feedback/index.js",
+        "./telemetry": "./dist/src/shared/telemetry/index.js"
     },
     "contributes": {
         "configuration": {

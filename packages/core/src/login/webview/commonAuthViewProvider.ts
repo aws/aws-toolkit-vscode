@@ -85,7 +85,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             if (webviewView.visible) {
                 telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
             } else {
-                telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
+                telemetry.auth_signInPageClosed.emit({ result: 'Succeeded', passive: true })
             }
         })
 
