@@ -249,11 +249,19 @@ export async function preTransformationUploadCode() {
     return uploadId
 }
 
+//to-do: store this state somewhere
+let PomFileVirtualFileReference: vscode.Uri
+const osTmpDir = os.tmpdir()
+const tmpDependencyListFolderName = 'q-pom-dependency-list'
+const userDependencyUpdateFolderName = 'q-pom-dependency-update'
+const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
+const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
+const pomReplacementDelimiter = '*****'
+
 export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCount: number) {
     console.log('Entering completeHumanInTheLoopWork', jobId, userInputRetryCount)
     let successfulFeedbackLoop = true
 
-    const pomReplacementDelimiter = '*****'
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
 
     const osTmpDir = os.tmpdir()
@@ -280,12 +288,18 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
             throw new Error('artifactId or artifactType is undefined')
         }
 
+        // Let the user know we've entered the loop in the chat
+        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+        })
+
         // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
         const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadHilResultArchive(
             jobId,
             artifactId,
             tmpDownloadsDir
         )
+        PomFileVirtualFileReference = pomFileVirtualFileReference
         const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
 
         // 3) We need to replace version in pom.xml
@@ -313,11 +327,33 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         console.log(latestVersion, majorVersions, minorVersions)
 
         // 5) We need to wait for user input
-        // transformByQState.getChatControllers()?.humanInTheLoopIntervention.fire({
-        //     latestVersion,
-        //     tabID: ChatSessionManager.Instance.getSession().tabID,
-        // })
-        const getUserInputValue = latestVersion
+        // This is asynchronous, so we have to wait to be called to complete this loop
+        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+            latestVersion: [latestVersion],
+        })
+    } catch (err) {
+        // Will probably emit different TYPES of errors from the Human in the loop engagement
+        // catch them here and determine what to do with in parent function
+        console.log('Error in completeHumanInTheLoopWork', err)
+    } finally {
+        // Always delete the dependency output
+        console.log('Deleting temporary dependency output', tmpDependencyListDir)
+        fs.rmdirSync(tmpDependencyListDir, { recursive: true })
+        console.log('Deleting temporary dependency output', userDependencyUpdateDir)
+        fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
+    }
+
+    return true
+}
+
+export async function finishHumanInTheLoop(selectedDependency: string) {
+    console.log('Entering finishHumanInTheLoop', selectedDependency)
+    const pomReplacementDelimiter = '*****'
+    const successfulFeedbackLoop = true
+
+    try {
+        const getUserInputValue = selectedDependency
 
         console.log('Sleeping for 5 seconds since user has entered version')
 
@@ -325,7 +361,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         // original pom.xml is intact somewhere, and run maven compile
         const userInputPomFileVirtualFileReference = await createPomCopy(
             userDependencyUpdateDir,
-            pomFileVirtualFileReference,
+            PomFileVirtualFileReference,
             'pom.xml'
         )
         await replacePomVersion(userInputPomFileVirtualFileReference, getUserInputValue, pomReplacementDelimiter)

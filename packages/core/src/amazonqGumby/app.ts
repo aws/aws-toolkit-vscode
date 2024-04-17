@@ -27,6 +27,9 @@ export function init(appContext: AmazonQAppInitContext) {
         transformationFinished: new vscode.EventEmitter<any>(),
         processHumanChatMessage: new vscode.EventEmitter<any>(),
         linkClicked: new vscode.EventEmitter<any>(),
+        startHumanInTheLoopIntervention: new vscode.EventEmitter<any>(),
+        // eslint-disable-next-line id-length
+        promptForDependencyHumanInTheLoopIntervention: new vscode.EventEmitter<any>(),
     }
 
     const dispatcher = new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher())

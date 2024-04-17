@@ -402,4 +402,95 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
 
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
+
+    public sendHumanInTheLoopInitialMessage(tabID: string) {
+        let message = `I ran into a dependency issue and was not able to successfully complete the transformation.`
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
+                },
+                tabID
+            )
+        )
+
+        message = `Here is the dependency causing the error: `
+
+        const buttons: ChatItemButton[] = []
+        buttons.push({
+            keepCardAfterClick: true,
+            text: 'Open File',
+            id: ButtonActions.OPEN_FILE,
+        })
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
+                    buttons,
+                },
+                tabID
+            )
+        )
+
+        message = `I am searching for other versions available in your maven repository for this dependency...`
+
+        this.sendInProgressMessage(tabID, message)
+    }
+
+    public sendInProgressMessage(tabID: string, message: string, messageName?: string) {
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, { inProgress: true, message: undefined })
+        )
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message,
+            })
+        )
+    }
+
+    public sendDependenciesFoundMessage(dependencies: string[], tabID: string) {
+        const message = `I found ${dependencies.length} other versions which are higher than the one in your code {CURRENT_DEPENDENCY_VERSION}.
+
+Latest major version: {LATEST_MAJOR_VERSION} {OPTIONAL_NOTE}
+Latest minor version: {LATEST_MINOR_VERSION} {OPTIONAL_NOTE}
+
+`
+
+        const dependencyFormOptions: { value: any; label: string }[] = []
+
+        dependencies.forEach(dependency => {
+            dependencyFormOptions.push({
+                value: dependency,
+                label: dependency,
+            })
+        })
+
+        const formItems: ChatItemFormItem[] = []
+        formItems.push({
+            id: 'GumbyTransformDependencyForm',
+            type: 'select',
+            title: 'Please select the version to use:',
+            mandatory: true,
+
+            options: dependencyFormOptions,
+        })
+
+        this.dispatcher.sendChatPrompt(
+            new ChatPrompt(
+                {
+                    message,
+                    formItems: formItems,
+                },
+                'TransformDependencyForm',
+                tabID,
+                false
+            )
+        )
+    }
 }
