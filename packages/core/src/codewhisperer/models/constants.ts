@@ -363,6 +363,8 @@ export const failedToStartJobTooManyJobsNotification =
 export const failedToUploadProjectChatMessage =
     "Sorry, I couldn't upload your project. Please try starting the transformation again."
 
+export const noOngoingJobMessage = 'No job is in-progress at the moment'
+
 export const failedToUploadProjectNotification =
     "Amazon Q couldn't upload your project. Please try starting the transformation again."
 
