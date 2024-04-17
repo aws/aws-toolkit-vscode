@@ -492,14 +492,14 @@ export default defineComponent({
 .urlInput {
     background-color: var(--vscode-input-background);
     width: 100%;
-    height: 18px;
+    height: 15px;
     color: white;
     border: none;
 }
 .iamInput {
     background-color: var(--vscode-input-background);
     width: 100%;
-    height: 28px;
+    height: 15px;
     color: white;
     border: none;
     margin-bottom: 5px;
@@ -509,6 +509,8 @@ export default defineComponent({
     background-color: var(--vscode-input-background);
     width: 100%;
     color: white;
+    margin-bottom: 5px;
+    margin-top: 2px;
 }
 .start-url-error {
     color: #ff0000;

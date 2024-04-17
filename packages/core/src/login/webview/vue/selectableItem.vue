@@ -119,5 +119,7 @@ export default defineComponent({
 }
 .icon {
     padding-right: 10px;
+    display: flex;
+    align-items: center;
 }
 </style>
