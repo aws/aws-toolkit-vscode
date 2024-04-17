@@ -466,7 +466,7 @@ ${codeSnippet}
     public sendDependencyVersionsFoundMessage(versions: DependencyVersions, tabID: string) {
         const message = `I found ${versions.length} other versions which are higher than the one in your code ${versions.currentVersion}.
 
-Latest major version: ${versions.majorVersions[0]}
+Latest major version: ${versions.latestVersion}
 Latest minor version: ${versions.minorVersions[0]}
 
 `
