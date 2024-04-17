@@ -39,11 +39,12 @@ export async function activateShared(context: vscode.ExtensionContext) {
 
     // Avoid activation if older toolkit is installed
     // Amazon Q is only compatible with AWS Toolkit >= 3.0.0
-    // Or AWS Toolkit with a development version
+    // Or AWS Toolkit with a development version. Example: 2.19.0-3413gv
     const toolkit = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
     if (toolkit) {
         const toolkitVersion = semver.coerce(toolkit.packageJSON.version)
-        if (toolkitVersion && toolkitVersion.major < 3) {
+        const isDevVersion = toolkit.packageJSON.version.toString().includes('-')
+        if (toolkitVersion && toolkitVersion.major < 3 && !isDevVersion) {
             await vscode.window.showInformationMessage(
                 `Amazon Q is not compatible with AWS Toolkit ${toolkit.packageJSON.version}. Please upgrade your [AWS Toolkit extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) to the latest version and then restart VS Code.`,
                 'OK'
