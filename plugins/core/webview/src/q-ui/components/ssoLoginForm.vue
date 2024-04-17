@@ -11,7 +11,15 @@
         </svg>
     </button>
     <div class="font-amazon" @keydown.enter="handleContinueClick">
-        <div class="title bottom-small-gap">Sign in with SSO:</div>
+        <div class="bottom-small-gap">
+            <div class="title">Sign in with SSO:</div>
+            <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
+                <div class="hint">
+                    Using CodeCatalyst with AWS Builder ID?
+                    <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
+                </div>
+            </div>
+        </div>
         <div>
             <div class="title no-bold">Profile Name</div>
             <div class="hint">User-specified name used to label credentials locally</div>
@@ -72,13 +80,19 @@
 
 <script lang="ts">
 import {defineComponent} from 'vue'
-import {Region} from "../../model";
+import {Feature, Region} from "../../model";
 
 export default defineComponent({
     name: "ssoForm",
+    props: {
+        app: String
+    },
     computed: {
         regions(): Region[] {
             return this.$store.state.ssoRegions
+        },
+        feature(): Feature {
+            return this.$store.state.feature
         },
         ssoProfile: {
             get() {
@@ -133,15 +147,20 @@ export default defineComponent({
                 command: 'loginIdC',
                 url: this.startUrl,
                 region: this.selectedRegion,
-                profileName: this.ssoProfile
+                profileName: this.ssoProfile,
+                feature: this.feature
             })
             this.$emit('stageChanged', 'AUTHENTICATING')
         },
+        handleCodeCatalystSignin() {
+            this.$emit('stageChanged', 'AUTHENTICATING')
+            window.ideApi.postMessage({
+                command: 'loginBuilderId'
+            })
+        }
     },
     mounted() {
         document.getElementById("ssoProfile")?.focus()
-        window.ideApi.postMessage({ command: 'fetchSsoRegion' })
-        window.ideApi.postMessage({ command: 'fetchLastLoginIdcInfo' })
     }
 })
 </script>
@@ -175,6 +194,10 @@ export default defineComponent({
 
 .region-select {
     padding-left: 6px;
+}
+
+a {
+    color: #29a7ff;
 }
 
 /* Theme specific styles */

@@ -10,9 +10,9 @@
             :is-connected="stage === 'CONNECTED'"
         />
 
-        <LoginOptions :app="app" v-if="stage === 'START'" @stageChanged="mutateStage"/>
-        <SsoLoginForm v-if="stage === 'SSO_FORM'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage"/>
-        <AwsProfileForm v-if="stage === 'AWS_PROFILE'" @backToMenu="handleBackButtonClick"/>
+        <LoginOptions :app="app" v-if="stage === 'START' || stage === 'TOOLKIT_BEARER'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage"/>
+        <SsoLoginForm :app="app" v-if="stage === 'SSO_FORM'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage"/>
+        <AwsProfileForm v-if="stage === 'AWS_PROFILE'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage"/>
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="font-amazon">
@@ -86,6 +86,9 @@ export default defineComponent({
         stage(): Stage {
             return this.$store.state.stage
         },
+        cancellable(): boolean {
+            return this.$store.state.cancellable
+        },
         authorizationCode(): string | undefined {
             return this.$store.state.authorizationCode
         },
@@ -104,6 +107,9 @@ export default defineComponent({
             }
         },
         handleBackButtonClick() {
+            if (this.cancellable && this.stage === 'START') {
+                window.ideApi.postMessage({ command: 'toggleBrowser' })
+            }
             this.mutateStage('START')
         },
         handleCancelButton() {
@@ -117,8 +123,13 @@ export default defineComponent({
         },
     },
     mounted() {
+        console.log('login mounted')
         window.changeTheme = this.changeTheme.bind(this)
+        window.ideApi.postMessage({command: 'prepareUi'})
     },
+    beforeUpdate() {
+        console.log('login beforeUpdate')
+    }
 })
 </script>
 

@@ -5,7 +5,7 @@
 import { createApp } from 'vue'
 import {createStore, Store} from 'vuex'
 import HelloWorld from './components/root.vue'
-import {IdcInfo, Region, Stage, State} from "../model";
+import {Feature, IdcInfo, Region, Stage, State} from "../model";
 import {IdeClient} from "../ideClient";
 import './assets/common.scss'
 
@@ -19,7 +19,9 @@ const store = createStore<State>({
             profileName: '',
             startUrl: '',
             region: '',
-        }
+        },
+        feature: 'Q',
+        cancellable: false
     },
     getters: {},
     mutations: {
@@ -29,8 +31,14 @@ const store = createStore<State>({
         setSsoRegions(state: State, regions: Region[]) {
             state.ssoRegions = regions
         },
+        setCancellable() {
+
+        },
         setAuthorizationCode(state: State, code: string) {
             state.authorizationCode = code
+        },
+        setFeature(state: State, feature: Feature) {
+            state.feature = feature
         },
         setLastLoginIdcInfo(state: State, idcInfo: IdcInfo) {
             console.log('state idc info is updated')
