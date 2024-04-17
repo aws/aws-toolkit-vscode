@@ -79,6 +79,7 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 import DependencyVersions from '../../amazonqGumby/models/dependencies'
 import { IManifestFile } from '../../amazonqFeatureDev/models'
 import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
+import { fsCommon } from '../../srcShared/fs'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -356,12 +357,12 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         // Call resume with "REJECTED" state which will put our service
         // back into the normal flow and will not trigger HIL again for this step
         await restartJob(jobId, 'REJECTED')
-        return false
+        return true
     } finally {
         await sleep(5000)
     }
 
-    return true
+    return false
 }
 
 export async function finishHumanInTheLoop(selectedDependency: string) {
@@ -388,6 +389,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         // IF WE fail, do we allow user to retry? or just fail
         // Maybe have clientside retries?
         await prepareProjectDependencies(uploadFolderInfo)
+        // zipCode side effects deletes the uploadFolderInfo right away
         const uploadPayloadFilePath = await zipCode({
             dependenciesFolder: uploadFolderInfo,
             zipManifest: createZipManifest({
@@ -425,10 +427,10 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         console.log('Error in completeHumanInTheLoopWork', err)
         successfulFeedbackLoop = false
     } finally {
-        // Always delete the dependency output
-        fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
-        // Always delete the dependency output
-        fs.rmdirSync(tmpDependencyListDir, { recursive: true })
+        // Always delete the dependency directories
+        await fsCommon.delete(userDependencyUpdateDir)
+        await fsCommon.delete(tmpDependencyListDir)
+        await fsCommon.delete(tmpDownloadsDir)
     }
 
     return successfulFeedbackLoop
