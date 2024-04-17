@@ -22,11 +22,6 @@ val Q_SCOPES = listOf(
     "codewhisperer:taskassist"
 )
 
-val Q_SCOPES_UNAVAILABLE_BUILDER_ID = listOf(
-    "codewhisperer:transformations",
-    "codewhisperer:taskassist"
-)
-
 val CODECATALYST_SCOPES = listOf(
     "codecatalyst:read_write"
 )
