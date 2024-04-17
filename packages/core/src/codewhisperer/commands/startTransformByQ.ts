@@ -166,7 +166,6 @@ export async function startTransformByQ() {
     let intervalId = undefined
     // Set the default state variables for our store and the UI
     await setTransformationToRunningState()
-    console.log('Starting transformation job')
 
     try {
         // Set web view UI to poll for progress
@@ -323,23 +322,20 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
             path.join(tmpDependencyListDir, localPathToXmlDependencyList)
         )
         console.log(latestVersion, majorVersions, minorVersions)
+        const dependencies = [latestVersion]
+        dependencies.concat(majorVersions)
+        dependencies.concat(minorVersions)
 
         // 5) We need to wait for user input
         // This is asynchronous, so we have to wait to be called to complete this loop
-        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
+        transformByQState.getChatControllers()?.promptForDependencyHumanInTheLoopIntervention.fire({
             tabID: ChatSessionManager.Instance.getSession().tabID,
-            latestVersion: [latestVersion],
+            latestVersion: dependencies,
         })
     } catch (err) {
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function
         console.log('Error in completeHumanInTheLoopWork', err)
-    } finally {
-        // Always delete the dependency output
-        console.log('Deleting temporary dependency output', tmpDependencyListDir)
-        fs.rmdirSync(tmpDependencyListDir, { recursive: true })
-        console.log('Deleting temporary dependency output', userDependencyUpdateDir)
-        fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
     }
 
     return true
@@ -388,6 +384,11 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
                 jobId,
                 uploadArtifactType: 'Dependencies',
             },
+        })
+
+        // inform user in chat
+        transformByQState.getChatControllers()?.HILDependencySubmitted.fire({
+            tabID: ChatSessionManager.Instance.getSession().tabID,
         })
 
         // 8) Once code has been uploaded we will restart the job

@@ -220,8 +220,10 @@ export class Messenger {
         )
     }
 
-    public sendJobSubmittedMessage(tabID: string, disableJobActions: boolean = false) {
-        const message = `I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.`
+    public sendJobSubmittedMessage(tabID: string, disableJobActions: boolean = false, message: string = '') {
+        if (message === '') {
+            message = `I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.`
+        }
 
         const buttons: ChatItemButton[] = []
 
@@ -492,5 +494,15 @@ Latest minor version: {LATEST_MINOR_VERSION} {OPTIONAL_NOTE}
                 false
             )
         )
+    }
+
+    public sendHILContinueMessage(tabID: string) {
+        const message = `Okay. Uploading the relevant jar and resuming the job.`
+        this.sendInProgressMessage(tabID, message)
+    }
+
+    public sendHILResumeMessage(tabID: string) {
+        const message = `I resumed your job. You can track detailed progress in the transformation hub.`
+        this.sendJobSubmittedMessage(tabID, false, message)
     }
 }

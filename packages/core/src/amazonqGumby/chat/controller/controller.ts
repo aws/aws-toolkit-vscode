@@ -48,6 +48,7 @@ export interface ChatControllerEventEmitters {
     readonly linkClicked: vscode.EventEmitter<any>
     readonly startHumanInTheLoopIntervention: vscode.EventEmitter<any>
     readonly promptForDependencyHumanInTheLoopIntervention: vscode.EventEmitter<any>
+    readonly HILDependencySubmitted: vscode.EventEmitter<any>
 }
 
 export class GumbyController {
@@ -106,6 +107,10 @@ export class GumbyController {
 
         this.chatControllerMessageListeners.promptForDependencyHumanInTheLoopIntervention.event(data => {
             return this.promptForDependencyHumanInTheLoopIntervention(data)
+        })
+
+        this.chatControllerMessageListeners.HILDependencySubmitted.event(data => {
+            return this.HILDependencySubmitted(data)
         })
     }
 
@@ -238,6 +243,7 @@ export class GumbyController {
                 await this.transformInitiated({ ...message, tabID: message.tabId })
                 break
             case ButtonActions.CONFIRM_DEPENDENCY_FORM:
+                this.messenger.sendHILContinueMessage(message.tabId)
                 // call back to hitl
                 // eslint-disable-next-line no-case-declarations
                 const selectedDependency = message.formSelectedValues['GumbyTransformDependencyForm']
@@ -364,6 +370,10 @@ export class GumbyController {
                 }
             }
         }
+    }
+
+    private HILDependencySubmitted(message: { tabID: string }) {
+        this.messenger.sendHILContinueMessage(message.tabID)
     }
 
     private openLink(message: { link: string }) {
