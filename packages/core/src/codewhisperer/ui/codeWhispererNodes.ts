@@ -26,6 +26,9 @@ import { cwQuickPickSource, cwTreeNodeSource } from '../commands/types'
 import { AuthUtil } from '../util/authUtil'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
+import { _switchToAmazonQ } from '../../amazonq/explorer/commonNodes'
+
+export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => _switchToAmazonQ)
 
 export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
@@ -68,7 +71,7 @@ export function createReconnect(type: 'item'): DataQuickPickItem<'reconnect'>
 export function createReconnect(type: 'tree'): TreeNode<Command>
 export function createReconnect(type: 'item' | 'tree'): DataQuickPickItem<'reconnect'> | TreeNode<Command>
 export function createReconnect(type: 'item' | 'tree'): any {
-    const label = localize('AWS.codewhisperer.reconnectNode.label', 'Re-authenticate to connect')
+    const label = localize('aws.amazonq.reconnectNode.label', 'Re-authenticate to connect')
     const icon = addColor(getIcon('vscode-debug-disconnect'), 'notificationsErrorIcon.foreground')
 
     switch (type) {
@@ -174,7 +177,7 @@ export function createSettingsNode(): DataQuickPickItem<'openCodeWhispererSettin
         data: 'openCodeWhispererSettings',
         label: 'Open Settings',
         iconPath: getIcon('vscode-settings-gear'),
-        onClick: () => Commands.tryExecute('aws.codeWhisperer.configure'),
+        onClick: () => Commands.tryExecute('aws.amazonq.configure'),
     } as DataQuickPickItem<'openCodeWhispererSettings'>
 }
 

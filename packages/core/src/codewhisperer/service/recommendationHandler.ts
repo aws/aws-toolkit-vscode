@@ -58,10 +58,10 @@ const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () 
     await RecommendationHandler.instance.showRecommendation(1)
 })
 
-const rejectCommand = Commands.declare('aws.codeWhisperer.rejectCodeSuggestion', () => async () => {
+const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () => async () => {
     RecommendationHandler.instance.reportUserDecisions(-1)
 
-    await Commands.tryExecute('aws.codewhisperer.refreshAnnotation')
+    await Commands.tryExecute('aws.amazonq.refreshAnnotation')
 })
 
 const lock = new AsyncLock({ maxPending: 1 })
@@ -280,7 +280,7 @@ export class RecommendationHandler {
                                 void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
-                    await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions', false)
+                    await vscode.commands.executeCommand('aws.amazonq.enableCodeSuggestions', false)
                 }
             } else {
                 errorMessage = error instanceof Error ? error.message : String(error)
@@ -454,7 +454,7 @@ export class RecommendationHandler {
             this.cancelPaginatedRequest()
             this.clearRecommendations()
             this.disposeInlineCompletion()
-            await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+            await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
             this.disposeCommandOverrides()
             // fix a regression that requires user to hit Esc twice to clear inline ghost text
             // because disposing a provider does not clear the UX

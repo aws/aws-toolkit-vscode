@@ -18,6 +18,7 @@ import {
     createFeedbackNode,
     createGitHubNode,
     createDocumentationNode,
+    switchToAmazonQCommand,
 } from './codeWhispererNodes'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
@@ -25,18 +26,12 @@ import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompt
 import { CodeSuggestionsState, vsCodeState } from '../models/model'
 import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
-import { isWeb } from '../../common/webUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { once } from '../../shared/utilities/functionUtils'
 import { getLogger } from '../../shared/logger'
+import { createSignIn, switchToAmazonQNode } from '../../amazonq/explorer/commonNodes'
 
 function getAmazonQCodeWhispererNodes() {
-    // TODO: Remove when web is supported for amazonq
-    let amazonq
-    if (!isWeb()) {
-        amazonq = require('../../amazonq/explorer/amazonQChildrenNodes')
-    }
-
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
 
     if (AuthUtil.instance.isConnectionExpired()) {
@@ -44,7 +39,7 @@ function getAmazonQCodeWhispererNodes() {
     }
 
     if (!AuthUtil.instance.isConnected()) {
-        return [amazonq.createSignIn('item'), createLearnMore()]
+        return [createSignIn('item', switchToAmazonQCommand), createLearnMore()]
     }
 
     if (vsCodeState.isFreeTierLimitReached) {
@@ -75,7 +70,7 @@ function getAmazonQCodeWhispererNodes() {
 
         // Amazon Q + others
         createSeparator('Other Features'),
-        ...(amazonq ? [amazonq.switchToAmazonQNode('item')] : []),
+        switchToAmazonQNode('item', switchToAmazonQCommand),
         createSecurityScan(),
     ]
 }
@@ -99,10 +94,10 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
     return children
 }
 
-export const listCodeWhispererCommandsId = 'aws.codewhisperer.listCommands'
+export const listCodeWhispererCommandsId = 'aws.amazonq.listCommands'
 export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispererCommandsId }, () => () => {
     once(() => telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' }))()
-    Commands.tryExecute('aws.codewhisperer.refreshAnnotation', true)
+    Commands.tryExecute('aws.amazonq.refreshAnnotation', true)
         .then()
         .catch(e => {
             getLogger().debug(

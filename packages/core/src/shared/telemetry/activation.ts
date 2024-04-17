@@ -14,7 +14,7 @@ import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { openSettings, Settings } from '../settings'
-import { TelemetryConfig } from './util'
+import { TelemetryConfig, setupTelemetryId } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
@@ -52,7 +52,7 @@ export async function activate(extensionContext: vscode.ExtensionContext, awsCon
         if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
             showTelemetryNotice(extensionContext)
         }
-
+        await setupTelemetryId(extensionContext)
         await globals.telemetry.start()
     } catch (e) {
         // Only throw in a production build because:

@@ -105,7 +105,7 @@ export class AuthUtil {
             return
         }
         this._isCustomizationFeatureEnabled = value
-        void Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
+        void Commands.tryExecute('aws.amazonq.refreshStatusBar')
     }
 
     public readonly secondaryAuth = getSecondaryAuth(
@@ -134,13 +134,13 @@ export class AuthUtil {
         this.secondaryAuth.onDidChangeActiveConnection(async () => {
             getLogger().info(`codewhisperer: active connection changed`)
             if (this.isValidEnterpriseSsoInUse()) {
-                void vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
+                void vscode.commands.executeCommand('aws.amazonq.notifyNewCustomizations')
             }
             vsCodeState.isFreeTierLimitReached = false
             await Promise.all([
                 // onDidChangeActiveConnection may trigger before these modules are activated.
-                Commands.tryExecute('aws.codeWhisperer.refreshStatusBar'),
-                Commands.tryExecute('aws.codeWhisperer.updateReferenceLog'),
+                Commands.tryExecute('aws.amazonq.refreshStatusBar'),
+                Commands.tryExecute('aws.amazonq.updateReferenceLog'),
             ])
             if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
                 await refreshToolkitQState.execute()
@@ -165,7 +165,7 @@ export class AuthUtil {
                 }
 
                 // start the feature config polling job
-                await vscode.commands.executeCommand('aws.codeWhisperer.fetchFeatureConfigs')
+                await vscode.commands.executeCommand('aws.amazonq.fetchFeatureConfigs')
             }
             await this.setVscodeContextProps()
         })
@@ -190,7 +190,7 @@ export class AuthUtil {
     public async onDeleteConnection(id: string) {
         await this.secondaryAuth.onDeleteConnection(id)
         await this.setVscodeContextProps()
-        await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+        await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
     }
 
     /* Callback used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
@@ -200,7 +200,7 @@ export class AuthUtil {
     public async onUpdateConnection(connection: AwsConnection) {
         await this.auth.onConnectionUpdate(connection)
         await this.setVscodeContextProps()
-        await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+        await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
     }
 
     public reformatStartUrl(startUrl: string | undefined) {
@@ -384,7 +384,7 @@ export class AuthUtil {
 
     public async refreshCodeWhisperer() {
         vsCodeState.isFreeTierLimitReached = false
-        await Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
+        await Commands.tryExecute('aws.amazonq.refreshStatusBar')
     }
 
     public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
