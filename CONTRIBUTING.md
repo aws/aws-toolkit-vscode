@@ -517,7 +517,13 @@ requests just from the model/types.
 
 ### Webview dev-server
 
-Webviews can be hot-reloaded (updated without restarting the extension) by running a developer server provided by webpack. This server is started automatically when running the `Extension` launch configuration. You can also start it by running `npm serve`. Note that only frontend components will be updated; if you change backend code you will still need to restart the development extension.
+Webviews can be refreshed to show changes to `.vue` code when running in Debug mode. You do not have to
+reload the Debug VS Code window.
+
+-   Use `Command Palette` -> `Reload Webviews`
+-   Only the frontend `.vue` changes will be reflected. If changing any backend code you must restart Debug mode.
+
+This works by continuously building the final Vue webview files (`webpack watch`) and then serving them through a local server (`webpack serve`). Whenever a webview is loaded it will grab the latest build from the server.
 
 ### Font generation
 
