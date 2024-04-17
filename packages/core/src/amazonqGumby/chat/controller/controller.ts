@@ -225,7 +225,6 @@ export class GumbyController {
     }
 
     private async formActionClicked(message: any) {
-        console.log(`button was clicked: ${message.action}`)
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, message.action as any)
         switch (typedAction) {
             case ButtonActions.CONFIRM_TRANSFORMATION_FORM:
@@ -332,17 +331,15 @@ export class GumbyController {
     }
 
     private async transformationFinished(tabID: string, jobStatus: string = '') {
-        console.log(`controller.transformationFinished!`)
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
         // at this point job is either completed, partially_completed, cancelled, or failed
         this.messenger.sendJobFinishedMessage(tabID, false)
     }
 
-    private startHILIntervention(data: { tabID: string }) {
+    private startHILIntervention(data: { tabID: string; codeSnippet: string }) {
         // to-do: need to set chat state to something other than IDLE,
         // as otherwise the user could start a new job in this flow
-        console.log(`messenger: startHumanInTheLoopIntervention with tabID ${data.tabID}`)
-        this.messenger.sendHumanInTheLoopInitialMessage(data.tabID)
+        this.messenger.sendHumanInTheLoopInitialMessage(data.tabID, data.codeSnippet)
     }
 
     private HILPromptForDependency(data: { tabID: string; dependencies: DependencyVersions }) {

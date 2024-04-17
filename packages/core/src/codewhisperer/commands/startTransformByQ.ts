@@ -67,6 +67,7 @@ import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 import {
     createPomCopy,
+    getCodeIssueSnippetFromPom,
     getDependenciesFolderInfo,
     getJsonValuesFromManifestFile,
     highlightPomIssueInProject,
@@ -289,11 +290,6 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             throw new Error('artifactId or artifactType is undefined')
         }
 
-        // Let the user know we've entered the loop in the chat
-        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
-            tabID: ChatSessionManager.Instance.getSession().tabID,
-        })
-
         // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
         const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadHilResultArchive(
             jobId,
@@ -302,6 +298,13 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         )
         PomFileVirtualFileReference = pomFileVirtualFileReference
         const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
+
+        const codeSnippet = await getCodeIssueSnippetFromPom(pomFileVirtualFileReference)
+        // Let the user know we've entered the loop in the chat
+        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+            codeSnippet,
+        })
 
         // 3) We need to replace version in pom.xml
         const newPomFileVirtualFileReference = await createPomCopy(

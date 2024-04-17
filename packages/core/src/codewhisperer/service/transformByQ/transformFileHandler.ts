@@ -76,6 +76,17 @@ export async function highlightPomIssueInProject(pomFileVirtualFileReference: vs
     await setWarningIcon(highlightLineNumber)
 }
 
+export async function getCodeIssueSnippetFromPom(pomFileVirtualFileReference: vscode.Uri) {
+    // TODO[gumby]: not great that we read this file multiple times
+    const pomFileContents = readFileSync(pomFileVirtualFileReference.fsPath, 'utf8')
+
+    const dependencyRegEx = /<dependencies\b[^>]*>(.*?)<\/dependencies>/ms
+    const match = dependencyRegEx.exec(pomFileContents)
+    const snippet = match ? match[0] : ''
+
+    return snippet
+}
+
 async function setWarningIcon(lineNumber: number = 0) {
     // Get active diff editor
     const diffEditor = vscode.window.activeTextEditor

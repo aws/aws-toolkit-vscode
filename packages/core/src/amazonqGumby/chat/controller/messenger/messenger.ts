@@ -406,7 +406,7 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
 
-    public sendHumanInTheLoopInitialMessage(tabID: string) {
+    public sendHumanInTheLoopInitialMessage(tabID: string, codeSnippet: string) {
         let message = `I ran into a dependency issue and was not able to successfully complete the transformation.`
 
         this.dispatcher.sendChatMessage(
@@ -419,29 +419,31 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
             )
         )
 
-        message = `Here is the dependency causing the error: 
+        if (codeSnippet !== '') {
+            message = `Here is the dependency causing the error: 
+\`\`\`
+${codeSnippet}
+\`\`\`
+`
 
-'''
-{CODE_SNIPPET}
-'''`
+            const buttons: ChatItemButton[] = []
+            buttons.push({
+                keepCardAfterClick: true,
+                text: 'Open File',
+                id: ButtonActions.OPEN_FILE,
+            })
 
-        const buttons: ChatItemButton[] = []
-        buttons.push({
-            keepCardAfterClick: true,
-            text: 'Open File',
-            id: ButtonActions.OPEN_FILE,
-        })
-
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message,
-                    messageType: 'ai-prompt',
-                    buttons,
-                },
-                tabID
+            this.dispatcher.sendChatMessage(
+                new ChatMessage(
+                    {
+                        message,
+                        messageType: 'ai-prompt',
+                        buttons,
+                    },
+                    tabID
+                )
             )
-        )
+        }
 
         message = `I am searching for other versions available in your maven repository for this dependency...`
 
@@ -464,8 +466,8 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
     public sendDependencyVersionsFoundMessage(versions: DependencyVersions, tabID: string) {
         const message = `I found ${versions.length} other versions which are higher than the one in your code {CURRENT_DEPENDENCY_VERSION}.
 
-Latest major version: ${versions.majorVersions[0]} {OPTIONAL_NOTE}
-Latest minor version: ${versions.minorVersions[0]} {OPTIONAL_NOTE}
+Latest major version: ${versions.majorVersions[0]}
+Latest minor version: ${versions.minorVersions[0]}
 
 `
 
