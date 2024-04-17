@@ -14,7 +14,6 @@ import {
     JDKToTelemetryValue,
 } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
-import { JDK11VersionNumber, JDK8VersionNumber } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import {
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
@@ -140,9 +139,9 @@ async function getProjectsValidToTransform(
             } else {
                 const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
                 const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
-                if (javaVersion === JDK8VersionNumber) {
+                if (javaVersion === CodeWhispererConstants.JDK8VersionNumber) {
                     detectedJavaVersion = JDKVersion.JDK8
-                } else if (javaVersion === JDK11VersionNumber) {
+                } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
                     detectedJavaVersion = JDKVersion.JDK11
                 } else {
                     detectedJavaVersion = JDKVersion.UNSUPPORTED
@@ -179,7 +178,6 @@ export async function validateOpenProjects(
 
     if (javaProjects.length === 0) {
         if (!onProjectFirstOpen) {
-            void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformPreValidationError: 'NoJavaProject',
@@ -193,12 +191,7 @@ export async function validateOpenProjects(
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
         if (!onProjectFirstOpen) {
-            void vscode.window.showErrorMessage(
-                CodeWhispererConstants.noPomXmlFoundMessage.replace(
-                    'LINK_HERE',
-                    CodeWhispererConstants.linkToPrerequisites
-                )
-            )
+            void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundNotification)
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformPreValidationError: 'NonMavenProject',
