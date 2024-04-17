@@ -13,11 +13,9 @@ import * as startTransformByQ from '../../../codewhisperer/commands/startTransfo
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import { getTestWindow } from '../../shared/vscode/window'
-import AdmZip from 'adm-zip'
-import { stopTransformByQMessage } from '../../../codewhisperer/models/constants'
 import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import path from 'path'
+import AdmZip from 'adm-zip'
 import { createTestWorkspaceFolder, toFile } from '../../testUtil'
 import {
     NoJavaProjectsFoundError,
@@ -78,12 +76,6 @@ describe('transformByQ', function () {
     })
 
     it('WHEN job is stopped THEN status is updated to cancelled', async function () {
-        const testWindow = getTestWindow()
-        testWindow.onDidShowMessage(message => {
-            if (message.message === stopTransformByQMessage) {
-                message.selectItem(startTransformByQ.stopTransformByQButton)
-            }
-        })
         model.transformByQState.setToRunning()
         await startTransformByQ.stopTransformByQ('abc-123')
         assert.strictEqual(model.transformByQState.getStatus(), 'Cancelled')
