@@ -427,6 +427,9 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
                 }
 
                 const authorizationCode = await authServer.waitForAuthorization()
+                if (authorizationCode.isErr()) {
+                    throw authorizationCode.err()
+                }
 
                 const tokenRequest: OidcClientPKCE.CreateTokenRequest = {
                     clientId: registration.clientId,
@@ -434,7 +437,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
                     grantType: authorizationGrantType,
                     redirectUri,
                     codeVerifier,
-                    code: authorizationCode,
+                    code: authorizationCode.unwrap(),
                 }
 
                 return this.oidc.createToken(tokenRequest)
