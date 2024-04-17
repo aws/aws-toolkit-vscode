@@ -260,8 +260,6 @@ const pomReplacementDelimiter = '*****'
 
 export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCount: number) {
     console.log('Entering completeHumanInTheLoopWork', jobId, userInputRetryCount)
-    let successfulFeedbackLoop = true
-
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
 
     const osTmpDir = os.tmpdir()
@@ -350,8 +348,8 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
 export async function finishHumanInTheLoop(selectedDependency: string) {
     console.log('Entering finishHumanInTheLoop', selectedDependency)
     const pomReplacementDelimiter = '*****'
-    const successfulFeedbackLoop = true
-
+    let successfulFeedbackLoop = true
+    const jobId = transformByQState.getJobId()
     try {
         const getUserInputValue = selectedDependency
 
@@ -404,10 +402,6 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         // Always delete the dependency output
         console.log('Deleting temporary dependency output', tmpDependencyListDir)
         fs.rmdirSync(tmpDependencyListDir, { recursive: true })
-        // console.log('Deleting temporary dependency output', userDependencyUpdateDir)
-        // fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
-        console.log('Deleting tmpDownloadsDir', tmpDownloadsDir)
-        fs.rmdirSync(tmpDownloadsDir, { recursive: true })
     }
 
     return successfulFeedbackLoop
