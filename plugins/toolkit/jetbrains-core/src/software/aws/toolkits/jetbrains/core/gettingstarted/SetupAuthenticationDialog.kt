@@ -42,7 +42,6 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.UserConfigSsoSessionProfile
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
-import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES_UNAVAILABLE_BUILDER_ID
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getSourceOfEntry
@@ -344,8 +343,7 @@ class SetupAuthenticationDialog(
 
             SetupAuthenticationTabs.BUILDER_ID -> {
                 authType = CredentialSourceId.AwsId
-                val newScopes = if (featureId == FeatureId.Q || featureId == FeatureId.Codewhisperer) scopes - Q_SCOPES_UNAVAILABLE_BUILDER_ID else scopes
-                loginSso(project, SONO_URL, SONO_REGION, newScopes)
+                loginSso(project, SONO_URL, SONO_REGION, scopes)
             }
 
             SetupAuthenticationTabs.IAM_LONG_LIVED -> {

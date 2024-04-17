@@ -11,5 +11,6 @@ import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerCon
 
 fun isFeatureDevAvailable(project: Project): Boolean {
     val connection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.Q)
-    return connection.connectionType == ActiveConnectionType.IAM_IDC && connection is ActiveConnection.ValidBearer
+    return (connection.connectionType == ActiveConnectionType.IAM_IDC || connection.connectionType == ActiveConnectionType.BUILDER_ID) &&
+        connection is ActiveConnection.ValidBearer
 }
