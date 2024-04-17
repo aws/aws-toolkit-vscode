@@ -95,7 +95,7 @@ jobs:
           java-version: '17'
       - name: Generate artifact
         run: |
-          ./gradlew -PideProfileName=${{ matrix.supported_versions }} :plugin-amazonq:buildPlugin --exclude-task buildResharperPlugin
+          ./gradlew -PideProfileName=${{ matrix.supported_versions }} :plugin-amazonq:buildPlugin
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
