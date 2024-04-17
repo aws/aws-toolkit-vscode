@@ -28,7 +28,7 @@ export const qExtensionPageCommand = Commands.declare('aws.toolkit.amazonq.exten
 })
 
 export const dismissQTree = Commands.declare(
-    { id: 'aws.toolkit.amazonq.dismiss', compositeKey: { 1: 'source' } },
+    { id: '_aws.toolkit.amazonq.dismiss', compositeKey: { 1: 'source' } },
     () => async (source: string) => {
         await telemetry.toolkit_invokeAction.run(async () => {
             telemetry.record({
@@ -59,7 +59,7 @@ export function createInstallQNode() {
 }
 
 export function createDismissNode() {
-    return dismissQTree.build().asTreeNode({
+    return dismissQTree.build(cwTreeNodeSource).asTreeNode({
         label: 'Dismiss', // TODO: localize
         iconPath: getIcon('vscode-close'),
     })

@@ -1177,10 +1177,6 @@
                 {
                     "command": "aws.toolkit.amazonq.extensionpage",
                     "when": "false"
-                },
-                {
-                    "command": "aws.toolkit.amazonq.dismiss",
-                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -3458,11 +3454,6 @@
             {
                 "command": "aws.toolkit.amazonq.extensionpage",
                 "title": "Open Amazon Q Extension",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.toolkit.amazonq.dismiss",
-                "title": "Dismiss Q Notification",
                 "category": "%AWS.title%"
             },
             {
