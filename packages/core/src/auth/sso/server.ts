@@ -204,11 +204,9 @@ export class AuthSSOServer {
             new Promise<Result<string>>((_, reject) => {
                 globals.clock.setTimeout(() => {
                     reject(
-                        Result.err(
-                            new ToolkitError('Timed-out waiting for browser login flow to complete', {
-                                code: 'TimedOut',
-                            })
-                        )
+                        new ToolkitError('Timed-out waiting for browser login flow to complete', {
+                            code: 'TimedOut',
+                        })
                     )
                 }, this.authenticationFlowTimeoutInMs)
 

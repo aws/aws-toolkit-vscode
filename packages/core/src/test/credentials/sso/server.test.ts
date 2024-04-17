@@ -116,7 +116,7 @@ describe('AuthSSOServer', function () {
         assert.deepStrictEqual(response.status, 200)
 
         const token = await server.waitForAuthorization()
-        assert.deepStrictEqual(code, token)
+        assert.deepStrictEqual(code, token.unwrap())
     })
 
     it('address is bound to localhost', function () {
