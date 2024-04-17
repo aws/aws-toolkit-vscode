@@ -29,7 +29,8 @@ To develop this project, install these dependencies:
 -   [Git](https://git-scm.com/downloads)
     -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 -   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
--   (required for Web mode) [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher)
+-   [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher)
+    -   Not installing will result in the following error during building: `Error: Invalid problemMatcher reference: $ts-webpack-watch`
 -   (optional) [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 -   (optional) [Docker](https://docs.docker.com/get-docker/)
 
