@@ -391,8 +391,8 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
             },
         })
 
-        // inform user in chat
-        transformByQState.getChatControllers()?.HILDependencySubmitted.fire({
+        // inform user of job resume status in chat
+        transformByQState.getChatControllers()?.HILSelectionUploaded.fire({
             tabID: ChatSessionManager.Instance.getSession().tabID,
         })
 
