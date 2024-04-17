@@ -107,7 +107,7 @@ export class AuthSSOServer {
                 resolve()
             })
 
-            this.server.listen()
+            this.server.listen(0, '127.0.0.1')
         })
     }
 
