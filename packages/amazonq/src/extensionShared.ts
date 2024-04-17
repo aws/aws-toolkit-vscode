@@ -11,6 +11,7 @@ import {
     shutdown as codewhispererShutdown,
     amazonQDismissedKey,
     refreshToolkitQState,
+    AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import {
     ExtContext,
@@ -24,13 +25,14 @@ import {
     globals,
     RegionProvider,
 } from 'aws-core-vscode/shared'
-import { initializeAuth, CredentialsStore, LoginManager } from 'aws-core-vscode/auth'
+import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-core-vscode/auth'
 import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
+import { telemetry } from 'aws-core-vscode/telemetry'
 
 export async function activateShared(context: vscode.ExtensionContext) {
     const contextPrefix = 'amazonq'
@@ -93,6 +95,29 @@ export async function activateShared(context: vscode.ExtensionContext) {
 
     // enable auto suggestions on activation
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
+
+    await telemetry.auth_userState.run(async () => {
+        if (AuthUtils.ExtensionUse.instance.isFirstUse()) {
+            telemetry.record({ source: 'firstStartUp' })
+        } else if (AuthUtils.ExtensionUse.instance.wasUpdated()) {
+            telemetry.record({ source: 'update' })
+        } else {
+            telemetry.record({ source: 'reloaded' })
+        }
+
+        const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat
+        const authKinds: AuthUtils.AuthSimpleId[] = []
+        if (await AuthUtils.hasBuilderId('codewhisperer')) {
+            authKinds.push('builderIdCodeWhisperer')
+        }
+        if (await AuthUtils.hasSso('codewhisperer')) {
+            authKinds.push('identityCenterCodeWhisperer')
+        }
+        telemetry.record({
+            authStatus: authState === 'connected' || authState === 'expired' ? authState : 'notConnected',
+            enabledAuthConnections: authKinds.join(','),
+        })
+    })
 }
 
 export async function deactivateShared() {
