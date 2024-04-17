@@ -32,7 +32,7 @@ import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
-import { telemetry } from 'aws-core-vscode/telemetry'
+import { telemetry, ExtStartUpSource } from 'aws-core-vscode/telemetry'
 
 export async function activateShared(context: vscode.ExtensionContext) {
     const contextPrefix = 'amazonq'
@@ -97,12 +97,13 @@ export async function activateShared(context: vscode.ExtensionContext) {
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
 
     await telemetry.auth_userState.run(async () => {
+        telemetry.record({ passive: true })
         if (AuthUtils.ExtensionUse.instance.isFirstUse()) {
-            telemetry.record({ source: 'firstStartUp' })
+            telemetry.record({ source: ExtStartUpSource.FirstStartUp })
         } else if (AuthUtils.ExtensionUse.instance.wasUpdated()) {
-            telemetry.record({ source: 'update' })
+            telemetry.record({ source: ExtStartUpSource.Update })
         } else {
-            telemetry.record({ source: 'reload' })
+            telemetry.record({ source: ExtStartUpSource.Reload })
         }
 
         const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat

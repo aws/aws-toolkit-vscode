@@ -203,3 +203,13 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
         getLogger().error(`Erro while setting up telemetry id ${err}`)
     }
 }
+
+/**
+ * Potentially helpful values for the 'source' field in telemetry.
+ */
+export enum ExtStartUpSource {
+    FirstStartUp = 'firstStartUp',
+    Update = 'update',
+    Reload = 'reload',
+    None = 'none',
+}

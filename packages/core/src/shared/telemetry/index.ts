@@ -5,3 +5,4 @@
 
 export { activate } from './activation'
 export { telemetry } from './telemetry'
+export { ExtStartUpSource } from './util'
