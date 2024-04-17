@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q CodeTransform may fail if JAVA_HOME has leading or trailing whitespace"
+}
