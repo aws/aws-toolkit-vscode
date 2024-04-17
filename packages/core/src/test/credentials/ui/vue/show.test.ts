@@ -135,7 +135,7 @@ describe('emitWebviewClosed()', function () {
 
             assertTelemetry('auth_addedConnections', {
                 result: 'Failed',
-                source: 'firstStartup',
+                source: 'firstStartUp',
             })
         })
 
@@ -147,7 +147,7 @@ describe('emitWebviewClosed()', function () {
 
             assertTelemetry('auth_addedConnections', {
                 result: 'Succeeded',
-                source: 'firstStartup',
+                source: 'firstStartUp',
                 enabledAuthConnections: buildCommaDelimitedString(authsInitial),
                 newEnabledAuthConnections: undefined,
             })
@@ -161,7 +161,7 @@ describe('emitWebviewClosed()', function () {
 
             assertTelemetry('auth_addedConnections', {
                 result: 'Failed',
-                source: 'firstStartup',
+                source: 'firstStartUp',
                 enabledAuthConnections: undefined,
                 newEnabledAuthConnections: undefined,
             })
