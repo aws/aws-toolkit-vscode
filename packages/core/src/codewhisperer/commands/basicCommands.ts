@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { CodewhispererCodeScanIssueApplyFix, Component, telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
+import { Commands, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
@@ -73,6 +73,9 @@ export const enableCodeSuggestions = Commands.declare(
 export const showReferenceLog = Commands.declare(
     { id: 'aws.amazonq.openReferencePanel', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        if (_ !== placeholder) {
+            source = 'ellipsesMenu'
+        }
         await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-reference-log')
     }
 )
@@ -351,6 +354,9 @@ export const applySecurityFix = Commands.declare(
 export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.amazonq.signout', compositeKey: { 1: 'source' } },
     (auth: AuthUtil) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        if (_ !== placeholder) {
+            source = 'ellipsesMenu'
+        }
         await auth.secondaryAuth.deleteConnection()
         return switchToAmazonQSignInCommand.execute(cwSignOut)
     }

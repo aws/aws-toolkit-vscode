@@ -98,9 +98,13 @@ export async function activateShared(context: vscode.ExtensionContext) {
 
     await telemetry.auth_userState.run(async () => {
         telemetry.record({ passive: true })
-        if (AuthUtils.ExtensionUse.instance.isFirstUse()) {
+
+        const firstUse = AuthUtils.ExtensionUse.instance.isFirstUse()
+        const wasUpdated = AuthUtils.ExtensionUse.instance.wasUpdated()
+
+        if (firstUse) {
             telemetry.record({ source: ExtStartUpSource.FirstStartUp })
-        } else if (AuthUtils.ExtensionUse.instance.wasUpdated()) {
+        } else if (wasUpdated) {
             telemetry.record({ source: ExtStartUpSource.Update })
         } else {
             telemetry.record({ source: ExtStartUpSource.Reload })

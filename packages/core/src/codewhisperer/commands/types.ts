@@ -16,6 +16,8 @@ export const amazonQChatSource = 'amazonQChat'
 export const firstStartUpSource = ExtStartUpSource.FirstStartUp
 /** Indicates a CodeWhisperer command was executed as a result of signing out */
 export const cwSignOut = 'codewhispererSignOut'
+/** Indicates a CodeWhisperer command was executed as a result of selecting an ellipses menu item */
+export const cwEllipsesMenu = 'ellipsesMenu'
 
 /**
  * Indicates what caused the CodeWhisperer command to be executed, since a command can be executed from different "sources"
@@ -32,3 +34,4 @@ export type CodeWhispererSource =
     | typeof amazonQChatSource
     | typeof firstStartUpSource
     | typeof cwSignOut
+    | typeof cwEllipsesMenu

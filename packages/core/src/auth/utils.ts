@@ -681,6 +681,17 @@ export class ExtensionUse {
 }
 
 /**
+ *  Simple readable ID for telemetry reporting
+ */
+export type AuthSimpleId =
+    | 'sharedCredentials'
+    | 'builderIdCodeWhisperer'
+    | 'builderIdCodeCatalyst'
+    | 'identityCenterCodeWhisperer'
+    | 'identityCenterCodeCatalyst'
+    | 'identityCenterExplorer'
+
+/**
  * Different places the Add Connection command could be executed from.
  *
  * Useful for telemetry.
