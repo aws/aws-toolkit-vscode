@@ -18,7 +18,6 @@ import {
     sessionPlanProgress,
     FolderInfo,
     TransformationCandidateProject,
-    TransformByQStatus,
     ZipManifest,
 } from '../models/model'
 import {
@@ -76,14 +75,13 @@ import {
     writeLogs,
 } from '../service/transformByQ/transformFileHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
-import { maxHumanInTheLoopAttempts } from '../models/constants'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
 
 let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
 let pollUIIntervalId: string | number | NodeJS.Timer | undefined = undefined
-let humanInTheLoopRetries = 0
+let humanInTheLoopRetryCount = 0
 
 export async function startTransformByQWithProgress() {
     await startTransformByQ()
@@ -177,12 +175,8 @@ export async function startTransformByQ() {
             )
         }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
 
-        console.log('CreateCodeUploadUrl job')
-
         // step 1: CreateCodeUploadUrl and upload code
         const uploadId = await preTransformationUploadCode()
-
-        console.log('About to call startTransformationJob job', uploadId)
 
         // step 2: StartJob and store the returned jobId in TransformByQState
         const jobId = await startTransformationJob(uploadId)
@@ -192,40 +186,38 @@ export async function startTransformByQ() {
 
         // step 4: poll until artifacts are ready to download
         await humanInTheLoopRetryLogic(jobId)
-
-        // If not HUMAN in the loop, then go to finish the job directly
-        // otherwise we are waiting on userInput
-        const status = transformByQState.getPolledJobStatus()
-        if (status !== TransformByQStatus.WaitingUserInput) {
-            await finalizeTransformByQ(status)
-        }
     } catch (error: any) {
         await transformationJobErrorHandler(error)
     }
 }
 
+/**
+ *  The whileLoop condition WaitingUserInput is set inside pollTransformationStatusUntilComplete
+ *  when we see a `PAUSED` state. If this is the case once completeHumanInTheLoopWork the
+ *  WaitingUserInput should still be set until pollTransformationStatusUntilComplete is called again.
+ *  We only don't want to continue calling pollTransformationStatusUntilComplete if there is no HIL
+ *  state ever engaged or we have reached our max amount of HIL retries.
+ */
 export async function humanInTheLoopRetryLogic(jobId: string) {
     try {
-        /**
-         *  The whileLoop condition WaitingUserInput is set inside pollTransformationStatusUntilComplete
-         *  when we see a `PAUSED` state. If this is the case once completeHumanInTheLoopWork the
-         *  WaitingUserInput should still be set until pollTransformationStatusUntilComplete is called again.
-         *  We only don't want to continue calling pollTransformationStatusUntilComplete if there is no HIL
-         *  state ever engaged or we have reached our max amount of HIL retries.
-         */
+        // IF we reached our max attempts, stop the job
+        if (humanInTheLoopRetryCount > CodeWhispererConstants.maxHumanInTheLoopAttempts) {
+            await finalizeTransformByQ(transformByQState.getPolledJobStatus())
+        }
+
         const status = await pollTransformationStatusUntilComplete(jobId)
         if (status === 'PAUSED') {
-            const humanInTheLoopStatus = await completeHumanInTheLoopWork(jobId, humanInTheLoopRetries)
-            humanInTheLoopRetries++
-            console.log('Human in the loop status was: ', humanInTheLoopStatus)
+            await completeHumanInTheLoopWork(jobId)
+            humanInTheLoopRetryCount++
+        } else {
+            await finalizeTransformByQ(status)
         }
-        return status
     } catch (error) {
         await transformationJobErrorHandler(error)
     }
 }
+
 export async function finalizeTransformByQ(status: string) {
-    console.log('finalizeTransformByQ')
     try {
         // Set the result state variables for our store and the UI
         // At this point job should be completed or partially completed
@@ -277,8 +269,7 @@ const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderNa
 const tmpDownloadsDir = path.join(osTmpDir, tmpDownloadsFolderName)
 const pomReplacementDelimiter = '*****'
 
-export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCount: number) {
-    console.log('Entering completeHumanInTheLoopWork', jobId, userInputRetryCount)
+export async function completeHumanInTheLoopWork(jobId: string) {
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
 
     try {
@@ -333,10 +324,7 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         const { latestVersion, majorVersions, minorVersions } = await parseXmlDependenciesReport(
             path.join(tmpDependencyListDir, localPathToXmlDependencyList)
         )
-        console.log(latestVersion, majorVersions, minorVersions)
-        const dependencies = [latestVersion]
-        dependencies.concat(majorVersions)
-        dependencies.concat(minorVersions)
+        const dependencies = [latestVersion, ...majorVersions, ...minorVersions]
 
         // 5) We need to wait for user input
         // This is asynchronous, so we have to wait to be called to complete this loop
@@ -348,17 +336,12 @@ export async function completeHumanInTheLoopWork(jobId: string, userInputRetryCo
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function
         console.log('Error in completeHumanInTheLoopWork', err)
-    } finally {
-        // Always delete the dependency output
-        console.log('Deleting temporary dependency output', tmpDependencyListDir)
-        fs.rmdirSync(tmpDependencyListDir, { recursive: true })
     }
 
     return true
 }
 
 export async function finishHumanInTheLoop(selectedDependency: string) {
-    console.log('Entering finishHumanInTheLoop', selectedDependency)
     let successfulFeedbackLoop = true
     const jobId = transformByQState.getJobId()
     try {
@@ -392,7 +375,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
             }),
         })
         // TODO map `CLIENT_INSTRUCTIONS` to `ClientInstructions` through UploadArtifactType
-        const uploadId = await uploadPayload(uploadPayloadFilePath, {
+        await uploadPayload(uploadPayloadFilePath, {
             transformationUploadContext: {
                 jobId,
                 uploadArtifactType: 'Dependencies',
@@ -405,17 +388,12 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         })
 
         // 8) Once code has been uploaded we will restart the job
-        const response = await restartJob(jobId)
-        console.log('Finished human in the loop work', uploadId, response)
+        // TODO response returns "RESUMED"
+        await restartJob(jobId)
 
         await sleep(1500)
 
-        if (humanInTheLoopRetries > maxHumanInTheLoopAttempts) {
-            // TODO mov maxHumanInTheLoopAttempts into humanInTheLoopRetryLogic
-            void finalizeTransformByQ('Done')
-        } else {
-            void humanInTheLoopRetryLogic(jobId)
-        }
+        void humanInTheLoopRetryLogic(jobId)
     } catch (err) {
         // Will probably emit different TYPES of errors from the Human in the loop engagement
         // catch them here and determine what to do with in parent function
@@ -423,8 +401,9 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         successfulFeedbackLoop = false
     } finally {
         // Always delete the dependency output
-        console.log('Deleting temporary dependency output', userDependencyUpdateDir)
         fs.rmdirSync(userDependencyUpdateDir, { recursive: true })
+        // Always delete the dependency output
+        fs.rmdirSync(tmpDependencyListDir, { recursive: true })
     }
 
     return successfulFeedbackLoop

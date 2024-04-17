@@ -122,9 +122,7 @@ export async function uploadArtifactToS3(
 }
 
 export async function restartJob(jobId: string) {
-    console.log('In restartJob', jobId)
     try {
-        const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
             transformationJobId: jobId,
             userActionStatus: 'COMPLETED', // can be "COMPLETED" or "REJECTED"
@@ -139,7 +137,6 @@ export async function restartJob(jobId: string) {
             //     result: MetadataResult.Pass,
             // })
             // always store request ID, but it will only show up in a notification if an error occurs
-            console.log('Resume transformation success', apiStartTime, response)
             return response.transformationStatus
         }
     } catch (e: any) {
@@ -291,7 +288,6 @@ interface IZipCodeParams {
     zipManifest: ZipManifest | HilZipManifest
 }
 export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePath, zipManifest }: IZipCodeParams) {
-    console.log('In zipCode', dependenciesFolder, modulePath, zipManifest)
     let tempFilePath = undefined
     let zipStartTime = undefined
     let logFilePath = undefined
@@ -606,7 +602,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 }
 
 export function getArtifactsFromProgressUpdate(progressUpdate: TransformationProgressUpdate) {
-    console.log('In getDownloadArtifactIdentifiers', progressUpdate)
     const artifactType = progressUpdate.downloadArtifacts?.[0]?.downloadArtifactType
     const artifactId = progressUpdate.downloadArtifacts?.[0]?.downloadArtifactId
     return {
@@ -616,7 +611,6 @@ export function getArtifactsFromProgressUpdate(progressUpdate: TransformationPro
 }
 
 export function findDownloadArtifactStep(transformationSteps: TransformationSteps) {
-    console.log('In findDownloadArtifactStep', transformationSteps)
     for (let i = 0; i < transformationSteps.length; i++) {
         const progressUpdates = transformationSteps[i].progressUpdates
         if (progressUpdates?.length) {
@@ -649,7 +643,6 @@ export async function downloadResultArchive({
     downloadArtifactId,
     pathToArchive,
 }: IDownloadResultArchiveParams) {
-    console.log('In downloadHilResultArchive', jobId, downloadArtifactId, pathToArchive)
     let downloadErrorMessage = undefined
     const cwStreamingClient = await createCodeWhispererChatStreamingClient()
     try {
@@ -686,7 +679,6 @@ export async function downloadResultArchive({
 }
 
 export async function downloadHilResultArchive(jobId: string, downloadArtifactId: string, pathToArchiveDir: string) {
-    console.log('Inside downloadResultArchive artifacts', jobId, downloadArtifactId, pathToArchiveDir)
     pathToArchiveDir =
         '/Users/nardeck/workplace/gumby-prod/aws-toolkit-vscode/packages/core/src/amazonqGumby/mock/downloadHilZip'
     // if (!fs.existsSync(pathToArchiveDir)) {

@@ -211,43 +211,36 @@ export async function getVersionData() {
 // run maven 'versions:dependency-updates-aggregate-report' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 // osTmpDir  -> /user/var/tmp/q2312341234/q-pom-dependency-list/pom.xml
 export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo) {
-    console.log('In runMavenDependencyUpdateCommands', dependenciesFolder)
-    try {
-        // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
-        const baseCommand = 'mvn' || transformByQState.getMavenName()
+    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+    const baseCommand = 'mvn' || transformByQState.getMavenName()
 
-        // transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
+    // transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
-        // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
-        const args = [
-            'versions:dependency-updates-aggregate-report',
-            `-DoutputDirectory=${dependenciesFolder.path}`,
-            '-DonlyProjectDependencies=true',
-            '-DdependencyUpdatesReportFormats=xml',
-        ]
-        let environment = process.env
-        // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
-        if (transformByQState.getJavaHome() !== undefined) {
-            environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
-        }
+    // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
+    const args = [
+        'versions:dependency-updates-aggregate-report',
+        `-DoutputDirectory=${dependenciesFolder.path}`,
+        '-DonlyProjectDependencies=true',
+        '-DdependencyUpdatesReportFormats=xml',
+    ]
+    let environment = process.env
+    // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
+    if (transformByQState.getJavaHome() !== undefined) {
+        environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+    }
 
-        const spawnResult = spawnSync(baseCommand, args, {
-            // default behavior is looks for pom.xml in this root
-            cwd: dependenciesFolder.path,
-            shell: true,
-            encoding: 'utf-8',
-            env: environment,
-            maxBuffer: CodeWhispererConstants.maxBufferSize,
-        })
+    const spawnResult = spawnSync(baseCommand, args, {
+        // default behavior is looks for pom.xml in this root
+        cwd: dependenciesFolder.path,
+        shell: true,
+        encoding: 'utf-8',
+        env: environment,
+        maxBuffer: CodeWhispererConstants.maxBufferSize,
+    })
 
-        if (spawnResult.status !== 0) {
-            throw new Error(spawnResult.stderr)
-        } else {
-            console.log(`Maven succeeded: `, spawnResult.stdout)
-            return spawnResult.stdout
-        }
-    } catch (err) {
-        console.log('Error in runMavenDependencyUpdateCommands', err)
-        throw err
+    if (spawnResult.status !== 0) {
+        throw new Error(spawnResult.stderr)
+    } else {
+        return spawnResult.stdout
     }
 }

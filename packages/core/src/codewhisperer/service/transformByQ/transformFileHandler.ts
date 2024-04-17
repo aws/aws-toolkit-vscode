@@ -40,53 +40,34 @@ export async function createPomCopy(
     pomFileVirtualFileReference: vscode.Uri,
     fileName: string
 ): Promise<vscode.Uri> {
-    console.log('In createPomCopy', dirname, pomFileVirtualFileReference, fileName)
-    try {
-        const newFilePath = path.join(dirname, fileName)
-        const pomFileContents = readFileSync(pomFileVirtualFileReference.fsPath)
-        if (!existsSync(dirname)) {
-            mkdirSync(dirname)
-        }
-        writeFileSync(newFilePath, pomFileContents)
-        return vscode.Uri.file(newFilePath)
-    } catch (err) {
-        console.log('Error creating pom copy', err)
-        throw err
+    const newFilePath = path.join(dirname, fileName)
+    const pomFileContents = readFileSync(pomFileVirtualFileReference.fsPath)
+    if (!existsSync(dirname)) {
+        mkdirSync(dirname)
     }
+    writeFileSync(newFilePath, pomFileContents)
+    return vscode.Uri.file(newFilePath)
 }
 
 export async function replacePomVersion(pomFileVirtualFileReference: vscode.Uri, version: string, delimiter: string) {
-    console.log('In replacePomVersion', pomFileVirtualFileReference, version, delimiter)
-    try {
-        const pomFileText = readFileSync(pomFileVirtualFileReference.fsPath, 'utf-8')
-        const pomFileTextWithNewVersion = pomFileText.replace(delimiter, version)
-        writeFileSync(pomFileVirtualFileReference.fsPath, pomFileTextWithNewVersion)
-    } catch (err) {
-        console.log('Error replacing pom version', err)
-        throw err
-    }
+    const pomFileText = readFileSync(pomFileVirtualFileReference.fsPath, 'utf-8')
+    const pomFileTextWithNewVersion = pomFileText.replace(delimiter, version)
+    writeFileSync(pomFileVirtualFileReference.fsPath, pomFileTextWithNewVersion)
 }
 
 export async function getJsonValuesFromManifestFile(
     manifestFileVirtualFileReference: vscode.Uri
 ): Promise<IManifestFile> {
-    console.log('Inside getJsonValuesFromManifestFile', manifestFileVirtualFileReference)
-    try {
-        const manifestFileContents = readFileSync(manifestFileVirtualFileReference.fsPath, 'utf-8')
-        const jsonValues = JSON.parse(manifestFileContents.toString())
-        return {
-            hilType: jsonValues?.hilType,
-            pomFolderName: jsonValues?.pomFolderName,
-            sourcePomVersion: jsonValues?.sourcePomVersion,
-        }
-    } catch (err) {
-        console.log('Error parsing manifest.json file', err)
-        throw err
+    const manifestFileContents = readFileSync(manifestFileVirtualFileReference.fsPath, 'utf-8')
+    const jsonValues = JSON.parse(manifestFileContents.toString())
+    return {
+        hilType: jsonValues?.hilType,
+        pomFolderName: jsonValues?.pomFolderName,
+        sourcePomVersion: jsonValues?.sourcePomVersion,
     }
 }
 
 export async function highlightPomIssueInProject(pomFileVirtualFileReference: vscode.Uri, currentVersion: string) {
-    console.log('In highlightPomIssueInProject', pomFileVirtualFileReference, currentVersion)
     // Open the editor and set this pom to activeTextEditor
     await vscode.window.showTextDocument(pomFileVirtualFileReference)
 
@@ -141,21 +122,15 @@ function findLineNumber(uri: vscode.Uri, searchString: string): number | undefin
 }
 
 export async function parseXmlDependenciesReport(pathToXmlOutput: string) {
-    console.log('In parseXmlDependenciesReport', pathToXmlOutput)
-    try {
-        const xmlString = readFileSync(pathToXmlOutput, 'utf-8')
-        const parser = new xml2js.Parser()
-        const parsedOutput = await parser.parseStringPromise(xmlString)
+    const xmlString = readFileSync(pathToXmlOutput, 'utf-8')
+    const parser = new xml2js.Parser()
+    const parsedOutput = await parser.parseStringPromise(xmlString)
 
-        const report = parsedOutput.DependencyUpdatesReport.dependencies[0].dependency[0]
+    const report = parsedOutput.DependencyUpdatesReport.dependencies[0].dependency[0]
 
-        const latestVersion = report.lastVersion[0]
-        const majorVersions = report.majors[0].major
-        const minorVersions = report.minors[0].minor
+    const latestVersion = report.lastVersion[0]
+    const majorVersions = report.majors[0].major
+    const minorVersions = report.minors[0].minor
 
-        return { latestVersion, majorVersions, minorVersions }
-    } catch (err) {
-        console.log('Error in parseXmlDependenciesReport', err)
-        throw err
-    }
+    return { latestVersion, majorVersions, minorVersions }
 }
