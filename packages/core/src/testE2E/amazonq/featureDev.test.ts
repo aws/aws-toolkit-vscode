@@ -19,11 +19,11 @@ describe('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
     let tab: Messenger
 
-    const maxTestDuration = 600000
+    const maxTestDuration = 300000
     const prompt = 'Implement fibonacci in python'
     const iterateApproachPrompt = prompt + ' and add a unit test'
     const codegenApproachPrompt = prompt + ' and add a readme that describes the changes'
-    const tooManyRequestsWaitTime = 100000
+    const tooManyRequestsWaitTime = 600000
 
     before(async function () {
         /**
@@ -88,8 +88,8 @@ describe('Amazon Q Feature Dev', function () {
                 return tab.getChatItems().some(chatItem => chatItem.body === text)
             },
             {
-                waitIntervalInMs: 250,
-                waitTimeoutInMs: 2000,
+                waitIntervalInMs: 2500,
+                waitTimeoutInMs: 20000,
             }
         )
     }
