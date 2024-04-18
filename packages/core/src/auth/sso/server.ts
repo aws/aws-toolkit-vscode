@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as path from 'path'
 import http from 'http'
 import { getLogger } from '../../shared/logger'
 import { ToolkitError } from '../../shared/errors'
 import { Socket } from 'net'
 import globals from '../../shared/extensionGlobals'
 import { Result } from '../../shared/utilities/result'
+import { FileSystemCommon } from '../../srcShared/fs'
 
 export class MissingPortError extends ToolkitError {
     constructor() {
@@ -45,8 +47,8 @@ export class AuthError extends ToolkitError {
  * back to VSCode
  */
 export class AuthSSOServer {
-    public baseUrl = `http://127.0.0.1`
-    private oauthCallback = '/'
+    private baseUrl = `http://127.0.0.1`
+    private oauthCallback = '/oauth/callback'
     private authenticationFlowTimeoutInMs = 600000
     private authenticationWarningTimeoutInMs = 60000
 
@@ -55,14 +57,18 @@ export class AuthSSOServer {
     private server: http.Server
     private connections: Socket[]
 
-    constructor(private readonly state: string, private readonly vscodeUriPath: string) {
+    constructor(
+        private readonly state: string,
+        private readonly vscodeUriPath: string,
+        private readonly scopes: string[]
+    ) {
         this.authenticationPromise = new Promise<Result<string>>(resolve => {
             this.deferred = { resolve }
         })
 
         this.connections = []
 
-        this.server = http.createServer((req, res) => {
+        this.server = http.createServer(async (req, res) => {
             res.setHeader('Access-Control-Allow-Methods', 'GET')
 
             if (!req.url) {
@@ -76,7 +82,22 @@ export class AuthSSOServer {
                     break
                 }
                 default: {
-                    getLogger().info('AuthSSOServer: missing redirection path name')
+                    if (url.pathname.startsWith('/resources')) {
+                        const iconPath = path.join(globals.context.extensionUri.fsPath, url.pathname)
+                        await this.loadResource(res, iconPath)
+                        break
+                    }
+                    const resourcePath = path.join(
+                        globals.context.extensionUri.fsPath,
+                        'dist',
+                        'src',
+                        'auth',
+                        'sso',
+                        'media',
+                        url.pathname
+                    )
+                    await this.loadResource(res, resourcePath)
+                    break
                 }
             }
         })
@@ -132,6 +153,10 @@ export class AuthSSOServer {
     }
 
     public get redirectUri(): string {
+        return `${this.baseLocation}${this.oauthCallback}`
+    }
+
+    private get baseLocation(): string {
         return `${this.baseUrl}:${this.getPort()}`
     }
 
@@ -147,6 +172,36 @@ export class AuthSSOServer {
             return parseInt(addr)
         } else {
             throw new MissingPortError()
+        }
+    }
+
+    private redirect(
+        res: http.ServerResponse,
+        params:
+            | {
+                  productName: string
+                  scopes: string
+                  redirectUri: string
+              }
+            | {
+                  error: string
+              }
+    ) {
+        const redirectUrl = `${this.baseLocation}/index.html?${new URLSearchParams(params).toString()}`
+        res.setHeader('Location', redirectUrl)
+        res.writeHead(302)
+        res.end()
+    }
+
+    private async loadResource(res: http.ServerResponse, resourcePath: string) {
+        try {
+            const file = await FileSystemCommon.instance.readFile(resourcePath)
+            res.writeHead(200)
+            res.end(file)
+        } catch (e) {
+            getLogger().error(`Unable to find ${resourcePath}`)
+            res.writeHead(404)
+            res.end()
         }
     }
 
@@ -176,23 +231,19 @@ export class AuthSSOServer {
         }
 
         this.deferred?.resolve(Result.ok(code))
-        res.setHeader('Content-Type', 'text/html')
-        res.writeHead(200)
-        res.end(`
-            <html>
-                <body>
-                    <p>Authenticated successfully. You may now close this window.</p>
-                    <script>
-                        window.location.replace('${this.vscodeUriPath}')
-                    </script>
-                </body>
-            </html>`)
+
+        this.redirect(res, {
+            productName: 'AWS Toolkit for VSCode',
+            scopes: this.scopes.join(', '),
+            redirectUri: this.vscodeUriPath,
+        })
     }
 
     private handleRequestRejection(res: http.ServerResponse, error: ToolkitError) {
         // Notify the user
-        res.writeHead(400)
-        res.end(error.message)
+        this.redirect(res, {
+            error: error.message,
+        })
 
         // Send the response back to the editor
         this.deferred?.resolve(Result.err(error))

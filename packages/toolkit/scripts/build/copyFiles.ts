@@ -32,6 +32,10 @@ const tasks: CopyTask[] = [
     { target: path.join('../core', 'resources'), destination: path.join('..', 'resources') },
     { target: path.join('../core', 'package.nls.json'), destination: path.join('..', 'package.nls.json') },
     { target: path.join('../core', 'src', 'templates'), destination: path.join('src', 'templates') },
+    {
+        target: path.join('../core', 'src', 'auth', 'sso', 'media'),
+        destination: path.join('src', 'auth', 'sso', 'media'),
+    },
 
     // SSM
     {
