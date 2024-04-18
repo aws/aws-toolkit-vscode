@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtStartUpSource } from '../../shared/telemetry'
+import { ExtStartUpSources } from '../../shared/telemetry'
 import { CompositeKey, Commands, vscodeComponent } from '../../shared/vscode/commands2'
 
 /** Indicates a CodeWhisperer command was executed through a tree node */
@@ -13,7 +13,7 @@ export const cwQuickPickSource = 'codewhispererQuickPick'
 /** Indicates a CodeWhisperer command was executed through the Amazon Q chat pane */
 export const amazonQChatSource = 'amazonQChat'
 /** Indicates a CodeWhisperer command was executed during the first start of the extension */
-export const firstStartUpSource = ExtStartUpSource.FirstStartUp
+export const firstStartUpSource = ExtStartUpSources.firstStartUp
 /** Indicates a CodeWhisperer command was executed as a result of signing out */
 export const cwSignOut = 'codewhispererSignOut'
 /** Indicates a CodeWhisperer command was executed as a result of selecting an ellipses menu item */

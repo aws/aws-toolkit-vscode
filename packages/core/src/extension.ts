@@ -56,7 +56,7 @@ import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
 import { amazonQInstallDismissedKey } from './codewhisperer/models/constants'
 import { ExtensionUse } from './auth/utils'
-import { ExtStartUpSource } from './shared/telemetry'
+import { ExtStartUpSources } from './shared/telemetry'
 
 let localize: nls.LocalizeFunc
 
@@ -191,8 +191,8 @@ export async function activate(context: vscode.ExtensionContext) {
                                         await telemetry.toolkit_invokeAction.run(async () => {
                                             telemetry.record({
                                                 source: ExtensionUse.instance.isFirstUse()
-                                                    ? ExtStartUpSource.FirstStartUp
-                                                    : ExtStartUpSource.None,
+                                                    ? ExtStartUpSources.firstStartUp
+                                                    : ExtStartUpSources.none,
                                             })
 
                                             if (resp === 'Learn More') {

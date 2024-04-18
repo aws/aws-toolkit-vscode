@@ -14,7 +14,7 @@ import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { globals } from '../../shared'
 import { amazonQDismissedKey } from '../../codewhisperer/models/constants'
 import { _switchToAmazonQ } from './commonNodes'
-import { ExtStartUpSource, telemetry } from '../../shared/telemetry'
+import { ExtStartUpSources, telemetry } from '../../shared/telemetry'
 import { ExtensionUse } from '../../auth/utils'
 
 const localize = nls.loadMessageBundle()
@@ -28,11 +28,11 @@ export const qExtensionPageCommand = Commands.declare('aws.toolkit.amazonq.exten
 })
 
 export const dismissQTree = Commands.declare(
-    { id: '_aws.toolkit.amazonq.dismiss', compositeKey: { 1: 'source' } },
+    { id: '_aws.toolkit.amazonq.dismiss', compositeKey: { 0: 'source' } },
     () => async (source: string) => {
         await telemetry.toolkit_invokeAction.run(async () => {
             telemetry.record({
-                source: ExtensionUse.instance.isFirstUse() ? ExtStartUpSource.FirstStartUp : ExtStartUpSource.None,
+                source: ExtensionUse.instance.isFirstUse() ? ExtStartUpSources.firstStartUp : ExtStartUpSources.none,
             })
 
             await globals.context.globalState.update(amazonQDismissedKey, true)

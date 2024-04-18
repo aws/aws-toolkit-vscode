@@ -207,9 +207,11 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
 /**
  * Potentially helpful values for the 'source' field in telemetry.
  */
-export enum ExtStartUpSource {
-    FirstStartUp = 'firstStartUp',
-    Update = 'update',
-    Reload = 'reload',
-    None = 'none',
-}
+export const ExtStartUpSources = {
+    firstStartUp: 'firstStartUp',
+    update: 'update',
+    reload: 'reload',
+    none: 'none',
+} as const
+
+export type ExtStartUpSource = (typeof ExtStartUpSources)[keyof typeof ExtStartUpSources]

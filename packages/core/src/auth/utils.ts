@@ -50,7 +50,7 @@ import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { extensionVersion } from '../shared/vscode/env'
-import { ExtStartUpSource } from '../shared/telemetry'
+import { ExtStartUpSources } from '../shared/telemetry'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 let showConnectionsPageCommand: string | undefined
@@ -698,7 +698,7 @@ export type AuthSimpleId =
  */
 export const AuthSources = {
     addConnectionQuickPick: 'addConnectionQuickPick',
-    firstStartup: ExtStartUpSource.FirstStartUp,
+    firstStartup: ExtStartUpSources.firstStartUp,
     codecatalystDeveloperTools: 'codecatalystDeveloperTools',
     vscodeComponent: vscodeComponent,
     cwQuickPick: cwQuickPickSource,

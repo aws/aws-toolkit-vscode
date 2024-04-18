@@ -10,7 +10,7 @@ import { assertTelemetry, getProjectDir } from '../../../testUtil'
 import { AuthFormId } from '../../../../auth/ui/vue/authForms/types'
 import assert from 'assert'
 import { fsCommon } from '../../../../srcShared/fs'
-import { ExtStartUpSource } from '../../../../shared/telemetry'
+import { ExtStartUpSources } from '../../../../shared/telemetry'
 
 describe('emitWebviewClosed()', function () {
     let authWebview: SinonStubbedInstance<AuthWebview>
@@ -127,7 +127,7 @@ describe('emitWebviewClosed()', function () {
 
     describe('source === "firstTimeUser"', function () {
         beforeEach(function () {
-            authWebview.getSource.returns(ExtStartUpSource.FirstStartUp)
+            authWebview.getSource.returns(ExtStartUpSources.firstStartUp)
         })
 
         it('no connections exist, no user attempts', async function () {
