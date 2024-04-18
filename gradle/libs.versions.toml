@@ -18,7 +18,7 @@ junit5 = "5.10.2"
 kotlin = "1.9.23"
 # set in <root>/settings.gradle.kts
 kotlinCoroutines = "1.7.3"
-mockito = "5.10.0"
+mockito = "5.11.0"
 mockitoKotlin = "5.2.1"
 mockk = "1.13.10"
 node-gradle = "7.0.1"
