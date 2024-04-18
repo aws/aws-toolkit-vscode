@@ -15,7 +15,7 @@ import { welcome } from './onboardingPage'
 import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
 import { activateBadge } from './util/viewBadgeHandler'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { focusAmazonQPanel } from '../codewhispererChat/commands/registerCommands'
+import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -37,7 +37,8 @@ export async function activate(context: ExtensionContext) {
                 retainContextWhenHidden: true,
             },
         }),
-        focusAmazonQPanel.register()
+        focusAmazonQPanel.register(),
+        focusAmazonQPanelKeybinding.register()
     )
 
     amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)

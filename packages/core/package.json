@@ -3831,6 +3831,12 @@
         ],
         "keybindings": [
             {
+                "command": "_aws.amazonq.focusChat.keybinding",
+                "win": "win+i",
+                "mac": "cmd+i",
+                "linux": "meta+i"
+            },
+            {
                 "command": "aws.amazonq.explainCode",
                 "win": "win+alt+e",
                 "mac": "cmd+alt+e",

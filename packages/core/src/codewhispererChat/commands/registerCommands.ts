@@ -17,6 +17,16 @@ export const focusAmazonQPanel = Commands.declare(
     }
 )
 
+/** 
+ * {@link focusAmazonQPanel} but only used for the keybinding since we cannot
+ * explicitly set the `source` in the package.json definition
+ */
+export const focusAmazonQPanelKeybinding = Commands.declare(
+    '_aws.amazonq.focusChat.keybinding', () => async () => {
+        await focusAmazonQPanel.execute(placeholder, 'keybinding')
+    }
+)
+
 const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
     // data is undefined when commands triggered from keybinding or command palette. Currently no
     // way to differentiate keybinding and command palette, so both interactions are recorded as keybinding
