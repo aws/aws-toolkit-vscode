@@ -110,7 +110,8 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                     getLogger().info(
                         `auth: re-use(new scope) to connection from existing connection id ${connectionId}`
                     )
-                    await this.codeCatalystAuth.secondaryAuth.addScopes(conn, scopesCodeCatalyst)
+                    const newConn = await this.codeCatalystAuth.secondaryAuth.addScopes(conn, scopesCodeCatalyst)
+                    await this.codeCatalystAuth.secondaryAuth.useNewConnection(newConn)
                 }
             } else {
                 await Auth.instance.useConnection({ id: connectionId })
