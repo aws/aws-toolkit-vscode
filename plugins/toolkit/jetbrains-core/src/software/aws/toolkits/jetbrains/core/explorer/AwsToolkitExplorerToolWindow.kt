@@ -23,7 +23,6 @@ import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import software.aws.toolkits.jetbrains.core.credentials.CredsComboBoxActionGroup
 import software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow
-import software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQTreeStructure
 import software.aws.toolkits.jetbrains.core.explorer.cwqTab.isQInstalled
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
 import software.aws.toolkits.resources.message
@@ -52,12 +51,11 @@ class AwsToolkitExplorerToolWindow(
     }
 
     private val tabComponents = buildMap<String, () -> Component> {
-        if (CwQTreeStructure.EP_NAME.hasAnyExtensions() && !isQInstalled()) {
-            put(CODEWHISPERER_Q_TAB_ID, { CodewhispererQToolWindow.getInstance(project) })
-        }
-
         put(EXPLORER_TAB_ID, { ExplorerToolWindow.getInstance(project) })
         put(DEVTOOLS_TAB_ID, { DevToolsToolWindow.getInstance(project) })
+        if (!isQInstalled()) {
+            put(CODEWHISPERER_Q_TAB_ID, { CodewhispererQToolWindow.getInstance(project) })
+        }
     }
 
     init {

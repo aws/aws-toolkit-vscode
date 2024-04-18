@@ -213,7 +213,6 @@
         <extensionPoint name="tool" interface="software.aws.toolkits.jetbrains.core.tools.ToolType" dynamic="true"/>
         <extensionPoint name="devTools.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.DevToolsServiceNode" dynamic="true"/>
         <extensionPoint name="devTools.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsTreeStructureProvider" dynamic="true"/>
-        <extensionPoint name="cwq.rootNode" interface="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQRootNodeProvider" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -393,7 +392,6 @@
 
         <!-- DevTools nodes-->
         <devTools.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.CawsServiceNode"/>
-        <cwq.rootNode implementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQRootNodeProviderImpl"/>
 
         <!-- Experiments -->
         <experiment implementation="software.aws.toolkits.jetbrains.services.ecs.EcsExecExperiment"/>
