@@ -20,6 +20,9 @@
                     <li>
                         <code> pip install tf-policy-validator </code>
                     </li>
+                    <li>
+                        <p>Provide IAM Roles Credentials</p>
+                    </li>
                 </ol>
             </div>
             <div style="justify-content: space-between">
@@ -29,9 +32,9 @@
                             >Document Type</label
                         >
                         <select id="select-document-type" v-on:change="setDocumentType" v-model="documentType">
-                            <option value="JSON Policy Language">JSON Policy Language</option>
                             <option value="CloudFormation">CloudFormation</option>
                             <option value="Terraform Plan">Terraform Plan</option>
+                            <option value="JSON Policy Language">JSON Policy Language</option>
                         </select>
                     </div>
                     <div style="display: block" v-if="documentType == 'JSON Policy Language'">
@@ -103,16 +106,20 @@
             <h2 style="border-bottom-style: none">Validate Policies</h2>
             <div style="display: grid">
                 <p>
-                    IAM Access Analyzer validates your policy against IAM policy grammar and AWS best practices. You can
-                    view policy validation check findings that include security warnings, errors, general warnings, and
-                    suggestions for your policy. These findings provide actionable recommendations that help you author
-                    policies that are functional and conform to security best practices.
+                    Validate your policy against IAM policy grammar and AWS best practices. You can view policy
+                    validation check findings that include security warnings, errors, general warnings, and suggestions
+                    for your policy. These findings provide actionable recommendations that help you author policies
+                    that are functional and conform to security best practices.
                 </p>
                 <div style="display: grid">
-                    <p style="margin-bottom: 5px">
-                        Policy checks should be run until issues are no longer found in your policy document.
-                    </p>
-                    <button class="button-theme-primary" v-on:click="runValidator">Run Policy Validation</button>
+                    <div>
+                        <button class="button-theme-primary" v-on:click="runValidator">Run Policy Validation</button>
+                        <div style="margin-top: 5px">
+                            <p :style="{ color: validatePolicyResponseColor }">
+                                {{ validatePolicyResponse }}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -121,8 +128,9 @@
             <h2 style="border-bottom-style: none">Custom Policy Checks</h2>
             <div style="display: block">
                 <p>
-                    IAM Access Analyzer validates your policies against your specified security standards using AWS
-                    Identity and Access Management Access Analyzer custom policy checks.
+                    Validate your policy against your specified security standards using AWS Identity and Access
+                    Management Access Analyzer custom policy checks. You can check against a reference policy or a list
+                    of IAM actions.
                 </p>
                 <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-custom-policy-checks.html"
                     >More about Custom Policy Checks</a
@@ -178,6 +186,11 @@
                         v-model="initialData.referenceFilePath"
                     />
                 </div>
+                <div style="margin-top: 5px" v-if="initialData.referenceFileErrorMessage">
+                    <p style="color: red">
+                        {{ initialData.referenceFileErrorMessage }}
+                    </p>
+                </div>
                 <div>
                     <textarea
                         style="
@@ -192,7 +205,6 @@
                     ></textarea>
                 </div>
                 <div style="display: grid">
-                    <p>Policy checks should be run until issues are no longer found in your policy document.</p>
                     <b style="margin-bottom: 5px"
                         >A charge is associated with each custom policy check. For more details about pricing, see
                         <a href="https://aws.amazon.com/iam/access-analyzer/pricing/"> IAM Access Analyzer pricing </a>.
@@ -205,6 +217,11 @@
                         >
                             Run Custom Policy Check
                         </button>
+                        <div style="margin-top: 5px">
+                            <p :style="{ color: customPolicyCheckResponseColor }">
+                                {{ customPolicyCheckResponse }}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -225,19 +242,24 @@ const client = WebviewClientFactory.create<IamPolicyChecksWebview>()
 export default defineComponent({
     mixins: [saveData],
     data: () => ({
-        documentType: 'JSON Policy Language',
+        documentType: 'CloudFormation',
         policyType: 'Identity',
         resourcePolicyType: 'Identity',
         checkType: 'CheckNoNewAccess',
         initialData: {
             referenceFilePath: '',
-            cfnParameterPath: '',
             referenceDocument: '',
-            pythonToolsInstalled: true,
+            referenceFileErrorMessage: '',
+            cfnParameterPath: '',
+            pythonToolsInstalled: false,
         },
         inputPath: '',
         customChecksPathPlaceholder: 'Reference policy file path',
         customChecksTextAreaPlaceholder: 'Enter reference policy document',
+        validatePolicyResponse: '',
+        validatePolicyResponseColor: 'red',
+        customPolicyCheckResponse: '',
+        customPolicyCheckResponseColor: 'red',
     }),
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
@@ -255,6 +277,17 @@ export default defineComponent({
         })
         client.onChangeCloudformationParameterFilePath((data: string) => {
             this.initialData.cfnParameterPath = data
+        })
+        client.onValidatePolicyResponse((data: [string, string]) => {
+            this.validatePolicyResponse = data[0]
+            this.validatePolicyResponseColor = data[1]
+        })
+        client.onCustomPolicyCheckResponse((data: [string, string]) => {
+            this.customPolicyCheckResponse = data[0]
+            this.customPolicyCheckResponseColor = data[1]
+        })
+        client.onFileReadError((data: string) => {
+            this.initialData.referenceFileErrorMessage = data
         })
     },
     methods: {
@@ -289,8 +322,25 @@ export default defineComponent({
         setCfnParameterFilePath: function (event: any) {
             this.initialData.cfnParameterPath = event.target.value
         },
-        runValidator: function () {},
-        runCustomPolicyCheck: function () {},
+        runValidator: function () {
+            client.validatePolicy(this.documentType, this.policyType, this.initialData.cfnParameterPath)
+        },
+        runCustomPolicyCheck: function () {
+            if (this.checkType == 'CheckNoNewAccess') {
+                client.checkNoNewAccess(
+                    this.documentType,
+                    this.resourcePolicyType,
+                    this.initialData.referenceDocument,
+                    this.initialData.cfnParameterPath
+                )
+            } else {
+                client.checkAccessNotGranted(
+                    this.documentType,
+                    this.initialData.referenceDocument,
+                    this.initialData.cfnParameterPath
+                )
+            }
+        },
     },
     computed: {},
 })

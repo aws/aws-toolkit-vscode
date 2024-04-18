@@ -94,6 +94,12 @@ const tasks: CopyTask[] = [
         target: path.join('../../node_modules', 'web-tree-sitter', 'tree-sitter.wasm'),
         destination: path.join('src', 'tree-sitter.wasm'),
     },
+
+    // AccessAnalyzer
+    {
+        target: path.join('../core', 'src', 'accessanalyzer', 'terraformConfig', 'default.yaml'),
+        destination: path.join('terraformConfig', 'default.yaml'),
+    },
 ]
 
 async function copy(task: CopyTask): Promise<void> {
