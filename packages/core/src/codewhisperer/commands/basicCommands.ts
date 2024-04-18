@@ -374,7 +374,7 @@ const registerToolkitApiCallbackOnce = once(async () => {
                     startUrl: conn.startUrl,
                     state: e.state,
                     id: id,
-                    label: `AmazonQ ${conn.label}`,
+                    label: conn.label,
                 } as AwsConnection)
             }
         }

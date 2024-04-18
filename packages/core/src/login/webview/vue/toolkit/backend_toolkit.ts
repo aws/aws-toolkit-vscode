@@ -7,9 +7,10 @@ import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
 import { AuthError, CommonAuthWebview } from '../backend'
-import { AwsConnection, createSsoProfile, scopesCodeCatalyst } from '../../../../auth/connection'
+import { AwsConnection, createSsoProfile, hasScopes, scopesCodeCatalyst } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
+import { amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -81,7 +82,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         const _connections = await Auth.instance.listConnections()
         _connections.forEach(c => {
             const status = Auth.instance.getConnectionState({ id: c.id })
-            if (c.label.startsWith('AmazonQ') && c.type === 'sso' && status) {
+            if (c.type === 'sso' && hasScopes(c, amazonQScopes) && status && !hasScopes(c, scopesCodeCatalyst)) {
                 connections.push({
                     id: c.id,
                     label: c.label,
@@ -115,7 +116,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                 await Auth.instance.useConnection({ id: connectionId })
             }
             await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
-            void this.showResourceExplorer()
+            await this.showResourceExplorer()
         })
     }
 
