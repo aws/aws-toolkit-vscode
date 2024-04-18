@@ -427,9 +427,9 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
 
         void humanInTheLoopRetryLogic(jobId)
     } catch (err) {
-        // Will probably emit different TYPES of errors from the Human in the loop engagement
-        // catch them here and determine what to do with in parent function
-        console.log('Error in completeHumanInTheLoopWork', err)
+        // If anything went wrong in HIL state, we should restart the job
+        // with the rejected state
+        await restartJob(jobId, 'REJECTED')
         successfulFeedbackLoop = false
     } finally {
         // Always delete the dependency directories
@@ -705,7 +705,6 @@ export async function stopTransformByQ(
                     }
                 })
         } catch {
-            console.log('error stopping job')
             void vscode.window
                 .showErrorMessage(
                     CodeWhispererConstants.errorStoppingJobMessage,
