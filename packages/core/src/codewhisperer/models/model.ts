@@ -264,7 +264,8 @@ export class ZipManifest {
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     constructor(dependencyPath?: FolderInfo) {
         if (dependencyPath) {
-            this.dependenciesRoot = `dependencies/${dependencyPath.name}/`
+            // this.dependenciesRoot = `dependencies/${dependencyPath.name}/`
+            console.log(dependencyPath)
         }
     }
 }
@@ -287,9 +288,9 @@ export class HilZipManifest {
         this.hilInput.pomGroupId = pomGroupId
         this.hilInput.pomArtifactId = pomArtifactId
         this.hilInput.targetPomVersion = targetPomVersion
-        if (dependencyPath) {
-            this.hilInput.dependenciesRoot = `dependencies/${dependencyPath.name}/`
-        }
+        // if (dependencyPath) {
+        //     this.hilInput.dependenciesRoot = `dependencies/${dependencyPath.name}/`
+        // }
     }
 }
 

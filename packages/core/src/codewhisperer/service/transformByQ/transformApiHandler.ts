@@ -319,7 +319,8 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         if (dependencyFiles.length > 0) {
             for (const file of dependencyFiles) {
                 const relativePath = path.relative(dependenciesFolder.path, file)
-                const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
+                // const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
+                const paddedPath = path.join(`dependencies/`, relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
             }
             telemetry.codeTransform_dependenciesCopied.emit({
