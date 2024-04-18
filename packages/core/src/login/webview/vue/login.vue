@@ -399,7 +399,7 @@ export default defineComponent({
             sharedConnections?.forEach((connection, index) => {
                 this.existingLogins.push({
                     id: LoginOption.EXISTING_LOGINS + index,
-                    text: this.app === 'TOOLKIT' ? 'Used by AWS Toolkit' : 'Used by Amazon Q',
+                    text: this.app === 'TOOLKIT' ? 'Used by Amazon Q' : 'Used by AWS Toolkit',
                     title: isBuilderId(connection.startUrl)
                         ? 'AWS Builder ID'
                         : `IAM Identity Center ${connection.startUrl}`,
