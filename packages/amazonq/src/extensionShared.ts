@@ -25,6 +25,7 @@ import {
     DefaultAWSClientBuilder,
     globals,
     RegionProvider,
+    getLogger,
 } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-core-vscode/auth'
 import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
@@ -45,21 +46,27 @@ export async function activateShared(context: vscode.ExtensionContext) {
     const toolkit = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
     if (toolkit) {
         const toolkitVersion = semver.coerce(toolkit.packageJSON.version)
+        // XXX: can't use `SemVer.prerelease` because Toolkit "prerelease" (git sha) is not a valid
+        // semver prerelease: it may start with a number.
         const isDevVersion = toolkit.packageJSON.version.toString().includes('-')
         if (toolkitVersion && toolkitVersion.major < 3 && !isDevVersion) {
             await vscode.commands
                 .executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.awstoolkit)
                 .then(
-                    void vscode.window
-                        .showInformationMessage(
-                            `The Amazon Q extension is incompatible with AWS Toolkit versions 2.9 and below. Your AWS Toolkit was updated to version 3.0 or later.`,
-                            'Reload Now'
-                        )
-                        .then(async resp => {
-                            if (resp === 'Reload Now') {
-                                await vscode.commands.executeCommand('workbench.action.reloadWindow')
-                            }
-                        })
+                    () =>
+                        vscode.window
+                            .showInformationMessage(
+                                `The Amazon Q extension is incompatible with AWS Toolkit ${toolkitVersion} and older. Your AWS Toolkit was updated to version 3.0 or later.`,
+                                'Reload Now'
+                            )
+                            .then(async resp => {
+                                if (resp === 'Reload Now') {
+                                    await vscode.commands.executeCommand('workbench.action.reloadWindow')
+                                }
+                            }),
+                    reason => {
+                        getLogger().error('workbench.extensions.installExtension failed: %O', reason)
+                    }
                 )
             return
         }
