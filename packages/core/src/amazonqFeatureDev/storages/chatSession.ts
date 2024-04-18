@@ -3,11 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import AsyncLock from 'async-lock'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { Session } from '../session/session'
 import { createSessionConfig } from '../session/sessionConfigFactory'
 
 export class ChatSessionStorage {
+    private lock = new AsyncLock()
+
     private sessions: Map<string, Session> = new Map()
 
     constructor(private readonly messenger: Messenger) {}
@@ -20,12 +23,19 @@ export class ChatSessionStorage {
     }
 
     public async getSession(tabID: string): Promise<Session> {
-        const sessionFromStorage = this.sessions.get(tabID)
-        if (sessionFromStorage === undefined) {
-            // If a session doesn't already exist just create it
-            return this.createSession(tabID)
-        }
-        return sessionFromStorage
+        /**
+         * The lock here is added in order to mitigate amazon Q's eventing fire & forget design when integrating with mynah-ui that creates a race condition here.
+         * The race condition happens when handleDevFeatureCommand in src/amazonq/webview/ui/quickActions/handler.ts is firing two events after each other to amazonqFeatureDev controller
+         * This eventually may make code generation fail as at the moment of that event it may get from the storage a session that has not been properly updated.
+         */
+        return this.lock.acquire(tabID, async () => {
+            const sessionFromStorage = this.sessions.get(tabID)
+            if (sessionFromStorage === undefined) {
+                // If a session doesn't already exist just create it
+                return this.createSession(tabID)
+            }
+            return sessionFromStorage
+        })
     }
 
     // Find all sessions that are currently waiting to be authenticated
