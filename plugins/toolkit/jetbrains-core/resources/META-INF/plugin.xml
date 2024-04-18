@@ -403,7 +403,6 @@
     </extensions>
 
     <actions resource-bundle="software.aws.toolkits.resources.MessagesBundle">
-        <action id="aws.toolkit.open.toolkit.webview" class="software.aws.toolkits.jetbrains.core.explorer.webview.OpenToolkitWebviewAction"/>
         <action id="aws.toolkit.open.telemetry.viewer" class="software.aws.toolkits.jetbrains.services.telemetry.OpenTelemetryAction"/>
         <action id="aws.settings.refresh" class="software.aws.toolkits.jetbrains.core.credentials.RefreshConnectionAction"/>
         <action id="aws.toolkit.showFeedback" class="software.aws.toolkits.jetbrains.ui.feedback.ShowFeedbackDialogAction"/>
