@@ -58,6 +58,8 @@ import { amazonQInstallDismissedKey } from './codewhisperer/models/constants'
 import { ExtensionUse } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
 
+export { makeEndpointsProvider, registerCommands } from './extensionShared'
+
 let localize: nls.LocalizeFunc
 
 /**
@@ -290,7 +292,3 @@ function recordToolkitInitialization(activationStartedOn: number, settingsValid:
         logger?.error(err as Error)
     }
 }
-
-// Unique extension entrypoint names, so that they can be obtained from the webpack bundle
-export const awsToolkitActivate = activate
-export const awsToolkitDeactivate = deactivate

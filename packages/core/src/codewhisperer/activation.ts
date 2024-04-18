@@ -45,7 +45,7 @@ import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from './service/referenceHoverProvider'
 import { ReferenceInlineProvider } from './service/referenceInlineProvider'
-import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
+import { SecurityPanelViewProvider, openEditorAtRange } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2'
@@ -267,7 +267,8 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.languages.registerCodeActionsProvider(
             [...CodeWhispererConstants.platformLanguageIds],
             SecurityIssueCodeActionProvider.instance
-        )
+        ),
+        vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange)
     )
 
     await auth.restore()

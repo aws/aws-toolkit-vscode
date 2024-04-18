@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit - Amazon Q and more",
     "description": "Including Amazon Q, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
-    "version": "2.19.0-SNAPSHOT",
+    "version": "2.20.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -57,10 +57,10 @@
         "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles",
         "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart*",
-        "compile": "npm run clean && npm run buildScripts && webpack --mode development",
-        "webWatch": "npm run clean && npm run copyFiles --vueHr && webpack --config-name web --watch",
-        "webCompile": "npm run clean && npm run buildScripts -- --vueHr && webpack --config-name web",
+        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* CHANGELOG.md",
+        "compile": "npm run clean && npm run buildScripts && webpack",
+        "webWatch": "npm run clean && npm run buildScripts && webpack --mode development --watch",
+        "webCompile": "npm run clean && npm run buildScripts && webpack --config-name web",
         "webRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "package": "npm run copyPackageJson && ts-node ../../scripts/package.ts && npm run restorePackageJson",
         "install-plugin": "vsce package --ignoreFile '../.vscodeignore.packages' -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
@@ -69,7 +69,7 @@
         "lint": "echo 'Nothing to lint yet!'",
         "createRelease": "ts-node ../../scripts/createRelease.ts",
         "newChange": "ts-node ../../scripts/newChange.ts",
-        "watch": "npm run clean && npm run buildScripts -- --vueHr && tsc -watch -p ./",
+        "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "serve": "webpack serve --config-name mainServe --mode development",
         "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
         "restorePackageJson": "ts-node ./scripts/build/handlePackageJson --restore"

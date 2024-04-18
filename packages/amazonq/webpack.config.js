@@ -3,35 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const path = require('path')
-const currentDir = process.cwd()
+const baseConfigFactory = require('../webpack.base.config')
+const baseVueConfigFactory = require('../webpack.vue.config')
 
-const baseConfig = require('../webpack.base.config')
+module.exports = (env, argv) => {
+    const config = {
+        ...baseConfigFactory(env, argv),
+        entry: {
+            'src/extension': './src/extension.ts',
+        },
+    }
 
-const devServer = {
-    static: {
-        directory: path.resolve(currentDir, 'dist'),
-    },
-    headers: {
-        'Access-Control-Allow-Origin': '*',
-    },
-    allowedHosts: 'all',
+    const vue = baseVueConfigFactory(env, argv)
+    const vueConfig = {
+        ...vue.config,
+        entry: {
+            ...vue.createVueEntries(),
+            //'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
+        },
+    }
+
+    return [config, vueConfig]
 }
-
-const config = {
-    ...baseConfig,
-    entry: {
-        'src/extension': './src/extension.ts',
-    },
-}
-
-const serveConfig = {
-    ...config,
-    name: 'mainServe',
-    devServer,
-    externals: {
-        vscode: 'commonjs vscode',
-    },
-}
-
-module.exports = process.env.npm_lifecycle_event === 'serve' ? [serveConfig] : [config]
