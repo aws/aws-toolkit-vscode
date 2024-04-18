@@ -303,7 +303,9 @@ export class TransformByQState {
 
     private payloadFilePath: string = ''
 
-    private jobFailureErrorMessage: string = ''
+    private jobFailureErrorNotification: string | undefined = undefined
+
+    private jobFailureErrorChatMessage: string | undefined = undefined
 
     private errorLog: string = ''
 
@@ -393,8 +395,12 @@ export class TransformByQState {
         return this.payloadFilePath
     }
 
-    public getJobFailureErrorMessage() {
-        return this.jobFailureErrorMessage
+    public getJobFailureErrorNotification() {
+        return this.jobFailureErrorNotification
+    }
+
+    public getJobFailureErrorChatMessage() {
+        return this.jobFailureErrorChatMessage
     }
 
     public getErrorLog() {
@@ -497,8 +503,12 @@ export class TransformByQState {
         this.payloadFilePath = payloadFilePath
     }
 
-    public setJobFailureErrorMessage(errorMessage: string) {
-        this.jobFailureErrorMessage = errorMessage
+    public setJobFailureErrorNotification(errorNotification: string) {
+        this.jobFailureErrorNotification = errorNotification
+    }
+
+    public setJobFailureErrorChatMessage(errorChatMessage: string) {
+        this.jobFailureErrorChatMessage = errorChatMessage
     }
 
     public setMavenName(mavenName: string) {
@@ -544,7 +554,9 @@ export class TransformByQState {
     public setJobDefaults() {
         this.setToNotStarted() // so that the "Transform by Q" button resets
         this.polledJobStatus = '' // reset polled job status too
-        this.jobFailureErrorMessage = ''
+        this.jobFailureErrorNotification = undefined
+        this.jobFailureErrorChatMessage = undefined
+        this.jobFailureMetadata = ''
         this.payloadFilePath = ''
         this.errorLog = ''
     }
