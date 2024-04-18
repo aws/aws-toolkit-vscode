@@ -75,11 +75,11 @@ function getAmazonQCodeWhispererNodes() {
                 : []),
             createOpenReferenceLog(),
             createGettingStarted(), // "Learn" node : opens Learn CodeWhisperer page
-    
+
             // Security scans
             createSeparator('Security Scans'),
             createSecurityScan(),
-    
+
             // Amazon Q + others
             createSeparator('Other Features'),
             ...(amazonq ? [amazonq.switchToAmazonQNode('item')] : []),

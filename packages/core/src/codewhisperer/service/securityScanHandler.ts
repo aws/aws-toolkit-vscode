@@ -123,9 +123,10 @@ export async function pollScanJobStatus(
         throwIfCancelled(scope)
         await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
         timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
-        const timeoutSeconds = (scope === CodeWhispererConstants.CodeAnalysisScope.FILE) 
-            ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds 
-            : CodeWhispererConstants.codeScanJobTimeoutSeconds;
+        const timeoutSeconds =
+            scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+                ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
+                : CodeWhispererConstants.codeScanJobTimeoutSeconds
         if (timer > timeoutSeconds) {
             getLogger().verbose(`Scan job status: ${status}`)
             getLogger().verbose(`Scan job timeout.`)
