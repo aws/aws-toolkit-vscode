@@ -169,6 +169,11 @@ export interface ProfileMetadata {
      * * `invalid` -> `invalid` -> immediately throw to stop the user from being spammed
      */
     readonly connectionState: 'valid' | 'invalid' | 'unauthenticated' | 'authenticating'
+
+    /**
+     * Source of this connection profile where it was first created.
+     */
+    readonly source?: 'amazonq' | 'toolkit'
 }
 
 // Difference between "Connection" vs. "Profile":

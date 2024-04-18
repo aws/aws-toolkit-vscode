@@ -7,10 +7,9 @@ import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
 import { AuthError, CommonAuthWebview } from '../backend'
-import { AwsConnection, createSsoProfile, hasScopes, scopesCodeCatalyst } from '../../../../auth/connection'
+import { AwsConnection, createSsoProfile, scopesCodeCatalyst } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
-import { amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -76,13 +75,16 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     async errorNotification(e: AuthError) {
         await vscode.window.showInformationMessage(`${e.text}`)
     }
-
+    /**
+     * Returns list of connections that are pushed from Amazon Q to Toolkit
+     */
     async fetchConnections(): Promise<AwsConnection[] | undefined> {
         const connections: AwsConnection[] = []
         const _connections = await Auth.instance.listConnections()
         _connections.forEach(c => {
             const status = Auth.instance.getConnectionState({ id: c.id })
-            if (c.type === 'sso' && hasScopes(c, amazonQScopes) && status && !hasScopes(c, scopesCodeCatalyst)) {
+            const source = Auth.instance.getConnectionSource({ id: c.id })
+            if (c.type === 'sso' && source === 'amazonq' && status) {
                 connections.push({
                     id: c.id,
                     label: c.label,
@@ -95,7 +97,9 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         })
         return connections
     }
-
+    /**
+     * Re-use connection that is pushed from Amazon Q to Toolkit.
+     */
     async useConnection(connectionId: string): Promise<AuthError | undefined> {
         return this.ssoSetup('useConnection', async () => {
             const conn = await Auth.instance.getConnection({ id: connectionId })
