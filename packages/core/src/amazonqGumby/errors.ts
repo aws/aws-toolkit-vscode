@@ -41,3 +41,9 @@ export class AlternateDependencyVersionsNotFoundError extends Error {
         super('No available versions for update')
     }
 }
+
+export class JobStoppedError extends Error {
+    constructor(readonly requestId: string) {
+        super('Job was rejected, stopped, or failed')
+    }
+}

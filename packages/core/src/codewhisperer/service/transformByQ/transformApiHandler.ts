@@ -37,7 +37,7 @@ import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTrans
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
 import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
-import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
+import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
@@ -578,7 +578,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 transformByQState.setJobFailureMetadata(
                     `${response.transformationJob.reason} (request ID: ${response.$response.requestId})`
                 )
-                throw new Error('Job was rejected, stopped, or failed')
+                throw new JobStoppedError(response.$response.requestId)
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
             timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds

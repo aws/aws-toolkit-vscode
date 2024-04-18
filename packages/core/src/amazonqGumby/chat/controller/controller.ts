@@ -352,7 +352,6 @@ export class GumbyController {
     }
 
     private HILPromptForDependency(data: { tabID: string; dependencies: DependencyVersions }) {
-        // if dependencies does not exist or length == 0, send error message
         this.messenger.sendDependencyVersionsFoundMessage(data.dependencies, data.tabID)
     }
 

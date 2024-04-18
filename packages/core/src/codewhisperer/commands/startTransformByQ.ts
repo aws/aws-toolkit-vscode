@@ -188,6 +188,7 @@ export async function startTransformByQ() {
 
         // step 3 (intermediate step): show transformation-plan.md file
         await pollTransformationStatusUntilPlanReady(jobId)
+        console.log(`plan is ready, now entering HiL`)
 
         // step 4: poll until artifacts are ready to download
         await humanInTheLoopRetryLogic(jobId)
@@ -209,9 +210,12 @@ export async function startTransformByQ() {
  *  state ever engaged or we have reached our max amount of HIL retries.
  */
 export async function humanInTheLoopRetryLogic(jobId: string) {
+    console.log(`entering HitL retry loop with job id ${jobId}`)
     try {
         const status = await pollTransformationStatusUntilComplete(jobId)
+        console.log(`hitl: status is ${status}`)
         if (status === 'PAUSED') {
+            console.log(`hitl: status is PAUSED, now prompting user`)
             const hilStatusFailure = await initiateHumanInTheLoopPrompt(jobId)
             if (hilStatusFailure) {
                 // We rejected the changes and resumed the job and should
@@ -285,19 +289,25 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
     try {
         // 1) We need to call GetTransformationPlan to get artifactId
+        console.log(`hitl prompt: getTransformationSteps`)
         const transformationSteps = await getTransformationSteps(jobId, false)
+        console.log(`hitl prompt: findDownloadArtifactStep`)
         const { transformationStep, progressUpdate } = findDownloadArtifactStep(transformationSteps)
 
         if (!transformationStep || !progressUpdate) {
+            console.log(`Hitl prompt: no transformation step found`)
             throw new Error('No HIL Transformation Step found')
         }
 
+        console.log(`hitl prompt: getArtifactsFromProgressUpdate`)
         const { artifactId, artifactType } = getArtifactsFromProgressUpdate(progressUpdate)
 
         // Early exit safeguard incase artifactId or artifactType are undefined
         if (!artifactId || !artifactType) {
             throw new Error('artifactId or artifactType is undefined')
         }
+
+        console.log(`hitl prompt: downloadHilResultArchive`)
 
         // 2) We need to call DownloadResultArchive to get the manifest and pom.xml
         const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadHilResultArchive(
@@ -308,6 +318,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         PomFileVirtualFileReference = pomFileVirtualFileReference
         manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
 
+        console.log(`got pom file`)
         // 3) We need to replace version in pom.xml
         const newPomFileVirtualFileReference = await createPomCopy(
             tmpDependencyListDir,
@@ -319,6 +330,8 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             manifestFileValues.sourcePomVersion,
             pomReplacementDelimiter
         )
+
+        console.log(`got replacement`)
 
         const codeSnippet = await getCodeIssueSnippetFromPom(newPomFileVirtualFileReference)
         // Let the user know we've entered the loop in the chat
@@ -332,12 +345,17 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             name: tmpDependencyListFolderName,
             path: tmpDependencyListDir,
         }
+        console.log(`run maven commands`)
         runMavenDependencyUpdateCommands(compileFolderInfo)
-        const { latestVersion, majorVersions, minorVersions, status } = await parseVersionsListFromPomFile(
+        const { latestVersion, majorVersions, minorVersions } = await parseVersionsListFromPomFile(
             path.join(tmpDependencyListDir, localPathToXmlDependencyList)
         )
 
-        if (status === dependencyNoAvailableVersions) {
+        console.log(`maven commands complete`)
+        const fakeStatus = dependencyNoAvailableVersions
+
+        if (fakeStatus === dependencyNoAvailableVersions) {
+            console.log(`dependencyNoAvailableVersions`)
             // let user know and early exit for human in the loop happened because no upgrade versions available
             const error = new AlternateDependencyVersionsNotFoundError()
 
@@ -351,7 +369,6 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
 
         await highlightPomIssueInProject(newPomFileVirtualFileReference, manifestFileValues.sourcePomVersion)
 
-        // todo filter duplicates
         const dependencies = new DependencyVersions(
             latestVersion,
             majorVersions,
@@ -366,14 +383,22 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             dependencies,
         })
     } catch (err) {
-        // Call resume with "REJECTED" state which will put our service
-        // back into the normal flow and will not trigger HIL again for this step
-        await resumeTransformationJob(jobId, 'REJECTED')
+        try {
+            // Regardless of the error,
+            // Call resume with "REJECTED" state which will put our service
+            // back into the normal flow and will not trigger HIL again for this step
+            await resumeTransformationJob(jobId, 'REJECTED')
+        } finally {
+            // TODO: report telemetry
+            transformByQState.getChatControllers()?.errorThrown.fire({
+                error: err,
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+            })
+        }
         return true
     } finally {
         await sleep(5000)
     }
-
     return false
 }
 

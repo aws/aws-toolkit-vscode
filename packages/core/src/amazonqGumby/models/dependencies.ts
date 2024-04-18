@@ -10,7 +10,7 @@ export default class DependencyVersions {
 
     public readonly currentVersion: string
 
-    public readonly allVersions: string[]
+    public readonly allVersions: Set<string>
 
     public readonly length: number
 
@@ -21,7 +21,7 @@ export default class DependencyVersions {
 
         this.currentVersion = currentVersion
 
-        this.allVersions = [latestVersion].concat(majorVersions).concat(minorVersions)
+        this.allVersions = new Set<string>([latestVersion].concat(majorVersions).concat(minorVersions))
 
         this.length = 1 + this.majorVersions.length + this.minorVersions.length
     }
