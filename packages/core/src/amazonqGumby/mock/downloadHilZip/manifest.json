@@ -1,7 +1,0 @@
-{
-    "pomArtifactId": "java-8-only-depdendency",
-    "pomFolderName": "pomFolder/",
-    "hilCapability": "HIL_1pDependency_VersionUpgrade",
-    "pomGroupId": "org.example",
-    "sourcePomVersion": "0.11.4"
-}
