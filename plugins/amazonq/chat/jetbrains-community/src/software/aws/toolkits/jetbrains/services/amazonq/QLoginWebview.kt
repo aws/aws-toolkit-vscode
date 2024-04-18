@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.amazonq
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
@@ -117,6 +118,7 @@ class WebviewBrowser(val project: Project) : LoginBrowser(project, WebviewBrowse
     // TODO: confirm if we need such configuration or the default is fine
     override val jcefBrowser = createBrowser(project)
     override val query = JBCefJSQuery.create(jcefBrowser)
+    private val objectMapper = jacksonObjectMapper()
 
     override val handler = Function<String, JBCefJSQuery.Response> {
         val jsonTree = objectMapper.readTree(it)

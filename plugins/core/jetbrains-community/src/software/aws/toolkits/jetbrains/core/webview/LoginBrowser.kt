@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.webview
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
@@ -32,7 +31,6 @@ abstract class LoginBrowser(
     abstract val handler: Function<String, JBCefJSQuery.Response>
 
     protected var currentAuthorization: PendingAuthorization? = null
-    protected val objectMapper = jacksonObjectMapper()
 
     // TODO: figure out a better way to do this UI update
     protected val onPendingProfile: (InteractiveBearerTokenProvider) -> Unit = { provider ->

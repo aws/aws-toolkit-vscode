@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.explorer.webview
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
@@ -126,6 +127,7 @@ class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, Toolki
             .build()
     }
     override val query: JBCefJSQuery = JBCefJSQuery.create(jcefBrowser)
+    private val objectMapper = jacksonObjectMapper()
 
     override val handler = Function<String, JBCefJSQuery.Response> {
         val jsonTree = objectMapper.readTree(it)
