@@ -23,6 +23,11 @@ export class ChatSessionStorage {
     }
 
     public async getSession(tabID: string): Promise<Session> {
+        /**
+         * The lock here is added in order to mitigate amazon Q's eventing fire & forget design when integrating with mynah-ui that creates a race condition here.
+         * The race condition happens when handleDevFeatureCommand in src/amazonq/webview/ui/quickActions/handler.ts is firing two events after each other to amazonqFeatureDev controller
+         * This eventually may make code generation fail as at the moment of that event it may get from the storage a session that has not been properly updated.
+         */
         return this.lock.acquire(tabID, async () => {
             const sessionFromStorage = this.sessions.get(tabID)
             if (sessionFromStorage === undefined) {
