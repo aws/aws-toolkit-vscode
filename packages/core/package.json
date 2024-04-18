@@ -263,6 +263,18 @@
                     "type": "object",
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
+                },
+                "aws.accessAnalyzer.iamPolicyChecks.referencePolicyFilePath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "File path or S3 path to a control policy for Custom Policy Checks.",
+                    "scope": "window"
+                },
+                "aws.accessAnalyzer.iamPolicyChecks.cloudFormationParameterFilePath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Keys and values for CloudFormation template parameters. Only parameters that are referenced by IAM policies in the template are required.",
+                    "scope": "machine-overridable"
                 }
             }
         },
@@ -2190,6 +2202,12 @@
             ]
         },
         "commands": [
+            {
+                "command": "aws.accessanalyzer.iamPolicyChecks",
+                "title": "%AWS.command.accessanalyzer.iamPolicyChecks%",
+                "category": "%AWS.title%",
+                "enablement": "aws.iamPolicyChecks.enabled"
+            },
             {
                 "command": "aws.amazonq.explainCode",
                 "title": "%AWS.command.amazonq.explainCode%",

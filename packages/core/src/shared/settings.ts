@@ -688,6 +688,7 @@ const devSettings = {
     codecatalystService: Record(String, String),
     codewhispererService: Record(String, String),
     ssoCacheDirectory: String,
+    enableIamPolicyChecksFeature: Boolean,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings

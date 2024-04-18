@@ -40,6 +40,7 @@ import { activate as activateApplicationComposer } from './applicationcomposer/a
 import { activate as activateRedshift } from './redshift/activation'
 import { activate as activateCWChat } from './amazonq/activation'
 import { activate as activateQGumby } from './amazonqGumby/activation'
+import { activate as activateIamPolicyChecks } from './accessanalyzer/activation'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
@@ -163,6 +164,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
 
         await activateRedshift(extContext)
+
+        await activateIamPolicyChecks(extContext)
 
         context.subscriptions.push(
             vscode.window.registerUriHandler({
