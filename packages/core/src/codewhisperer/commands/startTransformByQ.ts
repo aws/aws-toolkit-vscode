@@ -156,7 +156,8 @@ export async function compileProject() {
     try {
         const dependenciesFolder: FolderInfo = getDependenciesFolderInfo()
         transformByQState.setDependencyFolderInfo(dependenciesFolder)
-        await prepareProjectDependencies(dependenciesFolder)
+        const modulePath = transformByQState.getProjectPath()
+        await prepareProjectDependencies(dependenciesFolder, modulePath)
     } catch (err) {
         // open build-logs.txt file to show user error logs
         const logFilePath = await writeLogs()
@@ -393,7 +394,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         // TODO maybe separate function for just install
         // IF WE fail, do we allow user to retry? or just fail
         // Maybe have clientside retries?
-        await prepareProjectDependencies(uploadFolderInfo)
+        await prepareProjectDependencies(uploadFolderInfo, uploadFolderInfo.path)
         // zipCode side effects deletes the uploadFolderInfo right away
         const uploadPayloadFilePath = await zipCode({
             dependenciesFolder: uploadFolderInfo,

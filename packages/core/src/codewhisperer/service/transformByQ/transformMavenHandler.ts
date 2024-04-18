@@ -15,10 +15,9 @@ import { writeLogs } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
-function installProjectDependencies(dependenciesFolder: FolderInfo) {
+function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
     // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
     const baseCommand = transformByQState.getMavenName()
-    const modulePath = transformByQState.getProjectPath()
 
     transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
@@ -84,10 +83,9 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
     }
 }
 
-function copyProjectDependencies(dependenciesFolder: FolderInfo) {
+function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
     // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
     const baseCommand = transformByQState.getMavenName()
-    const modulePath = transformByQState.getProjectPath()
 
     transformByQState.appendToErrorLog(`Running command ${baseCommand} copy-dependencies`)
 
@@ -151,15 +149,15 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
     }
 }
 
-export async function prepareProjectDependencies(dependenciesFolder: FolderInfo) {
+export async function prepareProjectDependencies(dependenciesFolder: FolderInfo, rootPomPath: string) {
     try {
-        copyProjectDependencies(dependenciesFolder)
+        copyProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
         // continue in case of errors
     }
 
     try {
-        installProjectDependencies(dependenciesFolder)
+        installProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
         void vscode.window.showErrorMessage(
             CodeWhispererConstants.installErrorMessage.replace(
