@@ -109,3 +109,14 @@ export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispere
         ignoreFocusOut: false,
     }).prompt()
 })
+
+/**
+ * Does what {@link listCodeWhispererCommands} does, must only be used by the walkthrough for telemetry
+ * purposes.
+ */
+export const listCodeWhispererCommandsWalkthrough = Commands.declare(
+    `_aws.amazonq.walkthrough.listCommands`,
+    () => async () => {
+        await listCodeWhispererCommands.execute()
+    }
+)
