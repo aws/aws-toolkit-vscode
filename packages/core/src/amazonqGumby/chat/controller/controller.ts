@@ -25,7 +25,12 @@ import {
     validateCanCompileProject,
 } from '../../../codewhisperer/commands/startTransformByQ'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
-import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
+import {
+    AlternateDependencyVersionsNotFoundError,
+    JavaHomeNotSetError,
+    NoJavaProjectsFoundError,
+    NoMavenJavaProjectsFoundError,
+} from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
@@ -50,6 +55,7 @@ export interface ChatControllerEventEmitters {
     readonly startHumanInTheLoopIntervention: vscode.EventEmitter<any>
     readonly promptForDependencyHIL: vscode.EventEmitter<any>
     readonly HILSelectionUploaded: vscode.EventEmitter<any>
+    readonly errorThrown: vscode.EventEmitter<any>
 }
 
 export class GumbyController {
@@ -112,6 +118,10 @@ export class GumbyController {
 
         this.chatControllerMessageListeners.HILSelectionUploaded.event(data => {
             return this.HILDependencySelectionUploaded(data)
+        })
+
+        this.chatControllerMessageListeners.errorThrown.event(data => {
+            return this.reportError(data)
         })
     }
 
@@ -380,6 +390,15 @@ export class GumbyController {
 
     private openLink(message: { link: string }) {
         void openUrl(vscode.Uri.parse(message.link))
+    }
+
+    private reportError(message: { error: Error; tabID: string }) {
+        console.log(`reportError for ${message.tabID}`)
+        if (message.error instanceof AlternateDependencyVersionsNotFoundError) {
+            this.messenger.sendUnrecoverableError('no-alternate-dependencies-found', message.tabID)
+        } else {
+            this.messenger.sendErrorMessage(message.error.message, message.tabID)
+        }
     }
 }
 

@@ -43,6 +43,8 @@ export type ErrorTextResponseType =
     | 'invalid-java-home'
     | 'unsupported-source-jdk-version'
 
+export type UnrecoverableErrorResponseType = 'no-alternate-dependencies-found'
+
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
     JOB_SUBMISSION_STATUS_MESSAGE = 'gumbyJobSubmissionMessage',
@@ -341,6 +343,28 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
                 tabID
             )
         )
+    }
+
+    public sendUnrecoverableError(type: UnrecoverableErrorResponseType, tabID: string) {
+        let message = '...'
+
+        switch (type) {
+            case 'no-alternate-dependencies-found':
+                message = `I wasn't able to find any other version for this dependency in your local maven repository. You may want to first transform your 1p dependency to make it Java 17 compatible before upgrading this module .`
+                break
+        }
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
+                },
+                tabID
+            )
+        )
+
+        this.sendInProgressMessage(tabID, 'Stopping job...')
     }
 
     public sendCommandMessage(message: any) {

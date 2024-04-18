@@ -63,7 +63,7 @@ import {
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
-import { JavaHomeNotSetError } from '../../amazonqGumby/errors'
+import { AlternateDependencyVersionsNotFoundError, JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 import {
     createPomCopy,
@@ -339,7 +339,14 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
 
         if (status === dependencyNoAvailableVersions) {
             // let user know and early exit for human in the loop happened because no upgrade versions available
-            throw new Error('No available versions for update')
+            const error = new AlternateDependencyVersionsNotFoundError()
+
+            transformByQState.getChatControllers()?.errorThrown.fire({
+                error,
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+            })
+
+            throw error
         }
 
         await highlightPomIssueInProject(newPomFileVirtualFileReference, manifestFileValues.sourcePomVersion)

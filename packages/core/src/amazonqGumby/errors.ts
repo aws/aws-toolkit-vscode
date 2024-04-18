@@ -35,3 +35,9 @@ export class ZipExceedsSizeLimitError extends ToolkitError {
         super('Zip file exceeds size limit', { code: 'ZipFileExceedsSizeLimit' })
     }
 }
+
+export class AlternateDependencyVersionsNotFoundError extends Error {
+    constructor() {
+        super('No available versions for update')
+    }
+}
