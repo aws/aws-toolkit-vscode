@@ -690,11 +690,11 @@
             "activitybar": [
                 {
                     "id": "aws-explorer",
-                    "title": "%AWS.title%",
+                    "title": "%AWS.productName%",
                     "icon": "resources/aws-logo.svg",
                     "cloud9": {
                         "cn": {
-                            "title": "%AWS.title.cn%",
+                            "title": "%AWS.productName.cn%",
                             "icon": "resources/aws-cn-logo.svg"
                         }
                     }
@@ -2100,49 +2100,49 @@
             {
                 "command": "aws.codecatalyst.openOrg",
                 "title": "%AWS.command.codecatalyst.openOrg%",
-                "category": "AWS",
+                "category": "%AWS.productName%",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.openProject",
                 "title": "%AWS.command.codecatalyst.openProject%",
-                "category": "AWS",
+                "category": "%AWS.productName%",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.openRepo",
                 "title": "%AWS.command.codecatalyst.openRepo%",
-                "category": "AWS",
+                "category": "%AWS.productName%",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.openDevEnv",
                 "title": "%AWS.command.codecatalyst.openDevEnv%",
-                "category": "AWS",
+                "category": "%AWS.productName%",
                 "enablement": "!isCloud9 && !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.listCommands",
                 "title": "%AWS.command.codecatalyst.listCommands%",
-                "category": "AWS",
+                "category": "%AWS.productName%",
                 "enablement": "!isCloud9 && !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.cloneRepo",
                 "title": "%AWS.command.codecatalyst.cloneRepo%",
-                "category": "AWS",
+                "category": "%AWS.productName%",
                 "enablement": "!isCloud9 && !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.createDevEnv",
                 "title": "%AWS.command.codecatalyst.createDevEnv%",
-                "category": "AWS",
+                "category": "%AWS.productName%",
                 "enablement": "!isCloud9 && !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.signout",
                 "title": "%AWS.command.codecatalyst.signout%",
-                "category": "AWS",
+                "category": "%AWS.productName%",
                 "icon": "$(debug-disconnect)",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
             },
@@ -2159,22 +2159,22 @@
             {
                 "command": "aws.toolkit.auth.addConnection",
                 "title": "%AWS.command.auth.addConnection%",
-                "category": "%AWS.title%"
+                "category": "%AWS.productName%"
             },
             {
                 "command": "aws.toolkit.auth.manageConnections",
                 "title": "%AWS.command.auth.showConnectionsPage%",
-                "category": "%AWS.title%"
+                "category": "%AWS.productName%"
             },
             {
                 "command": "aws.codecatalyst.manageConnections",
                 "title": "%AWS.command.auth.showConnectionsPage%",
-                "category": "%AWS.title%"
+                "category": "%AWS.productName%"
             },
             {
                 "command": "aws.toolkit.auth.switchConnections",
                 "title": "%AWS.command.auth.switchConnections%",
-                "category": "%AWS.title%"
+                "category": "%AWS.productName%"
             },
             {
                 "command": "aws.toolkit.auth.signout",
@@ -2885,7 +2885,7 @@
             {
                 "command": "aws.toolkit.viewLogs",
                 "title": "%AWS.command.viewLogs%",
-                "category": "%AWS.title%"
+                "category": "%AWS.productName%"
             },
             {
                 "command": "aws.toolkit.help",
@@ -2977,13 +2977,13 @@
                 "command": "aws.cdk.renderStateMachineGraph",
                 "title": "%AWS.command.cdk.previewStateMachine%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "AWS",
+                "category": "%AWS.productName%",
                 "icon": "$(aws-stepfunctions-preview)"
             },
             {
                 "command": "aws.toolkit.aboutExtension",
                 "title": "%AWS.command.aboutToolkit%",
-                "category": "%AWS.title%"
+                "category": "%AWS.productName%"
             },
             {
                 "command": "aws.cwl.viewLogStream",
@@ -3366,7 +3366,7 @@
             {
                 "command": "aws.apprunner.resumeService",
                 "title": "%AWS.command.apprunner.resumeService%",
-                "category": "AWS",
+                "category": "%AWS.productName%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
