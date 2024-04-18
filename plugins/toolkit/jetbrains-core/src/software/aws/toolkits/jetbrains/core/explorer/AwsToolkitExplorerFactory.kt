@@ -95,7 +95,7 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
             AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED,
             object : ConnectionSettingsStateChangeNotifier {
                 override fun settingsStateChanged(newState: ConnectionState) {
-                    connectionChanged(project, ToolkitConnectionManager.getInstance(project).activeConnection(), toolWindow)
+                    settingsStateChanged(project, newState, toolWindow)
                 }
             }
         )
@@ -123,26 +123,7 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
             }
 
             null -> {
-                ToolkitConnectionManager.getInstance(project).let {
-                    val conn = it.activeConnection()
-                    val hasIdCRoleAccess = if (conn is AwsBearerTokenConnection) {
-                        conn.scopes.contains(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)
-                    } else {
-                        false
-                    }
-
-                    val isCodecatalystConn = it.activeConnectionForFeature(CodeCatalystConnection.getInstance()) != null
-                    val hasIamCredential = CredentialManager.getInstance().getCredentialIdentifiers().isNotEmpty()
-
-                    LOG.debug {
-                        "sign out, checking existing connection(s)... " +
-                            "hasIdCPermission=$hasIdCRoleAccess; codecatalyst=$isCodecatalystConn; IAM=$hasIamCredential"
-                    }
-
-                    it.activeConnectionForFeature(CodeCatalystConnection.getInstance()) != null ||
-                        hasIdCRoleAccess ||
-                        CredentialManager.getInstance().getCredentialIdentifiers().isNotEmpty()
-                }
+                inspectExistingConnection(project)
             }
 
             else -> {
@@ -150,8 +131,24 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
             }
         }
 
-        val contentManager = toolWindow.contentManager
-        val component = if (isToolkitConnected) {
+        toolWindow.reload(isToolkitConnected)
+    }
+
+    private fun settingsStateChanged(project: Project, newState: ConnectionState, toolWindow: ToolWindow) {
+        val isToolkitConnected = if (newState is ConnectionState.ValidConnection) {
+            true
+        } else {
+            inspectExistingConnection(project)
+        }
+
+        LOG.debug { "settingsStateChanged: ${newState::class.simpleName}; isToolkitConnected=$isToolkitConnected" }
+
+        toolWindow.reload(isToolkitConnected)
+    }
+
+    private fun ToolWindow.reload(isConnected: Boolean) {
+        val contentManager = this.contentManager
+        val component = if (isConnected) {
             LOG.debug { "Rendering explorer tree" }
             AwsToolkitExplorerToolWindow.getInstance(project)
         } else {
@@ -171,6 +168,34 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
             contentManager.addContent(myContent)
         }
     }
+
+    private fun inspectExistingConnection(project: Project): Boolean =
+        ToolkitConnectionManager.getInstance(project).let {
+            if (CredentialManager.getInstance().getCredentialIdentifiers().isNotEmpty()) {
+                LOG.debug { "inspecting existing connection and found IAM credentials" }
+                return@let true
+            }
+
+            val conn = it.activeConnection()
+            val hasIdCRoleAccess = if (conn is AwsBearerTokenConnection) {
+                conn.scopes.contains(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)
+            } else {
+                false
+            }
+
+            if (hasIdCRoleAccess) {
+                LOG.debug { "inspecting existing connection and found bearer connections with IdCRoleAccess scope" }
+                return@let true
+            }
+
+            val isCodecatalystConn = it.activeConnectionForFeature(CodeCatalystConnection.getInstance()) != null
+            if (isCodecatalystConn) {
+                LOG.debug { "inspecting existing connection and found active Codecatalyst connection" }
+                return@let true
+            }
+
+            return@let false
+        }
 
     companion object {
         private val LOG = getLogger<AwsToolkitExplorerFactory>()
