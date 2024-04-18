@@ -3,7 +3,7 @@ apache-commons-collections = "4.4"
 apache-commons-io = "2.16.0"
 assertJ = "3.20.2" # Upgrading leads to SAM errors: https://youtrack.jetbrains.com/issue/KT-17765
 # match with <root>/settings.gradle.kts
-awsSdk = "2.25.32"
+awsSdk = "2.25.33"
 commonmark = "0.17.1"
 detekt = "1.23.6"
 intellijGradle = "1.17.3"
