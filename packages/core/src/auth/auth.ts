@@ -65,7 +65,7 @@ import { randomUUID } from '../common/crypto'
 
 interface AuthService {
     /**
-     * Lists all connections known to the Toolkit.
+     * Lists all connections known to the extension.
      */
     listConnections(): Promise<Connection[]>
 

@@ -10,6 +10,7 @@ import { assertTelemetry, getProjectDir } from '../../../testUtil'
 import { AuthFormId } from '../../../../auth/ui/vue/authForms/types'
 import assert from 'assert'
 import { fsCommon } from '../../../../srcShared/fs'
+import { ExtStartUpSources } from '../../../../shared/telemetry'
 
 describe('emitWebviewClosed()', function () {
     let authWebview: SinonStubbedInstance<AuthWebview>
@@ -126,7 +127,7 @@ describe('emitWebviewClosed()', function () {
 
     describe('source === "firstTimeUser"', function () {
         beforeEach(function () {
-            authWebview.getSource.returns('firstStartup')
+            authWebview.getSource.returns(ExtStartUpSources.firstStartUp)
         })
 
         it('no connections exist, no user attempts', async function () {
@@ -134,7 +135,7 @@ describe('emitWebviewClosed()', function () {
 
             assertTelemetry('auth_addedConnections', {
                 result: 'Failed',
-                source: 'firstStartup',
+                source: 'firstStartUp',
             })
         })
 
@@ -146,7 +147,7 @@ describe('emitWebviewClosed()', function () {
 
             assertTelemetry('auth_addedConnections', {
                 result: 'Succeeded',
-                source: 'firstStartup',
+                source: 'firstStartUp',
                 enabledAuthConnections: buildCommaDelimitedString(authsInitial),
                 newEnabledAuthConnections: undefined,
             })
@@ -160,7 +161,7 @@ describe('emitWebviewClosed()', function () {
 
             assertTelemetry('auth_addedConnections', {
                 result: 'Failed',
-                source: 'firstStartup',
+                source: 'firstStartUp',
                 enabledAuthConnections: undefined,
                 newEnabledAuthConnections: undefined,
             })

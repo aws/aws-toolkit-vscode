@@ -18,7 +18,6 @@ import {
     createFeedbackNode,
     createGitHubNode,
     createDocumentationNode,
-    switchToAmazonQCommand,
 } from './codeWhispererNodes'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
@@ -39,7 +38,7 @@ function getAmazonQCodeWhispererNodes() {
     }
 
     if (!AuthUtil.instance.isConnected()) {
-        return [createSignIn('item', switchToAmazonQCommand), createLearnMore()]
+        return [createSignIn('item'), createLearnMore()]
     }
 
     if (vsCodeState.isFreeTierLimitReached) {
@@ -70,7 +69,7 @@ function getAmazonQCodeWhispererNodes() {
 
         // Amazon Q + others
         createSeparator('Other Features'),
-        switchToAmazonQNode('item', switchToAmazonQCommand),
+        switchToAmazonQNode('item'),
         createSecurityScan(),
     ]
 }

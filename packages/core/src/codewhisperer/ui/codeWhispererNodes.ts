@@ -28,8 +28,6 @@ import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { _switchToAmazonQ } from '../../amazonq/explorer/commonNodes'
 
-export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => _switchToAmazonQ)
-
 export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
     const iconResume = getIcon('vscode-debug-start')

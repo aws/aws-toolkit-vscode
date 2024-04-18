@@ -14,6 +14,8 @@ import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { globals } from '../../shared'
 import { amazonQDismissedKey } from '../../codewhisperer/models/constants'
 import { _switchToAmazonQ } from './commonNodes'
+import { ExtStartUpSources, telemetry } from '../../shared/telemetry'
+import { ExtensionUse } from '../../auth/utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -25,12 +27,21 @@ export const qExtensionPageCommand = Commands.declare('aws.toolkit.amazonq.exten
     void vscode.env.openExternal(vscode.Uri.parse(`vscode:extension/${VSCODE_EXTENSION_ID.amazonq}`))
 })
 
-export const dismissQTree = Commands.declare('aws.toolkit.amazonq.dismiss', () => async () => {
-    await globals.context.globalState.update(amazonQDismissedKey, true)
-    await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
-})
+export const dismissQTree = Commands.declare(
+    { id: '_aws.toolkit.amazonq.dismiss', compositeKey: { 0: 'source' } },
+    () => async (source: string) => {
+        await telemetry.toolkit_invokeAction.run(async () => {
+            telemetry.record({
+                source: ExtensionUse.instance.isFirstUse() ? ExtStartUpSources.firstStartUp : ExtStartUpSources.none,
+            })
 
-export const toolkitSwitchToAmazonQCommand = Commands.declare('_aws.toolkit.amazonq.focusView', () => _switchToAmazonQ)
+            await globals.context.globalState.update(amazonQDismissedKey, true)
+            await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+
+            telemetry.record({ action: 'dismissQExplorerTree' })
+        })
+    }
+)
 
 // Learn more button of Amazon Q now opens the Amazon Q marketplace page.
 export const createLearnMoreNode = () =>
@@ -48,7 +59,7 @@ export function createInstallQNode() {
 }
 
 export function createDismissNode() {
-    return dismissQTree.build().asTreeNode({
+    return dismissQTree.build(cwTreeNodeSource).asTreeNode({
         label: 'Dismiss', // TODO: localize
         iconPath: getIcon('vscode-close'),
     })
