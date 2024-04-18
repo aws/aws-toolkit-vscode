@@ -938,6 +938,12 @@ export class Auth implements AuthService, ConnectionManager {
         } else {
             await this.store.updateProfile(connection.id, newProfile)
             await this.updateConnectionState(id, connection.state)
+            if (!this.getConnectionSource({ id: id })) {
+                await this.store.updateMetadata(id, {
+                    source: 'amazonq',
+                    connectionState: connection.state,
+                })
+            }
         }
     }
 
