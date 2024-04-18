@@ -353,6 +353,7 @@ export class CWCTelemetryHelper {
                         fullResponselatency: event.cwsprChatFullResponseLatency,
                         requestLength: event.cwsprChatRequestLength,
                         responseLength: event.cwsprChatResponseLength,
+                        numberOfCodeBlocks: event.cwsprChatResponseCodeSnippetCount,
                     },
                 },
             })
