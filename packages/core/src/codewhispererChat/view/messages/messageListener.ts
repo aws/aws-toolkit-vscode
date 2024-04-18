@@ -34,9 +34,6 @@ export class UIMessageListener {
 
     private handleMessage(msg: ExtensionMessage) {
         switch (msg.command) {
-            case 'onboarding-page-interaction':
-                this.processOnboardingPageInteraction(msg)
-                break
             case 'help':
             case 'clear':
             case 'transform':
@@ -129,11 +126,6 @@ export class UIMessageListener {
         })
     }
 
-    private processOnboardingPageInteraction(msg: any) {
-        this.chatControllerMessagePublishers.processOnboardingPageInteraction.publish({
-            type: msg.type,
-        })
-    }
     private processUIFocus(msg: any) {
         this.chatControllerMessagePublishers.processUIFocusMessage.publish({
             command: msg.command,
