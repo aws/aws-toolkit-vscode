@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as semver from 'semver'
 import { join } from 'path'
 import {
     CodeSuggestionsState,
@@ -24,7 +25,7 @@ import {
     globals,
     RegionProvider,
 } from 'aws-core-vscode/shared'
-import { initializeAuth, CredentialsStore, LoginManager } from 'aws-core-vscode/auth'
+import { initializeAuth, CredentialsStore, LoginManager, ExtensionUse } from 'aws-core-vscode/auth'
 import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
@@ -35,6 +36,32 @@ import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 export async function activateShared(context: vscode.ExtensionContext) {
     const contextPrefix = 'amazonq'
     globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
+
+    // Avoid activation if older toolkit is installed
+    // Amazon Q is only compatible with AWS Toolkit >= 3.0.0
+    // Or AWS Toolkit with a development version. Example: 2.19.0-3413gv
+    const toolkit = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+    if (toolkit) {
+        const toolkitVersion = semver.coerce(toolkit.packageJSON.version)
+        const isDevVersion = toolkit.packageJSON.version.toString().includes('-')
+        if (toolkitVersion && toolkitVersion.major < 3 && !isDevVersion) {
+            await vscode.commands
+                .executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.awstoolkit)
+                .then(
+                    void vscode.window
+                        .showInformationMessage(
+                            `The Amazon Q extension is incompatible with AWS Toolkit versions 2.9 and below. Your AWS Toolkit was updated to version 3.0 or later.`,
+                            'Reload Now'
+                        )
+                        .then(async resp => {
+                            if (resp === 'Reload Now') {
+                                await vscode.commands.executeCommand('workbench.action.reloadWindow')
+                            }
+                        })
+                )
+            return
+        }
+    }
 
     await initializeComputeRegion()
     initialize(context)
@@ -93,6 +120,10 @@ export async function activateShared(context: vscode.ExtensionContext) {
 
     // enable auto suggestions on activation
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
+
+    if (ExtensionUse.instance.isFirstUse()) {
+        await vscode.commands.executeCommand('workbench.view.extension.amazonq')
+    }
 }
 
 export async function deactivateShared() {
