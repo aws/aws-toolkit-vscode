@@ -282,12 +282,16 @@ export async function activate(context: ExtContext): Promise<void> {
     if (auth.isValidEnterpriseSsoInUse()) {
         await notifyNewCustomizations()
     }
+    if (auth.isBuilderIdInUse()) {
+        await CodeScansState.instance.setScansEnabled(false)
+    }
 
     function setSubscriptionsForAutoScans() {
         // Initial scan when the editor opens for the first time
         const editor = vscode.window.activeTextEditor
         if (
             CodeScansState.instance.isScansEnabled() &&
+            !auth.isBuilderIdInUse() &&
             editor &&
             securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&
             editor.document.getText().length > 0
@@ -306,6 +310,7 @@ export async function activate(context: ExtContext): Promise<void> {
             vscode.window.onDidChangeActiveTextEditor(editor => {
                 if (
                     CodeScansState.instance.isScansEnabled() &&
+                    !auth.isBuilderIdInUse() &&
                     editor &&
                     securityScanLanguageContext.isLanguageSupported(editor.document.languageId)
                 ) {
@@ -334,6 +339,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 const editor = vscode.window.activeTextEditor
                 if (
                     CodeScansState.instance.isScansEnabled() &&
+                    !auth.isBuilderIdInUse() &&
                     editor &&
                     event.document === editor.document &&
                     securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&
@@ -355,6 +361,7 @@ export async function activate(context: ExtContext): Promise<void> {
             const editor = vscode.window.activeTextEditor
             if (
                 isScansEnabled &&
+                !auth.isBuilderIdInUse() &&
                 editor &&
                 securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&
                 editor.document.getText().length > 0
