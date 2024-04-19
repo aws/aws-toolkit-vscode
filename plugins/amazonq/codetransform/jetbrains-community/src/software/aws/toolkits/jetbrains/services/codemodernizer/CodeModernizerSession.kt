@@ -318,7 +318,7 @@ class CodeModernizerSession(
                         val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_start_failure")
                         return CodeModernizerJobCompletedResult.JobFailed(jobId, failureReason)
                     } else if (!passedBuild) {
-                        val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_build_failure")
+                        val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.maven_failed.content")
                         return CodeModernizerJobCompletedResult.JobFailedInitialBuild(jobId, failureReason)
                     } else {
                         val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_status_response")

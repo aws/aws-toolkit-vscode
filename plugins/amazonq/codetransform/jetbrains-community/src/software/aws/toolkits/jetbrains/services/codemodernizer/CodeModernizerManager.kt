@@ -235,7 +235,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         val reason = failureReason ?: message("codemodernizer.notification.info.modernize_failed.unknown_failure_reason") // should not happen
         notifyStickyInfo(
             message("codemodernizer.notification.info.modernize_failed.title"),
-            message("codemodernizer.notification.info.modernize_failed.description", reason),
+            reason,
             project,
             listOf(displayFeedbackNotificationAction())
         )
