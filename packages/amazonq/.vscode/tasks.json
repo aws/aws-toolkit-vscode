@@ -43,7 +43,7 @@
         },
         {
             "label": "watchCore",
-            "command": "npm run compileLite -- --watch",
+            "command": "npm run compileOnly -- --watch",
             "type": "shell",
             "isBackground": true,
             "problemMatcher": {
