@@ -6,7 +6,7 @@
 import { window, TreeItem, TreeView, ViewBadge } from 'vscode'
 import { getLogger } from '../../shared/logger'
 import globals from '../../shared/extensionGlobals'
-import { getChatAuthState } from '../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { GlobalState } from '../../shared/globalState'
 
 let badgeHelperView: TreeView<void> | undefined
@@ -76,7 +76,7 @@ export async function shouldShowBadge(): Promise<boolean> {
     const memento = globals.context.globalState
     const hasAlreadyShown = memento.get(mementoKey)
     if (!hasAlreadyShown) {
-        const state = await getChatAuthState()
+        const state = await AuthUtil.instance.getChatAuthState()
         if (state.codewhispererCore === 'connected' && state.codewhispererChat !== 'connected') {
             return true
         }

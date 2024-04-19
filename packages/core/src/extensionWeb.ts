@@ -11,13 +11,14 @@ import os from 'os'
 
 export async function activate(context: vscode.ExtensionContext) {
     setWeb(true) // THIS MUST ALWAYS BE FIRST
+    const contextPrefix = 'toolkit'
 
     try {
         patchOsVersion()
 
         // IMPORTANT: Any new activation code should be done in the function below unless
         // it is web mode specific activation code.
-        await activateShared(context)
+        await activateShared(context, contextPrefix)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long

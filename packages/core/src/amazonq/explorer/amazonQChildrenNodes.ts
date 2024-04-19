@@ -5,56 +5,64 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { Command, Commands, placeholder } from '../../shared/vscode/commands2'
+import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
-import { reconnect } from '../../codewhisperer/commands/basicCommands'
+import { installAmazonQExtension, reconnect } from '../../codewhisperer/commands/basicCommands'
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import { focusAmazonQPanel } from '../../auth/ui/vue/show'
-import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { globals } from '../../shared'
+import { amazonQDismissedKey } from '../../codewhisperer/models/constants'
+import { _switchToAmazonQ } from './commonNodes'
+import { ExtStartUpSources, telemetry } from '../../shared/telemetry'
+import { ExtensionUse } from '../../auth/utils'
 
 const localize = nls.loadMessageBundle()
 
-export const learnMoreAmazonQCommand = Commands.declare('aws.amazonq.learnMore', () => () => {
+export const learnMoreAmazonQCommand = Commands.declare('aws.toolkit.amazonq.learnMore', () => () => {
     void vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
 })
 
+export const qExtensionPageCommand = Commands.declare('aws.toolkit.amazonq.extensionpage', () => () => {
+    void vscode.env.openExternal(vscode.Uri.parse(`vscode:extension/${VSCODE_EXTENSION_ID.amazonq}`))
+})
+
+export const dismissQTree = Commands.declare(
+    { id: '_aws.toolkit.amazonq.dismiss', compositeKey: { 0: 'source' } },
+    () => async (source: string) => {
+        await telemetry.toolkit_invokeAction.run(async () => {
+            telemetry.record({
+                source: ExtensionUse.instance.isFirstUse() ? ExtStartUpSources.firstStartUp : ExtStartUpSources.none,
+            })
+
+            await globals.context.globalState.update(amazonQDismissedKey, true)
+            await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+
+            telemetry.record({ action: 'dismissQExplorerTree' })
+        })
+    }
+)
+
+// Learn more button of Amazon Q now opens the Amazon Q marketplace page.
 export const createLearnMoreNode = () =>
-    learnMoreAmazonQCommand.build().asTreeNode({
+    qExtensionPageCommand.build().asTreeNode({
         label: localize('AWS.amazonq.learnMore', 'Learn More About Amazon Q (Preview)'),
         iconPath: getIcon('vscode-question'),
         contextValue: 'awsAmazonQLearnMoreNode',
     })
 
-export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => () => {
-    telemetry.ui_click.emit({
-        elementId: 'amazonq_switchToQChat',
-        passive: false,
+export function createInstallQNode() {
+    return installAmazonQExtension.build().asTreeNode({
+        label: 'Install the Amazon Q Extension', // TODO: localize
+        iconPath: getIcon('vscode-extensions'),
     })
-    void focusAmazonQPanel()
-})
+}
 
-export function switchToAmazonQNode(type: 'item'): DataQuickPickItem<'openChatPanel'>
-export function switchToAmazonQNode(type: 'tree'): TreeNode<Command>
-export function switchToAmazonQNode(type: 'item' | 'tree'): DataQuickPickItem<'openChatPanel'> | TreeNode<Command>
-export function switchToAmazonQNode(type: 'item' | 'tree'): any {
-    switch (type) {
-        case 'tree':
-            return switchToAmazonQCommand.build().asTreeNode({
-                label: 'Open Chat Panel',
-                iconPath: getIcon('vscode-comment'),
-                contextValue: 'awsToAmazonQChatNode',
-            })
-        case 'item':
-            return {
-                data: 'openChatPanel',
-                label: 'Open Chat Panel',
-                iconPath: getIcon('vscode-comment'),
-                onClick: () => switchToAmazonQCommand.execute(),
-            } as DataQuickPickItem<'openChatPanel'>
-    }
+export function createDismissNode() {
+    return dismissQTree.build(cwTreeNodeSource).asTreeNode({
+        label: 'Dismiss', // TODO: localize
+        iconPath: getIcon('vscode-close'),
+    })
 }
 
 /*

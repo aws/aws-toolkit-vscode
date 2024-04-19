@@ -166,6 +166,31 @@ export function toTitleCase(str: string): string {
 }
 
 /**
+ * converts keys in an object from camelCase to snake_case
+ * e.g.
+ * {
+ *   fooBar: "fi"
+ * }
+ *
+ * to
+ * {
+ *   foo_bar: "fi"
+ * }
+ */
+export function toSnakeCase(obj: Record<string, any>) {
+    const snakeObj: Record<string, string> = {}
+
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            const snakeKey = key.replace(/([a-z])([A-Z]+)/g, '$1_$2').toLowerCase()
+            snakeObj[snakeKey] = obj[key]
+        }
+    }
+
+    return snakeObj
+}
+
+/**
  * Gets a relative date between the from date and now date (default: current time)
  * e.g. "in 1 minute", '1 minute ago'
  * works on the scales of seconds, minutes, hours, days, weeks, months, years

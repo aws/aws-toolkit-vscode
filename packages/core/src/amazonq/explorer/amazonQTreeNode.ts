@@ -4,15 +4,18 @@
  */
 
 import * as vscode from 'vscode'
-import { createFreeTierLimitMet, createSignIn, createReconnect } from '../../codewhisperer/ui/codeWhispererNodes'
+import { createFreeTierLimitMet, createReconnect } from '../../codewhisperer/ui/codeWhispererNodes'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
-import { AuthUtil, amazonQScopes, codeWhispererChatScopes } from '../../codewhisperer/util/authUtil'
-import { createLearnMoreNode, enableAmazonQNode, switchToAmazonQNode } from './amazonQChildrenNodes'
+import { AuthState, AuthUtil, isPreviousQUser } from '../../codewhisperer/util/authUtil'
+import { createLearnMoreNode, createInstallQNode, createDismissNode } from './amazonQChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
-import { hasScopes, isBuilderIdConnection, isSsoConnection } from '../../auth/connection'
 import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
 import { getIcon } from '../../shared/icons'
 import { vsCodeState } from '../../codewhisperer/models/model'
+import { isExtensionActive, isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { getLogger } from '../../shared/logger'
+import { createSignIn, switchToAmazonQNode } from './commonNodes'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -24,7 +27,17 @@ export class AmazonQNode implements TreeNode {
     private readonly onDidChangeVisibilityEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
 
-    constructor() {}
+    public static amazonQState: AuthState
+
+    private constructor() {
+        // This case handles if the Toolkit extension is installed or activated after the Amazon Q extension.
+        // This command is registered in Amazon Q.
+        if (isExtensionActive(VSCODE_EXTENSION_ID.amazonq)) {
+            // 'void' instead of await, so that the command call doesn't trigger an infinite loop
+            // on constructing these instances.
+            void vscode.commands.executeCommand('_aws.amazonq.refreshToolkitQTreeState')
+        }
+    }
 
     public getTreeItem() {
         const item = new vscode.TreeItem('Amazon Q')
@@ -59,38 +72,26 @@ export class AmazonQNode implements TreeNode {
     }
 
     public getChildren() {
-        if (AuthUtil.instance.isConnectionExpired()) {
-            return [createReconnect('tree'), createLearnMoreNode()]
-        }
-
-        if (!AuthUtil.instance.isConnected()) {
-            return [createSignIn('tree'), createLearnMoreNode()]
-        }
-
-        if (isSsoConnection(AuthUtil.instance.conn)) {
-            const missingScopes =
-                (AuthUtil.instance.isEnterpriseSsoInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
-                !hasScopes(AuthUtil.instance.conn, codeWhispererChatScopes)
-
-            if (missingScopes) {
-                return [enableAmazonQNode(), createLearnMoreNode()]
+        if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
+            const children = [createInstallQNode(), createLearnMoreNode()]
+            if (!isPreviousQUser()) {
+                children.push(createDismissNode())
             }
-        }
-
-        if (isBuilderIdConnection(AuthUtil.instance.conn)) {
-            const missingScopes =
-                (AuthUtil.instance.isBuilderIdInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
-                !hasScopes(AuthUtil.instance.conn, codeWhispererChatScopes)
-
-            if (missingScopes) {
-                return [enableAmazonQNode(), createLearnMoreNode()]
+            return children
+        } else {
+            if (AmazonQNode.amazonQState === 'expired') {
+                return [createReconnect('tree'), createLearnMoreNode()]
             }
-        }
 
-        return [
-            vsCodeState.isFreeTierLimitReached ? createFreeTierLimitMet('tree') : switchToAmazonQNode('tree'),
-            createNewMenuButton(),
-        ]
+            if (AmazonQNode.amazonQState !== 'connected') {
+                return [createSignIn('tree'), createLearnMoreNode()]
+            }
+
+            return [
+                vsCodeState.isFreeTierLimitReached ? createFreeTierLimitMet('tree') : switchToAmazonQNode('tree'),
+                createNewMenuButton(),
+            ]
+        }
     }
 
     /**
@@ -104,6 +105,12 @@ export class AmazonQNode implements TreeNode {
     getParent(): TreeNode<unknown> | undefined {
         return undefined
     }
+
+    static #instance: AmazonQNode
+
+    static get instance(): AmazonQNode {
+        return (this.#instance ??= new AmazonQNode())
+    }
 }
 
 function createNewMenuButton(): TreeNode<Command> {
@@ -113,19 +120,30 @@ function createNewMenuButton(): TreeNode<Command> {
         description: 'Learn more',
     })
 }
-
-export const amazonQNode = new AmazonQNode()
+/**
+ * Refreshes the Amazon Q Tree node. If Amazon Q's connection state is provided, it will also internally
+ * update the connection state.
+ *
+ * This command is meant to be called by Amazon Q. It doesn't serve much purpose being called otherwise.
+ */
 export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
-    Commands.register({ id: 'aws.amazonq.refresh', logging: false }, () => {
-        amazonQNode.refresh()
+    Commands.register({ id: '_aws.toolkit.amazonq.refreshTreeNode', logging: false }, (state?: AuthState) => {
+        if (state) {
+            AmazonQNode.amazonQState = state
+            getLogger().debug(`_aws.toolkit.amazonq.refreshTreeNode called, updating state to ${state}.`)
+        } else {
+            getLogger().debug(`_aws.toolkit.amazonq.refreshTreeNode was called, but state wasn't specified.`)
+        }
+
+        AmazonQNode.instance.refresh()
         if (provider) {
             provider.refresh()
         }
     })
 
 export const refreshAmazonQRootNode = (provider?: ResourceTreeDataProvider) =>
-    Commands.register({ id: 'aws.amazonq.refreshRootNode', logging: false }, () => {
-        amazonQNode.refreshRootNode()
+    Commands.register({ id: '_aws.amazonq.refreshRootNode', logging: false }, () => {
+        AmazonQNode.instance.refreshRootNode()
         if (provider) {
             provider.refresh()
         }

@@ -19,7 +19,21 @@ const projectRoot = process.cwd()
  * @param outputFile Filepath to output HTML to
  * @param cn Converts "AWS" to "Amazon" for CN-based compute.
  */
-function translateReadmeToHtml(root: string, inputFile: string, outputFile: string, cn: boolean = false) {
+function translateReadmeToHtml(
+    root: string,
+    inputFile: string,
+    outputFile: string,
+    throwIfNotExists: boolean,
+    cn: boolean = false
+) {
+    const inputPath = path.join(root, inputFile)
+    if (!fs.existsSync(inputPath)) {
+        if (throwIfNotExists) {
+            throw Error(`File ${inputFile} was not found, but it is required.`)
+        }
+        console.log(`File ${inputFile} was not found, skipping transformation...`)
+        return
+    }
     const fileText = fs.readFileSync(path.join(root, inputFile)).toString()
     const relativePathRegex = /]\(\.\//g
     let transformedText = fileText.replace(relativePathRegex, '](!!EXTENSIONROOT!!/')
@@ -47,9 +61,9 @@ function generateFileHash(root: string) {
 }
 
 try {
-    translateReadmeToHtml(projectRoot, 'README.md', 'quickStartVscode.html')
-    translateReadmeToHtml(projectRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9.html')
-    translateReadmeToHtml(projectRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9-cn.html', true)
+    translateReadmeToHtml(projectRoot, 'README.md', 'quickStartVscode.html', true)
+    translateReadmeToHtml(projectRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9.html', false)
+    translateReadmeToHtml(projectRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9-cn.html', false, true)
     generateFileHash(projectRoot)
 } catch (error) {
     console.error(error)

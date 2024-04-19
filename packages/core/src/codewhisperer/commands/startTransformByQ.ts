@@ -170,7 +170,6 @@ export async function startTransformByQ() {
 }
 
 export async function preTransformationUploadCode() {
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
     void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification)
@@ -216,7 +215,6 @@ export async function startTransformationJob(uploadId: string) {
         throw new Error('Start job failed')
     }
     transformByQState.setJobId(encodeHTML(jobId))
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     await sleep(2000) // sleep before polling job to prevent ThrottlingException
     throwIfCancelled()
@@ -284,7 +282,6 @@ export async function finalizeTransformationJob(status: string) {
     }
 
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     sessionPlanProgress['transformCode'] = StepProgress.Succeeded
 }
@@ -328,8 +325,6 @@ export async function setTransformationToRunningState() {
         'aws.amazonq.showPlanProgressInHub',
         codeTransformTelemetryState.getStartTime()
     )
-
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 }
 
 export async function postTransformationJob() {
@@ -393,7 +388,7 @@ export async function postTransformationJob() {
             )
             .then(choice => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                    void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                 }
             })
     }
@@ -420,7 +415,7 @@ export async function transformationJobErrorHandler(error: any) {
             .showErrorMessage(displayedErrorMessage, CodeWhispererConstants.amazonQFeedbackText)
             .then(choice => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                    void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                 }
             })
     } else {
@@ -433,7 +428,6 @@ export async function cleanupTransformationJob(intervalId: NodeJS.Timeout | unde
     clearInterval(intervalId)
     transformByQState.setJobDefaults()
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
     await vscode.commands.executeCommand(
         'aws.amazonq.showPlanProgressInHub',
         codeTransformTelemetryState.getStartTime()
@@ -470,7 +464,6 @@ export async function stopTransformByQ(
         getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
         transformByQState.setToCancelled()
         codeTransformTelemetryState.setResultStatus('JobCancelled')
-        await vscode.commands.executeCommand('aws.amazonq.refresh')
         await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         try {
             await stopJob(jobId)
@@ -481,7 +474,7 @@ export async function stopTransformByQ(
                 )
                 .then(choice => {
                     if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                        void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                     }
                 })
         } catch {
@@ -492,7 +485,7 @@ export async function stopTransformByQ(
                 )
                 .then(choice => {
                     if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                        void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                     }
                 })
         }

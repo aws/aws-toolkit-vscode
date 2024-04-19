@@ -72,7 +72,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         markdownString.appendMarkdown(`${suggestedFix ? suggestedFix.description : issue.recommendation.text}\n\n`)
 
         const viewDetailsCommand = this._getCommandMarkdown(
-            'aws.codeWhisperer.openSecurityIssuePanel',
+            'aws.amazonq.openSecurityIssuePanel',
             [issue, filePath],
             'eye',
             'View Details',
@@ -100,7 +100,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
 
         if (suggestedFix) {
             const applyFixCommand = this._getCommandMarkdown(
-                'aws.codeWhisperer.applySecurityFix',
+                'aws.amazonq.applySecurityFix',
                 [issue, filePath, 'hover'],
                 'wrench',
                 'Apply Fix',

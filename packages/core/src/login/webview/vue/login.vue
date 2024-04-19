@@ -48,8 +48,8 @@
             <svg
                 v-if="app === 'TOOLKIT' && stage !== 'CONNECTED'"
                 width="100"
-                height="100"
-                viewBox="0 0 54 54"
+                height="80"
+                viewBox="0 0 54 40"
                 fill="none"
                 id="Layer_1"
                 data-name="Layer 1"
@@ -72,34 +72,54 @@
             </svg>
         </div>
         <template v-if="stage === 'START'">
+            <button class="back-button" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                        fill="#21A2FF"
+                    />
+                </svg>
+            </button>
             <div class="auth-container-section">
-                <div class="existing-logins" v-if="existingLogin.id !== -1 && app === 'AMAZONQ'">
+                <div class="existing-logins" v-if="existingLogins.length > 0 && app === 'AMAZONQ'">
                     <div class="title">Connect with an existing account:</div>
-                    <SelectableItem
-                        @toggle="toggleItemSelection"
-                        :isSelected="selectedLoginOption === LoginOption.EXISTING_LOGINS"
-                        :itemId="LoginOption.EXISTING_LOGINS"
-                        :itemText="existingLogin.text"
-                        :itemTitle="existingLogin.title"
-                        class="selectable-item"
-                    ></SelectableItem>
+                    <div v-for="(existingLogin, index) in existingLogins" :key="index">
+                        <SelectableItem
+                            @toggle="toggleItemSelection"
+                            :isSelected="selectedLoginOption === LoginOption.EXISTING_LOGINS + index"
+                            :itemId="LoginOption.EXISTING_LOGINS + index"
+                            :itemText="existingLogin.text"
+                            :itemTitle="existingLogin.title"
+                            class="selectable-item"
+                        ></SelectableItem>
+                    </div>
                     <div class="title">Or, choose a sign-in option:</div>
                 </div>
-                <div class="title" v-if="existingLogin.id === -1">Choose a sign-in option:</div>
+                <div class="title" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
                     :itemId="LoginOption.BUILDER_ID"
-                    :itemText="'Create or sign-in using AWS Builder ID'"
-                    :itemTitle="'Personal'"
+                    :itemText="'No AWS account required'"
+                    :itemTitle="'Use For Free'"
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem
+                    v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Single sign-on with AWS IAM Identity Center'"
+                    :itemTitle="'Use professional license'"
+                    class="selectable-item"
+                ></SelectableItem>
+                <SelectableItem
+                    v-if="app === 'TOOLKIT'"
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
+                    :itemId="LoginOption.ENTERPRISE_SSO"
+                    :itemText="'Sign in to AWS with single sign-on'"
                     :itemTitle="'Workforce'"
                     class="selectable-item"
                 ></SelectableItem>
@@ -132,7 +152,13 @@
             </button>
             <div class="auth-container-section">
                 <div class="title">Sign in with SSO:</div>
-                <div class="p">Start URL</div>
+                <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
+                    <div class="h4">
+                        Using CodeCatalyst with AWS Builder ID?
+                        <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
+                    </div>
+                </div>
+                <div class="title">Start URL</div>
                 <div class="hint">URL for your organization, provided by an admin or help desk</div>
                 <input
                     class="urlInput"
@@ -142,7 +168,7 @@
                     @input="handleUrlInput"
                     v-model="startUrl"
                 />
-                <br /><br />
+                <h4 class="start-url-error">{{ startUrlError }}</h4>
                 <div class="title">Region</div>
                 <div class="hint">AWS Region that hosts identity directory</div>
                 <select class="regionSelect" id="regions" name="regions" v-model="selectedRegion">
@@ -150,8 +176,11 @@
                         {{ `${region.name} (${region.id})` }}
                     </option>
                 </select>
-                <br /><br />
-                <button class="continue-button" :disabled="!urlValid" v-on:click="handleContinueClick()">
+                <button
+                    class="continue-button"
+                    :disabled="startUrl.length == 0 || startUrlError.length > 0"
+                    v-on:click="handleContinueClick()"
+                >
                     Continue
                 </button>
             </div>
@@ -175,19 +204,16 @@
                     />
                 </svg>
             </button>
-            <div class="p">Profile Name</div>
+            <div class="title">IAM Credentials:</div>
+            <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
+            <div style="margin-bottom: 8px"></div>
+            <div class="title">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
             <input class="iamInput" type="text" id="profileName" name="profileName" v-model="profileName" />
-
-            <br /><br />
-            <div class="p">Access Key</div>
+            <div class="title">Access Key</div>
             <input class="iamInput" type="text" id="accessKey" name="accessKey" v-model="accessKey" />
-
-            <br /><br />
-            <div class="p">Secret Key</div>
+            <div class="title">Secret Key</div>
             <input class="iamInput" type="text" id="secretKey" name="secretKey" v-model="secretKey" />
-
-            <br /><br />
             <button
                 class="continue-button"
                 :disabled="profileName.length <= 0 || accessKey.length <= 0 || secretKey.length <= 0"
@@ -218,12 +244,19 @@ enum LoginOption {
 }
 
 function validateSsoUrlFormat(url: string) {
-    const regex = /^https?:\/\/(.+)\.awsapps\.com\/start$/
+    const regex = /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-.*)$/
     return regex.test(url)
 }
 
 function isBuilderId(url: string) {
     return url === 'https://view.awsapps.com/start'
+}
+
+interface ExistingLogin {
+    id: number
+    text: string
+    title: string
+    connectionId: string
 }
 
 export default defineComponent({
@@ -242,11 +275,11 @@ export default defineComponent({
     },
     data() {
         return {
-            existingLogin: { id: -1, text: '', title: '' },
+            existingLogins: [] as ExistingLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
             regions: [] as Region[],
-            urlValid: false,
+            startUrlError: '',
             selectedRegion: '',
             startUrl: '',
             app: this.app,
@@ -254,25 +287,17 @@ export default defineComponent({
             profileName: '',
             accessKey: '',
             secretKey: '',
+            existingConnectionStartUrls: [] as string[],
         }
     },
     async created() {
         await this.emitUpdate('created')
-
-        const connection = await client.fetchConnection()
-        if (connection) {
-            this.existingLogin = {
-                id: LoginOption.EXISTING_LOGINS,
-                text: 'Used by another AWS Extension',
-                title: isBuilderId(connection.startUrl) ? 'AWS Builder ID' : 'AWS IAM Identity Center',
-            }
-        }
     },
 
     mounted() {
         this.fetchRegions()
+        void this.updateExistingConnections()
     },
-
     methods: {
         toggleItemSelection(itemId: number) {
             this.selectedLoginOption = itemId
@@ -284,7 +309,11 @@ export default defineComponent({
             }
         },
         handleBackButtonClick() {
-            this.stage = 'START'
+            if (this.stage === 'START') {
+                void client.quitLoginScreen()
+            } else {
+                this.stage = 'START'
+            }
         },
         async handleContinueClick() {
             if (this.stage === 'START') {
@@ -299,9 +328,17 @@ export default defineComponent({
                     }
                 } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                     this.stage = 'SSO_FORM'
-                } else if (this.selectedLoginOption === LoginOption.EXISTING_LOGINS) {
-                    // TODO:
-                    this.stage = 'START'
+                } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
+                    this.stage = 'AUTHENTICATING'
+                    const selectedConnection =
+                        this.existingLogins[this.selectedLoginOption - LoginOption.EXISTING_LOGINS]
+                    const error = await client.useConnection(selectedConnection.connectionId)
+                    if (error) {
+                        this.stage = 'START'
+                        void client.errorNotification(error)
+                    } else {
+                        this.stage = 'CONNECTED'
+                    }
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
                     this.stage = 'AWS_PROFILE'
                 }
@@ -325,11 +362,25 @@ export default defineComponent({
                 }
             }
         },
-        handleUrlInput() {
-            if (this.startUrl && validateSsoUrlFormat(this.startUrl)) {
-                this.urlValid = true
+        async handleCodeCatalystSignin() {
+            this.stage = 'AUTHENTICATING'
+            const error = await client.startBuilderIdSetup(this.app)
+            if (error) {
+                this.stage = 'START'
+                void client.errorNotification(error)
             } else {
-                this.urlValid = false
+                this.stage = 'CONNECTED'
+            }
+        },
+        handleUrlInput() {
+            if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
+                this.startUrlError =
+                    'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
+            } else if (this.startUrl && this.existingConnectionStartUrls.includes(this.startUrl)) {
+                this.startUrlError =
+                    'A connection for this start URL already exists. Sign out before creating a new one.'
+            } else {
+                this.startUrlError = ''
             }
         },
         handleCancelButtom() {
@@ -340,6 +391,39 @@ export default defineComponent({
             this.regions = regions
         },
         async emitUpdate(cause?: string) {},
+        async updateExistingConnections() {
+            // fetch existing connections of aws toolkit in Amazon Q
+            // Only used by Amazon Q to reuse connections in AWS Toolkit
+            const toolkitConnections = await client.fetchConnections()
+            toolkitConnections?.forEach((connection, index) => {
+                this.existingLogins.push({
+                    id: LoginOption.EXISTING_LOGINS + index,
+                    text: 'Used by AWS Toolkit',
+                    title: isBuilderId(connection.startUrl)
+                        ? 'AWS Builder ID'
+                        : `IAM Identity Center ${connection.startUrl}`,
+                    connectionId: connection.id,
+                })
+            })
+            // fetch existing connections of itself
+            const connections = await client.listConnections()
+            connections.forEach(connection => {
+                if ('startUrl' in connection) {
+                    this.existingConnectionStartUrls.push(connection.startUrl)
+                }
+            })
+
+            // If Amazon Q has no connections while Toolkit has connections
+            // Auto connect Q using toolkit connection.
+            if (connections.length === 0 && toolkitConnections && toolkitConnections.length > 0) {
+                const conn = await client.findConnection(toolkitConnections)
+                if (conn) {
+                    await client.useConnection(conn.id)
+                }
+            }
+
+            this.$forceUpdate()
+        },
     },
 })
 </script>
@@ -349,60 +433,113 @@ export default defineComponent({
     margin-bottom: 10px;
     margin-top: 10px;
 }
-.continue-button {
-    background-color: #29a7ff;
-    color: white;
-    width: 100%;
-    height: 40px;
-}
-.back-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: white;
-    font-size: 30px;
-}
 .logoIcon {
     display: flex;
     flex-direction: row;
     justify-content: left;
     align-items: flex-start;
-    padding-top: 150px;
-    padding-bottom: 10px;
+    padding-top: 130px;
+    padding-bottom: 2px;
     padding-left: 10px;
     height: auto;
 }
 .hint {
-    color: #948a8a;
+    color: #c6c6c6;
     margin-bottom: 5px;
     margin-top: 5px;
+    font-size: 8px;
 }
+.vscode-light .hint {
+    color: #3d3a3a;
+}
+.vscode-dark .hint {
+    color: #c6c6c6;
+}
+
 .title {
-    margin-bottom: 5px;
-    margin-top: 5px;
-    font-size: 23px;
-    font-size: 15px;
+    margin-bottom: 3px;
+    margin-top: 3px;
+    font-size: 12px;
     font-weight: bold;
+}
+.title.vscode-dark {
     color: white;
 }
+.title.vscode-light {
+    color: black;
+}
+
+.h4 {
+    font-size: 8px;
+    margin-bottom: 8px;
+}
+.continue-button {
+    background-color: var(--vscode-button-background);
+    color: white;
+    width: 100%;
+    height: 30px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    margin-bottom: 3px;
+    margin-top: 3px;
+}
+.back-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--vscode-button-foreground);
+    padding: 0;
+    height: 13px;
+}
 .continue-button:disabled {
-    background-color: #252526;
+    background-color: var(--vscode-input-background);
     color: #6f6f6f;
 }
 .urlInput {
-    background-color: #252526;
+    background-color: var(--vscode-input-background);
     width: 100%;
+    height: 15px;
+    color: white;
+    border: none;
+}
+.vscode-light .urlInput {
+    color: black;
+}
+.vscode-dark .urlInput {
     color: white;
 }
 .iamInput {
-    background-color: #252526;
+    background-color: var(--vscode-input-background);
     width: 100%;
+    height: 15px;
+    color: white;
+    border: none;
+    margin-bottom: 5px;
+    margin-top: 2px;
+}
+.vscode-light .iamInput {
+    color: black;
+}
+.vscode-dark .iamInput {
     color: white;
 }
 .regionSelect {
-    background-color: #252526;
+    background-color: var(--vscode-input-background);
     width: 100%;
     color: white;
+    margin-bottom: 5px;
+    margin-top: 2px;
+}
+.vscode-light .regionSelect {
+    color: black;
+}
+.vscode-dark .regionSelect {
+    color: white;
+}
+.start-url-error {
+    color: #ff0000;
+    font-size: 8px;
 }
 #logo {
     fill: var(--vscode-button-foreground);

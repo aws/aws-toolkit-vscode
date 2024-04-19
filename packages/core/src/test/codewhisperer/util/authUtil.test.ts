@@ -10,7 +10,6 @@ import {
     amazonQScopes,
     codeWhispererChatScopes,
     codeWhispererCoreScopes,
-    getChatAuthState,
 } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
@@ -123,10 +122,7 @@ describe('AuthUtil', async function () {
 
         const warningMessage = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Information)
         assert.strictEqual(warningMessage.length, 1)
-        assert.strictEqual(
-            warningMessage[0].message,
-            'Connection expired. To continue using Amazon Q/CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.'
-        )
+        assert.strictEqual(warningMessage[0].message, `Your Amazon Q connection has expired. Please re-authenticate.`)
     })
 
     it('reauthenticate prompt reauthenticates invalid connection', async function () {
@@ -135,7 +131,7 @@ describe('AuthUtil', async function () {
         )
         await auth.useConnection(conn)
         getTestWindow().onDidShowMessage(m => {
-            m.selectItem('Connect with AWS')
+            m.selectItem('Re-authenticate')
         })
         assert.strictEqual(auth.getConnectionState(conn), 'invalid')
 
@@ -254,7 +250,7 @@ describe('getChatAuthState()', function () {
     })
 
     it('indicates nothing connected when no auth connection exists', async function () {
-        const result = await getChatAuthState(authUtil)
+        const result = await authUtil.getChatAuthState()
         assert.deepStrictEqual(result, {
             codewhispererChat: AuthStates.disconnected,
             codewhispererCore: AuthStates.disconnected,
@@ -273,7 +269,7 @@ describe('getChatAuthState()', function () {
             createToken(conn)
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.connected,
                 codewhispererChat: AuthStates.expired,
@@ -286,7 +282,7 @@ describe('getChatAuthState()', function () {
             createToken(conn)
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.connected,
                 codewhispererChat: AuthStates.connected,
@@ -300,7 +296,7 @@ describe('getChatAuthState()', function () {
             )
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.expired,
                 codewhispererChat: AuthStates.expired,
@@ -317,7 +313,7 @@ describe('getChatAuthState()', function () {
             createToken(conn)
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.connected,
                 codewhispererChat: AuthStates.expired,
@@ -332,7 +328,7 @@ describe('getChatAuthState()', function () {
             createToken(conn)
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.connected,
                 codewhispererChat: AuthStates.connected,
@@ -346,7 +342,7 @@ describe('getChatAuthState()', function () {
             )
             await auth.useConnection(conn)
 
-            const result = await getChatAuthState(authUtil)
+            const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.expired,
                 codewhispererChat: AuthStates.expired,

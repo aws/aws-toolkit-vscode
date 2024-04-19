@@ -151,13 +151,15 @@ function main() {
                 fs.writeFileSync(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
             }
         }
-        // Always include CHANGELOG.md until we can have separate changelogs for packages
-        fs.copyFileSync('../../CHANGELOG.md', 'CHANGELOG.md')
 
         fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
-        child_process.execFileSync('vsce', ['package', '--ignoreFile', '../.vscodeignore.packages'], {
-            stdio: 'inherit',
-        })
+        child_process.execFileSync(
+            'vsce',
+            ['package', '--ignoreFile', '../.vscodeignore.packages', '--allow-missing-repository'],
+            {
+                stdio: 'inherit',
+            }
+        )
 
         console.log(`VSIX Version: ${packageJson.version}`)
 

@@ -560,7 +560,7 @@ async function acceptByTab() {
 }
 
 async function rejectByEsc() {
-    return vscode.commands.executeCommand('aws.codeWhisperer.rejectCodeSuggestion')
+    return vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
 }
 
 async function navigateNext() {

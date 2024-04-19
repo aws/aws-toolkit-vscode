@@ -14,7 +14,7 @@ import { ChatSessionManager } from '../storages/chatSession'
 import { ConversationState, Session } from '../session/session'
 import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
-import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
     compileProject,
     getValidCandidateProjects,
@@ -107,7 +107,7 @@ export class GumbyController {
         try {
             getLogger().debug(`${featureName}: Session created with id: ${session.tabID}`)
 
-            const authState = await getChatAuthState()
+            const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 void this.messenger.sendAuthNeededExceptionMessage(authState, tabID)
                 session.isAuthenticating = true
@@ -150,7 +150,7 @@ export class GumbyController {
         // check that the session is authenticated
         const session: Session = this.sessionStorage.getSession()
         try {
-            const authState = await getChatAuthState()
+            const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
@@ -275,7 +275,7 @@ export class GumbyController {
 
         this.messenger.sendCompilationFinished(message.tabID)
 
-        const authState = await getChatAuthState()
+        const authState = await AuthUtil.instance.getChatAuthState()
         if (authState.amazonQ !== 'connected') {
             void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
             this.sessionStorage.getSession().isAuthenticating = true

@@ -8,7 +8,6 @@ import {
     createOpenReferenceLog,
     createSecurityScan,
     createLearnMore,
-    createSignIn,
     createFreeTierLimitMet,
     createSelectCustomization,
     createReconnect,
@@ -27,10 +26,10 @@ import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompt
 import { CodeScansState, CodeSuggestionsState, vsCodeState } from '../models/model'
 import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
-import { isWeb } from '../../common/webUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { once } from '../../shared/utilities/functionUtils'
 import { getLogger } from '../../shared/logger'
+import { createSignIn, switchToAmazonQNode } from '../../amazonq/explorer/commonNodes'
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
@@ -59,32 +58,6 @@ function getAmazonQCodeWhispererNodes() {
         return [createAutoSuggestions(autoTriggerEnabled), createOpenReferenceLog()]
     }
 
-    // TODO: Remove when web is supported for amazonq
-    let amazonq
-    if (!isWeb()) {
-        amazonq = require('../../amazonq/explorer/amazonQChildrenNodes')
-    }
-
-    if (AuthUtil.instance.isBuilderIdInUse()) {
-        return [
-            // CodeWhisperer
-            createSeparator('Inline Suggestions'),
-            createAutoSuggestions(autoTriggerEnabled),
-            ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled
-                ? [createSelectCustomization()]
-                : []),
-            createOpenReferenceLog(),
-            createGettingStarted(), // "Learn" node : opens Learn CodeWhisperer page
-
-            // Security scans
-            createSeparator('Security Scans'),
-            createSecurityScan(),
-
-            // Amazon Q + others
-            createSeparator('Other Features'),
-            ...(amazonq ? [amazonq.switchToAmazonQNode('item')] : []),
-        ]
-    }
     return [
         // CodeWhisperer
         createSeparator('Inline Suggestions'),
@@ -102,7 +75,7 @@ function getAmazonQCodeWhispererNodes() {
 
         // Amazon Q + others
         createSeparator('Other Features'),
-        ...(amazonq ? [amazonq.switchToAmazonQNode('item')] : []),
+        switchToAmazonQNode('item'),
     ]
 }
 
@@ -125,10 +98,10 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
     return children
 }
 
-export const listCodeWhispererCommandsId = 'aws.codewhisperer.listCommands'
+export const listCodeWhispererCommandsId = 'aws.amazonq.listCommands'
 export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispererCommandsId }, () => () => {
     once(() => telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' }))()
-    Commands.tryExecute('aws.codewhisperer.refreshAnnotation', true)
+    Commands.tryExecute('aws.amazonq.refreshAnnotation', true)
         .then()
         .catch(e => {
             getLogger().debug(

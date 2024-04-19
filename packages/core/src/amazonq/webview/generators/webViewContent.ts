@@ -5,7 +5,7 @@
 
 import path from 'path'
 import { Uri, Webview } from 'vscode'
-import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 export class WebViewContentGenerator {
     public async generate(extensionURI: Uri, webView: Webview): Promise<string> {
@@ -52,7 +52,9 @@ export class WebViewContentGenerator {
         <script type="text/javascript" src="${entrypoint.toString()}" defer onload="init()"></script>
         <script type="text/javascript">
             const init = () => {
-                createMynahUI(acquireVsCodeApi(), ${(await getChatAuthState()).amazonQ === 'connected'});
+                createMynahUI(acquireVsCodeApi(), ${
+                    (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
+                });
             }
     </script>
         `

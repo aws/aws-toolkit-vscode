@@ -136,8 +136,11 @@ export default globals
  */
 interface ToolkitGlobals {
     readonly context: ExtensionContext
+    /** Decides the prefix for package.json extension parameters, e.g. commands, 'setContext' values, etc. */
+    contextPrefix: string
     // TODO: make the rest of these readonly (or delete them)
     outputChannel: OutputChannel
+    logOutputChannel: OutputChannel
     loginManager: LoginManager
     awsContextCommands: AwsContextCommands
     awsContext: AwsContext

@@ -9,6 +9,9 @@ _This is an **unsupported preview build** of the `${BRANCH}` branch of AWS Toolk
 
 ${AWS_TOOLKIT_CHANGES}
 
+${AMAZON_Q_CHANGES}
+
 ## Previous changes
 
--   See [CHANGELOG.md](CHANGELOG.md)
+-   For Toolkit, see [CHANGELOG.md](/packages/toolkit/CHANGELOG.md)
+-   For Amazon Q, see [CHANGELOG.md](/packages/amazonq/CHANGELOG.md)

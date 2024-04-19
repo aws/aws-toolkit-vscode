@@ -275,7 +275,7 @@ export class LineAnnotationController implements vscode.Disposable {
             this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
                 await this.refresh(vscode.window.activeTextEditor, 'editor')
             }),
-            Commands.register('aws.codeWhisperer.dismissTutorial', async () => {
+            Commands.register('aws.amazonq.dismissTutorial', async () => {
                 const editor = vscode.window.activeTextEditor
                 if (editor) {
                     this.clear()

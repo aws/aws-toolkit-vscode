@@ -6,6 +6,8 @@
 import assert from 'assert'
 import * as semver from 'semver'
 import * as env from '../shared/vscode/env'
+import { defaultLogLevel } from '../shared/logger/activation'
+import packageJson from '../../package.json'
 
 // Checks project config and dependencies, to remind us to remove old things
 // when possible.
@@ -31,6 +33,24 @@ describe('tech debt', function () {
         assert.ok(
             semver.lt(minNodejs, '18.0.0'),
             'with node16+, we can now use AbortController to cancel Node things (child processes, HTTP requests, etc.)'
+        )
+    })
+
+    it('feature/standalone branch temporary debug log level for testing', async function () {
+        if (!(process.env.GITHUB_BASE_REF ?? '').includes('master')) {
+            this.skip()
+        }
+
+        assert.strictEqual(
+            defaultLogLevel,
+            'info',
+            'set loglevel defaults back to info for src/shared/logger/activation.ts. (revert this commit)'
+        )
+
+        assert.strictEqual(
+            packageJson.contributes.configuration.properties['aws.logLevel'].default,
+            'info',
+            'set loglevel defaults back to info for packages/amazonq/package.json, packages/toolkit/package.json. (revert this commit)'
         )
     })
 })

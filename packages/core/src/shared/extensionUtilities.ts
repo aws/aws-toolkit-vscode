@@ -13,6 +13,7 @@ import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
 import { DevSettings } from './settings'
+import globals from './extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -255,20 +256,25 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
 /**
  * Shows info about the extension and its environment.
  */
-export async function aboutToolkit(): Promise<void> {
-    const toolkitEnvDetails = getToolkitEnvironmentDetails()
+export async function aboutExtension(): Promise<void> {
+    const extEnvDetails = getExtEnvironmentDetails()
     const copyButtonLabel = localize('AWS.message.prompt.copyButtonLabel', 'Copy')
-    const result = await vscode.window.showInformationMessage(toolkitEnvDetails, { modal: true }, copyButtonLabel)
+    const result = await vscode.window.showInformationMessage(extEnvDetails, { modal: true }, copyButtonLabel)
     if (result === copyButtonLabel) {
-        void vscode.env.clipboard.writeText(toolkitEnvDetails)
+        void vscode.env.clipboard.writeText(extEnvDetails)
     }
 }
 
+function getProductName(): string {
+    return globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq
+        ? 'Amazon Q Toolkit'
+        : `${getIdeProperties().company} Toolkit`
+}
+
 /**
- * Returns a string that includes the OS, AWS Toolkit,
- * and VS Code versions.
+ * Returns a string that includes the OS, extension, and VS Code versions.
  */
-export function getToolkitEnvironmentDetails(): string {
+export function getExtEnvironmentDetails(): string {
     const osType = os.type()
     const osArch = os.arch()
     const osRelease = os.release()
@@ -278,13 +284,13 @@ export function getToolkitEnvironmentDetails(): string {
 
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS: {0} {1} {2}\n{3} extension host:  {4}\n{5} Toolkit:  {6}\n{7}{8}',
+        'OS: {0} {1} {2}\n{3} extension host:  {4}\n{5}:  {6}\n{7}{8}',
         osType,
         osArch,
         osRelease,
         getIdeProperties().longName,
         vsCodeVersion,
-        getIdeProperties().company,
+        getProductName(),
         extensionVersion,
         node,
         electron

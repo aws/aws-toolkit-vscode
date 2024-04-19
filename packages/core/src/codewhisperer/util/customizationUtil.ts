@@ -122,7 +122,7 @@ export const setSelectedCustomization = async (customization: Customization) => 
 
     await set(selectedCustomizationKey, selectedCustomizationObj, globals.context.globalState)
     vsCodeState.isFreeTierLimitReached = false
-    await Commands.tryExecute('aws.codeWhisperer.refreshStatusBar')
+    await Commands.tryExecute('aws.amazonq.refreshStatusBar')
 }
 
 export const getPersistedCustomizations = (): Customization[] => {

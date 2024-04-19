@@ -30,12 +30,13 @@ import {
     showRegionPrompter,
     promptAndUseConnection,
     ExtensionUse,
-    addConnection,
     hasIamCredentials,
     hasBuilderId,
     hasSso,
     BuilderIdKind,
     findSsoConnections,
+    AuthSource,
+    authCommands,
 } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
@@ -47,13 +48,13 @@ import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
-import { amazonQChatSource, cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
-import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../../shared/vscode/commands2'
+import { Commands, RegisteredCommand, VsCodeCommandArg, placeholder } from '../../../shared/vscode/commands2'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { isWeb } from '../../../common/webUtils'
+import { ExtStartUpSources } from '../../../shared/telemetry'
 
 export class AuthWebview extends VueWebview {
     public static readonly sourcePath: string = 'src/auth/ui/vue/index.js'
@@ -412,7 +413,7 @@ export class AuthWebview extends VueWebview {
     }
 
     openFeedbackForm() {
-        return submitFeedback.execute(placeholder, 'AWS Toolkit')
+        return submitFeedback(placeholder, 'AWS Toolkit')
     }
 
     // -------------------- Telemetry Stuff --------------------
@@ -707,49 +708,48 @@ const Panel = VueWebview.compilePanel(AuthWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 
-/**
- * Different places the Add Connection command could be executed from.
- *
- * Useful for telemetry.
- */
-export const AuthSources = {
-    addConnectionQuickPick: 'addConnectionQuickPick',
-    firstStartup: 'firstStartup',
-    codecatalystDeveloperTools: 'codecatalystDeveloperTools',
-    vscodeComponent: vscodeComponent,
-    cwQuickPick: cwQuickPickSource,
-    cwTreeNode: cwTreeNodeSource,
-    amazonQChat: amazonQChatSource,
-    authNode: 'authNode',
-} as const
-
-export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]
-
-export const showManageConnections = Commands.declare(
-    { id: 'aws.auth.manageConnections', compositeKey: { 1: 'source' } },
-    (context: vscode.ExtensionContext) => (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
-        if (_ !== placeholder) {
-            source = 'vscodeComponent'
-        }
-
-        // The auth webview page does not make sense to use in C9,
-        // so show the auth quick pick instead.
-        if (isCloud9('any') || isWeb()) {
-            if (source.toLowerCase().includes('codewhisperer')) {
-                // Show CW specific quick pick for CW connections
-                return showCodeWhispererConnectionPrompt()
-            }
-            return addConnection.execute()
-        }
-
-        if (!isServiceItemId(serviceToShow)) {
-            serviceToShow = undefined
-        }
-        return showAuthWebview(context, source, serviceToShow)
+let showManageConnections: RegisteredCommand<any> | undefined
+export function getShowManageConnections(): RegisteredCommand<any> {
+    if (!showManageConnections) {
+        throw new Error('showManageConnections not registered')
     }
-)
+    return showManageConnections
+}
 
-async function showAuthWebview(
+export function registerCommands(context: vscode.ExtensionContext, prefix: string) {
+    showManageConnections = Commands.register(
+        { id: `aws.${prefix}.auth.manageConnections`, compositeKey: { 1: 'source' } },
+        async (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
+            if (_ !== placeholder) {
+                source = 'vscodeComponent'
+            }
+
+            // The auth webview page does not make sense to use in C9,
+            // so show the auth quick pick instead.
+            if (isCloud9('any') || isWeb()) {
+                if (source.toLowerCase().includes('codewhisperer')) {
+                    // Show CW specific quick pick for CW connections
+                    return showCodeWhispererConnectionPrompt()
+                }
+                return authCommands().addConnection.execute()
+            }
+
+            if (!isServiceItemId(serviceToShow)) {
+                serviceToShow = undefined
+            }
+
+            // TODO: hack
+            if (prefix === 'toolkit') {
+                await vscode.commands.executeCommand('aws.explorer.setLoginService', serviceToShow)
+                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
+                await vscode.commands.executeCommand('aws.toolkit.AmazonCommonAuth.focus')
+            }
+        }
+    )
+}
+
+//todo: delete?
+export async function showAuthWebview(
     ctx: vscode.ExtensionContext,
     source: AuthSource,
     serviceToShow?: ServiceItemId
@@ -843,7 +843,7 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
             result = 'Cancelled'
         }
 
-        if (source === 'firstStartup' && numConnectionsAdded === 0) {
+        if (source === ExtStartUpSources.firstStartUp && numConnectionsAdded === 0) {
             if (numConnectionsInitial > 0) {
                 // This is the users first startup of the extension and no new connections were added, but they already had connections setup on their
                 // system which we discovered. We consider this a success even though they added no new connections.
@@ -865,4 +865,5 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
  */
 export async function focusAmazonQPanel(): Promise<void> {
     await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+    await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
 }

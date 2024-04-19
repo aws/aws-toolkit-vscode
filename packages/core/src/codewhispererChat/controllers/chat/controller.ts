@@ -43,7 +43,7 @@ import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhisper
 import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
-import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../../common/crypto'
 
@@ -578,7 +578,7 @@ export class ChatController {
 
         const tabID = triggerEvent.tabID
 
-        const credentialsState = await getChatAuthState()
+        const credentialsState = await AuthUtil.instance.getChatAuthState()
 
         if (credentialsState.codewhispererChat !== 'connected' && credentialsState.codewhispererCore !== 'connected') {
             await this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
@@ -610,7 +610,7 @@ export class ChatController {
 
         const tabID = triggerEvent.tabID
 
-        const credentialsState = await getChatAuthState()
+        const credentialsState = await AuthUtil.instance.getChatAuthState()
 
         if (
             !(credentialsState.codewhispererChat === 'connected' && credentialsState.codewhispererCore === 'connected')
