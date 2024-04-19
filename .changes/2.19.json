@@ -1,0 +1,14 @@
+{
+  "date" : "2024-04-19",
+  "version" : "2.19",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Enable Amazon Q feature development and Amazon Q transform capabilities (/dev and /transform) for AWS Builder ID users."
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Code Transformation: ensure full error message shown in notifications"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue with competing SDK proxy configuration (#4279)"
+  } ]
+}

@@ -1,3 +1,8 @@
+# _2.19_ (2024-04-19)
+- **(Feature)** Enable Amazon Q feature development and Amazon Q transform capabilities (/dev and /transform) for AWS Builder ID users.
+- **(Bug Fix)** Amazon Q Code Transformation: ensure full error message shown in notifications
+- **(Bug Fix)** Fix issue with competing SDK proxy configuration ([#4279](https://github.com/aws/aws-toolkit-jetbrains/issues/4279))
+
 # _2.18_ (2024-04-12)
 - **(Feature)** Add support for Lambda runtime Java 21
 - **(Feature)** Add support for Lambda runtime Node.js 20
