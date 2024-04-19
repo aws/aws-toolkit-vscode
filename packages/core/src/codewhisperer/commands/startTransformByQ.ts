@@ -34,7 +34,7 @@ import {
     getTransformationPlan,
     getTransformationSteps,
     pollTransformationJob,
-    restartJob,
+    resumeTransformationJob,
     startJob,
     stopJob,
     throwIfCancelled,
@@ -283,7 +283,6 @@ const pomReplacementDelimiter = '*****'
 
 export async function initiateHumanInTheLoopPrompt(jobId: string) {
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
-
     try {
         // 1) We need to call GetTransformationPlan to get artifactId
         const transformationSteps = await getTransformationSteps(jobId, false)
@@ -362,7 +361,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
     } catch (err) {
         // Call resume with "REJECTED" state which will put our service
         // back into the normal flow and will not trigger HIL again for this step
-        await restartJob(jobId, 'REJECTED')
+        await resumeTransformationJob(jobId, 'REJECTED')
         return true
     } finally {
         await sleep(5000)
@@ -422,7 +421,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
 
         // 8) Once code has been uploaded we will restart the job
         // TODO response returns "RESUMED"
-        await restartJob(jobId, 'COMPLETED')
+        await resumeTransformationJob(jobId, 'COMPLETED')
 
         await sleep(1500)
 
@@ -430,7 +429,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
     } catch (err) {
         // If anything went wrong in HIL state, we should restart the job
         // with the rejected state
-        await restartJob(jobId, 'REJECTED')
+        await resumeTransformationJob(jobId, 'REJECTED')
         successfulFeedbackLoop = false
     } finally {
         // Always delete the dependency directories

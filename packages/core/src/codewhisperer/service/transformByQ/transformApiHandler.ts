@@ -123,7 +123,7 @@ export async function uploadArtifactToS3(
     }
 }
 
-export async function restartJob(jobId: string, userActionStatus: TransformationUserActionStatus) {
+export async function resumeTransformationJob(jobId: string, userActionStatus: TransformationUserActionStatus) {
     try {
         const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
             transformationJobId: jobId,
