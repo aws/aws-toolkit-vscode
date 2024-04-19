@@ -21,11 +21,8 @@ import software.aws.toolkits.jetbrains.services.amazonq.isQSupportedInThisVersio
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.FeatureId
-import java.util.concurrent.atomic.AtomicBoolean
 
 class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
-    private val isConnected = AtomicBoolean()
-
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val contentManager = toolWindow.contentManager
 
@@ -38,10 +35,7 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
             }
         )
 
-        val hasConnection = isQConnected(project).also {
-            isConnected.set(it)
-        }
-        val component = if (hasConnection) {
+        val component = if (isQConnected(project)) {
             AmazonQToolWindow.getInstance(project).component
         } else {
             WebviewPanel.getInstance(project).browser?.prepareBrowser(BrowserState(FeatureId.Q))
@@ -65,7 +59,7 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
 
     private fun onConnectionChanged(project: Project, newConnection: ToolkitConnection?, toolWindow: ToolWindow) {
         val contentManager = toolWindow.contentManager
-        val isQConnection = newConnection?.let {
+        val isNewConnectionForQ = newConnection?.let {
             (it as? AwsBearerTokenConnection)?.let { conn ->
                 val scopeShouldHave = Q_SCOPES + CODEWHISPERER_SCOPES
 
@@ -75,16 +69,9 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
             } ?: false
         } ?: false
 
-        val isQConnected = (isQConnection || isQConnected(project)).also {
-            val old = isConnected.getAndSet(it)
-            if (old == it) {
-                return
-            }
-        }
-
         // isQConnected alone is not robust and there is race condition (read/update connection states)
-        val component = if (isQConnected) {
-            LOG.debug { "returning Q-chat window; isQConnection=$isQConnection; hasPinnedConnection=$isQConnection" }
+        val component = if (isNewConnectionForQ || isQConnected(project)) {
+            LOG.debug { "returning Q-chat window; isQConnection=$isNewConnectionForQ; hasPinnedConnection=$isNewConnectionForQ" }
             AmazonQToolWindow.getInstance(project).component
         } else {
             LOG.debug { "returning login window; no Q connection found" }

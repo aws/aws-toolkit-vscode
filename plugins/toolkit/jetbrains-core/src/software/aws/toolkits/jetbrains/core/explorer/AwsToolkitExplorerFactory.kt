@@ -73,8 +73,13 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
 
         val contentManager = toolWindow.contentManager
 
-        // TODO: ideally we should evaluate component by connection states here, fix it
-        val content = contentManager.factory.createContent(ToolkitWebviewPanel.getInstance(project).component, null, false).also {
+        val component = if (inspectExistingConnection(project)) {
+            AwsToolkitExplorerToolWindow.getInstance(project)
+        } else {
+            ToolkitWebviewPanel.getInstance(project).component
+        }
+
+        val content = contentManager.factory.createContent(component, null, false).also {
             it.isCloseable = true
             it.isPinnable = true
         }
@@ -106,7 +111,7 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
     }
 
     private fun connectionChanged(project: Project, newConnection: ToolkitConnection?, toolWindow: ToolWindow) {
-        val isToolkitConnected = when (newConnection) {
+        val isNewConnToolkitConnection = when (newConnection) {
             is AwsConnectionManagerConnection -> {
                 LOG.debug { "IAM connection" }
                 true
@@ -122,14 +127,10 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
                     newConnection.scopes.contains(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)
             }
 
-            null -> {
-                inspectExistingConnection(project)
-            }
-
-            else -> {
-                false
-            }
+            else -> false
         }
+
+        val isToolkitConnected = isNewConnToolkitConnection || inspectExistingConnection(project)
 
         toolWindow.reload(isToolkitConnected)
     }
