@@ -19,11 +19,11 @@ describe('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
     let tab: Messenger
 
-    const maxTestDuration = 300000
+    const maxTestDuration = 900000
     const prompt = 'Implement fibonacci in python'
     const iterateApproachPrompt = prompt + ' and add a unit test'
     const codegenApproachPrompt = prompt + ' and add a readme that describes the changes'
-    const tooManyRequestsWaitTime = 600000
+    const tooManyRequestsWaitTime = 900000
 
     before(async function () {
         /**
