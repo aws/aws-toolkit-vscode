@@ -224,7 +224,7 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
         }
 
         is DetectedDiskSsoSessionProfile -> DetectedDiskSsoSessionConnection(
-            sessionProfileName = profile.profileName,
+            sessionName = profile.profileName,
             startUrl = profile.startUrl,
             region = profile.ssoRegion,
             scopes = profile.scopes

@@ -41,6 +41,7 @@ interface AwsCredentialConnection : ToolkitConnection {
 }
 
 interface AwsBearerTokenConnection : ToolkitConnection {
+    val sessionName: String
     val startUrl: String
     val region: String
     val scopes: List<String>

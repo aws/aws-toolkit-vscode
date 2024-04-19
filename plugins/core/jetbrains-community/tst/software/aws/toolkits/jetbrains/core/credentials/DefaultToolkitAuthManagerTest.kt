@@ -75,6 +75,7 @@ class DefaultToolkitAuthManagerTest {
 
         assertThat(connection).isInstanceOf<ManagedBearerSsoConnection>()
         connection as ManagedBearerSsoConnection
+        assertThat(connection.sessionName).isEqualTo("")
         assertThat(connection.region).isEqualTo(profile.ssoRegion)
         assertThat(connection.startUrl).isEqualTo(profile.startUrl)
         assertThat(connection.scopes).isEqualTo(profile.scopes)
@@ -111,6 +112,7 @@ class DefaultToolkitAuthManagerTest {
 
         assertThat(sut.listConnections()).singleElement().satisfies {
             assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
+                assertThat(connection.sessionName).isEqualTo("")
                 assertThat(connection.region).isEqualTo(profile.ssoRegion)
                 assertThat(connection.startUrl).isEqualTo(profile.startUrl)
                 assertThat(connection.scopes).isEqualTo(profile.scopes)
@@ -138,6 +140,7 @@ class DefaultToolkitAuthManagerTest {
 
         assertThat(sut.listConnections()).singleElement().satisfies {
             assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
+                assertThat(connection.sessionName).isEqualTo("")
                 assertThat(connection.region).isEqualTo(profile.ssoRegion)
                 assertThat(connection.startUrl).isEqualTo(profile.startUrl)
                 assertThat(connection.scopes).isEqualTo(profile.scopes)
@@ -163,6 +166,7 @@ class DefaultToolkitAuthManagerTest {
 
         assertThat(sut.listConnections()).singleElement().satisfies {
             assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
+                assertThat(connection.sessionName).isEqualTo("add")
                 assertThat(connection.region).isEqualTo("us-east-1")
                 assertThat(connection.startUrl).isEqualTo("startUrl")
                 assertThat(connection.scopes).isEqualTo(scopes)
@@ -180,6 +184,7 @@ class DefaultToolkitAuthManagerTest {
 
         assertThat(sut.listConnections()).singleElement().satisfies {
             assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
+                assertThat(connection.sessionName).isEqualTo("add")
                 assertThat(connection.region).isEqualTo("us-east-1")
                 assertThat(connection.startUrl).isEqualTo("startUrl2")
                 assertThat(connection.scopes).isEqualTo(scopes)
