@@ -37,6 +37,7 @@ import { indent } from '../../shared/utilities/textUtilities'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { isExtensionActive } from '../../shared/utilities'
 import { showReauthenticateMessage } from '../../shared/utilities/messages'
+import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -251,6 +252,8 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
+        await showAmazonQWalkthroughOnce()
+
         return this.secondaryAuth.useNewConnection(conn)
     }
 
@@ -269,6 +272,8 @@ export class AuthUtil {
         if (this.auth.getConnectionState(conn) === 'invalid') {
             conn = await this.auth.reauthenticate(conn)
         }
+
+        await showAmazonQWalkthroughOnce()
 
         return this.secondaryAuth.useNewConnection(conn)
     }

@@ -14,9 +14,10 @@ import {
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../../credentials/testUtil'
-import { captureEventOnce } from '../../testUtil'
+import { captureEventOnce, tryRegister } from '../../testUtil'
 import { Connection, isAnySsoConnection, isBuilderIdConnection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
+import { openAmazonQWalkthrough } from '../../../amazonq/onboardingPage/walkthrough'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
@@ -27,6 +28,7 @@ describe('AuthUtil', async function () {
     beforeEach(async function () {
         auth = createTestAuth()
         authUtil = new AuthUtil(auth)
+        tryRegister(openAmazonQWalkthrough)
     })
 
     afterEach(async function () {
