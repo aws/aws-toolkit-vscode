@@ -89,11 +89,7 @@ export class AuthSSOServer {
                     }
                     const resourcePath = path.join(
                         globals.context.extensionUri.fsPath,
-                        'dist',
-                        'src',
-                        'auth',
-                        'sso',
-                        'media',
+                        'dist/src/auth/sso/vue',
                         url.pathname
                     )
                     await this.loadResource(res, resourcePath)
