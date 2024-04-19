@@ -45,9 +45,13 @@ class CawsRootNode(private val nodeProject: Project) : AbstractTreeNode<String>(
             is ActiveConnection.ValidBearer -> {
                 when (connection.connectionType) {
                     ActiveConnectionType.BUILDER_ID -> message("caws.connected.builder_id")
-                    else -> message("caws.connected.identity_center")
+                    else -> message(
+                        "caws.connected.identity_center",
+                        connection.activeConnectionBearer?.let { "(${it.sessionName})" }.orEmpty()
+                    )
                 }
             }
+
             is ActiveConnection.NotConnected -> null
             else -> message("caws.expired.connection")
         }
@@ -55,6 +59,7 @@ class CawsRootNode(private val nodeProject: Project) : AbstractTreeNode<String>(
     }
 
     override fun feature() = CodeCatalystConnection.getInstance()
+
     companion object {
         const val CAWS_SIGNED_IN_ACTION_GROUP = "aws.caws.devtools.actions.loggedin"
         const val CAWS_SIGNED_OUT_ACTION_GROUP = "aws.caws.devtools.actions.loggedout"
