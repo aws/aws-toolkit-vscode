@@ -112,7 +112,7 @@ export default defineComponent({
         },
         handleCancelButton() {
             window.ideClient.cancelLogin()
-            this.mutateStage('START')
+            this.mutateStage('START', undefined)
             this.authorizationCode = undefined
         },
         changeTheme(darkMode: boolean) {

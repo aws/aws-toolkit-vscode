@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.ssooidc.model.InvalidGrantException
 import software.amazon.awssdk.services.ssooidc.model.InvalidRequestException
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.amazon.awssdk.services.sts.StsClient
+import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.tryOrNull
@@ -159,8 +160,28 @@ fun authAndUpdateConfig(
     onPendingToken: (InteractiveBearerTokenProvider) -> Unit,
     onError: (String) -> Unit
 ): AwsBearerTokenConnection? {
+    val requestedScopes = profile.scopes
+    val allScopes = requestedScopes.toMutableSet()
+
+    val oldScopeOrEmpty = ToolkitBearerTokenProvider.ssoIdentifier(profile.startUrl, profile.ssoRegion).let { connId ->
+        ToolkitAuthManager.getInstance().getConnection(connId)?.let { existingConn ->
+            if (existingConn is AwsBearerTokenConnection) {
+                existingConn.scopes
+            } else {
+                null
+            }
+        }.orEmpty()
+    }
+
+    // TODO: what if the old scope is deprecated?
+    if (!oldScopeOrEmpty.all { it in requestedScopes }) {
+        allScopes.addAll(oldScopeOrEmpty)
+    }
+
+    val updatedProfile = profile.copy(scopes = allScopes.toList())
+
     val connection = try {
-        ToolkitAuthManager.getInstance().tryCreateTransientSsoConnection(profile) { connection ->
+        ToolkitAuthManager.getInstance().tryCreateTransientSsoConnection(updatedProfile) { connection ->
             (connection.getConnectionSettings().tokenProvider.delegate as? InteractiveBearerTokenProvider)?.let {
                 onPendingToken(it)
             }
