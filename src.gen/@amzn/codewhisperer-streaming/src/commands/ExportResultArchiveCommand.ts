@@ -60,6 +60,12 @@ export interface ExportResultArchiveCommandOutput extends ExportResultArchiveRes
  * const input = { // ExportResultArchiveRequest
  *   exportId: "STRING_VALUE", // required
  *   exportIntent: "TRANSFORMATION" || "TASK_ASSIST", // required
+ *   exportContext: { // ExportContext Union: only one key present
+ *     transformationExportContext: { // TransformationExportContext
+ *       downloadArtifactId: "STRING_VALUE", // required
+ *       downloadArtifactType: "ClientInstructions", // required
+ *     },
+ *   },
  * };
  * const command = new ExportResultArchiveCommand(input);
  * const response = await client.send(command);
