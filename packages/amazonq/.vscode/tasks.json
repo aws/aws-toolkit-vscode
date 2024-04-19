@@ -13,27 +13,37 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": ["serve"]
+            "dependsOn": ["watchCore", "webpackCore", "serveVueCore"]
         },
         {
-            "label": "serve",
-            "type": "npm",
-            "script": "serve",
-            "group": "build",
+            "label": "watchCore",
+            "command": "npm run compileOnly -- --watch",
+            "type": "shell",
             "isBackground": true,
-            "problemMatcher": {
-                "owner": "custom",
-                "pattern": {
-                    "regexp": ".",
-                    "file": 1,
-                    "location": 2,
-                    "message": 3
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "Project is running at",
-                    "endsPattern": "compiled successfully"
-                }
+            "problemMatcher": "$tsc-watch",
+            "options": {
+                "cwd": "../core"
+            }
+        },
+        {
+            "label": "webpackCore",
+            "command": "npm run webpackDev -- --watch",
+            "type": "shell",
+            "isBackground": true,
+            "problemMatcher": "$ts-webpack-watch",
+            "options": {
+                "cwd": "../core"
+            }
+        },
+        {
+            "label": "serveVueCore",
+            "command": "npm run serveVue",
+            "type": "shell",
+            "detail": "Webpack + local server for Vue webview files from `core`.",
+            "isBackground": true,
+            "problemMatcher": "$ts-webpack-watch",
+            "options": {
+                "cwd": "../core"
             }
         },
         {
