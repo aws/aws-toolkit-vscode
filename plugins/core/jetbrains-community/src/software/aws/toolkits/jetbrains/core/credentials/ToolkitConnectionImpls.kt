@@ -24,6 +24,7 @@ class ProfileSsoManagedBearerSsoConnection(
     scopes: List<String>,
     cache: DiskCache = diskCache,
 ) : ManagedBearerSsoConnection(
+    configSessionName,
     startUrl,
     region,
     scopes,
@@ -41,6 +42,7 @@ class LegacyManagedBearerSsoConnection(
     scopes: List<String>,
     cache: DiskCache = diskCache,
 ) : ManagedBearerSsoConnection(
+    "",
     startUrl,
     region,
     scopes,
@@ -50,6 +52,7 @@ class LegacyManagedBearerSsoConnection(
 )
 
 sealed class ManagedBearerSsoConnection(
+    override val sessionName: String,
     override val startUrl: String,
     override val region: String,
     override val scopes: List<String>,
@@ -78,19 +81,19 @@ sealed class ManagedBearerSsoConnection(
 }
 
 class DetectedDiskSsoSessionConnection(
-    val sessionProfileName: String,
+    override val sessionName: String,
     override val startUrl: String,
     override val region: String,
     override val scopes: List<String>,
     displayNameOverride: String? = null
 ) : AwsBearerTokenConnection, Disposable {
-    override val id = ToolkitBearerTokenProvider.diskSessionIdentifier(sessionProfileName)
-    override val label = displayNameOverride ?: ToolkitBearerTokenProvider.diskSessionDisplayName(sessionProfileName)
+    override val id = ToolkitBearerTokenProvider.diskSessionIdentifier(sessionName)
+    override val label = displayNameOverride ?: ToolkitBearerTokenProvider.diskSessionDisplayName(sessionName)
 
     private val provider =
         tokenConnection(
             ProfileSdkTokenProviderWrapper(
-                sessionName = sessionProfileName,
+                sessionName = sessionName,
                 region = region
             ),
             region
