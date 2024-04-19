@@ -70,7 +70,6 @@
         "createRelease": "ts-node ../../scripts/createRelease.ts",
         "newChange": "ts-node ../../scripts/newChange.ts",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
-        "serve": "webpack serve --config-name mainServe --mode development",
         "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
         "restorePackageJson": "ts-node ./scripts/build/handlePackageJson --restore"
     },

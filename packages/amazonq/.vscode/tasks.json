@@ -13,53 +13,35 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": ["watchCore", "serve"]
-        },
-        {
-            "label": "serve",
-            "type": "npm",
-            "script": "serve",
-            "group": "build",
-            "isBackground": true,
-            "problemMatcher": {
-                "owner": "custom",
-                "pattern": {
-                    "regexp": ".",
-                    "file": 1,
-                    "location": 2,
-                    "message": 3
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "Project is running at",
-                    "endsPattern": "compiled"
-                }
-            },
-            "options": {
-                "env": {
-                    "NODE_OPTIONS": "--max_old_space_size=5120"
-                }
-            }
+            "dependsOn": ["watchCore", "webpackCore", "serveVueCore"]
         },
         {
             "label": "watchCore",
-            "command": "npm run compileLite -- --watch",
+            "command": "npm run compileOnly -- --watch",
             "type": "shell",
             "isBackground": true,
-            "problemMatcher": {
-                "owner": "custom",
-                "pattern": {
-                    "regexp": ".",
-                    "file": 1,
-                    "location": 2,
-                    "message": 3
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "Starting compilation",
-                    "endsPattern": "Watching for file changes."
-                }
-            },
+            "problemMatcher": "$tsc-watch",
+            "options": {
+                "cwd": "../core"
+            }
+        },
+        {
+            "label": "webpackCore",
+            "command": "npm run webpackDev -- --watch",
+            "type": "shell",
+            "isBackground": true,
+            "problemMatcher": "$ts-webpack-watch",
+            "options": {
+                "cwd": "../core"
+            }
+        },
+        {
+            "label": "serveVueCore",
+            "command": "npm run serveVue",
+            "type": "shell",
+            "detail": "Webpack + local server for Vue webview files from `core`.",
+            "isBackground": true,
+            "problemMatcher": "$ts-webpack-watch",
             "options": {
                 "cwd": "../core"
             }
