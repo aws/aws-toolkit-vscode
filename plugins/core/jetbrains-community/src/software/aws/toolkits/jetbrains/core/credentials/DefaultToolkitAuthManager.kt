@@ -244,7 +244,7 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
                 state.lastLoginIdcInfo = LastLoginIdcInfo(profile.profileName, profile.startUrl, profile.ssoRegion)
             }
             DetectedDiskSsoSessionConnection(
-                sessionProfileName = profile.profileName,
+                sessionName = profile.profileName,
                 startUrl = profile.startUrl,
                 region = profile.ssoRegion,
                 scopes = profile.scopes
