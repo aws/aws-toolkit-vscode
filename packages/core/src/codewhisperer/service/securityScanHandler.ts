@@ -225,9 +225,18 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
         headersObj['x-amz-server-side-encryption-aws-kms-key-id'] = resp.kmsKeyArn
     }
 
-    const response = await request.fetch('PUT', resp.uploadUrl, {
-        body: readFileSync(fileName),
-        headers: headersObj,
-    }).response
-    getLogger().debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
+    try {
+        const response = await request.fetch('PUT', resp.uploadUrl, {
+            body: readFileSync(fileName),
+            headers: resp.requestHeaders !== undefined ? resp.requestHeaders : headersObj,
+        }).response
+        getLogger().debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
+    } catch (error) {
+        getLogger().error(
+            `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the Amazon Q documentation or contact your network or organization administrator.`
+        )
+        throw new Error(
+            `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html) or contact your network or organization administrator.`
+        )
+    }
 }
