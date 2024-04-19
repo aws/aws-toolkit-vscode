@@ -9,6 +9,7 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import org.jetbrains.annotations.VisibleForTesting
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.AwsPlugin
 import software.aws.toolkits.jetbrains.AwsToolkit
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
@@ -57,7 +58,7 @@ class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUse
     }
 
     fun getUserGroup(): CodeWhispererUserGroup {
-        if (version != AwsToolkit.PLUGIN_VERSION) {
+        if (version != AwsToolkit.PLUGINS_INFO[AwsPlugin.TOOLKIT]?.version) {
             resetGroupSettings()
         }
 
@@ -65,7 +66,7 @@ class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUse
     }
 
     fun isExpThreshold(): Boolean {
-        if (version != AwsToolkit.PLUGIN_VERSION) {
+        if (version != AwsToolkit.PLUGINS_INFO[AwsPlugin.TOOLKIT]?.version) {
             resetGroupSettings()
         }
 
@@ -81,7 +82,7 @@ class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUse
         val group = CodeWhispererUserGroup.Control
 
         settings[USER_GROUP_KEY] = group.name
-        version = AwsToolkit.PLUGIN_VERSION
+        version = AwsToolkit.PLUGINS_INFO[AwsPlugin.TOOLKIT]?.version
 
         return group
     }
@@ -95,7 +96,7 @@ class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUse
         }
 
         settings[EXP_THRESHOLD_KEY] = group.name
-        version = AwsToolkit.PLUGIN_VERSION
+        version = AwsToolkit.PLUGINS_INFO[AwsPlugin.TOOLKIT]?.version
 
         return group
     }

@@ -114,8 +114,6 @@ class CodeWhispererCustomizationDialog(
     override fun doCancelAction() {
         super.doCancelAction()
 
-        // TODO: not using project.refreshDevToolTree is weird
-        //  but the purpose is to update devTool trees of all IDE instances with CodeWhisperer IdC
         CodeWhispererCustomizationListener.notifyCustomUiUpdate()
         close(CANCEL_EXIT_CODE)
     }

@@ -213,7 +213,6 @@
         <extensionPoint name="tool" interface="software.aws.toolkits.jetbrains.core.tools.ToolType" dynamic="true"/>
         <extensionPoint name="devTools.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.DevToolsServiceNode" dynamic="true"/>
         <extensionPoint name="devTools.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsTreeStructureProvider" dynamic="true"/>
-        <extensionPoint name="cwq.rootNode" interface="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQRootNodeProvider" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -241,6 +240,7 @@
 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.executables.ExecutableLoader"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.startup.QMigrationActivity"/>
 
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.executables.ExecutableManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
@@ -248,8 +248,6 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.tools.ToolManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.tools.DefaultToolManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.tools.MockToolManager"/>
-
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.plugins.ToolkitUpdateManager"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes"/>
@@ -265,6 +263,8 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.webview.ToolkitWebviewPanel"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow"/>
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider"/>
@@ -286,10 +286,10 @@
 
         <!-- plugin configurables -->
         <applicationConfigurable
-            id="aws"
+            id="aws.old"
             groupId="tools"
             bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="aws.settings.title"
+            key="aws.settings.title.old"
             instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"
         />
         <projectConfigurable
@@ -690,6 +690,9 @@
 
         <action id="aws.toolkit.connection.pinning.unpin"
                 class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.UnpinConnectionAction"/>
+
+        <action id="aws.toolkit.cwQRootNode.installQ"
+                class="software.aws.toolkits.jetbrains.core.explorer.actions.InstallAmazonQAction"/>
 
     </actions>
 

@@ -136,6 +136,7 @@ dependencies {
     compileOnlyApi(project(":plugin-toolkit:core"))
     compileOnlyApi(project(":plugin-core:jetbrains-community"))
 
+    // TODO: remove Q dependency when split is fully done
     implementation(project(":plugin-amazonq:mynah-ui"))
     implementation(libs.bundles.jackson)
     implementation(libs.zjsonpatch)

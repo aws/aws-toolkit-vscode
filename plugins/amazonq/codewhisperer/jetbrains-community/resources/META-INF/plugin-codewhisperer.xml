@@ -16,8 +16,6 @@
                   topic="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener"/>
         <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
                   topic="software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
-                  topic="software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationListener"/>
     </projectListeners>
 
     <extensionPoints>

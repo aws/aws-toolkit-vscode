@@ -28,7 +28,7 @@ class SonoLogin : DumbAwareAction(AllIcons.Actions.Execute) {
             } ?: run {
                 runInEdt {
                     // Start from scratch if no active connection
-                    if (requestCredentialsForCodeCatalyst(project)) {
+                    if (requestCredentialsForCodeCatalyst(project) == true) {
                         project.refreshDevToolTree()
                     }
                 }

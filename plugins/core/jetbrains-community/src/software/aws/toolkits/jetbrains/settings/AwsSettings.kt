@@ -21,6 +21,7 @@ interface AwsSettings {
     var isAutoUpdateEnabled: Boolean
     var isAutoUpdateNotificationEnabled: Boolean
     var isAutoUpdateFeatureNotificationShownOnce: Boolean
+    var isQMigrationNotificationShownOnce: Boolean
     val clientId: UUID
 
     companion object {
@@ -99,6 +100,12 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
             state.isAutoUpdateFeatureNotificationShownOnce = value
         }
 
+    override var isQMigrationNotificationShownOnce: Boolean
+        get() = state.isQMigrationNotificationShownOnce ?: false
+        set(value) {
+            state.isQMigrationNotificationShownOnce = value
+        }
+
     override val clientId: UUID
         @Synchronized get() {
             val id = when {
@@ -126,5 +133,6 @@ data class AwsConfiguration(
     var profilesNotification: String? = null,
     var isAutoUpdateEnabled: Boolean? = null,
     var isAutoUpdateNotificationEnabled: Boolean? = null,
-    var isAutoUpdateFeatureNotificationShownOnce: Boolean? = null
+    var isAutoUpdateFeatureNotificationShownOnce: Boolean? = null,
+    var isQMigrationNotificationShownOnce: Boolean? = null
 )

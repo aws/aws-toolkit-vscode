@@ -31,6 +31,7 @@ import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerExtension
 import software.aws.toolkits.jetbrains.core.credentials.ConfigFilesFacade
 import software.aws.toolkits.jetbrains.core.credentials.UserConfigSsoSessionProfile
+import software.aws.toolkits.jetbrains.core.credentials.authAndUpdateConfig
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
@@ -97,7 +98,13 @@ class SetupAuthenticationDialogTest {
         }
 
         verify {
-            authAndUpdateConfig(projectExtension.project, UserConfigSsoSessionProfile("", region.id, startUrl, scopes), configFacade, any())
+            authAndUpdateConfig(
+                projectExtension.project,
+                UserConfigSsoSessionProfile("", region.id, startUrl, scopes),
+                configFacade,
+                any(),
+                any()
+            )
         }
     }
 
@@ -149,6 +156,7 @@ class SetupAuthenticationDialogTest {
                 projectExtension.project,
                 UserConfigSsoSessionProfile("", region.id, startUrl, scopes + "sso:account:access"),
                 configFacade,
+                any(),
                 any()
             )
         }

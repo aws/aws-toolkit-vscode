@@ -17,6 +17,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
@@ -278,7 +279,7 @@ class DefaultToolkitAuthManagerTest {
             loginSso(projectRule.project, "foo", "us-east-1", emptyList())
 
             val tokenProvider = it.constructed()[0]
-            verify(tokenProvider).reauthenticate()
+            verify(tokenProvider, timeout(5000)).reauthenticate()
             verify(connectionManager).switchConnection(eq(existingConnection))
         }
     }
@@ -358,7 +359,7 @@ class DefaultToolkitAuthManagerTest {
 
             // after
             assertThat(sut.listConnections()).hasSize(1)
-            verify(connectionManager).switchConnection(any())
+            verify(connectionManager, timeout(5000)).switchConnection(any())
 
             val expectedConnection = LegacyManagedBearerSsoConnection(
                 "foo",

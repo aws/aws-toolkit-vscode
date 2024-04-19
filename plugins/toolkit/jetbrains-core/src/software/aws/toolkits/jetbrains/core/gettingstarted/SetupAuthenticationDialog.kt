@@ -40,6 +40,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ConfigFilesFacade
 import software.aws.toolkits.jetbrains.core.credentials.DefaultConfigFilesFacade
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.UserConfigSsoSessionProfile
+import software.aws.toolkits.jetbrains.core.credentials.authAndUpdateConfig
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
@@ -302,7 +303,7 @@ class SetupAuthenticationDialog(
                     scopes = scopes
                 )
 
-                val connection = authAndUpdateConfig(project, profile, configFilesFacade) {
+                val connection = authAndUpdateConfig(project, profile, configFilesFacade, {}) {
                     Messages.showErrorDialog(project, it, title)
                     AuthTelemetry.addConnection(
                         project,

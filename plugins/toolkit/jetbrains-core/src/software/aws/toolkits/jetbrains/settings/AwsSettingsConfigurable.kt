@@ -1,4 +1,4 @@
-// Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.settings
@@ -16,7 +16,6 @@ import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.dsl.builder.selected
 import com.intellij.ui.layout.selected
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.ExecutableWithPath
@@ -32,6 +31,7 @@ import java.nio.file.Paths
 import java.util.concurrent.CompletionException
 import javax.swing.JComponent
 
+// TODO: pending migration for other non-Q settings
 class AwsSettingsConfigurable : SearchableConfigurable {
     private val samExecutableInstance: SamExecutable
         get() = ExecutableType.getExecutable(SamExecutable::class.java)
@@ -118,9 +118,9 @@ class AwsSettingsConfigurable : SearchableConfigurable {
         enableAutoUpdateNotification.isSelected = awsSettings.isAutoUpdateNotificationEnabled
     }
 
-    override fun getDisplayName(): String = message("aws.settings.title")
+    override fun getDisplayName(): String = message("aws.settings.title.old")
 
-    override fun getId(): String = "aws"
+    override fun getId(): String = "aws.old"
 
     private fun createCliConfigurationElement(executableType: ExecutableType<*>, cliName: String): TextFieldWithBrowseButton {
         val autoDetectPath = getSavedExecutablePath(executableType, true)

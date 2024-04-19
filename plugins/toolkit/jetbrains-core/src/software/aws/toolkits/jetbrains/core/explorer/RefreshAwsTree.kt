@@ -9,7 +9,6 @@ import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
-import software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
 
 fun Project.refreshAwsTree(resource: Resource<*>? = null, connectionSettings: ConnectionSettings = getConnectionSettingsOrThrow()) {
@@ -29,12 +28,5 @@ fun Project.refreshDevToolTree() {
     runInEdt {
         if (this.isDisposed) return@runInEdt
         DevToolsToolWindow.getInstance(this).redrawContent()
-    }
-}
-
-fun Project.refreshCwQTree() {
-    runInEdt {
-        if (this.isDisposed) return@runInEdt
-        CodewhispererQToolWindow.getInstance(this).redrawContent()
     }
 }
