@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { activateShared, deactivateShared } from './extensionShared'
 
 export async function activate(context: vscode.ExtensionContext) {
-    await activateShared(context)
+    await activateShared(context, false)
 }
 
 export async function deactivate() {

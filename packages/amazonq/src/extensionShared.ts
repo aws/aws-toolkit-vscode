@@ -36,7 +36,10 @@ import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
 
-export async function activateShared(context: vscode.ExtensionContext) {
+export async function activateShared(context: vscode.ExtensionContext, isWeb: boolean) {
+    initialize(context, isWeb)
+    await initializeComputeRegion()
+
     const contextPrefix = 'amazonq'
     globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
 
@@ -72,8 +75,6 @@ export async function activateShared(context: vscode.ExtensionContext) {
         }
     }
 
-    await initializeComputeRegion()
-    initialize(context)
     const extContext = {
         extensionContext: context,
     }

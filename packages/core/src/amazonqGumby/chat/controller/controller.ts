@@ -31,7 +31,7 @@ import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
-import { codeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 
 // These events can be interactions within the chat,
@@ -234,7 +234,7 @@ export class GumbyController {
     private async initiateTransformationOnProject(message: any) {
         const authType = await getAuthType()
         telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             credentialSourceId: authType,
             result: MetadataResult.Pass,
         })

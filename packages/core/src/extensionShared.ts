@@ -11,7 +11,7 @@
 import vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import globals, { initialize } from './shared/extensionGlobals'
+import globals, { initialize, isWeb } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
@@ -32,7 +32,6 @@ import { CredentialsStore } from './auth/credentials/store'
 import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
 import { RegionProvider, getEndpointsFromFetcher } from './shared/regions/regionProvider'
 import { ChildProcess } from './shared/utilities/childProcess'
-import { isWeb } from './common/webUtils'
 import { registerErrorHandler as registerCommandErrorHandler } from './shared/vscode/commands2'
 import { ToolkitError, isUserCancelledError, resolveErrorMessageToDisplay } from './shared/errors'
 import { getLogger } from './shared/logger'
@@ -59,13 +58,18 @@ let localize: nls.LocalizeFunc
  * Activation/setup code that is shared by the regular (nodejs) extension AND web mode extension.
  * Most setup code should live here, unless there is a reason not to.
  */
-export async function activateShared(context: vscode.ExtensionContext, contextPrefix: string): Promise<ExtContext> {
+export async function activateShared(
+    context: vscode.ExtensionContext,
+    contextPrefix: string,
+    isWeb: boolean
+): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
-    globals.contextPrefix = '' //todo: disconnect supplied argument
 
     // some "initialize" functions
+    initialize(context, isWeb)
     await initializeComputeRegion()
-    initialize(context)
+
+    globals.contextPrefix = '' //todo: disconnect supplied argument
 
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
