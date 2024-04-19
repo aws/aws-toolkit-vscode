@@ -110,7 +110,7 @@ export async function activateShared(context: vscode.ExtensionContext, contextPr
     globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
 
     // telemetry
-    await activateTelemetry(context, globals.awsContext, Settings.instance)
+    await activateTelemetry(context, globals.awsContext, Settings.instance, 'AWS Toolkit For VS Code')
 
     // Create this now, but don't call vscode.window.registerUriHandler() until after all
     // Toolkit services have a chance to register their path handlers. #4105

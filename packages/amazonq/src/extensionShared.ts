@@ -89,7 +89,7 @@ export async function activateShared(context: vscode.ExtensionContext) {
     globals.logOutputChannel = qLogChannel
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 
-    await activateTelemetry(context, globals.awsContext, Settings.instance)
+    await activateTelemetry(context, globals.awsContext, Settings.instance, 'Amazon Q For VS Code')
 
     await initializeAuth(context, globals.loginManager, contextPrefix, undefined)
 
