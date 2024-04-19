@@ -12,9 +12,9 @@ import { ExtensionUse, initAuthCommands } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../shared/vscode/env'
 import { registerCommands, getShowManageConnections } from './ui/vue/show'
-import { isWeb } from '../common/webUtils'
 import { UriHandler } from '../shared/vscode/uriHandler'
 import { authenticationPath } from './sso/ssoAccessTokenProvider'
+import { isWeb } from '../shared/extensionGlobals'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,

@@ -10,9 +10,8 @@ import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
-import { isWeb } from '../../common/webUtils'
 import { fsCommon } from '../../srcShared/fs'
-import globals from '../extensionGlobals'
+import globals, { isWeb } from '../extensionGlobals'
 
 export const defaultLogLevel: LogLevel = 'debug'
 

@@ -75,7 +75,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     try {
         // IMPORTANT: If you are doing setup that should also work in web mode (browser), it should be done in the function below
-        const extContext = await activateShared(context, contextPrefix)
+        const extContext = await activateShared(context, contextPrefix, false)
 
         initializeCredentialsProviderManager()
 

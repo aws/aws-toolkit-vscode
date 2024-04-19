@@ -151,3 +151,4 @@ The assumption for the behavior is due to how Web Workers work. We (VS Code) use
     -   VS Code uses Dedicated Workers since `globalThis` is indicated as a [`DedicatedWorkerGlobalScope`](https://developer.mozilla.org/en-US/docs/Web/API/DedicatedWorkerGlobalScope) when debugging
     -   `globalThis` is one object (that I could find so far) which **is shared** between our extension and test scripts. A guess to why is that the main script spawns another web worker (for unit tests) and passes on the `DedicatedWorkerGlobalScope`. See [`"Workers can also spawn other workers"`](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Functions_and_classes_available_to_workers).
     -   `globalThis` returns `global` in Node.js, or a `WorkerGlobalScope` in the browser
+    -   NOTE: `globalThis` is shared across all of VS Code, including all extensions.

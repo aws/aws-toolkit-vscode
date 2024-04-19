@@ -5,7 +5,7 @@
  * This module sets up the necessary components
  * for the webview to be shown.
  */
-import globals from '../../../shared/extensionGlobals'
+import globals, { isWeb } from '../../../shared/extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
@@ -53,7 +53,6 @@ import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
-import { isWeb } from '../../../common/webUtils'
 import { ExtStartUpSources } from '../../../shared/telemetry'
 
 export class AuthWebview extends VueWebview {
