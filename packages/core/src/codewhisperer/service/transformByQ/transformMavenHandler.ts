@@ -161,12 +161,7 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo)
     try {
         installProjectDependencies(dependenciesFolder)
     } catch (err) {
-        void vscode.window.showErrorMessage(
-            CodeWhispererConstants.installErrorMessage.replace(
-                'LINK_HERE',
-                CodeWhispererConstants.linkToMavenTroubleshooting
-            )
-        )
+        void vscode.window.showErrorMessage(CodeWhispererConstants.cleanInstallErrorNotification)
         // open build-logs.txt file to show user error logs
         const logFilePath = await writeLogs()
         const doc = await vscode.workspace.openTextDocument(logFilePath)
@@ -175,6 +170,7 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo)
     }
 
     throwIfCancelled()
+    void vscode.window.showInformationMessage(CodeWhispererConstants.buildSucceededNotification)
 }
 
 export async function getVersionData() {
