@@ -48,6 +48,10 @@ class ToolkitFeedbackDialog(project: Project) : FeedbackDialog(project) {
     override fun notificationTitle() = message("aws.notification.title")
 
     override fun getHelpId() = HelpIds.AWS_TOOLKIT_GETTING_STARTED.id
+
+    override suspend fun sendFeedback() {
+        sendFeedbackWithExperimentsMetadata(sentiment, commentText)
+    }
 }
 
 abstract class FeedbackDialog(
@@ -55,9 +59,7 @@ abstract class FeedbackDialog(
     initialSentiment: Sentiment = Sentiment.POSITIVE,
     initialComment: String = "",
 ) : DialogWrapper(project) {
-    open suspend fun sendFeedback() {
-        sendFeedbackWithExperimentsMetadata(sentiment, commentText)
-    }
+    abstract suspend fun sendFeedback()
 
     protected abstract fun notificationTitle(): String
     protected abstract fun productName(): String
