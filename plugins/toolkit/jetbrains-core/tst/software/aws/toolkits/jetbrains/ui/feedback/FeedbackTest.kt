@@ -28,6 +28,7 @@ class FeedbackTest {
         override fun notificationTitle() = "title"
         override fun productName() = "product"
         override fun feedbackPrompt() = "prompt"
+        override suspend fun sendFeedback() {}
     }
 
     @Test

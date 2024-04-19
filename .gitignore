@@ -4,6 +4,7 @@ target/
 .idea
 !.run/
 build/
+gradle_build/
 *.iml
 .DS_Store
 Build/
