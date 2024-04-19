@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q FeatureDev: code generation may fail with \"conversation id not found\" error"
-}
