@@ -7,7 +7,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.panels.Wrapper
@@ -117,9 +116,8 @@ class WebviewBrowser(val project: Project) : LoginBrowser(project, WebviewBrowse
 
                 val scope = CODEWHISPERER_SCOPES + Q_SCOPES
 
-                val onError: (String) -> Unit = { s ->
-                    Messages.showErrorDialog(project, it, "Q Idc Login Failed")
-                    // TODO: AuthTelemetry.addConnection
+                val onError: (String) -> Unit = { _ ->
+                    // TODO: telemetry
                 }
                 runInEdt {
                     Login.IdC(profileName, url, awsRegion, scope, onPendingProfile, onError).loginIdc(project)

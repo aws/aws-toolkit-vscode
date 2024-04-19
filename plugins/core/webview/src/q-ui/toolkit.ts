@@ -32,7 +32,7 @@ const store = createStore<State>({
         setSsoRegions(state: State, regions: Region[]) {
             state.ssoRegions = regions
         },
-        setAuthorizationCode(state: State, code: string) {
+        setAuthorizationCode(state: State, code: string | undefined) {
             state.authorizationCode = code
         },
         setFeature(state: State, feature: Feature) {

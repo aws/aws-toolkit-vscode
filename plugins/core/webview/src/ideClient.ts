@@ -16,9 +16,10 @@ export class IdeClient {
         this.updateLastLoginIdcInfo(state.idcInfo)
         this.store.commit("setCancellable", state.cancellable)
         this.store.commit("setFeature", state.feature)
+        this.updateAuthorization(undefined)
     }
 
-    updateAuthorization(code: string) {
+    updateAuthorization(code: string | undefined) {
         this.store.commit('setAuthorizationCode', code)
     }
 
