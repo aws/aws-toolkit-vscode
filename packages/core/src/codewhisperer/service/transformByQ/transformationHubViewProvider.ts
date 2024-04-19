@@ -10,6 +10,11 @@ import { StepProgress, transformByQState } from '../../models/model'
 import { convertToTimeString } from '../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../shared/logger'
 import { getTransformationSteps } from './transformApiHandler'
+import {
+    TransformationSteps,
+    ProgressUpdates,
+    TransformationStatus,
+} from '../../../codewhisperer/client/codewhispereruserclient'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
@@ -113,85 +118,258 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         `
     }
 
-    private async showPlanProgress(startTime: number): Promise<string> {
+    private generateTransformationStepMarkup(
+        name: string,
+        startTime: Date | undefined,
+        endTime: Date | undefined,
+        previousStatus: string,
+        isFirstStep: boolean,
+        stepProgress: StepProgress,
+        stepId: number,
+        isCurrentlyProcessing: boolean
+    ) {
+        // include check for the previous step not being CREATED, as this means it has finished, so we can display the next step
+        if (startTime && endTime && (isFirstStep || previousStatus !== 'CREATED')) {
+            const stepTime = endTime.toLocaleDateString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            })
+            const stepDuration = convertToTimeString(endTime.getTime() - startTime.getTime())
+            return `
+                <p class="step" id="step-${stepId}">
+                    ${this.getProgressIconMarkup(stepProgress)} ${name} [finished on ${stepTime}] 
+                    <span>${stepDuration}</span>
+                </p>`
+        } else if (previousStatus !== 'CREATED' && isCurrentlyProcessing) {
+            return `
+                <p class="step active" id="step-${stepId}")>
+                    ${this.getProgressIconMarkup(stepProgress)} ${name}
+                </p>`
+        } else if (previousStatus !== 'CREATED') {
+            return `
+                <p class="step" id="step-${stepId}")>
+                    ${this.getProgressIconMarkup(stepProgress)} ${name}
+                </p>`
+        }
+    }
+
+    private stepStatusToStepProgress(stepStatus: string, transformFailed: boolean) {
+        if (stepStatus === 'COMPLETED' || stepStatus === 'PARTIALLY_COMPLETED') {
+            return StepProgress.Succeeded
+        } else if (stepStatus === 'STOPPED' || stepStatus === 'FAILED' || transformFailed) {
+            return StepProgress.Failed
+        } else {
+            return StepProgress.Pending
+        }
+    }
+
+    private selectSubstepIcon(status: string) {
+        switch (status) {
+            case 'IN_PROGRESS':
+                return '<p><span class="spinner status-PENDING"> ↻ </span></p>'
+            case 'COMPLETED':
+                return '<p><span class="status-COMPLETED"> ✓ </span></p>'
+            case 'FAILED':
+            default:
+                return '<p><span class="status-FAILED"> ⓧ </span></p>'
+        }
+    }
+
+    private generateSubstepMarkup(progressUpdates: ProgressUpdates, stepId: number, stepTitle: string) {
+        const substepParagraphs = []
+        for (const subStep of progressUpdates) {
+            substepParagraphs.push(`
+            <div class="substep-container">
+                <div class="substep-icon">${this.selectSubstepIcon(subStep.status)}</div>
+                <div>
+                    <p>${subStep.name}</p>
+                    ${subStep.description ? `<p class="status-${subStep.status}">- ${subStep.description}</p>` : ''}
+                </div>
+            </div>
+            `)
+        }
+        return `<div class="substep" id="substep-${stepId}">
+        <p><b>${stepTitle}</b></p>
+        ${substepParagraphs.join('\n')}
+        </div>`
+    }
+
+    /**
+     * Generates markup for each step in a transformation plan
+     * @param planSteps The transformation steps of the transformation plan
+     * @param isTransformFailed boolean of if the transform failed during the transformation step
+     * @returns Tuple where first element is the markup for the steps and the second element is the markup of all substeps
+     */
+    private getTransformationStepProgressMarkup(
+        planSteps: TransformationSteps | undefined,
+        isTransformFailed: boolean
+    ) {
+        const steps = []
+        const substeps = []
+        if (planSteps !== undefined) {
+            const stepStatuses = []
+            for (const step of planSteps) {
+                stepStatuses.push(step.status)
+            }
+            let lastPendingStep = undefined
+            for (let i = 0; i < planSteps.length; i++) {
+                const step = planSteps[i]
+                const stepProgress = this.stepStatusToStepProgress(step.status, isTransformFailed)
+                lastPendingStep =
+                    lastPendingStep === undefined && stepProgress === StepProgress.Pending ? i : lastPendingStep
+                const stepMarkup = this.generateTransformationStepMarkup(
+                    step.name,
+                    step.startTime,
+                    step.endTime,
+                    stepStatuses[i - 1],
+                    i === 0,
+                    stepProgress,
+                    i,
+                    lastPendingStep === i
+                )
+                steps.push(stepMarkup)
+                if (step.progressUpdates) {
+                    substeps.push(this.generateSubstepMarkup(step.progressUpdates, i, step.name))
+                }
+            }
+        }
+
+        return [steps.join(''), substeps.join('\n')]
+    }
+
+    private getLatestGenericStepDetails(currentJobStatus: TransformationStatus) {
+        switch (currentJobStatus) {
+            case 'CREATED':
+            case 'ACCEPTED':
+            case 'STARTED':
+                return 'Files have been uploaded to Amazon Q, transformation job has been accepted and is preparing to start.'
+            case 'PREPARING':
+            case 'PREPARED':
+                return `Amazon Q is building your code using Java ${transformByQState.getSourceJDKVersion()} in a secure build environment.`
+            case 'PLANNING':
+            case 'PLANNED':
+                return 'Amazon Q is analyzing your code in order to generate a transformation plan.'
+            case 'TRANSFORMING':
+            case 'TRANSFORMED':
+            case 'COMPLETED':
+            case 'PARTIALLY_COMPLETED':
+                return 'Amazon Q is transforming your code. Details will appear soon.'
+            case 'STOPPING':
+            case 'STOPPED':
+                return 'Stopping the job...'
+            case 'FAILED':
+            case 'REJECTED':
+                return 'The step failed, fetching additional details...'
+            default:
+                if (transformByQState.isCancelled()) {
+                    return 'Stopping the job...'
+                } else if (transformByQState.isFailed()) {
+                    return 'The step failed, fetching additional details...'
+                } else if (transformByQState.isNotStarted()) {
+                    return `Amazon Q is scanning the project files and getting ready to start the job. 
+                    To start the job, Amazon Q needs to upload the project artifacts. Once that's done, Q can start the transformation job. 
+                    The estimated time for this operation ranges from a few seconds to several minutes.`
+                } else if (transformByQState.isPartiallySucceeded() || transformByQState.isSucceeded()) {
+                    return 'Job completed' // this should never have too be shown since substeps will block the generic details. Added for completeness.
+                }
+        }
+    }
+
+    public async showPlanProgress(startTime: number): Promise<string> {
         const planProgress = getPlanProgress()
+        const simpleStep = (icon: string, text: string, isActive: boolean) => {
+            return isActive
+                ? `<p class="simple-step active">${icon} ${text}</p>`
+                : `<p class="simple-step">${icon} ${text}</p>`
+        }
+
         let planSteps = transformByQState.getPlanSteps()
         if (planProgress['generatePlan'] === StepProgress.Succeeded && transformByQState.isRunning()) {
             planSteps = await getTransformationSteps(transformByQState.getJobId())
             transformByQState.setPlanSteps(planSteps)
         }
-        let progressHtml = `<p><b>Transformation Status</b></p><p>No job ongoing</p>`
+        let progressHtml
         if (planProgress['transformCode'] !== StepProgress.NotStarted) {
-            progressHtml = `<p><b>Transformation Status</b></p>`
-            progressHtml += `<p> ${this.getProgressIconMarkup(planProgress['startJob'])} Waiting for job to start</p>`
-            if (planProgress['startJob'] === StepProgress.Succeeded) {
-                progressHtml += `<p> ${this.getProgressIconMarkup(
-                    planProgress['buildCode']
-                )} Build uploaded code in secure build environment</p>`
-            }
-            if (planProgress['buildCode'] === StepProgress.Succeeded) {
-                progressHtml += `<p> ${this.getProgressIconMarkup(
-                    planProgress['generatePlan']
-                )} Generate transformation plan</p>`
-            }
-            if (planProgress['generatePlan'] === StepProgress.Succeeded) {
-                progressHtml += `<p> ${this.getProgressIconMarkup(
-                    planProgress['transformCode']
-                )} Transform your code to Java 17 using transformation plan</p>`
-                // now get the details of each sub-step of the "transformCode" step
-                if (planSteps !== undefined) {
-                    const stepStatuses = []
-                    for (const step of planSteps) {
-                        stepStatuses.push(step.status)
-                    }
-                    for (let i = 0; i < planSteps.length; i++) {
-                        const step = planSteps[i]
-                        const stepStatus = step.status
-                        let stepProgress = undefined
-                        if (stepStatus === 'COMPLETED' || stepStatus === 'PARTIALLY_COMPLETED') {
-                            stepProgress = StepProgress.Succeeded
-                        } else if (
-                            stepStatus === 'STOPPED' ||
-                            stepStatus === 'FAILED' ||
-                            planProgress['transformCode'] === StepProgress.Failed
-                        ) {
-                            stepProgress = StepProgress.Failed
-                        } else {
-                            stepProgress = StepProgress.Pending
-                        }
-                        // include check for the previous step not being CREATED, as this means it has finished, so we can display the next step
-                        if (step.startTime && step.endTime && (i === 0 || stepStatuses[i - 1] !== 'CREATED')) {
-                            const stepTime = step.endTime.toLocaleDateString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                second: '2-digit',
-                            })
-                            const stepDuration = convertToTimeString(step.endTime.getTime() - step.startTime.getTime())
-                            progressHtml += `<p style="margin-left: 20px">${this.getProgressIconMarkup(stepProgress)} ${
-                                step.name
-                            } [finished on ${stepTime}] <span style="color:grey">${stepDuration}</span></p>`
-                        } else if (stepStatuses[i - 1] !== 'CREATED') {
-                            progressHtml += `<p style="margin-left: 20px">${this.getProgressIconMarkup(stepProgress)} ${
-                                step.name
-                            }</p>`
-                        }
-                        if (step.progressUpdates) {
-                            for (const subStep of step.progressUpdates) {
-                                progressHtml += `<p style="margin-left: 40px">- ${subStep.name}</p>`
-                                if (subStep.description) {
-                                    progressHtml += `<p style="margin-left: 60px; color:${this.getFontColorForSubStep(
-                                        subStep.status
-                                    )}">- ${subStep.description}</p>`
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            const isTransformFailed = planProgress['transformCode'] === StepProgress.Failed
+
+            // for each step that has succeeded, increment activeStepId by 1
+            let activeStepId = [
+                planProgress.startJob,
+                planProgress.buildCode,
+                planProgress.generatePlan,
+                planProgress.transformCode,
+            ]
+                .map(it => (it === StepProgress.Succeeded ? 1 : 0) as number)
+                .reduce((prev, current) => prev + current)
+            // When we receive plan step details, we want those to be active -> increment activeStepId
+            activeStepId += planSteps === undefined || planSteps.length === 0 ? 0 : 1
+
+            console.log(planProgress['startJob'])
+            const waitingMarkup = simpleStep(
+                this.getProgressIconMarkup(planProgress['startJob']),
+                'Waiting for job to start',
+                activeStepId === 0
+            )
+
+            const buildMarkup =
+                activeStepId >= 1
+                    ? simpleStep(
+                          this.getProgressIconMarkup(planProgress['buildCode']),
+                          'Build uploaded code in secure build environment',
+                          activeStepId === 1
+                      )
+                    : ''
+            const planMarkup =
+                activeStepId >= 2
+                    ? simpleStep(
+                          this.getProgressIconMarkup(planProgress['generatePlan']),
+                          'Generate transformation plan',
+                          activeStepId === 2
+                      )
+                    : ''
+            const transformMarkup =
+                activeStepId >= 3
+                    ? simpleStep(
+                          this.getProgressIconMarkup(planProgress['transformCode']),
+                          'Transform your code to Java 17 using transformation plan',
+                          activeStepId === 3
+                      )
+                    : ''
+
+            const progress = this.getTransformationStepProgressMarkup(planSteps, isTransformFailed)
+            const latestGenericStepDetails = this.getLatestGenericStepDetails(transformByQState.getPolledJobStatus())
+            progressHtml = `
+            <div class="column">
+                <div id="runningTime" style="flex:1; overflow: auto;"></div>
+                <p><b>Transformation Progress</b></p>
+                ${waitingMarkup}
+                ${buildMarkup}
+                ${planMarkup}
+                ${transformMarkup}
+                ${progress[0]}
+            </div>
+            <div id="stepdetails" class="column">
+                <div class="substep center" id="generic-step-details">
+                    <div class="column--container">
+                        <div class="center-flex substep-icon"><p class="center-flex"><span class="spinner status-PENDING"> ↻ </span></p></div>
+                        <div><p>${latestGenericStepDetails}</p></div>
+                    </div>
+                </div>
+                ${progress[1]}
+            </div>
+            `
+        } else {
+            progressHtml = `
+            <div class="column">
+                <p><b>Transformation Progress</b></p>
+                <p>No job ongoing</p>
+            </div>`
         }
-        const isJobInProgress = transformByQState.isRunning()
+        //<meta http-equiv="refresh" content="1" />
         return `<!DOCTYPE html>
             <html lang="en">
+            
             <head>
             <title>Transformation Hub</title>
             <style>
@@ -203,17 +381,99 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         transform: rotate(360deg);
                     }
                 }
+                body {
+                    margin: 0;
+                    padding: 0 1em;
+                    height: 100vh;
+                }
+
+                .wrapper {
+                    height: 100%;
+                    display: flex;
+                }
+
                 .spinner {
                     display: inline-block;
                     animation: spin 1s infinite;
                 }
+
+                .column--container, .substep-container {
+                    display: flex;
+                    flex-direction: row;
+                }
+
+                .column {
+                    flex-grow: 1;
+                }
+
+                .substep-container  p {
+                    margin: .5em 0;
+                }
+
+                .step, .simple-step {
+                    padding: .5em 0 .5em 0;
+                    margin: 0;
+                }
+
+                .step {
+                    padding-left: 20px;
+                }
+
+                .step:hover, .active {
+                    background-color: aliceblue;
+                    background-color: var(button.hoverBackground);
+                }
+
+                #stepdetails {
+                    padding-left: 20px;
+                    border-left: solid lightgray;
+                    min-height: 100vh;
+                    ${transformByQState.isRunning() ? '' : 'display: none;'}
+                }
+
+                .status-PENDING {
+                    color: grey;
+                }
+
+                .status-COMPLETED {
+                    color: green;
+                }
+
+                .status-FAILED {
+                    color: red;
+                }
+
+                .substep {
+                    display: none;
+                }
+
+                .substep-icon {
+                    padding: 0 1em;
+                }
+
+                .visible {
+                    display: block;
+                }
+
+                .center {
+                    position: absolute;
+                    top: 50%;
+                    transform: translate(0, -50%);
+                }
+
+                .center-flex {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
             </style>
             </head>
             <body>
-            <div style="display: flex">
+            <div class="wrapper">
                 <div style="flex:1; overflow: auto;">
-                    <div id="runningTime" style="flex:1; overflow: auto;"></div>
-                    ${progressHtml}
+                    <div class="column--container">
+                        ${progressHtml}
+                    </div>
                 </div>
             </div>
             <script>
@@ -221,7 +481,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 let runningTime = "";
 
                 function updateTimer() {
-                    if (${isJobInProgress}) {
+                    if (${transformByQState.isRunning()}) {
                         runningTime = convertToTimeString(Date.now() - ${startTime});
                         document.getElementById("runningTime").textContent = "Time elapsed: " + runningTime;
                     } else {
@@ -244,7 +504,84 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     }
                     return timeString
                 }
+
+                function clearActiveSteps(){
+                    const activeSteps = document.querySelectorAll(".active")
+                    for(const step of activeSteps){
+                        step.classList.remove("active")
+                    }
+                }
+
+                function showStepDetails(item) {
+                    console.log("Clicked" + item.id)
+                    const visibleSubSteps = document.querySelectorAll(".visible");
+                    const substep = document.getElementById(item.id.replace("step-", "substep-"))
+                    document.getElementById("stepdetails").style.display = "none"
+                    let substepWasAlreadyVisible = false
+                    clearActiveSteps()
+                    for(const visibleSubStep of visibleSubSteps){                
+                        visibleSubStep.classList.remove("visible")
+                        document.getElementById(visibleSubStep.id.replace("substep-", "step-")).classList.remove("active")
+                        if(visibleSubStep === substep){
+                            substepWasAlreadyVisible = true
+                        }
+                    }
+
+                    if(substepWasAlreadyVisible){
+                        return
+                    }
+                    
+                    substep.classList.add("visible")
+                    document.getElementById("stepdetails").style.display = "block"
+                    item.classList.add("active")
+                    document.getElementById("generic-step-details").classList.add("blocked")
+                }
+
+                function handleSimpleStepClicked(item) {  
+                    clearActiveSteps()
+                    item.classList.add("active")
+                    if(document.getElementById("generic-step-details").classList.contains("blocked")){
+                        return
+                    }
+                    document.getElementById("stepdetails").style.display = "block"
+                    document.getElementById("generic-step-details").classList.add("visible")
+                }
+
+
+                function addShowSubstepEventListeners() {
+                    console.log("addShowSubstepEventListeners")
+                    const steps = document.getElementsByClassName("step");
+                    for(const item of steps) {
+                        item.addEventListener("click", (event) => {
+                            showStepDetails(item)
+                        })
+                    }
+                }
+
+                function addHighlightStepWithoutSubstepListeners(){
+                    console.log("addHighlightStepWithoutSubstepListeners")
+                    const steps = document.getElementsByClassName("simple-step");
+                    for(const item of steps) {
+                        item.addEventListener("click", (event) => {
+                            handleSimpleStepClicked(item)
+                        })
+                    }
+                }
+
+                function showCurrentActiveSubstep() {
+                    console.log("showCurrentActiveSubstep")
+                    const activeStep = document.getElementsByClassName("active")[0]
+                    if(activeStep && activeStep.classList.contains("step")){
+                        showStepDetails(activeStep)
+                    } else if(activeStep && activeStep.classList.contains("simple-step")){
+                        handleSimpleStepClicked(activeStep)
+                    }
+                }
+
                 intervalId = setInterval(updateTimer, 1000);
+                addShowSubstepEventListeners();
+                addHighlightStepWithoutSubstepListeners();
+                showCurrentActiveSubstep();
             </script>
             </body>
             </html>`
@@ -252,21 +589,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
 
     private getProgressIconMarkup(stepStatus: StepProgress) {
         if (stepStatus === StepProgress.Succeeded) {
-            return `<span style="color: green"> ✓ </span>`
+            return `<span class="status-COMPLETED"> ✓ </span>`
         } else if (stepStatus === StepProgress.Pending) {
-            return `<span style="color: grey" class="spinner"> ↻ </span>`
+            return `<span class="spinner status-PENDING"> ↻ </span>`
         } else {
-            return `<span style="color: grey"> ✓ </span>`
-        }
-    }
-
-    private getFontColorForSubStep(status: string) {
-        if (status === 'COMPLETED') {
-            return 'green'
-        } else if (status === 'FAILED') {
-            return 'red'
-        } else {
-            return '' // uses VS Code's default color
+            return `<span class="status-PENDING"> ✓ </span>`
         }
     }
 }

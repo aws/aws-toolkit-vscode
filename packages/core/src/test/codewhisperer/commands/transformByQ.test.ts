@@ -34,6 +34,8 @@ import {
     getOpenProjects,
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
 import { TransformationCandidateProject } from '../../../codewhisperer/models/model'
+import { TransformationHubViewProvider } from '../../../codewhisperer/service/transformByQ/transformationHubViewProvider'
+import { getPlanProgress } from '../../../codewhisperer/commands/startTransformByQ'
 
 describe('transformByQ', function () {
     let tempDir: string
@@ -251,5 +253,1171 @@ describe('transformByQ', function () {
                 assert(expectedFilesAfterClean.includes(dependency.name))
             })
         })
+    })
+    it.only(`Test split panel UI animated`, async function () {
+        const hub = new TransformationHubViewProvider()
+        const progress = getPlanProgress()
+        const sequence = [
+            {
+                polledJobStatus: 'ACCEPTED',
+                steps: [],
+            },
+            {
+                polledJobStatus: 'ACCEPTED',
+                steps: [],
+            },
+            {
+                polledJobStatus: 'PREPARING',
+                steps: [],
+            },
+            {
+                polledJobStatus: 'PREPARING',
+                steps: [],
+            },
+            {
+                polledJobStatus: 'PLANNING',
+                steps: [],
+            },
+            {
+                polledJobStatus: 'PLANNING',
+                steps: [],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Applying dependencies and code changes',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Applying dependencies and code changes',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Applying dependencies and code changes',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Applying dependencies and code changes',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Applying dependencies and code changes',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Applying dependencies and code changes',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Applying dependencies and code changes',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                                endTime: '2024-04-22T11:01:09.783Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                        endTime: '2024-04-22T11:01:09.797Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:01:09.833Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:09.821Z',
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                                endTime: '2024-04-22T11:01:09.783Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                        endTime: '2024-04-22T11:01:09.797Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:01:09.833Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:09.821Z',
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                                endTime: '2024-04-22T11:01:09.783Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                        endTime: '2024-04-22T11:01:09.797Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:01:09.833Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:09.821Z',
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                                endTime: '2024-04-22T11:01:09.783Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                        endTime: '2024-04-22T11:01:09.797Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:01:09.833Z',
+                                endTime: '2024-04-22T11:01:26.253Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:09.821Z',
+                        endTime: '2024-04-22T11:01:26.269Z',
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:01:26.340Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:26.283Z',
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                                endTime: '2024-04-22T11:01:09.783Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                        endTime: '2024-04-22T11:01:09.797Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:01:09.833Z',
+                                endTime: '2024-04-22T11:01:26.253Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:09.821Z',
+                        endTime: '2024-04-22T11:01:26.269Z',
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:01:26.340Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:26.283Z',
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                                endTime: '2024-04-22T11:01:09.783Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                        endTime: '2024-04-22T11:01:09.797Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:01:09.833Z',
+                                endTime: '2024-04-22T11:01:26.253Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:09.821Z',
+                        endTime: '2024-04-22T11:01:26.269Z',
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:01:26.340Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:26.283Z',
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                                endTime: '2024-04-22T11:01:09.783Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                        endTime: '2024-04-22T11:01:09.797Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:01:09.833Z',
+                                endTime: '2024-04-22T11:01:26.253Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:09.821Z',
+                        endTime: '2024-04-22T11:01:26.269Z',
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'FAILED',
+                                startTime: '2024-04-22T11:01:26.340Z',
+                                endTime: '2024-04-22T11:01:42.604Z',
+                            },
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:01:42.619Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:26.283Z',
+                    },
+                ],
+            },
+            {
+                polledJobStatus: 'TRANSFORMING',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                                endTime: '2024-04-22T11:01:09.783Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                        endTime: '2024-04-22T11:01:09.797Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:01:09.833Z',
+                                endTime: '2024-04-22T11:01:26.253Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:09.821Z',
+                        endTime: '2024-04-22T11:01:26.269Z',
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'FAILED',
+                                startTime: '2024-04-22T11:01:26.340Z',
+                                endTime: '2024-04-22T11:01:42.604Z',
+                            },
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:01:42.619Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:26.283Z',
+                    },
+                ],
+            },
+            {
+                polledJobStatus: '',
+                steps: [
+                    {
+                        description:
+                            'Q will update mandatory package dependencies and frameworks. Also, where required for compatability with Java 17, it will replace deprecated code with working code.',
+                        name: 'Step 1 - Update dependencies and code',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Step finished successfully',
+                                name: 'Applying dependencies and code changes',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:16.192Z',
+                                endTime: '2024-04-22T11:00:53.003Z',
+                            },
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:00:53.223Z',
+                                endTime: '2024-04-22T11:01:09.783Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:00:15.999Z',
+                        endTime: '2024-04-22T11:01:09.797Z',
+                    },
+                    {
+                        description:
+                            'Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
+                        name: 'Step 2 - Build in Java 17 and fix any issues',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'COMPLETED',
+                                startTime: '2024-04-22T11:01:09.833Z',
+                                endTime: '2024-04-22T11:01:26.253Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:09.821Z',
+                        endTime: '2024-04-22T11:01:26.269Z',
+                    },
+                    {
+                        description:
+                            'Q will generate code changes for you to review and accept. It will also summarize the changes made, and will copy over build logs for future reference and troubleshooting.',
+                        name: 'Step 3 - Finalize code changes and generate transformation summary',
+                        status: 'CREATED',
+                        progressUpdates: [
+                            {
+                                description: 'Successfully built code in Java 17',
+                                name: 'Building in Java 17 environment',
+                                status: 'FAILED',
+                                startTime: '2024-04-22T11:01:26.340Z',
+                                endTime: '2024-04-22T11:01:42.604Z',
+                            },
+                            {
+                                description: 'Migration step started',
+                                name: 'Building in Java 17 environment',
+                                status: 'IN_PROGRESS',
+                                startTime: '2024-04-22T11:01:42.619Z',
+                            },
+                        ],
+                        startTime: '2024-04-22T11:01:26.283Z',
+                    },
+                ],
+            },
+        ]
+
+        for (const entry of sequence) {
+            const entryAsTransformationSteps = entry.steps.map((step, index) => {
+                return {
+                    id: `${index}`,
+                    name: step.name,
+                    description: step.description,
+                    status: step.status,
+                    progressUpdates: step.progressUpdates.map((value, index) => {
+                        return {
+                            id: `${index}`,
+                            name: value.name,
+                            status: value.status,
+                            description: value.description,
+                        }
+                    }),
+                }
+            })
+            model.transformByQState.setPlanSteps(entryAsTransformationSteps)
+            model.transformByQState.setPolledJobStatus(entry.polledJobStatus)
+
+            progress['buildCode'] = model.StepProgress.Succeeded
+            progress['generatePlan'] = model.StepProgress.Succeeded
+            progress['startJob'] = model.StepProgress.Succeeded
+            progress['transformCode'] = model.StepProgress.Pending
+
+            const time = Date.now()
+            const html = await hub.showPlanProgress(time)
+            fs.writeFileSync('/Users/araneda/index.html', html)
+            await new Promise(f => setTimeout(f, 1000))
+        }
+    })
+
+    it(`Test split panel UI`, async function () {
+        const hub = new TransformationHubViewProvider()
+        const progress = getPlanProgress()
+        model.transformByQState.setPolledJobStatus('STARTED')
+        model.transformByQState.setPlanSteps([
+            {
+                id: '1',
+                name: 'Step 1',
+                description: 'try to make something happen',
+                status: 'COMPLETED',
+                progressUpdates: [
+                    {
+                        name: 'substep 1',
+                        status: 'COMPLETED',
+                        description: 'This is a completed substep description',
+                    },
+                    {
+                        name: 'substep 1',
+                        status: 'FAILED',
+                        description: 'This is a failed substep description',
+                    },
+                    {
+                        name: 'substep 1',
+                        status: 'PENDING',
+                        description: 'This is a unprocessed description',
+                    },
+                ],
+            },
+            {
+                id: '2',
+                name: 'Step 2 - partially completed',
+                description: 'Very descriptive',
+                status: 'PARTIALLY_COMPLETED',
+                progressUpdates: [
+                    {
+                        name: 'substep 1',
+                        status: 'COMPLETED',
+                        description: 'This is a completed substep description',
+                    },
+                    {
+                        name: 'substep 2',
+                        status: 'FAILED',
+                        description: 'This is a failed substep description',
+                    },
+                    {
+                        name: 'substep 3',
+                        status: 'PENDING',
+                        description: 'This is a unprocessed description',
+                    },
+                ],
+            },
+            {
+                id: '3',
+                name: 'Step 3 - stopped',
+                description: 'Decided to stop the transform',
+                status: 'STOPPED',
+                progressUpdates: [
+                    {
+                        name: 'substep 1',
+                        status: 'COMPLETED',
+                        description: 'This is a completed substep description',
+                    },
+                    {
+                        name: 'substep 2',
+                        status: 'FAILED',
+                        description: 'This is a failed substep description',
+                    },
+                    {
+                        name: 'substep 3',
+                        status: 'PENDING',
+                        description: 'This is a unprocessed description',
+                    },
+                ],
+            },
+            {
+                id: '4',
+                name: 'Step 4 - Failed',
+                description: 'Well this did not work out...',
+                status: 'FAILED',
+                progressUpdates: [
+                    {
+                        name: 'substep 1',
+                        status: 'COMPLETED',
+                        description: 'This is a completed substep description',
+                    },
+                    {
+                        name: 'substep 2',
+                        status: 'FAILED',
+                        description: 'This is a failed substep description',
+                    },
+                    {
+                        name: 'substep 3',
+                        status: 'PENDING',
+                        description: 'This is a unprocessed description',
+                    },
+                ],
+            },
+            {
+                id: '5',
+                name: 'Step 5 - Created',
+                description: 'Decided to stop the transform',
+                status: 'CREATED',
+                progressUpdates: [
+                    {
+                        name: 'substep 1',
+                        status: 'COMPLETED',
+                        description: 'This is a completed substep description for the first created entry',
+                    },
+                    {
+                        name: 'substep 2',
+                        status: 'FAILED',
+                        description: 'This is a failed substep description for the first created entry',
+                    },
+                    {
+                        name: 'substep 3',
+                        status: 'PENDING',
+                        description: 'This is a unprocessed description for the first created entry',
+                    },
+                ],
+            },
+            {
+                id: '6',
+                name: 'Step 6 - Created',
+                description: 'Decided to stop the transform',
+                status: 'CREATED',
+                progressUpdates: [
+                    {
+                        name: 'substep 1',
+                        status: 'COMPLETED',
+                        description: 'This is a completed substep description',
+                    },
+                    {
+                        name: 'substep 2',
+                        status: 'FAILED',
+                        description: 'This is a failed substep description',
+                    },
+                    {
+                        name: 'substep 3',
+                        status: 'PENDING',
+                        description: 'This is a unprocessed description',
+                    },
+                ],
+            },
+        ])
+
+        progress['buildCode'] = model.StepProgress.Succeeded
+        progress['generatePlan'] = model.StepProgress.Succeeded
+        progress['startJob'] = model.StepProgress.Succeeded
+        progress['transformCode'] = model.StepProgress.Pending
+
+        const time = Date.now()
+        const html = await hub.showPlanProgress(time)
+        fs.writeFileSync('/Users/araneda/index.html', html)
     })
 })
