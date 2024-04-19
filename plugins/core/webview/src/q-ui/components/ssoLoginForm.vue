@@ -80,7 +80,7 @@
 
 <script lang="ts">
 import {defineComponent} from 'vue'
-import {Feature, Region} from "../../model";
+import {Feature, Region, IdC, BuilderId} from "../../model";
 
 export default defineComponent({
     name: "ssoForm",
@@ -150,10 +150,10 @@ export default defineComponent({
                 profileName: this.ssoProfile,
                 feature: this.feature
             })
-            this.$emit('stageChanged', 'AUTHENTICATING')
+            this.$emit('stageChanged', 'AUTHENTICATING', new IdC(this.ssoProfile, this.startUrl, this.selectedRegion))
         },
         handleCodeCatalystSignin() {
-            this.$emit('stageChanged', 'AUTHENTICATING')
+            this.$emit('stageChanged', 'AUTHENTICATING', new BuilderId())
             window.ideApi.postMessage({
                 command: 'loginBuilderId'
             })

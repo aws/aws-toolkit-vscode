@@ -34,6 +34,7 @@
 
 <script lang="ts">
 import {defineComponent} from 'vue'
+import {LongLivedIAM} from '../../model'
 
 export default defineComponent({
     name: "awsProfileForm",
@@ -46,7 +47,7 @@ export default defineComponent({
     },
     methods: {
         async handleContinueClick() {
-            this.$emit('stageChanged', 'AUTHENTICATING')
+            this.$emit('stageChanged', 'AUTHENTICATING', new LongLivedIAM(this.profileName, this.accessKey, this.secretKey))
             window.ideApi.postMessage({
                 command: 'loginIAM',
                 profileName: this.profileName,

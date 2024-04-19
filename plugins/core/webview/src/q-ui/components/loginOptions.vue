@@ -52,15 +52,7 @@
 <script lang="ts">
 import {defineComponent} from 'vue'
 import SelectableItem from "./selectableItem.vue";
-import {Feature, Stage} from "../../model";
-
-enum LoginOption {
-    NONE,
-    BUILDER_ID,
-    ENTERPRISE_SSO,
-    IAM_CREDENTIAL,
-    EXISTING_LOGINS,
-}
+import {Feature, Stage, LoginIdentifier, BuilderId} from "../../model";
 
 export default defineComponent({
     name: "loginOptions",
@@ -83,8 +75,8 @@ export default defineComponent({
         return {
             app: this.app,
             existingLogin: { id: -1, text: '', title: '' },
-            selectedLoginOption: LoginOption.NONE,
-            LoginOption
+            selectedLoginOption: LoginIdentifier.NONE,
+            LoginOption: LoginIdentifier
         }
     },
     methods: {
@@ -95,14 +87,14 @@ export default defineComponent({
             this.$emit('backToMenu')
         },
         async handleContinueClick() {
-            if (this.selectedLoginOption === LoginOption.BUILDER_ID) {
-                this.$emit('stageChanged', 'AUTHENTICATING')
+            if (this.selectedLoginOption === LoginIdentifier.BUILDER_ID) {
+                this.$emit('stageChanged', 'AUTHENTICATING', new BuilderId())
                 window.ideApi.postMessage({ command: 'loginBuilderId' })
-            } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
+            } else if (this.selectedLoginOption === LoginIdentifier.ENTERPRISE_SSO) {
                 this.$emit('stageChanged', 'SSO_FORM')
-            } else if (this.selectedLoginOption === LoginOption.EXISTING_LOGINS) {
+            } else if (this.selectedLoginOption === LoginIdentifier.EXISTING_LOGINS) {
                 this.$emit('stageChanged', 'START')
-            } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
+            } else if (this.selectedLoginOption === LoginIdentifier.IAM_CREDENTIAL) {
                 this.$emit('stageChanged', 'AWS_PROFILE')
             }
         },
