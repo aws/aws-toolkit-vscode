@@ -24,6 +24,7 @@ import {
     validateCanCompileProject,
 } from '../../../codewhisperer/commands/startTransformByQ'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
@@ -213,7 +214,7 @@ export class GumbyController {
                 await this.initiateTransformationOnProject(message)
                 break
             case ButtonActions.CANCEL_TRANSFORMATION_FORM:
-                this.messenger.sendJobFinishedMessage(message.tabId, true)
+                this.messenger.sendJobFinishedMessage(message.tabId, CodeWhispererConstants.jobCancelledChatMessage)
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB)
@@ -309,10 +310,10 @@ export class GumbyController {
         await this.prepareProjectForSubmission(message)
     }
 
-    private async transformationFinished(tabID: string, jobStatus: string = '') {
+    private async transformationFinished(data: { message: string; tabID: string }) {
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
         // at this point job is either completed, partially_completed, cancelled, or failed
-        this.messenger.sendJobFinishedMessage(tabID, false)
+        this.messenger.sendJobFinishedMessage(data.tabID, data.message)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
@@ -346,6 +347,7 @@ export class GumbyController {
  * Examples:
  * ```
  * extractPath("./some/path/here") => "C:/some/root/some/path/here"
+ * extractPath(" ./some/path/here\n") => "C:/some/root/some/path/here"
  * extractPath("C:/some/nonexistent/path/here") => undefined
  * extractPath("C:/some/filepath/.txt") => undefined
  * ```
@@ -354,6 +356,6 @@ export class GumbyController {
  * @returns the absolute path if path points to existing folder, otherwise undefined
  */
 function extractPath(text: string): string | undefined {
-    const resolvedPath = path.resolve(text)
+    const resolvedPath = path.resolve(text.trim())
     return fs.existsSync(resolvedPath) && fs.lstatSync(resolvedPath).isDirectory() ? resolvedPath : undefined
 }
