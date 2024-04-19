@@ -4,6 +4,8 @@
 package software.aws.toolkits.jetbrains.services.amazonq
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -18,8 +20,12 @@ import com.intellij.ui.jcef.JBCefJSQuery
 import org.cef.CefApp
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.Login
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.actions.SsoLogoutAction
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -28,6 +34,7 @@ import software.aws.toolkits.jetbrains.core.webview.LoginBrowser
 import software.aws.toolkits.jetbrains.core.webview.WebviewResourceHandlerFactory
 import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.CredentialType
 import software.aws.toolkits.telemetry.FeatureId
@@ -137,6 +144,25 @@ class WebviewBrowser(val project: Project) : LoginBrowser(project, WebviewBrowse
                 currentAuthorization?.progressIndicator?.cancel()
             }
 
+            "signout" -> {
+                // TODO: CodeWhispererConnection/QConnection
+                (
+                    ToolkitConnectionManager.getInstance(project)
+                        .activeConnectionForFeature(CodeWhispererConnection.getInstance()) as? AwsBearerTokenConnection
+                    )?.let { connection ->
+                    SsoLogoutAction(connection).actionPerformed(
+                        AnActionEvent.createFromDataContext(
+                            "qBrowser",
+                            null,
+                            DataContext.EMPTY_CONTEXT
+                        )
+                    )
+                }
+            }
+
+            "reauth" -> {
+                // TODO: implementation
+            }
             else -> {
                 error("received unknown command from Q browser: $command")
             }
@@ -172,9 +198,16 @@ class WebviewBrowser(val project: Project) : LoginBrowser(project, WebviewBrowse
             objectMapper.writeValueAsString(it)
         }
 
+        // TODO: pass "REAUTH" if connection expires
+        val stage = if (isCodeWhispererExpired(project)) {
+            "REAUTH"
+        } else {
+            "START"
+        }
+
         val jsonData = """
             {
-                stage: 'START',
+                stage: '$stage',
                 regions: $regions,
                 idcInfo: {
                     profileName: '${lastLoginIdcInfo.profileName}',

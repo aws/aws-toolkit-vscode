@@ -1,7 +1,13 @@
 // Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-export type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE' | 'TOOLKIT_BEARER'
+export type Stage =
+    'START' |
+    'SSO_FORM' |
+    'CONNECTED' |
+    'AUTHENTICATING' |
+    'AWS_PROFILE' |
+    'REAUTH'
 
 export type Feature = 'Q' | 'codecatalyst' | 'awsExplorer'
 

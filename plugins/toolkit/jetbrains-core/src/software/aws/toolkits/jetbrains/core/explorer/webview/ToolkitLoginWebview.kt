@@ -187,6 +187,14 @@ class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, Toolki
                 currentAuthorization?.progressIndicator?.cancel()
             }
 
+            "signout" -> {
+                // TODO: implementation
+            }
+
+            "reauth" -> {
+                // TODO: implementation
+            }
+
             else -> {
                 error("received unknown command from Toolkit login browser")
             }
@@ -219,9 +227,12 @@ class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, Toolki
         val regions = AwsRegionProvider.getInstance().allRegionsForService("sso").values
         val regionJson = objectMapper.writeValueAsString(regions)
 
+        // TODO: if codecatalyst connection expires, set stage to 'REAUTH'
+        val stage = "START"
+
         val jsonData = """
             {
-                stage: 'START',
+                stage: '$stage',
                 regions: $regionJson,
                 idcInfo: {
                     profileName: '${lastLoginIdcInfo.profileName}',

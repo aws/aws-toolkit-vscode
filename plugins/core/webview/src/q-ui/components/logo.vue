@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <script lang="ts">
-import {defineComponent} from 'vue'
+import {computed, defineComponent} from 'vue'
 export default defineComponent({
     name: "Logo",
     props: {
@@ -14,12 +14,24 @@ export default defineComponent({
             app: this.app,
             isConnected: this.isConnected
         }
+    },
+    computed: {
+        stage() {
+            return this.$store.state.stage
+        },
+        logoPosition() {
+            if (this.stage === 'REAUTH') {
+                return "logoIconCenter"
+            }
+
+            return "logoIconLeft"
+        }
     }
 })
 </script>
 
 <template>
-    <div class="logoIcon bottom-small-gap">
+    <div class="bottom-small-gap" :class="logoPosition">
         <!-- Icon -->
 
         <svg
@@ -92,10 +104,19 @@ export default defineComponent({
 </template>
 
 <style scoped lang="scss">
-.logoIcon {
+.logoIconLeft {
     display: flex;
     flex-direction: row;
     justify-content: left;
+    align-items: flex-start;
+    padding-top: 75px;
+    height: auto;
+}
+
+.logoIconCenter {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
     align-items: flex-start;
     padding-top: 75px;
     height: auto;
