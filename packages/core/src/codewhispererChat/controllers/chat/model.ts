@@ -76,6 +76,7 @@ export interface PromptAnswer {
     messageID: string
     responseCode: number
     codeReferenceCount: number
+    totalNumberOfCodeBlocksInResponse: number
 }
 
 export interface StopResponseMessage {

@@ -89,6 +89,16 @@ export class Messenger {
             )
         )
     }
+
+    public countTotalNumberOfCodeBlocks(message: string): number {
+        if (message === undefined) {
+            return 0
+        }
+        const countOfCodeBlocks = message.match(/^```/gm)
+        const numberOfTripleBackTicksInMarkdown = countOfCodeBlocks ? countOfCodeBlocks.length : 0
+        return Math.floor(numberOfTripleBackTicksInMarkdown / 2)
+    }
+
     public async sendAIResponse(
         response: GenerateAssistantResponseCommandOutput,
         session: ChatSession,
@@ -265,6 +275,7 @@ export class Messenger {
                     messageID,
                     responseCode,
                     codeReferenceCount: codeReference.length,
+                    totalNumberOfCodeBlocksInResponse: this.countTotalNumberOfCodeBlocks(message),
                 })
             })
     }
