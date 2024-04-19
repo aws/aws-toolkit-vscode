@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix issue with competing SDK proxy configuration (#4279)"
-}
