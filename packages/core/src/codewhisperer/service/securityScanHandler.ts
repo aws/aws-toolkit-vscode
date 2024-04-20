@@ -140,7 +140,8 @@ export async function createScanJob(
     client: DefaultCodeWhispererClient,
     artifactMap: codewhispererClient.ArtifactMap,
     languageId: string,
-    scope: CodeWhispererConstants.CodeAnalysisScope
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    scanName: string
 ) {
     getLogger().verbose(`Creating scan job...`)
     const req: codewhispererClient.CreateCodeScanRequest = {
@@ -149,8 +150,12 @@ export async function createScanJob(
             languageName: languageId,
         },
         scope: scope,
+        codeScanName: scanName,
     }
-    const resp = await client.createCodeScan(req)
+    const resp = await client.createCodeScan(req).catch(err => {
+        getLogger().error(`Failed creating scan job. Request id: ${err.requestId}`)
+        throw err
+    })
     getLogger().verbose(`Request id: ${resp.$response.requestId}`)
     TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$response.requestId)
     return resp
@@ -159,7 +164,8 @@ export async function createScanJob(
 export async function getPresignedUrlAndUpload(
     client: DefaultCodeWhispererClient,
     zipMetadata: ZipMetadata,
-    scope: CodeWhispererConstants.CodeAnalysisScope
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    scanName: string
 ) {
     if (zipMetadata.zipFilePath === '') {
         throw new Error("Zip failure: can't find valid source zip.")
@@ -168,9 +174,17 @@ export async function getPresignedUrlAndUpload(
         contentMd5: getMd5(zipMetadata.zipFilePath),
         artifactType: 'SourceCode',
         uploadIntent: getUploadIntent(scope),
+        uploadContext: {
+            codeAnalysisUploadContext: {
+                codeScanName: scanName,
+            },
+        },
     }
     getLogger().verbose(`Prepare for uploading src context...`)
-    const srcResp = await client.createUploadUrl(srcReq)
+    const srcResp = await client.createUploadUrl(srcReq).catch(err => {
+        getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
+        throw err
+    })
     getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
     getLogger().verbose(`Uploading src context...`)

@@ -22,6 +22,7 @@ import {
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { fsCommon } from '../../srcShared/fs'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
+import { randomUUID } from '../../common/crypto'
 
 const filePromptWithSecurityIssues = `from flask import app
 
@@ -84,7 +85,7 @@ describe('CodeWhisperer security scan', async function () {
         Step 1: Generate context truncations
         Step 2: Get presigned Url and upload
 
-    returns artifactMap and projectPath
+    returns artifactMap, projectPath and codeScanName
     */
     async function securityJobSetup(editor: vscode.TextEditor) {
         const zipUtil = new ZipUtil()
@@ -93,16 +94,18 @@ describe('CodeWhisperer security scan', async function () {
         const projectPath = zipUtil.getProjectPath(editor.document.uri)
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
         const zipMetadata = await zipUtil.generateZip(uri, scope)
+        const codeScanName = randomUUID()
 
         let artifactMap
         try {
-            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope)
+            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, codeScanName)
         } finally {
             await zipUtil.removeTmpFiles(zipMetadata)
         }
         return {
             artifactMap: artifactMap,
             projectPath: projectPath,
+            codeScanName: codeScanName,
         }
     }
 
@@ -120,7 +123,13 @@ describe('CodeWhisperer security scan', async function () {
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
 
         //get job status and result
-        const scanJob = await createScanJob(client, artifactMap, editor.document.languageId, scope)
+        const scanJob = await createScanJob(
+            client,
+            artifactMap,
+            editor.document.languageId,
+            scope,
+            securityJobSetupResult.codeScanName
+        )
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope)
         const securityRecommendationCollection = await listScanResults(
             client,
@@ -146,7 +155,13 @@ describe('CodeWhisperer security scan', async function () {
         const securityJobSetupResult = await securityJobSetup(editor)
         const artifactMap = securityJobSetupResult.artifactMap
         const projectPath = securityJobSetupResult.projectPath
-        const scanJob = await createScanJob(client, artifactMap, editor.document.languageId, scope)
+        const scanJob = await createScanJob(
+            client,
+            artifactMap,
+            editor.document.languageId,
+            scope,
+            securityJobSetupResult.codeScanName
+        )
 
         //get job status and result
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope)
