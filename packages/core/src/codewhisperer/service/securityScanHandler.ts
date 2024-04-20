@@ -228,7 +228,7 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
     try {
         const response = await request.fetch('PUT', resp.uploadUrl, {
             body: readFileSync(fileName),
-            headers: resp.requestHeaders !== undefined ? resp.requestHeaders : headersObj,
+            headers: resp?.requestHeaders ?? headersObj,
         }).response
         getLogger().debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
     } catch (error) {
