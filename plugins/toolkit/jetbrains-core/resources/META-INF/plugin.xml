@@ -238,7 +238,6 @@
         <statusBarWidgetFactory id="AwsSettingsPanel" implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
         <statusBarWidgetFactory id="CawsSpaceProjectInfo" implementation="software.aws.toolkits.jetbrains.services.caws.CawsStatusBarInstaller"/>
 
-        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.executables.ExecutableLoader"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.startup.QMigrationActivity"/>
 

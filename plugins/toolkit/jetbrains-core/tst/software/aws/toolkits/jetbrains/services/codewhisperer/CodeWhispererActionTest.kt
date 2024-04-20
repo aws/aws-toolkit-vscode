@@ -28,9 +28,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererShowSettingsAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererSsoLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererWhatIsAction
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.DoNotShowAgainActionError
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.DoNotShowAgainActionWarn
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfigurable
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import java.net.URI
@@ -90,22 +87,6 @@ class CodeWhispererActionTest : CodeWhispererTestBase() {
     fun `CodeWhispererWhatIsAction actionPerformed should open correct URI`() {
         val action = CodeWhispererWhatIsAction()
         testBrowserActionHelper(action, CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI)
-    }
-
-    @Test
-    fun `DoNotShowAgainActionWarn actionPerformed should set doNotShowAgainWarn`() {
-        CodeWhispererExplorerActionManager.getInstance().setDoNotShowAgainWarn(false)
-        val action = DoNotShowAgainActionWarn()
-        action.actionPerformed(event)
-        assertThat(CodeWhispererExplorerActionManager.getInstance().getDoNotShowAgainWarn()).isTrue
-    }
-
-    @Test
-    fun `DoNotShowAgainActionError actionPerformed should set doNotShowAgainError`() {
-        CodeWhispererExplorerActionManager.getInstance().setDoNotShowAgainError(false)
-        val action = DoNotShowAgainActionError()
-        action.actionPerformed(event)
-        assertThat(CodeWhispererExplorerActionManager.getInstance().getDoNotShowAgainError()).isTrue
     }
 
     @Test

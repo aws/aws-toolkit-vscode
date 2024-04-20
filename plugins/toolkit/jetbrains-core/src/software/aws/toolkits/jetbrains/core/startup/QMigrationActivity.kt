@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.startup
 
+import com.intellij.ide.BrowserUtil
 import com.intellij.ide.plugins.PluginManagerConfigurable
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.ide.plugins.PluginManagerMain
@@ -24,9 +25,12 @@ import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.resources.AwsToolkitBundle.message
+import java.net.URI
 import java.util.concurrent.atomic.AtomicBoolean
 
 class QMigrationActivity : StartupActivity.DumbAware {
@@ -54,13 +58,16 @@ class QMigrationActivity : StartupActivity.DumbAware {
             // show opt-in/install notification
             notifyInfo(
                 // TODO: change text
-                title = "Hey we have a new extension, you should install",
+                title = message("aws.q.migration.new_users.notify.title"),
+                content = message("aws.q.migration.new_users.notify.message"),
                 project = project,
                 notificationActions = listOf(
-                    NotificationAction.createSimpleExpiring("Install") {
+                    NotificationAction.createSimpleExpiring(message("aws.q.migration.action.read_more.text")) {
                         installQPlugin(project, autoInstall = false)
+                    },
+                    NotificationAction.createSimple(message("aws.q.migration.action.install.text")) {
+                        // TODO: open url
                     }
-                    // TODO: other actions?
                 )
             )
         }
@@ -84,23 +91,35 @@ class QMigrationActivity : StartupActivity.DumbAware {
                             PluginManagerMain.notifyPluginsUpdated(project)
                         } else {
                             notifyInfo(
-                                // TODO: change text
-                                title = "Hey we've auto-installed because you use Q",
+                                title = message("aws.q.migration.existing_users.notify.title"),
+                                content = message("aws.q.migration.existing_users.notify.message"),
                                 project = project,
+                                // TODO: change text
                                 notificationActions = listOf(
-                                    NotificationAction.createSimpleExpiring("Restart") {
+                                    NotificationAction.createSimple(message("aws.q.migration.action.read_more.text")) {
+                                        // TODO: change this
+                                        BrowserUtil.browse(URI(CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI))
+                                    },
+                                    NotificationAction.createSimple(message("aws.q.migration.action.manage_plugins.text")) {
+                                        ShowSettingsUtil.getInstance().showSettingsDialog(
+                                            project,
+                                            PluginManagerConfigurable::class.java
+                                        ) { configurable: PluginManagerConfigurable ->
+                                            configurable.openMarketplaceTab("Amazon Q")
+                                        }
+                                    },
+                                    NotificationAction.createSimpleExpiring(message("aws.q.migration.action.restart.text")) {
                                         ApplicationManager.getApplication().restart()
-                                    }
+                                    },
                                 )
                             )
                         }
                     } else {
                         notifyError(
-                            // TODO: change text
-                            title = "Failed to auto-install, please go install manually",
+                            title = message("aws.q.migration.failed_to_install.message"),
                             project = project,
                             notificationActions = listOf(
-                                NotificationAction.createSimpleExpiring("Go to plugin management") {
+                                NotificationAction.createSimpleExpiring(message("aws.q.migration.action.manage_plugins.text")) {
                                     // TODO: change search text
                                     ShowSettingsUtil.getInstance().showSettingsDialog(
                                         project,

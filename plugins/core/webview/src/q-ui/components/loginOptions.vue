@@ -17,25 +17,36 @@
             @toggle="toggleItemSelection"
             :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
             :itemId="LoginOption.BUILDER_ID"
-            :itemText="'Create or sign-in using AWS Builder ID'"
-            :itemTitle="'Personal'"
+            :itemTitle="'Use for free'"
+            :itemText="'No AWS account required'"
             class="font-amazon bottom-small-gap"
         ></SelectableItem>
+        <!-- TODO: IdC description undecided -->
         <SelectableItem
+            v-if="app === 'AMAZONQ' || feature === 'codecatalyst'"
             @toggle="toggleItemSelection"
             :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
             :itemId="LoginOption.ENTERPRISE_SSO"
+            :itemTitle="'Use professional license'"
             :itemText="'Sign in to AWS with single sign-on'"
-            :itemTitle="'Workforce'"
             class="font-amazon bottom-small-gap"
         ></SelectableItem>
         <SelectableItem
-            v-if="app === 'TOOLKIT' &&  feature === 'awsExplorer'"
+            v-if="app === 'TOOLKIT' && feature === 'awsExplorer'"
+            @toggle="toggleItemSelection"
+            :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
+            :itemId="LoginOption.ENTERPRISE_SSO"
+            :itemTitle="'Workforce'"
+            :itemText="'Sign in to AWS with single sign-on'"
+            class="font-amazon bottom-small-gap"
+        ></SelectableItem>
+        <SelectableItem
+            v-if="app === 'TOOLKIT' && feature === 'awsExplorer'"
             @toggle="toggleItemSelection"
             :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
             :itemId="LoginOption.IAM_CREDENTIAL"
-            :itemText="'Store keys locally for use with AWS CLI tools'"
-            :itemTitle="'IAM Credential'"
+            :itemTitle="'IAM Credentials'"
+            :itemText="'Store keys for use with AWS CLI tools'"
             class="font-amazon bottom-small-gap"
         ></SelectableItem>
         <button
