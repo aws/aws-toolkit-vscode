@@ -77,15 +77,23 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
         context: WebviewViewResolveContext,
         _token: CancellationToken
     ) {
+        if (webviewView.visible) {
+            telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
+        }
+
         webviewView.onDidChangeVisibility(async () => {
             this.onDidChangeVisibility?.fire(webviewView.visible)
-            // force webview to reload
             await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
 
             if (webviewView.visible) {
                 telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
             } else {
                 telemetry.auth_signInPageClosed.emit({ result: 'Succeeded', passive: true })
+                this.webView!.server.emitCancelledMetric()
+
+                // Set after. If users use side bar to return to login, this source is correct.
+                // Otherwise, other sources will set accordingly.
+                this.webView!.server.authSource = 'vscodeComponent'
             }
         })
 

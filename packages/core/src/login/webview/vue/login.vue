@@ -171,14 +171,20 @@
                 <h4 class="start-url-error">{{ startUrlError }}</h4>
                 <div class="title">Region</div>
                 <div class="hint">AWS Region that hosts identity directory</div>
-                <select class="regionSelect" id="regions" name="regions" v-model="selectedRegion">
+                <select
+                    class="regionSelect"
+                    id="regions"
+                    name="regions"
+                    v-model="selectedRegion"
+                    @change="handleRegionInput($event)"
+                >
                     <option v-for="region in regions" :key="region.id" :value="region.id">
                         {{ `${region.name} (${region.id})` }}
                     </option>
                 </select>
                 <button
                     class="continue-button"
-                    :disabled="startUrl.length == 0 || startUrlError.length > 0"
+                    :disabled="startUrl.length == 0 || startUrlError.length > 0 || !selectedRegion"
                     v-on:click="handleContinueClick()"
                 >
                     Continue
@@ -190,7 +196,7 @@
             <div class="auth-container-section">
                 <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Connecting to IAM...</div>
                 <div v-else class="title">Authenticating in browser...</div>
-                <button class="continue-button" v-on:click="handleCancelButtom()">Cancel</button>
+                <button class="continue-button" v-on:click="handleCancelButton()">Cancel</button>
             </div>
         </template>
 
@@ -252,6 +258,30 @@ function isBuilderId(url: string) {
     return url === 'https://view.awsapps.com/start'
 }
 
+function getCredentialId(loginOption: LoginOption) {
+    switch (loginOption) {
+        case LoginOption.BUILDER_ID:
+            return 'awsId'
+        case LoginOption.ENTERPRISE_SSO:
+            return 'iamIdentityCenter'
+        case LoginOption.IAM_CREDENTIAL:
+            return 'sharedCredentials'
+        default:
+            return undefined
+    }
+}
+
+const authUiClickOptionMap = {
+    [LoginOption.BUILDER_ID]: 'auth_builderIdOption',
+    [LoginOption.ENTERPRISE_SSO]: 'auth_idcOption',
+    [LoginOption.IAM_CREDENTIAL]: 'auth_credentialsOption',
+    [LoginOption.EXISTING_LOGINS]: 'auth_existingAuthOption',
+}
+
+function getUiClickEvent(loginOption: LoginOption) {
+    return (authUiClickOptionMap as any)[loginOption]
+}
+
 interface ExistingLogin {
     id: number
     text: string
@@ -297,10 +327,19 @@ export default defineComponent({
     mounted() {
         this.fetchRegions()
         void this.updateExistingConnections()
+        void client.resetStoredMetricMetadata()
     },
     methods: {
         toggleItemSelection(itemId: number) {
             this.selectedLoginOption = itemId
+            void client.storeMetricMetadata({
+                credentialSourceId: getCredentialId(itemId),
+            })
+
+            const uiClickEvent = getUiClickEvent(itemId)
+            if (uiClickEvent !== undefined) {
+                void client.emitUiClick(uiClickEvent)
+            }
         },
         handleDocumentClick(event: any) {
             const isClickInsideSelectableItems = event.target.closest('.selectable-item')
@@ -310,12 +349,16 @@ export default defineComponent({
         },
         handleBackButtonClick() {
             if (this.stage === 'START') {
+                void client.emitUiClick('auth_toolkitCloseButton')
                 void client.quitLoginScreen()
             } else {
+                void client.emitCancelledMetric()
+                void client.emitUiClick('auth_backButton')
                 this.stage = 'START'
             }
         },
         async handleContinueClick() {
+            void client.emitUiClick('auth_continueButton')
             if (this.stage === 'START') {
                 if (this.selectedLoginOption === LoginOption.BUILDER_ID) {
                     this.stage = 'AUTHENTICATING'
@@ -363,6 +406,7 @@ export default defineComponent({
             }
         },
         async handleCodeCatalystSignin() {
+            void client.emitUiClick('auth_codeCatalystSignIn')
             this.stage = 'AUTHENTICATING'
             const error = await client.startBuilderIdSetup(this.app)
             if (error) {
@@ -381,9 +425,21 @@ export default defineComponent({
                     'A connection for this start URL already exists. Sign out before creating a new one.'
             } else {
                 this.startUrlError = ''
+                void client.storeMetricMetadata({
+                    credentialStartUrl: this.startUrl,
+                })
             }
         },
-        handleCancelButtom() {
+        handleRegionInput(event: any) {
+            void client.storeMetricMetadata({
+                region: event.target.value,
+            })
+            void client.emitUiClick('auth_regionSelection')
+        },
+        handleCancelButton() {
+            void client.emitCancelledMetric()
+            void client.emitUiClick('auth_cancelButton')
+
             this.stage = 'START'
         },
         async fetchRegions() {

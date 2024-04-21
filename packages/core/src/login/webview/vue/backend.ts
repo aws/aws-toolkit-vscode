@@ -15,11 +15,35 @@ import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { AwsConnection, Connection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
+import { telemetry } from '../../../shared/telemetry'
+import { AuthUiClick } from '../util'
+import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
 
 export type AuthError = { id: string; text: string }
+type Writeable<T> = { -readonly [U in keyof T]: T[U] }
+export type TelemetryMetadata = Partial<Writeable<AuthAddConnection>>
 export const userCancelled = 'userCancelled'
 
 export abstract class CommonAuthWebview extends VueWebview {
+    private metricMetadata: TelemetryMetadata = {}
+    static #authSource: string = 'vscodeComponent'
+
+    public static get authSource() {
+        return CommonAuthWebview.#authSource
+    }
+
+    public static set authSource(source: string) {
+        CommonAuthWebview.#authSource = source
+    }
+
+    public get authSource() {
+        return CommonAuthWebview.#authSource
+    }
+
+    public set authSource(source: string) {
+        CommonAuthWebview.#authSource = source
+    }
+
     public getRegions(): Region[] {
         return globals.regionProvider.getRegions().reverse()
     }
@@ -31,60 +55,72 @@ export abstract class CommonAuthWebview extends VueWebview {
      * @param setupFunc The function which will be executed in a try/catch so that we can handle common errors.
      * @returns
      */
-    async ssoSetup(methodName: string, setupFunc: () => Promise<any>): Promise<AuthError | undefined> {
-        try {
-            await setupFunc()
-            return
-        } catch (e) {
-            console.log(e)
-            if (e instanceof ToolkitError && e.code === 'NotOnboarded') {
-                /**
-                 * Connection is fine, they just skipped onboarding so not an actual error.
-                 *
-                 * The error comes from user cancelling prompt by {@link CodeCatalystAuthenticationProvider.promptOnboarding()}
-                 */
+    async ssoSetup(
+        methodName: string,
+        telemetryMetadata: TelemetryMetadata | undefined,
+        setupFunc: () => Promise<any>
+    ) {
+        const runSetup = async () => {
+            try {
+                await setupFunc()
                 return
-            }
-
-            if (
-                CancellationError.isUserCancelled(e) ||
-                (e instanceof ToolkitError && (CancellationError.isUserCancelled(e.cause) || e.cancelled === true))
-            ) {
-                return { id: userCancelled, text: 'Setup cancelled.' }
-            }
-
-            if (e instanceof ToolkitError && e.cause instanceof InvalidGrantException) {
-                return {
-                    id: 'invalidGrantException',
-                    text: 'Permissions for this service may not be enabled by your SSO Admin, or the selected region may not be supported.',
+            } catch (e) {
+                console.log(e)
+                if (e instanceof ToolkitError && e.code === 'NotOnboarded') {
+                    /**
+                     * Connection is fine, they just skipped onboarding so not an actual error.
+                     *
+                     * The error comes from user cancelling prompt by {@link CodeCatalystAuthenticationProvider.promptOnboarding()}
+                     */
+                    return
                 }
-            }
 
-            if (
-                e instanceof ToolkitError &&
-                (e.code === trustedDomainCancellation || e.cause?.name === trustedDomainCancellation)
-            ) {
-                return {
-                    id: 'trustedDomainCancellation',
-                    text: `Must 'Open' or 'Configure Trusted Domains', unless you cancelled.`,
+                if (
+                    CancellationError.isUserCancelled(e) ||
+                    (e instanceof ToolkitError && (CancellationError.isUserCancelled(e.cause) || e.cancelled === true))
+                ) {
+                    return { id: userCancelled, text: 'Setup cancelled.' }
                 }
+
+                if (e instanceof ToolkitError && e.cause instanceof InvalidGrantException) {
+                    return {
+                        id: 'invalidGrantException',
+                        text: 'Permissions for this service may not be enabled by your SSO Admin, or the selected region may not be supported.',
+                    }
+                }
+
+                if (
+                    e instanceof ToolkitError &&
+                    (e.code === trustedDomainCancellation || e.cause?.name === trustedDomainCancellation)
+                ) {
+                    return {
+                        id: 'trustedDomainCancellation',
+                        text: `Must 'Open' or 'Configure Trusted Domains', unless you cancelled.`,
+                    }
+                }
+
+                const invalidRequestException = 'InvalidRequestException'
+                if (
+                    (e instanceof Error && e.name === invalidRequestException) ||
+                    (e instanceof ToolkitError && e.cause?.name === invalidRequestException)
+                ) {
+                    return { id: 'badStartUrl', text: `Connection failed. Please verify your start URL.` }
+                }
+
+                // If SSO setup fails we want to be able to show the user an error in the UI, due to this we cannot
+                // throw an error here. So instead this will additionally show an error message that provides more
+                // detailed information.
+                handleWebviewError(e, this.id, methodName)
+
+                return { id: 'defaultFailure', text: 'Failed to setup.' }
             }
-
-            const invalidRequestException = 'InvalidRequestException'
-            if (
-                (e instanceof Error && e.name === invalidRequestException) ||
-                (e instanceof ToolkitError && e.cause?.name === invalidRequestException)
-            ) {
-                return { id: 'badStartUrl', text: `Connection failed. Please verify your start URL.` }
-            }
-
-            // If SSO setup fails we want to be able to show the user an error in the UI, due to this we cannot
-            // throw an error here. So instead this will additionally show an error message that provides more
-            // detailed information.
-            handleWebviewError(e, this.id, methodName)
-
-            return { id: 'defaultFailure', text: 'Failed to setup.' }
         }
+
+        const result = await runSetup()
+        if (telemetryMetadata !== undefined) {
+            this.emitAuthMetric({ ...telemetryMetadata, ...this.getResultForMetrics(result) })
+        }
+        return result
     }
 
     abstract startBuilderIdSetup(app: string): Promise<AuthError | undefined>
@@ -117,5 +153,49 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     async listConnections(): Promise<Connection[]> {
         return Auth.instance.listConnections()
+    }
+
+    emitAuthMetric(metadata: Partial<AuthAddConnection>) {
+        telemetry.auth_addConnection.emit({
+            ...metadata,
+            source: this.authSource,
+        })
+    }
+
+    emitCancelledMetric() {
+        this.emitAuthMetric({ ...this.metricMetadata, isReAuth: false, result: 'Cancelled', source: this.authSource })
+    }
+
+    storeMetricMetadata(data: TelemetryMetadata) {
+        this.metricMetadata = { ...this.metricMetadata, ...data }
+    }
+
+    resetStoredMetricMetadata() {
+        this.metricMetadata = {}
+    }
+
+    getResultForMetrics(error?: AuthError) {
+        const metadata: Partial<TelemetryMetadata> = {}
+        if (error) {
+            if (error.id === userCancelled) {
+                metadata.result = 'Cancelled'
+            } else {
+                metadata.result = 'Failed'
+                metadata.reason = error.text
+            }
+        } else {
+            metadata.result = 'Succeeded'
+        }
+
+        return metadata
+    }
+
+    /**
+     * The metric when certain elements in the webview are clicked
+     */
+    emitUiClick(id: AuthUiClick) {
+        telemetry.ui_click.emit({
+            elementId: id,
+        })
     }
 }

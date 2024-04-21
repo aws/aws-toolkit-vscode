@@ -54,7 +54,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     async useConnection(connectionId: string): Promise<AuthError | undefined> {
-        return this.ssoSetup('useConnection', async () => {
+        return this.ssoSetup('useConnection', undefined, async () => {
             if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
                 return
             }
@@ -104,17 +104,31 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
-        return this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
-            await awsIdSignIn()
-            await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
-        })
+        return this.ssoSetup(
+            'startCodeWhispererBuilderIdSetup',
+            { credentialSourceId: 'awsId', authEnabledFeatures: 'codewhisperer', isReAuth: false },
+            async () => {
+                await awsIdSignIn()
+                await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
+            }
+        )
     }
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
-        return this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
-            await connectToEnterpriseSso(startUrl, region)
-            void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
-        })
+        return this.ssoSetup(
+            'startCodeWhispererEnterpriseSetup',
+            {
+                credentialStartUrl: startUrl,
+                region,
+                credentialSourceId: 'iamIdentityCenter',
+                authEnabledFeatures: 'codewhisperer',
+                isReAuth: false,
+            },
+            async () => {
+                await connectToEnterpriseSso(startUrl, region)
+                void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
+            }
+        )
     }
 
     async errorNotification(e: AuthError) {
