@@ -32,6 +32,7 @@ import path from 'path'
 import { ZipMetadata, ZipUtil } from '../util/zipUtil'
 import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
+import { randomUUID } from '../../common/crypto'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -133,8 +134,9 @@ export async function startSecurityScan(
         throwIfCancelled(scope)
         let artifactMap: ArtifactMap = {}
         const uploadStartTime = performance.now()
+        const scanName = randomUUID()
         try {
-            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope)
+            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, scanName)
         } catch (error) {
             getLogger().error('Failed to upload code artifacts', error)
             throw error
@@ -148,7 +150,13 @@ export async function startSecurityScan(
          */
         throwIfCancelled(scope)
         serviceInvocationStartTime = performance.now()
-        const scanJob = await createScanJob(client, artifactMap, codeScanTelemetryEntry.codewhispererLanguage, scope)
+        const scanJob = await createScanJob(
+            client,
+            artifactMap,
+            codeScanTelemetryEntry.codewhispererLanguage,
+            scope,
+            scanName
+        )
         if (scanJob.status === 'Failed') {
             throw new Error(scanJob.errorMessage)
         }

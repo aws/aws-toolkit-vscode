@@ -414,6 +414,13 @@
             "type": "string",
             "enum": ["Completed", "Pending", "Failed"]
         },
+        "CodeAnalysisUploadContext": {
+            "type": "structure",
+            "required": ["codeScanName"],
+            "members": {
+                "codeScanName": { "shape": "CodeScanName" }
+            }
+        },
         "CodeCoverageEvent": {
             "type": "structure",
             "required": ["programmingLanguage", "acceptedCharacterCount", "totalCharacterCount", "timestamp"],
@@ -458,6 +465,12 @@
         },
         "CodeScanJobId": {
             "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "CodeScanName": {
+            "type": "string",
+            "documentation": "<p>Code analysis scan name</p>",
             "max": 128,
             "min": 1
         },
@@ -1243,7 +1256,8 @@
                 "clientToken": {
                     "shape": "StartCodeAnalysisRequestClientTokenString",
                     "idempotencyToken": true
-                }
+                },
+                "codeScanName": { "shape": "CodeScanName" }
             }
         },
         "StartCodeAnalysisRequestClientTokenString": {
@@ -1570,7 +1584,8 @@
         "UploadContext": {
             "type": "structure",
             "members": {
-                "taskAssistPlanningUploadContext": { "shape": "TaskAssistPlanningUploadContext" }
+                "taskAssistPlanningUploadContext": { "shape": "TaskAssistPlanningUploadContext" },
+                "codeAnalysisUploadContext": { "shape": "CodeAnalysisUploadContext" }
             },
             "union": true
         },
