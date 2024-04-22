@@ -20,7 +20,7 @@ import {
     throwIfCancelled,
 } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { AggregatedCodeScanIssue, codeScanState, CodeScanTelemetryEntry } from '../models/model'
+import { AggregatedCodeScanIssue, CodeScansState, codeScanState, CodeScanTelemetryEntry } from '../models/model'
 import { cancel, ok } from '../../shared/localizedText'
 import { getFileExt } from '../util/commonUtil'
 import { getDirSize } from '../../shared/filesystemUtilities'
@@ -33,6 +33,7 @@ import { ZipMetadata, ZipUtil } from '../util/zipUtil'
 import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../common/crypto'
+import { CodeAnalysisScope } from '../models/constants'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -109,6 +110,7 @@ export async function startSecurityScan(
         codewhispererCodeScanTotalIssues: 0,
         codewhispererCodeScanIssuesWithFixes: 0,
         credentialStartUrl: AuthUtil.instance.startUrl,
+        codewhispererCodeScanScope: scope,
     }
     try {
         getLogger().verbose(`Starting security scan `)
@@ -219,14 +221,20 @@ export async function startSecurityScan(
             codeScanTelemetryEntry.result = 'Failed'
         }
 
-        if (isAwsError(error)) {
+        if (isAwsError(error) && error.code === 'ThrottlingException') {
             if (
-                error.code === 'ThrottlingException' &&
-                error.message.includes(CodeWhispererConstants.throttlingMessage)
+                scope === CodeAnalysisScope.PROJECT &&
+                error.message.includes(CodeWhispererConstants.projectScansThrottlingMessage)
             ) {
-                void vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReachedCodeScan)
+                void vscode.window.showErrorMessage(CodeWhispererConstants.projectScansLimitReached)
                 // TODO: Should we set a graphical state?
                 // We shouldn't set vsCodeState.isFreeTierLimitReached here because it will hide CW and Q chat options.
+            } else if (
+                scope === CodeAnalysisScope.FILE &&
+                error.message.includes(CodeWhispererConstants.fileScansThrottlingMessage)
+            ) {
+                void vscode.window.showErrorMessage(CodeWhispererConstants.fileScansLimitReached)
+                CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
         codeScanTelemetryEntry.reason = (error as Error).message
@@ -298,7 +306,6 @@ function populateCodeScanLogStream(scannedFiles: Set<string>) {
         const uri = vscode.Uri.file(file)
         codeScanLogger.info(`File scanned: ${uri.fsPath}`)
     }
-    codeScanOutpuChan.show()
 }
 
 export async function confirmStopSecurityScan() {
