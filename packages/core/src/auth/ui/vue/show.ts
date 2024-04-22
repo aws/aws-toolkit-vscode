@@ -37,6 +37,7 @@ import {
     findSsoConnections,
     AuthSource,
     authCommands,
+    AuthSources,
 } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
@@ -56,6 +57,9 @@ import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { ExtStartUpSources } from '../../../shared/telemetry'
 import { CommonAuthWebview } from '../../../login/webview/vue/backend'
 
+// This file has some used functions, but most of it should be removed soon. We have a new
+// auth page located at src/login/
+// Until we can clean this up, we will just disable this type check.
 type FeatureId = any
 
 export class AuthWebview extends VueWebview {
@@ -562,9 +566,9 @@ export class AuthWebview extends VueWebview {
             // featureId: featureType,
             result: args.reason === userCancelled ? 'Cancelled' : 'Failed',
             reason: args.reason,
-            invalidInputFields: args.invalidInputFields
-                ? buildCommaDelimitedString(args.invalidInputFields)
-                : undefined,
+            // invalidInputFields: args.invalidInputFields
+            //     ? buildCommaDelimitedString(args.invalidInputFields)
+            //     : undefined,
             // isAggregated: false,
         })
 
@@ -648,8 +652,8 @@ export class AuthWebview extends VueWebview {
             // featureId: args.featureType,
             result: args.result,
             reason: args.reason,
-            invalidInputFields: args.invalidFields ? buildCommaDelimitedString(args.invalidFields) : undefined,
-            attempts: args.attempts,
+            // invalidInputFields: args.invalidFields ? buildCommaDelimitedString(args.invalidFields) : undefined,
+            // attempts: args.attempts,
             // isAggregated: true,
         })
 
@@ -723,7 +727,7 @@ export function registerCommands(context: vscode.ExtensionContext, prefix: strin
         { id: `aws.${prefix}.auth.manageConnections`, compositeKey: { 1: 'source' } },
         async (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
             if (_ !== placeholder) {
-                source = 'vscodeComponent'
+                source = AuthSources.vscodeComponent
             }
 
             // The auth webview page does not make sense to use in C9,

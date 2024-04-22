@@ -54,53 +54,59 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     async useConnection(connectionId: string): Promise<AuthError | undefined> {
-        return this.ssoSetup('useConnection', undefined, async () => {
-            if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
-                return
-            }
-            try {
-                await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
-                const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-                const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
-                if (importedApi && 'listConnections' in importedApi) {
-                    const connections: AwsConnection[] = await importedApi?.listConnections()
-                    for (const conn of connections) {
-                        if (conn.id === connectionId) {
-                            if (conn.scopes?.includes(scopesCodeWhispererChat[0])) {
-                                getLogger().info(`auth: re-use connection from existing connection id ${connectionId}`)
-                                const newConn = await Auth.instance.createConnectionFromApi(conn)
-                                await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
-                            } else {
-                                getLogger().info(
-                                    `auth: re-use(new scope) to connection from existing connection id ${connectionId}`
-                                )
-                                // when re-using a connection from toolkit, if adding scope is necessary
-                                // temporarily create a new connection without triggerring any connection hooks
-                                // then try reauthenticate, if success, use this connection, toolkit connnection scope also gets updated.
-                                // if failed, connection is set to invalid
-                                const oldScopes = conn?.scopes ? conn.scopes : []
-                                const newScopes = Array.from(new Set([...oldScopes, ...amazonQScopes]))
-                                const newConn = await Auth.instance.createConnectionFromApi({
-                                    type: conn.type,
-                                    ssoRegion: conn.ssoRegion,
-                                    scopes: newScopes,
-                                    startUrl: conn.startUrl,
-                                    state: conn.state,
-                                    id: conn.id,
-                                    label: conn.label,
-                                })
-                                await Auth.instance.reauthenticate(newConn)
-                                await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
+        return this.ssoSetup(
+            'useConnection',
+            undefined, // We will not send an auth_addConnection event for this case. The connection already exists and was captured by auth_userState.
+            async () => {
+                if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
+                    return
+                }
+                try {
+                    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+                    const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+                    const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
+                    if (importedApi && 'listConnections' in importedApi) {
+                        const connections: AwsConnection[] = await importedApi?.listConnections()
+                        for (const conn of connections) {
+                            if (conn.id === connectionId) {
+                                if (conn.scopes?.includes(scopesCodeWhispererChat[0])) {
+                                    getLogger().info(
+                                        `auth: re-use connection from existing connection id ${connectionId}`
+                                    )
+                                    const newConn = await Auth.instance.createConnectionFromApi(conn)
+                                    await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
+                                } else {
+                                    getLogger().info(
+                                        `auth: re-use(new scope) to connection from existing connection id ${connectionId}`
+                                    )
+                                    // when re-using a connection from toolkit, if adding scope is necessary
+                                    // temporarily create a new connection without triggerring any connection hooks
+                                    // then try reauthenticate, if success, use this connection, toolkit connnection scope also gets updated.
+                                    // if failed, connection is set to invalid
+                                    const oldScopes = conn?.scopes ? conn.scopes : []
+                                    const newScopes = Array.from(new Set([...oldScopes, ...amazonQScopes]))
+                                    const newConn = await Auth.instance.createConnectionFromApi({
+                                        type: conn.type,
+                                        ssoRegion: conn.ssoRegion,
+                                        scopes: newScopes,
+                                        startUrl: conn.startUrl,
+                                        state: conn.state,
+                                        id: conn.id,
+                                        label: conn.label,
+                                    })
+                                    await Auth.instance.reauthenticate(newConn)
+                                    await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
+                                }
                             }
                         }
                     }
+                } catch (e) {
+                    throw ToolkitError.chain(e, 'Failed to add Amazon Q scope', {
+                        code: 'FailedToConnect',
+                    })
                 }
-            } catch (e) {
-                throw ToolkitError.chain(e, 'Failed to add Amazon Q scope', {
-                    code: 'FailedToConnect',
-                })
             }
-        })
+        )
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {

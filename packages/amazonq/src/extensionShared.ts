@@ -135,8 +135,6 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
     if (AuthUtils.ExtensionUse.instance.isFirstUse()) {
         CommonAuthWebview.authSource = ExtStartUpSources.firstStartUp
         await vscode.commands.executeCommand('workbench.view.extension.amazonq')
-    } else {
-        CommonAuthWebview.authSource = 'vscodeComponent'
     }
 
     await telemetry.auth_userState.run(async () => {

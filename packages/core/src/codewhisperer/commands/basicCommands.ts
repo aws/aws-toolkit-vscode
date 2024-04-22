@@ -167,6 +167,8 @@ export const connectWithCustomization = Commands.declare(
                 await getStartUrl()
             }
 
+            // This shortcut is unusual, and currently would only be used if another extension
+            // triggered a connection to Amazon Q. We should still capture and emit the event.
             telemetry.auth_addConnection.emit({
                 source,
                 isReAuth: false,

@@ -476,7 +476,7 @@ export class AuthNode implements TreeNode<Auth> {
             .then(() => {
                 CommonAuthWebview.authSource = ExtensionUse.instance.isFirstUse()
                     ? ExtStartUpSources.firstStartUp
-                    : 'vscodeComponent'
+                    : ExtStartUpSources.reload
                 void vscode.commands.executeCommand(
                     'setContext',
                     'aws.explorer.showAuthView',

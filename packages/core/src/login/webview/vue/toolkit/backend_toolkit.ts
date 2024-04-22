@@ -74,7 +74,6 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                 await this.showResourceExplorer()
             } catch (e) {
                 getLogger().error('Failed submitting credentials', e)
-                // this.recordCurrentTelemetry({ result: 'Failed', reason: e as string })
                 return { id: this.id, text: e as string }
             }
         }

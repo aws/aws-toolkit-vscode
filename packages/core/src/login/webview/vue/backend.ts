@@ -18,6 +18,7 @@ import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/crede
 import { telemetry } from '../../../shared/telemetry'
 import { AuthUiClick } from '../util'
 import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
+import { AuthSources } from '../../../auth/utils'
 
 export type AuthError = { id: string; text: string }
 type Writeable<T> = { -readonly [U in keyof T]: T[U] }
@@ -26,7 +27,10 @@ export const userCancelled = 'userCancelled'
 
 export abstract class CommonAuthWebview extends VueWebview {
     private metricMetadata: TelemetryMetadata = {}
-    static #authSource: string = 'vscodeComponent'
+
+    // authSource should be set by whatever triggers the auth page flow.
+    // It will be reported in telemetry.
+    static #authSource: string = AuthSources.vscodeComponent
 
     public static get authSource() {
         return CommonAuthWebview.#authSource
@@ -155,6 +159,9 @@ export abstract class CommonAuthWebview extends VueWebview {
         return Auth.instance.listConnections()
     }
 
+    /**
+     * Emit metric metadata.
+     */
     emitAuthMetric(metadata: Partial<AuthAddConnection>) {
         telemetry.auth_addConnection.emit({
             ...metadata,
@@ -162,18 +169,40 @@ export abstract class CommonAuthWebview extends VueWebview {
         })
     }
 
-    emitCancelledMetric() {
-        this.emitAuthMetric({ ...this.metricMetadata, isReAuth: false, result: 'Cancelled', source: this.authSource })
-    }
-
+    /**
+     * To be used by login.vue to report incremental changes about the auth flow. E.g., record 'startUrl' when
+     * a startUrl is entered by the user.
+     * Generally, telemetry is reported after a connection is established, so incremental reporting is not needed.
+     * However, UI elements can indicate that a user cancelled the flow, e.g. leaving, back button, etc.
+     * For these cases, we dump everything that we have reported via the login form since we wouldn't otherwise
+     * be know what the form was going to submit.
+     */
     storeMetricMetadata(data: TelemetryMetadata) {
+        // We shouldn't report startUrl or region if we aren't reporting IdC
+        if (data.credentialSourceId !== 'iamIdentityCenter') {
+            data.region = undefined
+            data.credentialStartUrl = undefined
+        }
         this.metricMetadata = { ...this.metricMetadata, ...data }
     }
 
+    /**
+     * Emit stored metric metadata in the event of an auth form cancellation.
+     */
+    emitCancelledMetric() {
+        this.emitAuthMetric({ ...this.metricMetadata, isReAuth: false, result: 'Cancelled' })
+    }
+
+    /**
+     * Reset metadata stored by the auth form.
+     */
     resetStoredMetricMetadata() {
         this.metricMetadata = {}
     }
 
+    /**
+     * Determines the status of the metric to report.
+     */
     getResultForMetrics(error?: AuthError) {
         const metadata: Partial<TelemetryMetadata> = {}
         if (error) {
@@ -191,7 +220,7 @@ export abstract class CommonAuthWebview extends VueWebview {
     }
 
     /**
-     * The metric when certain elements in the webview are clicked
+     * The metric when certain elements in the webview are clicked.
      */
     emitUiClick(id: AuthUiClick) {
         telemetry.ui_click.emit({

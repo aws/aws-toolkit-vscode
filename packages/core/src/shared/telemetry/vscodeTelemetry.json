@@ -1166,19 +1166,11 @@
             "description": "Captures the result of adding a new connection in the 'Add New Connection' workflow",
             "metadata": [
                 {
-                    "type": "attempts",
-                    "required": false
-                },
-                {
                     "type": "credentialSourceId",
                     "required": false
                 },
                 {
                     "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "invalidInputFields",
                     "required": false
                 },
                 {
