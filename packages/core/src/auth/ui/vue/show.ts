@@ -35,9 +35,7 @@ import {
     hasSso,
     BuilderIdKind,
     findSsoConnections,
-    AuthSource,
     authCommands,
-    AuthSources,
 } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
@@ -56,6 +54,7 @@ import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { ExtStartUpSources } from '../../../shared/telemetry'
 import { CommonAuthWebview } from '../../../login/webview/vue/backend'
+import { AuthSource, AuthSources } from '../../../login/webview/util'
 
 // This file has some used functions, but most of it should be removed soon. We have a new
 // auth page located at src/login/

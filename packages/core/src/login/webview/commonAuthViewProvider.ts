@@ -42,7 +42,7 @@ import { AmazonQLoginWebview } from './vue/amazonq/backend_amazonq'
 import { ToolkitLoginWebview } from './vue/toolkit/backend_toolkit'
 import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { AuthSources } from '../../auth/utils'
+import { AuthSources } from './util'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
     public readonly viewType: string
