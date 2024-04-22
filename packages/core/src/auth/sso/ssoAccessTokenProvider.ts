@@ -392,7 +392,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
             clientType: clientRegistrationType,
             scopes: this.profile.scopes,
             grantTypes: [authorizationGrantType, refreshGrantType],
-            redirectUris: ['http://127.0.0.1'],
+            redirectUris: ['http://127.0.0.1/oauth/callback'],
             issuerUrl: this.profile.startUrl,
         })
     }
@@ -401,7 +401,11 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
         registration: ClientRegistration
     ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
         const state = randomUUID()
-        const authServer = new AuthSSOServer(state, UriHandler.buildUri(authenticationPath).toString())
+        const authServer = new AuthSSOServer(
+            state,
+            UriHandler.buildUri(authenticationPath).toString(),
+            this.profile.scopes ?? []
+        )
 
         try {
             await authServer.start()
