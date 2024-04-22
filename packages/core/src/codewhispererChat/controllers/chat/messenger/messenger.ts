@@ -30,6 +30,7 @@ import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/mo
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
+import { marked } from 'marked'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -89,13 +90,18 @@ export class Messenger {
         )
     }
 
-    public countTotalNumberOfCodeBlocks(message: string): number {
+    public async countTotalNumberOfCodeBlocks(message: string): Promise<number> {
         if (message === undefined) {
             return 0
         }
-        const countOfCodeBlocks = message.match(/^```/gm)
-        const numberOfTripleBackTicksInMarkdown = countOfCodeBlocks ? countOfCodeBlocks.length : 0
-        return Math.floor(numberOfTripleBackTicksInMarkdown / 2)
+
+        // To Convert Markdown text to HTML using marked library
+        const html = await marked(message)
+
+        // Count the number of <pre> tags in the HTML to find the total number of code blocks
+        const totalNumberOfCodeBlocks = (html.match(/<pre>/g) || []).length
+
+        return totalNumberOfCodeBlocks
     }
 
     public async sendAIResponse(
@@ -224,7 +230,7 @@ export class Messenger {
                 relatedSuggestions = []
                 this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
             })
-            .finally(() => {
+            .finally(async () => {
                 if (relatedSuggestions.length !== 0) {
                     this.dispatcher.sendChatMessage(
                         new ChatMessage(
@@ -274,7 +280,7 @@ export class Messenger {
                     messageID,
                     responseCode,
                     codeReferenceCount: codeReference.length,
-                    totalNumberOfCodeBlocksInResponse: this.countTotalNumberOfCodeBlocks(message),
+                    totalNumberOfCodeBlocksInResponse: await this.countTotalNumberOfCodeBlocks(message),
                 })
             })
     }
