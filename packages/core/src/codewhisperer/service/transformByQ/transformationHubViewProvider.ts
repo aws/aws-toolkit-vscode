@@ -284,7 +284,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     }
 
     public async showPlanProgress(startTime: number): Promise<string> {
-        console.log(`cancelled: ${transformByQState.isCancelled()} not started: ${transformByQState.isNotStarted()}`)
         const planProgress = getPlanProgress()
         const simpleStep = (icon: string, text: string, isActive: boolean) => {
             return isActive
@@ -312,8 +311,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 .reduce((prev, current) => prev + current)
             // When we receive plan step details, we want those to be active -> increment activeStepId
             activeStepId += planSteps === undefined || planSteps.length === 0 ? 0 : 1
-
-            console.log(planProgress['startJob'])
             const waitingMarkup = simpleStep(
                 this.getProgressIconMarkup(planProgress['startJob']),
                 'Waiting for job to start',
@@ -375,7 +372,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 <p>No job ongoing</p>
             </div>`
         }
-        //<meta http-equiv="refresh" content="1" />
         return `<!DOCTYPE html>
             <html lang="en">
             
@@ -522,7 +518,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 }
 
                 function showStepDetails(item) {
-                    console.log("Clicked" + item.id)
                     const visibleSubSteps = document.querySelectorAll(".visible");
                     const substep = document.getElementById(item.id.replace("step-", "substep-"))
                     document.getElementById("stepdetails").style.display = "none"
@@ -558,7 +553,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
 
 
                 function addShowSubstepEventListeners() {
-                    console.log("addShowSubstepEventListeners")
                     const steps = document.getElementsByClassName("step");
                     for(const item of steps) {
                         item.addEventListener("click", (event) => {
@@ -567,8 +561,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     }
                 }
 
-                function addHighlightStepWithoutSubstepListeners(){
-                    console.log("addHighlightStepWithoutSubstepListeners")
+                function addHighlightStepWithoutSubstepListeners() {
                     const steps = document.getElementsByClassName("simple-step");
                     for(const item of steps) {
                         item.addEventListener("click", (event) => {
@@ -578,7 +571,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 }
 
                 function showCurrentActiveSubstep() {
-                    console.log("showCurrentActiveSubstep")
                     const activeStep = document.getElementsByClassName("active")[0]
                     if(activeStep && activeStep.classList.contains("step")){
                         showStepDetails(activeStep)
