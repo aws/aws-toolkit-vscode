@@ -406,12 +406,12 @@ export const failedToStartJobTooManyJobsNotification =
     "Amazon Q couldn't begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed."
 
 export const failedToUploadProjectChatMessage =
-    'Amazon Q is unable to upload workspace artifacts to Amazon S3 for Code Transformation. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html) or contact your network or organization administrator.'
+    "Sorry, I couldn't upload your project to Amazon S3 for Code Transformation. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html) or contact your network or organization administrator."
 
 export const noOngoingJobMessage = 'No job is in-progress at the moment'
 
 export const failedToUploadProjectNotification =
-    'Amazon Q is unable to upload workspace artifacts to Amazon S3 for Code Transformation. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html) or contact your network or organization administrator.'
+    'Amazon Q is unable to upload your project to Amazon S3 for Code Transformation. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html) or contact your network or organization administrator.'
 
 export const failedToGetPlanChatMessage =
     "Sorry, I couldn't create the transformation plan to upgrade your project. Please try starting the transformation again."
