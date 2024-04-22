@@ -24,7 +24,7 @@ describe('zipStream', function () {
 
     it('Should create a zip stream from text content', async function () {
         const zipStream = new ZipStream()
-        zipStream.writeString('foo bar', 'file.txt')
+        await zipStream.writeString('foo bar', 'file.txt')
         const result = await zipStream.finalize()
 
         const zipBuffer = result.streamBuffer.getContents()
@@ -45,7 +45,7 @@ describe('zipStream', function () {
         await fsCommon.writeFile(testFilePath, 'foo bar')
 
         const zipStream = new ZipStream()
-        zipStream.writeFile(testFilePath, 'file.txt')
+        await zipStream.writeFile(testFilePath, 'file.txt')
         const result = await zipStream.finalize()
 
         const zipPath = path.join(tmpDir, 'test.zip')

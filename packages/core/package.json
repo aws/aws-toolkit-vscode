@@ -9,7 +9,7 @@
     "license": "Apache-2.0",
     "engines": {
         "npm": "^10.1.0",
-        "vscode": "^1.68.0"
+        "vscode": "^1.83.0"
     },
     "activationEvents": [
         "onStartupFinished",
@@ -4320,6 +4320,7 @@
         "@iarna/toml": "^2.2.5",
         "@smithy/shared-ini-file-loader": "^2.2.8",
         "@vscode/debugprotocol": "^1.57.0",
+        "@zip.js/zip.js": "^2.7.41",
         "adm-zip": "^0.5.10",
         "amazon-states-language-service": "^1.11.0",
         "archiver": "^7.0.1",

@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import archiver from 'archiver'
 import { WritableStreamBuffer } from 'stream-buffers'
 import crypto from 'crypto'
-import { getLogger } from '../logger'
+import { readFileAsString } from '../filesystemUtilities'
+// Use require instead of import since this package doesn't support commonjs
+const { ZipWriter, TextReader } = require('@zip.js/zip.js')
 
 export interface ZipStreamResult {
     sizeInBytes: number
@@ -27,45 +28,41 @@ export interface ZipStreamResult {
  * ```
  */
 export class ZipStream {
-    private _archive: archiver.Archiver
+    // TypeScript compiler is confused about using ZipWriter as a type
+    // @ts-ignore
+    private _zipWriter: ZipWriter<WritableStream>
     private _streamBuffer: WritableStreamBuffer
     private _hasher: crypto.Hash
 
     constructor() {
-        this._archive = archiver('zip')
         this._streamBuffer = new WritableStreamBuffer()
-        this._archive.pipe(this._streamBuffer)
         this._hasher = crypto.createHash('md5')
 
-        this._archive.on('data', data => {
-            this._hasher.update(data)
-        })
-        this._archive.on('error', err => {
-            throw err
-        })
-        this._archive.on('warning', err => {
-            getLogger().warn(err)
-        })
-    }
-
-    public writeString(data: string, path: string) {
-        this._archive.append(Buffer.from(data, 'utf-8'), { name: path })
-    }
-
-    public writeFile(file: string, path: string) {
-        this._archive.file(file, { name: path })
-    }
-
-    public finalize(): Promise<ZipStreamResult> {
-        return new Promise((resolve, reject) => {
-            void this._archive.finalize()
-            this._archive.on('finish', () => {
-                resolve({
-                    sizeInBytes: this._archive.pointer(),
-                    md5: this._hasher.digest('base64'),
-                    streamBuffer: this._streamBuffer,
-                })
+        this._zipWriter = new ZipWriter(
+            new WritableStream({
+                write: chunk => {
+                    this._streamBuffer.write(chunk)
+                    this._hasher.update(chunk)
+                },
             })
-        })
+        )
+    }
+
+    public async writeString(data: string, path: string) {
+        return this._zipWriter.add(path, new TextReader(data))
+    }
+
+    public async writeFile(file: string, path: string) {
+        const content = await readFileAsString(file)
+        return this._zipWriter.add(path, new TextReader(content))
+    }
+
+    public async finalize(): Promise<ZipStreamResult> {
+        await this._zipWriter.close()
+        return {
+            sizeInBytes: this._streamBuffer.size(),
+            md5: this._hasher.digest('base64'),
+            streamBuffer: this._streamBuffer,
+        }
     }
 }
