@@ -16,7 +16,6 @@ import software.amazon.awssdk.services.ssooidc.model.InvalidGrantException
 import software.amazon.awssdk.services.ssooidc.model.InvalidRequestException
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.amazon.awssdk.services.sts.StsClient
-import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.tryOrNull
@@ -163,15 +162,13 @@ fun authAndUpdateConfig(
     val requestedScopes = profile.scopes
     val allScopes = requestedScopes.toMutableSet()
 
-    val oldScopeOrEmpty = ToolkitBearerTokenProvider.ssoIdentifier(profile.startUrl, profile.ssoRegion).let { connId ->
-        ToolkitAuthManager.getInstance().getConnection(connId)?.let { existingConn ->
-            if (existingConn is AwsBearerTokenConnection) {
-                existingConn.scopes
-            } else {
-                null
-            }
-        }.orEmpty()
-    }
+    val oldScopeOrEmpty = ToolkitAuthManager.getInstance().getConnection(profile.id)?.let { existingConn ->
+        if (existingConn is AwsBearerTokenConnection) {
+            existingConn.scopes
+        } else {
+            null
+        }
+    }.orEmpty()
 
     // TODO: what if the old scope is deprecated?
     if (!oldScopeOrEmpty.all { it in requestedScopes }) {
