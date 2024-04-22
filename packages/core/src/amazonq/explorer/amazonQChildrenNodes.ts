@@ -11,9 +11,9 @@ import { reconnect } from '../../codewhisperer/commands/basicCommands'
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 
 const localize = nls.loadMessageBundle()
 
@@ -33,7 +33,7 @@ export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView',
         elementId: 'amazonq_switchToQChat',
         passive: false,
     })
-    void focusAmazonQPanel()
+    void focusAmazonQPanel.execute(placeholder, 'switchToQChat')
 })
 
 export function switchToAmazonQNode(type: 'item'): DataQuickPickItem<'openChatPanel'>
