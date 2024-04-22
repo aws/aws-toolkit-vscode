@@ -167,6 +167,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     private selectSubstepIcon(status: string) {
         switch (status) {
             case 'IN_PROGRESS':
+                // In case transform is cancelled by user, the state transitions to not started after some time.
+                // This may contradict the last result from the API, so need to be handled here.
+                if (transformByQState.isNotStarted()) {
+                    return '<p><span class="status-FAILED"> ⓧ </span></p>'
+                }
                 return '<p><span class="spinner status-PENDING"> ↻ </span></p>'
             case 'COMPLETED':
                 return '<p><span class="status-COMPLETED"> ✓ </span></p>'
@@ -266,17 +271,20 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     return 'Stopping the job...'
                 } else if (transformByQState.isFailed()) {
                     return 'The step failed, fetching additional details...'
-                } else if (transformByQState.isNotStarted()) {
+                } else if (transformByQState.isRunning()) {
                     return `Amazon Q is scanning the project files and getting ready to start the job. 
                     To start the job, Amazon Q needs to upload the project artifacts. Once that's done, Q can start the transformation job. 
                     The estimated time for this operation ranges from a few seconds to several minutes.`
                 } else if (transformByQState.isPartiallySucceeded() || transformByQState.isSucceeded()) {
                     return 'Job completed' // this should never have too be shown since substeps will block the generic details. Added for completeness.
+                } else {
+                    return 'No ongoing job.'
                 }
         }
     }
 
     public async showPlanProgress(startTime: number): Promise<string> {
+        console.log(`cancelled: ${transformByQState.isCancelled()} not started: ${transformByQState.isNotStarted()}`)
         const planProgress = getPlanProgress()
         const simpleStep = (icon: string, text: string, isActive: boolean) => {
             return isActive
@@ -311,7 +319,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 'Waiting for job to start',
                 activeStepId === 0
             )
-
             const buildMarkup =
                 activeStepId >= 1
                     ? simpleStep(
@@ -350,7 +357,9 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 ${progress[0]}
             </div>
             <div id="stepdetails" class="column">
-                <div class="substep center" id="generic-step-details">
+                <div class="substep center ${
+                    transformByQState.isNotStarted() ? 'blocked' : ''
+                }" id="generic-step-details">
                     <div class="column--container">
                         <div class="center-flex substep-icon"><p class="center-flex"><span class="spinner status-PENDING"> ↻ </span></p></div>
                         <div><p>${latestGenericStepDetails}</p></div>
@@ -428,7 +437,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     padding-left: 20px;
                     border-left: solid lightgray;
                     min-height: 100vh;
-                    ${transformByQState.isRunning() ? '' : 'display: none;'}
+                    ${transformByQState.isRunning() || !transformByQState.isNotStarted() ? '' : 'display: none;'}
                 }
 
                 .status-PENDING {
