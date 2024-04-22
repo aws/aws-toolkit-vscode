@@ -10,12 +10,8 @@ import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
 import { init as gumbyChatAppInit } from '../amazonqGumby/app'
 import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
-import { Commands, VsCodeCommandArg } from '../shared/vscode/commands2'
-import { MessagePublisher } from './messages/messagePublisher'
-import { welcome } from './onboardingPage'
+import { Commands } from '../shared/vscode/commands2'
 import { activateBadge } from './util/viewBadgeHandler'
-import { telemetry } from '../shared/telemetry/telemetry'
-import { focusAmazonQPanel } from '../auth/ui/vue/show'
 import { amazonQHelpUrl } from '../shared/constants'
 import { openAmazonQWalkthrough } from './onboardingPage/walkthrough'
 import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
@@ -32,8 +28,6 @@ export async function activate(context: ExtensionContext) {
         appInitContext.onDidChangeAmazonQVisibility
     )
 
-    const cwcWebViewToAppsPublisher = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!
-
     context.subscriptions.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
             webviewOptions: {
@@ -45,7 +39,6 @@ export async function activate(context: ExtensionContext) {
         listCodeWhispererCommandsWalkthrough.register()
     )
 
-    amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
     Commands.register('aws.amazonq.learnMore', () => {
         void vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
     })
@@ -58,14 +51,3 @@ function registerApps(appInitContext: AmazonQAppInitContext) {
     featureDevChatAppInit(appInitContext)
     gumbyChatAppInit(appInitContext)
 }
-
-export const amazonQWelcomeCommand = Commands.declare(
-    { id: 'aws.amazonq.welcome', compositeKey: { 1: 'source' } },
-    (context: ExtensionContext, publisher: MessagePublisher<any>) => (_: VsCodeCommandArg, source: string) => {
-        telemetry.ui_click.run(() => {
-            void focusAmazonQPanel()
-            welcome(context, publisher)
-            telemetry.record({ elementId: 'toolkit_openedWelcomeToAmazonQPage', source })
-        })
-    }
-)

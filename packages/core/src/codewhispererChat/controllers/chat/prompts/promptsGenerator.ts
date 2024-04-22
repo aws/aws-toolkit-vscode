@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
 import { EditorContextCommand, EditorContextCommandType } from '../../../commands/registerCommands'
 
 // TODO: It's a workaround for the demo, we need to remove it after backend will be ready
@@ -19,12 +18,5 @@ export class PromptsGenerator {
 
     public generateForContextMenuCommand(command: EditorContextCommand): string {
         return [this.editorContextMenuCommandVerbs.get(command.type), ' the selected codeblock'].join('')
-    }
-
-    public generateForOnboardingPageInteraction(interaction: OnboardingPageInteraction): string {
-        switch (interaction.type) {
-            case 'onboarding-page-cwc-button-clicked':
-                return 'What can Q help me with?'
-        }
     }
 }

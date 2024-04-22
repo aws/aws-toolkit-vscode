@@ -613,11 +613,6 @@
                 "category": "%AWS.amazonq.productName%"
             },
             {
-                "command": "aws.amazonq.welcome",
-                "title": "%AWS.command.q.welcome%",
-                "category": "%AWS.amazonq.productName%"
-            },
-            {
                 "command": "aws.dev.openMenu",
                 "title": "Open Developer Menu",
                 "category": "AWS (Developer)",

@@ -28,9 +28,7 @@ import {
     AwsConnection,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
-import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
-import { Commands, placeholder } from '../../shared/vscode/commands2'
-import { GlobalState } from '../../shared/globalState'
+import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
 import { onceChanged, once } from '../../shared/utilities/functionUtils'
 import { indent } from '../../shared/utilities/textUtilities'
@@ -71,20 +69,12 @@ export const isValidAmazonQConnection = (conn?: Connection): conn is Connection 
     )
 }
 
-interface HasAlreadySeenQWelcome {
-    local?: boolean
-    devEnv?: boolean
-    ssh?: boolean
-    wsl?: boolean
-}
-
 export class AuthUtil {
     static #instance: AuthUtil
     protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
 
     private reauthenticatePromptShown: boolean = false
     private _isCustomizationFeatureEnabled: boolean = false
-    private readonly mementoKey: string = 'hasAlreadySeenQWelcomeObj'
 
     // user should only see that screen once.
     // TODO: move to memento
@@ -144,22 +134,8 @@ export class AuthUtil {
 
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
 
-            const shouldShowObject: HasAlreadySeenQWelcome = GlobalState.instance.get(this.mementoKey) ?? {
-                local: false,
-                devEnv: false,
-                ssh: false,
-                wsl: false,
-            }
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
-                //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
-                const key = getEnvType()
-                if (!shouldShowObject[key]) {
-                    shouldShowObject[key] = true
-                    GlobalState.instance.tryUpdate(this.mementoKey, shouldShowObject)
-                    await vscode.commands.executeCommand('aws.amazonq.welcome', placeholder, key)
-                }
-
                 // start the feature config polling job
                 await vscode.commands.executeCommand('aws.amazonq.fetchFeatureConfigs')
             }
@@ -518,20 +494,6 @@ function buildFeatureAuthState(state: AuthState): FeatureAuthState {
         codewhispererChat: state,
         amazonQ: state,
     }
-}
-
-function getEnvType(): keyof HasAlreadySeenQWelcome {
-    const remoteName = vscode.env.remoteName
-    if (remoteName) {
-        if (remoteName === 'ssh-remote') {
-            if (getCodeCatalystDevEnvId()) {
-                return 'devEnv'
-            }
-            return 'ssh'
-        }
-        return 'wsl'
-    }
-    return 'local'
 }
 
 /**

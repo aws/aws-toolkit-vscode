@@ -9,7 +9,6 @@ import {
     AuthNeededException,
     CodeReference,
     EditorContextCommandMessage,
-    OnboardingPageInteractionMessage,
     QuickActionMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
@@ -26,7 +25,6 @@ import { ChatPromptCommandType, TriggerPayload } from '../model'
 import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
-import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
@@ -379,23 +377,6 @@ export class Messenger {
         this.dispatcher.sendQuickActionMessage(
             new QuickActionMessage({
                 message,
-                triggerID,
-            })
-        )
-    }
-
-    public sendOnboardingPageInteractionMessage(interaction: OnboardingPageInteraction, triggerID: string) {
-        let message
-        switch (interaction.type) {
-            case 'onboarding-page-cwc-button-clicked':
-                message = 'What can Amazon Q do and what are some example questions?'
-                break
-        }
-
-        this.dispatcher.sendOnboardingPageInteractionMessage(
-            new OnboardingPageInteractionMessage({
-                message,
-                interactionType: interaction.type,
                 triggerID,
             })
         )
