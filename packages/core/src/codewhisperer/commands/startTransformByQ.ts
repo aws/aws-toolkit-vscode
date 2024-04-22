@@ -37,7 +37,7 @@ import {
     CodeTransformJavaTargetVersionsAllowed,
     telemetry,
 } from '../../shared/telemetry/telemetry'
-import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import {
     CancelActionPositions,
     JDKToTelemetryValue,
@@ -98,7 +98,7 @@ async function validateJavaHome(): Promise<boolean> {
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformPreValidationError: 'ProjectJDKDiffersFromMavenJDK',
             result: MetadataResult.Fail,
             reason: `${transformByQState.getSourceJDKVersion()} (project) - ${javaVersionUsedByMaven} (maven)`,
@@ -143,7 +143,7 @@ export async function startTransformByQ() {
         intervalId = setInterval(() => {
             void vscode.commands.executeCommand(
                 'aws.amazonq.showPlanProgressInHub',
-                codeTransformTelemetryState.getStartTime()
+                CodeTransformTelemetryState.instance.getStartTime()
             )
         }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
 
@@ -170,7 +170,6 @@ export async function startTransformByQ() {
 }
 
 export async function preTransformationUploadCode() {
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
     void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification)
@@ -216,7 +215,6 @@ export async function startTransformationJob(uploadId: string) {
         throw new Error('Start job failed')
     }
     transformByQState.setJobId(encodeHTML(jobId))
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     await sleep(2000) // sleep before polling job to prevent ThrottlingException
     throwIfCancelled()
@@ -278,13 +276,12 @@ export async function finalizeTransformationJob(status: string) {
     transformByQState.setToSucceeded()
     if (status === 'PARTIALLY_COMPLETED') {
         transformByQState.setToPartiallySucceeded()
-        codeTransformTelemetryState.setResultStatus('JobPartiallySucceeded')
+        CodeTransformTelemetryState.instance.setResultStatus('JobPartiallySucceeded')
     } else {
-        codeTransformTelemetryState.setResultStatus('JobCompletedSuccessfully')
+        CodeTransformTelemetryState.instance.setResultStatus('JobCompletedSuccessfully')
     }
 
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     sessionPlanProgress['transformCode'] = StepProgress.Succeeded
 }
@@ -303,7 +300,7 @@ export async function setTransformationToRunningState() {
     sessionPlanProgress['generatePlan'] = StepProgress.Pending
     sessionPlanProgress['transformCode'] = StepProgress.Pending
 
-    codeTransformTelemetryState.setStartTime()
+    CodeTransformTelemetryState.instance.setStartTime()
 
     const projectPath = transformByQState.getProjectPath()
     let projectId = telemetryUndefined
@@ -312,7 +309,7 @@ export async function setTransformationToRunningState() {
     }
 
     telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
-        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
         codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
             transformByQState.getSourceJDKVersion()!
         ) as CodeTransformJavaSourceVersionsAllowed,
@@ -326,10 +323,8 @@ export async function setTransformationToRunningState() {
     await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
     await vscode.commands.executeCommand(
         'aws.amazonq.showPlanProgressInHub',
-        codeTransformTelemetryState.getStartTime()
+        CodeTransformTelemetryState.instance.getStartTime()
     )
-
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
 }
 
 export async function postTransformationJob() {
@@ -356,8 +351,8 @@ export async function postTransformationJob() {
     transformByQState
         .getChatControllers()
         ?.transformationFinished.fire({ message: chatMessage, tabID: ChatSessionManager.Instance.getSession().tabID })
-    const durationInMs = calculateTotalLatency(codeTransformTelemetryState.getStartTime())
-    const resultStatusMessage = codeTransformTelemetryState.getResultStatus()
+    const durationInMs = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())
+    const resultStatusMessage = CodeTransformTelemetryState.instance.getResultStatus()
 
     const versionInfo = await getVersionData()
     const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
@@ -365,7 +360,7 @@ export async function postTransformationJob() {
 
     // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
     telemetry.codeTransform_totalRunTime.emit({
-        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
         codeTransformResultStatusMessage: resultStatusMessage,
         codeTransformRunTimeLatency: durationInMs,
         codeTransformLocalMavenVersion: mavenVersionInfoMessage,
@@ -376,7 +371,7 @@ export async function postTransformationJob() {
 
     sessionJobHistory = processHistory(
         sessionJobHistory,
-        convertDateToTimestamp(new Date(codeTransformTelemetryState.getStartTime())),
+        convertDateToTimestamp(new Date(CodeTransformTelemetryState.instance.getStartTime())),
         transformByQState.getProjectName(),
         transformByQState.getStatus(),
         convertToTimeString(durationInMs),
@@ -393,7 +388,7 @@ export async function postTransformationJob() {
             )
             .then(choice => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                    void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                 }
             })
     }
@@ -407,7 +402,7 @@ export async function transformationJobErrorHandler(error: any) {
     if (!transformByQState.isCancelled()) {
         // means some other error occurred; cancellation already handled by now with stopTransformByQ
         transformByQState.setToFailed()
-        codeTransformTelemetryState.setResultStatus('JobFailed')
+        CodeTransformTelemetryState.instance.setResultStatus('JobFailed')
         // jobFailureErrorNotification should always be defined here
         let displayedErrorMessage = transformByQState.getJobFailureErrorNotification() ?? 'Job failed'
         if (transformByQState.getJobFailureMetadata() !== '') {
@@ -420,7 +415,7 @@ export async function transformationJobErrorHandler(error: any) {
             .showErrorMessage(displayedErrorMessage, CodeWhispererConstants.amazonQFeedbackText)
             .then(choice => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                    void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                 }
             })
     } else {
@@ -433,10 +428,9 @@ export async function cleanupTransformationJob(intervalId: NodeJS.Timeout | unde
     clearInterval(intervalId)
     transformByQState.setJobDefaults()
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
     await vscode.commands.executeCommand(
         'aws.amazonq.showPlanProgressInHub',
-        codeTransformTelemetryState.getStartTime()
+        CodeTransformTelemetryState.instance.getStartTime()
     )
 }
 
@@ -469,8 +463,7 @@ export async function stopTransformByQ(
     if (transformByQState.isRunning()) {
         getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
         transformByQState.setToCancelled()
-        codeTransformTelemetryState.setResultStatus('JobCancelled')
-        await vscode.commands.executeCommand('aws.amazonq.refresh')
+        CodeTransformTelemetryState.instance.setResultStatus('JobCancelled')
         await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         try {
             await stopJob(jobId)
@@ -481,7 +474,7 @@ export async function stopTransformByQ(
                 )
                 .then(choice => {
                     if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                        void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                     }
                 })
         } catch {
@@ -492,13 +485,13 @@ export async function stopTransformByQ(
                 )
                 .then(choice => {
                     if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback.execute(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                        void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                     }
                 })
         }
         telemetry.codeTransform_jobIsCancelledByUser.emit({
             codeTransformCancelSrcComponents: cancelSrc as CodeTransformCancelSrcComponents,
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             result: MetadataResult.Pass,
         })
     }

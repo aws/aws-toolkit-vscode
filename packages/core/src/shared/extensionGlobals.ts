@@ -82,10 +82,12 @@ function getBrowserAlternatives() {
  *
  * See `web.md` for more info.
  *
+ * Note: The returned globals is shared across all extensions/the entire VS Code instance.
+ *
  */
 function resolveGlobalsObject(): ToolkitGlobals {
     if ((globalThis as any).globals === undefined) {
-        ;(globalThis as any).globals = { clock: copyClock() } as ToolkitGlobals
+        ;(globalThis as any).globals = {} as ToolkitGlobals
     }
     return (globalThis as any).globals
 }
@@ -96,39 +98,61 @@ function resolveGlobalsObject(): ToolkitGlobals {
 function proxyGlobals(globals_: ToolkitGlobals): ToolkitGlobals {
     return new Proxy(globals_, {
         get: (target, prop) => {
+            // Test for initialize()
+            if (Object.keys(target).length === 0) {
+                throw new Error(`ToolkitGlobals accessed before initialize()`)
+            }
+
+            // Test that the property was set before access.
+            // Tradeoff: not being able to do something like `globals.myValue ??= ...` without a try/catch
             const propName = String(prop)
             const val = (target as any)[propName]
             if (
                 val !== undefined ||
-                propName.includes('Symbol') || // hack for sinon.stub
-                'isWeb' === propName
+                propName.includes('Symbol') // hack for sinon.stub
             ) {
                 return val
             }
-            throw new Error(`ToolkitGlobals.${propName} accessed before initialize()`)
+            throw new Error(`ToolkitGlobals.${propName} accessed, but this property is not set.`)
         },
     })
 }
 
-const globals = proxyGlobals(resolveGlobalsObject())
+/**
+ * Extension globals object.
+ * Unless this is running in web mode, these globals are scoped only to the current extension.
+ *
+ * TODO: If multiple extensions are running in webmode, they will override and access
+ * each other's globals. We should partition globalThis by extension ID.
+ */
+let globals = proxyGlobals(resolveGlobalsObject())
 
 export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
-export function initialize(context: ExtensionContext): ToolkitGlobals {
+export function initialize(context: ExtensionContext, isWeb: boolean = false): ToolkitGlobals {
+    if (!isWeb) {
+        // Not running in web mode, let's use globals scoped to the current extension only.
+        globals = proxyGlobals({} as ToolkitGlobals)
+    }
     Object.assign(globals, {
         context,
         clock: copyClock(),
         didReload: checkDidReload(context),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
+        isWeb,
     })
 
     return globals
 }
 
-export default globals
+export function isWeb() {
+    return globals.isWeb
+}
+
+export { globals as default }
 
 /**
  * Namespace for common variables used globally in the extension.
@@ -136,8 +160,11 @@ export default globals
  */
 interface ToolkitGlobals {
     readonly context: ExtensionContext
+    /** Decides the prefix for package.json extension parameters, e.g. commands, 'setContext' values, etc. */
+    contextPrefix: string
     // TODO: make the rest of these readonly (or delete them)
     outputChannel: OutputChannel
+    logOutputChannel: OutputChannel
     loginManager: LoginManager
     awsContextCommands: AwsContextCommands
     awsContext: AwsContext

@@ -13,7 +13,7 @@ import globals from '../../shared/extensionGlobals'
 import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
 import { fsCommon } from '../../srcShared/fs'
 import { getLogger } from '../../shared/logger'
-import { PromptSettings } from '../../shared/settings'
+import { AmazonQPromptSettings } from '../../shared/settings'
 import { CodeWhispererSource } from '../commands/types'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
@@ -93,7 +93,7 @@ export class CodeWhispererWebview extends VueWebview {
 
     //This function opens the Feedback CodeWhisperer page in the webview
     async openFeedBack(): Promise<void> {
-        return submitFeedback.execute(placeholder, 'CodeWhisperer')
+        return submitFeedback(placeholder, 'CodeWhisperer')
     }
 
     //------Telemetry------
@@ -159,7 +159,7 @@ export async function showCodeWhispererWebview(
                 subscriptions = undefined
             }),
         ]
-        const prompts = PromptSettings.instance
+        const prompts = AmazonQPromptSettings.instance
         //To check the condition If the user has already seen the welcome message
         if (await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')) {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: true })

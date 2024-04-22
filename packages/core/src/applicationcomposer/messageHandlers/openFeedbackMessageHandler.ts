@@ -7,5 +7,5 @@ import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 
 export function openFeedbackMessageHandler() {
-    void submitFeedback.execute(placeholder, 'Application Composer')
+    void submitFeedback(placeholder, 'Application Composer')
 }

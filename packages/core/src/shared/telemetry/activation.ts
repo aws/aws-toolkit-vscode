@@ -14,8 +14,10 @@ import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { openSettings, Settings } from '../settings'
-import { TelemetryConfig } from './util'
+import { TelemetryConfig, setupTelemetryId } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
+import { AWSProduct } from './clienttelemetry'
+import { DefaultTelemetryClient } from './telemetryClient'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -33,8 +35,14 @@ const CURRENT_TELEMETRY_NOTICE_VERSION = 2 // eslint-disable-line @typescript-es
 /**
  * Sets up the Metrics system and initializes globals.telemetry
  */
-export async function activate(extensionContext: vscode.ExtensionContext, awsContext: AwsContext, settings: Settings) {
+export async function activate(
+    extensionContext: vscode.ExtensionContext,
+    awsContext: AwsContext,
+    settings: Settings,
+    productName: AWSProduct
+) {
     const config = new TelemetryConfig(settings)
+    DefaultTelemetryClient.productName = productName
     globals.telemetry = await DefaultTelemetryService.create(extensionContext, awsContext, getComputeRegion())
 
     try {
@@ -52,7 +60,7 @@ export async function activate(extensionContext: vscode.ExtensionContext, awsCon
         if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
             showTelemetryNotice(extensionContext)
         }
-
+        await setupTelemetryId(extensionContext)
         await globals.telemetry.start()
     } catch (e) {
         // Only throw in a production build because:
@@ -87,7 +95,7 @@ function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
 
     const telemetryNoticeText: string = localize(
         'AWS.telemetry.notificationMessage',
-        '{0} Toolkit collects anonymous usage metrics to help drive toolkit improvements. This can be changed in the settings.',
+        'AWS IDE Extensions collects anonymous usage metrics to improve the product. You can opt-out in settings.',
         getIdeProperties().company
     )
 

@@ -34,7 +34,7 @@ import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
-import { PromptSettings } from '../settings'
+import { ToolkitPromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
@@ -297,7 +297,7 @@ async function activateCodefileOverlays(
  * Will not show if the YAML extension is installed or if a user has permanently dismissed the message.
  */
 async function createYamlExtensionPrompt(): Promise<void> {
-    const settings = PromptSettings.instance
+    const settings = ToolkitPromptSettings.instance
 
     /**
      * Prompt the user to install the YAML plugin when AWSTemplateFormatVersion becomes available as a top level key
@@ -415,7 +415,7 @@ async function promptInstallYamlPlugin(disposables: vscode.Disposable[]) {
     for (const prompt of disposables) {
         prompt.dispose()
     }
-    const settings = PromptSettings.instance
+    const settings = ToolkitPromptSettings.instance
 
     const installBtn = localize('AWS.missingExtension.install', 'Install...')
     const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Don't show again")

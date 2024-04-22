@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { OnboardingPageInteraction } from '../../amazonq/onboardingPage/model'
 import { EditorContextCommand } from '../commands/registerCommands'
 import { EditorContext } from '../editor/context/model'
 
@@ -22,7 +21,6 @@ export interface TriggerEvent {
     readonly type: TriggerEventType
     readonly command?: EditorContextCommand
     readonly quickAction?: string
-    readonly onboardingPageInteraction?: OnboardingPageInteraction
 }
 
 export class TriggerEventsStorage {

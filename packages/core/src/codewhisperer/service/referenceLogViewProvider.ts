@@ -42,7 +42,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled()
         )
         this._view.webview.onDidReceiveMessage(async data => {
-            await vscode.commands.executeCommand('aws.codeWhisperer.configure', 'codewhisperer')
+            await vscode.commands.executeCommand('aws.amazonq.configure', 'codewhisperer')
         })
     }
 

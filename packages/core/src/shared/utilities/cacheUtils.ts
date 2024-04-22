@@ -8,8 +8,8 @@ import { dirname } from 'path'
 import { ToolkitError, isFileNotFoundError } from '../errors'
 import { SystemUtilities } from '../systemUtilities'
 import { promises as fsPromises } from 'fs'
-import { isWeb } from '../../common/webUtils'
 import crypto from 'crypto'
+import { isWeb } from '../extensionGlobals'
 
 // TODO(sijaden): further generalize this concept over async references (maybe create a library?)
 // It's pretty clear that this interface (and VSC's `Memento`) reduce down to what is essentially

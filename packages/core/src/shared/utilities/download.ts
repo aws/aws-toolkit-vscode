@@ -6,7 +6,7 @@
 import path from 'path'
 import { CodeWhispererStreaming, ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
 import { ToolkitError } from '../errors'
-import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { transformByQState } from '../../codewhisperer/models/model'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { telemetry } from '../telemetry/telemetry'
@@ -49,7 +49,7 @@ export async function downloadExportResultArchive(
     await fsCommon.writeFile(toPath, Buffer.concat(buffer))
     telemetry.codeTransform_logApiLatency.emit({
         codeTransformApiNames: 'ExportResultArchive',
-        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
         codeTransformJobId: transformByQState.getJobId(),
         codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
         codeTransformTotalByteSize: totalDownloadBytes,

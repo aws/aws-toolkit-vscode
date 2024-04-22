@@ -8,7 +8,7 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { createCodeScanIssue, createMockDocument, resetCodeWhispererGlobalVariables } from '../testUtil'
-import { assertTelemetry, assertTelemetryCurried } from '../../testUtil'
+import { assertTelemetry, assertTelemetryCurried, tryRegister } from '../../testUtil'
 import {
     toggleCodeSuggestions,
     showSecurityScan,
@@ -44,18 +44,22 @@ import {
     createSecurityScan,
     createSelectCustomization,
     createSettingsNode,
-    createSignIn,
     createSignout,
 } from '../../../codewhisperer/ui/codeWhispererNodes'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
 import { CodeScansState, CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
-import { switchToAmazonQNode } from '../../../amazonq/explorer/amazonQChildrenNodes'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
+import { createSignIn, switchToAmazonQNode } from '../../../amazonq/explorer/commonNodes'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
+
+    before(async function () {
+        tryRegister(refreshStatusBar)
+    })
 
     beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()
@@ -303,6 +307,10 @@ describe('CodeWhisperer-basicCommands', function () {
         function genericItems() {
             return [createFeedbackNode(), createGitHubNode(), createDocumentationNode()]
         }
+
+        before(async function () {
+            tryRegister(listCodeWhispererCommands)
+        })
 
         it('shows expected items when not connected', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)

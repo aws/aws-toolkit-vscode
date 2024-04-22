@@ -42,12 +42,12 @@ async function updateDevfile(uri: vscode.Uri): Promise<void> {
     // TODO: accurate telemetry is hard to capture here
 }
 
-export const updateDevfileCommand = Commands.register(
+export const updateDevfileCommand = Commands.declare(
     {
         id: 'aws.codecatalyst.updateDevfile',
         telemetryName: 'codecatalyst_updateDevfile',
     },
-    updateDevfile
+    () => uri => updateDevfile(uri)
 )
 
 type Workspace = Pick<typeof vscode.workspace, 'onDidSaveTextDocument'>

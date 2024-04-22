@@ -9,7 +9,6 @@ import {
     AuthNeededException,
     CodeReference,
     EditorContextCommandMessage,
-    OnboardingPageInteractionMessage,
     QuickActionMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
@@ -26,7 +25,6 @@ import { ChatPromptCommandType, TriggerPayload } from '../model'
 import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
-import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
@@ -309,36 +307,36 @@ export class Messenger {
         switch (type) {
             case 'quick-action-help':
                 message = `I'm Amazon Q, a generative AI assistant. Learn more about me below. Your feedback will help me improve.
-                \n\n### What I can do:                
+                \n\n### What I can do:
                 \n\n- Answer questions about AWS
                 \n\n- Answer questions about general programming concepts
                 \n\n- Explain what a line of code or code function does
                 \n\n- Write unit tests and code
                 \n\n- Debug and fix code
-                \n\n- Refactor code                 
-                \n\n### What I don't do right now:                
+                \n\n- Refactor code
+                \n\n### What I don't do right now:
                 \n\n- Answer questions in languages other than English
                 \n\n- Remember conversations from your previous sessions
-                \n\n- Have information about your AWS account or your specific AWS resources                
-                \n\n### Examples of questions I can answer:                
+                \n\n- Have information about your AWS account or your specific AWS resources
+                \n\n### Examples of questions I can answer:
                 \n\n- When should I use ElastiCache?
                 \n\n- How do I create an Application Load Balancer?
-                \n\n- Explain the <selected code> and ask clarifying questions about it. 
-                \n\n- What is the syntax of declaring a variable in TypeScript?                
-                \n\n### Special Commands                
+                \n\n- Explain the <selected code> and ask clarifying questions about it.
+                \n\n- What is the syntax of declaring a variable in TypeScript?
+                \n\n### Special Commands
                 \n\n- /clear - Clear the conversation.
                 \n\n- /dev - Get code suggestions across files in your current project. Provide a brief prompt, such as "Implement a GET API."<strong> Only available through CodeWhisperer Professional Tier.</strong>
                 \n\n- /transform - Transform your code. Use to upgrade Java code versions. <strong>Only available through CodeWhisperer Professional Tier.</strong>
-                \n\n- /help - View chat topics and commands.                             
-                \n\n### Things to note:                
-                \n\n- I may not always provide completely accurate or current information. 
+                \n\n- /help - View chat topics and commands.
+                \n\n### Things to note:
+                \n\n- I may not always provide completely accurate or current information.
                 \n\n- Provide feedback by choosing the like or dislike buttons that appear below answers.
                 \n\n- When you use Amazon Q, AWS may, for service improvement purposes, store data about your usage and content. You can opt-out of sharing this data by following the steps in AI services opt-out policies. See <a href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/sharing-data.html">here</a>
-                \n\n- Do not enter any confidential, sensitive, or personal information.                
+                \n\n- Do not enter any confidential, sensitive, or personal information.
                 \n\n*For additional help, visit the [Amazon Q User Guide](${userGuideURL}).*`
                 break
             case 'onboarding-help':
-                message = `### What I can do:                
+                message = `### What I can do:
                 \n\n- Answer questions about AWS
                 \n\n- Answer questions about general programming concepts
                 \n\n- Explain what a line of code or code function does
@@ -393,23 +391,6 @@ export class Messenger {
         this.dispatcher.sendQuickActionMessage(
             new QuickActionMessage({
                 message,
-                triggerID,
-            })
-        )
-    }
-
-    public sendOnboardingPageInteractionMessage(interaction: OnboardingPageInteraction, triggerID: string) {
-        let message
-        switch (interaction.type) {
-            case 'onboarding-page-cwc-button-clicked':
-                message = 'What can Amazon Q do and what are some example questions?'
-                break
-        }
-
-        this.dispatcher.sendOnboardingPageInteractionMessage(
-            new OnboardingPageInteractionMessage({
-                message,
-                interactionType: interaction.type,
                 triggerID,
             })
         )

@@ -45,7 +45,7 @@ describe('securityIssueHoverProvider', () => {
             (actual.contents[0] as vscode.MarkdownString).value,
             '## title ![High](severity-high.svg)\n' +
                 'fix\n\n' +
-                `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
+                `[$(eye) View Details](command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName])
                 )} 'Open "Amazon Q Security Issue"')\n` +
                 ` | [$(comment-discussion) Explain with Q](command:aws.amazonq.explainIssue?${encodeURIComponent(
@@ -54,7 +54,7 @@ describe('securityIssueHoverProvider', () => {
                 ` | [$(comment) Fix with Q](command:aws.amazonq.fixIssue?${encodeURIComponent(
                     JSON.stringify([issues[0]])
                 )} 'Fix with Amazon Q')\n` +
-                ` | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(
+                ` | [$(wrench) Apply Fix](command:aws.amazonq.applySecurityFix?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
                 )} 'Apply Amazon Q Suggestion')\n` +
                 '### Suggested Fix Preview\n\n' +
@@ -92,7 +92,7 @@ describe('securityIssueHoverProvider', () => {
             (actual.contents[1] as vscode.MarkdownString).value,
             '## title ![High](severity-high.svg)\n' +
                 'recommendationText\n\n' +
-                `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
+                `[$(eye) View Details](command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[1], mockDocument.fileName])
                 )} 'Open "Amazon Q Security Issue"')\n` +
                 ` | [$(comment-discussion) Explain with Q](command:aws.amazonq.explainIssue?${encodeURIComponent(

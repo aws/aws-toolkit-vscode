@@ -3,33 +3,48 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
-import globals from '../../shared/extensionGlobals'
 import * as vscode from 'vscode'
-import { AuthorizationPendingException, SlowDownException, SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
-import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile, builderIdStartUrl } from './model'
+import globals from '../../shared/extensionGlobals'
+import { AuthorizationPendingException, SSOOIDCServiceException, SlowDownException } from '@aws-sdk/client-sso-oidc'
+import {
+    SsoToken,
+    ClientRegistration,
+    isExpired,
+    SsoProfile,
+    builderIdStartUrl,
+    openSsoPortalLink,
+    isDeprecatedAuth,
+    openSsoUrl,
+} from './model'
 import { getCache } from './cache'
 import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
-import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
-import { OidcClient } from './clients'
+import { OidcClient, OidcClientV2 } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
 import {
+    ToolkitError,
     getRequestId,
     getTelemetryReason,
     getTelemetryResult,
     isClientFault,
     isNetworkError,
-    ToolkitError,
 } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemetry'
-import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { indent } from '../../shared/utilities/textUtilities'
+import { AuthSSOServer } from './server'
+import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
+import OidcClientPKCE from './oidcclientpkce'
+import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { randomUUID, randomBytes, createHash } from 'crypto'
+import { UriHandler } from '../../shared/vscode/uriHandler'
+import { DevSettings } from '../../shared/settings'
+import { localize } from '../../shared/utilities/vsCodeUtils'
+
+export const authenticationPath = 'sso/authenticated'
 
 const clientRegistrationType = 'public'
 const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
+const authorizationGrantType = 'authorization_code'
 const refreshGrantType = 'refresh_token'
 
 /**
@@ -68,11 +83,11 @@ const refreshGrantType = 'refresh_token'
  *         - ExpiresIn
  *         - RefreshToken (optional)
  */
-export class SsoAccessTokenProvider {
+export abstract class SsoAccessTokenProvider {
     public constructor(
-        private readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
-        private readonly cache = getCache(),
-        private readonly oidc = OidcClient.create(profile.region)
+        protected readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        protected readonly cache = getCache(),
+        protected readonly oidc: OidcClient | OidcClientV2 = OidcClient.create(profile.region)
     ) {}
 
     public async invalidate(): Promise<void> {
@@ -164,7 +179,7 @@ export class SsoAccessTokenProvider {
         }
     }
 
-    private formatToken(token: SsoToken, registration: ClientRegistration) {
+    protected formatToken(token: SsoToken, registration: ClientRegistration) {
         return { token, registration, region: this.profile.region, startUrl: this.profile.startUrl }
     }
 
@@ -172,42 +187,14 @@ export class SsoAccessTokenProvider {
         return this.profile.identifier ?? this.profile.startUrl
     }
 
-    private get registrationCacheKey() {
+    protected get registrationCacheKey() {
         return { region: this.profile.region, scopes: this.profile.scopes }
-    }
-
-    private async authorize(registration: ClientRegistration) {
-        // This will NOT throw on expired clientId/Secret, but WILL throw on invalid clientId/Secret
-        const authorization = await this.oidc.startDeviceAuthorization({
-            startUrl: this.profile.startUrl,
-            clientId: registration.clientId,
-            clientSecret: registration.clientSecret,
-        })
-
-        const openBrowserAndWaitUntilComplete = async () => {
-            if (!(await openSsoPortalLink(this.profile.startUrl, authorization))) {
-                throw new CancellationError('user')
-            }
-
-            const tokenRequest = {
-                clientId: registration.clientId,
-                clientSecret: registration.clientSecret,
-                deviceCode: authorization.deviceCode,
-                grantType: deviceGrantType,
-            }
-
-            return await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
-        }
-
-        const token = this.withBrowserLoginTelemetry(() => openBrowserAndWaitUntilComplete())
-
-        return this.formatToken(await token, registration)
     }
 
     /**
      * Wraps the given function with telemetry related to the browser login.
      */
-    private withBrowserLoginTelemetry<T extends (...args: any[]) => any>(func: T): ReturnType<T> {
+    protected withBrowserLoginTelemetry<T extends (...args: any[]) => any>(func: T): ReturnType<T> {
         if (telemetry.spans.some(s => s.name === 'aws_loginWithBrowser')) {
             // During certain flows, eg reauthentication, we are already running within a span (run())
             // so we don't need to create a new one.
@@ -220,34 +207,30 @@ export class SsoAccessTokenProvider {
         })
     }
 
+    protected abstract authorize(registration: ClientRegistration): Promise<{
+        token: SsoToken
+        registration: ClientRegistration
+        region: string
+        startUrl: string
+    }>
+
     /**
      * If the registration already exists locally, it
      * will be validated before being returned. Otherwise, a client registration is
      * created and returned.
      */
-    private async getValidatedClientRegistration(): Promise<ClientRegistration> {
-        const cacheKey = this.registrationCacheKey
-        const cachedRegistration = await this.cache.registration.load(cacheKey)
+    protected abstract getValidatedClientRegistration(): Promise<ClientRegistration>
+    protected abstract registerClient(): Promise<ClientRegistration>
 
-        // Clear cached if registration is expired
-        if (cachedRegistration && isExpired(cachedRegistration)) {
-            await this.invalidate()
+    public static create(
+        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        cache = getCache(),
+        oidc: OidcClient = OidcClient.create(profile.region)
+    ) {
+        if (!DevSettings.instance.get('pkceAuth', false)) {
+            return new DeviceFlowAuthorization(profile, cache, oidc)
         }
-
-        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
-    }
-
-    private async registerClient(): Promise<ClientRegistration> {
-        const companyName = getIdeProperties().company
-        return this.oidc.registerClient({
-            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} Toolkit for VSCode`,
-            clientType: clientRegistrationType,
-            scopes: this.profile.scopes,
-        })
-    }
-
-    public static create(profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>) {
-        return new this(profile)
+        return new AuthFlowAuthorization(profile, cache, OidcClientV2.create(profile.region))
     }
 }
 
@@ -324,4 +307,166 @@ function getSessionDuration(id: string, memento = globals.context.globalState) {
     const creationDate = getSessionCreationDate(id, memento)
 
     return creationDate !== undefined ? Date.now() - creationDate : undefined
+}
+
+export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
+    constructor(
+        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        cache = getCache(),
+        oidc: OidcClient = OidcClient.create(profile.region)
+    ) {
+        super(profile, cache, oidc)
+    }
+
+    override async registerClient(): Promise<ClientRegistration> {
+        const companyName = getIdeProperties().company
+        return this.oidc.registerClient({
+            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+            clientType: clientRegistrationType,
+            scopes: this.profile.scopes,
+        })
+    }
+
+    override async authorize(
+        registration: ClientRegistration
+    ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
+        // This will NOT throw on expired clientId/Secret, but WILL throw on invalid clientId/Secret
+        const authorization = await this.oidc.startDeviceAuthorization({
+            startUrl: this.profile.startUrl,
+            clientId: registration.clientId,
+            clientSecret: registration.clientSecret,
+        })
+
+        const openBrowserAndWaitUntilComplete = async () => {
+            if (!(await openSsoPortalLink(this.profile.startUrl, authorization))) {
+                throw new CancellationError('user')
+            }
+
+            const tokenRequest = {
+                clientId: registration.clientId,
+                clientSecret: registration.clientSecret,
+                deviceCode: authorization.deviceCode,
+                grantType: deviceGrantType,
+            }
+
+            return await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
+        }
+
+        const token = this.withBrowserLoginTelemetry(() => openBrowserAndWaitUntilComplete())
+
+        return this.formatToken(await token, registration)
+    }
+
+    /**
+     * If the registration already exists locally, it
+     * will be validated before being returned. Otherwise, a client registration is
+     * created and returned.
+     */
+    override async getValidatedClientRegistration(): Promise<ClientRegistration> {
+        const cacheKey = this.registrationCacheKey
+        const cachedRegistration = await this.cache.registration.load(cacheKey)
+
+        // Clear cached if registration is expired
+        if (cachedRegistration && isExpired(cachedRegistration)) {
+            await this.invalidate()
+        }
+
+        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+    }
+}
+
+class AuthFlowAuthorization extends SsoAccessTokenProvider {
+    constructor(
+        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        cache = getCache(),
+        protected override readonly oidc: OidcClientV2
+    ) {
+        super(profile, cache, oidc)
+    }
+
+    override async registerClient(): Promise<ClientRegistration> {
+        const companyName = getIdeProperties().company
+        return this.oidc.registerClient({
+            // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
+            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+            clientType: clientRegistrationType,
+            scopes: this.profile.scopes,
+            grantTypes: [authorizationGrantType, refreshGrantType],
+            redirectUris: ['http://127.0.0.1/oauth/callback'],
+            issuerUrl: this.profile.startUrl,
+        })
+    }
+
+    override async authorize(
+        registration: ClientRegistration
+    ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
+        const state = randomUUID()
+        const authServer = new AuthSSOServer(
+            state,
+            UriHandler.buildUri(authenticationPath).toString(),
+            this.profile.scopes ?? []
+        )
+
+        try {
+            await authServer.start()
+
+            const token = await this.withBrowserLoginTelemetry(async () => {
+                const redirectUri = authServer.redirectUri
+
+                const codeVerifier = randomBytes(32).toString('base64url')
+                const codeChallenge = createHash('sha256').update(codeVerifier).digest().toString('base64url')
+
+                const location = await this.oidc.authorize({
+                    responseType: 'code',
+                    clientId: registration.clientId,
+                    redirectUri: redirectUri,
+                    scopes: this.profile.scopes ?? [],
+                    state,
+                    codeChallenge,
+                    codeChallengeMethod: 'S256',
+                })
+
+                if (!(await openSsoUrl(vscode.Uri.parse(location)))) {
+                    throw new CancellationError('user')
+                }
+
+                const authorizationCode = await authServer.waitForAuthorization()
+                if (authorizationCode.isErr()) {
+                    throw authorizationCode.err()
+                }
+
+                const tokenRequest: OidcClientPKCE.CreateTokenRequest = {
+                    clientId: registration.clientId,
+                    clientSecret: registration.clientSecret,
+                    grantType: authorizationGrantType,
+                    redirectUri,
+                    codeVerifier,
+                    code: authorizationCode.unwrap(),
+                }
+
+                return this.oidc.createToken(tokenRequest)
+            })
+
+            return this.formatToken(token, registration)
+        } finally {
+            await authServer.close()
+        }
+    }
+
+    /**
+     * If the registration already exists locally, it
+     * will be validated before being returned. Otherwise, a client registration is
+     * created and returned.
+     */
+    override async getValidatedClientRegistration(): Promise<ClientRegistration> {
+        const cacheKey = this.registrationCacheKey
+        const cachedRegistration = await this.cache.registration.load(cacheKey)
+
+        // Clear cached if registration is expired or it uses a deprecate auth version (device code)
+        if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
+            await this.invalidate()
+        }
+
+        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+    }
 }
