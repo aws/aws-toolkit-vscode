@@ -205,6 +205,14 @@ type Inject<T, U> = T extends (...args: infer P) => infer R
 
 type WithClient<T> = Parameters<Inject<T, CodeCatalystClient>>
 
+class RemoteContextError extends ToolkitError {
+    constructor() {
+        super('Cannot connect from a remote context. Try again from a local VS Code instance.', {
+            code: 'ConnectedToRemote',
+        })
+    }
+}
+
 export class CodeCatalystCommands {
     public readonly withClient: ClientInjector
     public readonly bindClient = createCommandDecorator(this)
@@ -222,6 +230,9 @@ export class CodeCatalystCommands {
     }
 
     public createDevEnv(): Promise<void> {
+        if (vscode.env.remoteName === 'ssh-remote') {
+            throw new RemoteContextError()
+        }
         return this.withClient(showCreateDevEnv, globals.context, CodeCatalystCommands.declared)
     }
 
@@ -269,9 +280,7 @@ export class CodeCatalystCommands {
         connection?: { startUrl: string; region: string }
     ): Promise<void> {
         if (vscode.env.remoteName === 'ssh-remote') {
-            throw new ToolkitError('Cannot connect from a remote context. Try again from a local VS Code instance.', {
-                code: 'ConnectedToRemote',
-            })
+            throw new RemoteContextError()
         }
 
         const devenv = id ?? (await this.selectDevEnv())
