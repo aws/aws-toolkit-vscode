@@ -41,6 +41,9 @@ export interface InsertCodeAtCursorPosition {
     code: string
     insertionTargetType: string | undefined
     codeReference: CodeReference[] | undefined
+    eventId: string
+    codeBlockIndex: number
+    totalCodeBlocks: number
 }
 
 export interface CopyCodeToClipboard {
@@ -50,6 +53,9 @@ export interface CopyCodeToClipboard {
     code: string
     insertionTargetType: string | undefined
     codeReference: CodeReference[] | undefined
+    eventId: string
+    codeBlockIndex: number
+    totalCodeBlocks: number
 }
 
 export type ChatPromptCommandType =

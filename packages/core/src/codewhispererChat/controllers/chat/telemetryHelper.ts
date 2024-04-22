@@ -160,6 +160,8 @@ export class CWCTelemetryHelper {
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
+                    cwsprChatCodeBlockIndex: message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
                 }
                 break
             case 'code_was_copied_to_clipboard':
@@ -173,6 +175,8 @@ export class CWCTelemetryHelper {
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
+                    cwsprChatCodeBlockIndex: message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
                 }
                 break
             case 'follow-up-was-clicked':
