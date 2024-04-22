@@ -9,13 +9,13 @@ import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
 import { init as gumbyChatAppInit } from '../amazonqGumby/app'
 import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
-import { Commands, VsCodeCommandArg } from '../shared/vscode/commands2'
+import { Commands, VsCodeCommandArg, placeholder } from '../shared/vscode/commands2'
 import { MessagePublisher } from './messages/messagePublisher'
 import { welcome } from './onboardingPage'
 import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
 import { activateBadge } from './util/viewBadgeHandler'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { focusAmazonQPanel } from '../auth/ui/vue/show'
+import { focusAmazonQPanel } from '../codewhispererChat/commands/registerCommands'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -36,7 +36,8 @@ export async function activate(context: ExtensionContext) {
             webviewOptions: {
                 retainContextWhenHidden: true,
             },
-        })
+        }),
+        focusAmazonQPanel.register()
     )
 
     amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
@@ -56,7 +57,7 @@ export const amazonQWelcomeCommand = Commands.declare(
     { id: 'aws.amazonq.welcome', compositeKey: { 1: 'source' } },
     (context: ExtensionContext, publisher: MessagePublisher<any>) => (_: VsCodeCommandArg, source: string) => {
         telemetry.ui_click.run(() => {
-            void focusAmazonQPanel()
+            void focusAmazonQPanel.execute(placeholder, 'welcome')
             welcome(context, publisher)
             telemetry.record({ elementId: 'toolkit_openedWelcomeToAmazonQPage', source })
         })
