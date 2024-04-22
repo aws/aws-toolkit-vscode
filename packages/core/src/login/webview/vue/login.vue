@@ -351,7 +351,7 @@ export default defineComponent({
             // Count hitting the back button as a user auth cancellation.
             // This will return the user to select a different login option.
             if (this.stage === 'START') {
-                // For the toolkit only, the user can back out to the explorer.
+                // For the toolkit only, the user can also back out to the explorer.
                 // We will not emit another cancellation event here, just a ui_click event.
                 void client.emitUiClick('auth_toolkitCloseButton')
                 void client.quitLoginScreen()

@@ -695,24 +695,6 @@ export type AuthSimpleId =
     | 'identityCenterCodeCatalyst'
     | 'identityCenterExplorer'
 
-/**
- * Different places the Add Connection command could be executed from.
- *
- * Useful for telemetry.
- */
-export const AuthSources = {
-    addConnectionQuickPick: 'addConnectionQuickPick',
-    firstStartup: ExtStartUpSources.firstStartUp,
-    codecatalystDeveloperTools: 'codecatalystDeveloperTools',
-    vscodeComponent: vscodeComponent,
-    cwQuickPick: cwQuickPickSource,
-    cwTreeNode: cwTreeNodeSource,
-    amazonQChat: amazonQChatSource,
-    authNode: 'authNode',
-} as const
-
-export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]
-
 type AuthCommands = {
     switchConnections: RegisteredCommand<(auth: Auth | TreeNode | unknown) => Promise<void>>
     help: RegisteredCommand<() => Promise<void>>

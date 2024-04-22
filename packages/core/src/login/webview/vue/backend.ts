@@ -16,14 +16,13 @@ import { AwsConnection, Connection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 import { telemetry } from '../../../shared/telemetry'
-import { AuthUiClick } from '../util'
+import { AuthSources, AuthUiClick } from '../util'
 import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
-import { AuthSources } from '../../../auth/utils'
 
-export type AuthError = { id: string; text: string }
+const userCancelled = 'userCancelled'
 type Writeable<T> = { -readonly [U in keyof T]: T[U] }
 export type TelemetryMetadata = Partial<Writeable<AuthAddConnection>>
-export const userCancelled = 'userCancelled'
+export type AuthError = { id: string; text: string }
 
 export abstract class CommonAuthWebview extends VueWebview {
     private metricMetadata: TelemetryMetadata = {}
