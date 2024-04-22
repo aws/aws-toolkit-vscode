@@ -223,8 +223,10 @@ export class Messenger {
         )
     }
 
-    public sendJobSubmittedMessage(tabID: string, disableJobActions: boolean = false) {
-        const message = CodeWhispererConstants.jobStartedChatMessage
+    public sendJobSubmittedMessage(tabID: string, disableJobActions: boolean = false, message?: string) {
+        if (!message) {
+            message = CodeWhispererConstants.jobStartedChatMessage
+        }
 
         const buttons: ChatItemButton[] = []
 
