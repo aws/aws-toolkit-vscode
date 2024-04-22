@@ -10,12 +10,15 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { VueWebview } from '../../webviews/main'
 import { ExtContext } from '../../shared/extensions'
 //import { telemetry } from '../../shared/telemetry/telemetry'
-import { AccessAnalyzer } from 'aws-sdk'
+import { AccessAnalyzer, S3 } from 'aws-sdk'
+import { exec } from 'child_process'
+const AmazonS3URI = require('amazon-s3-uri')
 
 export interface IamPolicyChecksInitialData {
     referenceFilePath: string
     cfnParameterPath: string
     referenceDocument: string
+    pythonToolsInstalled: boolean
 }
 
 export class IamPolicyChecksWebview extends VueWebview {
@@ -26,7 +29,7 @@ export class IamPolicyChecksWebview extends VueWebview {
 
     public constructor(
         private readonly data: IamPolicyChecksInitialData,
-        private readonly client: AccessAnalyzer, //private readonly s3Client: S3
+        private readonly client: AccessAnalyzer,
         public readonly onChangeInputPath = new vscode.EventEmitter<string>(),
         public readonly onChangeReferenceFilePath = new vscode.EventEmitter<string>(),
         public readonly onChangeCloudformationParameterFilePath = new vscode.EventEmitter<string>()
@@ -40,7 +43,7 @@ export class IamPolicyChecksWebview extends VueWebview {
         return this.data
     }
 
-    public getReferenceDocument(path: string): string {
+    public async getReferenceDocument(path: string): Promise<string> {
         return _getReferenceDocument(path)
     }
 
@@ -54,19 +57,15 @@ export class IamPolicyChecksWebview extends VueWebview {
     public _setActiveConfigurationListener() {
         vscode.workspace.onDidChangeConfiguration((config: vscode.ConfigurationChangeEvent) => {
             // If settings change, we want to update the Webview to reflect the change in inputs
-            if (config.affectsConfiguration('aws.accessAnalyzer.iamPolicyChecks.referencePolicyFilePath')) {
+            if (config.affectsConfiguration('aws.accessAnalyzer.policyChecks.referencePolicyFilePath')) {
                 this.onChangeReferenceFilePath.fire(
-                    vscode.workspace
-                        .getConfiguration()
-                        .get('aws.accessAnalyzer.iamPolicyChecks.referencePolicyFilePath')!
+                    vscode.workspace.getConfiguration().get('aws.accessAnalyzer.policyChecks.referencePolicyFilePath')!
                 )
-            } else if (
-                config.affectsConfiguration('aws.accessAnalyzer.iamPolicyChecks.cloudFormationParameterFilePath')
-            ) {
+            } else if (config.affectsConfiguration('aws.accessAnalyzer.policyChecks.cloudFormationParameterFilePath')) {
                 this.onChangeCloudformationParameterFilePath.fire(
                     vscode.workspace
                         .getConfiguration()
-                        .get('aws.accessAnalyzer.iamPolicyChecks.cloudFormationParameterFilePath')!
+                        .get('aws.accessAnalyzer.policyChecks.cloudFormationParameterFilePath')!
                 )
             }
         })
@@ -89,17 +88,36 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<void> 
         //Read from settings to auto-fill some inputs
         const referencePolicyFilePath: string = vscode.workspace
             .getConfiguration()
-            .get('aws.accessAnalyzer.iamPolicyChecks.referencePolicyFilePath')!
+            .get('aws.accessAnalyzer.policyChecks.referencePolicyFilePath')!
         const cfnParameterPath: string = vscode.workspace
             .getConfiguration()
-            .get('aws.accessAnalyzer.iamPolicyChecks.cloudFormationParameterFilePath')!
+            .get('aws.accessAnalyzer.policyChecks.cloudFormationParameterFilePath')!
+
+        //Check if Cfn and Tf tools are installed
+        let cfnToolInstalled = true
+        let tfToolInstalled = true
+        exec('tf-policy-validator', err => {
+            if (err) {
+                if (err.message.includes('command not found')) {
+                    tfToolInstalled = false
+                }
+            }
+        })
+        exec('cfn-policy-validator', err => {
+            if (err) {
+                if (err.message.includes('command not found')) {
+                    cfnToolInstalled = false
+                }
+            }
+        })
 
         const wv = new Panel(
             context.extensionContext,
             {
                 referenceFilePath: referencePolicyFilePath ? referencePolicyFilePath : '',
                 cfnParameterPath: cfnParameterPath ? cfnParameterPath : '',
-                referenceDocument: _getReferenceDocument(referencePolicyFilePath),
+                referenceDocument: await _getReferenceDocument(referencePolicyFilePath),
+                pythonToolsInstalled: cfnToolInstalled && tfToolInstalled,
             },
             client
         )
@@ -113,10 +131,16 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<void> 
 }
 
 // Helper function to get document contents from a path
-// TODO: Implement functionality to pull from S3
-function _getReferenceDocument(path: string): string {
-    if (fs.existsSync(path)) {
-        return fs.readFileSync(path).toString()
+async function _getReferenceDocument(input: string): Promise<string> {
+    if (fs.existsSync(input)) {
+        return fs.readFileSync(input).toString()
+    } else {
+        try {
+            const { region, bucket, key } = AmazonS3URI(input)
+            const s3Client = new S3({ region })
+            const resp = await s3Client.getObject({ Bucket: bucket, Key: key }).promise()
+            return resp.Body!.toString()
+        } catch (e: any) {}
     }
     return ''
 }

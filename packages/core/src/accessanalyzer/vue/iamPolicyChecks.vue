@@ -4,24 +4,24 @@
     <div id="app">
         <div>
             <h1>IAM Policy Checks</h1>
-            <h3>Getting Started</h3>
-            <p>
-                Policy Checks requires Python 3.6+ and the respective Python CLI tools installed, based on the document
-                type:
-            </p>
-            <ul>
-                <li>
-                    <a href="https://github.com/awslabs/aws-cloudformation-iam-policy-validator"
-                        >IAM Policy Validator for CloudFormation</a
-                    >
-                </li>
-                <li>
-                    <a href="https://github.com/awslabs/terraform-iam-policy-validator"
-                        >IAM Policy Validator for Terraform</a
-                    >
-                </li>
-            </ul>
-            <p>Policy checks should be run until issues are no longer found in your policy document.</p>
+            <div v-if="!initialData.pythonToolsInstalled">
+                <h3>Getting Started</h3>
+                <p>
+                    Policy Checks requires Python 3.6+ and the respective Python CLI tools installed, based on the
+                    document type:
+                </p>
+                <ol>
+                    <li>
+                        <p>Install Python</p>
+                    </li>
+                    <li>
+                        <code> pip install cfn-policy-validator </code>
+                    </li>
+                    <li>
+                        <code> pip install tf-policy-validator </code>
+                    </li>
+                </ol>
+            </div>
             <div style="justify-content: space-between">
                 <div style="display: flex">
                     <div style="display: block; margin-right: 25px">
@@ -50,10 +50,15 @@
                     >
                     <input
                         type="text"
-                        style="display: flex; box-sizing: border-box; position: relative; margin-bottom: 10px"
+                        style="
+                            display: flex;
+                            box-sizing: border-box;
+                            position: relative;
+                            margin-bottom: 10px;
+                            width: 70%;
+                        "
                         id="input-path"
                         placeholder="CloudFormation Parameter File Path"
-                        size="70%"
                         v-on:change="setCfnParameterFilePath"
                         v-model="initialData.cfnParameterPath"
                     />
@@ -63,13 +68,19 @@
                 </label>
                 <input
                     type="text"
-                    style="display: flex; cursor: not-allowed; box-sizing: border-box; position: relative; opacity: 0.4"
+                    style="
+                        display: flex;
+                        cursor: not-allowed;
+                        box-sizing: border-box;
+                        position: relative;
+                        opacity: 0.4;
+                        width: 70%;
+                    "
                     id="input-path"
                     placeholder="Input policy file path"
                     readOnly
                     disabled
                     v-model="inputPath"
-                    size="70%"
                 />
             </div>
             <div v-if="documentType == 'Terraform Plan'" style="margin-top: 15px">
@@ -97,7 +108,10 @@
                     suggestions for your policy. These findings provide actionable recommendations that help you author
                     policies that are functional and conform to security best practices.
                 </p>
-                <div>
+                <div style="display: grid">
+                    <p style="margin-bottom: 5px">
+                        Policy checks should be run until issues are no longer found in your policy document.
+                    </p>
                     <button class="button-theme-primary" v-on:click="runValidator">Run Policy Validation</button>
                 </div>
             </div>
@@ -151,10 +165,15 @@
                     <label for="input-path" style="display: block; margin-bottom: 3px">Reference File</label>
                     <input
                         type="text"
-                        style="display: flex; box-sizing: border-box; position: relative; margin-bottom: 10px"
+                        style="
+                            display: flex;
+                            box-sizing: border-box;
+                            position: relative;
+                            margin-bottom: 10px;
+                            width: 70%;
+                        "
                         id="input-path"
                         :placeholder="customChecksPathPlaceholder"
-                        size="70%"
                         v-on:change="setReferenceFilePath"
                         v-model="initialData.referenceFilePath"
                     />
@@ -173,6 +192,7 @@
                     ></textarea>
                 </div>
                 <div style="display: grid">
+                    <p>Policy checks should be run until issues are no longer found in your policy document.</p>
                     <b style="margin-bottom: 5px"
                         >A charge is associated with each custom policy check. For more details about pricing, see
                         <a href="https://aws.amazon.com/iam/access-analyzer/pricing/"> IAM Access Analyzer pricing </a>.
@@ -213,6 +233,7 @@ export default defineComponent({
             referenceFilePath: '',
             cfnParameterPath: '',
             referenceDocument: '',
+            pythonToolsInstalled: true,
         },
         inputPath: '',
         customChecksPathPlaceholder: 'Reference policy file path',
@@ -225,6 +246,12 @@ export default defineComponent({
         })
         client.onChangeReferenceFilePath((data: string) => {
             this.initialData.referenceFilePath = data
+            client
+                .getReferenceDocument(this.initialData.referenceFilePath)
+                .then(response => {
+                    this.initialData.referenceDocument = response
+                })
+                .catch(err => console.log(err))
         })
         client.onChangeCloudformationParameterFilePath((data: string) => {
             this.initialData.cfnParameterPath = data
