@@ -9,7 +9,6 @@ import { TransformationHubViewProvider } from '../codewhisperer/service/transfor
 import { ExtContext } from '../shared/extensions'
 import { stopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'
-import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformByQ/transformationResultsViewProvider'
 import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { telemetry } from '../shared/telemetry/telemetry'
@@ -52,8 +51,6 @@ export async function activate(context: ExtContext) {
             Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
                 if (transformByQState.isRunning()) {
                     void stopTransformByQ(transformByQState.getJobId(), cancelSrc)
-                } else {
-                    void vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
                 }
             }),
 

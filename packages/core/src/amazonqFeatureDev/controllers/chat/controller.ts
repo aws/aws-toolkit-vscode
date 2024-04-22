@@ -449,9 +449,15 @@ export class FeatureDevController {
         let session
         try {
             session = await this.sessionStorage.getSession(message.tabID)
+
+            const acceptedFiles = (paths?: { rejected: boolean }[]) => (paths || []).filter(i => !i.rejected).length
+
+            const amazonqNumberOfFilesAccepted =
+                acceptedFiles(session.state.filePaths) + acceptedFiles(session.state.deletedFiles)
+
             telemetry.amazonq_isAcceptedCodeChanges.emit({
                 amazonqConversationId: session.conversationId,
-                amazonqNumberOfFilesAccepted: session.state.filePaths?.filter(i => !i.rejected).length ?? -1,
+                amazonqNumberOfFilesAccepted,
                 enabled: true,
                 result: 'Succeeded',
             })

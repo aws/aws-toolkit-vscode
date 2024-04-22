@@ -5,16 +5,17 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import * as model from '../../../codewhisperer/models/model'
 import * as startTransformByQ from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import { getTestWindow } from '../../shared/vscode/window'
-import { stopTransformByQMessage } from '../../../codewhisperer/models/constants'
 import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import path from 'path'
+import AdmZip from 'adm-zip'
 import { createTestWorkspaceFolder, toFile } from '../../testUtil'
 import {
     NoJavaProjectsFoundError,
@@ -26,6 +27,7 @@ import {
     pollTransformationJob,
     getHeadersObj,
     throwIfCancelled,
+    zipCode,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import {
     validateOpenProjects,
@@ -34,8 +36,15 @@ import {
 import { TransformationCandidateProject } from '../../../codewhisperer/models/model'
 
 describe('transformByQ', function () {
-    afterEach(function () {
+    let tempDir: string
+
+    beforeEach(async function () {
+        tempDir = await makeTemporaryToolkitFolder()
+    })
+
+    afterEach(async function () {
         sinon.restore()
+        await fs.remove(tempDir)
     })
 
     it('WHEN converting short duration in milliseconds THEN converts correctly', async function () {
@@ -67,12 +76,6 @@ describe('transformByQ', function () {
     })
 
     it('WHEN job is stopped THEN status is updated to cancelled', async function () {
-        const testWindow = getTestWindow()
-        testWindow.onDidShowMessage(message => {
-            if (message.message === stopTransformByQMessage) {
-                message.selectItem(startTransformByQ.stopTransformByQButton)
-            }
-        })
         model.transformByQState.setToRunning()
         await startTransformByQ.stopTransformByQ('abc-123')
         assert.strictEqual(model.transformByQState.getStatus(), 'Cancelled')
@@ -198,5 +201,55 @@ describe('transformByQ', function () {
             'Content-Type': 'application/zip',
         }
         assert.deepStrictEqual(actual, expected)
+    })
+
+    it(`WHEN zip created THEN dependencies contains no .sha1 or .repositories files`, async function () {
+        const m2Folders = [
+            'com/groupid1/artifactid1/version1',
+            'com/groupid1/artifactid1/version2',
+            'com/groupid1/artifactid2/version1',
+            'com/groupid2/artifactid1/version1',
+            'com/groupid2/artifactid1/version2',
+        ]
+        // List of files that exist in m2 artifact directory
+        const filesToAdd = [
+            '_remote.repositories',
+            'test-0.0.1-20240315.145420-18.pom',
+            'test-0.0.1-20240315.145420-18.pom.sha1',
+            'test-0.0.1-SNAPSHOT.pom',
+            'maven-metadata-test-repo.xml',
+            'maven-metadata-test-repo.xml.sha1',
+            'resolver-status.properties',
+        ]
+        const expectedFilesAfterClean = [
+            'test-0.0.1-20240315.145420-18.pom',
+            'test-0.0.1-SNAPSHOT.pom',
+            'maven-metadata-test-repo.xml',
+            'resolver-status.properties',
+        ]
+
+        m2Folders.forEach(folder => {
+            const folderPath = path.join(tempDir, folder)
+            fs.mkdirSync(folderPath, { recursive: true })
+            filesToAdd.forEach(file => {
+                fs.writeFileSync(path.join(folderPath, file), 'sample content for the test file')
+            })
+        })
+
+        const tempFileName = `testfile-${Date.now()}.zip`
+        model.transformByQState.setProjectPath(tempDir)
+        return zipCode({
+            path: tempDir,
+            name: tempFileName,
+        }).then(zipFile => {
+            const zip = new AdmZip(zipFile)
+            const dependenciesToUpload = zip.getEntries().filter(entry => entry.entryName.startsWith('dependencies'))
+            // Each dependency version folder contains each expected file, thus we multiply
+            const expectedNumberOfDependencyFiles = m2Folders.length * expectedFilesAfterClean.length
+            assert.strictEqual(expectedNumberOfDependencyFiles, dependenciesToUpload.length)
+            dependenciesToUpload.forEach(dependency => {
+                assert(expectedFilesAfterClean.includes(dependency.name))
+            })
+        })
     })
 })

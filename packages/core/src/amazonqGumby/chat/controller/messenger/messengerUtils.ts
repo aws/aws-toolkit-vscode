@@ -6,12 +6,7 @@
 
 import * as os from 'os'
 import { transformByQState, JDKVersion } from '../../../../codewhisperer/models/model'
-import {
-    enterJavaHomeMessage,
-    nonWindowsJava11HomeHelpMessage,
-    nonWindowsJava8HomeHelpMessage,
-    windowsJavaHomeHelpMessage,
-} from './stringConstants'
+import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 
 // These enums map to string IDs
 export enum ButtonActions {
@@ -35,18 +30,20 @@ export enum GumbyCommands {
 
 export default class MessengerUtils {
     static createJavaHomePrompt = (): string => {
-        let javaHomePrompt = `${enterJavaHomeMessage} ${transformByQState.getSourceJDKVersion()}. \n`
+        let javaHomePrompt = `${
+            CodeWhispererConstants.enterJavaHomeChatMessage
+        } ${transformByQState.getSourceJDKVersion()}. \n`
         if (os.platform() === 'win32') {
-            javaHomePrompt += windowsJavaHomeHelpMessage.replace(
+            javaHomePrompt += CodeWhispererConstants.windowsJavaHomeHelpChatMessage.replace(
                 'JAVA_VERSION_HERE',
                 transformByQState.getSourceJDKVersion()!
             )
         } else {
             const jdkVersion = transformByQState.getSourceJDKVersion()
             if (jdkVersion === JDKVersion.JDK8) {
-                javaHomePrompt += ` ${nonWindowsJava8HomeHelpMessage}`
+                javaHomePrompt += ` ${CodeWhispererConstants.nonWindowsJava8HomeHelpChatMessage}`
             } else if (jdkVersion === JDKVersion.JDK11) {
-                javaHomePrompt += ` ${nonWindowsJava11HomeHelpMessage}`
+                javaHomePrompt += ` ${CodeWhispererConstants.nonWindowsJava11HomeHelpChatMessage}`
             }
         }
         return javaHomePrompt
@@ -80,6 +77,6 @@ export default class MessengerUtils {
             }
         }
 
-        return `I can upgrade your ${javaVersionString}. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Transform.`
+        return CodeWhispererConstants.projectPromptChatMessage.replace('JAVA_VERSION_HERE', javaVersionString)
     }
 }

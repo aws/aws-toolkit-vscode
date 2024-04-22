@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { isValidCodeWhispererChatConnection } from '../../codewhisperer/util/authUtil'
+import { isValidAmazonQConnection } from '../../codewhisperer/util/authUtil'
 import { Auth } from '../../auth/auth'
 
 /*
@@ -17,7 +17,7 @@ If user has an expired connection they must reauthenticate prior to running test
 */
 
 async function getValidConnection() {
-    return (await Auth.instance.listConnections()).find(isValidCodeWhispererChatConnection)
+    return (await Auth.instance.listConnections()).find(isValidAmazonQConnection)
 }
 
 //Returns true if a valid connection is found and set, false if not

@@ -36,7 +36,6 @@ import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/cod
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
-import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
@@ -44,6 +43,7 @@ import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
 import { fsCommon } from '../../../srcShared/fs'
+import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -244,6 +244,27 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
 }
 
 /**
+ * Array of file extensions used by Maven as metadata in the local repository.
+ * Files with these extensions influence Maven's behavior during compile time,
+ * particularly in checking the availability of source repositories and potentially
+ * re-downloading dependencies if the source is not accessible. Removing these
+ * files can prevent Maven from attempting to download dependencies again.
+ */
+const MavenExcludedExtensions = ['.repositories', '.sha1']
+
+/**
+ * Determines if the specified file path corresponds to a Maven metadata file
+ * by checking against known metadata file extensions. This is used to identify
+ * files that might trigger Maven to recheck or redownload dependencies from source repositories.
+ *
+ * @param path The file path to evaluate for exclusion based on its extension.
+ * @returns {boolean} Returns true if the path ends with an extension associated with Maven metadata files; otherwise, false.
+ */
+function isExcludedDependencyFile(path: string): boolean {
+    return MavenExcludedExtensions.some(extension => path.endsWith(extension))
+}
+
+/**
  * Gets all files in dir. We use this method to get the source code, then we run a mvn command to
  * copy over dependencies into their own folder, then we use this method again to get those
  * dependencies. If isDependenciesFolder is true, then we are getting all the files
@@ -318,6 +339,9 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
 
         if (dependencyFiles.length > 0) {
             for (const file of dependencyFiles) {
+                if (isExcludedDependencyFile(file)) {
+                    continue
+                }
                 const relativePath = path.relative(dependenciesFolder.path, file)
                 // const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
                 const paddedPath = path.join(`dependencies/`, relativePath)
@@ -377,9 +401,11 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
     })
 
     if (exceedsLimit) {
-        void vscode.window.showErrorMessage(
-            projectSizeTooLargeMessage.replace('LINK_HERE', CodeWhispererConstants.linkToUploadZipTooLarge)
-        )
+        void vscode.window.showErrorMessage(CodeWhispererConstants.projectSizeTooLargeNotification)
+        transformByQState.getChatControllers()?.transformationFinished.fire({
+            message: CodeWhispererConstants.projectSizeTooLargeChatMessage,
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+        })
         throw new ZipExceedsSizeLimitError()
     }
 
@@ -425,7 +451,7 @@ export async function startJob(uploadId: string) {
             result: MetadataResult.Fail,
             reason: 'StartTransformationFailed',
         })
-        throw new Error('Start job failed')
+        throw new Error(`Start job failed: ${errorMessage}`)
     }
 }
 
@@ -559,6 +585,12 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
             transformByQState.setPolledJobStatus(status)
             await vscode.commands.executeCommand('aws.amazonq.refresh')
+            const errorMessage = response.transformationJob.reason
+            if (errorMessage !== undefined) {
+                transformByQState.setJobFailureErrorChatMessage(errorMessage)
+                transformByQState.setJobFailureErrorNotification(errorMessage)
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+            }
             if (validStates.includes(status)) {
                 break
             }

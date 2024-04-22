@@ -9,7 +9,7 @@ import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resour
 import { AuthUtil, amazonQScopes, codeWhispererChatScopes } from '../../codewhisperer/util/authUtil'
 import { createLearnMoreNode, enableAmazonQNode, switchToAmazonQNode } from './amazonQChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
-import { hasScopes, isSsoConnection } from '../../auth/connection'
+import { hasScopes, isBuilderIdConnection, isSsoConnection } from '../../auth/connection'
 import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
 import { getIcon } from '../../shared/icons'
 import { vsCodeState } from '../../codewhisperer/models/model'
@@ -70,6 +70,16 @@ export class AmazonQNode implements TreeNode {
         if (isSsoConnection(AuthUtil.instance.conn)) {
             const missingScopes =
                 (AuthUtil.instance.isEnterpriseSsoInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
+                !hasScopes(AuthUtil.instance.conn, codeWhispererChatScopes)
+
+            if (missingScopes) {
+                return [enableAmazonQNode(), createLearnMoreNode()]
+            }
+        }
+
+        if (isBuilderIdConnection(AuthUtil.instance.conn)) {
+            const missingScopes =
+                (AuthUtil.instance.isBuilderIdInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
                 !hasScopes(AuthUtil.instance.conn, codeWhispererChatScopes)
 
             if (missingScopes) {
