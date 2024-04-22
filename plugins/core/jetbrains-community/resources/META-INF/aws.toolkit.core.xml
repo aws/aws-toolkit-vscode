@@ -60,7 +60,7 @@
             groupId="tools"
             bundle="software.aws.toolkits.resources.MessagesBundle"
             key="aws.settings.title"
-            instance="software.aws.toolkits.jetbrains.settings.AwsSettingsCoreConfigurable"
+            instance="software.aws.toolkits.jetbrains.settings.AwsSettingsSharedConfigurable"
         />
 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.plugin.PluginAutoUpdater"/>

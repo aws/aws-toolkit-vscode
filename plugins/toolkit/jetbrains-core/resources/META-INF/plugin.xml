@@ -285,39 +285,25 @@
 
         <!-- plugin configurables -->
         <applicationConfigurable
-            id="aws.old"
-            groupId="tools"
+            parentId="aws"
+            id="aws.toolkit"
             bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="aws.settings.title.old"
-            instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"
+            key="aws.settings.toolkit.configurable.title"
+            instance="software.aws.toolkits.jetbrains.settings.ToolkitSettingsConfigurable"
         />
         <projectConfigurable
-            parentId="aws"
+            parentId="aws.toolkit"
             id="aws.lambda"
             bundle="software.aws.toolkits.resources.MessagesBundle"
             key="aws.settings.lambda.configurable.title"
             instance="software.aws.toolkits.jetbrains.services.lambda.settings.LambdaSettingsConfigurable"
         />
         <applicationConfigurable
-            parentId="aws"
+            parentId="aws.toolkit"
             id="aws.dynamicresources"
             bundle="software.aws.toolkits.resources.MessagesBundle"
             key="aws.settings.dynamic_resources_configurable.title"
             instance="software.aws.toolkits.jetbrains.settings.DynamicResourcesConfigurable"
-        />
-        <applicationConfigurable
-            parentId="aws"
-            id="aws.experiments"
-            bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="aws.toolkit.experimental.title"
-            instance="software.aws.toolkits.jetbrains.core.experiments.ExperimentConfigurable"
-        />
-        <applicationConfigurable
-            parentId="aws"
-            id="aws.tools"
-            bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="executableCommon.configurable.title"
-            instance="software.aws.toolkits.jetbrains.core.tools.ToolConfigurable"
         />
 
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>

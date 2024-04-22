@@ -26,7 +26,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.AwsPlugin
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.settings.AwsSettings
-import software.aws.toolkits.jetbrains.settings.AwsSettingsCoreConfigurable
+import software.aws.toolkits.jetbrains.settings.AwsSettingsSharedConfigurable
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Component
@@ -173,7 +173,7 @@ class PluginUpdateManager {
                         source = SOURCE_AUTO_UPDATE_FINISH_NOTIFY,
                         component = Component.Filesystem
                     )
-                    ShowSettingsUtil.getInstance().showSettingsDialog(null, AwsSettingsCoreConfigurable::class.java)
+                    ShowSettingsUtil.getInstance().showSettingsDialog(null, AwsSettingsSharedConfigurable::class.java)
                 }
             )
         )
@@ -202,7 +202,7 @@ class PluginUpdateManager {
                         source = SOURCE_AUTO_UPDATE_FEATURE_INTRO_NOTIFY,
                         component = Component.Filesystem
                     )
-                    ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsCoreConfigurable::class.java)
+                    ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsSharedConfigurable::class.java)
                 }
             )
         )
