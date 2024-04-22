@@ -7,7 +7,12 @@ import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
 import { AuthError, CommonAuthWebview } from '../backend'
-import { AwsConnection, createSsoProfile, scopesCodeCatalyst } from '../../../../auth/connection'
+import {
+    AwsConnection,
+    createSsoProfile,
+    isValidCodeCatalystConnection,
+    scopesCodeCatalyst,
+} from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 
@@ -107,7 +112,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                 return
             }
             if (this.isCodeCatalystLogin) {
-                if (conn.scopes?.includes(scopesCodeCatalyst[0])) {
+                if (isValidCodeCatalystConnection(conn)) {
                     getLogger().info(`auth: re-use connection from existing connection id ${connectionId}`)
                     await this.codeCatalystAuth.secondaryAuth.useNewConnection(conn)
                 } else {
