@@ -31,7 +31,7 @@ import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsStore } from './auth/credentials/store'
 import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
 import { RegionProvider, getEndpointsFromFetcher } from './shared/regions/regionProvider'
-import { ChildProcess } from './shared/utilities/childProcess'
+import { getMachineId } from './shared/vscode/env'
 import { registerErrorHandler as registerCommandErrorHandler } from './shared/vscode/commands2'
 import { ToolkitError, isUserCancelledError, resolveErrorMessageToDisplay } from './shared/errors'
 import { getLogger } from './shared/logger'
@@ -180,14 +180,6 @@ export function registerCommands(extensionContext: vscode.ExtensionContext, cont
             await aboutExtension()
         })
     )
-}
-
-async function getMachineId(): Promise<string> {
-    if (isWeb()) {
-        return 'browser'
-    }
-    const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
-    return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }
 
 /**
