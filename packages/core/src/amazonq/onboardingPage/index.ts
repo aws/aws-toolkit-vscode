@@ -8,8 +8,9 @@ import globals from '../../shared/extensionGlobals'
 import path from 'path'
 import { MessagePublisher } from '../messages/messagePublisher'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 import { getLogger } from '../../shared/logger'
+import { placeholder } from '../../shared/vscode/commands2'
+import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 
 export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublisher: MessagePublisher<any>): void {
     const panel = vscode.window.createWebviewPanel(
@@ -35,7 +36,7 @@ export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublis
                 switch (message.command) {
                     case 'sendToQ':
                         telemetry.record({ elementId: 'amazonq_meet_askq' })
-                        focusAmazonQPanel().then(
+                        focusAmazonQPanel.execute(placeholder, 'sendToQ').then(
                             () => {
                                 cwcWebViewToAppsPublisher.publish({
                                     type: 'onboarding-page-cwc-button-clicked',

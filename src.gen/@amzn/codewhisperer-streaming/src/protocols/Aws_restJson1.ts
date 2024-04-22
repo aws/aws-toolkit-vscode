@@ -27,8 +27,12 @@ import {
   Diagnostic,
   DocumentSymbol,
   EditorState,
+  EnvState,
+  EnvironmentVariable,
+  ExportContext,
   FollowupPrompt,
   FollowupPromptEvent,
+  GitState,
   InternalServerException,
   InvalidStateEvent,
   MessageMetadataEvent,
@@ -39,12 +43,15 @@ import {
   ResourceNotFoundException,
   ResultArchiveStream,
   RuntimeDiagnostic,
+  ShellHistoryEntry,
+  ShellState,
   Span,
   SupplementaryWebLink,
   SupplementaryWebLinksEvent,
   TextDocument,
   TextDocumentDiagnostic,
   ThrottlingException,
+  TransformationExportContext,
   UserInputMessage,
   UserInputMessageContext,
   ValidationException,
@@ -85,6 +92,7 @@ export const se_ExportResultArchiveCommand = async(
   let resolvedPath = `${basePath?.endsWith('/') ? basePath.slice(0, -1) : (basePath || '')}` + "/exportResultArchive";
   let body: any;
   body = JSON.stringify(take(input, {
+    'exportContext': _ => _json(_),
     'exportId': [],
     'exportIntent': [],
   }));
@@ -633,7 +641,17 @@ const de_ExportResultArchiveCommandError = async(
 
       // se_EditorState omitted.
 
+      // se_EnvironmentVariable omitted.
+
+      // se_EnvironmentVariables omitted.
+
+      // se_EnvState omitted.
+
+      // se_ExportContext omitted.
+
       // se_FollowupPrompt omitted.
+
+      // se_GitState omitted.
 
       // se_Position omitted.
 
@@ -647,6 +665,12 @@ const de_ExportResultArchiveCommandError = async(
 
       // se_RuntimeDiagnostic omitted.
 
+      // se_ShellHistory omitted.
+
+      // se_ShellHistoryEntry omitted.
+
+      // se_ShellState omitted.
+
       // se_Span omitted.
 
       // se_SupplementaryWebLink omitted.
@@ -656,6 +680,8 @@ const de_ExportResultArchiveCommandError = async(
       // se_TextDocument omitted.
 
       // se_TextDocumentDiagnostic omitted.
+
+      // se_TransformationExportContext omitted.
 
       // se_UserInputMessage omitted.
 
