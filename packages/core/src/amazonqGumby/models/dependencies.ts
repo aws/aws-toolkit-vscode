@@ -16,13 +16,14 @@ export default class DependencyVersions {
 
     constructor(latestVersion: string, majorVersions: string[], minorVersions: string[], currentVersion: string) {
         this.latestVersion = latestVersion
-        this.majorVersions = majorVersions
-        this.minorVersions = minorVersions
+        this.majorVersions = majorVersions.sort()
+        this.minorVersions = minorVersions.sort()
 
         this.currentVersion = currentVersion
 
-        this.allVersions = new Set<string>([latestVersion].concat(majorVersions).concat(minorVersions))
+        // Note: Set preserves insertion order
+        this.allVersions = new Set<string>(majorVersions.concat(minorVersions))
 
-        this.length = 1 + this.majorVersions.length + this.minorVersions.length
+        this.length = this.allVersions.size
     }
 }
