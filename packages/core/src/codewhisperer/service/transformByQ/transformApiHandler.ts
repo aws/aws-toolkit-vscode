@@ -23,14 +23,14 @@ import { sleep } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
 import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemetry'
-import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
-import { projectSizeTooLargeMessage } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
+import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -88,7 +88,7 @@ export async function uploadArtifactToS3(
         }).response
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'UploadZip',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
@@ -100,7 +100,7 @@ export async function uploadArtifactToS3(
         getLogger().error(`CodeTransformation: UploadZip error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
@@ -120,7 +120,7 @@ export async function stopJob(jobId: string) {
             if (response !== undefined) {
                 telemetry.codeTransform_logApiLatency.emit({
                     codeTransformApiNames: 'StopTransformation',
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: jobId,
                     codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
                     codeTransformRequestId: response.$response.requestId,
@@ -136,7 +136,7 @@ export async function stopJob(jobId: string) {
             getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'StopTransformation',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: jobId,
                 codeTransformApiErrorMessage: errorMessage,
                 codeTransformRequestId: e.requestId ?? '',
@@ -166,7 +166,7 @@ export async function uploadPayload(payloadFileName: string) {
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'CreateUploadUrl',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformUploadId: response.uploadId,
             codeTransformRequestId: response.$response.requestId,
@@ -177,7 +177,7 @@ export async function uploadPayload(payloadFileName: string) {
         getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'CreateUploadUrl',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
@@ -193,6 +193,27 @@ export async function uploadPayload(payloadFileName: string) {
         throw new Error('S3 upload failed')
     }
     return response.uploadId
+}
+
+/**
+ * Array of file extensions used by Maven as metadata in the local repository.
+ * Files with these extensions influence Maven's behavior during compile time,
+ * particularly in checking the availability of source repositories and potentially
+ * re-downloading dependencies if the source is not accessible. Removing these
+ * files can prevent Maven from attempting to download dependencies again.
+ */
+const MavenExcludedExtensions = ['.repositories', '.sha1']
+
+/**
+ * Determines if the specified file path corresponds to a Maven metadata file
+ * by checking against known metadata file extensions. This is used to identify
+ * files that might trigger Maven to recheck or redownload dependencies from source repositories.
+ *
+ * @param path The file path to evaluate for exclusion based on its extension.
+ * @returns {boolean} Returns true if the path ends with an extension associated with Maven metadata files; otherwise, false.
+ */
+function isExcludedDependencyFile(path: string): boolean {
+    return MavenExcludedExtensions.some(extension => path.endsWith(extension))
 }
 
 /**
@@ -252,13 +273,16 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
 
         if (dependencyFiles.length > 0) {
             for (const file of dependencyFiles) {
+                if (isExcludedDependencyFile(file)) {
+                    continue
+                }
                 const relativePath = path.relative(dependenciesFolder.path, file)
                 const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
             }
             zipManifest.dependenciesRoot += `${dependenciesFolder.name}/`
             telemetry.codeTransform_dependenciesCopied.emit({
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 result: MetadataResult.Pass,
             })
         } else {
@@ -281,7 +305,7 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
         fs.rmSync(logFilePath) // will always exist here
     } catch (e: any) {
         telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformApiErrorMessage: 'Failed to zip project',
             result: MetadataResult.Fail,
             reason: 'ZipCreationFailed',
@@ -295,16 +319,18 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
 
     // Later, consider adding field for number of source lines of code
     telemetry.codeTransform_jobCreateZipEndTime.emit({
-        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
         codeTransformTotalByteSize: zipSize,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
         result: exceedsLimit ? MetadataResult.Fail : MetadataResult.Pass,
     })
 
     if (exceedsLimit) {
-        void vscode.window.showErrorMessage(
-            projectSizeTooLargeMessage.replace('LINK_HERE', CodeWhispererConstants.linkToUploadZipTooLarge)
-        )
+        void vscode.window.showErrorMessage(CodeWhispererConstants.projectSizeTooLargeNotification)
+        transformByQState.getChatControllers()?.transformationFinished.fire({
+            message: CodeWhispererConstants.projectSizeTooLargeChatMessage,
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+        })
         throw new ZipExceedsSizeLimitError()
     }
 
@@ -332,7 +358,7 @@ export async function startJob(uploadId: string) {
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'StartTransformation',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformJobId: response.transformationJobId,
             codeTransformRequestId: response.$response.requestId,
@@ -344,13 +370,13 @@ export async function startJob(uploadId: string) {
         getLogger().error(`CodeTransformation: StartTransformation error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'StartTransformation',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
             reason: 'StartTransformationFailed',
         })
-        throw new Error('Start job failed')
+        throw new Error(`Start job failed: ${errorMessage}`)
     }
 }
 
@@ -370,7 +396,7 @@ export async function getTransformationPlan(jobId: string) {
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformRequestId: response.$response.requestId,
@@ -397,7 +423,7 @@ export async function getTransformationPlan(jobId: string) {
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
@@ -420,7 +446,7 @@ export async function getTransformationSteps(jobId: string) {
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformRequestId: response.$response.requestId,
@@ -432,7 +458,7 @@ export async function getTransformationSteps(jobId: string) {
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
@@ -455,7 +481,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             })
             telemetry.codeTransform_logApiLatency.emit({
                 codeTransformApiNames: 'GetTransformation',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: jobId,
                 codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
                 codeTransformRequestId: response.$response.requestId,
@@ -472,7 +498,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             // emit metric when job status changes
             if (status !== transformByQState.getPolledJobStatus()) {
                 telemetry.codeTransform_jobStatusChanged.emit({
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: jobId,
                     codeTransformStatus: status,
                     result: MetadataResult.Pass,
@@ -481,6 +507,12 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
             transformByQState.setPolledJobStatus(status)
             await vscode.commands.executeCommand('_aws.toolkit.amazonq.refreshTreeNode')
+            const errorMessage = response.transformationJob.reason
+            if (errorMessage !== undefined) {
+                transformByQState.setJobFailureErrorChatMessage(errorMessage)
+                transformByQState.setJobFailureErrorNotification(errorMessage)
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+            }
             if (validStates.includes(status)) {
                 break
             }
@@ -489,9 +521,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
              * is called, we break above on validStatesForCheckingDownloadUrl and check final status in finalizeTransformationJob
              */
             if (CodeWhispererConstants.failureStates.includes(status)) {
-                transformByQState.setJobFailureMetadata(
-                    `${response.transformationJob.reason} (request ID: ${response.$response.requestId})`
-                )
                 throw new Error('Job was rejected, stopped, or failed')
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
@@ -505,7 +534,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             getLogger().error(`CodeTransformation: GetTransformation error = ${errorMessage}`)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'GetTransformation',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: jobId,
                 codeTransformApiErrorMessage: errorMessage,
                 codeTransformRequestId: e.requestId ?? '',

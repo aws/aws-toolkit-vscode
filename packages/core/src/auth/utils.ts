@@ -49,6 +49,8 @@ import { authHelpUrl } from '../shared/constants'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { extensionVersion } from '../shared/vscode/env'
+import { ExtStartUpSources } from '../shared/telemetry'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 let showConnectionsPageCommand: string | undefined
@@ -608,11 +610,17 @@ async function findBuilderIdConnections(
  */
 export class ExtensionUse {
     public readonly isExtensionFirstUseKey = 'isExtensionFirstUse'
+    public readonly lastExtensionVersionKey = 'lastExtensionVersion'
 
     // The result of if is first use for the remainder of the extension session.
     // This will reset on next startup.
     private isFirstUseCurrentSession: boolean | undefined
 
+    private wasExtensionUpdated: boolean | undefined
+
+    /**
+     * Check if this is the first use/session of the extension.
+     */
     isFirstUse(
         state: vscode.Memento = globals.context.globalState,
         hasExistingConnections = () => Auth.instance.hasConnections
@@ -634,11 +642,35 @@ export class ExtensionUse {
         }
 
         // Update state, so next time it is not first use
-        state.update(this.isExtensionFirstUseKey, false).then(undefined, e => {
-            getLogger().error('Memento.update failed: %s', (e as Error).message)
-        })
+        this.updateMemento(state, this.isExtensionFirstUseKey, false)
 
         return this.isFirstUseCurrentSession
+    }
+
+    /**
+     * Checks if the extension has been updated since the last time it was used.
+     * If this is the first used version of the extension, it returns true.
+     * If the extension has been downgraded, it returns true.
+     *
+     * Caveat: This may return true even if an update hadn't occurred IF
+     * this function hasn't been called.
+     */
+    wasUpdated(state: vscode.Memento = globals.context.globalState) {
+        if (this.wasExtensionUpdated !== undefined) {
+            return this.wasExtensionUpdated
+        }
+        const currentVersion = extensionVersion
+
+        this.wasExtensionUpdated = currentVersion !== state.get(this.lastExtensionVersionKey)
+        this.updateMemento(state, this.lastExtensionVersionKey, currentVersion)
+
+        return this.wasExtensionUpdated
+    }
+
+    private updateMemento(memento: vscode.Memento, key: string, val: any) {
+        memento.update(key, val).then(undefined, e => {
+            getLogger().error('Memento.update failed: %s', (e as Error).message)
+        })
     }
 
     static #instance: ExtensionUse
@@ -649,13 +681,24 @@ export class ExtensionUse {
 }
 
 /**
+ *  Simple readable ID for telemetry reporting
+ */
+export type AuthSimpleId =
+    | 'sharedCredentials'
+    | 'builderIdCodeWhisperer'
+    | 'builderIdCodeCatalyst'
+    | 'identityCenterCodeWhisperer'
+    | 'identityCenterCodeCatalyst'
+    | 'identityCenterExplorer'
+
+/**
  * Different places the Add Connection command could be executed from.
  *
  * Useful for telemetry.
  */
 export const AuthSources = {
     addConnectionQuickPick: 'addConnectionQuickPick',
-    firstStartup: 'firstStartup',
+    firstStartup: ExtStartUpSources.firstStartUp,
     codecatalystDeveloperTools: 'codecatalystDeveloperTools',
     vscodeComponent: vscodeComponent,
     cwQuickPick: cwQuickPickSource,

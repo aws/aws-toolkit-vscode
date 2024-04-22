@@ -2,11 +2,12 @@
     "name": "amazon-q-vscode",
     "displayName": "Standalone Test",
     "description": "",
-    "version": "0.10.0-SNAPSHOT",
+    "version": "0.15.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
     "publisher": "amazonwebservices",
+    "icon": "resources/marketplace/amazonq-icon-256x256.png",
     "license": "Apache-2.0",
     "galleryBanner": {
         "color": "#FF9900",
@@ -797,7 +798,58 @@
                     "fontCharacter": "\\f1c3"
                 }
             }
-        }
+        },
+        "walkthroughs": [
+            {
+                "id": "aws.amazonq.walkthrough",
+                "title": "Meet Amazon Q",
+                "description": "Your AI assistant",
+                "steps": [
+                    {
+                        "id": "aws.amazonq.walkthrough.chat",
+                        "title": "Ask using chat",
+                        "description": "Amazon Q answers software development questions, writes code based on your current file, and cites sources.\n\nUse the right-click menu for quick commands.\n\n[Open Chat](command:_aws.amazonq.walkthrough.focusChat)",
+                        "media": {
+                            "image": "placeholder.jpg",
+                            "altText": "Gif of the right click context menu opening Amazon Q chat"
+                        },
+                        "completionEvents": [
+                            "onCommand:_aws.amazonq.walkthrough.focusChat"
+                        ]
+                    },
+                    {
+                        "id": "aws.amazonq.walkthrough.inlineSuggestions",
+                        "title": "Get inline code suggestions",
+                        "description": "Amazon Q suggests code as you type based on your open files. Accepted suggestions from licensed code will go into the 'Code Reference Log'.",
+                        "media": {
+                            "image": "placeholder.jpg",
+                            "altText": "Gif of Amazon Q Inline Suggestions feature"
+                        }
+                    },
+                    {
+                        "id": "aws.amazonq.walkthrough.securityScan",
+                        "title": "Check for security vulnerabilities",
+                        "description": "Amazon Q scans your code to identify security vulnerabilities and suggests fixes.",
+                        "media": {
+                            "image": "placeholder.jpg",
+                            "altText": "Gif of a security scan"
+                        }
+                    },
+                    {
+                        "id": "aws.amazonq.walkthrough.settings",
+                        "title": "Access settings and options",
+                        "description": "Pause inline suggestions, open the Code Reference Log, access Settings, and more from the Amazon Q menu.\n\n[Open the status bar menu](command:_aws.amazonq.walkthrough.listCommands)",
+                        "media": {
+                            "image": "placeholder.jpg",
+                            "altText": "Gif of opening the Amazon Q status bar menu"
+                        },
+                        "completionEvents": [
+                            "onCommand:_aws.amazonq.walkthrough.listCommands"
+                        ]
+                    }
+                ]
+            }
+        ]
     },
     "engines": {
         "npm": "^10.1.0",

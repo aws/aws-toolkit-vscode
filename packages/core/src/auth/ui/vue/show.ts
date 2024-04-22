@@ -5,7 +5,7 @@
  * This module sets up the necessary components
  * for the webview to be shown.
  */
-import globals from '../../../shared/extensionGlobals'
+import globals, { isWeb } from '../../../shared/extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
@@ -53,7 +53,7 @@ import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
-import { isWeb } from '../../../common/webUtils'
+import { ExtStartUpSources } from '../../../shared/telemetry'
 
 export class AuthWebview extends VueWebview {
     public static readonly sourcePath: string = 'src/auth/ui/vue/index.js'
@@ -842,7 +842,7 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
             result = 'Cancelled'
         }
 
-        if (source === 'firstStartup' && numConnectionsAdded === 0) {
+        if (source === ExtStartUpSources.firstStartUp && numConnectionsAdded === 0) {
             if (numConnectionsInitial > 0) {
                 // This is the users first startup of the extension and no new connections were added, but they already had connections setup on their
                 // system which we discovered. We consider this a success even though they added no new connections.

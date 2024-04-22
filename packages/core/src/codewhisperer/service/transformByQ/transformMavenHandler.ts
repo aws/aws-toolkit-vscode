@@ -8,7 +8,7 @@ import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
 import { CodeTransformMavenBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
-import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { ToolkitError } from '../../../shared/errors'
 import { writeLogs } from './transformFileHandler'
@@ -73,7 +73,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
             mavenBuildCommand = 'mvnw.cmd'
         }
         telemetry.codeTransform_mvnBuildFailed.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
             result: MetadataResult.Fail,
             reason: errorReason,
@@ -140,7 +140,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
             mavenBuildCommand = 'mvnw.cmd'
         }
         telemetry.codeTransform_mvnBuildFailed.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
             result: MetadataResult.Fail,
             reason: errorReason,
@@ -161,12 +161,7 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo)
     try {
         installProjectDependencies(dependenciesFolder)
     } catch (err) {
-        void vscode.window.showErrorMessage(
-            CodeWhispererConstants.installErrorMessage.replace(
-                'LINK_HERE',
-                CodeWhispererConstants.linkToMavenTroubleshooting
-            )
-        )
+        void vscode.window.showErrorMessage(CodeWhispererConstants.cleanInstallErrorNotification)
         // open build-logs.txt file to show user error logs
         const logFilePath = await writeLogs()
         const doc = await vscode.workspace.openTextDocument(logFilePath)
@@ -175,6 +170,7 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo)
     }
 
     throwIfCancelled()
+    void vscode.window.showInformationMessage(CodeWhispererConstants.buildSucceededNotification)
 }
 
 export async function getVersionData() {

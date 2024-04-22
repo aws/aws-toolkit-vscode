@@ -45,7 +45,7 @@ import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from './service/referenceHoverProvider'
 import { ReferenceInlineProvider } from './service/referenceInlineProvider'
-import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
+import { SecurityPanelViewProvider, openEditorAtRange } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2'
@@ -63,7 +63,7 @@ import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActi
 import { listCodeWhispererCommands } from './ui/statusBarMenu'
 import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
-import { switchToAmazonQCommand } from './ui/codeWhispererNodes'
+import { switchToAmazonQCommand, switchToAmazonQSignInCommand } from '../amazonq/explorer/commonNodes'
 
 export async function activate(context: ExtContext): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance
@@ -213,6 +213,7 @@ export async function activate(context: ExtContext): Promise<void> {
         listCodeWhispererCommands.register(),
         // switch to Q node for status bar menu
         switchToAmazonQCommand.register(),
+        switchToAmazonQSignInCommand.register(),
         // manual trigger
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             invokeRecommendation(
@@ -266,7 +267,8 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.languages.registerCodeActionsProvider(
             [...CodeWhispererConstants.platformLanguageIds],
             SecurityIssueCodeActionProvider.instance
-        )
+        ),
+        vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange)
     )
 
     await auth.restore()

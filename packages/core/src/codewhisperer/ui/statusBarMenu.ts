@@ -18,7 +18,6 @@ import {
     createFeedbackNode,
     createGitHubNode,
     createDocumentationNode,
-    switchToAmazonQCommand,
 } from './codeWhispererNodes'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
@@ -39,7 +38,7 @@ function getAmazonQCodeWhispererNodes() {
     }
 
     if (!AuthUtil.instance.isConnected()) {
-        return [createSignIn('item', switchToAmazonQCommand), createLearnMore()]
+        return [createSignIn('item'), createLearnMore()]
     }
 
     if (vsCodeState.isFreeTierLimitReached) {
@@ -70,7 +69,7 @@ function getAmazonQCodeWhispererNodes() {
 
         // Amazon Q + others
         createSeparator('Other Features'),
-        switchToAmazonQNode('item', switchToAmazonQCommand),
+        switchToAmazonQNode('item'),
         createSecurityScan(),
     ]
 }
@@ -110,3 +109,14 @@ export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispere
         ignoreFocusOut: false,
     }).prompt()
 })
+
+/**
+ * Does what {@link listCodeWhispererCommands} does, must only be used by the walkthrough for telemetry
+ * purposes.
+ */
+export const listCodeWhispererCommandsWalkthrough = Commands.declare(
+    `_aws.amazonq.walkthrough.listCommands`,
+    () => async () => {
+        await listCodeWhispererCommands.execute()
+    }
+)

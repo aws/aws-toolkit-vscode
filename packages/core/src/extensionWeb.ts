@@ -4,13 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { setWeb } from './common/webUtils'
 import { getLogger } from './shared/logger'
 import { activateShared, deactivateShared } from './extensionShared'
 import os from 'os'
 
 export async function activate(context: vscode.ExtensionContext) {
-    setWeb(true) // THIS MUST ALWAYS BE FIRST
     const contextPrefix = 'toolkit'
 
     try {
@@ -18,7 +16,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // IMPORTANT: Any new activation code should be done in the function below unless
         // it is web mode specific activation code.
-        await activateShared(context, contextPrefix)
+        // This should happen as early as possible, as initialize() must be called before
+        // isWeb() calls will work.
+        await activateShared(context, contextPrefix, true)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long

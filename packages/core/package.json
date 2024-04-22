@@ -36,7 +36,8 @@
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
         "./login": "./dist/src/login/webview/index.js",
         "./utils": "./dist/src/shared/utilities/index.js",
-        "./feedback": "./dist/src/feedback/index.js"
+        "./feedback": "./dist/src/feedback/index.js",
+        "./telemetry": "./dist/src/shared/telemetry/index.js"
     },
     "contributes": {
         "configuration": {
@@ -1175,10 +1176,6 @@
                 },
                 {
                     "command": "aws.toolkit.amazonq.extensionpage",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.toolkit.amazonq.dismiss",
                     "when": "false"
                 }
             ],
@@ -3457,11 +3454,6 @@
             {
                 "command": "aws.toolkit.amazonq.extensionpage",
                 "title": "Open Amazon Q Extension",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.toolkit.amazonq.dismiss",
-                "title": "Dismiss Q Notification",
                 "category": "%AWS.title%"
             },
             {

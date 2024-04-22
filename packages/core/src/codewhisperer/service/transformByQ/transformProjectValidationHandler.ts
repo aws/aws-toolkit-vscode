@@ -8,13 +8,12 @@ import * as CodeWhispererConstants from '../../models/constants'
 import * as vscode from 'vscode'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
 import { CodeTransformJavaSourceVersionsAllowed, telemetry } from '../../../shared/telemetry/telemetry'
-import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import {
     javapOutputToTelemetryValue,
     JDKToTelemetryValue,
 } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
-import { JDK11VersionNumber, JDK8VersionNumber } from '../../../amazonqGumby/chat/controller/messenger/stringConstants'
 import {
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
@@ -39,7 +38,7 @@ export async function validateAndLogProjectDetails() {
     } finally {
         telemetry.codeTransform_projectDetails.emit({
             passive: true,
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformLocalJavaVersion: telemetryJavaVersion,
             result: errorCode ? MetadataResult.Fail : MetadataResult.Pass,
             reason: errorCode,
@@ -130,7 +129,7 @@ async function getProjectsValidToTransform(
                 }
                 if (!onProjectFirstOpen) {
                     telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                         codeTransformPreValidationError: 'NoJavaProject',
                         codeTransformRuntimeError: errorReason,
                         result: MetadataResult.Fail,
@@ -140,15 +139,15 @@ async function getProjectsValidToTransform(
             } else {
                 const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
                 const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
-                if (javaVersion === JDK8VersionNumber) {
+                if (javaVersion === CodeWhispererConstants.JDK8VersionNumber) {
                     detectedJavaVersion = JDKVersion.JDK8
-                } else if (javaVersion === JDK11VersionNumber) {
+                } else if (javaVersion === CodeWhispererConstants.JDK11VersionNumber) {
                     detectedJavaVersion = JDKVersion.JDK11
                 } else {
                     detectedJavaVersion = JDKVersion.UNSUPPORTED
                     if (!onProjectFirstOpen) {
                         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                             codeTransformPreValidationError: 'UnsupportedJavaVersion',
                             result: MetadataResult.Fail,
                             reason: javapOutputToTelemetryValue(javaVersion),
@@ -179,9 +178,8 @@ export async function validateOpenProjects(
 
     if (javaProjects.length === 0) {
         if (!onProjectFirstOpen) {
-            void vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformPreValidationError: 'NoJavaProject',
                 result: MetadataResult.Fail,
                 reason: 'CouldNotFindJavaProject',
@@ -193,14 +191,9 @@ export async function validateOpenProjects(
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
     if (mavenJavaProjects.length === 0) {
         if (!onProjectFirstOpen) {
-            void vscode.window.showErrorMessage(
-                CodeWhispererConstants.noPomXmlFoundMessage.replace(
-                    'LINK_HERE',
-                    CodeWhispererConstants.linkToPrerequisites
-                )
-            )
+            void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundNotification)
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformPreValidationError: 'NonMavenProject',
                 result: MetadataResult.Fail,
                 reason: 'NoPomFileFound',

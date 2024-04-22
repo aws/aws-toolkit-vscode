@@ -10,14 +10,13 @@ import { fromExtensionManifest } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { isInDevEnv, extensionVersion, isAutomation } from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
-import globals from '../extensionGlobals'
+import globals, { isWeb } from '../extensionGlobals'
 import { mapMetadata } from './telemetryLogger'
 import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { VSCODE_EXTENSION_ID } from '../utilities'
-import { isWeb } from '../../common/webUtils'
 import { randomUUID } from '../../common/crypto'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
@@ -203,3 +202,15 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
         getLogger().error(`Erro while setting up telemetry id ${err}`)
     }
 }
+
+/**
+ * Potentially helpful values for the 'source' field in telemetry.
+ */
+export const ExtStartUpSources = {
+    firstStartUp: 'firstStartUp',
+    update: 'update',
+    reload: 'reload',
+    none: 'none',
+} as const
+
+export type ExtStartUpSource = (typeof ExtStartUpSources)[keyof typeof ExtStartUpSources]

@@ -14,9 +14,10 @@ import {
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../../credentials/testUtil'
-import { captureEventOnce } from '../../testUtil'
+import { captureEventOnce, tryRegister } from '../../testUtil'
 import { Connection, isAnySsoConnection, isBuilderIdConnection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
+import { openAmazonQWalkthrough } from '../../../amazonq/onboardingPage/walkthrough'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
@@ -27,6 +28,7 @@ describe('AuthUtil', async function () {
     beforeEach(async function () {
         auth = createTestAuth()
         authUtil = new AuthUtil(auth)
+        tryRegister(openAmazonQWalkthrough)
     })
 
     afterEach(async function () {
@@ -43,7 +45,7 @@ describe('AuthUtil', async function () {
         const conn = authUtil.conn
         assert.strictEqual(conn?.type, 'sso')
         assert.strictEqual(conn.label, 'AWS Builder ID')
-        assert.deepStrictEqual(conn.scopes, codeWhispererChatScopes)
+        assert.deepStrictEqual(conn.scopes, amazonQScopes)
     })
 
     it('if there IS an existing AwsBuilderID conn, it will upgrade the scopes and use it', async function () {
@@ -60,7 +62,7 @@ describe('AuthUtil', async function () {
         const conn = authUtil.conn
         assert.strictEqual(conn?.type, 'sso')
         assert.strictEqual(conn.id, existingBuilderId.id)
-        assert.deepStrictEqual(conn.scopes, codeWhispererChatScopes)
+        assert.deepStrictEqual(conn.scopes, amazonQScopes)
     })
 
     it('if there is no valid enterprise SSO conn, will create and use one', async function () {
@@ -122,10 +124,7 @@ describe('AuthUtil', async function () {
 
         const warningMessage = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Information)
         assert.strictEqual(warningMessage.length, 1)
-        assert.strictEqual(
-            warningMessage[0].message,
-            'Connection expired. To continue using Amazon Q, connect with AWS Builder ID or AWS IAM Identity center.'
-        )
+        assert.strictEqual(warningMessage[0].message, `Your Amazon Q connection has expired. Please re-authenticate.`)
     })
 
     it('reauthenticate prompt reauthenticates invalid connection', async function () {
@@ -134,7 +133,7 @@ describe('AuthUtil', async function () {
         )
         await auth.useConnection(conn)
         getTestWindow().onDidShowMessage(m => {
-            m.selectItem('Connect with AWS')
+            m.selectItem('Re-authenticate')
         })
         assert.strictEqual(auth.getConnectionState(conn), 'invalid')
 
@@ -154,7 +153,7 @@ describe('AuthUtil', async function () {
         assert.deepStrictEqual(authUtil.conn?.scopes, codeWhispererCoreScopes)
     })
 
-    it('reauthenticate adds missing CodeWhisperer Chat Builder ID scopes when explicitly required', async function () {
+    it('reauthenticate adds missing Builder ID scopes when explicitly required', async function () {
         const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
         await auth.useConnection(conn)
 
@@ -162,7 +161,7 @@ describe('AuthUtil', async function () {
         await authUtil.reauthenticate(true)
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
-        assert.deepStrictEqual(authUtil.conn?.scopes, codeWhispererChatScopes)
+        assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
     })
 
     it('reauthenticate adds missing Amazon Q IdC scopes when explicitly required', async function () {
@@ -221,7 +220,7 @@ describe('AuthUtil', async function () {
         assert.strictEqual(authUtil.conn?.id, upgradeableConn.id)
         assert.strictEqual(authUtil.conn.startUrl, upgradeableConn.startUrl)
         assert.strictEqual(authUtil.conn.ssoRegion, upgradeableConn.ssoRegion)
-        assert.deepStrictEqual(authUtil.conn.scopes, codeWhispererChatScopes)
+        assert.deepStrictEqual(authUtil.conn.scopes, amazonQScopes)
         assert.strictEqual((await auth.listConnections()).filter(isAnySsoConnection).length, 1)
     })
 
@@ -276,12 +275,12 @@ describe('getChatAuthState()', function () {
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.connected,
                 codewhispererChat: AuthStates.expired,
-                amazonQ: AuthStates.unsupported,
+                amazonQ: AuthStates.expired,
             })
         })
 
         it('indicates all SUPPORTED features connected when all scopes are set', async function () {
-            const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererChatScopes }))
+            const conn = await auth.createConnection(createBuilderIdProfile({ scopes: amazonQScopes }))
             createToken(conn)
             await auth.useConnection(conn)
 
@@ -289,7 +288,7 @@ describe('getChatAuthState()', function () {
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.connected,
                 codewhispererChat: AuthStates.connected,
-                amazonQ: AuthStates.unsupported,
+                amazonQ: AuthStates.connected,
             })
         })
 
@@ -303,7 +302,7 @@ describe('getChatAuthState()', function () {
             assert.deepStrictEqual(result, {
                 codewhispererCore: AuthStates.expired,
                 codewhispererChat: AuthStates.expired,
-                amazonQ: AuthStates.unsupported,
+                amazonQ: AuthStates.expired,
             })
         })
     })

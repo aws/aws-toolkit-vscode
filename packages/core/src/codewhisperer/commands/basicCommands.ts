@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { CodewhispererCodeScanIssueApplyFix, Component, telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
+import { Commands, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
@@ -29,12 +29,13 @@ import { applyPatch } from 'diff'
 import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
 import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
-import { CodeWhispererSource } from './types'
+import { CodeWhispererSource, cwSignOut } from './types'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
+import { _switchToAmazonQ, switchToAmazonQSignInCommand } from '../../amazonq/explorer/commonNodes'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -72,6 +73,9 @@ export const enableCodeSuggestions = Commands.declare(
 export const showReferenceLog = Commands.declare(
     { id: 'aws.amazonq.openReferencePanel', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        if (_ !== placeholder) {
+            source = 'ellipsesMenu'
+        }
         await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-reference-log')
     }
 )
@@ -349,8 +353,12 @@ export const applySecurityFix = Commands.declare(
 
 export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.amazonq.signout', compositeKey: { 1: 'source' } },
-    (auth: AuthUtil) => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        return auth.secondaryAuth.deleteConnection()
+    (auth: AuthUtil) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        if (_ !== placeholder) {
+            source = 'ellipsesMenu'
+        }
+        await auth.secondaryAuth.deleteConnection()
+        return switchToAmazonQSignInCommand.execute(cwSignOut)
     }
 )
 

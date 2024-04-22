@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as semver from 'semver'
 import { join } from 'path'
 import {
     CodeSuggestionsState,
@@ -11,6 +12,7 @@ import {
     shutdown as codewhispererShutdown,
     amazonQDismissedKey,
     refreshToolkitQState,
+    AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import {
     ExtContext,
@@ -23,21 +25,56 @@ import {
     DefaultAWSClientBuilder,
     globals,
     RegionProvider,
+    getLogger,
 } from 'aws-core-vscode/shared'
-import { initializeAuth, CredentialsStore, LoginManager } from 'aws-core-vscode/auth'
+import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-core-vscode/auth'
 import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
+import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
 
-export async function activateShared(context: vscode.ExtensionContext) {
+export async function activateShared(context: vscode.ExtensionContext, isWeb: boolean) {
+    initialize(context, isWeb)
+    await initializeComputeRegion()
+
     const contextPrefix = 'amazonq'
     globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
 
-    await initializeComputeRegion()
-    initialize(context)
+    // Avoid activation if older toolkit is installed
+    // Amazon Q is only compatible with AWS Toolkit >= 3.0.0
+    // Or AWS Toolkit with a development version. Example: 2.19.0-3413gv
+    const toolkit = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+    if (toolkit) {
+        const toolkitVersion = semver.coerce(toolkit.packageJSON.version)
+        // XXX: can't use `SemVer.prerelease` because Toolkit "prerelease" (git sha) is not a valid
+        // semver prerelease: it may start with a number.
+        const isDevVersion = toolkit.packageJSON.version.toString().includes('-')
+        if (toolkitVersion && toolkitVersion.major < 3 && !isDevVersion) {
+            await vscode.commands
+                .executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.awstoolkit)
+                .then(
+                    () =>
+                        vscode.window
+                            .showInformationMessage(
+                                `The Amazon Q extension is incompatible with AWS Toolkit ${toolkitVersion} and older. Your AWS Toolkit was updated to version 3.0 or later.`,
+                                'Reload Now'
+                            )
+                            .then(async resp => {
+                                if (resp === 'Reload Now') {
+                                    await vscode.commands.executeCommand('workbench.action.reloadWindow')
+                                }
+                            }),
+                    reason => {
+                        getLogger().error('workbench.extensions.installExtension failed: %O', reason)
+                    }
+                )
+            return
+        }
+    }
+
     const extContext = {
         extensionContext: context,
     }
@@ -53,7 +90,7 @@ export async function activateShared(context: vscode.ExtensionContext) {
     globals.logOutputChannel = qLogChannel
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 
-    await activateTelemetry(context, globals.awsContext, Settings.instance)
+    await activateTelemetry(context, globals.awsContext, Settings.instance, 'Amazon Q For VS Code')
 
     await initializeAuth(context, globals.loginManager, contextPrefix, undefined)
 
@@ -93,6 +130,38 @@ export async function activateShared(context: vscode.ExtensionContext) {
 
     // enable auto suggestions on activation
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
+
+    if (AuthUtils.ExtensionUse.instance.isFirstUse()) {
+        await vscode.commands.executeCommand('workbench.view.extension.amazonq')
+    }
+
+    await telemetry.auth_userState.run(async () => {
+        telemetry.record({ passive: true })
+
+        const firstUse = AuthUtils.ExtensionUse.instance.isFirstUse()
+        const wasUpdated = AuthUtils.ExtensionUse.instance.wasUpdated()
+
+        if (firstUse) {
+            telemetry.record({ source: ExtStartUpSources.firstStartUp })
+        } else if (wasUpdated) {
+            telemetry.record({ source: ExtStartUpSources.update })
+        } else {
+            telemetry.record({ source: ExtStartUpSources.reload })
+        }
+
+        const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat
+        const authKinds: AuthUtils.AuthSimpleId[] = []
+        if (await AuthUtils.hasBuilderId('codewhisperer')) {
+            authKinds.push('builderIdCodeWhisperer')
+        }
+        if (await AuthUtils.hasSso('codewhisperer')) {
+            authKinds.push('identityCenterCodeWhisperer')
+        }
+        telemetry.record({
+            authStatus: authState === 'connected' || authState === 'expired' ? authState : 'notConnected',
+            enabledAuthConnections: authKinds.join(','),
+        })
+    })
 }
 
 export async function deactivateShared() {

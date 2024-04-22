@@ -9,9 +9,8 @@ import { TransformationHubViewProvider } from '../codewhisperer/service/transfor
 import { ExtContext } from '../shared/extensions'
 import { stopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'
-import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformByQ/transformationResultsViewProvider'
-import { codeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { CancelActionPositions } from './telemetry/codeTransformTelemetry'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
@@ -33,14 +32,14 @@ export async function activate(context: ExtContext) {
                 if (transformByQState.isRunning()) {
                     telemetry.codeTransform_jobIsClosedDuringIdeRun.emit({
                         codeTransformJobId: transformByQState.getJobId(),
-                        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                         codeTransformStatus: transformByQState.getStatus(),
                     })
                 }
             } else {
                 telemetry.codeTransform_jobIsResumedAfterIdeClose.emit({
                     codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformStatus: transformByQState.getStatus(),
                 })
             }
@@ -52,8 +51,6 @@ export async function activate(context: ExtContext) {
             Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
                 if (transformByQState.isRunning()) {
                     void stopTransformByQ(transformByQState.getJobId(), cancelSrc)
-                } else {
-                    void vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
                 }
             }),
 

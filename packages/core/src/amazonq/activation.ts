@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { ExtensionContext, window } from 'vscode'
-import { AmazonQChatViewProvider } from './webview/webView'
+import { AmazonQChatViewProvider, focusAmazonQChatWalkthrough } from './webview/webView'
 import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
 import { init as gumbyChatAppInit } from '../amazonqGumby/app'
@@ -17,6 +17,8 @@ import { activateBadge } from './util/viewBadgeHandler'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { focusAmazonQPanel } from '../auth/ui/vue/show'
 import { amazonQHelpUrl } from '../shared/constants'
+import { openAmazonQWalkthrough } from './onboardingPage/walkthrough'
+import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -37,7 +39,10 @@ export async function activate(context: ExtensionContext) {
             webviewOptions: {
                 retainContextWhenHidden: true,
             },
-        })
+        }),
+        focusAmazonQChatWalkthrough.register(),
+        openAmazonQWalkthrough.register(),
+        listCodeWhispererCommandsWalkthrough.register()
     )
 
     amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
