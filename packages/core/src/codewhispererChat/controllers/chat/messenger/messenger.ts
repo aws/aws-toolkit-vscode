@@ -31,6 +31,7 @@ import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
 import { marked } from 'marked'
+import { JSDOM } from 'jsdom'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -95,13 +96,16 @@ export class Messenger {
             return 0
         }
 
-        // To Convert Markdown text to HTML using marked library
+        // // To Convert Markdown text to HTML using marked library
         const html = await marked(message)
 
-        // Count the number of <pre> tags in the HTML to find the total number of code blocks
-        const totalNumberOfCodeBlocks = (html.match(/<pre>/g) || []).length
+        const dom = new JSDOM(html)
+        const document = dom.window.document
 
-        return totalNumberOfCodeBlocks
+        // Search for <pre> elements containing <code> elements
+        const codeBlocks = document.querySelectorAll('pre > code')
+
+        return codeBlocks.length
     }
 
     public async sendAIResponse(
