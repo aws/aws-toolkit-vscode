@@ -15,6 +15,7 @@ import { activateBadge } from './util/viewBadgeHandler'
 import { amazonQHelpUrl } from '../shared/constants'
 import { openAmazonQWalkthrough } from './onboardingPage/walkthrough'
 import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
+import { focusAmazonQPanel } from '../codewhispererChat/commands/registerCommands'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -36,7 +37,8 @@ export async function activate(context: ExtensionContext) {
         }),
         focusAmazonQChatWalkthrough.register(),
         openAmazonQWalkthrough.register(),
-        listCodeWhispererCommandsWalkthrough.register()
+        listCodeWhispererCommandsWalkthrough.register(),
+        focusAmazonQPanel.register()
     )
 
     Commands.register('aws.amazonq.learnMore', () => {

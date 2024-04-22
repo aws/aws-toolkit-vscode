@@ -1,3 +1,11 @@
+## 2.20.0 2024-04-19
+
+- **Bug Fix** Amazon Q CodeTransform may fail if JAVA_HOME has leading or trailing whitespace
+- **Bug Fix** Amazon Q FeatureDev: code generation may fail with "conversation id not found" error
+- **Bug Fix** Amazon Q Code Transformation: show error messages in chat
+- **Bug Fix** Amazon Q Code Transformation - Omit Maven metadata files when uploading dependencies to fix certain build failures in backend.
+- **Feature** Enable Amazon Q feature development and Amazon Q transform capabilities (/dev and /transform) for AWS Builder ID users.
+
 ## 2.19.0 2024-04-15
 
 - **Bug Fix** Amazon Q: Fixed quick action command list inconsistency between Q tabs
