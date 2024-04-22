@@ -96,11 +96,6 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
-    /**
-     * CodeWhisperer auto scans
-     */
-    setSubscriptionsForAutoScans()
-
     // Service initialization
     const container = Container.instance
     ReferenceInlineProvider.instance
@@ -286,11 +281,18 @@ export async function activate(context: ExtContext): Promise<void> {
         await CodeScansState.instance.setScansEnabled(false)
     }
 
+    /**
+     * CodeWhisperer auto scans
+     */
+    setSubscriptionsForAutoScans()
+
     function setSubscriptionsForAutoScans() {
         // Initial scan when the editor opens for the first time
         const editor = vscode.window.activeTextEditor
         if (
             CodeScansState.instance.isScansEnabled() &&
+            !CodeScansState.instance.isMonthlyQuotaExceeded() &&
+            auth.isConnected() &&
             !auth.isBuilderIdInUse() &&
             editor &&
             securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&
@@ -310,6 +312,8 @@ export async function activate(context: ExtContext): Promise<void> {
             vscode.window.onDidChangeActiveTextEditor(editor => {
                 if (
                     CodeScansState.instance.isScansEnabled() &&
+                    !CodeScansState.instance.isMonthlyQuotaExceeded() &&
+                    auth.isConnected() &&
                     !auth.isBuilderIdInUse() &&
                     editor &&
                     securityScanLanguageContext.isLanguageSupported(editor.document.languageId)
@@ -339,6 +343,8 @@ export async function activate(context: ExtContext): Promise<void> {
                 const editor = vscode.window.activeTextEditor
                 if (
                     CodeScansState.instance.isScansEnabled() &&
+                    !CodeScansState.instance.isMonthlyQuotaExceeded() &&
+                    auth.isConnected() &&
                     !auth.isBuilderIdInUse() &&
                     editor &&
                     event.document === editor.document &&
@@ -361,6 +367,8 @@ export async function activate(context: ExtContext): Promise<void> {
             const editor = vscode.window.activeTextEditor
             if (
                 isScansEnabled &&
+                !CodeScansState.instance.isMonthlyQuotaExceeded() &&
+                auth.isConnected() &&
                 !auth.isBuilderIdInUse() &&
                 editor &&
                 securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&

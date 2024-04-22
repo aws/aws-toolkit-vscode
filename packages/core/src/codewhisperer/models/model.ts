@@ -6,6 +6,7 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
 import { getIcon } from '../../shared/icons'
 import {
+    CodewhispererCodeScanScope,
     CodewhispererCompletionType,
     CodewhispererLanguage,
     CodewhispererTriggerType,
@@ -119,6 +120,8 @@ export class CodeScansState {
     /** Set a callback for when state of code scans changes */
     onDidChangeState = this.#onDidChangeState.event
 
+    private exceedsMonthlyQuota = false
+
     static #instance: CodeScansState
     static get instance() {
         return (this.#instance ??= new this())
@@ -146,6 +149,14 @@ export class CodeScansState {
     isScansEnabled(): boolean {
         const isEnabled = get(autoScansEnabledKey, this.#context)
         return isEnabled !== undefined ? isEnabled : this.#fallback
+    }
+
+    setMonthlyQuotaExceeded() {
+        this.exceedsMonthlyQuota = true
+    }
+
+    isMonthlyQuotaExceeded() {
+        return this.exceedsMonthlyQuota
     }
 }
 
@@ -626,6 +637,7 @@ export interface CodeScanTelemetryEntry {
     codewhispererCodeScanTotalIssues: number
     codewhispererCodeScanIssuesWithFixes: number
     credentialStartUrl: string | undefined
+    codewhispererCodeScanScope: CodewhispererCodeScanScope
 }
 
 export interface RecommendationDescription {

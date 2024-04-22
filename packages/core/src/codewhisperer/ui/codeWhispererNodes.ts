@@ -22,7 +22,7 @@ import {
     toggleCodeScans,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
-import { codeScanState } from '../models/model'
+import { CodeScansState, codeScanState } from '../models/model'
 import { getNewCustomizationsAvailable, getSelectedCustomization } from '../util/customizationUtil'
 import { cwQuickPickSource, cwTreeNodeSource } from '../commands/types'
 import { AuthUtil } from '../util/authUtil'
@@ -48,11 +48,12 @@ export function createAutoScans(pause: boolean): DataQuickPickItem<'autoScans'> 
     const iconResume = getIcon('vscode-debug-alt')
     const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Automatic File Scanning')
     const iconPause = getIcon('vscode-debug-pause')
+    const monthlyQuotaExceeded = CodeScansState.instance.isMonthlyQuotaExceeded()
 
     return {
         data: 'autoScans',
         label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
-        description: pause ? 'RUNNING' : 'PAUSED',
+        description: monthlyQuotaExceeded ? 'Monthly quota exceeded' : pause ? 'RUNNING' : 'PAUSED',
         onClick: () => toggleCodeScans.execute(placeholder, cwQuickPickSource),
     } as DataQuickPickItem<'autoScans'>
 }
