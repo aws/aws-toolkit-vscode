@@ -147,7 +147,7 @@ export async function showCodeWhispererWebview(
         return
     }
     const webview = await activePanel!.show({
-        title: localize('AWS.view.gettingStartedPage.title', `Learn CodeWhisperer`),
+        title: localize('AWS.view.gettingStartedPage.title', `Learn Amazon Q`),
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
     })
 
