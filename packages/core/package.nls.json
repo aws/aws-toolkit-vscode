@@ -9,7 +9,7 @@
     "AWS.configuration.profileDescription": "The name of the credential profile to obtain credentials from.",
     "AWS.configuration.description.lambda.recentlyUploaded": "Recently selected Lambda upload targets.",
     "AWS.configuration.description.ecs.openTerminalCommand": "The command to run when starting a new interactive terminal session.",
-    "AWS.configuration.description.logLevel": "AWS IDE Extensions's log level (changes reflected on restart)",
+    "AWS.configuration.description.logLevel": "AWS IDE Extensions log level (changes reflected on restart)",
     "AWS.configuration.description.logLevel.cn": "The Amazon Toolkit's log level (changes reflected on restart)",
     "AWS.configuration.description.iot.maxItemsPerPage": "Controls how many IoT Things, Certificates, or Policies are listed before showing a node to `Load More...`.",
     "AWS.configuration.description.s3.maxItemsPerPage": "Controls how many S3 items are listed before showing a node to `Load More...`.\nThis corresponds to the `MaxKeys` requested in a single call to S3. [Learn More](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html#AmazonS3-ListObjectsV2-response-MaxKeys)",
