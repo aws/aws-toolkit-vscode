@@ -83,28 +83,19 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         const explainWithQCommand = this._getCommandMarkdown(
             'aws.amazonq.explainIssue',
             [issue],
-            'comment-discussion',
+            'comment',
             'Explain with Q',
             'Explain with Amazon Q'
         )
         markdownString.appendMarkdown(' | ' + explainWithQCommand)
-
-        const fixWithQCommand = this._getCommandMarkdown(
-            'aws.amazonq.fixIssue',
-            [issue],
-            'comment',
-            'Fix with Q',
-            'Fix with Amazon Q'
-        )
-        markdownString.appendMarkdown(' | ' + fixWithQCommand)
 
         if (suggestedFix) {
             const applyFixCommand = this._getCommandMarkdown(
                 'aws.amazonq.applySecurityFix',
                 [issue, filePath, 'hover'],
                 'wrench',
-                'Apply Fix',
-                'Apply Amazon Q Suggestion'
+                'Fix with Q',
+                'Fix with Amazon Q'
             )
             markdownString.appendMarkdown(' | ' + applyFixCommand)
 
