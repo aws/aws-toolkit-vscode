@@ -47,13 +47,7 @@ export default defineComponent({
     },
     methods: {
         async handleContinueClick() {
-            this.$emit('stageChanged', 'AUTHENTICATING', new LongLivedIAM(this.profileName, this.accessKey, this.secretKey))
-            window.ideApi.postMessage({
-                command: 'loginIAM',
-                profileName: this.profileName,
-                accessKey: this.accessKey,
-                secretKey: this.secretKey
-            })
+            this.$emit('login',  new LongLivedIAM(this.profileName, this.accessKey, this.secretKey))
         },
         handleBackButtonClick() {
             this.$emit('backToMenu')

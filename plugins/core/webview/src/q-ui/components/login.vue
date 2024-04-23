@@ -9,10 +9,19 @@
             :is-connected="stage === 'CONNECTED'"
         />
 
+        <button v-if="cancellable" class="back-button" @click="handleBackButtonClick" tabindex="-1">
+            <svg width="24" height="24" viewBox="0 -3 13 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                    fill="#21A2FF"
+                />
+            </svg>
+        </button>
+
         <Reauth v-if="stage === 'REAUTH'" :app="app" @stageChanged="mutateStage"/>
-        <LoginOptions :app="app" v-if="stage === 'START'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage"/>
-        <SsoLoginForm :app="app" v-if="stage === 'SSO_FORM'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage"/>
-        <AwsProfileForm v-if="stage === 'AWS_PROFILE'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage"/>
+        <LoginOptions :app="app" v-if="stage === 'START'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login"/>
+        <SsoLoginForm :app="app" v-if="stage === 'SSO_FORM'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login"/>
+        <AwsProfileForm v-if="stage === 'AWS_PROFILE'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login"/>
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="font-amazon">
@@ -39,7 +48,7 @@ import SsoLoginForm from "./ssoLoginForm.vue";
 import LoginOptions from "./loginOptions.vue";
 import AwsProfileForm from "./awsProfileForm.vue";
 import Reauth from "./reauth.vue";
-import {LoginIdentifier, LoginOption, Stage} from "../../model";
+import {BuilderId, Feature, IdC, LoginIdentifier, LoginOption, LongLivedIAM, Stage} from "../../model";
 
 export default defineComponent({
     name: 'Login',
@@ -66,12 +75,14 @@ export default defineComponent({
             existingLogin: { id: -1, text: '', title: '' },
             selectedLoginOption: undefined as (LoginOption | undefined),
             app: this.app,
-            profileName: '',
         }
     },
     computed: {
         stage(): Stage {
             return this.$store.state.stage
+        },
+        feature(): Feature {
+            return this.$store.state.feature
         },
         cancellable(): boolean {
             return this.$store.state.cancellable
@@ -101,21 +112,18 @@ export default defineComponent({
         }
     },
     methods: {
-        mutateStage(stage: Stage, loginOption: LoginOption | undefined) {
-            console.log('mutating stage=', stage)
-            console.log('mutating loginOption=', loginOption)
-            this.selectedLoginOption = loginOption
+        mutateStage(stage: Stage) {
             this.$store.commit('setStage', stage)
         },
         handleBackButtonClick() {
             if (this.cancellable && this.stage === 'START') {
                 window.ideApi.postMessage({ command: 'toggleBrowser' })
             }
-            this.mutateStage('START', undefined)
+            this.mutateStage('START')
         },
         handleCancelButton() {
             window.ideClient.cancelLogin()
-            this.mutateStage('START', undefined)
+            this.mutateStage('START')
             this.authorizationCode = undefined
         },
         changeTheme(darkMode: boolean) {
@@ -124,6 +132,28 @@ export default defineComponent({
             document.body.classList.add(newCssId);
             document.body.classList.remove(oldCssId);
         },
+        login(type: LoginOption) {
+            this.selectedLoginOption = type
+            this.mutateStage('AUTHENTICATING')
+            if (type instanceof IdC) {
+                window.ideApi.postMessage({
+                    command: 'loginIdC',
+                    url: type.url,
+                    region: type.region,
+                    profileName: type.profileName,
+                    feature: this.feature
+                })
+            } else if (type instanceof BuilderId) {
+                window.ideApi.postMessage({ command: 'loginBuilderId' })
+            } else if (type instanceof LongLivedIAM) {
+                window.ideApi.postMessage({
+                    command: 'loginIAM',
+                    profileName: type.profileName,
+                    accessKey: type.accessKey,
+                    secretKey: type.secret
+                })
+            }
+        }
     },
     mounted() {
         console.log('login mounted')

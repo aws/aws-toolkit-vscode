@@ -142,21 +142,13 @@ export default defineComponent({
             this.$emit('backToMenu')
         },
         async handleContinueClick() {
-            if (!this.isInputValid) return
-            window.ideApi.postMessage({
-                command: 'loginIdC',
-                url: this.startUrl,
-                region: this.selectedRegion,
-                profileName: this.ssoProfile,
-                feature: this.feature
-            })
-            this.$emit('stageChanged', 'AUTHENTICATING', new IdC(this.ssoProfile, this.startUrl, this.selectedRegion))
+            if (!this.isInputValid) {
+                return
+            }
+            this.$emit('login', new IdC(this.ssoProfile, this.startUrl, this.selectedRegion))
         },
         handleCodeCatalystSignin() {
-            this.$emit('stageChanged', 'AUTHENTICATING', new BuilderId())
-            window.ideApi.postMessage({
-                command: 'loginBuilderId'
-            })
+            this.$emit('login', new BuilderId())
         }
     },
     mounted() {
