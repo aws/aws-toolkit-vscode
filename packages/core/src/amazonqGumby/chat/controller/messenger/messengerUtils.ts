@@ -7,6 +7,7 @@
 import * as os from 'os'
 import { transformByQState, JDKVersion } from '../../../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
+import DependencyVersions from '../../../models/dependencies'
 
 // These enums map to string IDs
 export enum ButtonActions {
@@ -78,5 +79,25 @@ export default class MessengerUtils {
         }
 
         return CodeWhispererConstants.projectPromptChatMessage.replace('JAVA_VERSION_HERE', javaVersionString)
+    }
+
+    static createAvailableDependencyVersionString = (versions: DependencyVersions): string => {
+        let message = `I found ${versions.length} other versions which are higher than the one in your code ${versions.currentVersion}.
+
+`
+
+        if (versions.majorVersions !== undefined && versions.majorVersions.length > 0) {
+            message = message.concat(
+                `Latest major version: ${versions.majorVersions[versions.majorVersions.length - 1]} \n`
+            )
+        }
+
+        if (versions.minorVersions !== undefined && versions.minorVersions.length > 0) {
+            message = message.concat(
+                `Latest minor version: ${versions.minorVersions[versions.minorVersions.length - 1]} \n`
+            )
+        }
+
+        return message
     }
 }

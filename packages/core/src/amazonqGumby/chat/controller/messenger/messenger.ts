@@ -468,13 +468,7 @@ ${codeSnippet}
     }
 
     public sendDependencyVersionsFoundMessage(versions: DependencyVersions, tabID: string) {
-        //TODO[gumby]: dynamically create string depending on whether versions are null or not
-        const message = `I found ${versions.length} other versions which are higher than the one in your code ${versions.currentVersion}.
-
-Latest major version: ${versions.latestVersion}
-Latest minor version: ${versions.minorVersions[0]}
-
-`
+        const message = MessengerUtils.createAvailableDependencyVersionString(versions)
 
         const valueFormOptions: { value: any; label: string }[] = []
 
