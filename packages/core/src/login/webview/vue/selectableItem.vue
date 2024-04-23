@@ -2,7 +2,7 @@
     <div class="item-container" :class="{ selected: isSelected }" @click="toggleSelection">
         <div class="icon">
             <svg
-                v-if="itemTitle == 'Use For Free'"
+                v-if="itemTitle == 'Use for free'"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
