@@ -1503,8 +1503,7 @@
             "editor/context": [
                 {
                     "submenu": "amazonqEditorContextSubmenu",
-                    "group": "cw_chat",
-                    "when": "editorHasSelection"
+                    "group": "cw_chat"
                 }
             ],
             "view/item/context": [
@@ -3832,32 +3831,34 @@
         ],
         "keybindings": [
             {
+                "command": "_aws.amazonq.focusChat.keybinding",
+                "win": "win+i",
+                "mac": "cmd+i",
+                "linux": "meta+i"
+            },
+            {
                 "command": "aws.amazonq.explainCode",
                 "win": "win+alt+e",
                 "mac": "cmd+alt+e",
-                "linux": "meta+alt+e",
-                "when": "editorHasSelection"
+                "linux": "meta+alt+e"
             },
             {
                 "command": "aws.amazonq.refactorCode",
                 "win": "win+alt+u",
                 "mac": "cmd+alt+u",
-                "linux": "meta+alt+u",
-                "when": "editorHasSelection"
+                "linux": "meta+alt+u"
             },
             {
                 "command": "aws.amazonq.fixCode",
                 "win": "win+alt+y",
                 "mac": "cmd+alt+y",
-                "linux": "meta+alt+y",
-                "when": "editorHasSelection"
+                "linux": "meta+alt+y"
             },
             {
                 "command": "aws.amazonq.optimizeCode",
                 "win": "win+alt+a",
                 "mac": "cmd+alt+a",
-                "linux": "meta+alt+a",
-                "when": "editorHasSelection"
+                "linux": "meta+alt+a"
             },
             {
                 "command": "aws.amazonq.sendToPrompt",
