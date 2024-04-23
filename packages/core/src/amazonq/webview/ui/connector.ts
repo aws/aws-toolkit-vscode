@@ -205,11 +205,23 @@ export class Connector {
         messageId: string,
         code?: string,
         type?: 'selection' | 'block',
-        codeReference?: CodeReference[]
+        codeReference?: CodeReference[],
+        eventId?: string,
+        codeBlockIndex?: number,
+        totalCodeBlocks?: number
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCodeInsertToCursorPosition(tabID, messageId, code, type, codeReference)
+                this.cwChatConnector.onCodeInsertToCursorPosition(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks
+                )
                 break
             case 'featuredev':
                 this.featureDevChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
@@ -222,11 +234,23 @@ export class Connector {
         messageId: string,
         code?: string,
         type?: 'selection' | 'block',
-        codeReference?: CodeReference[]
+        codeReference?: CodeReference[],
+        eventId?: string,
+        codeBlockIndex?: number,
+        totalCodeBlocks?: number
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCopyCodeToClipboard(tabID, messageId, code, type, codeReference)
+                this.cwChatConnector.onCopyCodeToClipboard(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks
+                )
                 break
             case 'featuredev':
                 this.featureDevChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)

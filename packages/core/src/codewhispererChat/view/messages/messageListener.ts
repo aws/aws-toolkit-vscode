@@ -149,6 +149,9 @@ export class UIMessageListener {
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,
             codeReference: msg.codeReference,
+            eventId: msg.eventId,
+            codeBlockIndex: msg.codeBlockIndex,
+            totalCodeBlocks: msg.totalCodeBlocks,
         })
     }
 
@@ -160,6 +163,9 @@ export class UIMessageListener {
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,
             codeReference: msg.codeReference,
+            eventId: msg.eventId,
+            codeBlockIndex: msg.codeBlockIndex,
+            totalCodeBlocks: msg.totalCodeBlocks,
         })
     }
 
