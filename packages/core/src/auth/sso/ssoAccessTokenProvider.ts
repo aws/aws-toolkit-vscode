@@ -449,7 +449,11 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
 
             return this.formatToken(token, registration)
         } finally {
-            await authServer.close()
+            // Temporary delay to make sure the auth ui was displayed to the user before closing
+            // inspired by https://github.com/microsoft/vscode/blob/a49c81edea6647684eee87d204e50feed9c455f6/extensions/github-authentication/src/flows.ts#L262
+            setTimeout(() => {
+                void authServer.close()
+            }, 5000)
         }
     }
 
