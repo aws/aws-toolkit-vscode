@@ -67,6 +67,10 @@ import { switchToAmazonQCommand, switchToAmazonQSignInCommand } from '../amazonq
 
 export async function activate(context: ExtContext): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance
+
+    // Import old CodeWhisperer settings into Amazon Q
+    await CodeWhispererSettings.instance.importSettings()
+
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
     const auth = AuthUtil.instance
     auth.initCodeWhispererHooks()

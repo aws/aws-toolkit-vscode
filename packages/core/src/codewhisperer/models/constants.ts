@@ -318,6 +318,7 @@ export const validStatesForCheckingDownloadUrl = [
     'REJECTED',
 ]
 
+export const codewhispererSettingsImportedKey = 'aws.amazonq.codewhispererSettingsImported'
 export const amazonQDismissedKey = 'aws.toolkit.amazonq.dismissed'
 export const amazonQInstallDismissedKey = 'aws.toolkit.amazonqInstall.dismissed'
 

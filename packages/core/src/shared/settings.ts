@@ -898,3 +898,47 @@ export async function migrateSetting<T, U = T>(
 export async function openSettings<K extends keyof SettingsProps>(key: K): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.openSettings', `@id:${key}`)
 }
+
+/**
+ * Deprecated settings that users on old versions may have.
+ */
+const deprecatedSettings = [
+    'aws.codeWhisperer.includeSuggestionsWithCodeReferences',
+    'aws.codeWhisperer.importRecommendation',
+    'aws.codeWhisperer.shareCodeWhispererContentWithAWS',
+    'aws.codeWhisperer.javaCompilationOutput',
+] as const
+
+export type DeprecatedSetting = (typeof deprecatedSettings)[number]
+
+/**
+ * Import the setting value of an old setting into a new setting, if the old setting exists.
+ * Useful for setting renames.
+ *
+ * newKey must be defined in the extension, e.g. keys of {@link settingsProps}.
+ */
+export async function tryImportSetting(oldKey: DeprecatedSetting, newKey: keyof SettingsProps) {
+    getLogger().debug(`trying to import setting '${oldKey}' into '${newKey}'`)
+
+    const newSettingInfo = vscode.workspace.getConfiguration().inspect(newKey)
+    if (newSettingInfo && (newSettingInfo.workspaceValue !== undefined || newSettingInfo.globalValue !== undefined)) {
+        getLogger().debug(`'${newKey}' is already set, skipping import`)
+        return
+    }
+
+    const oldSettingInfo = vscode.workspace.getConfiguration().inspect(oldKey)
+    if (oldSettingInfo) {
+        if (oldSettingInfo.workspaceValue !== undefined) {
+            await vscode.workspace
+                .getConfiguration()
+                .update(newKey, oldSettingInfo.workspaceValue, vscode.ConfigurationTarget.Workspace)
+            getLogger().info(`imported workspace setting '${oldKey}' into '${newKey}'`)
+        }
+        if (oldSettingInfo.globalValue !== undefined) {
+            await vscode.workspace
+                .getConfiguration()
+                .update(newKey, oldSettingInfo.globalValue, vscode.ConfigurationTarget.Global)
+            getLogger().info(`imported global setting '${oldKey}' into '${newKey}'`)
+        }
+    }
+}

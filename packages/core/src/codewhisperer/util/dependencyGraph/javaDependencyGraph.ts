@@ -10,6 +10,7 @@ import { readFileAsString } from '../../../shared/filesystemUtilities'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import path = require('path')
+import { CodeWhispererSettings } from '../codewhispererSettings'
 
 export interface PackageNode {
     paths: string[]
@@ -244,8 +245,8 @@ export class JavaDependencyGraph extends DependencyGraph {
     }
 
     private autoDetectClasspath(projectPath: string, projectName: string, extension: string) {
-        const compileOutput = vscode.workspace.getConfiguration('aws.amazonQ').get('javaCompilationOutput')
-        if (compileOutput && typeof compileOutput === 'string') {
+        const compileOutput = CodeWhispererSettings.instance.get('javaCompilationOutput', '')
+        if (compileOutput) {
             this._outputDirs.add(compileOutput)
         }
         this.detectClasspath(projectPath, projectName, projectName, extension)
