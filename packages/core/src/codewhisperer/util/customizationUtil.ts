@@ -90,10 +90,10 @@ export const isSelectedCustomizationAvailable = (available: Customization[], sel
 
 export const baseCustomization = {
     arn: '',
-    name: localize('AWS.codewhisperer.customization.base.label', 'CodeWhisperer foundation (Default)'),
+    name: localize('AWS.codewhisperer.customization.base.label', 'Amazon Q foundation (Default)'),
     description: localize(
         'AWS.codewhisperer.customization.base.detail',
-        'Receive suggestions from CodeWhisperer base model'
+        'Receive suggestions from Amazon Q base model'
     ),
 }
 
@@ -198,7 +198,7 @@ const createCustomizationItems = async () => {
         void showMessageWithUrl(
             localize(
                 'AWS.codewhisperer.customization.noCustomizations.description',
-                'You dont have access to any CodeWhisperer customization. Contact your admin for access.'
+                'You dont have access to any Amazon Q customization. Contact your admin for access.'
             ),
             customLearnMoreUri,
             localize('AWS.codewhisperer.customization.notification.new_customizations.learn_more', 'Learn More'),
@@ -236,7 +236,7 @@ const createCustomizationItems = async () => {
 const createBaseCustomizationItem = () => {
     const label = codicon`${getIcon('vscode-circuit-board')} ${localize(
         'AWS.codewhisperer.customization.base.label',
-        'CodeWhisperer foundation (Default)'
+        'Amazon Q foundation (Default)'
     )}`
     const selectedArn = getSelectedCustomization().arn
     return {
@@ -246,7 +246,7 @@ const createBaseCustomizationItem = () => {
         },
         detail: localize(
             'AWS.codewhisperer.customization.base.description',
-            'Receive suggestions from CodeWhisperer base model'
+            'Receive suggestions from Amazon Q base model'
         ),
         description: renderDescriptionText(label),
         recentlyUsed: selectedArn === baseCustomization.arn,
@@ -297,7 +297,7 @@ export const selectCustomization = async (customization: Customization) => {
     void vscode.window.showInformationMessage(
         localize(
             'AWS.codewhisperer.customization.selected.message',
-            'CodeWhisperer suggestions are now coming from the {0}',
+            'Amazon Q suggestions are now coming from the {0}',
             suffix
         )
     )
@@ -325,7 +325,7 @@ export const switchToBaseCustomizationAndNotify = async () => {
     const selection = await vscode.window.showWarningMessage(
         localize(
             'AWS.codewhisperer.customization.notification.selected_customization_not_available',
-            'Selected CodeWhisperer customization is not available. Contact your administrator. Your instance of CodeWhisperer is using the foundation model.'
+            'Selected Amazon Q customization is not available. Contact your administrator. Your instance of Amazon Q is using the foundation model.'
         ),
         selectCustomizationLabel
     )

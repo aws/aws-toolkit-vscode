@@ -25,8 +25,8 @@ export const showCodeWhispererConnectionPrompt = async () => {
         : [createBuilderIdItem(), createSsoItem(), createCodeWhispererIamItem()]
 
     const resp = await showQuickPick(items, {
-        title: 'CodeWhisperer: Add Connection to AWS',
-        placeholder: 'Select a connection option to start using CodeWhisperer',
+        title: 'Amazon Q: Add Connection to AWS',
+        placeholder: 'Select a connection option to start using Amazon Q',
         buttons: createCommonButtons() as vscode.QuickInputButton[],
     })
 

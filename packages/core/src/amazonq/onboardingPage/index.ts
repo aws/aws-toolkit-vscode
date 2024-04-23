@@ -12,14 +12,9 @@ import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 import { getLogger } from '../../shared/logger'
 
 export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublisher: MessagePublisher<any>): void {
-    const panel = vscode.window.createWebviewPanel(
-        'amazonQWelcome',
-        'Meet Amazon Q (Preview)',
-        vscode.ViewColumn.Active,
-        {
-            enableScripts: true,
-        }
-    )
+    const panel = vscode.window.createWebviewPanel('amazonQWelcome', 'Meet Amazon Q', vscode.ViewColumn.Active, {
+        enableScripts: true,
+    })
 
     // TODO: get svg gradient icon and use `getIcon` (currently only works with svg)
     panel.iconPath = vscode.Uri.file(

@@ -104,7 +104,7 @@ export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispere
             )
         })
     return createQuickPick(getQuickPickItems(), {
-        title: 'Amazon Q (Preview) + CodeWhisperer',
+        title: 'Amazon Q',
         buttons: [createExitButton()],
         ignoreFocusOut: false,
     }).prompt()
