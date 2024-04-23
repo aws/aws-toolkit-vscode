@@ -149,6 +149,7 @@ interface CodeWhispererClientAdaptor : Disposable {
         fullResponselatency: Double?,
         requestLength: Int?,
         responseLength: Int?,
+        numberOfCodeBlocks: Int?
     ): SendTelemetryEventResponse
 
     fun sendChatInteractWithMessageTelemetry(
@@ -447,7 +448,8 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
         timeBetweenChunks: List<Double>?,
         fullResponselatency: Double?,
         requestLength: Int?,
-        responseLength: Int?
+        responseLength: Int?,
+        numberOfCodeBlocks: Int?
     ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
         requestBuilder.telemetryEvent { telemetryEventBuilder ->
             telemetryEventBuilder.chatAddMessageEvent {
@@ -462,6 +464,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                 it.fullResponselatency(fullResponselatency)
                 it.requestLength(requestLength)
                 it.responseLength(responseLength)
+                it.numberOfCodeBlocks(numberOfCodeBlocks)
             }
         }
         requestBuilder.optOutPreference(getTelemetryOptOutPreference())

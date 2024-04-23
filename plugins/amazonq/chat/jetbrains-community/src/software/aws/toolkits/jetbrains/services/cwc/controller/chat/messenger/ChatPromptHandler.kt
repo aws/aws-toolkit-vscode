@@ -32,6 +32,19 @@ class ChatPromptHandler(private val telemetryHelper: TelemetryHelper) {
     private var requestId: String = ""
     private var statusCode: Int = 0
 
+    companion object {
+        val CODE_BLOCK_REGEX: Regex = Regex("^```", RegexOption.MULTILINE)
+    }
+
+    private fun countTotalNumberOfCodeBlocks(message: StringBuilder): Int {
+        if (message.isEmpty()) {
+            return 0
+        }
+        val countOfCodeBlocks = CODE_BLOCK_REGEX.findAll(message)
+        val numberOfTripleBackTicksInMarkdown = countOfCodeBlocks.count()
+        return numberOfTripleBackTicksInMarkdown / 2
+    }
+
     fun handle(
         tabId: String,
         triggerId: String,
@@ -75,7 +88,7 @@ class ChatPromptHandler(private val telemetryHelper: TelemetryHelper) {
                     ChatMessage(tabId = tabId, triggerId = triggerId, messageId = requestId, messageType = ChatMessageType.Answer, followUps = followUps)
 
                 telemetryHelper.setResponseStreamTotalTime(tabId)
-                telemetryHelper.recordAddMessage(data, response, responseText.length, statusCode)
+                telemetryHelper.recordAddMessage(data, response, responseText.length, statusCode, countTotalNumberOfCodeBlocks(responseText))
                 emit(response)
             }
             .catch { exception ->
