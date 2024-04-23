@@ -10,12 +10,13 @@ import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
 import { init as gumbyChatAppInit } from '../amazonqGumby/app'
 import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
-import { Commands } from '../shared/vscode/commands2'
 import { activateBadge } from './util/viewBadgeHandler'
 import { amazonQHelpUrl } from '../shared/constants'
 import { openAmazonQWalkthrough } from './onboardingPage/walkthrough'
 import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
-import { focusAmazonQPanel } from '../codewhispererChat/commands/registerCommands'
+import { Commands } from '../shared/vscode/commands2'
+import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
+import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -29,6 +30,8 @@ export async function activate(context: ExtensionContext) {
         appInitContext.onDidChangeAmazonQVisibility
     )
 
+    await TryChatCodeLensProvider.register()
+
     context.subscriptions.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
             webviewOptions: {
@@ -38,7 +41,9 @@ export async function activate(context: ExtensionContext) {
         focusAmazonQChatWalkthrough.register(),
         openAmazonQWalkthrough.register(),
         listCodeWhispererCommandsWalkthrough.register(),
-        focusAmazonQPanel.register()
+        focusAmazonQPanel.register(),
+        focusAmazonQPanelKeybinding.register(),
+        tryChatCodeLensCommand.register()
     )
 
     Commands.register('aws.amazonq.learnMore', () => {

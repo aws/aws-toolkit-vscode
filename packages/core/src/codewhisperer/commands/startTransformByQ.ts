@@ -54,10 +54,6 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 
 let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
 
-export async function startTransformByQWithProgress() {
-    await startTransformByQ()
-}
-
 export async function processTransformFormInput(
     pathToProject: string,
     fromJDKVersion: JDKVersion,
@@ -293,7 +289,7 @@ export async function getValidCandidateProjects(): Promise<TransformationCandida
 
 export async function setTransformationToRunningState() {
     await setContextVariables()
-
+    await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reset')
     transformByQState.setToRunning()
     sessionPlanProgress['startJob'] = StepProgress.Pending
     sessionPlanProgress['buildCode'] = StepProgress.Pending
