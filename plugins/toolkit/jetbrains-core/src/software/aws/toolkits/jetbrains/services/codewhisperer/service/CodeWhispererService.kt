@@ -79,6 +79,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CrossFileStra
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.UtgStrategy
 import software.aws.toolkits.jetbrains.utils.isInjectedText
+import software.aws.toolkits.jetbrains.utils.isRunningOnCWNotSupportedRemoteBackend
 import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
@@ -96,6 +97,11 @@ class CodeWhispererService {
         if (!isCodeWhispererEnabled(project)) return
 
         latencyContext.credentialFetchingStart = System.nanoTime()
+
+        if (isRunningOnCWNotSupportedRemoteBackend()) {
+            showCodeWhispererInfoHint(editor, message("codewhisperer.trigger.ide.unsupported"))
+            return
+        }
 
         if (promptReAuth(project)) return
 

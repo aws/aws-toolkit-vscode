@@ -20,6 +20,9 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.FEATURE_CONFIG_POLL_INTERVAL_IN_MS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.calculateIfIamIdentityCenterConnection
+import software.aws.toolkits.jetbrains.utils.isRunningOnCWNotSupportedRemoteBackend
+import software.aws.toolkits.jetbrains.utils.notifyWarn
+import software.aws.toolkits.resources.message
 
 // TODO: add logics to check if we want to remove recommendation suspension date when user open the IDE
 class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
@@ -36,6 +39,8 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
         // ---- Everything below will be triggered only when CW is enabled, everything above will be triggered once per project ----
 
         if (runOnce) return
+
+        checkRemoteDevVersionAndPromptUpdate()
 
         // Reconnect CodeWhisperer on startup
         promptReAuth(project, isPluginStarting = true)
@@ -65,5 +70,13 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
                 delay(FEATURE_CONFIG_POLL_INTERVAL_IN_MS)
             }
         }
+    }
+
+    private fun checkRemoteDevVersionAndPromptUpdate() {
+        if (!isRunningOnCWNotSupportedRemoteBackend()) return
+        notifyWarn(
+            title = message("codewhisperer.notification.remote.ide_unsupported.title"),
+            content = message("codewhisperer.notification.remote.ide_unsupported.message"),
+        )
     }
 }

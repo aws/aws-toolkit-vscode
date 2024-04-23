@@ -71,6 +71,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
+import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import java.time.Duration
@@ -175,8 +176,13 @@ class CodeWhispererCodeScanManager(val project: Project) {
         var codeScanJobId: String? = null
         var language: CodeWhispererProgrammingLanguage = CodeWhispererUnknownLanguage.INSTANCE
         try {
-            val file = FileEditorManager.getInstance(project).selectedEditor?.file
-                ?: noFileOpenError()
+            val file =
+                if (isRunningOnRemoteBackend()) {
+                    FileEditorManager.getInstance(project).selectedEditorWithRemotes.firstOrNull()?.file
+                } else {
+                    FileEditorManager.getInstance(project).selectedEditor?.file
+                }
+                    ?: noFileOpenError()
             val codeScanSessionConfig = CodeScanSessionConfig.create(file, project)
             language = codeScanSessionConfig.getSelectedFile().programmingLanguage()
             withTimeout(Duration.ofSeconds(codeScanSessionConfig.overallJobTimeoutInSeconds())) {
@@ -211,6 +217,10 @@ class CodeWhispererCodeScanManager(val project: Project) {
             getProjectSize = async {
                 codeScanSessionConfig.getTotalProjectSizeInBytes()
             }
+        } catch (e: Error) {
+            isCodeScanInProgress.set(false)
+            val errorMessage = handleError(coroutineContext, e)
+            codeScanResponseContext = codeScanResponseContext.copy(reason = errorMessage)
         } catch (e: Exception) {
             isCodeScanInProgress.set(false)
             val errorMessage = handleException(coroutineContext, e)
@@ -226,6 +236,27 @@ class CodeWhispererCodeScanManager(val project: Project) {
                 sendCodeScanTelemetryToServiceAPI(project, language, codeScanJobId)
             }
         }
+    }
+
+    fun handleError(coroutineContext: CoroutineContext, e: Error): String {
+        val errorMessage = when (e) {
+            is NoClassDefFoundError -> {
+                if (e.cause?.message?.contains("com.intellij.openapi.compiler.CompilerPaths") == true) {
+                    message("codewhisperer.codescan.java_module_not_found")
+                } else {
+                    message("codewhisperer.codescan.service_error")
+                }
+            }
+            else -> null
+        } ?: message("codewhisperer.codescan.run_scan_error")
+
+        if (!coroutineContext.isActive) {
+            codeScanResultsPanel.setDefaultUI()
+        } else {
+            codeScanResultsPanel.showError(errorMessage)
+        }
+
+        return errorMessage
     }
 
     fun handleException(coroutineContext: CoroutineContext, e: Exception): String {
