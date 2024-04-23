@@ -29,7 +29,7 @@
         "testWeb": "npm run testWeb -w packages/ --if-present",
         "testE2E": "npm run testE2E -w packages/ --if-present",
         "testInteg": "npm run testInteg -w packages/ --if-present",
-        "package": "npm run package -w packages/toolkit",
+        "package": "npm run package -w packages/toolkit -w packages/amazonq",
         "newChange": "echo 'Must specify subproject/workspace with -w packages/<subproject>' && false",
         "createRelease": "echo 'Must specify subproject/workspace with -w packages/<subproject>' && false",
         "format": "prettier --check plugins && npm run format -w packages/ --if-present",
@@ -38,10 +38,7 @@
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts packages plugins && npm run formatfix",
         "clean": "npm run clean -w packages/ -w plugins/",
         "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules && npm install",
-        "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present",
-        "watch": "npm run watch -w packages/toolkit",
-        "webRun": "npm run webRun -w packages/toolkit",
-        "webWatch": "npm run webWatch -w packages/toolkit"
+        "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
     },
     "devDependencies": {
         "@types/vscode": "^1.68.0",
