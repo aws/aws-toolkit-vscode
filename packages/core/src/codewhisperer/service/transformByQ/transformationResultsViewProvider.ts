@@ -261,9 +261,30 @@ export class ProposedTransformationExplorer {
             treeDataProvider: transformDataProvider,
         })
 
+        const reset = async () => {
+            await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
+            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
+
+            // delete result archive after changes cleared
+            // Summary is under ResultArchiveFilePath
+            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
+            fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
+
+            diffModel.clearChanges()
+            transformByQState.setSummaryFilePath('')
+            transformByQState.setProjectCopyFilePath('')
+            transformByQState.setResultArchiveFilePath('')
+            transformDataProvider.refresh()
+        }
+
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.refresh', () =>
             transformDataProvider.refresh()
         )
+
+        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.reset', async () => 
+            await reset()
+        )
+
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.reveal', async () => {
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', true)
             const root = diffModel.getRoot()
@@ -408,17 +429,12 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
-            await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
-            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
-            transformDataProvider.refresh()
             await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 message: CodeWhispererConstants.changesAppliedChatMessage,
                 tabID: ChatSessionManager.Instance.getSession().tabID,
             })
-            // delete result archive and copied source code after changes accepted
-            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
-            fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
+            await reset()
             telemetry.codeTransform_vcsViewerSubmitted.emit({
                 codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
@@ -429,13 +445,8 @@ export class ProposedTransformationExplorer {
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
             diffModel.rejectChanges()
+            await reset()
             telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
-            await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
-            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
-            transformDataProvider.refresh()
-            // delete result archive after changes rejected
-            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
-            fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
             telemetry.codeTransform_vcsViewerCanceled.emit({
                 // eslint-disable-next-line id-length
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',

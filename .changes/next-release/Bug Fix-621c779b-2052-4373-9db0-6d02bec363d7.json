@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q Code Transformation - Proposed changes not updated when multiple transformation jobs run in sequence."
+}
