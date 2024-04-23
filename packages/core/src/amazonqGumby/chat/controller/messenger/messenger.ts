@@ -10,8 +10,9 @@
 
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 import { ChatItemType } from '../../../../amazonqFeatureDev/models'
-import { JDKVersion } from '../../../../codewhisperer/models/model'
+import { JDKVersion, TransformationCandidateProject } from '../../../../codewhisperer/models/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
+import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 import {
     AppToWebViewMessageDispatcher,
     AsyncEventProgressMessage,
@@ -26,7 +27,6 @@ import {
 } from '../../views/connector/connector'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import MessengerUtils, { ButtonActions } from './messengerUtils'
-import { TransformationCandidateProject } from '../../../../codewhisperer/service/transformByQHandler'
 
 export type StaticTextResponseType =
     | 'transform'
@@ -36,7 +36,6 @@ export type StaticTextResponseType =
 
 export type ErrorTextResponseType =
     | 'no-project-found'
-    | 'no-workspace-open'
     | 'no-java-project-found'
     | 'no-maven-java-project-found'
     | 'could-not-compile-project'
@@ -66,7 +65,7 @@ export class Messenger {
 
     public sendErrorMessage(errorMessage: string, tabID: string) {
         this.dispatcher.sendErrorMessage(
-            new ErrorMessage(`Sorry, we encountered a problem when processing your request.`, errorMessage, tabID)
+            new ErrorMessage(CodeWhispererConstants.genericErrorMessage, errorMessage, tabID)
         )
     }
 
@@ -196,7 +195,7 @@ export class Messenger {
     }
 
     public sendCompilationInProgress(tabID: string) {
-        const message = `I'm building your project. This can take up to 10 minutes, depending on the size of your project.`
+        const message = CodeWhispererConstants.buildStartedChatMessage
 
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, { inProgress: true, message: undefined })
@@ -211,7 +210,7 @@ export class Messenger {
     }
 
     public sendCompilationFinished(tabID: string) {
-        const message = `I was able to build your project. I'll start transforming your code soon.`
+        const message = CodeWhispererConstants.buildSucceededChatMessage
 
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
@@ -222,23 +221,22 @@ export class Messenger {
     }
 
     public sendJobSubmittedMessage(tabID: string, disableJobActions: boolean = false) {
-        const message = `I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.`
+        const message = CodeWhispererConstants.jobStartedChatMessage
 
         const buttons: ChatItemButton[] = []
 
         if (!disableJobActions) {
             // Note: buttons can only be clicked once.
-            // To get around this, we remove the card after they're clicked and then
-            // resubmit the message.
+            // To get around this, we remove the card after it's clicked and then resubmit the message.
             buttons.push({
                 keepCardAfterClick: true,
-                text: 'Open Transformation Hub',
+                text: CodeWhispererConstants.openTransformationHubButtonText,
                 id: ButtonActions.VIEW_TRANSFORMATION_HUB,
             })
 
             buttons.push({
                 keepCardAfterClick: true,
-                text: 'Stop transformation',
+                text: CodeWhispererConstants.stopTransformationButtonText,
                 id: ButtonActions.STOP_TRANSFORMATION_JOB,
             })
         }
@@ -292,37 +290,29 @@ export class Messenger {
         let message = '...'
 
         switch (type) {
-            case 'no-workspace-open':
-                message = 'To begin, please open a workspace.'
-                break
             case 'no-project-found':
+                message = CodeWhispererConstants.noOpenProjectsFoundChatMessage
+                break
             case 'no-java-project-found':
-                message = `Sorry, I can't upgrade any of your open projects. Currently, I can only upgrade Java projects built on Maven. 
-
-For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
+                message = CodeWhispererConstants.noJavaProjectsFoundChatMessage
                 break
             case 'no-maven-java-project-found':
-                message = `Sorry, I can't upgrade any of your open projects. I couldn't find a pom.xml file in any of your Java projects. Currently, I can only upgrade Java projects built on Maven.
-                    
-For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
+                message = CodeWhispererConstants.noPomXmlFoundChatMessage
                 break
             case 'could-not-compile-project':
-                message = `Sorry, I couldn't run the Maven install to build your project. To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)`
+                message = CodeWhispererConstants.cleanInstallErrorChatMessage
                 break
             case 'invalid-java-home':
-                message =
-                    "I'm sorry, I could not locate your Java installation.  To troubleshoot, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing)"
+                message = CodeWhispererConstants.noJavaHomeFoundChatMessage
                 break
             case 'unsupported-source-jdk-version':
-                message = `I'm sorry, currently I can only upgrade Java 8 or Java 11 projects.
-                
-For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html).`
+                message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
         }
 
         const buttons: ChatItemButton[] = []
         buttons.push({
             keepCardAfterClick: false,
-            text: 'Start a new transformation',
+            text: CodeWhispererConstants.startTransformationButtonText,
             id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
         })
 
@@ -342,19 +332,11 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabId, message.eventId))
     }
 
-    public sendJobFinishedMessage(tabID: string, cancelled: boolean = false, jobStatus: string = '') {
-        let message =
-            'I stopped your transformation. If you want to start another transformation, choose **Start a new transformation.**'
-
-        if (!cancelled) {
-            message =
-                'The transformation job is over. If you want to start another transformation, choose **Start a new transformation.**'
-        }
-
+    public sendJobFinishedMessage(tabID: string, message: string = '') {
         const buttons: ChatItemButton[] = []
         buttons.push({
             keepCardAfterClick: false,
-            text: 'Start a new transformation',
+            text: CodeWhispererConstants.startTransformationButtonText,
             id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
         })
 
@@ -378,7 +360,7 @@ For more information, see the [Amazon Q documentation.](https://docs.aws.amazon.
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: "I'm checking for open projects that are eligible for Code Transformation.",
+                message: CodeWhispererConstants.checkingForProjectsChatMessage,
             })
         )
     }

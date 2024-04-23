@@ -122,14 +122,13 @@ export async function activate(context: vscode.ExtensionContext) {
             context: extContext,
             regionProvider: globals.regionProvider,
             toolkitOutputChannel: globals.outputChannel,
-            remoteInvokeOutputChannel: globals.invokeOutputChannel,
         })
 
         await activateAppRunner(extContext)
 
         await activateApiGateway({
             extContext: extContext,
-            outputChannel: globals.invokeOutputChannel,
+            outputChannel: globals.outputChannel,
         })
 
         await activateLambda(extContext)
@@ -233,7 +232,3 @@ function recordToolkitInitialization(activationStartedOn: number, settingsValid:
         logger?.error(err as Error)
     }
 }
-
-// Unique extension entrypoint names, so that they can be obtained from the webpack bundle
-export const awsToolkitActivate = activate
-export const awsToolkitDeactivate = deactivate

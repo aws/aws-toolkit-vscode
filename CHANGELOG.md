@@ -1,3 +1,26 @@
+## 2.20.0 2024-04-19
+
+- **Bug Fix** Amazon Q CodeTransform may fail if JAVA_HOME has leading or trailing whitespace
+- **Bug Fix** Amazon Q FeatureDev: code generation may fail with "conversation id not found" error
+- **Bug Fix** Amazon Q Code Transformation: show error messages in chat
+- **Bug Fix** Amazon Q Code Transformation - Omit Maven metadata files when uploading dependencies to fix certain build failures in backend.
+- **Feature** Enable Amazon Q feature development and Amazon Q transform capabilities (/dev and /transform) for AWS Builder ID users.
+
+## 2.19.0 2024-04-15
+
+- **Bug Fix** Amazon Q: Fixed quick action command list inconsistency between Q tabs
+- **Bug Fix** Amazon Q Code Transform: Handle whitespaces in manually entered JAVA_HOME
+- **Bug Fix** Amazon Q: Fixed cursor not focuses to prompt input when code is sent to Q Chat
+- **Bug Fix** Amazon Q: Fixed newly opening tabs have all quick actions disabled.
+- **Feature** Support extended CodeWhisperer session durations when using CodeCatalyst on the same SSO connection
+- **Feature** Amazon Q Feature Dev: Use project context from workspace root directory instead of the /src folder
+
+## 2.18.0 2024-04-04
+
+- **Bug Fix** Amazon Q Feature Dev: Fix followups after hitting iteration limit
+- **Bug Fix** Amazon Q Code Transformation: remove Transform button from side panel, use /transform in chat now
+- **Bug Fix** Amazon Q Code Transformation: allow "Start a new transformation" button in chat to work after job fails
+
 ## 2.17.0 2024-03-28
 
 - **Bug Fix** CodeWhisperer: Infinite loop of logging if users' editor focus is on OUTPUT tab

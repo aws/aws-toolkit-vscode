@@ -21,7 +21,7 @@ import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { FeatureDevClient } from '../../../amazonqFeatureDev/client/featureDev'
 import { ToolkitError } from '../../../shared/errors'
 import { PrepareRepoFailedError } from '../../../amazonqFeatureDev/errors'
-import crypto from 'crypto'
+import * as crypto from '../../../common/crypto'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 import { assertTelemetry, createTestWorkspaceFolder } from '../../testUtil'
 import { getFetchStubWithResponse } from '../../common/request.test'
@@ -51,7 +51,7 @@ const mockSessionStateConfig = ({
     uploadId: string
     workspaceFolder: vscode.WorkspaceFolder
 }): SessionStateConfig => ({
-    sourceRoots: ['fake-source'],
+    workspaceRoots: ['fake-source'],
     workspaceFolders: [workspaceFolder],
     conversationId,
     proxyClient: {

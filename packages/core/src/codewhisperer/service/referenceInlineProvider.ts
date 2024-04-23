@@ -12,8 +12,6 @@ import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { application } from '../util/codeWhispererApplication'
 import { placeholder } from '../../shared/vscode/commands2'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 /**
  * ReferenceInlineProvider
  */

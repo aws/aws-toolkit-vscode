@@ -4,12 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import globals from '../../shared/extensionGlobals'
-import { getJobHistory, getPlanProgress } from '../commands/startTransformByQ'
-import { StepProgress, transformByQState } from '../models/model'
-import { getTransformationSteps } from './transformByQHandler'
-import { convertToTimeString } from '../../shared/utilities/textUtilities'
-import { getLogger } from '../../shared/logger'
+import globals from '../../../shared/extensionGlobals'
+import { getJobHistory, getPlanProgress } from '../../commands/startTransformByQ'
+import { StepProgress, transformByQState } from '../../models/model'
+import { convertToTimeString } from '../../../shared/utilities/textUtilities'
+import { getLogger } from '../../../shared/logger'
+import { getTransformationSteps } from './transformApiHandler'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
@@ -115,9 +115,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
 
     private async showPlanProgress(startTime: number): Promise<string> {
         const planProgress = getPlanProgress()
-        let planSteps = undefined
-        if (planProgress['generatePlan'] === StepProgress.Succeeded) {
+        let planSteps = transformByQState.getPlanSteps()
+        if (planProgress['generatePlan'] === StepProgress.Succeeded && transformByQState.isRunning()) {
             planSteps = await getTransformationSteps(transformByQState.getJobId())
+            transformByQState.setPlanSteps(planSteps)
         }
         let progressHtml = `<p><b>Transformation Status</b></p><p>No job ongoing</p>`
         if (planProgress['transformCode'] !== StepProgress.NotStarted) {

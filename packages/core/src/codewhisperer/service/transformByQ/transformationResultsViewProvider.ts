@@ -9,17 +9,17 @@ import fs from 'fs-extra'
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
-
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import { TransformByQReviewStatus, transformByQState } from '../models/model'
-import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../shared/utilities/download'
-import { getLogger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
-import { MetadataResult } from '../../shared/telemetry/telemetryClient'
-import * as CodeWhispererConstants from '../models/constants'
-import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
+import { TransformByQReviewStatus, transformByQState } from '../../models/model'
+import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
+import { getLogger } from '../../../shared/logger'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
+import * as CodeWhispererConstants from '../../models/constants'
+import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
+import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -139,10 +139,6 @@ export class DiffModel {
      */
     public parseDiff(pathToDiff: string, pathToWorkspace: string): ProposedChangeNode[] {
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
-        if (!diffContents) {
-            void vscode.window.showErrorMessage(CodeWhispererConstants.emptyDiffMessage)
-            throw new Error('diff.patch file is empty')
-        }
         const changedFiles = parsePatch(diffContents)
         // path to the directory containing copy of the changed files in the transformed project
         const pathToTmpSrcDir = this.copyProject(pathToWorkspace, changedFiles)
@@ -294,19 +290,15 @@ export class ProposedTransformationExplorer {
                 'gumby.reviewState',
                 TransformByQReviewStatus.PreparingReview
             )
-            telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
 
-            // This metric is emitted when user clicks Download Proposed Changes button
-            telemetry.codeTransform_vcsViewerClicked.emit({
-                codeTransformVCSViewerSrcComponents: 'toastNotification',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-            })
             const pathToArchive = path.join(
                 ProposedTransformationExplorer.TmpDir,
                 transformByQState.getJobId(),
                 'ExportResultsArchive.zip'
             )
+
+            let downloadErrorMessage = undefined
+
             const cwStreamingClient = await createCodeWhispererChatStreamingClient()
             try {
                 await downloadExportResultArchive(
@@ -318,30 +310,38 @@ export class ProposedTransformationExplorer {
                     pathToArchive
                 )
             } catch (e: any) {
+                downloadErrorMessage = (e as Error).message
                 // This allows the customer to retry the download
-                void vscode.window.showErrorMessage(
-                    CodeWhispererConstants.errorDownloadingDiffMessage.replace(
-                        'LINK_HERE',
-                        CodeWhispererConstants.linkToDownloadZipTooLarge
-                    )
-                )
+                void vscode.window.showErrorMessage(CodeWhispererConstants.errorDownloadingDiffNotification)
+                transformByQState.getChatControllers()?.transformationFinished.fire({
+                    message: CodeWhispererConstants.errorDownloadingDiffChatMessage,
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
                 await vscode.commands.executeCommand(
                     'setContext',
                     'gumby.reviewState',
                     TransformByQReviewStatus.NotStarted
                 )
-                const errorMessage = CodeWhispererConstants.errorDownloadingDiffMessage
-                getLogger().error(`CodeTransformation: ExportResultArchive error = ${errorMessage}`)
+                getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 telemetry.codeTransform_logApiError.emit({
                     codeTransformApiNames: 'ExportResultArchive',
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformApiErrorMessage: (e as Error).message ?? errorMessage,
+                    codeTransformApiErrorMessage: downloadErrorMessage,
                     codeTransformRequestId: e.requestId ?? '',
                     result: MetadataResult.Fail,
                     reason: 'ExportResultArchiveFailed',
                 })
                 throw new Error('Error downloading diff')
+            } finally {
+                // This metric is emitted when user clicks Download Proposed Changes button
+                telemetry.codeTransform_vcsViewerClicked.emit({
+                    codeTransformVCSViewerSrcComponents: 'toastNotification',
+                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformJobId: transformByQState.getJobId(),
+                    result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
+                    reason: downloadErrorMessage,
+                })
             }
 
             const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
@@ -378,12 +378,20 @@ export class ProposedTransformationExplorer {
                 })
 
                 // Do not await this so that the summary reveals without user needing to close this notification
-                void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesMessage)
+                void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesNotification)
+                transformByQState.getChatControllers()?.transformationFinished.fire({
+                    message: CodeWhispererConstants.viewProposedChangesChatMessage,
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
-                deserializeErrorMessage = (e as Error).message ?? CodeWhispererConstants.errorDeserializingDiffMessage
+                deserializeErrorMessage = (e as Error).message
                 getLogger().error(`CodeTransformation: ParseDiff error = ${deserializeErrorMessage}`)
-                void vscode.window.showErrorMessage(CodeWhispererConstants.errorDeserializingDiffMessage)
+                transformByQState.getChatControllers()?.transformationFinished.fire({
+                    message: CodeWhispererConstants.errorDeserializingDiffChatMessage,
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
+                void vscode.window.showErrorMessage(CodeWhispererConstants.errorDeserializingDiffNotification)
             } finally {
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
                     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
@@ -403,7 +411,11 @@ export class ProposedTransformationExplorer {
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
-            await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedMessage)
+            await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
+            transformByQState.getChatControllers()?.transformationFinished.fire({
+                message: CodeWhispererConstants.changesAppliedChatMessage,
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+            })
             // delete result archive and copied source code after changes accepted
             fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
             fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })

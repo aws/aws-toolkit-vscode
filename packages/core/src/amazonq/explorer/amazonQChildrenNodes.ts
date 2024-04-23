@@ -8,15 +8,12 @@ import * as nls from 'vscode-nls'
 import { Command, Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
 import { reconnect } from '../../codewhisperer/commands/basicCommands'
-import { transformByQState } from '../../codewhisperer/models/model'
-import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { focusAmazonQPanel } from '../../auth/ui/vue/show'
-import { showTransformByQ } from '../../amazonqGumby/commands'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 
 const localize = nls.loadMessageBundle()
 
@@ -36,7 +33,7 @@ export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView',
         elementId: 'amazonq_switchToQChat',
         passive: false,
     })
-    void focusAmazonQPanel()
+    void focusAmazonQPanel.execute(placeholder, 'switchToQChat')
 })
 
 export function switchToAmazonQNode(type: 'item'): DataQuickPickItem<'openChatPanel'>
@@ -72,30 +69,3 @@ export const enableAmazonQNode = () =>
         iconPath: getIcon('vscode-debug-start'),
         contextValue: 'awsEnableAmazonQ',
     })
-
-export const createTransformByQ = () => {
-    const prefix = transformByQState.getPrefixTextForButton()
-    let status = transformByQState.getPolledJobStatus().toLowerCase()
-    if (transformByQState.isRunning()) {
-        if (status === '') {
-            // job is running but polling has not started yet, so display generic message
-            status = CodeWhispererConstants.transformByQStateRunningMessage
-        }
-    } else if (transformByQState.isCancelled()) {
-        status = CodeWhispererConstants.transformByQStateCancellingMessage
-    } else if (transformByQState.isFailed()) {
-        status = CodeWhispererConstants.transformByQStateFailedMessage
-    } else if (transformByQState.isSucceeded()) {
-        status = CodeWhispererConstants.transformByQStateSucceededMessage
-    } else if (transformByQState.isPartiallySucceeded()) {
-        status = CodeWhispererConstants.transformByQStatePartialSuccessMessage
-    } else if (transformByQState.isNotStarted()) {
-        status = ''
-    }
-    return showTransformByQ.build(CodeWhispererConstants.transformTreeNode).asTreeNode({
-        label: status !== '' ? `${prefix} Transform [Job status: ` + status + `]` : `Transform`,
-        iconPath: transformByQState.getIconForButton(),
-        tooltip: `${prefix} Transform`,
-        contextValue: `${prefix}TransformByQ`,
-    })
-}

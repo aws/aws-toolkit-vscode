@@ -11,7 +11,13 @@ import { EventEmitter } from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 import { featureDevScheme } from '../../constants'
-import { ContentLengthError, SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
+import {
+    CodeIterationLimitError,
+    ContentLengthError,
+    PlanIterationLimitError,
+    SelectedFolderNotInWorkspaceFolderError,
+    createUserFacingErrorMessage,
+} from '../../errors'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureName } from '../../constants'
@@ -236,6 +242,38 @@ export class FeatureDevController {
                         },
                     ],
                 })
+            } else if (err instanceof PlanIterationLimitError) {
+                this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: message.tabID,
+                    followUps: [
+                        {
+                            pillText: 'Discuss a new plan',
+                            type: FollowUpTypes.NewTask,
+                            status: 'info',
+                        },
+                        {
+                            pillText: 'Generate code',
+                            type: FollowUpTypes.GenerateCode,
+                            status: 'info',
+                        },
+                    ],
+                })
+            } else if (err instanceof CodeIterationLimitError) {
+                this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: message.tabID,
+                    followUps: [
+                        {
+                            pillText: 'Insert code',
+                            type: FollowUpTypes.InsertCode,
+                            icon: 'ok' as MynahIcons,
+                            status: 'success',
+                        },
+                    ],
+                })
             } else {
                 const errorMessage = createUserFacingErrorMessage(
                     `${featureName} request failed: ${err.cause?.message ?? err.message}`
@@ -411,9 +449,15 @@ export class FeatureDevController {
         let session
         try {
             session = await this.sessionStorage.getSession(message.tabID)
+
+            const acceptedFiles = (paths?: { rejected: boolean }[]) => (paths || []).filter(i => !i.rejected).length
+
+            const amazonqNumberOfFilesAccepted =
+                acceptedFiles(session.state.filePaths) + acceptedFiles(session.state.deletedFiles)
+
             telemetry.amazonq_isAcceptedCodeChanges.emit({
                 amazonqConversationId: session.conversationId,
-                amazonqNumberOfFilesAccepted: session.state.filePaths?.filter(i => !i.rejected).length ?? -1,
+                amazonqNumberOfFilesAccepted,
                 enabled: true,
                 result: 'Succeeded',
             })
@@ -576,7 +620,7 @@ export class FeatureDevController {
         }
 
         if (uri && uri instanceof vscode.Uri) {
-            session.config.sourceRoots = [uri.fsPath]
+            session.config.workspaceRoots = [uri.fsPath]
             this.messenger.sendAnswer({
                 message: `Changed source root to: ${uri.fsPath}`,
                 type: 'answer',

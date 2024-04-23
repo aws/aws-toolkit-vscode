@@ -7,8 +7,7 @@ import { env, Memento, version } from 'vscode'
 import { getLogger } from '../logger'
 import { fromExtensionManifest } from '../settings'
 import { shared } from '../utilities/functionUtils'
-import { extensionVersion, isAutomation } from '../vscode/env'
-import { v4 as uuidv4 } from 'uuid'
+import { isInDevEnv, extensionVersion, isAutomation } from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
 import globals from '../extensionGlobals'
 import { mapMetadata } from './telemetryLogger'
@@ -16,7 +15,7 @@ import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
-import { isInDevEnv } from '../../codecatalyst/utils'
+import { randomUUID } from '../../common/crypto'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -55,7 +54,7 @@ export const getClientId = shared(
         try {
             let clientId = globalState.get<string>('telemetryClientId')
             if (!clientId) {
-                clientId = uuidv4()
+                clientId = randomUUID()
                 await globalState.update('telemetryClientId', clientId)
             }
             return clientId

@@ -10,7 +10,6 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
-import * as uuid from 'uuid' // TODO: use crypto.randomUUID when C9 is on node16
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
@@ -61,6 +60,7 @@ import {
 } from './connection'
 import { isSageMaker, isCloud9 } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { randomUUID } from '../common/crypto'
 
 interface AuthService {
     /**
@@ -172,10 +172,10 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile.type === 'sso') {
             const provider = this.getSsoTokenProvider(id, profile)
 
-            // We create our own span with run() since we want to
-            // set the isReAuth attribute
+            // We cannot easily set isReAuth inside the createToken() call,
+            // so we need to set it here.
             await telemetry.aws_loginWithBrowser.run(async span => {
-                span.record({ isReAuth: true })
+                span.record({ isReAuth: true, credentialStartUrl: profile.startUrl })
                 await this.authenticate(id, () => provider.createToken())
             })
 
@@ -281,7 +281,7 @@ export class Auth implements AuthService, ConnectionManager {
             throw new Error('Creating IAM connections is not supported')
         }
 
-        const id = uuid.v4()
+        const id = randomUUID()
         const tokenProvider = this.getSsoTokenProvider(id, {
             ...profile,
             metadata: { connectionState: 'unauthenticated' },
@@ -834,7 +834,7 @@ export class Auth implements AuthService, ConnectionManager {
                     // an issue, it should be possible to use the actual key here However, this
                     // would require deleting existing profiles to avoid inserting duplicates.
                     const [_dangerousDiscardActualKey, devEnvProfile] = await this.createCodeCatalystDevEnvProfile()
-                    const key = uuid.v4()
+                    const key = randomUUID()
                     await this.store.addProfile(key, devEnvProfile)
                     await this.store.setCurrentProfileId(key)
                 } catch (err) {

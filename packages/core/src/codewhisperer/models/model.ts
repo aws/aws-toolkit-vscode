@@ -16,7 +16,7 @@ import globals from '../../shared/extensionGlobals'
 import { autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
-import { FolderInfo } from '../service/transformByQHandler'
+import { TransformationSteps } from '../client/codewhispereruserclient'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -303,7 +303,9 @@ export class TransformByQState {
 
     private payloadFilePath: string = ''
 
-    private jobFailureErrorMessage: string = ''
+    private jobFailureErrorNotification: string | undefined = undefined
+
+    private jobFailureErrorChatMessage: string | undefined = undefined
 
     private errorLog: string = ''
 
@@ -314,6 +316,8 @@ export class TransformByQState {
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
 
     private dependencyFolderInfo: FolderInfo | undefined = undefined
+
+    private planSteps: TransformationSteps | undefined = undefined
 
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
@@ -391,8 +395,12 @@ export class TransformByQState {
         return this.payloadFilePath
     }
 
-    public getJobFailureErrorMessage() {
-        return this.jobFailureErrorMessage
+    public getJobFailureErrorNotification() {
+        return this.jobFailureErrorNotification
+    }
+
+    public getJobFailureErrorChatMessage() {
+        return this.jobFailureErrorChatMessage
     }
 
     public getErrorLog() {
@@ -413,6 +421,10 @@ export class TransformByQState {
 
     public getDependencyFolderInfo(): FolderInfo | undefined {
         return this.dependencyFolderInfo
+    }
+
+    public getPlanSteps() {
+        return this.planSteps
     }
 
     public appendToErrorLog(message: string) {
@@ -491,8 +503,12 @@ export class TransformByQState {
         this.payloadFilePath = payloadFilePath
     }
 
-    public setJobFailureErrorMessage(errorMessage: string) {
-        this.jobFailureErrorMessage = errorMessage
+    public setJobFailureErrorNotification(errorNotification: string) {
+        this.jobFailureErrorNotification = errorNotification
+    }
+
+    public setJobFailureErrorChatMessage(errorChatMessage: string) {
+        this.jobFailureErrorChatMessage = errorChatMessage
     }
 
     public setMavenName(mavenName: string) {
@@ -509,6 +525,10 @@ export class TransformByQState {
 
     public setDependencyFolderInfo(folderInfo: FolderInfo) {
         this.dependencyFolderInfo = folderInfo
+    }
+
+    public setPlanSteps(steps: TransformationSteps) {
+        this.planSteps = steps
     }
 
     public getPrefixTextForButton() {
@@ -534,7 +554,9 @@ export class TransformByQState {
     public setJobDefaults() {
         this.setToNotStarted() // so that the "Transform by Q" button resets
         this.polledJobStatus = '' // reset polled job status too
-        this.jobFailureErrorMessage = ''
+        this.jobFailureErrorNotification = undefined
+        this.jobFailureErrorChatMessage = undefined
+        this.jobFailureMetadata = ''
         this.payloadFilePath = ''
         this.errorLog = ''
     }
@@ -643,4 +665,15 @@ export enum Cloud9AccessState {
     NoAccess,
     RequestedAccess,
     HasAccess,
+}
+
+export interface TransformationCandidateProject {
+    name: string
+    path: string
+    JDKVersion?: JDKVersion
+}
+
+export interface FolderInfo {
+    path: string
+    name: string
 }

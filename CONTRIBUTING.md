@@ -29,7 +29,8 @@ To develop this project, install these dependencies:
 -   [Git](https://git-scm.com/downloads)
     -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 -   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
--   (required for Web mode) [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher)
+-   [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher)
+    -   Not installing will result in the following error during building: `Error: Invalid problemMatcher reference: $ts-webpack-watch`
 -   (optional) [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 -   (optional) [Docker](https://docs.docker.com/get-docker/)
 
@@ -252,8 +253,6 @@ Pull requests that change **customer-impacting behavior** must include a changel
 
     npm run newChange
 
-
-
 > [!TIP]
 >
 > -   Describe the change in a way that is _meaningful to the customer_. If you can't describe the _customer impact_ then it probably shouldn't be in the changelog.
@@ -269,7 +268,6 @@ Pull requests that change **customer-impacting behavior** must include a changel
 > -   To update an _existing_ changelog item, just edit its `.changes/next-release/….json` file, you don't need to re-run `npm run newChange`.
 > -   If there are multiple unrelated changes, run `npm run newChange` for each change.
 > -   Include the feature that the change affects, Q, CodeWhisperer, etc.
-
 
 ### Commit messages
 
@@ -520,7 +518,13 @@ requests just from the model/types.
 
 ### Webview dev-server
 
-Webviews can be hot-reloaded (updated without restarting the extension) by running a developer server provided by webpack. This server is started automatically when running the `Extension` launch configuration. You can also start it by running `npm serve`. Note that only frontend components will be updated; if you change backend code you will still need to restart the development extension.
+Webviews can be refreshed to show changes to `.vue` code when running in Debug mode. You do not have to
+reload the Debug VS Code window.
+
+-   Use `Command Palette` -> `Reload Webviews`
+-   Only the frontend `.vue` changes will be reflected. If changing any backend code you must restart Debug mode.
+
+This works by continuously building the final Vue webview files (`webpack watch`) and then serving them through a local server (`webpack serve`). Whenever a webview is loaded it will grab the latest build from the server.
 
 ### Font generation
 
@@ -539,8 +543,7 @@ As a simple example, let's say I wanted to add a new icon for CloudWatch log str
 ### VSCode Marketplace
 
 The [marketplace page](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode)
-is defined in `README.quickstart.vscode.md` (which replaces `README.md` during
-the release automation). The `vsce` package tool always [replaces relative image paths](https://github.com/microsoft/vscode-vsce/blob/9478dbd11ea2e7adb23ec72923e889c7bb215263/src/package.ts#L885)
+is defined in `packages/toolkit/README.md`. The `vsce` package tool always [replaces relative image paths](https://github.com/microsoft/vscode-vsce/blob/9478dbd11ea2e7adb23ec72923e889c7bb215263/src/package.ts#L885)
 with URLs pointing to `HEAD` on GitHub (`https://github.com/aws/aws-toolkit-vscode/raw/HEAD/…/foo.gif`).
 
 Note therefore:

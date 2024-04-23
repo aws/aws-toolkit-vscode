@@ -128,7 +128,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         }
         const regionProvider = createTestRegionProvider({ globalState: ctx.globalState, awsContext })
         const outputChannel = new MockOutputChannel()
-        const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
         const telemetryService = await DefaultTelemetryService.create(
             ctx,
@@ -143,7 +142,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             samCliContext,
             regionProvider,
             outputChannel,
-            invokeOutputChannel,
             telemetryService,
             credentialsStore: new CredentialsStore(),
             uriHandler: new UriHandler(),

@@ -34,14 +34,25 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import { DependencyGraphConstants } from '../util/dependencyGraph/dependencyGraph'
 import path from 'path'
+import { once } from '../../shared/utilities/functionUtils'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
-const codeScanLogger = makeLogger({
-    outputChannels: [securityScanOutputChannel],
-})
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
+
+/**
+ * Creates the vscode OutputChannel and Toolkit logger used by Security Scan, exactly once.
+ *
+ * To avoid cluttering the Output channels list, do not call this until it's actually needed.
+ *
+ * @returns Logger and OutputChannel created on the first invocation.
+ */
+const getLogOutputChan = once(() => {
+    const codeScanOutpuChan = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
+    const codeScanLogger = makeLogger({
+        outputChannels: [codeScanOutpuChan],
+    })
+    return [codeScanLogger, codeScanOutpuChan] as const
+})
 
 export function startSecurityScanWithProgress(
     securityPanelViewProvider: SecurityPanelViewProvider,
@@ -263,9 +274,10 @@ export function errorPromptHelper(error: Error) {
 }
 
 function populateCodeScanLogStream(scannedFiles: Set<string>) {
-    // Clear log
-    securityScanOutputChannel.clear()
+    const [codeScanLogger, codeScanOutpuChan] = getLogOutputChan()
     const numScannedFiles = scannedFiles.size
+    // Clear log
+    codeScanOutpuChan.clear()
     if (numScannedFiles === 1) {
         codeScanLogger.info(`${numScannedFiles} file was scanned during the last Security Scan.`)
     } else {
@@ -276,6 +288,7 @@ function populateCodeScanLogStream(scannedFiles: Set<string>) {
         const uri = vscode.Uri.file(file)
         codeScanLogger.info(`File scanned: ${uri.fsPath}`)
     }
+    codeScanOutpuChan.show()
 }
 
 export async function confirmStopSecurityScan() {
@@ -287,7 +300,7 @@ export async function confirmStopSecurityScan() {
     }
 }
 
-export function showScanCompletedNotification(total: number, scannedFiles: Set<string>, isProjectTruncated: boolean) {
+function showScanCompletedNotification(total: number, scannedFiles: Set<string>, isProjectTruncated: boolean) {
     const totalFiles = `${scannedFiles.size} ${scannedFiles.size === 1 ? 'file' : 'files'}`
     const totalIssues = `${total} ${total === 1 ? 'issue was' : 'issues were'}`
     const fileSizeLimitReached = isProjectTruncated ? 'File size limit reached.' : ''
@@ -303,7 +316,8 @@ export function showScanCompletedNotification(total: number, scannedFiles: Set<s
         )
         .then(value => {
             if (value === CodeWhispererConstants.showScannedFilesMessage) {
-                void vscode.commands.executeCommand(CodeWhispererConstants.codeScanLogsOutputChannelId)
+                const [, codeScanOutpuChan] = getLogOutputChan()
+                codeScanOutpuChan.show()
             } else if (value === learnMore) {
                 void openUrl(vscode.Uri.parse(CodeWhispererConstants.securityScanLearnMoreUri))
             }

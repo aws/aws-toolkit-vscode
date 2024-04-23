@@ -4,7 +4,6 @@
  */
 
 import { MynahIcons } from '@aws/mynah-ui'
-import { randomUUID } from 'crypto'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
@@ -34,6 +33,7 @@ import { CodeReference } from '../../amazonq/webview/ui/connector'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { randomUUID } from '../../common/crypto'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -62,7 +62,7 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
                 credentialStartUrl: AuthUtil.instance.startUrl,
             })
             const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-                this.config.sourceRoots,
+                this.config.workspaceRoots,
                 this.config.workspaceFolders,
                 action.telemetry,
                 span
@@ -461,7 +461,7 @@ export class PrepareCodeGenState implements SessionState {
 
         const uploadId = await telemetry.amazonq_createUpload.run(async span => {
             const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-                this.config.sourceRoots,
+                this.config.workspaceRoots,
                 this.config.workspaceFolders,
                 action.telemetry,
                 span

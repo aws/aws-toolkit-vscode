@@ -21,7 +21,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "build"
         },
         {
             "name": "Extension Tests (current file)",
@@ -40,7 +40,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "build"
         },
         {
             "name": "Extension Tests (web)",
@@ -51,12 +51,11 @@
                 "--disable-extension=amazonwebservices.aws-toolkit-vscode",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionDevelopmentKind=web",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testWeb/testRunner",
+                "--extensionTestsPath=${workspaceFolder}/dist/src/testWeb/testRunnerWebCore",
                 "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
-            "preLaunchTask": "webWatch",
-            "postDebugTask": "webRunTerminate"
+            "preLaunchTask": "testsBuildWatch"
         },
         {
             "name": "Integration Tests",
@@ -74,7 +73,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "build"
         },
         {
             "name": "Integration Tests (current file)",
@@ -93,7 +92,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "build"
         },
         {
             "name": "E2E Test (current file)",
@@ -112,7 +111,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "build"
         },
         {
             "name": "Test Lint",
@@ -120,29 +119,31 @@
             "request": "launch",
             "program": "${workspaceFolder}/scripts/lint/testLint.ts",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Attach to ASL Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6009,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
-        },
-        {
-            "name": "Attach to SSM Document Language Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6010,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
+            "preLaunchTask": "build"
         }
+        // ---- We do not need the following currently, and we want to reduce clutter. Re-enable if necessary ----
+        // {
+        //     "name": "Attach to ASL Server",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 6009,
+        //     "restart": true,
+        //     "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
+        // },
+        // {
+        //     "name": "Attach to SSM Document Language Server",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 6010,
+        //     "restart": true,
+        //     "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
+        // }
     ],
     "compounds": [
-        {
-            "name": "Extension + Attach to SSM Document Language Server",
-            "configurations": ["Extension", "Attach to SSM Document Language Server"]
-        }
+        // ---- We do not need the following currently, and we want to reduce clutter. Re-enable if necessary ----
+        // {
+        //     "name": "Extension + Attach to SSM Document Language Server",
+        //     "configurations": ["Extension", "Attach to SSM Document Language Server"]
+        // }
     ]
 }

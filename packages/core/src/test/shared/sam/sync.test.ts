@@ -19,9 +19,8 @@ import { ToolkitError } from '../../../shared/errors'
 import globals from '../../../shared/extensionGlobals'
 
 describe('SyncWizard', async function () {
-    const registry = await globals.templateRegistry
     const createTester = async (params?: Partial<SyncParams>) =>
-        createWizardTester(new SyncWizard({ deployType: 'code', ...params }, registry))
+        createWizardTester(new SyncWizard({ deployType: 'code', ...params }, await globals.templateRegistry))
 
     it('shows steps in correct order', async function () {
         const tester = await createTester()

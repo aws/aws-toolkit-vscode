@@ -98,6 +98,31 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *                 },
  *               },
  *             },
+ *             shellState: { // ShellState
+ *               shellName: "STRING_VALUE", // required
+ *               shellHistory: [ // ShellHistory
+ *                 { // ShellHistoryEntry
+ *                   command: "STRING_VALUE", // required
+ *                   directory: "STRING_VALUE",
+ *                   exitCode: Number("int"),
+ *                   stdout: "STRING_VALUE",
+ *                   stderr: "STRING_VALUE",
+ *                 },
+ *               ],
+ *             },
+ *             gitState: { // GitState
+ *               status: "STRING_VALUE",
+ *             },
+ *             envState: { // EnvState
+ *               operatingSystem: "STRING_VALUE",
+ *               currentWorkingDirectory: "STRING_VALUE",
+ *               environmentVariables: [ // EnvironmentVariables
+ *                 { // EnvironmentVariable
+ *                   key: "STRING_VALUE",
+ *                   value: "STRING_VALUE",
+ *                 },
+ *               ],
+ *             },
  *             diagnostic: { // Diagnostic Union: only one key present
  *               textDocumentDiagnostic: { // TextDocumentDiagnostic
  *                 document: {
@@ -178,6 +203,31 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *                 end: "<Position>", // required
  *               },
  *             },
+ *           },
+ *           shellState: {
+ *             shellName: "STRING_VALUE", // required
+ *             shellHistory: [
+ *               {
+ *                 command: "STRING_VALUE", // required
+ *                 directory: "STRING_VALUE",
+ *                 exitCode: Number("int"),
+ *                 stdout: "STRING_VALUE",
+ *                 stderr: "STRING_VALUE",
+ *               },
+ *             ],
+ *           },
+ *           gitState: {
+ *             status: "STRING_VALUE",
+ *           },
+ *           envState: {
+ *             operatingSystem: "STRING_VALUE",
+ *             currentWorkingDirectory: "STRING_VALUE",
+ *             environmentVariables: [
+ *               {
+ *                 key: "STRING_VALUE",
+ *                 value: "STRING_VALUE",
+ *               },
+ *             ],
  *           },
  *           diagnostic: {//  Union: only one key present
  *             textDocumentDiagnostic: {
