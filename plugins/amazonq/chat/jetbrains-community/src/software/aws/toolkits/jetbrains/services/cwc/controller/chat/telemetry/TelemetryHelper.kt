@@ -207,6 +207,7 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
                     cwsprChatMessageId = message.messageId,
                     cwsprChatInteractionType = CwsprChatInteractionType.InsertAtCursor,
                     cwsprChatAcceptedCharactersLength = message.code.length,
+                    cwsprChatAcceptedNumberOfLines = message.code.lines().size,
                     cwsprChatInteractionTarget = message.insertionTargetType,
                     cwsprChatHasReference = null,
                     credentialStartUrl = getStartUrl(context.project)
@@ -217,6 +218,7 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
                     interactionType(ChatMessageInteractionType.INSERT_AT_CURSOR)
                     interactionTarget(message.insertionTargetType)
                     acceptedCharacterCount(message.code.length)
+                    acceptedLineCount(message.code.lines().size)
                 }.build()
             }
 
