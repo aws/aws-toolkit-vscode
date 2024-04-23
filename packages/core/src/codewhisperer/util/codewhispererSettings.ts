@@ -8,7 +8,7 @@ import { codewhispererSettingsImportedKey } from '../models/constants'
 
 const description = {
     showInlineCodeSuggestionsWithCodeReferences: Boolean, // eslint-disable-line id-length
-    importRecommendation: Boolean,
+    importRecommendationForInlineCodeSuggestions: Boolean,
     shareContentWithAWS: Boolean,
 }
 
@@ -24,7 +24,7 @@ export class CodeWhispererSettings extends fromExtensionManifest('aws.amazonQ', 
         )
         await migrateSetting(
             { key: 'aws.codeWhisperer.importRecommendation', type: Boolean },
-            { key: 'aws.amazonQ.importRecommendation' }
+            { key: 'aws.amazonQ.importRecommendationForInlineCodeSuggestions' }
         )
         await migrateSetting(
             { key: 'aws.codeWhisperer.shareCodeWhispererContentWithAWS', type: Boolean },
@@ -38,7 +38,7 @@ export class CodeWhispererSettings extends fromExtensionManifest('aws.amazonQ', 
         return this.get(`showInlineCodeSuggestionsWithCodeReferences`, false)
     }
     public isImportRecommendationEnabled(): boolean {
-        return this.get(`importRecommendation`, false)
+        return this.get(`importRecommendationForInlineCodeSuggestions`, false)
     }
 
     public isOptoutEnabled(): boolean {

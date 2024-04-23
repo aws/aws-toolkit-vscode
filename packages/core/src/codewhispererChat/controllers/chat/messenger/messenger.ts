@@ -325,8 +325,8 @@ export class Messenger {
                 \n\n- What is the syntax of declaring a variable in TypeScript?
                 \n\n### Special Commands
                 \n\n- /clear - Clear the conversation.
-                \n\n- /dev - Get code suggestions across files in your current project. Provide a brief prompt, such as "Implement a GET API."<strong> Only available through CodeWhisperer Professional Tier.</strong>
-                \n\n- /transform - Transform your code. Use to upgrade Java code versions. <strong>Only available through CodeWhisperer Professional Tier.</strong>
+                \n\n- /dev - Get code suggestions across files in your current project. Provide a brief prompt, such as "Implement a GET API."
+                \n\n- /transform - Transform your code. Use to upgrade Java code versions.
                 \n\n- /help - View chat topics and commands.
                 \n\n### Things to note:
                 \n\n- I may not always provide completely accurate or current information.

@@ -123,7 +123,7 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq%",
                     "default": true
                 },
-                "aws.amazonQ.importRecommendation": {
+                "aws.amazonQ.importRecommendationForInlineCodeSuggestions": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.amazonq.importRecommendation%",
                     "default": true
