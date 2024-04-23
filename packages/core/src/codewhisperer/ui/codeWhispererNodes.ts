@@ -18,9 +18,10 @@ import {
     selectCustomizationPrompt,
     signoutCodeWhisperer,
     showIntroduction,
+    toggleCodeScans,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
-import { codeScanState } from '../models/model'
+import { CodeScansState, codeScanState } from '../models/model'
 import { getNewCustomizationsAvailable, getSelectedCustomization } from '../util/customizationUtil'
 import { cwQuickPickSource, cwTreeNodeSource } from '../commands/types'
 import { AuthUtil } from '../util/authUtil'
@@ -42,6 +43,21 @@ export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSu
     } as DataQuickPickItem<'autoSuggestions'>
 }
 
+export function createAutoScans(pause: boolean): DataQuickPickItem<'autoScans'> {
+    const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Automatic File Scanning')
+    const iconResume = getIcon('vscode-debug-alt')
+    const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Automatic File Scanning')
+    const iconPause = getIcon('vscode-debug-pause')
+    const monthlyQuotaExceeded = CodeScansState.instance.isMonthlyQuotaExceeded()
+
+    return {
+        data: 'autoScans',
+        label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
+        description: monthlyQuotaExceeded ? 'Monthly quota exceeded' : pause ? 'RUNNING' : 'PAUSED',
+        onClick: () => toggleCodeScans.execute(placeholder, cwQuickPickSource),
+    } as DataQuickPickItem<'autoScans'>
+}
+
 export function createOpenReferenceLog(): DataQuickPickItem<'openReferenceLog'> {
     const label = localize('AWS.codewhisperer.openReferenceLogNode.label', 'Open Code Reference Log')
     const icon = getIcon('vscode-code')
@@ -55,7 +71,7 @@ export function createOpenReferenceLog(): DataQuickPickItem<'openReferenceLog'> 
 
 export function createSecurityScan(): DataQuickPickItem<'securityScan'> {
     const prefix = codeScanState.getPrefixTextForButton()
-    const label = `${prefix} Security Scan`
+    const label = `${prefix} Full Project Scan`
     const icon = codeScanState.getIconForButton()
 
     return {

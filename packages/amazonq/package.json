@@ -133,11 +133,6 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.shareContentWithAWS%",
                     "default": true,
                     "scope": "application"
-                },
-                "aws.amazonQ.javaCompilationOutput": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Provide the ABSOLUTE path which is used to store java project compilation results."
                 }
             }
         },

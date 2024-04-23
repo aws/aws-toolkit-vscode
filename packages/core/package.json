@@ -276,11 +276,6 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.shareContentWithAWS%",
                     "default": true,
                     "scope": "application"
-                },
-                "aws.amazonQ.javaCompilationOutput": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Provide the ABSOLUTE path which is used to store java project compilation results."
                 }
             }
         },
@@ -793,6 +788,10 @@
                 },
                 {
                     "command": "aws.codecatalyst.listCommands",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.codecatalyst.manageConnections",
                     "when": "false"
                 },
                 {
@@ -3896,7 +3895,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.201",
+        "@aws-toolkits/telemetry": "^1.0.203",
         "@aws/fully-qualified-names": "^2.1.4",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",

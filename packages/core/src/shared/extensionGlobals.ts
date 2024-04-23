@@ -87,7 +87,7 @@ function getBrowserAlternatives() {
  */
 function resolveGlobalsObject(): ToolkitGlobals {
     if ((globalThis as any).globals === undefined) {
-        ;(globalThis as any).globals = {} as ToolkitGlobals
+        ;(globalThis as any).globals = { clock: copyClock() } as ToolkitGlobals
     }
     return (globalThis as any).globals
 }
@@ -99,7 +99,10 @@ function proxyGlobals(globals_: ToolkitGlobals): ToolkitGlobals {
     return new Proxy(globals_, {
         get: (target, prop) => {
             // Test for initialize()
-            if (Object.keys(target).length === 0) {
+            if (
+                !initialized &&
+                !target.isWeb // extension instance globals would have set this truly globally prior to the test instance globals being accessed.
+            ) {
                 throw new Error(`ToolkitGlobals accessed before initialize()`)
             }
 
@@ -131,6 +134,7 @@ export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
+let initialized = false
 export function initialize(context: ExtensionContext, isWeb: boolean = false): ToolkitGlobals {
     if (!isWeb) {
         // Not running in web mode, let's use globals scoped to the current extension only.
@@ -144,6 +148,8 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
     })
+
+    initialized = true
 
     return globals
 }

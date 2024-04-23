@@ -86,7 +86,7 @@ export class InlineCompletionService {
         if (vsCodeState.isCodeWhispererEditing || RecommendationHandler.instance.isSuggestionVisible()) {
             return {
                 result: 'Failed',
-                errorMessage: 'codewhisperer already is running',
+                errorMessage: 'Amazon Q is already running',
                 recommendationCount: 0,
             }
         }

@@ -46,7 +46,7 @@ export const dismissQTree = Commands.declare(
 // Learn more button of Amazon Q now opens the Amazon Q marketplace page.
 export const createLearnMoreNode = () =>
     qExtensionPageCommand.build().asTreeNode({
-        label: localize('AWS.amazonq.learnMore', 'Learn More About Amazon Q (Preview)'),
+        label: localize('AWS.amazonq.learnMore', 'Learn More About Amazon Q'),
         iconPath: getIcon('vscode-question'),
         contextValue: 'awsAmazonQLearnMoreNode',
     })

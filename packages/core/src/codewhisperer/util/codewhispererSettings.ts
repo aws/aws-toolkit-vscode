@@ -10,7 +10,6 @@ const description = {
     showInlineCodeSuggestionsWithCodeReferences: Boolean, // eslint-disable-line id-length
     importRecommendation: Boolean,
     shareContentWithAWS: Boolean,
-    javaCompilationOutput: String,
 }
 
 export class CodeWhispererSettings extends fromExtensionManifest('aws.amazonQ', description) {
@@ -30,10 +29,6 @@ export class CodeWhispererSettings extends fromExtensionManifest('aws.amazonQ', 
         await migrateSetting(
             { key: 'aws.codeWhisperer.shareCodeWhispererContentWithAWS', type: Boolean },
             { key: 'aws.amazonQ.shareContentWithAWS' }
-        )
-        await migrateSetting(
-            { key: 'aws.codeWhisperer.javaCompilationOutput', type: String },
-            { key: 'aws.amazonQ.javaCompilationOutput' }
         )
 
         await globals.context.globalState.update(codewhispererSettingsImportedKey, true)

@@ -344,7 +344,8 @@
                 "timeBetweenChunks": { "shape": "TimeBetweenChunks" },
                 "fullResponselatency": { "shape": "Double" },
                 "requestLength": { "shape": "Integer" },
-                "responseLength": { "shape": "Integer" }
+                "responseLength": { "shape": "Integer" },
+                "numberOfCodeBlocks": { "shape": "Integer" }
             }
         },
         "ChatHistory": {
@@ -405,9 +406,20 @@
             "type": "string",
             "enum": ["codeanalysis/findings/1.0"]
         },
+        "CodeAnalysisScope": {
+            "type": "string",
+            "enum": ["FILE", "PROJECT"]
+        },
         "CodeAnalysisStatus": {
             "type": "string",
             "enum": ["Completed", "Pending", "Failed"]
+        },
+        "CodeAnalysisUploadContext": {
+            "type": "structure",
+            "required": ["codeScanName"],
+            "members": {
+                "codeScanName": { "shape": "CodeScanName" }
+            }
         },
         "CodeCoverageEvent": {
             "type": "structure",
@@ -453,6 +465,12 @@
         },
         "CodeScanJobId": {
             "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "CodeScanName": {
+            "type": "string",
+            "documentation": "<p>Code analysis scan name</p>",
             "max": 128,
             "min": 1
         },
@@ -598,7 +616,10 @@
             "members": {
                 "uploadId": { "shape": "UploadId" },
                 "uploadUrl": { "shape": "PreSignedUrl" },
-                "kmsKeyArn": { "shape": "ResourceArn" }
+                "kmsKeyArn": { "shape": "ResourceArn" },
+                "requestHeaders": {
+                    "shape": "RequestHeaders"
+                }
             }
         },
         "CursorState": {
@@ -1137,6 +1158,27 @@
             "min": 0,
             "pattern": "arn:([-.a-z0-9]{1,63}:){2}([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
         },
+        "RequestHeaderKey": {
+            "type": "string",
+            "max": 64,
+            "min": 1
+        },
+        "RequestHeaderValue": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "RequestHeaders": {
+            "type": "map",
+            "key": {
+                "shape": "RequestHeaderKey"
+            },
+            "value": {
+                "shape": "RequestHeaderValue"
+            },
+            "max": 16,
+            "min": 1
+        },
         "ResourceNotFoundException": {
             "type": "structure",
             "required": ["message"],
@@ -1210,10 +1252,12 @@
             "members": {
                 "artifacts": { "shape": "ArtifactMap" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "scope": { "shape": "CodeAnalysisScope" },
                 "clientToken": {
                     "shape": "StartCodeAnalysisRequestClientTokenString",
                     "idempotencyToken": true
-                }
+                },
+                "codeScanName": { "shape": "CodeScanName" }
             }
         },
         "StartCodeAnalysisRequestClientTokenString": {
@@ -1540,7 +1584,8 @@
         "UploadContext": {
             "type": "structure",
             "members": {
-                "taskAssistPlanningUploadContext": { "shape": "TaskAssistPlanningUploadContext" }
+                "taskAssistPlanningUploadContext": { "shape": "TaskAssistPlanningUploadContext" },
+                "codeAnalysisUploadContext": { "shape": "CodeAnalysisUploadContext" }
             },
             "union": true
         },
@@ -1551,7 +1596,12 @@
         },
         "UploadIntent": {
             "type": "string",
-            "enum": ["TRANSFORMATION", "TASK_ASSIST_PLANNING"]
+            "enum": [
+                "TRANSFORMATION",
+                "TASK_ASSIST_PLANNING",
+                "AUTOMATIC_FILE_SECURITY_SCAN",
+                "FULL_PROJECT_SECURITY_SCAN"
+            ]
         },
         "UserContext": {
             "type": "structure",
