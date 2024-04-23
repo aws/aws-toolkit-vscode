@@ -261,26 +261,21 @@
                     },
                     "additionalProperties": false
                 },
-                "aws.amazonQ.includeSuggestionsWithCodeReferences": {
+                "aws.amazonQ.showInlineCodeSuggestionsWithCodeReferences": {
                     "type": "boolean",
-                    "markdownDescription": "%AWS.configuration.description.codewhisperer%",
+                    "markdownDescription": "%AWS.configuration.description.amazonq%",
                     "default": true
                 },
                 "aws.amazonQ.importRecommendation": {
                     "type": "boolean",
-                    "description": "%AWS.configuration.description.codewhisperer.importRecommendation%",
+                    "description": "%AWS.configuration.description.amazonq.importRecommendation%",
                     "default": true
                 },
-                "aws.amazonQ.shareCodeWhispererContentWithAWS": {
+                "aws.amazonQ.shareContentWithAWS": {
                     "type": "boolean",
-                    "markdownDescription": "%AWS.configuration.description.codewhisperer.shareCodeWhispererContentWithAWS%",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.shareContentWithAWS%",
                     "default": true,
                     "scope": "application"
-                },
-                "aws.amazonQ.javaCompilationOutput": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Provide the ABSOLUTE path which is used to store java project compilation results."
                 }
             }
         },

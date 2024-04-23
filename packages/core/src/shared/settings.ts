@@ -860,34 +860,38 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
  * Simple utility function to 'migrate' a setting from one key to another.
  *
  * Currently only used for simple migrations where we are not concerned about maintaining the
- * legacy definition. Only migrates to global settings.
+ * legacy definition.
  */
 export async function migrateSetting<T, U = T>(
     from: { key: string; type: TypeConstructor<T> },
-    to: { key: string; transform?: (value: T) => U }
+    to: { key: keyof SettingsProps; transform?: (value: T) => U }
 ) {
-    // TODO(sijaden): we should handle other targets besides 'global'
     const config = vscode.workspace.getConfiguration()
-    const hasLatest = config.inspect(to.key)?.globalValue !== undefined
-    const logPrefix = `Settings migration ("${from.key}" -> "${to.key}")`
 
-    if (hasLatest || !config.has(from.key)) {
-        return true
+    const migrateForScope = async (scope: vscode.ConfigurationTarget) => {
+        const valueProp = scope === vscode.ConfigurationTarget.Global ? 'globalValue' : 'workspaceValue'
+        const hasLatest = config.inspect(to.key)![valueProp] !== undefined
+        const logPrefix = `Settings migration ("${from.key}" -> "${to.key}"), (scope: ${valueProp})`
+
+        const oldSettingProps = config.inspect(from.key)
+        if (hasLatest || !oldSettingProps || oldSettingProps[valueProp] === undefined) {
+            getLogger().debug(`${logPrefix}: skipping, no migration needed`)
+            return
+        }
+
+        try {
+            const oldVal = cast(config.get(from.key), from.type)
+            const newVal = to.transform?.(oldVal) ?? oldVal
+
+            await config.update(to.key, newVal, scope)
+            getLogger().info(`${logPrefix}: succeeded`)
+        } catch (error) {
+            getLogger().verbose(`${logPrefix}: failed: %s`, error)
+        }
     }
 
-    try {
-        const oldVal = cast(config.get(from.key), from.type)
-        const newVal = to.transform?.(oldVal) ?? oldVal
-
-        await config.update(to.key, newVal, vscode.ConfigurationTarget.Global)
-        getLogger().debug(`${logPrefix}: succeeded`)
-
-        return true
-    } catch (error) {
-        getLogger().verbose(`${logPrefix}: failed: %s`, error)
-
-        return false
-    }
+    await migrateForScope(vscode.ConfigurationTarget.Workspace)
+    await migrateForScope(vscode.ConfigurationTarget.Global)
 }
 
 /**

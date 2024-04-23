@@ -2,23 +2,47 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { fromExtensionManifest } from '../../shared/settings'
+import { fromExtensionManifest, migrateSetting } from '../../shared/settings'
+import globals from '../../shared/extensionGlobals'
+import { codewhispererSettingsImportedKey } from '../models/constants'
 
 const description = {
-    includeSuggestionsWithCodeReferences: Boolean,
+    showInlineCodeSuggestionsWithCodeReferences: Boolean, // eslint-disable-line id-length
     importRecommendation: Boolean,
-    shareCodeWhispererContentWithAWS: Boolean,
+    shareContentWithAWS: Boolean,
 }
+
 export class CodeWhispererSettings extends fromExtensionManifest('aws.amazonQ', description) {
+    public async importSettings() {
+        if (globals.context.globalState.get<boolean>(codewhispererSettingsImportedKey)) {
+            return
+        }
+
+        await migrateSetting(
+            { key: 'aws.codeWhisperer.includeSuggestionsWithCodeReferences', type: Boolean },
+            { key: 'aws.amazonQ.showInlineCodeSuggestionsWithCodeReferences' }
+        )
+        await migrateSetting(
+            { key: 'aws.codeWhisperer.importRecommendation', type: Boolean },
+            { key: 'aws.amazonQ.importRecommendation' }
+        )
+        await migrateSetting(
+            { key: 'aws.codeWhisperer.shareCodeWhispererContentWithAWS', type: Boolean },
+            { key: 'aws.amazonQ.shareContentWithAWS' }
+        )
+
+        await globals.context.globalState.update(codewhispererSettingsImportedKey, true)
+    }
+
     public isSuggestionsWithCodeReferencesEnabled(): boolean {
-        return this.get(`includeSuggestionsWithCodeReferences`, false)
+        return this.get(`showInlineCodeSuggestionsWithCodeReferences`, false)
     }
     public isImportRecommendationEnabled(): boolean {
         return this.get(`importRecommendation`, false)
     }
 
     public isOptoutEnabled(): boolean {
-        const value = this.get('shareCodeWhispererContentWithAWS', true)
+        const value = this.get('shareContentWithAWS', true)
         return !value
     }
 

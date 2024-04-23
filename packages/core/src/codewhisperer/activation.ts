@@ -70,6 +70,10 @@ import { switchToAmazonQCommand, switchToAmazonQSignInCommand } from '../amazonq
 
 export async function activate(context: ExtContext): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance
+
+    // Import old CodeWhisperer settings into Amazon Q
+    await CodeWhispererSettings.instance.importSettings()
+
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
     const auth = AuthUtil.instance
     auth.initCodeWhispererHooks()
@@ -117,7 +121,9 @@ export async function activate(context: ExtContext): Promise<void> {
                 EditorContext.updateTabSize(getTabSizeSetting())
             }
 
-            if (configurationChangeEvent.affectsConfiguration('aws.amazonQ.includeSuggestionsWithCodeReferences')) {
+            if (
+                configurationChangeEvent.affectsConfiguration('aws.amazonQ.showInlineCodeSuggestionsWithCodeReferences')
+            ) {
                 ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
@@ -133,7 +139,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             }
 
-            if (configurationChangeEvent.affectsConfiguration('aws.amazonQ.shareCodeWhispererContentWithAWS')) {
+            if (configurationChangeEvent.affectsConfiguration('aws.amazonQ.shareContentWithAWS')) {
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
                         .showInformationMessage(
