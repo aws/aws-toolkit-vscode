@@ -796,6 +796,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.codecatalyst.manageConnections",
+                    "when": "false"
+                },
+                {
                     "command": "aws.codecatalyst.openDevEnv",
                     "when": "!isCloud9"
                 },
