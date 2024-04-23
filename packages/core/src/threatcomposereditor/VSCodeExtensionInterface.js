@@ -53,9 +53,9 @@ function updateContent(/** @type {string} */ text) {
 }
 
 async function checkThreatComposerAPI() {
-    while (!window.threatcomposer.setCurrentWorkspaceData) {
+    while (!window.threatcomposer || !window.threatcomposer.setCurrentWorkspaceData) {
         console.debug('Waiting for window.threatcomposer.setCurrentWorkspaceData to be ready.')
-        await sleep(50)
+        await new Promise(r => setTimeout(r, 50))
     }
 }
 
