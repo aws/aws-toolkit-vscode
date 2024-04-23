@@ -56,3 +56,7 @@ packages/*/resources/css/icons.css
 
 # Created by `npm run webRun` when testing extension in web mode
 .vscode-test-web
+
+# Generated file from local build
+packages/toolkit/package.json
+scripts/clean.js
