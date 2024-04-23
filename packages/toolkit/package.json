@@ -57,7 +57,7 @@
         "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles",
         "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* CHANGELOG.md",
+        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart*",
         "compile": "npm run clean && npm run buildScripts && webpack",
         "webWatch": "npm run clean && npm run buildScripts && webpack --mode development --watch",
         "webCompile": "npm run clean && npm run buildScripts && webpack --config-name web",
