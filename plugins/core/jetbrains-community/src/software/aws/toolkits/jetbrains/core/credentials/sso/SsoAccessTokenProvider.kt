@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.ssooidc.model.SlowDownException
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
+import software.aws.toolkits.jetbrains.core.credentials.sso.pkce.PKCE_CLIENT_NAME
 import software.aws.toolkits.jetbrains.core.credentials.sso.pkce.ToolkitOAuthService
 import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
 import software.aws.toolkits.jetbrains.utils.sleepWithCancellation
@@ -131,7 +132,7 @@ class SsoAccessTokenProvider(
         }
 
         val registerResponse = client.registerClient {
-            it.clientName("AWS IDE extensions for JetBrains")
+            it.clientName(PKCE_CLIENT_NAME)
             it.clientType(PUBLIC_CLIENT_REGISTRATION_TYPE)
             it.scopes(scopes)
             it.grantTypes(PKCE_GRANT_TYPES)
