@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Standalone Test",
     "description": "",
-    "version": "0.15.0-SNAPSHOT",
+    "version": "0.16.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -610,11 +610,6 @@
             {
                 "command": "aws.amazonq.learnMore",
                 "title": "%AWS.amazonq.learnMore%",
-                "category": "%AWS.amazonq.productName%"
-            },
-            {
-                "command": "aws.amazonq.welcome",
-                "title": "%AWS.command.q.welcome%",
                 "category": "%AWS.amazonq.productName%"
             },
             {

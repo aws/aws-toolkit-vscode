@@ -111,9 +111,6 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 quickActionHandler.handle({ command: '/clear' }, tabID)
             }
         },
-        onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
-            return messageController.sendMessageToTab(message, 'cwc')
-        },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
             if (command === 'aws.amazonq.sendToPrompt') {
                 return messageController.sendSelectedCodeToTab(message)
@@ -367,8 +364,26 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             })
         },
         onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
-        onCopyCodeToClipboard: (tabId, messageId, code, type, referenceTrackerInfo) => {
-            connector.onCopyCodeToClipboard(tabId, messageId, code, type, referenceTrackerInfo)
+        onCopyCodeToClipboard: (
+            tabId,
+            messageId,
+            code,
+            type,
+            referenceTrackerInfo,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks
+        ) => {
+            connector.onCopyCodeToClipboard(
+                tabId,
+                messageId,
+                code,
+                type,
+                referenceTrackerInfo,
+                eventId,
+                codeBlockIndex,
+                totalCodeBlocks
+            )
             mynahUI.notify({
                 type: NotificationType.SUCCESS,
                 content: 'Selected code is copied to clipboard',

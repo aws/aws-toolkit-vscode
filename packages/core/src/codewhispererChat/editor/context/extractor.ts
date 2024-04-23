@@ -10,7 +10,7 @@ import { FileContext } from './file/model'
 import { EditorContext } from './model'
 import { window } from 'vscode'
 
-export type TriggerType = 'ChatMessage' | 'ContextMenu' | 'OnboardingPageInteraction' | 'QuickAction'
+export type TriggerType = 'ChatMessage' | 'ContextMenu' | 'QuickAction'
 
 export class EditorContextExtractor {
     private readonly activeFileContextExtractor: FileContextExtractor
@@ -32,11 +32,6 @@ export class EditorContextExtractor {
                 return {
                     activeFileContext: await this.extractActiveFileContext(),
                     focusAreaContext: await this.extractActiveEditorCodeSelectionContext(),
-                }
-            case 'OnboardingPageInteraction':
-                return {
-                    activeFileContext: undefined,
-                    focusAreaContext: undefined,
                 }
             case 'QuickAction':
                 return {

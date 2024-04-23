@@ -223,10 +223,11 @@ export class CodeWhispererStatusBar {
         statusBar.command = listCodeWhispererCommandsId
         statusBar.backgroundColor = undefined
 
+        const title = 'Amazon Q'
         switch (status) {
             case 'loading': {
                 const selectedCustomization = getSelectedCustomization()
-                statusBar.text = codicon` ${getIcon('vscode-loading~spin')} Amazon Q${
+                statusBar.text = codicon` ${getIcon('vscode-loading~spin')} ${title}${
                     selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
                 }`
                 break
@@ -234,19 +235,19 @@ export class CodeWhispererStatusBar {
             case 'ok': {
                 const selectedCustomization = getSelectedCustomization()
                 const icon = isSuggestionsEnabled ? getIcon('vscode-debug-start') : getIcon('vscode-debug-pause')
-                statusBar.text = codicon`${icon} Amazon Q${
+                statusBar.text = codicon`${icon} ${title}${
                     selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
                 }`
                 break
             }
 
             case 'expired': {
-                statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} Amazon Q`
+                statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} ${title}`
                 statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
                 break
             }
             case 'notConnected':
-                statusBar.text = codicon` ${getIcon('vscode-chrome-close')} Amazon Q`
+                statusBar.text = codicon` ${getIcon('vscode-chrome-close')} ${title}`
                 break
         }
 

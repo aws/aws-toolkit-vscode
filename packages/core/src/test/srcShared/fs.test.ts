@@ -170,13 +170,13 @@ describe('FileSystem', function () {
         paths.forEach(async function (p) {
             it(`creates folder but uses the "fs" module if in C9: '${p}'`, async function () {
                 sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-                const mkdirSpy = sandbox.spy(fsPromises, 'mkdir')
                 const dirPath = createTestPath(p)
+                const mkdirSpy = sandbox.spy(fsPromises, 'mkdir')
 
                 await fsCommon.mkdir(dirPath)
 
                 assert(existsSync(dirPath))
-                assert.deepStrictEqual(mkdirSpy.args, [[dirPath, { recursive: true }]])
+                assert.deepStrictEqual(mkdirSpy.args[0], [dirPath, { recursive: true }])
             })
         })
     })

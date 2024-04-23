@@ -35,6 +35,10 @@ const tasks: CopyTask[] = [
 
     // Vue
     {
+        target: '../core/src/auth/sso/vue',
+        destination: 'src/auth/sso/vue',
+    },
+    {
         target: path.join('../core', 'resources', 'js', 'vscode.js'),
         destination: path.join('libs', 'vscode.js'),
     },
