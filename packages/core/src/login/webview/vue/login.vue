@@ -102,7 +102,7 @@
                     :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
                     :itemId="LoginOption.BUILDER_ID"
                     :itemText="'No AWS account required'"
-                    :itemTitle="'Use For Free'"
+                    :itemTitle="'Use for free'"
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem
@@ -128,7 +128,7 @@
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
                     :itemId="LoginOption.IAM_CREDENTIAL"
-                    :itemText="'Store keys locally for use with AWS CLI tools'"
+                    :itemText="'Store keys for use with AWS CLI tools'"
                     :itemTitle="'IAM Credential'"
                     class="selectable-item"
                 ></SelectableItem>
