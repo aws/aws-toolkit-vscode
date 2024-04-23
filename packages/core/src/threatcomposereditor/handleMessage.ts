@@ -4,10 +4,10 @@
  */
 
 import { Command, LogMessage, Message, WebviewContext, SaveFileRequestMessage, MessageType } from './types'
-import { saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler'
+import { autoSaveFileMessageHandler, saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler'
 import { logMessageHandler } from './messageHandlers/logMessageHandler'
 import { openFeedbackMessageHandler } from './messageHandlers/openFeedbackMessageHandler'
-import { initMessageHandler } from './messageHandlers/initMessageHandler'
+import { initMessageHandler, reloadMessageHandler } from './messageHandlers/initMessageHandler'
 
 export async function handleMessage(message: unknown, context: WebviewContext) {
     const composerMessage = message as Message
@@ -16,11 +16,17 @@ export async function handleMessage(message: unknown, context: WebviewContext) {
 
     if (messageType === MessageType.REQUEST) {
         switch (command) {
+            case Command.AUTO_SAVE_FILE:
+                void autoSaveFileMessageHandler(message as SaveFileRequestMessage, context)
+                break
             case Command.SAVE_FILE:
                 void saveFileMessageHandler(message as SaveFileRequestMessage, context)
                 break
             case Command.INIT:
                 void initMessageHandler(context)
+                break
+            case Command.RELOAD:
+                void reloadMessageHandler(context)
         }
     } else if (messageType === MessageType.BROADCAST) {
         switch (command) {

@@ -12,6 +12,7 @@ export type WebviewContext = {
     defaultTemplatePath: string
     defaultTemplateName: string
     fileWatches: Record<string, FileWatchInfo>
+    autoSaveFileWatches: Record<string, FileWatchInfo>
 }
 
 export type FileWatchInfo = {
@@ -24,11 +25,13 @@ export interface Message {
 }
 
 export enum Command {
+    AUTO_SAVE_FILE = 'AUTO_SAVE_FILE',
     SAVE_FILE = 'SAVE_FILE',
     LOG = 'LOG',
     EMIT_TELEMETRY = 'EMIT_TELEMETRY',
     OPEN_FEEDBACK = 'OPEN_FEEDBACK',
     INIT = 'INIT',
+    RELOAD = 'RELOAD',
 
     FILE_CHANGED = 'FILE_CHANGED',
     THEME_CHANGED = 'THEME_CHANGED',

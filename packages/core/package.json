@@ -4220,8 +4220,7 @@
         ],
         "configurationDefaults": {
             "workbench.editorAssociations": {
-                "git:/**/*.tc.json": "default",
-                "gitlens:/**/*.tc.json": "default"
+                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default"
             }
         }
     },

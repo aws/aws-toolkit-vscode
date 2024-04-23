@@ -23,6 +23,9 @@ export class ThreatComposer {
     public defaultTemplateName: string
     // fileWatches is used to monitor template file changes and achieve bi-direction sync
     public fileWatches: Record<string, FileWatchInfo>
+
+    // autoSaveFileWatches is used to monitor local file changes and achieve bi-direction sync
+    public autoSaveFileWatches: Record<string, FileWatchInfo>
     private getWebviewContent: () => string
 
     public constructor(
@@ -35,6 +38,7 @@ export class ThreatComposer {
         this.documentUri = textDocument.uri
         this.webviewPanel = webviewPanel
         this.fileWatches = {}
+        this.autoSaveFileWatches = {}
         this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
@@ -73,6 +77,16 @@ export class ThreatComposer {
         // Initialise the panel panel
         this.initialiseVisualizationWebviewPanel(documentUri, context)
 
+        const contextObject = {
+            panel: this.webviewPanel,
+            textDocument: textDocument,
+            disposables: this.disposables,
+            workSpacePath: this.workSpacePath,
+            defaultTemplatePath: this.defaultTemplatePath,
+            defaultTemplateName: this.defaultTemplateName,
+            fileWatches: this.fileWatches,
+            autoSaveFileWatches: this.autoSaveFileWatches,
+        }
         // Hook up event handlers so that we can synchronize the webview with the text document.
         //
         // The text document acts as our model, so we have to sync change in the document to our
@@ -81,39 +95,12 @@ export class ThreatComposer {
         // Remember that a single text document can also be shared between multiple custom
         // editors (this happens for example when you split a custom editor)
 
-        addFileWatchMessageHandler({
-            panel: this.webviewPanel,
-            textDocument: textDocument,
-            disposables: this.disposables,
-            workSpacePath: this.workSpacePath,
-            defaultTemplatePath: this.defaultTemplatePath,
-            defaultTemplateName: this.defaultTemplateName,
-            fileWatches: this.fileWatches,
-        })
-
-        addThemeWatchMessageHandler({
-            panel: this.webviewPanel,
-            textDocument: textDocument,
-            disposables: this.disposables,
-            workSpacePath: this.workSpacePath,
-            defaultTemplatePath: this.defaultTemplatePath,
-            defaultTemplateName: this.defaultTemplateName,
-            fileWatches: this.fileWatches,
-        })
+        addFileWatchMessageHandler(contextObject)
+        addThemeWatchMessageHandler(contextObject)
 
         // Handle messages from the webview
         this.disposables.push(
-            this.webviewPanel.webview.onDidReceiveMessage(message =>
-                handleMessage(message, {
-                    panel: this.webviewPanel,
-                    textDocument: textDocument,
-                    disposables: this.disposables,
-                    workSpacePath: this.workSpacePath,
-                    defaultTemplatePath: this.defaultTemplatePath,
-                    defaultTemplateName: this.defaultTemplateName,
-                    fileWatches: this.fileWatches,
-                })
-            )
+            this.webviewPanel.webview.onDidReceiveMessage(message => handleMessage(message, contextObject))
         )
 
         // When the panel is closed, dispose of any disposables/remove subscriptions

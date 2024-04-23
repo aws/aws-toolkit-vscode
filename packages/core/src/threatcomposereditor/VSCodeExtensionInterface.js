@@ -8,7 +8,8 @@
 
 const vscode = acquireVsCodeApi()
 const instanceMapper = {}
-var theme = 'unknown'
+let disableAutoSave = false
+let theme = 'unknown'
 
 // Handle messages sent from the extension to the webview
 window.addEventListener('message', handelMessage)
@@ -62,59 +63,62 @@ async function checkThreatComposerAPI() {
  * Render the document in the webview.
  */
 async function render(/** @type {string} */ text) {
-    let threatModel
-    try {
-        if (!text) {
-            text = '{}'
-        }
-        threatModel = JSON.parse(text)
-    } catch {
-        return
-    }
-
     await checkThreatComposerAPI()
 
-    const state = vscode.getState()
-
-    if (!state.workspaceId) {
-        const currentWorkspaces = window.threatcomposer.getWorkspaceList()
-        const workspaceWithSameFile = currentWorkspaces.filter(x => x.name === state.filePath)
-        workspaceWithSameFile.forEach(async x => await window.threatcomposer.deleteWorkspace(x.id))
-
-        const workspaceObject = await window.threatcomposer.createWorkspace(state.filePath, 'LocalStorage')
-
-        if (Object.keys(threatModel).length !== 0) {
-            try {
-                await window.threatcomposer.setCurrentWorkspaceData(threatModel)
-            } catch (e) {
-                console.log(e.message)
-                vscode.postMessage({
-                    command: 'LOG',
-                    messageType: 'BROADCAST',
-                    logMessage: e.message,
-                    logType: 'ERROR',
-                    showNotification: true,
-                })
-            }
-        }
-
-        state.workspaceId = workspaceObject.id
-        state.name = workspaceObject.name
-        state.storageType = workspaceObject.storageType
-        vscode.setState(state)
+    try {
+        let threatModel = text && JSON.parse(text)
+        await window.threatcomposer.setCurrentWorkspaceData(threatModel)
+    } catch (e) {
+        console.log(e.message)
+        disableAutoSave = true
+        await window.threatcomposer.setCurrentWorkspaceData('')
+        vscode.postMessage({
+            command: 'LOG',
+            messageType: 'BROADCAST',
+            logMessage: e.message,
+            logType: 'ERROR',
+            showNotification: true,
+        })
     }
 
-    window.threatcomposer.switchWorkspace(state.workspaceId)
     window.threatcomposer.addEventListener('save', e => {
+        const stringyfiedData = window.threatcomposer.stringifyWorkspaceData(e.detail)
+        const currentState = vscode.getState()
+        currentState.fileContents = stringyfiedData
+        vscode.setState(currentState)
+        disableAutoSave = false
+
         vscode.postMessage({
             command: 'SAVE_FILE',
             messageType: 'REQUEST',
-            fileContents: window.threatcomposer.stringifyWorkspaceData(e.detail),
+            fileContents: stringyfiedData,
         })
-        const currentState = vscode.getState()
-        currentState.fileContents = e.detail
-        vscode.setState(currentState)
     })
+
+    autoSaveInterval = setInterval(async () => {
+        if (disableAutoSave) {
+            return
+        }
+
+        console.log('AutoSave')
+        const data = await window.threatcomposer.getCurrentWorkspaceData()
+        const stringyfiedData = window.threatcomposer.stringifyWorkspaceData(data)
+
+        const currentState = vscode.getState()
+
+        if (stringyfiedData === currentState.fileContents) {
+            return
+        }
+
+        currentState.fileContents = stringyfiedData
+        vscode.setState(currentState)
+
+        vscode.postMessage({
+            command: 'AUTO_SAVE_FILE',
+            messageType: 'REQUEST',
+            fileContents: stringyfiedData,
+        })
+    }, 1000)
 }
 
 function applyTheme(newTheme) {
@@ -131,9 +135,11 @@ function applyTheme(newTheme) {
 // Webviews are normally torn down when not visible and re-created when they become visible again.
 // State lets us save information across these re-loads
 const state = vscode.getState()
-if (state) {
-    console.log(state)
-    updateContent(state.fileContents)
+if (state && state.fileContents) {
+    vscode.postMessage({
+        command: 'RELOAD',
+        messageType: 'REQUEST',
+    })
 } else {
     vscode.postMessage({
         command: 'INIT',

@@ -13,10 +13,20 @@ export function addFileWatchMessageHandler(context: WebviewContext) {
     context.disposables.push(
         vscode.workspace.onDidChangeTextDocument(async e => {
             const fileContents = (await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))).toString()
+
             if (fileContents !== context.fileWatches[filePath].fileContents) {
-                console.log('DocumentChanged')
-                await broadcastFileChange(fileName, filePath, fileContents, context.panel)
-                context.fileWatches[filePath] = { fileContents: fileContents }
+                if (fileContents === context.autoSaveFileWatches[filePath].fileContents) {
+                    context.fileWatches[filePath] = { fileContents: fileContents }
+                } else if (
+                    context.fileWatches[filePath].fileContents === context.autoSaveFileWatches[filePath].fileContents
+                ) {
+                    console.log('DocumentChanged')
+                    await broadcastFileChange(fileName, filePath, fileContents, context.panel)
+                    context.fileWatches[filePath] = { fileContents: fileContents }
+                    context.autoSaveFileWatches[filePath] = { fileContents: fileContents }
+                } else {
+                    console.error('Document Changed externally before local changes are saved')
+                }
             }
         })
     )
