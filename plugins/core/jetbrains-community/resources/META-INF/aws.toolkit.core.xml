@@ -12,6 +12,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <httpRequestHandler implementation="software.aws.toolkits.jetbrains.core.credentials.sso.pkce.ToolkitOAuthCallbackHandler"/>
+        <httpRequestHandler implementation="software.aws.toolkits.jetbrains.core.credentials.sso.pkce.ToolkitOAuthCallbackResultService"/>
 
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.AwsSettings"
                             serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultAwsSettings"
