@@ -860,34 +860,38 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
  * Simple utility function to 'migrate' a setting from one key to another.
  *
  * Currently only used for simple migrations where we are not concerned about maintaining the
- * legacy definition. Only migrates to global settings.
+ * legacy definition.
  */
 export async function migrateSetting<T, U = T>(
     from: { key: string; type: TypeConstructor<T> },
-    to: { key: string; transform?: (value: T) => U }
+    to: { key: keyof SettingsProps; transform?: (value: T) => U }
 ) {
-    // TODO(sijaden): we should handle other targets besides 'global'
     const config = vscode.workspace.getConfiguration()
-    const hasLatest = config.inspect(to.key)?.globalValue !== undefined
-    const logPrefix = `Settings migration ("${from.key}" -> "${to.key}")`
 
-    if (hasLatest || !config.has(from.key)) {
-        return true
+    const migrateForScope = async (scope: vscode.ConfigurationTarget) => {
+        const valueProp = scope === vscode.ConfigurationTarget.Global ? 'globalValue' : 'workspaceValue'
+        const hasLatest = config.inspect(to.key)![valueProp] !== undefined
+        const logPrefix = `Settings migration ("${from.key}" -> "${to.key}"), (scope: ${valueProp})`
+
+        const oldSettingProps = config.inspect(from.key)
+        if (hasLatest || !oldSettingProps || oldSettingProps[valueProp] === undefined) {
+            getLogger().debug(`${logPrefix}: skipping, no migration needed`)
+            return
+        }
+
+        try {
+            const oldVal = cast(config.get(from.key), from.type)
+            const newVal = to.transform?.(oldVal) ?? oldVal
+
+            await config.update(to.key, newVal, scope)
+            getLogger().info(`${logPrefix}: succeeded`)
+        } catch (error) {
+            getLogger().verbose(`${logPrefix}: failed: %s`, error)
+        }
     }
 
-    try {
-        const oldVal = cast(config.get(from.key), from.type)
-        const newVal = to.transform?.(oldVal) ?? oldVal
-
-        await config.update(to.key, newVal, vscode.ConfigurationTarget.Global)
-        getLogger().debug(`${logPrefix}: succeeded`)
-
-        return true
-    } catch (error) {
-        getLogger().verbose(`${logPrefix}: failed: %s`, error)
-
-        return false
-    }
+    await migrateForScope(vscode.ConfigurationTarget.Workspace)
+    await migrateForScope(vscode.ConfigurationTarget.Global)
 }
 
 /**
@@ -897,48 +901,4 @@ export async function migrateSetting<T, U = T>(
  */
 export async function openSettings<K extends keyof SettingsProps>(key: K): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.openSettings', `@id:${key}`)
-}
-
-/**
- * Deprecated settings that users on old versions may have.
- */
-const deprecatedSettings = [
-    'aws.codeWhisperer.includeSuggestionsWithCodeReferences',
-    'aws.codeWhisperer.importRecommendation',
-    'aws.codeWhisperer.shareCodeWhispererContentWithAWS',
-    'aws.codeWhisperer.javaCompilationOutput',
-] as const
-
-export type DeprecatedSetting = (typeof deprecatedSettings)[number]
-
-/**
- * Import the setting value of an old setting into a new setting, if the old setting exists.
- * Useful for setting renames.
- *
- * newKey must be defined in the extension, e.g. keys of {@link settingsProps}.
- */
-export async function tryImportSetting(oldKey: DeprecatedSetting, newKey: keyof SettingsProps) {
-    getLogger().debug(`trying to import setting '${oldKey}' into '${newKey}'`)
-
-    const newSettingInfo = vscode.workspace.getConfiguration().inspect(newKey)
-    if (newSettingInfo && (newSettingInfo.workspaceValue !== undefined || newSettingInfo.globalValue !== undefined)) {
-        getLogger().debug(`'${newKey}' is already set, skipping import`)
-        return
-    }
-
-    const oldSettingInfo = vscode.workspace.getConfiguration().inspect(oldKey)
-    if (oldSettingInfo) {
-        if (oldSettingInfo.workspaceValue !== undefined) {
-            await vscode.workspace
-                .getConfiguration()
-                .update(newKey, oldSettingInfo.workspaceValue, vscode.ConfigurationTarget.Workspace)
-            getLogger().info(`imported workspace setting '${oldKey}' into '${newKey}'`)
-        }
-        if (oldSettingInfo.globalValue !== undefined) {
-            await vscode.workspace
-                .getConfiguration()
-                .update(newKey, oldSettingInfo.globalValue, vscode.ConfigurationTarget.Global)
-            getLogger().info(`imported global setting '${oldKey}' into '${newKey}'`)
-        }
-    }
 }

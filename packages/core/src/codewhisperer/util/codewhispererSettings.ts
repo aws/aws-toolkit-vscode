@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { tryImportSetting, fromExtensionManifest } from '../../shared/settings'
+import { fromExtensionManifest, migrateSetting } from '../../shared/settings'
 import globals from '../../shared/extensionGlobals'
 import { codewhispererSettingsImportedKey } from '../models/constants'
 
@@ -19,13 +19,22 @@ export class CodeWhispererSettings extends fromExtensionManifest('aws.amazonQ', 
             return
         }
 
-        await tryImportSetting(
-            'aws.codeWhisperer.includeSuggestionsWithCodeReferences',
-            'aws.amazonQ.showInlineCodeSuggestionsWithCodeReferences'
+        await migrateSetting(
+            { key: 'aws.codeWhisperer.includeSuggestionsWithCodeReferences', type: Boolean },
+            { key: 'aws.amazonQ.showInlineCodeSuggestionsWithCodeReferences' }
         )
-        await tryImportSetting('aws.codeWhisperer.importRecommendation', 'aws.amazonQ.importRecommendation')
-        await tryImportSetting('aws.codeWhisperer.shareCodeWhispererContentWithAWS', 'aws.amazonQ.shareContentWithAWS')
-        await tryImportSetting('aws.codeWhisperer.javaCompilationOutput', 'aws.amazonQ.javaCompilationOutput')
+        await migrateSetting(
+            { key: 'aws.codeWhisperer.importRecommendation', type: Boolean },
+            { key: 'aws.amazonQ.importRecommendation' }
+        )
+        await migrateSetting(
+            { key: 'aws.codeWhisperer.shareCodeWhispererContentWithAWS', type: Boolean },
+            { key: 'aws.amazonQ.shareContentWithAWS' }
+        )
+        await migrateSetting(
+            { key: 'aws.codeWhisperer.javaCompilationOutput', type: String },
+            { key: 'aws.amazonQ.javaCompilationOutput' }
+        )
 
         await globals.context.globalState.update(codewhispererSettingsImportedKey, true)
     }
