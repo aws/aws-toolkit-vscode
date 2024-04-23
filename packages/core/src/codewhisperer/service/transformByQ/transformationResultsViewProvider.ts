@@ -281,9 +281,7 @@ export class ProposedTransformationExplorer {
             transformDataProvider.refresh()
         )
 
-        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.reset', async () => 
-            await reset()
-        )
+        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.reset', async () => await reset())
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.reveal', async () => {
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', true)
