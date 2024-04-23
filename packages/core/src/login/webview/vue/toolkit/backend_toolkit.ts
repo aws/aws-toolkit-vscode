@@ -7,14 +7,17 @@ import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
 import { AuthError, CommonAuthWebview } from '../backend'
-import { AwsConnection, createSsoProfile } from '../../../../auth/connection'
+import { AwsConnection, Connection, createSsoProfile } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
+import { AuthFlowState } from '../types'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/toolkit/index.js'
     private isCodeCatalystLogin = false
+
+    override onActiveConnectionModified: vscode.EventEmitter<void> = new vscode.EventEmitter()
 
     constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider) {
         super(ToolkitLoginWebview.sourcePath)
@@ -87,6 +90,27 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
     findConnection(connections: AwsConnection[]): AwsConnection | undefined {
         return undefined
+    }
+
+    override reauthenticateConnection(): Promise<undefined> {
+        throw new Error('Method not implemented.')
+    }
+    override getActiveConnection(): Promise<Connection | undefined> {
+        throw new Error('Method not implemented.')
+    }
+
+    override async refreshAuthState(): Promise<void> {}
+    override async getAuthState(): Promise<AuthFlowState> {
+        // No need for a reauth page yet, so always show login
+        return 'LOGIN'
+    }
+
+    override signout(): Promise<void> {
+        throw new Error('Method not implemented.')
+    }
+
+    override getReauthError(): Promise<AuthError | undefined> {
+        throw new Error('Method not implemented.')
     }
 
     async quitLoginScreen() {
