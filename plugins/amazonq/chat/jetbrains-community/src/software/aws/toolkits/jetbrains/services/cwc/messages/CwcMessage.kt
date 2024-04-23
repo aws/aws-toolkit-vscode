@@ -67,6 +67,9 @@ sealed interface IncomingCwcMessage : CwcMessage {
         val messageId: String,
         val code: String,
         val insertionTargetType: String?,
+        val eventId: String?,
+        val codeBlockIndex: Int?,
+        val totalCodeBlocks: Int?
     ) : IncomingCwcMessage
 
     data class InsertCodeAtCursorPosition(
@@ -75,6 +78,9 @@ sealed interface IncomingCwcMessage : CwcMessage {
         val code: String,
         val insertionTargetType: String?,
         val codeReference: List<CodeReference>?,
+        val eventId: String?,
+        val codeBlockIndex: Int?,
+        val totalCodeBlocks: Int?
     ) : IncomingCwcMessage
 
     data class TriggerTabIdReceived(

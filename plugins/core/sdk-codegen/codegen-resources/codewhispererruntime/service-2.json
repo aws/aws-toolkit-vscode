@@ -370,7 +370,8 @@
                 "timeBetweenChunks": { "shape": "TimeBetweenChunks" },
                 "fullResponselatency": { "shape": "Double" },
                 "requestLength": { "shape": "Integer" },
-                "responseLength": { "shape": "Integer" }
+                "responseLength": { "shape": "Integer" },
+                "numberOfCodeBlocks": { "shape": "Integer" }
             }
         },
         "ChatHistory":{
