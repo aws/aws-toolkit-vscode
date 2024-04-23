@@ -218,7 +218,7 @@ describe('codewhisperer status bar', function () {
         await service.refreshStatusBar()
 
         const actualStatusBar = statusBar.getStatusBar()
-        assert.strictEqual(actualStatusBar.text, '$(chrome-close) CodeWhisperer')
+        assert.strictEqual(actualStatusBar.text, '$(chrome-close) Amazon Q')
         assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
         assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
     })
@@ -230,7 +230,7 @@ describe('codewhisperer status bar', function () {
         await service.refreshStatusBar()
 
         const actualStatusBar = statusBar.getStatusBar()
-        assert.strictEqual(actualStatusBar.text, '$(debug-start) CodeWhisperer')
+        assert.strictEqual(actualStatusBar.text, '$(debug-start) Amazon Q')
         assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
         assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
     })
@@ -242,7 +242,7 @@ describe('codewhisperer status bar', function () {
         await service.refreshStatusBar()
 
         const actualStatusBar = statusBar.getStatusBar()
-        assert.strictEqual(actualStatusBar.text, '$(debug-pause) CodeWhisperer')
+        assert.strictEqual(actualStatusBar.text, '$(debug-pause) Amazon Q')
         assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
         assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
     })
@@ -254,7 +254,7 @@ describe('codewhisperer status bar', function () {
         await service.refreshStatusBar()
 
         const actualStatusBar = statusBar.getStatusBar()
-        assert.strictEqual(actualStatusBar.text, '$(debug-disconnect) CodeWhisperer')
+        assert.strictEqual(actualStatusBar.text, '$(debug-disconnect) Amazon Q')
         assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
         assert.deepStrictEqual(
             actualStatusBar.backgroundColor,
