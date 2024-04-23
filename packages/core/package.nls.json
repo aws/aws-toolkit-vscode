@@ -208,7 +208,6 @@
     "AWS.command.codewhisperer.signout": "Sign Out",
     "AWS.command.codewhisperer.reconnect": "Reconnect",
     "AWS.command.codewhisperer.openReferencePanel": "Open Code Reference Log",
-    "AWS.command.q.welcome": "Amazon Q Welcome Page",
     "AWS.command.q.transform.acceptChanges": "Accept",
     "AWS.command.q.transform.rejectChanges": "Reject",
     "AWS.command.q.transform.showChanges": "Show Proposed Changes",
