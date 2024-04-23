@@ -12,7 +12,7 @@ import AdmZip from 'adm-zip'
 import * as path from 'path'
 import { fsCommon } from '../../srcShared/fs'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-import { cloud9Findfile, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
@@ -20,7 +20,7 @@ import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { getLambdaDetails, listLambdaFunctions } from '../utils'
-import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { StepEstimator, Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
@@ -478,10 +478,7 @@ async function uploadZipBuffer(
     )
 }
 
-export async function findApplicationJsonFile(
-    startPath: vscode.Uri,
-    cloud9 = isCloud9()
-): Promise<vscode.Uri | undefined> {
+export async function findApplicationJsonFile(startPath: vscode.Uri): Promise<vscode.Uri | undefined> {
     if (!(await fsCommon.exists(startPath.fsPath))) {
         getLogger().error(
             'findApplicationJsonFile() invalid path (not accessible or does not exist): "%s"',
@@ -491,17 +488,15 @@ export async function findApplicationJsonFile(
     }
     const isdir = await fsCommon.existsDir(startPath.fsPath)
     const parentDir = isdir ? startPath.fsPath : path.dirname(startPath.fsPath)
-    const found = cloud9
-        ? await cloud9Findfile(parentDir, '.application.json')
-        : await vscode.workspace.findFiles(
-              new vscode.RelativePattern(parentDir, '**/.application.json'),
-              // exclude:
-              // - null      = NO excludes apply
-              // - undefined = default excludes apply (e.g. the `files.exclude` setting but not `search.exclude`).
-              // eslint-disable-next-line unicorn/no-null
-              null,
-              1
-          )
+    const found = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(parentDir, '**/.application.json'),
+        // exclude:
+        // - null      = NO excludes apply
+        // - undefined = default excludes apply (e.g. the `files.exclude` setting but not `search.exclude`).
+        // eslint-disable-next-line unicorn/no-null
+        null,
+        1
+    )
     if (!found || found.length === 0) {
         getLogger().debug('uploadLambda: .application.json not found in: "%s"', parentDir)
     }

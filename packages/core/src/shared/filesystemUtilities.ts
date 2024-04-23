@@ -232,35 +232,6 @@ export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: v
 }
 
 /**
- * TEMPORARY SHIM for vscode.workspace.findFiles() on Cloud9.
- *
- * @param dir Directory to search
- * @param fileName Name of file to locate
- * @returns  List of one or zero Uris (for compat with vscode.workspace.findFiles())
- */
-export async function cloud9Findfile(dir: string, fileName: string): Promise<vscode.Uri[]> {
-    getLogger().debug('cloud9Findfile: %s', dir)
-    const files = await fsCommon.readdir(dir)
-    const subDirs: vscode.Uri[] = []
-    for (const file of files) {
-        const [currentFileName] = file
-        const filePath = path.join(dir, currentFileName)
-        if (filePath === path.join(dir, fileName)) {
-            return [vscode.Uri.file(filePath)]
-        }
-        if (await fsCommon.existsDir(filePath)) {
-            subDirs.push(vscode.Uri.file(filePath))
-        }
-    }
-    for (const d of subDirs) {
-        const found = await cloud9Findfile(d.fsPath, fileName)
-        if (found.length > 0) {
-            return found
-        }
-    }
-    return []
-}
-/**
  * @returns  A string path to the last locally stored download location. If none, returns the users 'Downloads' directory path.
  */
 export async function getDefaultDownloadPath(): Promise<string> {
