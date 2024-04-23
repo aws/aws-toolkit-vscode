@@ -393,8 +393,26 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
             })
         },
         onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
-        onCopyCodeToClipboard: (tabId, messageId, code, type, referenceTrackerInfo) => {
-            connector.onCopyCodeToClipboard(tabId, messageId, code, type, referenceTrackerInfo)
+        onCopyCodeToClipboard: (
+            tabId,
+            messageId,
+            code,
+            type,
+            referenceTrackerInfo,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks
+        ) => {
+            connector.onCopyCodeToClipboard(
+                tabId,
+                messageId,
+                code,
+                type,
+                referenceTrackerInfo,
+                eventId,
+                codeBlockIndex,
+                totalCodeBlocks
+            )
             mynahUI.notify({
                 type: NotificationType.SUCCESS,
                 content: 'Selected code is copied to clipboard',

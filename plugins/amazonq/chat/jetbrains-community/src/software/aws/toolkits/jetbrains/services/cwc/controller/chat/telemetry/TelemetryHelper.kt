@@ -83,7 +83,7 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
     }
 
     // When Chat API responds to a user message (full response streamed)
-    fun recordAddMessage(data: ChatRequestData, response: ChatMessage, responseLength: Int, statusCode: Int) {
+    fun recordAddMessage(data: ChatRequestData, response: ChatMessage, responseLength: Int, statusCode: Int, numberOfCodeBlocks: Int) {
         AmazonqTelemetry.addMessage(
             cwsprChatConversationId = getConversationId(response.tabId).orEmpty(),
             cwsprChatMessageId = response.messageId,
@@ -93,7 +93,7 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
             cwsprChatProgrammingLanguage = data.activeFileContext.fileContext?.fileLanguage,
             cwsprChatActiveEditorTotalCharacters = data.activeFileContext.focusAreaContext?.codeSelection?.length,
             cwsprChatActiveEditorImportCount = data.activeFileContext.focusAreaContext?.codeNames?.fullyQualifiedNames?.used?.size,
-            cwsprChatResponseCodeSnippetCount = 0,
+            cwsprChatResponseCodeSnippetCount = numberOfCodeBlocks,
             cwsprChatResponseCode = statusCode,
             cwsprChatSourceLinkCount = response.relatedSuggestions?.size,
             cwsprChatReferencesCount = 0, // TODO
@@ -122,6 +122,7 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
             (responseStreamTotalTime[response.tabId] ?: 0).toDouble(),
             data.message.length,
             responseLength,
+            numberOfCodeBlocks
         )
     }
 
@@ -190,7 +191,9 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
                     cwsprChatAcceptedCharactersLength = message.code.length,
                     cwsprChatInteractionTarget = message.insertionTargetType,
                     cwsprChatHasReference = null,
-                    credentialStartUrl = getStartUrl(context.project)
+                    credentialStartUrl = getStartUrl(context.project),
+                    cwsprChatCodeBlockIndex = message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks = message.totalCodeBlocks
                 )
                 ChatInteractWithMessageEvent.builder().apply {
                     conversationId(getConversationId(message.tabId).orEmpty())
@@ -210,7 +213,9 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
                     cwsprChatAcceptedNumberOfLines = message.code.lines().size,
                     cwsprChatInteractionTarget = message.insertionTargetType,
                     cwsprChatHasReference = null,
-                    credentialStartUrl = getStartUrl(context.project)
+                    credentialStartUrl = getStartUrl(context.project),
+                    cwsprChatCodeBlockIndex = message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks = message.totalCodeBlocks
                 )
                 ChatInteractWithMessageEvent.builder().apply {
                     conversationId(getConversationId(message.tabId).orEmpty())
