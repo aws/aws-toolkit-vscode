@@ -27,3 +27,5 @@ export const uiComponentsTexts = {
 }
 
 export const userGuideURL = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/getting-started.html'
+export const manageAccessGuideURL =
+    'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html'
