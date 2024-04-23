@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { CodeScanIssue, codeScanState, CodeSuggestionsState, vsCodeState } from '../models/model'
+import { CodeScanIssue, CodeScansState, codeScanState, CodeSuggestionsState, vsCodeState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -68,6 +68,26 @@ export const enableCodeSuggestions = Commands.declare(
                 await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
             }
         }
+)
+
+export const toggleCodeScans = Commands.declare(
+    { id: 'aws.codeWhisperer.toggleCodeScan', compositeKey: { 1: 'source' } },
+    (scansState: CodeScansState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        await telemetry.aws_modifySetting.run(async span => {
+            span.record({
+                settingId: CodeWhispererConstants.autoScansConfig.settingId,
+            })
+
+            const isScansEnabled = await scansState.toggleScans()
+            span.record({
+                settingState: isScansEnabled
+                    ? CodeWhispererConstants.autoScansConfig.activated
+                    : CodeWhispererConstants.autoScansConfig.deactivated,
+            })
+
+            await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+        })
+    }
 )
 
 export const showReferenceLog = Commands.declare(

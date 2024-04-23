@@ -30,6 +30,12 @@ export const autoSuggestionConfig = {
     deactivated: 'Deactivated',
 }
 
+export const autoScansConfig = {
+    settingId: 'codewhisperer_autoScansActivation',
+    activated: 'Activated',
+    deactivated: 'Deactivated',
+}
+
 /**
  * EditorCon context
  */
@@ -101,7 +107,7 @@ export type PlatformLanguageId = (typeof platformLanguageIds)[number]
  */
 export const pendingResponse = 'Waiting for Amazon Q...'
 
-export const runningSecurityScan = 'Scanning active file and its dependencies...'
+export const runningSecurityScan = 'Scanning project for security issues...'
 
 export const noSuggestions = 'No suggestions from Amazon Q'
 
@@ -136,6 +142,8 @@ export const unsupportedLanguagesCacheTTL = 10 * 60 * 60 * 1000
 export const unsupportedLanguagesKey = 'CODEWHISPERER_UNSUPPORTED_LANGUAGES_KEY'
 
 export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
+
+export const autoScansEnabledKey = 'CODEWHISPERER_AUTO_SCANS_ENABLED'
 
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
@@ -187,7 +195,7 @@ export const referenceLogText = (
 ) =>
     `with code ${code} provided with reference under ${license} from repository ${repository}. Added to ${filePath} ${lineInfo}.`
 
-export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in 
+export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in
     <a href="#" onclick="openSettings();return false;">Amazon Q Settings</a>`
 
 export const referenceLogPromptTextEnterpriseSSO =
@@ -211,13 +219,23 @@ export const codeScanTerraformPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 2
 
 export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
+export const fileScanPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const fileScanUploadIntent = 'AUTOMATIC_FILE_SECURITY_SCAN'
+
+export const projectScanPayloadSizeLimitBytes = 5 * Math.pow(2, 30) // 5 GB
+
+export const projectScanUploadIntent = 'FULL_PROJECT_SECURITY_SCAN'
+
 export const codeScanTruncDirPrefix = 'codewhisperer_scan'
 
 export const codeScanZipExt = '.zip'
 
 export const contextTruncationTimeoutSeconds = 10
 
-export const codeScanJobTimeoutSeconds = 50
+export const codeScanJobTimeoutSeconds = 60 * 10 //10 minutes
+
+export const codeFileScanJobTimeoutSeconds = 60 //1 minute
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
@@ -226,6 +244,33 @@ export const codeScanJobPollingIntervalSeconds = 1
 export const artifactTypeSource = 'SourceCode'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
+
+export const autoScanDebounceDelaySeconds = 2
+
+export const codewhispererDiagnosticSourceLabel = 'Amazon Q '
+
+// use vscode languageId here / Supported languages
+export const securityScanLanguageIds = [
+    'java',
+    'python',
+    'javascript',
+    'typescript',
+    'csharp',
+    'go',
+    'ruby',
+    'golang', // Cloud9 reports Go files with this language-id
+    'json',
+    'yaml',
+    'tf',
+    'hcl',
+    'terraform',
+    'terragrunt',
+    'packer',
+    'plaintext',
+    'jsonc',
+] as const
+
+export type SecurityScanLanguageId = (typeof securityScanLanguageIds)[number]
 
 // wait time for editor to update editor.selection.active (in milliseconds)
 export const vsCodeCursorUpdateDelay = 10
@@ -245,9 +290,17 @@ export const freeTierLimitReached = 'You have reached the monthly fair use limit
 
 export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
 
+export const fileScansLimitReached = 'You have reached the monthly quota of automatic file scans.'
+
+export const projectScansLimitReached = 'You have reached the monthly quota of full project scans.'
+
 export const throttlingLearnMore = `Learn More`
 
 export const throttlingMessage = `Maximum recommendation count reached for this month`
+
+export const fileScansThrottlingMessage = `Maximum automatic file scan count reached for this month`
+
+export const projectScansThrottlingMessage = `Maximum full project scan count reached for this month`
 
 export const connectionChangeMessage = `Keep using Amazon Q with `
 
@@ -519,4 +572,9 @@ export const crossFileContextConfig = {
 
 export const utgConfig = {
     maxSegmentSize: 10200,
+}
+
+export enum CodeAnalysisScope {
+    FILE = 'FILE',
+    PROJECT = 'PROJECT',
 }

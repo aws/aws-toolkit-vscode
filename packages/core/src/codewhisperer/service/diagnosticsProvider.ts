@@ -4,32 +4,54 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeScanIssue, AggregatedCodeScanIssue } from '../models/model'
+import { CodeScanIssue, AggregatedCodeScanIssue, CodeScansState } from '../models/model'
 import { SecurityIssueHoverProvider } from './securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './securityIssueCodeActionProvider'
+import { CodeAnalysisScope, codewhispererDiagnosticSourceLabel } from '../models/constants'
 
 interface SecurityScanRender {
     securityDiagnosticCollection: vscode.DiagnosticCollection | undefined
     initialized: boolean
+    lastUpdated: number
 }
 
 export const securityScanRender: SecurityScanRender = {
     securityDiagnosticCollection: undefined,
     initialized: false,
+    lastUpdated: 0,
 }
 
 export function initSecurityScanRender(
     securityRecommendationList: AggregatedCodeScanIssue[],
-    context: vscode.ExtensionContext
+    context: vscode.ExtensionContext,
+    editor: vscode.TextEditor,
+    scope: CodeAnalysisScope,
+    codeScanStartTime: number
 ) {
     securityScanRender.initialized = false
-    securityScanRender.securityDiagnosticCollection?.clear()
+    if (scope === CodeAnalysisScope.FILE) {
+        securityScanRender.securityDiagnosticCollection?.delete(editor.document.uri)
+    } else if (scope === CodeAnalysisScope.PROJECT) {
+        securityScanRender.securityDiagnosticCollection?.clear()
+    }
     securityRecommendationList.forEach(securityRecommendation => {
         updateSecurityDiagnosticCollection(securityRecommendation)
     })
     securityScanRender.initialized = true
-    SecurityIssueHoverProvider.instance.issues = securityRecommendationList
-    SecurityIssueCodeActionProvider.instance.issues = securityRecommendationList
+    updateSecurityIssueHoverAndCodeActions(securityRecommendationList, editor)
+    securityScanRender.lastUpdated = codeScanStartTime
+}
+
+function updateSecurityIssueHoverAndCodeActions(
+    securityRecommendationList: AggregatedCodeScanIssue[],
+    editor: vscode.TextEditor
+) {
+    const updatedSecurityRecommendationList = [
+        ...SecurityIssueHoverProvider.instance.issues.filter(group => group.filePath !== editor.document.uri.fsPath),
+        ...securityRecommendationList,
+    ]
+    SecurityIssueHoverProvider.instance.issues = updatedSecurityRecommendationList
+    SecurityIssueCodeActionProvider.instance.issues = updatedSecurityRecommendationList
 }
 
 export function updateSecurityDiagnosticCollection(securityRecommendation: AggregatedCodeScanIssue) {
@@ -50,7 +72,11 @@ export function createSecurityDiagnostic(securityIssue: CodeScanIssue) {
         securityIssue.title,
         vscode.DiagnosticSeverity.Warning
     )
-    securityDiagnostic.source = 'Detected by CodeWhisperer '
+    securityDiagnostic.source = codewhispererDiagnosticSourceLabel
+    securityDiagnostic.code = {
+        value: securityIssue.detectorId,
+        target: vscode.Uri.parse(securityIssue.recommendation.url),
+    }
     return securityDiagnostic
 }
 
@@ -78,7 +104,8 @@ export function disposeSecurityDiagnostic(event: vscode.TextDocumentChangeEvent)
         if (
             issue.severity === vscode.DiagnosticSeverity.Warning &&
             intersection &&
-            (/\S/.test(changedText) || changedText === '')
+            (/\S/.test(changedText) || changedText === '') &&
+            !CodeScansState.instance.isScansEnabled()
         ) {
             issue.severity = vscode.DiagnosticSeverity.Information
             issue.message = 'Re-scan to validate the fix: ' + issue.message
