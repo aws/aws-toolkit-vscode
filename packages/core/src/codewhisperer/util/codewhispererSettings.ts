@@ -7,7 +7,7 @@ import globals from '../../shared/extensionGlobals'
 import { codewhispererSettingsImportedKey } from '../models/constants'
 
 const description = {
-    showInlineCodeSuggestionsWithCodeReferences: Boolean,
+    showInlineCodeSuggestionsWithCodeReferences: Boolean, // eslint-disable-line id-length
     importRecommendation: Boolean,
     shareContentWithAWS: Boolean,
     javaCompilationOutput: String,
