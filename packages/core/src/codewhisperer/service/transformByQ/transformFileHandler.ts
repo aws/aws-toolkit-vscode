@@ -109,7 +109,7 @@ async function setAnnotationObjectDetails(lineNumber: number = 0) {
         gutterIconPath: '/packages/toolkit/resources/icons/cloud9/generated/dark/vscode-bug.svg',
         gutterIconSize: '20',
         overviewRulerColor: new vscode.ThemeColor('warning'),
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
+        overviewRulerLane: vscode.OverviewRulerLane.Center,
     })
 
     // Set the decorations
@@ -118,6 +118,7 @@ async function setAnnotationObjectDetails(lineNumber: number = 0) {
             range: new vscode.Range(lineNumber, 0, lineNumber, 50),
             hoverMessage: `
             ### This dependency version needs to be updated
+            
             Use the Q Chat to select a valid version upgrade
         `,
         },
