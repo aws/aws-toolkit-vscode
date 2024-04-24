@@ -18,7 +18,9 @@ export class PromptsGenerator {
 
     public generateForContextMenuCommand(command: EditorContextCommand): string {
         if (command.type === 'aws.amazonq.explainIssue') {
-            return `Explain the issue "${JSON.stringify(command.issue)}" and generate code demonstrating the fix`
+            return `Explain the issue "${command.issue.title}" (${JSON.stringify(
+                command.issue
+            )}) and generate code demonstrating the fix`
         }
         return [this.editorContextMenuCommandVerbs.get(command.type), ' the selected codeblock'].join('')
     }
