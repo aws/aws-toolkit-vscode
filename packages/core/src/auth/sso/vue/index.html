@@ -70,16 +70,10 @@
                     return
                 }
 
-                const productName = params.get('productName')
-                const scopes = params.get('scopes')
-                if (!productName || !scopes) {
-                    showErrorMessage('Unable to find productName and scopes')
-                    return
-                }
-
+                const productName = 'AWS IDE Extensions for VS Code'
                 document.getElementById(
                     'approvalMessage'
-                ).innerText = `${productName} can now access your data in ${scopes}.`
+                ).innerText = `${productName} have been given requested permissions`
                 document.getElementById(
                     'footerText'
                 ).innerText = `You can close this window and start using ${productName}`

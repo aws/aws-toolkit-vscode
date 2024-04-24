@@ -24,7 +24,7 @@ describe('AuthSSOServer', function () {
     let server: AuthSSOServer
 
     beforeEach(async function () {
-        server = new AuthSSOServer(state, 'vscode://foo', [])
+        server = new AuthSSOServer(state, 'vscode://foo')
         await server.start()
     })
 

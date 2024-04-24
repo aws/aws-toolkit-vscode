@@ -401,11 +401,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
         registration: ClientRegistration
     ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
         const state = randomUUID()
-        const authServer = new AuthSSOServer(
-            state,
-            UriHandler.buildUri(authenticationPath).toString(),
-            this.profile.scopes ?? []
-        )
+        const authServer = new AuthSSOServer(state, UriHandler.buildUri(authenticationPath).toString())
 
         try {
             await authServer.start()
