@@ -78,7 +78,7 @@ class PluginUpdateManager : Disposable {
                 return
             }
 
-            updatePlugin(pluginDescriptor, progressIndicator)
+            if (!updatePlugin(pluginDescriptor, progressIndicator)) return
 
             // TODO: distinguish telemetry
             ToolkitTelemetry.showAction(
