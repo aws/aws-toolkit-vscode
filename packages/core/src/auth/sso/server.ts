@@ -171,7 +171,6 @@ export class AuthSSOServer {
         res: http.ServerResponse,
         params:
             | {
-                  productName: string
                   redirectUri: string
               }
             | {
@@ -224,7 +223,6 @@ export class AuthSSOServer {
         this.deferred?.resolve(Result.ok(code))
 
         this.redirect(res, {
-            productName: 'AWS Toolkit for VSCode',
             redirectUri: this.vscodeUriPath,
         })
     }

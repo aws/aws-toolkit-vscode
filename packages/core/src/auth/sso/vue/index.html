@@ -70,15 +70,10 @@
                     return
                 }
 
-                const productName = params.get('productName')
-                if (!productName) {
-                    showErrorMessage('Unable to find productName')
-                    return
-                }
-
+                const productName = 'AWS IDE Extensions for VS Code'
                 document.getElementById(
                     'approvalMessage'
-                ).innerText = `AWS IDE Extensions for VS Code have been given requested permissions`
+                ).innerText = `${productName} have been given requested permissions`
                 document.getElementById(
                     'footerText'
                 ).innerText = `You can close this window and start using ${productName}`
