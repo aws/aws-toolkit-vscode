@@ -175,7 +175,7 @@ export async function activate(context: vscode.ExtensionContext) {
                             await installAmazonQExtension.execute()
                             telemetry.record({ id: 'amazonQStandaloneInstalled' })
                             void vscode.window.showInformationMessage(
-                                'Amazon Q has moved to its own VSCode extension, which has been automatically installed.'
+                                "Amazon Q is now its own extension.\n\nWe've auto-installed it for you with all the same features and settings from CodeWhisperer and Amazon Q chat."
                             )
                         } else {
                             const dismissedInstall =
@@ -184,8 +184,8 @@ export async function activate(context: vscode.ExtensionContext) {
                                 telemetry.record({ id: 'amazonQStandaloneChange' })
                                 void vscode.window
                                     .showInformationMessage(
-                                        'Amazon Q has moved to its own VSCode extension.' +
-                                            '\nInstall to work with Amazon Q, a generative AI assistant, with chat and code suggestions.',
+                                        'Amazon Q has moved to its own extension.' +
+                                            '\nInstall it to use Amazon Q, a generative AI assistant, with chat and code suggestions.',
                                         'Install',
                                         'Learn More'
                                     )
