@@ -2022,33 +2022,33 @@
             {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.apig.copyUrl",
                 "title": "%AWS.command.apig.copyUrl%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.apig.invokeRemoteRestApi",
                 "title": "%AWS.command.apig.invokeRemoteRestApi%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%",
+                        "category": "%AWS.title.cn%",
                         "title": "%AWS.command.apig.invokeRemoteRestApi.cn%"
                     }
                 }
@@ -2056,43 +2056,43 @@
             {
                 "command": "aws.lambda.createNewSamApp",
                 "title": "%AWS.command.createNewSamApp%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.toolkit.login",
                 "title": "%AWS.command.login%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "title": "%AWS.command.login.cn%",
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.toolkit.credentials.profile.create",
                 "title": "%AWS.command.credentials.profile.create%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.toolkit.credentials.edit",
                 "title": "%AWS.command.credentials.edit%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2148,10 +2148,10 @@
             {
                 "command": "aws.toolkit.logout",
                 "title": "%AWS.command.logout%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2178,22 +2178,22 @@
             {
                 "command": "aws.toolkit.auth.signout",
                 "title": "%AWS.command.auth.signout%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "!isCloud9"
             },
             {
                 "command": "aws.toolkit.auth.help",
                 "title": "%AWS.generic.viewDocs%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "icon": "$(question)"
             },
             {
                 "command": "aws.toolkit.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2201,11 +2201,11 @@
                 "command": "aws.ec2.openTerminal",
                 "title": "%AWS.command.ec2.openTerminal%",
                 "icon": "$(terminal-view-icon)",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2213,11 +2213,11 @@
                 "command": "aws.ec2.openRemoteConnection",
                 "title": "%AWS.command.ec2.openRemoteConnection%",
                 "icon": "$(remote-explorer)",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2225,11 +2225,11 @@
                 "command": "aws.ec2.startInstance",
                 "title": "%AWS.command.ec2.startInstance%",
                 "icon": "$(debug-start)",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2237,11 +2237,11 @@
                 "command": "aws.ec2.stopInstance",
                 "title": "%AWS.command.ec2.stopInstance%",
                 "icon": "$(debug-stop)",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2249,292 +2249,292 @@
                 "command": "aws.ec2.rebootInstance",
                 "title": "%AWS.command.ec2.rebootInstance%",
                 "icon": "$(debug-restart)",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ec2.copyInstanceId",
                 "title": "%AWS.command.ec2.copyInstanceId%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ecr.copyTagUri",
                 "title": "%AWS.command.ecr.copyTagUri%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ecr.deleteTag",
                 "title": "%AWS.command.ecr.deleteTag%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ecr.copyRepositoryUri",
                 "title": "%AWS.command.ecr.copyRepositoryUri%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ecr.createRepository",
                 "title": "%AWS.command.ecr.createRepository%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(add)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ecr.deleteRepository",
                 "title": "%AWS.command.ecr.deleteRepository%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.showRegion",
                 "title": "%AWS.command.showRegion%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.createThing",
                 "title": "%AWS.command.iot.createThing%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(add)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.deleteThing",
                 "title": "%AWS.generic.promptDelete%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.createCert",
                 "title": "%AWS.command.iot.createCert%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(add)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.deleteCert",
                 "title": "%AWS.generic.promptDelete%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.attachCert",
                 "title": "%AWS.command.iot.attachCert%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-generic-attach-file)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.attachPolicy",
                 "title": "%AWS.command.iot.attachPolicy%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-generic-attach-file)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.activateCert",
                 "title": "%AWS.command.iot.activateCert%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.deactivateCert",
                 "title": "%AWS.command.iot.deactivateCert%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.revokeCert",
                 "title": "%AWS.command.iot.revokeCert%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.createPolicy",
                 "title": "%AWS.command.iot.createPolicy%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(add)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.deletePolicy",
                 "title": "%AWS.generic.promptDelete%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.createPolicyVersion",
                 "title": "%AWS.command.iot.createPolicyVersion%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.deletePolicyVersion",
                 "title": "%AWS.generic.promptDelete%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.detachCert",
                 "title": "%AWS.command.iot.detachCert%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.detachPolicy",
                 "title": "%AWS.command.iot.detachCert%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.viewPolicyVersion",
                 "title": "%AWS.command.iot.viewPolicyVersion%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.setDefaultPolicy",
                 "title": "%AWS.command.iot.setDefaultPolicy%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.iot.copyEndpoint",
                 "title": "%AWS.command.iot.copyEndpoint%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2551,135 +2551,135 @@
             {
                 "command": "aws.s3.presignedURL",
                 "title": "%AWS.command.s3.presignedURL%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.s3.copyPath",
                 "title": "%AWS.command.s3.copyPath%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.s3.downloadFileAs",
                 "title": "%AWS.command.s3.downloadFileAs%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(cloud-download)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.s3.openFile",
                 "title": "%AWS.command.s3.openFile%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(open-preview)"
             },
             {
                 "command": "aws.s3.editFile",
                 "title": "%AWS.command.s3.editFile%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(edit)"
             },
             {
                 "command": "aws.s3.uploadFile",
                 "title": "%AWS.command.s3.uploadFile%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(cloud-upload)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.s3.uploadFileToParent",
                 "title": "%AWS.command.s3.uploadFileToParent%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.s3.createFolder",
                 "title": "%AWS.command.s3.createFolder%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(new-folder)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.s3.createBucket",
                 "title": "%AWS.command.s3.createBucket%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-s3-create-bucket)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.s3.deleteBucket",
                 "title": "%AWS.generic.promptDelete%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.s3.deleteFile",
                 "title": "%AWS.generic.promptDelete%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.invokeLambda",
                 "title": "%AWS.command.invokeLambda%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "title": "%AWS.command.invokeLambda.cn%",
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.downloadLambda",
                 "title": "%AWS.command.downloadLambda%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "viewItem == awsRegionFunctionNodeDownloadable",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2687,10 +2687,10 @@
                 "command": "aws.uploadLambda",
                 "title": "%AWS.command.uploadLambda%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2698,10 +2698,10 @@
                 "command": "aws.deleteLambda",
                 "title": "%AWS.generic.promptDelete%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2709,10 +2709,10 @@
                 "command": "aws.copyLambdaUrl",
                 "title": "%AWS.generic.copyUrl%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2720,10 +2720,10 @@
                 "command": "aws.deploySamApplication",
                 "title": "%AWS.command.deploySamApplication%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2731,11 +2731,11 @@
                 "command": "aws.toolkit.submitFeedback",
                 "title": "%AWS.command.submitFeedback%",
                 "enablement": "!aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "icon": "$(comment)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2743,7 +2743,7 @@
                 "command": "aws.refreshAwsExplorer",
                 "title": "%AWS.command.refreshAwsExplorer%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "icon": {
                     "dark": "resources/icons/vscode/dark/refresh.svg",
                     "light": "resources/icons/vscode/light/refresh.svg"
@@ -2753,10 +2753,10 @@
                 "command": "aws.samcli.detect",
                 "title": "%AWS.command.samcli.detect%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2764,10 +2764,10 @@
                 "command": "aws.deleteCloudFormation",
                 "title": "%AWS.command.deleteCloudFormation%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2775,10 +2775,10 @@
                 "command": "aws.downloadStateMachineDefinition",
                 "title": "%AWS.command.downloadStateMachineDefinition%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2786,10 +2786,10 @@
                 "command": "aws.executeStateMachine",
                 "title": "%AWS.command.executeStateMachine%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2797,87 +2797,87 @@
                 "command": "aws.renderStateMachineGraph",
                 "title": "%AWS.command.renderStateMachineGraph%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.copyArn",
                 "title": "%AWS.command.copyArn%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.copyName",
                 "title": "%AWS.command.copyName%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.listCommands",
                 "title": "%AWS.command.listCommands%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
                         "title": "%AWS.command.listCommands.cn%",
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.viewSchemaItem",
                 "title": "%AWS.command.viewSchemaItem%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.searchSchema",
                 "title": "%AWS.command.searchSchema%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.searchSchemaPerRegistry",
                 "title": "%AWS.command.searchSchemaPerRegistry%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.downloadSchemaItemCode",
                 "title": "%AWS.command.downloadSchemaItemCode%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2889,38 +2889,38 @@
             {
                 "command": "aws.toolkit.help",
                 "title": "%AWS.command.help%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.toolkit.github",
                 "title": "%AWS.command.github%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.quickStart",
                 "title": "%AWS.command.quickStart%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.cdk.refresh",
                 "title": "%AWS.command.refreshCdkExplorer%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": {
                     "dark": "resources/icons/vscode/dark/refresh.svg",
@@ -2928,47 +2928,47 @@
                 },
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.cdk.viewDocs",
                 "title": "%AWS.generic.viewDocs%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.stepfunctions.createStateMachineFromTemplate",
                 "title": "%AWS.command.stepFunctions.createStateMachineFromTemplate%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.stepfunctions.publishStateMachine",
                 "title": "%AWS.command.stepFunctions.publishStateMachine%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.previewStateMachine",
                 "title": "%AWS.command.stepFunctions.previewStateMachine%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-stepfunctions-preview)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -2988,377 +2988,377 @@
                 "command": "aws.cwl.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ssmDocument.createLocalDocument",
                 "title": "%AWS.command.ssmDocument.createLocalDocument%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ssmDocument.openLocalDocument",
                 "title": "%AWS.command.ssmDocument.openLocalDocument%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(cloud-download)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ssmDocument.openLocalDocumentJson",
                 "title": "%AWS.command.ssmDocument.openLocalDocumentJson%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ssmDocument.openLocalDocumentYaml",
                 "title": "%AWS.command.ssmDocument.openLocalDocumentYaml%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ssmDocument.deleteDocument",
                 "title": "%AWS.command.ssmDocument.deleteDocument%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ssmDocument.publishDocument",
                 "title": "%AWS.command.ssmDocument.publishDocument%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(cloud-upload)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ssmDocument.updateDocumentVersion",
                 "title": "%AWS.command.ssmDocument.updateDocumentVersion%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.copyLogResource",
                 "title": "%AWS.command.copyLogResource%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(files)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.cwl.searchLogGroup",
                 "title": "%AWS.command.cloudWatchLogs.searchLogGroup%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(search-view-icon)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.saveCurrentLogDataContent",
                 "title": "%AWS.command.saveCurrentLogDataContent%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(save)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.cwl.changeFilterPattern",
                 "title": "%AWS.command.cwl.changeFilterPattern%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(search-view-icon)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.cwl.changeTimeFilter",
                 "title": "%AWS.command.cwl.changeTimeFilter%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(calendar)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.addSamDebugConfig",
                 "title": "%AWS.command.addSamDebugConfig%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.toggleSamCodeLenses",
                 "title": "%AWS.command.toggleSamCodeLenses%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ecs.runCommandInContainer",
                 "title": "%AWS.ecs.runCommandInContainer%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "viewItem == awsEcsContainerNodeExecEnabled",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ecs.openTaskInTerminal",
                 "title": "%AWS.ecs.openTaskInTerminal%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "viewItem == awsEcsContainerNodeExecEnabled",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ecs.enableEcsExec",
                 "title": "%AWS.ecs.enableEcsExec%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ecs.viewDocumentation",
                 "title": "%AWS.generic.viewDocs%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.resources.copyIdentifier",
                 "title": "%AWS.command.resources.copyIdentifier%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.resources.openResourcePreview",
                 "title": "%AWS.generic.preview%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(open-preview)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.resources.createResource",
                 "title": "%AWS.generic.create%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(add)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.resources.deleteResource",
                 "title": "%AWS.generic.promptDelete%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.resources.updateResource",
                 "title": "%AWS.generic.promptUpdate%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(pencil)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.resources.updateResourceInline",
                 "title": "%AWS.generic.promptUpdate%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(pencil)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.resources.saveResource",
                 "title": "%AWS.generic.save%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(save)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.resources.closeResource",
                 "title": "%AWS.generic.close%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(close)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.resources.viewDocs",
                 "title": "%AWS.generic.viewDocs%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(book)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.resources.configure",
                 "title": "%AWS.command.resources.configure%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(gear)",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.apprunner.createService",
                 "title": "%AWS.command.apprunner.createService%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.ecs.disableEcsExec",
                 "title": "%AWS.ecs.disableEcsExec%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.apprunner.createServiceFromEcr",
                 "title": "%AWS.command.apprunner.createServiceFromEcr%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.apprunner.pauseService",
                 "title": "%AWS.command.apprunner.pauseService%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
@@ -3369,80 +3369,80 @@
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.apprunner.copyServiceUrl",
                 "title": "%AWS.command.apprunner.copyServiceUrl%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.apprunner.open",
                 "title": "%AWS.command.apprunner.open%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.apprunner.deleteService",
                 "title": "%AWS.generic.promptDelete%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.apprunner.startDeployment",
                 "title": "%AWS.command.apprunner.startDeployment%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.cloudFormation.newTemplate",
                 "title": "%AWS.command.cloudFormation.newTemplate%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.sam.newTemplate",
                 "title": "%AWS.command.sam.newTemplate%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.samcli.sync",
                 "title": "%AWS.command.samcli.sync%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
@@ -3469,24 +3469,24 @@
             {
                 "command": "aws.openInApplicationComposerDialog",
                 "title": "%AWS.command.applicationComposer.openDialog%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             },
             {
                 "command": "aws.openInApplicationComposer",
                 "title": "%AWS.command.applicationComposer.open%",
-                "category": "%AWS.productName%",
+                "category": "%AWS.title%",
                 "icon": {
                     "dark": "resources/icons/aws/applicationcomposer/icon-dark.svg",
                     "light": "resources/icons/aws/applicationcomposer/icon.svg"
                 },
                 "cloud9": {
                     "cn": {
-                        "category": "%AWS.productName.cn%"
+                        "category": "%AWS.title.cn%"
                     }
                 }
             }
