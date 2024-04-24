@@ -57,11 +57,7 @@ export class AuthSSOServer {
     private server: http.Server
     private connections: Socket[]
 
-    constructor(
-        private readonly state: string,
-        private readonly vscodeUriPath: string,
-        private readonly scopes: string[]
-    ) {
+    constructor(private readonly state: string, private readonly vscodeUriPath: string) {
         this.authenticationPromise = new Promise<Result<string>>(resolve => {
             this.deferred = { resolve }
         })
@@ -176,7 +172,6 @@ export class AuthSSOServer {
         params:
             | {
                   productName: string
-                  scopes: string
                   redirectUri: string
               }
             | {
@@ -230,7 +225,6 @@ export class AuthSSOServer {
 
         this.redirect(res, {
             productName: 'AWS Toolkit for VSCode',
-            scopes: this.scopes.join(', '),
             redirectUri: this.vscodeUriPath,
         })
     }
