@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import {
     AmazonqAddMessage,
@@ -158,6 +157,7 @@ export class CWCTelemetryHelper {
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'insertAtCursor',
                     cwsprChatAcceptedCharactersLength: message.code.length,
+                    cwsprChatAcceptedNumberOfLines: message.code.split('\n').length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
@@ -249,6 +249,7 @@ export class CWCTelemetryHelper {
                         interactionType: this.getCWClientTelemetryInteractionType(event.cwsprChatInteractionType),
                         interactionTarget: event.cwsprChatInteractionTarget,
                         acceptedCharacterCount: event.cwsprChatAcceptedCharactersLength,
+                        acceptedLineCount: event.cwsprChatAcceptedNumberOfLines,
                         acceptedSnippetHasReference: false,
                     },
                 },
