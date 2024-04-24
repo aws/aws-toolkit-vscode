@@ -102,7 +102,6 @@ export default defineComponent({
 
 .item-container {
     border: 2px solid #625f5f;
-    border-radius: 3px;
 }
 
 .hovering {
