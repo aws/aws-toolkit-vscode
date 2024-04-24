@@ -200,14 +200,16 @@
 
         <template v-if="stage === 'CONNECTED'"> </template>
         <template v-if="stage === 'AWS_PROFILE'">
-            <button class="back-button" @click="handleBackButtonClick">
-                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
-                        fill="#21A2FF"
-                    />
-                </svg>
-            </button>
+            <div>
+                <button class="back-button" @click="handleBackButtonClick">
+                    <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                            fill="#21A2FF"
+                        />
+                    </svg>
+                </button>
+            </div>
             <div class="header">IAM Credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
             <div style="margin-bottom: 8px"></div>
