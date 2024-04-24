@@ -1,5 +1,11 @@
 <template>
-    <div class="item-container" :class="{ selected: isSelected }" @click="toggleSelection">
+    <div
+        class="item-container"
+        :class="{ selected: isSelected, hovering: isHovering }"
+        @click="toggleSelection"
+        @mouseover="isHovering = true"
+        @mouseout="isHovering = false"
+    >
         <div class="icon">
             <svg
                 v-if="itemId === LoginOption.BUILDER_ID"
@@ -61,17 +67,19 @@ export default defineComponent({
     name: 'SelectableItem',
     components: {},
     props: {
+        itemId: Number,
         itemText: String,
         itemTitle: String,
         isSelected: Boolean,
-        itemId: Number,
+        isHovering: Boolean,
     },
     data() {
         return {
-            itemText: this.itemText,
-            isSelected: this.isSelected,
             itemId: this.itemId,
             itemTitle: this.itemTitle,
+            itemText: this.itemText,
+            isSelected: this.isSelected,
+            isHovering: false,
             LoginOption,
         }
     },
@@ -95,8 +103,13 @@ export default defineComponent({
     border-radius: 3px;
 }
 
-.selected {
+.hovering {
     border: 2px solid #0e639c;
+    user-select: none;
+}
+
+.selected {
+    border: 2px solid #3675f4;
     user-select: none;
 }
 

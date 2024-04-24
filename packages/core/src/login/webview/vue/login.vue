@@ -72,17 +72,19 @@
             </svg>
         </div>
         <template v-if="stage === 'START'">
-            <button class="back-button" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
-                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
-                        fill="#21A2FF"
-                    />
-                </svg>
-            </button>
+            <div>
+                <button class="back-button" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
+                    <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                            fill="#21A2FF"
+                        />
+                    </svg>
+                </button>
+            </div>
             <div class="auth-container-section">
                 <div class="existing-logins" v-if="existingLogins.length > 0 && app === 'AMAZONQ'">
-                    <div class="title">Connect with an existing account:</div>
+                    <div class="header">Connect with an existing account:</div>
                     <div v-for="(existingLogin, index) in existingLogins" :key="index">
                         <SelectableItem
                             @toggle="toggleItemSelection"
@@ -93,9 +95,9 @@
                             class="selectable-item"
                         ></SelectableItem>
                     </div>
-                    <div class="title">Or, choose a sign-in option:</div>
+                    <div class="header">Or, choose a sign-in option:</div>
                 </div>
-                <div class="title" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
+                <div class="header" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
@@ -142,16 +144,18 @@
             </div>
         </template>
         <template v-if="stage === 'SSO_FORM'">
-            <button class="back-button" @click="handleBackButtonClick">
-                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
-                        fill="#21A2FF"
-                    />
-                </svg>
-            </button>
+            <div>
+                <button class="back-button" @click="handleBackButtonClick">
+                    <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                            fill="#21A2FF"
+                        />
+                    </svg>
+                </button>
+            </div>
             <div class="auth-container-section">
-                <div class="title">Sign in with SSO:</div>
+                <div class="header" style="padding-bottom:5%">Sign in with SSO:</div>
                 <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
                     <div class="h4">
                         Using CodeCatalyst with AWS Builder ID?
@@ -188,8 +192,8 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Connecting to IAM...</div>
-                <div v-else class="title">Authenticating in browser...</div>
+                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header">Connecting to IAM...</div>
+                <div v-else class="header">Authenticating in browser...</div>
                 <button class="continue-button" v-on:click="handleCancelButtom()">Cancel</button>
             </div>
         </template>
@@ -204,7 +208,7 @@
                     />
                 </svg>
             </button>
-            <div class="title">IAM Credentials:</div>
+            <div class="header">IAM Credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
             <div style="margin-bottom: 8px"></div>
             <div class="title">Profile Name</div>
@@ -458,11 +462,23 @@ export default defineComponent({
     justify-content: center;
 }
 
-.title {
+.header {
     margin-bottom: 3px;
     margin-top: 3px;
     font-size: 12px;
     font-weight: bold;
+}
+.header.vscode-dark {
+    color: white;
+}
+.header.vscode-light {
+    color: black;
+}
+
+.title {
+    margin-bottom: 3px;
+    margin-top: 3px;
+    font-size: 12px;
 }
 .title.vscode-dark {
     color: white;
@@ -492,13 +508,13 @@ export default defineComponent({
     border: none;
     cursor: pointer;
     color: var(--vscode-button-foreground);
-    padding: 0;
+    padding: 7.5% 0 10% 0;
     height: 13px;
-    cursor: pointer;
 }
 .continue-button:disabled {
     background-color: var(--vscode-input-background);
     color: #6f6f6f;
+    cursor: not-allowed;
 }
 .urlInput {
     background-color: var(--vscode-input-background);
