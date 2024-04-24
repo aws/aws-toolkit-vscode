@@ -102,7 +102,7 @@
                     :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
                     :itemId="LoginOption.BUILDER_ID"
                     :itemText="'No AWS account required'"
-                    :itemTitle="'Use for free'"
+                    :itemTitle="'Use For Free'"
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem
@@ -111,7 +111,7 @@
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Sign in to AWS with single sign-on'"
-                    :itemTitle="'Use professional license'"
+                    :itemTitle="'Use Professional License'"
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem
@@ -129,7 +129,7 @@
                     :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
                     :itemId="LoginOption.IAM_CREDENTIAL"
                     :itemText="'Store keys for use with AWS CLI tools'"
-                    :itemTitle="'IAM Credential'"
+                    :itemTitle="'IAM Credentials'"
                     class="selectable-item"
                 ></SelectableItem>
                 <button
@@ -227,6 +227,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import SelectableItem from './selectableItem.vue'
+import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
@@ -235,13 +236,6 @@ const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
 type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
-enum LoginOption {
-    NONE,
-    BUILDER_ID,
-    ENTERPRISE_SSO,
-    IAM_CREDENTIAL,
-    EXISTING_LOGINS,
-}
 
 function validateSsoUrlFormat(url: string) {
     const regex = /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-.*)$/
@@ -280,7 +274,7 @@ export default defineComponent({
             stage: 'START' as Stage,
             regions: [] as Region[],
             startUrlError: '',
-            selectedRegion: '',
+            selectedRegion: 'us-east-1',
             startUrl: '',
             app: this.app,
             LoginOption,
@@ -432,6 +426,7 @@ export default defineComponent({
 .selectable-item {
     margin-bottom: 10px;
     margin-top: 10px;
+    cursor: pointer;
 }
 .logoIcon {
     display: flex;
@@ -490,6 +485,7 @@ export default defineComponent({
     font-weight: bold;
     margin-bottom: 3px;
     margin-top: 3px;
+    cursor: pointer;
 }
 .back-button {
     background: none;
@@ -498,6 +494,7 @@ export default defineComponent({
     color: var(--vscode-button-foreground);
     padding: 0;
     height: 13px;
+    cursor: pointer;
 }
 .continue-button:disabled {
     background-color: var(--vscode-input-background);

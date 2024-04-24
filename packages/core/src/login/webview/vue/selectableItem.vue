@@ -2,7 +2,7 @@
     <div class="item-container" :class="{ selected: isSelected }" @click="toggleSelection">
         <div class="icon">
             <svg
-                v-if="itemTitle == 'Use for free'"
+                v-if="itemId === LoginOption.BUILDER_ID"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -17,7 +17,7 @@
                 />
             </svg>
             <svg
-                v-if="itemTitle == 'Workforce' || itemTitle == 'Use professional license'"
+                v-if="itemId === LoginOption.ENTERPRISE_SSO"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -32,7 +32,7 @@
                 />
             </svg>
             <svg
-                v-if="itemTitle == 'IAM Credential'"
+                v-if="itemId === LoginOption.IAM_CREDENTIAL"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -55,6 +55,7 @@
 </template>
 
 <script lang="ts">
+import { LoginOption } from './types'
 import { defineComponent } from 'vue'
 export default defineComponent({
     name: 'SelectableItem',
@@ -71,6 +72,7 @@ export default defineComponent({
             isSelected: this.isSelected,
             itemId: this.itemId,
             itemTitle: this.itemTitle,
+            LoginOption,
         }
     },
     async created() {},
