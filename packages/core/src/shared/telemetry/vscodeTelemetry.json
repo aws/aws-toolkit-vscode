@@ -272,6 +272,11 @@
             "description": "Count of code characters copied to the editor"
         },
         {
+            "name": "cwsprChatAcceptedNumberOfLines",
+            "type": "int",
+            "description": "Count of lines of code copied to the editor"
+        },
+        {
             "name": "cwsprChatHasReference",
             "type": "boolean",
             "description": "True if the code snippet that user interacts with has a reference."
@@ -828,6 +833,10 @@
                 },
                 {
                     "type": "cwsprChatAcceptedCharactersLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatAcceptedNumberOfLines",
                     "required": false
                 },
                 {
