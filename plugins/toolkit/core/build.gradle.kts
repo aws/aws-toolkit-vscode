@@ -23,7 +23,7 @@ dependencies {
 //    api(libs.aws.ssooidc)
     api(libs.aws.sts)
     api(libs.bundles.jackson)
-
+    implementation(libs.commonmark)
     testImplementation(libs.junit4)
 
     testRuntimeOnly(libs.junit5.jupiterVintage)

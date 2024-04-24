@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.services.codewhispererstreaming.model.CodeWhispererStreamingException
+import software.aws.toolkits.core.utils.convertMarkdownToHTML
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.exceptions.ChatApiException
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.ChatRequestData
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.ChatResponseEvent
@@ -21,7 +22,6 @@ import software.aws.toolkits.jetbrains.services.cwc.messages.FollowUp
 import software.aws.toolkits.jetbrains.services.cwc.messages.RecommendationContentSpan
 import software.aws.toolkits.jetbrains.services.cwc.messages.Suggestion
 import software.aws.toolkits.jetbrains.services.cwc.storage.ChatSessionInfo
-import software.aws.toolkits.jetbrains.utils.convertMarkdownToHTML
 
 class ChatPromptHandler(private val telemetryHelper: TelemetryHelper) {
 

@@ -139,7 +139,6 @@ dependencies {
     implementation(project(":plugin-amazonq:mynah-ui"))
     implementation(libs.bundles.jackson)
     implementation(libs.zjsonpatch)
-    implementation(libs.commonmark)
     // CodeWhispererTelemetryService uses a CircularFifoQueue, transitive from zjsonpatch
     implementation(libs.commons.collections)
 
