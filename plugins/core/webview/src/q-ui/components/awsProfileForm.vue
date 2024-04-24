@@ -72,13 +72,6 @@ export default defineComponent({
     font-size: 12px;
 }
 
-.iamInput {
-    background-color: #252526;
-    width: 100%;
-    height: 37px;
-    border-radius: 4px;
-}
-
 /* Theme specific styles */
 body.jb-dark {
     .iamInput {

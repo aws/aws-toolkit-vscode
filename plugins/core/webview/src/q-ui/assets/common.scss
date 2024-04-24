@@ -2,6 +2,27 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 /* Common styles */
+input, select {
+    height: 37px;
+    border-radius: 4px;
+    width: 100%;
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+input {
+    padding-left: 10px;
+    box-sizing: border-box;
+}
+
+select {
+    padding-left: 6px;
+}
+
+a {
+    color: #29a7ff;
+}
+
 .font-amazon {
     font-family: "Amazon Ember", sans-serif;
     user-select: none;
