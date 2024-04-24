@@ -83,15 +83,6 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
-    Commands.register('aws.amazonq.fixIssue', async issue => {
-        return focusAmazonQPanel.execute(placeholder, 'amazonq.fixIssue').then(() => {
-            controllerPublishers.processContextMenuCommand.publish({
-                type: 'aws.amazonq.fixIssue',
-                triggerType: 'click',
-                issue,
-            })
-        })
-    })
 }
 
 export type EditorContextBaseCommandType =
@@ -101,7 +92,7 @@ export type EditorContextBaseCommandType =
     | 'aws.amazonq.optimizeCode'
     | 'aws.amazonq.sendToPrompt'
 
-export type CodeScanIssueCommandType = 'aws.amazonq.explainIssue' | 'aws.amazonq.fixIssue'
+export type CodeScanIssueCommandType = 'aws.amazonq.explainIssue'
 
 export type EditorContextCommandType = EditorContextBaseCommandType | CodeScanIssueCommandType
 
