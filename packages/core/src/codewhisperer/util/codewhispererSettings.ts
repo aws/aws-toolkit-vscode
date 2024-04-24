@@ -8,7 +8,7 @@ import { codewhispererSettingsImportedKey } from '../models/constants'
 
 const description = {
     showInlineCodeSuggestionsWithCodeReferences: Boolean, // eslint-disable-line id-length
-    importRecommendationForInlineCodeSuggestions: Boolean,
+    importRecommendationForInlineCodeSuggestions: Boolean, // eslint-disable-line id-length
     shareContentWithAWS: Boolean,
 }
 
