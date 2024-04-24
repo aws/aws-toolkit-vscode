@@ -31,7 +31,7 @@ export async function handleMessage(message: unknown, context: WebviewContext) {
     } else if (messageType === MessageType.BROADCAST) {
         switch (command) {
             case Command.LOG:
-                void logMessageHandler(message as LogMessage)
+                void logMessageHandler(message as LogMessage, context)
                 break
             case Command.OPEN_FEEDBACK:
                 openFeedbackMessageHandler()

@@ -35,6 +35,7 @@ export enum Command {
 
     FILE_CHANGED = 'FILE_CHANGED',
     THEME_CHANGED = 'THEME_CHANGED',
+    OVERWRITE_FILE = 'OVERWRITE_FILE',
 }
 
 export enum MessageType {
@@ -94,6 +95,7 @@ export interface LogMessage extends Message {
     logMessage: string
     logType: 'INFO' | 'WARNING' | 'ERROR'
     showNotification: boolean
+    notifitonType: 'INVALD_JSON' | undefined
 }
 
 export interface EmitTelemetryMessage extends Message {

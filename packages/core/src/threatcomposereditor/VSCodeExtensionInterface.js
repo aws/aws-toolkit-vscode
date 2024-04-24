@@ -39,6 +39,11 @@ function handelMessage(event) {
             console.log('THEME_CHANGED')
             applyTheme(message.newTheme)
             break
+
+        case 'OVERWRITE_FILE':
+            console.log('OVERWRITE_FILE')
+            disableAutoSave = false
+            break
     }
 }
 
@@ -78,6 +83,7 @@ async function render(/** @type {string} */ text) {
             logMessage: e.message,
             logType: 'ERROR',
             showNotification: true,
+            notifitonType: 'INVALD_JSON',
         })
     }
 

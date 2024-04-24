@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LogMessage } from '../types'
+import { Command, LogMessage, Message, MessageType, WebviewContext } from '../types'
 import { getLogger } from '../../shared/logger'
 import * as vscode from 'vscode'
 import { sendThreatComposerErrored } from './emitTelemetryMessageHandler'
 
-export async function logMessageHandler(message: LogMessage) {
+export async function logMessageHandler(message: LogMessage, context: WebviewContext) {
     const logger = getLogger()
     switch (message.logType) {
         case 'INFO':
@@ -26,7 +26,27 @@ export async function logMessageHandler(message: LogMessage) {
         case 'ERROR':
             logger.error(message.logMessage)
             if (message.showNotification) {
-                await vscode.window.showErrorMessage(message.logMessage)
+                if (message.notifitonType === 'INVALD_JSON') {
+                    const selection = await vscode.window.showErrorMessage(
+                        message.logMessage +
+                            '. Please re-open the file in a text editor or overwrite the contents of the file with Threat Composer JSON.',
+                        'Reopen',
+                        'Overwrite'
+                    )
+
+                    if (selection === 'Reopen') {
+                        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+                        await vscode.commands.executeCommand('vscode.openWith', context.textDocument.uri, 'default')
+                    } else {
+                        const broadcastMessage: Message = {
+                            messageType: MessageType.BROADCAST,
+                            command: Command.OVERWRITE_FILE,
+                        }
+                        await context.panel.webview.postMessage(broadcastMessage)
+                    }
+                } else {
+                    await vscode.window.showErrorMessage(message.logMessage)
+                }
             }
             sendThreatComposerErrored({
                 reason: message.logMessage,
