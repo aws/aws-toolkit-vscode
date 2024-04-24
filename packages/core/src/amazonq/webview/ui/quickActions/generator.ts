@@ -30,7 +30,7 @@ export class QuickActionGenerator {
                                   command: '/dev',
                                   placeholder: 'Briefly describe a task or issue',
                                   description:
-                                      'Use all project files as context for code suggestions (increases latency).',
+                                      'Plan and implement new functionality across multiple files in your workspace.',
                               },
                           ]
                         : []),
