@@ -160,6 +160,8 @@ export class CWCTelemetryHelper {
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
+                    cwsprChatCodeBlockIndex: message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
                 }
                 break
             case 'code_was_copied_to_clipboard':
@@ -173,6 +175,8 @@ export class CWCTelemetryHelper {
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
+                    cwsprChatCodeBlockIndex: message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
                 }
                 break
             case 'follow-up-was-clicked':
@@ -321,7 +325,7 @@ export class CWCTelemetryHelper {
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: triggerPayload.fileText?.length,
             cwsprChatActiveEditorImportCount: triggerPayload.codeQuery?.fullyQualifiedNames?.used?.length,
-            cwsprChatResponseCodeSnippetCount: 0, // TODO
+            cwsprChatResponseCodeSnippetCount: message.totalNumberOfCodeBlocksInResponse,
             cwsprChatResponseCode: message.responseCode,
             cwsprChatSourceLinkCount: message.suggestionCount,
             cwsprChatReferencesCount: message.codeReferenceCount,
@@ -353,6 +357,7 @@ export class CWCTelemetryHelper {
                         fullResponselatency: event.cwsprChatFullResponseLatency,
                         requestLength: event.cwsprChatRequestLength,
                         responseLength: event.cwsprChatResponseLength,
+                        numberOfCodeBlocks: event.cwsprChatResponseCodeSnippetCount,
                     },
                 },
             })

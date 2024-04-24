@@ -5,6 +5,7 @@
 
 import { ToolkitError } from '../shared/errors'
 import { featureName } from './constants'
+import { uploadCodeError } from './userFacingText'
 
 export class ConversationIdNotFoundError extends ToolkitError {
     constructor() {
@@ -57,7 +58,7 @@ export class PrepareRepoFailedError extends ToolkitError {
 
 export class UploadCodeError extends ToolkitError {
     constructor(statusCode: string) {
-        super('Unable to upload code', { code: `UploadCode-${statusCode}` })
+        super(uploadCodeError, { code: `UploadCode-${statusCode}` })
     }
 }
 

@@ -9,7 +9,6 @@
 
 const baseConfigFactory = require('../webpack.base.config')
 const baseVueConfigFactory = require('../webpack.vue.config')
-const baseWebConfigFactory = require('../webpack.web.config')
 
 module.exports = (env, argv) => {
     const config = {
@@ -28,12 +27,5 @@ module.exports = (env, argv) => {
         },
     }
 
-    const webConfig = {
-        ...baseWebConfigFactory(env, argv),
-        entry: {
-            'src/extensionWeb': './src/extensionWeb.ts',
-        },
-    }
-
-    return [config, vueConfig, webConfig]
+    return [config, vueConfig]
 }

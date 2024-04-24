@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
     "description": "Including Amazon Q, CodeWhisperer, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
-    "version": "2.20.0-SNAPSHOT",
+    "version": "2.21.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -71,7 +71,6 @@
         "lint": "echo 'Nothing to lint yet!'",
         "createRelease": "ts-node ./scripts/build/createRelease.ts",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
-        "serve": "webpack serve --config-name mainServe --mode development",
         "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
         "restorePackageJson": "ts-node ./scripts/build/handlePackageJson --restore"
     },
