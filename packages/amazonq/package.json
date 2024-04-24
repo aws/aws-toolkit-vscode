@@ -638,11 +638,6 @@
                 "command": "aws.amazonq.showHistoryInHub",
                 "title": "Show Job Status",
                 "icon": "$(history)"
-            },
-            {
-                "command": "aws.amazonq.showTransformationPlanInHub",
-                "title": "Show Transformation Plan",
-                "enablement": "gumby.isPlanAvailable"
             }
         ],
         "keybindings": [
