@@ -8,7 +8,7 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode
 import software.aws.toolkits.jetbrains.core.credentials.ConfigureAwsConnectionAction
-import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
+import software.aws.toolkits.jetbrains.settings.ToolkitSettingsConfigurable
 import software.aws.toolkits.resources.message
 
 /**
@@ -40,7 +40,7 @@ fun notifySamCliNotValidError(
         content = message("aws.notification.sam_cli_not_valid", content),
         project = project,
         listener = NotificationListener { notification, _ ->
-            ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
+            ShowSettingsUtil.getInstance().showSettingsDialog(project, ToolkitSettingsConfigurable::class.java)
             notification.expire()
         },
         stripHtml = false

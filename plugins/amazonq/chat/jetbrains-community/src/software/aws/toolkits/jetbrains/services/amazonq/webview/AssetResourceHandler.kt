@@ -15,18 +15,20 @@ import org.cef.network.CefResponse
 import java.io.IOException
 import java.net.URLConnection
 
+// TODO: delete this file as it's moved to core/WebviewResourceHandler
+// TODO: maybe parameterize this class with the resource URI so that login UI and chat UI can share the same resource handler?
 /**
  * Loads assets from the /mynah-ui/assets/ directory on classpath if the CEF browser requests for
  * any resource starting with the [AssetResourceHandler.LOCAL_RESOURCE_URL_PREFIX] defined
  * below. The CEF Browser must register this scheme handler using [org.cef.CefApp.registerSchemeHandlerFactory] first. A
  * new AssetResourceHandler instance is created for each request.
  */
-class AssetResourceHandler(var data: ByteArray) : CefResourceHandler {
+open class AssetResourceHandler(var data: ByteArray) : CefResourceHandler {
     /**
      * Factory class for [AssetResourceHandler]. Ignores any request that doesn't begin with
      * [AssetResourceHandler.LOCAL_RESOURCE_URL_PREFIX]
      */
-    class AssetResourceHandlerFactory : CefSchemeHandlerFactory {
+    open class AssetResourceHandlerFactory : CefSchemeHandlerFactory {
         override fun create(
             browser: CefBrowser?,
             frame: CefFrame?,

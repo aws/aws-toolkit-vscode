@@ -28,6 +28,7 @@ dependencies {
     implementation(project(":plugin-core:sdk-codegen"))
     implementation(project(":plugin-core:jetbrains-community"))
     implementation(project(":plugin-core:jetbrains-ultimate"))
+    implementation(project(":plugin-core:webview"))
 }
 
 configurations {

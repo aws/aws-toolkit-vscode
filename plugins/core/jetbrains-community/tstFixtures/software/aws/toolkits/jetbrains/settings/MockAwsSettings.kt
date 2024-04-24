@@ -14,6 +14,7 @@ class MockAwsSettings : AwsSettings {
     override var isAutoUpdateEnabled: Boolean = true
     override var isAutoUpdateNotificationEnabled: Boolean = true
     override var isAutoUpdateFeatureNotificationShownOnce: Boolean = false
+    override var isQMigrationNotificationShownOnce: Boolean = false
     override val clientId: UUID = UUID.randomUUID()
 
     internal fun reset() {

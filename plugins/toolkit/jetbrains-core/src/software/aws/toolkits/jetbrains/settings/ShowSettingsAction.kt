@@ -12,6 +12,6 @@ import software.aws.toolkits.resources.message
 
 class ShowSettingsAction : AnAction(message("aws.settings.show.label")), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
-        ShowSettingsUtil.getInstance().showSettingsDialog(e.getRequiredData(LangDataKeys.PROJECT), AwsSettingsConfigurable::class.java)
+        ShowSettingsUtil.getInstance().showSettingsDialog(e.getRequiredData(LangDataKeys.PROJECT), ToolkitSettingsConfigurable::class.java)
     }
 }

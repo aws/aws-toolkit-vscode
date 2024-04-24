@@ -14,7 +14,7 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
-import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
+import software.aws.toolkits.jetbrains.settings.ToolkitSettingsConfigurable
 import software.aws.toolkits.resources.message
 import javax.swing.JButton
 import javax.swing.JComponent
@@ -36,7 +36,7 @@ fun setupSamSelectionElements(samExecutableField: JTextField, editButton: JButto
     samExecutableField.text = getSamExecutable()?.executablePath?.toString()
 
     editButton.addActionListener {
-        ShowSettingsUtil.getInstance().showSettingsDialog(DefaultProjectFactory.getInstance().defaultProject, AwsSettingsConfigurable::class.java)
+        ShowSettingsUtil.getInstance().showSettingsDialog(DefaultProjectFactory.getInstance().defaultProject, ToolkitSettingsConfigurable::class.java)
         samExecutableField.text = getSamExecutable()?.executablePath?.toString()
         postEditCallback?.run()
     }

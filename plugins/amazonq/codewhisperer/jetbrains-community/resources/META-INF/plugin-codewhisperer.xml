@@ -16,8 +16,6 @@
                   topic="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener"/>
         <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
                   topic="software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
-                  topic="software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationListener"/>
     </projectListeners>
 
     <extensionPoints>
@@ -77,7 +75,6 @@
                              order="first, before editorEnter"/>
         <actionPromoter order="last" implementation="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererActionPromoter"/>
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererEditorProvider"/>
-
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">

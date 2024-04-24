@@ -10,7 +10,6 @@ import com.intellij.openapi.startup.StartupActivity
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsForCodeWhisperer
 import software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.openMeetQPage
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
@@ -39,13 +38,11 @@ class GetStartedNode(nodeProject: Project) : CodeWhispererActionNode(
     private fun enableCodeWhisperer(project: Project) {
         val connectionManager = ToolkitConnectionManager.getInstance(project)
         connectionManager.activeConnectionForFeature(CodeWhispererConnection.getInstance())?.let {
-            project.refreshCwQTree()
             reauthConnectionIfNeeded(project, it)
         } ?: run {
             runInEdt {
                 // Start from scratch if no active connection
                 if (requestCredentialsForCodeWhisperer(project)) {
-                    project.refreshCwQTree()
                     if (!openMeetQPage(project)) {
                         return@runInEdt
                     }

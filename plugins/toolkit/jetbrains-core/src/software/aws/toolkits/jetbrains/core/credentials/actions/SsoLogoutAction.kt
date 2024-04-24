@@ -12,6 +12,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ProfileSsoManagedBearerS
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.deleteSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.logoutFromSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
 import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.resources.message
 
@@ -30,6 +31,8 @@ class SsoLogoutAction(private val value: AwsBearerTokenConnection) : DumbAwareAc
         ApplicationManager.getApplication().messageBus.syncPublisher(
             ToolkitConnectionManagerListener.TOPIC
         ).activeConnectionChanged(null)
-        e.project?.refreshDevToolTree()
+        if (CODECATALYST_SCOPES.all { it in value.scopes }) {
+            e.project?.refreshDevToolTree()
+        }
     }
 }

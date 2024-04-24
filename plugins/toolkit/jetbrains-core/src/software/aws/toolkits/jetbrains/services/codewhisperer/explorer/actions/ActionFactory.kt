@@ -9,6 +9,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWh
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isUserBuilderId
+import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 
 interface ActionProvider<T> {
     val pause: T
@@ -52,6 +53,9 @@ fun<T> buildActionListForInlineSuggestions(project: Project, actionProvider: Act
 
 fun<T> buildActionListForCodeScan(project: Project, actionProvider: ActionProvider<T>): List<T> =
     buildList {
+        if (!isRunningOnRemoteBackend()) {
+            add(actionProvider.openChatPanel)
+        }
         val codeScanManager = CodeWhispererCodeScanManager.getInstance(project)
         val manager = CodeWhispererExplorerActionManager.getInstance()
         if (!isUserBuilderId(project)) {

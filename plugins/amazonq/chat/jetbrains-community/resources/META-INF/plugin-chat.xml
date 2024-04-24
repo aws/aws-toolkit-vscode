@@ -14,6 +14,7 @@
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.MeetQSettings"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindow" />
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.WebviewPanel"/>
 
         <!--Q Getting Started page -->
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.QGettingStartedEditorProvider"/>
@@ -28,27 +29,12 @@
     </extensions>
 
     <actions>
-        <group id="aws.toolkit.q.idc.signed.in">
-            <action
-                id="q.openchat"
-                class="software.aws.toolkits.jetbrains.services.amazonq.QOpenPanelAction"/>
-            <action
-                id="q.migrate"
-                class="software.aws.toolkits.jetbrains.services.amazonq.QMigrationNotificationAction"/>
-        </group>
+        <!-- TODO: q.openchat will eventually be in amazonq, aws.toolkit.q.sign.in will eventually be in core. -->
+        <action id="q.openchat" class="software.aws.toolkits.jetbrains.services.amazonq.QOpenPanelAction"/>
 
         <group id="aws.toolkit.q.sign.in">
             <action id="q.sign.in" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.SignInToQAction"/>
-            <action id="q.learn.more" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.QLearnMoreAction"/>
-        </group>
-
-        <group id="aws.toolkit.q.enable">
-            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.EnableQAction"/>
-            <reference id="q.learn.more"/>
-        </group>
-
-        <group id="aws.toolkit.q.expired">
-            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.ReauthenticateWithQ"/>
+            <reference ref="q.learn.more"/>
         </group>
 
         <group

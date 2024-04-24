@@ -3,6 +3,10 @@
 
 <idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
     <id>aws.toolkit.core</id>
+    <name>AWS Core</name>
+    <description>
+        Aws Core Plugin required for AWS Toolkit and Amazon Q
+    </description>
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
     <version>1.0</version>
     <idea-version since-build="231" />

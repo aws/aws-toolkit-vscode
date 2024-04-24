@@ -8,7 +8,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.impl.status.widget.StatusBarEditorBasedWidgetFactory
-import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
+import software.aws.toolkits.jetbrains.utils.isRunningOnCWNotSupportedRemoteBackend
 import software.aws.toolkits.resources.message
 
 class CodeWhispererStatusBarWidgetFactory : StatusBarEditorBasedWidgetFactory() {
@@ -16,7 +16,7 @@ class CodeWhispererStatusBarWidgetFactory : StatusBarEditorBasedWidgetFactory() 
 
     override fun getDisplayName(): String = message("codewhisperer.statusbar.display_name")
 
-    override fun isAvailable(project: Project): Boolean = !isRunningOnRemoteBackend()
+    override fun isAvailable(project: Project): Boolean = !isRunningOnCWNotSupportedRemoteBackend()
 
     override fun createWidget(project: Project): StatusBarWidget = CodeWhispererStatusBarWidget(project)
 

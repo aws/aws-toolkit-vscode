@@ -213,7 +213,6 @@
         <extensionPoint name="tool" interface="software.aws.toolkits.jetbrains.core.tools.ToolType" dynamic="true"/>
         <extensionPoint name="devTools.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.DevToolsServiceNode" dynamic="true"/>
         <extensionPoint name="devTools.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsTreeStructureProvider" dynamic="true"/>
-        <extensionPoint name="cwq.rootNode" interface="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQRootNodeProvider" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -239,8 +238,8 @@
         <statusBarWidgetFactory id="AwsSettingsPanel" implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
         <statusBarWidgetFactory id="CawsSpaceProjectInfo" implementation="software.aws.toolkits.jetbrains.services.caws.CawsStatusBarInstaller"/>
 
-        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.executables.ExecutableLoader"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.startup.QMigrationActivity"/>
 
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.executables.ExecutableManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
@@ -248,8 +247,6 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.tools.ToolManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.tools.DefaultToolManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.tools.MockToolManager"/>
-
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.plugins.ToolkitUpdateManager"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes"/>
@@ -265,6 +262,8 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.webview.ToolkitWebviewPanel"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow"/>
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider"/>
@@ -286,39 +285,25 @@
 
         <!-- plugin configurables -->
         <applicationConfigurable
-            id="aws"
-            groupId="tools"
+            parentId="aws"
+            id="aws.toolkit"
             bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="aws.settings.title"
-            instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"
+            key="aws.settings.toolkit.configurable.title"
+            instance="software.aws.toolkits.jetbrains.settings.ToolkitSettingsConfigurable"
         />
         <projectConfigurable
-            parentId="aws"
+            parentId="aws.toolkit"
             id="aws.lambda"
             bundle="software.aws.toolkits.resources.MessagesBundle"
             key="aws.settings.lambda.configurable.title"
             instance="software.aws.toolkits.jetbrains.services.lambda.settings.LambdaSettingsConfigurable"
         />
         <applicationConfigurable
-            parentId="aws"
+            parentId="aws.toolkit"
             id="aws.dynamicresources"
             bundle="software.aws.toolkits.resources.MessagesBundle"
             key="aws.settings.dynamic_resources_configurable.title"
             instance="software.aws.toolkits.jetbrains.settings.DynamicResourcesConfigurable"
-        />
-        <applicationConfigurable
-            parentId="aws"
-            id="aws.experiments"
-            bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="aws.toolkit.experimental.title"
-            instance="software.aws.toolkits.jetbrains.core.experiments.ExperimentConfigurable"
-        />
-        <applicationConfigurable
-            parentId="aws"
-            id="aws.tools"
-            bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="executableCommon.configurable.title"
-            instance="software.aws.toolkits.jetbrains.core.tools.ToolConfigurable"
         />
 
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
@@ -690,6 +675,9 @@
 
         <action id="aws.toolkit.connection.pinning.unpin"
                 class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.UnpinConnectionAction"/>
+
+        <action id="aws.toolkit.cwQRootNode.installQ"
+                class="software.aws.toolkits.jetbrains.core.explorer.actions.InstallAmazonQAction"/>
 
     </actions>
 

@@ -45,6 +45,7 @@
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.sso.MockSsoLoginCallbackProvider"/>
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.profiles.DefaultProfileWatcher"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.plugin.PluginUpdateManager"/>
 
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultAwsConnectionManager"
@@ -54,6 +55,17 @@
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsRegionHandler"/>
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultToolkitConnectionManager"/>
+
+        <applicationConfigurable
+            id="aws"
+            groupId="tools"
+            bundle="software.aws.toolkits.resources.MessagesBundle"
+            key="aws.settings.title"
+            instance="software.aws.toolkits.jetbrains.settings.AwsSettingsSharedConfigurable"
+        />
+
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.plugin.PluginAutoUpdater"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
 
         <registryKey key="aws.dev.pkceAuth" description="True if new authorization requests should be using the PKCE grant flow"
                      defaultValue="false" restartRequired="false"/>
@@ -71,5 +83,7 @@
 
     <actions>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials"/>
+
+        <action id="q.learn.more" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.QLearnMoreAction"/>
     </actions>
 </idea-plugin>

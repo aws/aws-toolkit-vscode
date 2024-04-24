@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.popup
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
+import com.intellij.idea.AppMode
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -83,7 +84,10 @@ class CodeWhispererPopupComponents {
     private val recommendationInfoPanel = CodeWhispererPopupInfoPanel {
         add(recommendationInfoLabel, inlineLabelConstraints)
         addHorizontalGlue()
-        add(kebabMenu, kebabMenuConstraints)
+        // "More menu" not working in remote dev, it's not so important so disable it for now
+        if (!AppMode.isRemoteDevHost()) {
+            add(kebabMenu, kebabMenuConstraints)
+        }
     }
     val importLabel = JLabel().apply {
         font = font.deriveFont(POPUP_INFO_TEXT_SIZE)
