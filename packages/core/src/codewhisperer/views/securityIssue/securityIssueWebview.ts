@@ -43,13 +43,6 @@ export class SecurityIssueWebview extends VueWebview {
         })
     }
 
-    public fixWithQ() {
-        const args = [this.issue]
-        void this.navigateToFile()?.then(() => {
-            void vscode.commands.executeCommand('aws.amazonq.fixIssue', ...args)
-        })
-    }
-
     public getRelativePath() {
         if (this.filePath) {
             return vscode.workspace.asRelativePath(this.filePath)

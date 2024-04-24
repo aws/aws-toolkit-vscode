@@ -83,7 +83,7 @@
                 </button>
             </div>
             <div class="auth-container-section">
-                <div class="existing-logins" v-if="existingLogins.length > 0 && app === 'AMAZONQ'">
+                <div class="existing-logins" v-if="existingLogins.length > 0">
                     <div class="header">Connect with an existing account:</div>
                     <div v-for="(existingLogin, index) in existingLogins" :key="index">
                         <SelectableItem
@@ -155,7 +155,7 @@
                 </button>
             </div>
             <div class="auth-container-section">
-                <div class="header" style="padding-bottom:5%">Sign in with SSO:</div>
+                <div class="header" style="padding-bottom: 5%">Sign in with SSO:</div>
                 <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
                     <div class="h4">
                         Using CodeCatalyst with AWS Builder ID?
@@ -391,12 +391,13 @@ export default defineComponent({
         async emitUpdate(cause?: string) {},
         async updateExistingConnections() {
             // fetch existing connections of aws toolkit in Amazon Q
-            // Only used by Amazon Q to reuse connections in AWS Toolkit
-            const toolkitConnections = await client.fetchConnections()
-            toolkitConnections?.forEach((connection, index) => {
+            // or fetch existing connections of Amazon Q in AWS Toolkit
+            // to reuse connections in AWS Toolkit & Amazon Q
+            const sharedConnections = await client.fetchConnections()
+            sharedConnections?.forEach((connection, index) => {
                 this.existingLogins.push({
                     id: LoginOption.EXISTING_LOGINS + index,
-                    text: 'Used by AWS Toolkit',
+                    text: this.app === 'TOOLKIT' ? 'Used by Amazon Q' : 'Used by AWS Toolkit',
                     title: isBuilderId(connection.startUrl)
                         ? 'AWS Builder ID'
                         : `IAM Identity Center ${connection.startUrl}`,
@@ -413,8 +414,8 @@ export default defineComponent({
 
             // If Amazon Q has no connections while Toolkit has connections
             // Auto connect Q using toolkit connection.
-            if (connections.length === 0 && toolkitConnections && toolkitConnections.length > 0) {
-                const conn = await client.findConnection(toolkitConnections)
+            if (connections.length === 0 && sharedConnections && sharedConnections.length > 0) {
+                const conn = await client.findConnection(sharedConnections)
                 if (conn) {
                     await client.useConnection(conn.id)
                 }

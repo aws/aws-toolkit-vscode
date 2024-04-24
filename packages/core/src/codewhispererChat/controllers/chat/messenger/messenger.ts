@@ -305,7 +305,6 @@ export class Messenger {
         ['aws.amazonq.explainIssue', 'Explain'],
         ['aws.amazonq.refactorCode', 'Refactor'],
         ['aws.amazonq.fixCode', 'Fix'],
-        ['aws.amazonq.fixIssue', 'Fix'],
         ['aws.amazonq.optimizeCode', 'Optimize'],
         ['aws.amazonq.sendToPrompt', 'Send to prompt'],
     ])
@@ -418,13 +417,18 @@ export class Messenger {
         let message
         if (command === 'aws.amazonq.sendToPrompt') {
             message = ['\n```\n', trimmedCode, '\n```'].join('')
+        } else if (command === 'aws.amazonq.explainIssue' && issue) {
+            message = [
+                this.editorContextMenuCommandVerbs.get(command),
+                ` the "${issue.title}" issue in the following code:`,
+                '\n```\n',
+                trimmedCode,
+                '\n```',
+            ].join('')
         } else {
             message = [
                 this.editorContextMenuCommandVerbs.get(command),
                 ' the following part of my code:',
-                ...(issue
-                    ? [`\n\n**Issue**: ${issue.title}`, `\n\n**Description**: ${issue.recommendation.text}\n`]
-                    : []),
                 '\n```\n',
                 trimmedCode,
                 '\n```',

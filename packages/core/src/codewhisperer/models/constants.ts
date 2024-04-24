@@ -60,12 +60,12 @@ export const supplementalContextTimeoutInMs = 50
  */
 export const labelLength = 20
 
-export const completionDetail = 'CodeWhisperer'
+export const completionDetail = 'Amazon Q'
 
 /**
  * CodeWhisperer in configuration
  */
-export const codewhisperer = 'CodeWhisperer'
+export const codewhisperer = 'Amazon Q'
 
 // use vscode languageId here / Supported languages
 export const platformLanguageIds = [
@@ -112,13 +112,6 @@ export const runningSecurityScan = 'Scanning project for security issues...'
 export const noSuggestions = 'No suggestions from Amazon Q'
 
 export const licenseFilter = 'Amazon Q suggestions were filtered due to reference setting'
-
-/**
- * Beta landing page file
- */
-export const welcomeCodeWhispererReadmeFileSource = 'resources/markdown/WelcomeToCodeWhisperer.md'
-
-export const welcomeCodeWhispererCloud9Readme = 'resources/markdown/WelcomeToCodeWhispererCloud9.md'
 
 /**
  * Key bindings JSON file path

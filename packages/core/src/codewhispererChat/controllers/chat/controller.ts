@@ -343,7 +343,7 @@ export class ChatController {
 
                 const prompt = this.promptGenerator.generateForContextMenuCommand(command)
 
-                if (command.type === 'aws.amazonq.explainIssue' || command.type === 'aws.amazonq.fixIssue') {
+                if (command.type === 'aws.amazonq.explainIssue') {
                     this.messenger.sendEditorContextCommandMessage(
                         command.type,
                         context.activeFileContext?.fileText
