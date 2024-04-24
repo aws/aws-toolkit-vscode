@@ -116,10 +116,10 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
     @Deprecated("Accountless credential will be removed soon")
     @ApiStatus.ScheduledForRemoval
     // Will keep it for existing accountless users
-        /**
-         * Will be called from CodeWhispererService.showRecommendationInPopup()
-         * Caller (e.x. CodeWhispererService) should take care if null value returned, popup a notification/hint window or dialog etc.
-         */
+    /**
+     * Will be called from CodeWhispererService.showRecommendationInPopup()
+     * Caller (e.x. CodeWhispererService) should take care if null value returned, popup a notification/hint window or dialog etc.
+     */
     fun resolveAccessToken(): String? {
         if (actionState.token == null) {
             LOG.warn { "Logical Error: Try to get access token before token initialization" }
