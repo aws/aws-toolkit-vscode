@@ -80,12 +80,62 @@ export interface IHighlightPomIssueParams {
 }
 
 export async function highlightPomIssueInProject(pomFileVirtualFileReference: vscode.Uri, currentVersion: string) {
+    const collection = vscode.languages.createDiagnosticCollection(pomFileVirtualFileReference.path)
+    const diagnostics = vscode.languages.getDiagnostics(pomFileVirtualFileReference)
+
     // Open the editor and set this pom to activeTextEditor
     await vscode.window.showTextDocument(pomFileVirtualFileReference)
 
     // Find line number for "latestVersion" or set to first line in file
     const highlightLineNumber = findLineNumber(pomFileVirtualFileReference, '<dependency>') || 1
     await setAnnotationObjectDetails(highlightLineNumber)
+    await addDiagnosticOverview(collection, diagnostics, highlightLineNumber)
+}
+
+async function addDiagnosticOverview(
+    collection: vscode.DiagnosticCollection,
+    diagnostics: vscode.Diagnostic[],
+    lineNumber: number = 0
+) {
+    // Get the diff editor
+    const documentUri = vscode.window.activeTextEditor?.document?.uri
+    if (documentUri) {
+        collection.clear() // clear the collection
+        diagnostics = []
+        diagnostics.push({
+            code: 'code1',
+            message: 'There is an issue with your pom 1p related dependency',
+            range: new vscode.Range(new vscode.Position(lineNumber - 1, 0), new vscode.Position(lineNumber - 1, 50)),
+            severity: vscode.DiagnosticSeverity.Error,
+            source: 'This is a test diagnostic',
+            relatedInformation: [
+                new vscode.DiagnosticRelatedInformation(
+                    new vscode.Location(
+                        documentUri,
+                        new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 50))
+                    ),
+                    'This is the first instance we found'
+                ),
+            ],
+            tags: [1, 2],
+        })
+
+        collection.set(documentUri, diagnostics)
+        // Get first diagnostic to display
+        const diffEditor = vscode.window.activeTextEditor
+        const diffEditorDocument = diffEditor?.document
+        if (diffEditor && diffEditorDocument) {
+            const firstDiagnostic = collection.get(documentUri)?.[0]
+            if (firstDiagnostic) {
+                // Convert diagnostic to vscode Location
+                new vscode.Location(diffEditor.document.uri, firstDiagnostic.range)
+
+                // Reveal and select first diagnostic
+                diffEditor.selection = new vscode.Selection(firstDiagnostic.range.start, firstDiagnostic.range.end)
+                diffEditor.revealRange(firstDiagnostic.range)
+            }
+        }
+    }
 }
 
 export async function getCodeIssueSnippetFromPom(pomFileVirtualFileReference: vscode.Uri) {
