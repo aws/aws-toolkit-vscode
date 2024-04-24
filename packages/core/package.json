@@ -37,7 +37,8 @@
         "./login": "./dist/src/login/webview/index.js",
         "./utils": "./dist/src/shared/utilities/index.js",
         "./feedback": "./dist/src/feedback/index.js",
-        "./telemetry": "./dist/src/shared/telemetry/index.js"
+        "./telemetry": "./dist/src/shared/telemetry/index.js",
+        "./dev": "./dist/src/dev/index.js"
     },
     "contributes": {
         "configuration": {
@@ -1162,7 +1163,7 @@
                     "whem": "aws.isDevMode"
                 },
                 {
-                    "command": "aws.dev.openMenu",
+                    "command": "aws.toolkit.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 },
                 {
@@ -3456,15 +3457,16 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.dev.openMenu",
+                "command": "aws.toolkit.dev.openMenu",
                 "title": "Open Developer Menu",
                 "category": "AWS (Developer)",
                 "enablement": "aws.isDevMode"
             },
             {
-                "command": "aws.dev.viewLogs",
+                "command": "aws.toolkit.dev.viewLogs",
                 "title": "Watch Logs",
-                "category": "AWS (Developer)"
+                "category": "AWS (Developer)",
+                "enablement": "aws.isDevMode"
             },
             {
                 "command": "aws.openInApplicationComposerDialog",

@@ -32,6 +32,7 @@ import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-c
 import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
+import { activate as activateDev } from 'aws-core-vscode/dev'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
@@ -96,6 +97,7 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
     const extContext = {
         extensionContext: context,
     }
+    await activateDev(context, contextPrefix)
     await activateCodeWhisperer(extContext as ExtContext)
     await activateCWChat(context)
     await activateQGumby(extContext as ExtContext)

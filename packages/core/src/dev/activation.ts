@@ -10,7 +10,7 @@ import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { SkipPrompter } from '../shared/ui/common/skipPrompter'
 import { DevSettings } from '../shared/settings'
 import { FileProvider, VirtualFileSystem } from '../shared/virtualFilesystem'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, DeclaredCommand } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
@@ -116,20 +116,25 @@ export class DevDocumentProvider implements vscode.TextDocumentContentProvider {
  *
  * See {@link DevSettings} for more information.
  */
-export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
+export async function activate(ctx: vscode.ExtensionContext, contextPrefix: string): Promise<void> {
     const devSettings = DevSettings.instance
 
     async function updateMode() {
+        getLogger().debug(`aws.isDevMode: ${devSettings.isDevMode()}`)
         await vscode.commands.executeCommand('setContext', 'aws.isDevMode', devSettings.isDevMode())
     }
+
+    openStorageCommand = Commands.from(ObjectEditor).declareOpenStorage(`_aws.${contextPrefix}dev.openStorage`)
+    const editor = new ObjectEditor(ctx)
 
     ctx.subscriptions.push(
         devSettings.onDidChangeActiveSettings(updateMode),
         vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider(ctx)),
         // "AWS (Developer): Open Developer Menu"
-        vscode.commands.registerCommand('aws.dev.openMenu', () => openMenu(ctx, menuOptions)),
+        openStorageCommand.register(editor),
+        vscode.commands.registerCommand(`aws.${contextPrefix}.dev.openMenu`, () => openMenu(ctx, menuOptions)),
         // "AWS (Developer): Watch Logs"
-        Commands.register('aws.dev.viewLogs', async () => {
+        Commands.register(`aws.${contextPrefix}.dev.viewLogs`, async () => {
             // HACK: Use startDebugging() so we can use the DEBUG CONSOLE (which supports
             // user-defined filtering, unlike the OUTPUT panel).
             await vscode.debug.startDebugging(undefined, {
@@ -145,9 +150,6 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     )
 
     await updateMode()
-
-    const editor = new ObjectEditor(ctx)
-    ctx.subscriptions.push(openStorageCommand.register(editor))
 
     if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
         ctx.subscriptions.push(watchBetaVSIX(config.betaUrl))
@@ -374,4 +376,7 @@ async function showState(path: string) {
     await vscode.window.showTextDocument(doc, { preview: false })
 }
 
-export const openStorageCommand = Commands.from(ObjectEditor).declareOpenStorage('_aws.dev.openStorage')
+let openStorageCommand: DeclaredCommand<
+    (type: 'globalsView' | 'globals' | 'secrets', key: string) => Promise<void>,
+    [target: ObjectEditor]
+>

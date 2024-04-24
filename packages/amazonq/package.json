@@ -259,7 +259,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.dev.openMenu",
+                    "command": "aws.amazonq.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 },
                 {
@@ -607,15 +607,16 @@
                 "category": "%AWS.amazonq.productName%"
             },
             {
-                "command": "aws.dev.openMenu",
+                "command": "aws.amazonq.dev.openMenu",
                 "title": "Open Developer Menu",
                 "category": "AWS (Developer)",
                 "enablement": "aws.isDevMode"
             },
             {
-                "command": "aws.dev.viewLogs",
+                "command": "aws.amazonq.dev.viewLogs",
                 "title": "Watch Logs",
-                "category": "AWS (Developer)"
+                "category": "AWS (Developer)",
+                "enablement": "aws.isDevMode"
             },
             {
                 "command": "aws.amazonq.startTransformationInHub",

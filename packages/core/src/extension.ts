@@ -105,7 +105,7 @@ export async function activate(context: vscode.ExtensionContext) {
         awsFiletypes.activate()
 
         try {
-            await activateDev(context)
+            await activateDev(context, contextPrefix)
         } catch (error) {
             getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }
