@@ -366,9 +366,8 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
     } catch (err) {
         try {
             // Regardless of the error,
-            // Call resume with "REJECTED" state which will put our service
-            // back into the normal flow and will not trigger HIL again for this step
-            await resumeTransformationJob(jobId, 'REJECTED')
+            // Continue transformation flow
+            await shortCircuitHiL(jobId)
         } finally {
             // TODO: report telemetry
             transformByQState.getChatControllers()?.errorThrown.fire({
@@ -381,6 +380,12 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         await sleep(5000)
     }
     return false
+}
+
+export async function shortCircuitHiL(jobID: string) {
+    // Call resume with "REJECTED" state which will put our service
+    // back into the normal flow and will not trigger HIL again for this step
+    await resumeTransformationJob(jobID, 'REJECTED')
 }
 
 export async function finishHumanInTheLoop(selectedDependency: string) {

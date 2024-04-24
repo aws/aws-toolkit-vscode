@@ -34,6 +34,7 @@ export type StaticTextResponseType =
     | 'java-home-not-set'
     | 'start-transformation-confirmed'
     | 'job-transmitted'
+    | 'end-HIL-early'
 
 export type ErrorTextResponseType =
     | 'no-project-found'
@@ -277,6 +278,9 @@ export class Messenger {
         switch (type) {
             case 'java-home-not-set':
                 message = MessengerUtils.createJavaHomePrompt()
+                break
+            case 'end-HIL-early':
+                message = `I will continue transforming your code without being able to build successfully.`
                 break
         }
 

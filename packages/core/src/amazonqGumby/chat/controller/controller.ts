@@ -20,6 +20,7 @@ import {
     finishHumanInTheLoop,
     getValidCandidateProjects,
     processTransformFormInput,
+    shortCircuitHiL,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
@@ -257,6 +258,9 @@ export class GumbyController {
             case ButtonActions.CONFIRM_DEPENDENCY_FORM:
                 await this.continueJobWithSelectedDependency({ ...message, tabID: message.tabId })
                 break
+            case ButtonActions.CANCEL_DEPENDENCY_FORM:
+                await this.continueJobWithoutHIL({ tabID: message.tabId })
+                break
         }
     }
 
@@ -340,15 +344,14 @@ export class GumbyController {
         await this.prepareProjectForSubmission(message)
     }
 
-    private async transformationFinished(data: { message: string; tabID: string }) {
+    private async transformationFinished(data: { message?: string; tabID: string }) {
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
         // at this point job is either completed, partially_completed, cancelled, or failed
         this.messenger.sendJobFinishedMessage(data.tabID, data.message)
     }
 
     private startHILIntervention(data: { tabID: string; codeSnippet: string }) {
-        // to-do: need to set chat state to something other than IDLE,
-        // as otherwise the user could start a new job in this flow
+        this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_INPUT
         this.messenger.sendHumanInTheLoopInitialMessage(data.tabID, data.codeSnippet)
     }
 
@@ -357,6 +360,7 @@ export class GumbyController {
     }
 
     private HILDependencySelectionUploaded(data: { tabID: string }) {
+        this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
         this.messenger.sendHILResumeMessage(data.tabID)
     }
 
@@ -398,6 +402,19 @@ export class GumbyController {
         } else {
             this.messenger.sendErrorMessage(message.error.message, message.tabID)
         }
+    }
+
+    private async continueJobWithoutHIL(message: { tabID: string }) {
+        const jobID = transformByQState.getJobId()
+        this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
+
+        try {
+            await shortCircuitHiL(jobID)
+        } catch (err: any) {
+            await this.transformationFinished({ tabID: message.tabID })
+        }
+
+        this.messenger.sendStaticTextResponse('end-HIL-early', message.tabID)
     }
 }
 
