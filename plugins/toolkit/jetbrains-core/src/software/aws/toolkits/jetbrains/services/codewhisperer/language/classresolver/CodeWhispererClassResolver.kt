@@ -16,7 +16,7 @@ interface CodeWhispererClassResolver {
     fun resolveTopLevelFunction(psiFile: PsiFile): List<String>
 
     companion object {
-        val EP_NAME = ExtensionPointName<CodeWhispererClassResolver>("aws.toolkit.codewhisperer.classResolver")
+        val EP_NAME = ExtensionPointName<CodeWhispererClassResolver>("amazon.q.codewhisperer.classResolver")
     }
 }
 

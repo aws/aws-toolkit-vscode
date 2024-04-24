@@ -191,6 +191,6 @@ class CodeWhispererProgrammingLanguageTest {
     }
 
     companion object {
-        val EP_NAME = ExtensionPointName<CodeWhispererProgrammingLanguage>("aws.toolkit.codewhisperer.programmingLanguage")
+        val EP_NAME = ExtensionPointName<CodeWhispererProgrammingLanguage>("amazon.q.codewhisperer.programmingLanguage")
     }
 }

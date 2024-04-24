@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow
 
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColorsListener
@@ -35,6 +36,7 @@ import software.aws.toolkits.resources.message
 import javax.swing.JLabel
 import javax.swing.JPanel
 
+@Service(Service.Level.PROJECT)
 class CodeWhispererCodeReferenceManager(private val project: Project) {
     val codeReferenceComponents = CodeWhispererCodeReferenceComponents(project)
     val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(CodeWhispererCodeReferenceToolWindowFactory.id)

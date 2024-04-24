@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.amazonq.toolwindow
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
@@ -42,6 +43,7 @@ fun isQConnected(project: Project): Boolean {
     return isQEnabled && isCWEnabled
 }
 
+@Service(Service.Level.PROJECT)
 class AmazonQToolWindow @NonInjectable constructor(
     private val project: Project,
     private val appSource: AppSource,

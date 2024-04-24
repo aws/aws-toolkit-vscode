@@ -15,9 +15,7 @@ import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.CredentialType
 import software.aws.toolkits.telemetry.Result
 
-interface SsoLoginCallbackProvider {
-    fun getProvider(ssoUrl: String): SsoLoginCallback
-}
+typealias SsoLoginCallbackProvider = migration.software.aws.toolkits.jetbrains.core.credentials.sso.SsoLoginCallbackProvider
 
 class DefaultSsoLoginCallbackProvider : SsoLoginCallbackProvider {
     override fun getProvider(ssoUrl: String): SsoLoginCallback = when {

@@ -68,6 +68,7 @@ rootProject.name = "aws-toolkit-jetbrains"
 
 include("detekt-rules")
 include("ui-tests")
+include("tmp-all")
 
 /*
 plugins/

@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <idea-plugin>
     <extensionPoints>
-        <extensionPoint qualifiedName="aws.toolkit.amazonq.appFactory" interface="software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppFactory" dynamic="true" />
+        <extensionPoint qualifiedName="amazon.q.appFactory" interface="software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppFactory" dynamic="true" />
     </extensionPoints>
 
     <projectListeners>
@@ -11,11 +11,6 @@
     </projectListeners>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.MeetQSettings"/>
-
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindow" />
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.QWebviewPanel"/>
-
         <!--Q Getting Started page -->
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.QGettingStartedEditorProvider"/>
 
@@ -23,7 +18,7 @@
                     factoryClass="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory" icon="AwsIcons.Logos.AWS_Q" />
     </extensions>
 
-    <extensions defaultExtensionNs="aws.toolkit.amazonq">
+    <extensions defaultExtensionNs="amazon.q">
         <appFactory implementation="software.aws.toolkits.jetbrains.services.cwc.AppFactory" />
         <appFactory implementation="software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevAppFactory" />
     </extensions>

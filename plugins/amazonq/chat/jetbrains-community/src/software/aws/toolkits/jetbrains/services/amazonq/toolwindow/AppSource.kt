@@ -8,7 +8,7 @@ import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppFactory
 
 class AppSource {
-    private val extensionPointName = ExtensionPointName.create<AmazonQAppFactory>("aws.toolkit.amazonq.appFactory")
+    private val extensionPointName = ExtensionPointName.create<AmazonQAppFactory>("amazon.q.appFactory")
     fun getApps(project: Project) = buildList {
         extensionPointName.forEachExtensionSafe {
             add(it.createApp(project))

@@ -14,6 +14,7 @@ import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_MOVE_CARET_RIG
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_TAB
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.RangeMarker
@@ -79,6 +80,7 @@ import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JLabel
 
+@Service
 class CodeWhispererPopupManager {
     val popupComponents = CodeWhispererPopupComponents()
 

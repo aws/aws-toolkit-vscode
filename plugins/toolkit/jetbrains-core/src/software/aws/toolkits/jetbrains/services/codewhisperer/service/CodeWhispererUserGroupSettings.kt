@@ -4,6 +4,8 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.service
 
 import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.RoamingType
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
@@ -17,7 +19,8 @@ import kotlin.reflect.KClass
 /**
  * Component controlling codewhisperer user group settings
  */
-@State(name = "codewhispererUserGroupSettings", storages = [Storage("aws.xml")])
+@Service
+@State(name = "codewhispererUserGroupSettings", storages = [Storage("aws.xml", roamingType = RoamingType.DISABLED)])
 class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUserGroupStates> {
     private var version: String? = null
 

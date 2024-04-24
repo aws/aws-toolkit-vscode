@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.inlay
 import com.intellij.codeInsight.inline.completion.render.InlineBlockElementRenderer
 import com.intellij.codeInsight.inline.completion.render.InlineSuffixRenderer
 import com.intellij.idea.AppMode
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorCustomElementRenderer
@@ -15,6 +16,7 @@ import com.intellij.openapi.util.Disposer
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationChunk
 
+@Service
 class CodeWhispererInlayManager {
     private val existingInlays = mutableListOf<Inlay<EditorCustomElementRenderer>>()
     fun updateInlays(states: InvocationContext, chunks: List<RecommendationChunk>) {

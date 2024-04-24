@@ -8,7 +8,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -17,6 +16,8 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import java.util.concurrent.ConcurrentHashMap
 
+typealias ConnectionPinningManager = migration.software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
+
 interface FeatureWithPinnedConnection {
     val featureId: String
     val featureName: String
@@ -24,19 +25,7 @@ interface FeatureWithPinnedConnection {
     fun supportsConnectionType(connection: ToolkitConnection): Boolean
 
     companion object {
-        val EP_NAME = ExtensionPointName<FeatureWithPinnedConnection>("aws.toolkit.connection.pinned.feature")
-    }
-}
-
-interface ConnectionPinningManager {
-    fun isFeaturePinned(feature: FeatureWithPinnedConnection): Boolean
-    fun getPinnedConnection(feature: FeatureWithPinnedConnection): ToolkitConnection?
-    fun setPinnedConnection(feature: FeatureWithPinnedConnection, newConnection: ToolkitConnection?)
-
-    fun pinFeatures(oldConnection: ToolkitConnection?, newConnection: ToolkitConnection, features: List<FeatureWithPinnedConnection>)
-
-    companion object {
-        fun getInstance(): ConnectionPinningManager = service()
+        val EP_NAME = ExtensionPointName<FeatureWithPinnedConnection>("aws.toolkit.core.connection.pinned.feature")
     }
 }
 

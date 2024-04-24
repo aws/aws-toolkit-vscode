@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.service
 
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import org.jetbrains.annotations.VisibleForTesting
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
@@ -13,6 +14,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import kotlin.math.max
 import kotlin.math.min
 
+@Service
 class CodeWhispererRecommendationManager {
     fun reformatReference(requestContext: RequestContext, recommendation: Completion): Completion {
         // startOffset is the offset at the start of user input since invocation

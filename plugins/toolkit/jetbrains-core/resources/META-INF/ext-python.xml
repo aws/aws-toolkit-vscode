@@ -26,7 +26,7 @@
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.python.Python312ImageDebugSupport"/>
         <sam.projectWizard id="PYTHON" implementationClass="software.aws.toolkits.jetbrains.services.lambda.python.PythonSamProjectWizard"/>
     </extensions>
-    <extensions defaultExtensionNs="aws.toolkit.codewhisperer">
+    <extensions defaultExtensionNs="amazon.q.codewhisperer">
         <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython"/>
         <classResolver implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispererPythonClassResolver"/>
         <importAdder implementation="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererPythonImportAdder"/>

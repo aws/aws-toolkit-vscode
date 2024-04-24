@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin>
-    <extensions defaultExtensionNs="aws.toolkit.codewhisperer">
+    <extensions defaultExtensionNs="amazon.q.codewhisperer">
         <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererRuby"/>
     </extensions>
 </idea-plugin>

@@ -33,7 +33,8 @@ object AwsToolkit {
 data class PluginInfo(val id: String, val name: String) {
     val descriptor: PluginDescriptor?
         get() = PluginManagerCore.getPlugin(PluginId.getId(id))
-    val version: String = descriptor?.version ?: "Unknown"
+    val version: String?
+        get() = descriptor?.version
     val path: Path?
         get() =
             if (ApplicationManager.getApplication().isUnitTestMode) {
