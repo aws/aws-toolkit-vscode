@@ -5,7 +5,6 @@
 import { Connector } from './connector'
 import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/dark.scss'
-import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { TabDataGenerator } from './tabs/generator'
@@ -17,6 +16,7 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 import {getActions, getDetails} from "./diffTree/actions";
 import {DiffTreeFileInfo} from "./diffTree/types";
+import './styles.css';
 
 export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeTransformInitEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
@@ -99,7 +99,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                 }
             }
         },
-        onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
+        onFileActionClick: (): void => {},
         onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
             return messageController.sendMessageToTab(message, 'cwc')
         },
