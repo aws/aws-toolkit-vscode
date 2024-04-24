@@ -28,7 +28,7 @@ const telemetryClientIdEnvKey = '__TELEMETRY_CLIENT_ID'
 
 export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: TelemetryFlag }) {
     public isEnabled(): boolean {
-        return this.get(`${globals.contextPrefix}telemetry` as any, true)
+        return this.get('telemetry', true)
     }
 }
 

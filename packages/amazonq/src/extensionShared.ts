@@ -42,7 +42,6 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
     await initializeComputeRegion()
 
     const contextPrefix = 'amazonq'
-    globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
 
     // Avoid activation if older toolkit is installed
     // Amazon Q is only compatible with AWS Toolkit >= 3.0.0

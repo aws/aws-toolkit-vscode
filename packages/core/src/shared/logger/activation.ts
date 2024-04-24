@@ -11,7 +11,7 @@ import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
 import { fsCommon } from '../../srcShared/fs'
-import globals, { isWeb } from '../extensionGlobals'
+import { isWeb } from '../extensionGlobals'
 
 export const defaultLogLevel: LogLevel = 'debug'
 
@@ -127,5 +127,5 @@ export function makeLogger(
 
 function getLogLevel(): LogLevel {
     const configuration = Settings.instance.getSection('aws')
-    return configuration.get(`${globals.contextPrefix}logLevel`, defaultLogLevel)
+    return configuration.get('logLevel', defaultLogLevel)
 }

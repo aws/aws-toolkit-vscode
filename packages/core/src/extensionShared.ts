@@ -69,8 +69,6 @@ export async function activateShared(
     initialize(context, isWeb)
     await initializeComputeRegion()
 
-    globals.contextPrefix = '' //todo: disconnect supplied argument
-
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
         void logAndShowError(error, info.id, defaultMessage)
