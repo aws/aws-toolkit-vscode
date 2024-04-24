@@ -55,6 +55,12 @@ val gatewayArtifacts by configurations.creating {
     extendsFrom(configurations["implementation"], configurations["runtimeOnly"])
 }
 
+val jarNoPluginXmlArtifacts by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    // only consumed without transitive depen
+}
+
 val gatewayJar = tasks.create<Jar>("gatewayJar") {
     // META-INF/plugin.xml is a duplicate?
     // unclear why the exclude() statement didn't work
@@ -79,8 +85,22 @@ val gatewayJar = tasks.create<Jar>("gatewayJar") {
     }
 }
 
+val jarNoPluginXml = tasks.create<Jar>("jarNoPluginXml") {
+    duplicatesStrategy = DuplicatesStrategy.WARN
+
+    dependsOn(tasks.instrumentedJar)
+
+    archiveBaseName.set("aws-toolkit-jetbrains-IC-noPluginXml")
+    from(tasks.instrumentedJar.get().outputs.files.map { zipTree(it) }) {
+        exclude("**/plugin.xml")
+        exclude("**/plugin-intellij.xml")
+        exclude("**/inactive")
+    }
+}
+
 artifacts {
     add("gatewayArtifacts", gatewayJar)
+    add("jarNoPluginXmlArtifacts", jarNoPluginXml)
 }
 
 tasks.prepareSandbox {

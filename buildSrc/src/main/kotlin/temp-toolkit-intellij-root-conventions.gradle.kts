@@ -23,6 +23,7 @@ plugins {
     id("org.jetbrains.intellij")
     id("toolkit-testing") // Needed so the coverage configurations are present
     id("toolkit-detekt")
+    id("toolkit-publishing-conventions")
 }
 
 val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intellijToolkit").apply {
@@ -67,15 +68,6 @@ tasks.prepareSandbox {
         .from(gatewayResources)
 }
 
-tasks.publishPlugin {
-    token.set(publishToken)
-    channels.set(publishChannel.split(",").map { it.trim() })
-}
-
-tasks.check {
-    dependsOn(tasks.verifyPlugin)
-}
-
 // We have no source in this project, so skip test task
 tasks.test {
     enabled = false
@@ -92,21 +84,6 @@ dependencies {
 
     implementation(project(":plugin-toolkit:jetbrains-rider"))
     resharperDlls(project(":plugin-toolkit:jetbrains-rider", configuration = "resharperDlls"))
-}
-
-configurations {
-    all {
-        // IDE provides netty
-        exclude("io.netty")
-    }
-
-    // Make sure we exclude stuff we either A) ships with IDE, B) we don't use to cut down on size
-    runtimeClasspath {
-        exclude(group = "org.slf4j")
-        exclude(group = "org.jetbrains.kotlin")
-        exclude(group = "org.jetbrains.kotlinx")
-
-    }
 }
 
 // Enable coverage for the UI test target IDE

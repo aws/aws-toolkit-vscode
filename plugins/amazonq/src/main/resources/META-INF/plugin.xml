@@ -3,6 +3,10 @@
 
 <idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
     <id>amazon.q</id>
+    <name>Amazon Q</name>
+    <description>
+        This is the Amazon Q plugin. Placeholder until final copy is available
+    </description>
     <version>1.0</version>
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
     <idea-version since-build="231" />
