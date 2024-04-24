@@ -84,7 +84,7 @@ export async function highlightPomIssueInProject(pomFileVirtualFileReference: vs
     await vscode.window.showTextDocument(pomFileVirtualFileReference)
 
     // Find line number for "latestVersion" or set to first line in file
-    const highlightLineNumber = findLineNumber(pomFileVirtualFileReference, currentVersion) || 1
+    const highlightLineNumber = findLineNumber(pomFileVirtualFileReference, '<dependency>') || 1
     await setAnnotationObjectDetails(highlightLineNumber)
 }
 
