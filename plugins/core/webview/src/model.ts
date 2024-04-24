@@ -20,7 +20,6 @@ export interface Region {
 }
 
 export interface IdcInfo {
-    profileName: string,
     startUrl: string,
     region: string,
 }
@@ -61,7 +60,7 @@ export class LongLivedIAM implements LoginOption {
 export class IdC implements LoginOption {
     id: LoginIdentifier = LoginIdentifier.ENTERPRISE_SSO
 
-    constructor(readonly profileName: string, readonly url: string, readonly region: string) {
+    constructor(readonly url: string, readonly region: string) {
     }
 
     requiresBrowser(): boolean {

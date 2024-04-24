@@ -90,12 +90,12 @@ abstract class LoginBrowser(
         }
     }
 
-    open fun loginIdC(profileName: String, url: String, region: AwsRegion, scopes: List<String>) {
+    open fun loginIdC(url: String, region: AwsRegion, scopes: List<String>) {
         val onError: (String) -> Unit = { _ ->
             // TODO: telemetry
         }
         runInEdt {
-            Login.IdC(profileName, url, region, scopes, onPendingProfile, onError).loginIdc(project)
+            Login.IdC(url, region, scopes, onPendingProfile, onError).loginIdc(project)
             // TODO: telemetry
         }
     }

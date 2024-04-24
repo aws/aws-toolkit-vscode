@@ -87,6 +87,7 @@ junit4 = { module = "junit:junit", version.ref = "junit4" }
 junit5-bom = { module = "org.junit:junit-bom", version.ref = "junit5" }
 junit5-jupiterApi = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit5" }
 junit5-jupiterEngine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
+junit5-jupiterParams = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit5" }
 junit5-jupiterVintage = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junit5" }
 kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
 kotlin-coroutinesDebug = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-debug", version.ref = "kotlinCoroutines" }

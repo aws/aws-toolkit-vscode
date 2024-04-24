@@ -21,21 +21,6 @@
             </div>
         </div>
         <div>
-            <div class="title no-bold">Profile Name</div>
-            <div class="hint">User-specified name used to label credentials locally</div>
-            <input
-                class="sso-profile font-amazon"
-                type="text"
-                id="ssoProfile"
-                name="ssoProfile"
-                v-model="ssoProfile"
-                tabindex="0"
-                v-autofocus
-                spellcheck="false"
-            />
-        </div>
-        <br/>
-        <div>
             <div class="title no-bold">Start URL</div>
             <div class="hint">URL for your organization, provided by an admin or help desk</div>
             <input
@@ -94,17 +79,6 @@ export default defineComponent({
         feature(): Feature {
             return this.$store.state.feature
         },
-        ssoProfile: {
-            get() {
-                return this.$store.state.lastLoginIdcInfo.profileName;
-            },
-            set(value: string) {
-                window.ideClient.updateLastLoginIdcInfo({
-                    ...this.$store.state.lastLoginIdcInfo,
-                    profileName: value
-                })
-            }
-        },
         startUrl: {
             get() {
                 return this.$store.state.lastLoginIdcInfo.startUrl;
@@ -145,7 +119,7 @@ export default defineComponent({
             if (!this.isInputValid) {
                 return
             }
-            this.$emit('login', new IdC(this.ssoProfile, this.startUrl, this.selectedRegion))
+            this.$emit('login', new IdC(this.startUrl, this.selectedRegion))
         },
         handleCodeCatalystSignin() {
             this.$emit('login', new BuilderId())

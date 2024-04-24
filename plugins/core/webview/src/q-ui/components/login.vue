@@ -140,7 +140,6 @@ export default defineComponent({
                     command: 'loginIdC',
                     url: type.url,
                     region: type.region,
-                    profileName: type.profileName,
                     feature: this.feature
                 })
             } else if (type instanceof BuilderId) {
