@@ -12,7 +12,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
-import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -24,6 +23,7 @@ import com.intellij.util.Alarm
 import com.intellij.util.concurrency.annotations.RequiresBackgroundThread
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.AwsPlugin
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.settings.AwsSettings
@@ -68,7 +68,6 @@ class PluginUpdateManager : Disposable {
     @RequiresBackgroundThread
     fun checkForUpdates(progressIndicator: ProgressIndicator, plugin: AwsPlugin) {
         val pluginInfo = AwsToolkit.PLUGINS_INFO[plugin] ?: return
-        val pluginId = pluginInfo.id
         val pluginDescriptor = pluginInfo.descriptor as? IdeaPluginDescriptor ?: return
         val pluginName = pluginInfo.name
         // Note: This will need to handle exceptions and ensure thread-safety
@@ -79,31 +78,8 @@ class PluginUpdateManager : Disposable {
                 return
             }
 
-            // wasUpdatedWithRestart means that, it was an update and it needs to restart to apply
-            if (InstalledPluginsState.getInstance().wasUpdatedWithRestart(PluginId.getId(pluginId))) {
-                LOG.debug { "$pluginName was recently updated and needed restart, not performing auto-update again" }
-                return
-            }
+            updatePlugin(pluginDescriptor, progressIndicator)
 
-            if (pluginDescriptor.version.contains("SNAPSHOT", ignoreCase = true)) {
-                LOG.debug { "$pluginName is a SNAPSHOT version, not performing auto-update" }
-                return
-            }
-            if (!pluginDescriptor.isEnabled) {
-                LOG.debug { "$pluginName is disabled, not performing auto-update" }
-                return
-            }
-            LOG.debug { "Current version: ${pluginDescriptor.version}" }
-            val latestPluginDownloader = getUpdate(pluginDescriptor)
-            if (latestPluginDownloader == null) {
-                LOG.debug { "$pluginName no newer version found, not performing auto-update" }
-                return
-            } else {
-                LOG.debug { "$pluginName found newer version: ${latestPluginDownloader.pluginVersion}" }
-            }
-
-            if (!latestPluginDownloader.prepareToInstall(progressIndicator)) return
-            latestPluginDownloader.install()
             // TODO: distinguish telemetry
             ToolkitTelemetry.showAction(
                 project = null,
@@ -219,5 +195,37 @@ class PluginUpdateManager : Disposable {
 
         // TODO: Optimize this to only search the result for AWS plugins
         fun getUpdateInfo(): Collection<PluginDownloader> = UpdateChecker.getPluginUpdates() ?: emptyList()
+
+        internal fun updatePlugin(pluginDescriptor: IdeaPluginDescriptor, progressIndicator: ProgressIndicator): Boolean {
+            val pluginName = pluginDescriptor.name
+
+            // wasUpdatedWithRestart means that, it was an update and it needs to restart to apply
+            if (InstalledPluginsState.getInstance().wasUpdatedWithRestart(pluginDescriptor.pluginId)) {
+                LOG.info { "$pluginName was recently updated and needed restart, not performing auto-update again" }
+                return false
+            }
+
+            if (pluginDescriptor.version.contains("SNAPSHOT", ignoreCase = true)) {
+                LOG.info { "$pluginName is a SNAPSHOT version, not performing auto-update" }
+                return false
+            }
+            if (!pluginDescriptor.isEnabled) {
+                LOG.info { "$pluginName is disabled, not performing auto-update" }
+                return false
+            }
+            LOG.debug { "Current version: ${pluginDescriptor.version}" }
+            val latestPluginDownloader = getUpdate(pluginDescriptor)
+            if (latestPluginDownloader == null) {
+                LOG.info { "$pluginName no newer version found, not performing auto-update" }
+                return false
+            } else {
+                LOG.info { "$pluginName found newer version: ${latestPluginDownloader.pluginVersion}" }
+            }
+
+            if (!latestPluginDownloader.prepareToInstall(progressIndicator)) return false
+            latestPluginDownloader.install()
+
+            return true
+        }
     }
 }
