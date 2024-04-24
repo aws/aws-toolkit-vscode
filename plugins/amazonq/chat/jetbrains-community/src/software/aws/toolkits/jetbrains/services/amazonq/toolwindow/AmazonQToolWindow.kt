@@ -17,7 +17,7 @@ import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
-import software.aws.toolkits.jetbrains.services.amazonq.WebviewPanel
+import software.aws.toolkits.jetbrains.services.amazonq.QWebviewPanel
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AppConnection
 import software.aws.toolkits.jetbrains.services.amazonq.commands.MessageTypeRegistry
@@ -50,7 +50,7 @@ class AmazonQToolWindow @NonInjectable constructor(
 ) : Disposable {
 
     private val chatPanel = AmazonQPanel(parent = this)
-    private val loginPanel = WebviewPanel(project = project)
+    private val loginPanel = QWebviewPanel(project = project)
 
     val component: JComponent = chatPanel.component
 

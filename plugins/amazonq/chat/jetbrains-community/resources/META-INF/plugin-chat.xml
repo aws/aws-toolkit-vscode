@@ -14,7 +14,7 @@
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.MeetQSettings"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindow" />
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.WebviewPanel"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.QWebviewPanel"/>
 
         <!--Q Getting Started page -->
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.QGettingStartedEditorProvider"/>
