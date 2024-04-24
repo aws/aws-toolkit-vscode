@@ -34,9 +34,6 @@ export default defineComponent({
         toggleItemSelection(itemId: number) {
             this.selectedLoginOption = itemId
         },
-        handleBackButtonClick() {
-            this.$emit('backToMenu')
-        },
         stageChanged(stage: Stage) {
             this.$emit('stageChanged', stage)
         },

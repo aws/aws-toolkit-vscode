@@ -196,7 +196,12 @@ class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, Toolki
         val regionJson = objectMapper.writeValueAsString(regions)
 
         // TODO: if codecatalyst connection expires, set stage to 'REAUTH'
-        val stage = "START"
+        // TODO: make these strings type safe
+        val stage = if (state.feature == FeatureId.Codecatalyst) {
+            "SSO_FORM"
+        } else {
+            "START"
+        }
 
         val jsonData = """
             {
