@@ -438,9 +438,6 @@ export default defineComponent({
     flex-direction: row;
     justify-content: left;
     align-items: flex-start;
-    padding-top: 130px;
-    padding-bottom: 2px;
-    padding-left: 10px;
     height: auto;
 }
 .hint {
@@ -454,6 +451,16 @@ export default defineComponent({
 }
 .vscode-dark .hint {
     color: #c6c6c6;
+}
+
+.auth-container {
+    display: flex;
+    flex-direction: column;
+
+    /* Stretches our overall container to the whole screen */
+    height: 100%;
+    /* Centers all content in to middle of page since the height is the whole screen*/
+    justify-content: center;
 }
 
 .title {
@@ -543,7 +550,6 @@ export default defineComponent({
 }
 #logo {
     fill: var(--vscode-button-foreground);
-    padding-top: 0.2em;
 }
 body.vscode-dark #logo-text {
     fill: white;

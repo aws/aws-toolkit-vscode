@@ -144,15 +144,18 @@ export class AuthUtil {
     })
 
     public async setVscodeContextProps() {
-        if (!isCloud9()) {
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
-            await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', !this.isConnected())
-            await vscode.commands.executeCommand(
-                'setContext',
-                'aws.codewhisperer.connectionExpired',
-                this.isConnectionExpired()
-            )
+        if (isCloud9()) {
+            return
         }
+
+        await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
+        const doShowAmazonQLoginView = !this.isConnected() || this.isConnectionExpired()
+        await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', doShowAmazonQLoginView)
+        await vscode.commands.executeCommand(
+            'setContext',
+            'aws.codewhisperer.connectionExpired',
+            this.isConnectionExpired()
+        )
     }
 
     /* Callback used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit

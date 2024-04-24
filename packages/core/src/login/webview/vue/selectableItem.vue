@@ -89,11 +89,12 @@ export default defineComponent({
 }
 
 .item-container {
-    border: 1px solid #625f5f;
+    border: 2px solid #625f5f;
+    border-radius: 3px;
 }
 
 .selected {
-    border: 1px solid #0e639c;
+    border: 2px solid #0e639c;
     user-select: none;
 }
 
