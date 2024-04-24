@@ -33,10 +33,13 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
             }
         )
     }
+
     private val project: Project?
+
     constructor(project: Project) {
         this.project = project
     }
+
     constructor() {
         this.project = null
     }
@@ -142,6 +145,15 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
                                     )
                             )
                     ) {
+                        featuresToPin.add(it)
+                    } else if (
+                        newConnection is AwsBearerTokenConnection &&
+                        oldConnection is AwsBearerTokenConnection &&
+                        oldConnection.id == newConnection.id &&
+                        oldConnection.scopes.all { s -> s in newConnection.scopes }
+                    ) {
+                        // TODO: ugly
+                        // scope update case
                         featuresToPin.add(it)
                     }
                 }

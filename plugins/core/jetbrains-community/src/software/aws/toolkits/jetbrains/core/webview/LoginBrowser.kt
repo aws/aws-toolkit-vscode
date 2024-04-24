@@ -48,6 +48,7 @@ abstract class LoginBrowser(
         }
     }
 
+    // TODO: remove it
     // TODO: figure out a better way to do this UI update
     protected val onPendingAwsId: () -> Unit = {
         projectCoroutineScope(project).launch {
@@ -85,7 +86,7 @@ abstract class LoginBrowser(
 
     open fun loginBuilderId(scopes: List<String>) {
         runInEdt {
-            Login.BuilderId(scopes, onPendingAwsId).loginBuilderId(project)
+            Login.BuilderId(scopes, onPendingProfile) {}.loginBuilderId(project)
             // TODO: telemetry
         }
     }

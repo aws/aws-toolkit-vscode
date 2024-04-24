@@ -15,7 +15,6 @@ import org.junit.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
@@ -227,13 +226,12 @@ class DefaultToolkitAuthManagerTest {
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).state()
             verifyNoMoreInteractions(tokenProvider)
-            verify(connectionManager).switchConnection(eq(existingConnection))
         }
     }
 
     @Test
     fun `loginSso with an existing connection but expired and refresh token is valid, should refreshToken`() {
-        val connectionManager: ToolkitConnectionManager = mock()
+        val connectionManager = ToolkitConnectionManager.getInstance(projectRule.project)
         regionProvider.addRegion(Region.US_EAST_1)
         projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
         ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
@@ -249,20 +247,20 @@ class DefaultToolkitAuthManagerTest {
                     emptyList()
                 )
             )
+            connectionManager.switchConnection(existingConnection)
 
             loginSso(projectRule.project, "foo", "us-east-1", emptyList())
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).resolveToken()
-            verify(connectionManager).switchConnection(eq(existingConnection))
+            assertThat(connectionManager.activeConnection()).isEqualTo(existingConnection)
         }
     }
 
     @Test
     fun `loginSso with an existing connection that token is invalid and there's no refresh token, should re-authenticate`() {
-        val connectionManager: ToolkitConnectionManager = mock()
+        val connectionManager = ToolkitConnectionManager.getInstance(projectRule.project)
         regionProvider.addRegion(Region.US_EAST_1)
-        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
         ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
 
         mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
@@ -275,20 +273,20 @@ class DefaultToolkitAuthManagerTest {
                     emptyList()
                 )
             )
+            connectionManager.switchConnection(existingConnection)
 
             loginSso(projectRule.project, "foo", "us-east-1", emptyList())
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider, timeout(5000)).reauthenticate()
-            verify(connectionManager).switchConnection(eq(existingConnection))
+            assertThat(connectionManager.activeConnection()).isEqualTo(existingConnection)
         }
     }
 
     @Test
     fun `loginSso reuses connection if requested scopes are subset of existing`() {
-        val connectionManager: ToolkitConnectionManager = mock()
+        val connectionManager = ToolkitConnectionManager.getInstance(projectRule.project)
         regionProvider.addRegion(Region.US_EAST_1)
-        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
         ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
 
         mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
@@ -302,12 +300,14 @@ class DefaultToolkitAuthManagerTest {
                 )
             )
 
+            connectionManager.switchConnection(existingConnection)
+
             loginSso(projectRule.project, "foo", "us-east-1", listOf("existing1"))
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).state()
             verifyNoMoreInteractions(tokenProvider)
-            verify(connectionManager).switchConnection(eq(existingConnection))
+            assertThat(connectionManager.activeConnection()).isEqualTo(existingConnection)
         }
     }
 
@@ -380,7 +380,6 @@ class DefaultToolkitAuthManagerTest {
     @Test
     fun `logoutFromConnection should invalidate the token provider and the connection and invoke callback`() {
         regionProvider.addRegion(Region.US_EAST_1)
-
         projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
 
         val profile = ManagedSsoProfile("us-east-1", "startUrl000")

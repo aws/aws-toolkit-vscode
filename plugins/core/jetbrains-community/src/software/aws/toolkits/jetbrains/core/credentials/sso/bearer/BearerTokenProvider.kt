@@ -91,7 +91,7 @@ interface BearerTokenProvider : SdkTokenProvider, SdkAutoCloseable, ToolkitBeare
 class InteractiveBearerTokenProvider(
     startUrl: String,
     region: String,
-    scopes: List<String>,
+    val scopes: List<String>,
     id: String,
     cache: DiskCache = diskCache
 ) : BearerTokenProvider, BearerTokenLogoutSupport, Disposable {
@@ -122,6 +122,14 @@ class InteractiveBearerTokenProvider(
                 override fun invalidate(providerId: String) {
                     if (id == providerId) {
                         invalidate()
+                    }
+                }
+
+                override fun onChange(providerId: String, newScopes: List<String>?) {
+                    newScopes?.let {
+                        if (id == providerId && it.toSet() != scopes.toSet()) {
+                            invalidate()
+                        }
                     }
                 }
             }

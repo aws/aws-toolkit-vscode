@@ -64,7 +64,7 @@ class DefaultCredentialManager : CredentialManager(), Disposable {
         ApplicationManager.getApplication().messageBus.connect(this).subscribe(
             BearerTokenProviderListener.TOPIC,
             object : BearerTokenProviderListener {
-                override fun onChange(providerId: String) {
+                override fun onChange(providerId: String, newScopes: List<String>?) {
                     modifyDependentProviders(providerId)
                 }
 

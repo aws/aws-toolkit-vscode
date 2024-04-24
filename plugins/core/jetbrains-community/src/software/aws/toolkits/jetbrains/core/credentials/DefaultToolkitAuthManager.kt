@@ -88,7 +88,16 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
     override fun tryCreateTransientSsoConnection(profile: AuthProfile, callback: (AwsBearerTokenConnection) -> Unit): AwsBearerTokenConnection {
         val connection = (connectionFromProfile(profile) as AwsBearerTokenConnection).also {
             callback(it)
-            transientConnections.add(it)
+
+            if (profile is ManagedSsoProfile) {
+                disposeStaleConnections(it)
+
+                connections.add(it)
+            } else {
+                disposeStaleConnections(it)
+
+                transientConnections.add(it)
+            }
         }
 
         return connection
@@ -133,17 +142,43 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
         return connection
     }
 
+    private fun disposeStaleConnections(newConnection: AwsBearerTokenConnection) {
+        connections.removeAll { existOldConn ->
+            (existOldConn.id == newConnection.id).also { isDuplicate ->
+                if (isDuplicate && existOldConn is Disposable) {
+                    ApplicationManager.getApplication().messageBus.syncPublisher(BearerTokenProviderListener.TOPIC)
+                        .onChange(existOldConn.id, newConnection.scopes)
+                    Disposer.dispose(existOldConn)
+                }
+            }
+        }
+
+        transientConnections.removeAll { existOldConn ->
+            (existOldConn.id == newConnection.id).also { isDuplicate ->
+                if (isDuplicate && existOldConn is Disposable) {
+                    ApplicationManager.getApplication().messageBus.syncPublisher(BearerTokenProviderListener.TOPIC)
+                        .onChange(existOldConn.id, newConnection.scopes)
+                    Disposer.dispose(existOldConn)
+                }
+            }
+        }
+    }
+
     private fun deleteConnection(predicate: (ToolkitConnection) -> Boolean) {
         val deleted = mutableListOf<ToolkitConnection>()
         connections.removeAll { connection ->
             predicate(connection).also {
-                deleted.add(connection)
+                if (it) {
+                    deleted.add(connection)
+                }
             }
         }
 
         transientConnections.removeAll { connection ->
             predicate(connection).also {
-                deleted.add(connection)
+                if (it) {
+                    deleted.add(connection)
+                }
             }
         }
 

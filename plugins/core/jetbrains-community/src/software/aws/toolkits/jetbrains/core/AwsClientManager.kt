@@ -51,8 +51,7 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
         busConnection.subscribe(
             BearerTokenProviderListener.TOPIC,
             object : BearerTokenProviderListener {
-                override fun onChange(providerId: String) {
-                    // otherwise we potentially cache the provider with the wrong token
+                override fun onChange(providerId: String, newScopes: List<String>?) {
                     invalidateSdks(providerId)
                 }
 

@@ -7,7 +7,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
-import org.jetbrains.annotations.VisibleForTesting
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.ClientConnectionSettings
 import software.aws.toolkits.core.ConnectionSettings
@@ -23,6 +22,7 @@ import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConst
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
 
@@ -102,7 +102,34 @@ interface ToolkitConnectionManager : Disposable {
  * Individual service should subscribe [ToolkitConnectionManagerListener.TOPIC] to fire their service activation / UX update
  */
 @Deprecated("Connections created through this function are not written to the user's ~/.aws/config file")
-fun loginSso(project: Project?, startUrl: String, region: String, requestedScopes: List<String>): BearerTokenProvider {
+fun loginSso(
+    project: Project?,
+    startUrl: String,
+    region: String,
+    requestedScopes: List<String>,
+    onPendingToken: (InteractiveBearerTokenProvider) -> Unit = {},
+    onError: (String) -> Unit = {}
+): AwsBearerTokenConnection? {
+    fun createAndAuthNewConnection(profile: AuthProfile): AwsBearerTokenConnection? {
+        val authManager = ToolkitAuthManager.getInstance()
+        val connection = try {
+            authManager.tryCreateTransientSsoConnection(profile) { transientConnection ->
+                (transientConnection.getConnectionSettings().tokenProvider.delegate as? InteractiveBearerTokenProvider)?.let {
+                    onPendingToken(it)
+                }
+                reauthConnectionIfNeeded(project, transientConnection)
+            }
+        } catch (e: Exception) {
+            val message = ssoErrorMessageFromException(e)
+
+            onError(message)
+            null
+        }
+
+        ToolkitConnectionManager.getInstance(project).switchConnection(connection)
+        return connection
+    }
+
     val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
 
     val manager = ToolkitAuthManager.getInstance()
@@ -124,39 +151,29 @@ fun loginSso(project: Project?, startUrl: String, region: String, requestedScope
                     are not a complete subset of current scopes (${connection.scopes})
                 """.trimIndent()
             }
-            logoutFromSsoConnection(project, connection)
             // can't reuse since requested scopes are not in current connection. forcing reauth
-            return@let null
+            return createAndAuthNewConnection(
+                ManagedSsoProfile(
+                    region,
+                    startUrl,
+                    allScopes.toList()
+                )
+            )
         }
 
         // For the case when the existing connection is in invalid state, we need to re-auth
-        return reauthConnection(project, connection)
+        reauthConnectionIfNeeded(project, connection)
+        return connection
     } ?: run {
         // No existing connection, start from scratch
-        val connection = manager.createConnection(
+        createAndAuthNewConnection(
             ManagedSsoProfile(
                 region,
                 startUrl,
                 allScopes.toList()
             )
         )
-
-        try {
-            reauthConnection(project, connection)
-        } catch (e: Exception) {
-            manager.deleteConnection(connection)
-            throw e
-        }
     }
-}
-
-@VisibleForTesting
-internal fun reauthConnection(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
-    val provider = reauthConnectionIfNeeded(project, connection)
-
-    ToolkitConnectionManager.getInstance(project).switchConnection(connection)
-
-    return provider
 }
 
 @Suppress("UnusedParameter")
@@ -236,7 +253,9 @@ fun maybeReauthProviderIfNeeded(
             }
         }
 
-        BearerTokenAuthState.AUTHORIZED -> { return false }
+        BearerTokenAuthState.AUTHORIZED -> {
+            return false
+        }
     }
 }
 
