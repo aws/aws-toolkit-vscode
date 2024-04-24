@@ -8,6 +8,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isUserBuilderId
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 
 interface ActionProvider<T> {
@@ -17,6 +18,8 @@ interface ActionProvider<T> {
     val customize: T
     val learn: T
     val openChatPanel: T
+    val pauseAutoScans: T
+    val resumeAutoScans: T
     val runScan: T
     val stopScan: T
     val sendFeedback: T
@@ -48,17 +51,30 @@ fun<T> buildActionListForInlineSuggestions(project: Project, actionProvider: Act
     }
 }
 
-fun<T> buildActionListForOtherFeatures(project: Project, actionProvider: ActionProvider<T>): List<T> =
+fun<T> buildActionListForCodeScan(project: Project, actionProvider: ActionProvider<T>): List<T> =
     buildList {
         if (!isRunningOnRemoteBackend()) {
             add(actionProvider.openChatPanel)
         }
         val codeScanManager = CodeWhispererCodeScanManager.getInstance(project)
+        val manager = CodeWhispererExplorerActionManager.getInstance()
+        if (!isUserBuilderId(project)) {
+            if (manager.isAutoEnabledForCodeScan()) {
+                add(actionProvider.pauseAutoScans)
+            } else {
+                add(actionProvider.resumeAutoScans)
+            }
+        }
         if (codeScanManager.isCodeScanInProgress()) {
             add(actionProvider.stopScan)
         } else {
             add(actionProvider.runScan)
         }
+    }
+
+fun<T> buildActionListForOtherFeatures(actionProvider: ActionProvider<T>): List<T> =
+    buildList {
+        add(actionProvider.openChatPanel)
     }
 
 fun<T> buildActionListForConnectHelp(actionProvider: ActionProvider<T>): List<T> =

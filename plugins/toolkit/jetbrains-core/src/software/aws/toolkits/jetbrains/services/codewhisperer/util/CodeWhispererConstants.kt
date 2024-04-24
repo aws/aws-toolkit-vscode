@@ -7,7 +7,6 @@ import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.ui.JBColor
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.codewhispererruntime.model.AccessDeniedException
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.telemetry.CodewhispererGettingStartedTask
@@ -58,24 +57,13 @@ object CodeWhispererConstants {
 
     // Code scan feature constants
     val ISSUE_HIGHLIGHT_TEXT_ATTRIBUTES = TextAttributes(null, null, JBColor.YELLOW, EffectType.WAVE_UNDERSCORE, Font.PLAIN)
-    const val JAVA_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
-    const val JAVA_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
-    const val CSHARP_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
-    const val CSHARP_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
-    const val RUBY_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
-    const val RUBY_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
-    const val CLOUDFORMATION_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
-    const val CLOUDFORMATION_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
-    const val TERRAFORM_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
-    const val TERRAFORM_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
-    const val PYTHON_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
-    const val PYTHON_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
-    const val JS_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
-    const val JS_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
-    const val GO_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
-    const val GO_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
+    const val DEFAULT_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60 * 10 // 10 minutes
+    const val DEFAULT_PAYLOAD_LIMIT_IN_BYTES: Long = 5 * 1024 * 1024 * 1024 // 5 GB
     const val CODE_SCAN_POLLING_INTERVAL_IN_SECONDS: Long = 1
     const val CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS: Long = 10
+    const val FILE_SCAN_TIMEOUT_IN_SECONDS: Long = 60 // 60 seconds
+    const val FILE_SCAN_PAYLOAD_SIZE_LIMIT_IN_BYTES: Long = 1024 * 200 // 200KB
+    const val AUTO_SCAN_DEBOUNCE_DELAY_IN_SECONDS: Long = 2
     const val TOTAL_BYTES_IN_KB = 1024
     const val TOTAL_BYTES_IN_MB = 1024 * 1024
     const val TOTAL_MILLIS_IN_SECOND = 1000
@@ -102,6 +90,17 @@ object CodeWhispererConstants {
         const val SETTING_ID = "codewhisperer_autoSuggestionActivation"
         const val ACTIVATED = "Activated"
         const val DEACTIVATED = "Deactivated"
+    }
+
+    object AutoCodeScan {
+        const val SETTING_ID = "codewhisperer_autoScansActivation"
+        const val ACTIVATED = "Activated"
+        const val DEACTIVATED = "Deactivated"
+    }
+
+    enum class SecurityScanType {
+        FILE,
+        PROJECT
     }
 
     object Config {

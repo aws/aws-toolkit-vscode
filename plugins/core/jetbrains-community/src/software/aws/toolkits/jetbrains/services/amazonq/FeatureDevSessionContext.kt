@@ -1,7 +1,7 @@
 // Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
+package software.aws.toolkits.jetbrains.services.amazonq
 
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.project.Project
@@ -11,7 +11,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import org.apache.commons.codec.digest.DigestUtils
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.model.ZipCreationResult
 import java.io.File
 import java.io.FileInputStream
 import java.util.Base64
@@ -19,14 +18,15 @@ import kotlin.io.path.Path
 import kotlin.io.path.relativeTo
 
 class FeatureDevSessionContext(val project: Project) {
+    // TODO: Need to correct this class location in the modules going further to support both amazonq and codescan.
 
-    private var _projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
     private val ignorePatterns = listOf(
         "\\.aws-sam",
         "\\.svn",
         "\\.hg/",
         "\\.rvm",
         "\\.git/",
+        "\\.gitignore",
         "\\.project",
         "\\.gem",
         "/\\.idea/",
@@ -44,16 +44,23 @@ class FeatureDevSessionContext(val project: Project) {
         "/LICENSE\\.md$",
     ).map { Regex(it) }
 
+    private var _projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
+    private var ignorePatternsWithGitIgnore = emptyList<Regex>()
+    private val gitIgnoreFile = File(projectRoot.path, ".gitignore")
+
+    init {
+        ignorePatternsWithGitIgnore = ignorePatterns + parseGitIgnore().map { Regex(it) }
+    }
+
     fun getProjectZip(): ZipCreationResult {
         val zippedProject = runReadAction { zipFiles(projectRoot) }
         val checkSum256: String = Base64.getEncoder().encodeToString(DigestUtils.sha256(FileInputStream(zippedProject)))
         return ZipCreationResult(zippedProject, checkSum256, zippedProject.length())
     }
 
-    private fun ignoreFile(file: File): Boolean {
-        val ignorePatternsWithGitIgnore = ignorePatterns + parseGitIgnore(File(projectRoot.path, ".gitignore")).map { Regex(it) }
-        return ignorePatternsWithGitIgnore.any { p -> p.containsMatchIn(file.path) }
-    }
+    fun ignoreFile(file: File): Boolean = ignorePatternsWithGitIgnore.any { p -> p.containsMatchIn(file.path) }
+
+    fun ignoreFile(file: VirtualFile): Boolean = ignoreFile(File(file.path))
 
     private fun zipFiles(projectRoot: VirtualFile): File = createTemporaryZipFile {
         VfsUtil.collectChildrenRecursively(projectRoot).map { virtualFile -> File(virtualFile.path) }.forEach { file ->
@@ -64,7 +71,7 @@ class FeatureDevSessionContext(val project: Project) {
         }
     }.toFile()
 
-    private fun parseGitIgnore(gitIgnoreFile: File): List<String> {
+    private fun parseGitIgnore(): List<String> {
         if (!gitIgnoreFile.exists()) {
             return emptyList()
         }
@@ -74,6 +81,7 @@ class FeatureDevSessionContext(val project: Project) {
             .map { convertGitIgnorePatternToRegex(it) }
     }
 
+    // gitignore patterns are not regex, method update needed.
     private fun convertGitIgnorePatternToRegex(pattern: String): String = pattern
         .replace(".", "\\.")
         .replace("*", ".*")
@@ -85,3 +93,5 @@ class FeatureDevSessionContext(val project: Project) {
         }
         get() = _projectRoot
 }
+
+data class ZipCreationResult(val payload: File, val checksum: String, val contentLength: Long)

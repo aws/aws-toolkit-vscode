@@ -11,7 +11,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.JavaScriptCodeScanSessionConfig
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
@@ -24,7 +24,8 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
     internal lateinit var testJs: VirtualFile
     internal lateinit var utilsJs: VirtualFile
     internal lateinit var helperJs: VirtualFile
-    internal lateinit var sessionConfigSpy: JavaScriptCodeScanSessionConfig
+    private lateinit var readMeMd: VirtualFile
+    internal lateinit var sessionConfigSpy: CodeScanSessionConfig
 
     private var totalSize: Long = 0
     private var totalLines: Long = 0
@@ -33,7 +34,13 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
     override fun setup() {
         super.setup()
         setupJavaScriptProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testJs, project) as JavaScriptCodeScanSessionConfig)
+        sessionConfigSpy = spy(
+            CodeScanSessionConfig.create(
+                testJs,
+                project,
+                CodeWhispererConstants.SecurityScanType.PROJECT
+            )
+        )
         setupResponse(testJs.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {
@@ -48,10 +55,10 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
     fun `test createPayload`() {
         val payload = sessionConfigSpy.createPayload()
         assertNotNull(payload)
-        assertThat(payload.context.totalFiles).isEqualTo(3)
+        assertThat(payload.context.totalFiles).isEqualTo(4)
 
-        assertThat(payload.context.scannedFiles.size).isEqualTo(3)
-        assertThat(payload.context.scannedFiles).containsExactly(testJs, utilsJs, helperJs)
+        assertThat(payload.context.scannedFiles.size).isEqualTo(4)
+        assertThat(payload.context.scannedFiles).containsExactly(testJs, helperJs, utilsJs, readMeMd)
 
         assertThat(payload.context.srcPayloadSize).isEqualTo(totalSize)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Javascript)
@@ -65,35 +72,17 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
             filesInZip += 1
         }
 
-        assertThat(filesInZip).isEqualTo(3)
+        assertThat(filesInZip).isEqualTo(4)
     }
 
     @Test
     fun `test getSourceFilesUnderProjectRoot`() {
-        getSourceFilesUnderProjectRoot(sessionConfigSpy, testJs, 3)
-    }
-
-    @Test
-    fun `test parseImport()`() {
-        val testJsImports = sessionConfigSpy.parseImports(testJs)
-        assertThat(testJsImports.size).isEqualTo(3)
-
-        val helperJsImports = sessionConfigSpy.parseImports(helperJs)
-        assertThat(helperJsImports.size).isEqualTo(1)
-    }
-
-    @Test
-    fun `test getImportedFiles()`() {
-        val files = sessionConfigSpy.getImportedFiles(testJs, setOf())
-        assertNotNull(files)
-        assertThat(files).hasSize(2)
-        assertThat(files).contains(utilsJs.path)
-        assertThat(files).contains(helperJs.path)
+        getSourceFilesUnderProjectRoot(sessionConfigSpy, testJs, 4)
     }
 
     @Test
     fun `test includeDependencies()`() {
-        includeDependencies(sessionConfigSpy, 3, totalSize, this.totalLines, 0)
+        includeDependencies(sessionConfigSpy, 4, totalSize, this.totalLines, 0)
     }
 
     @Test
@@ -117,11 +106,11 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
         assertThat(payload.context.totalFiles).isEqualTo(2)
 
         assertThat(payload.context.scannedFiles.size).isEqualTo(2)
-        assertThat(payload.context.scannedFiles).containsExactly(testJs, utilsJs)
+        assertThat(payload.context.scannedFiles).containsExactly(testJs, helperJs)
 
-        assertThat(payload.context.srcPayloadSize).isEqualTo(816)
+        assertThat(payload.context.srcPayloadSize).isEqualTo(513)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Javascript)
-        assertThat(payload.context.totalLines).isEqualTo(31)
+        assertThat(payload.context.totalLines).isEqualTo(27)
         assertNotNull(payload.srcZip)
 
         val bufferedInputStream = BufferedInputStream(payload.srcZip.inputStream())
@@ -136,7 +125,7 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
 
     @Test
     fun `e2e happy path integration test`() {
-        assertE2ERunsSuccessfully(sessionConfigSpy, projectRule.project, totalLines, 3, totalSize, 2)
+        assertE2ERunsSuccessfully(sessionConfigSpy, projectRule.project, totalLines, 4, totalSize, 2)
     }
 
     private fun setupJavaScriptProject() {
@@ -213,6 +202,8 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
         totalSize += helperJs.length
         totalLines += helperJs.toNioPath().toFile().readLines().size
 
-        projectRule.fixture.addFileToProject("/notIncluded.md", "### should NOT be included")
+        readMeMd = projectRule.fixture.addFileToProject("/ReadMe.md", "### Now included").virtualFile
+        totalSize += readMeMd.length
+        totalLines += readMeMd.toNioPath().toFile().readLines().size
     }
 }

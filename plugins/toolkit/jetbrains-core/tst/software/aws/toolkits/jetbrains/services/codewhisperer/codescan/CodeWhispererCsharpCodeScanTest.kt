@@ -11,7 +11,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CsharpCodeScanSessionConfig
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
@@ -23,7 +23,9 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
     private lateinit var testCs: VirtualFile
     private lateinit var utilsCs: VirtualFile
     private lateinit var helperCs: VirtualFile
-    private lateinit var sessionConfigSpy: CsharpCodeScanSessionConfig
+    private lateinit var readMeMd: VirtualFile
+    private lateinit var sessionConfigSpy: CodeScanSessionConfig
+    private lateinit var sessionConfigSpy2: CodeScanSessionConfig
 
     private var totalSize: Long = 0
     private var totalLines: Long = 0
@@ -32,8 +34,11 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
     override fun setup() {
         super.setup()
         setupCsharpProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testCs, project) as CsharpCodeScanSessionConfig)
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(testCs, project, CodeWhispererConstants.SecurityScanType.PROJECT))
         setupResponse(testCs.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
+
+        sessionConfigSpy2 = spy(CodeScanSessionConfig.create(testCs, project, CodeWhispererConstants.SecurityScanType.FILE))
+        setupResponse(testCs.toNioPath().relativeTo(sessionConfigSpy2.projectRoot.toNioPath()))
 
         mockClient.stub {
             onGeneric { createUploadUrl(any()) }.thenReturn(fakeCreateUploadUrlResponse)
@@ -47,10 +52,10 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
     fun `test createPayload`() {
         val payload = sessionConfigSpy.createPayload()
         assertNotNull(payload)
-        assertThat(payload.context.totalFiles).isEqualTo(3)
+        assertThat(payload.context.totalFiles).isEqualTo(4)
 
-        assertThat(payload.context.scannedFiles.size).isEqualTo(3)
-        assertThat(payload.context.scannedFiles).containsExactly(testCs, utilsCs, helperCs)
+        assertThat(payload.context.scannedFiles.size).isEqualTo(4)
+        assertThat(payload.context.scannedFiles).containsExactly(testCs, helperCs, utilsCs, readMeMd)
 
         assertThat(payload.context.srcPayloadSize).isEqualTo(totalSize)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Csharp)
@@ -64,38 +69,22 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
             filesInZip += 1
         }
 
-        assertThat(filesInZip).isEqualTo(3)
+        assertThat(filesInZip).isEqualTo(4)
     }
 
     @Test
     fun `test getSourceFilesUnderProjectRoot`() {
-        getSourceFilesUnderProjectRoot(sessionConfigSpy, testCs, 3)
+        getSourceFilesUnderProjectRoot(sessionConfigSpy, testCs, 4)
     }
 
     @Test
-    fun `test parseImport()`() {
-        val testCsImports = sessionConfigSpy.parseImports(testCs)
-        assertThat(testCsImports.size).isEqualTo(3)
-
-        val helperCsImports = sessionConfigSpy.parseImports(helperCs)
-        assertThat(helperCsImports.size).isEqualTo(0)
-
-        val utilsCsImports = sessionConfigSpy.parseImports(utilsCs)
-        assertThat(utilsCsImports.size).isEqualTo(0)
-    }
-
-    @Test
-    fun `test getImportedFiles()`() {
-        val files = sessionConfigSpy.getImportedFiles(testCs, setOf())
-        assertNotNull(files)
-        assertThat(files).hasSize(2)
-        assertThat(files).contains(utilsCs.path)
-        assertThat(files).contains(helperCs.path)
+    fun `test getSourceFilesUnderProjectRootForFileScan`() {
+        getSourceFilesUnderProjectRootForFileScan(sessionConfigSpy2, testCs)
     }
 
     @Test
     fun `test includeDependencies()`() {
-        includeDependencies(sessionConfigSpy, 3, totalSize, this.totalLines, 0)
+        includeDependencies(sessionConfigSpy, 4, totalSize, this.totalLines, 0)
     }
 
     @Test
@@ -120,11 +109,12 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
         assertThat(payload.context.totalFiles).isEqualTo(2)
 
         assertThat(payload.context.scannedFiles.size).isEqualTo(2)
-        assertThat(payload.context.scannedFiles).containsExactly(testCs, utilsCs)
+        assertThat(payload.context.scannedFiles).containsExactly(testCs, helperCs)
 
-        assertThat(payload.context.srcPayloadSize).isEqualTo(431)
+        // Adding 16 Bytes for read me Markdown file across all tests.
+        assertThat(payload.context.srcPayloadSize).isEqualTo(887)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Csharp)
-        assertThat(payload.context.totalLines).isEqualTo(26)
+        assertThat(payload.context.totalLines).isEqualTo(44)
         assertNotNull(payload.srcZip)
 
         val bufferedInputStream = BufferedInputStream(payload.srcZip.inputStream())
@@ -139,7 +129,7 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
 
     @Test
     fun `e2e happy path integration test`() {
-        assertE2ERunsSuccessfully(sessionConfigSpy, project, totalLines, 3, totalSize, 2)
+        assertE2ERunsSuccessfully(sessionConfigSpy, project, totalLines, 4, totalSize, 2)
     }
 
     private fun setupCsharpProject() {
@@ -228,6 +218,13 @@ class CodeWhispererCsharpCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
         totalSize += helperCs.length
         totalLines += helperCs.toNioPath().toFile().readLines().size
 
-        projectRule.fixture.addFileToProject("/notIncluded.md", "### should NOT be included")
+        readMeMd = projectRule.fixture.addFileToProject("/ReadMe.md", "### Now included").virtualFile
+        totalSize += readMeMd.length
+        totalLines += readMeMd.toNioPath().toFile().readLines().size
+
+        // Adding gitignore file and gitignore file member for testing.
+        // The tests include the markdown file but not these two files.
+        projectRule.fixture.addFileToProject("/.gitignore", "node_modules\n.idea\n.vscode\n.DS_Store").virtualFile
+        projectRule.fixture.addFileToProject("test.idea", "ref: refs/heads/main")
     }
 }

@@ -21,7 +21,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWh
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExploreActionState
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExploreStateType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.telemetry.AwsTelemetry
 import java.time.LocalDateTime
 
@@ -45,13 +45,19 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
 
     private fun getCodeWhispererConnectionStartUrl(project: Project): String {
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
-        return CodeWhispererUtil.getConnectionStartUrl(connection) ?: CodeWhispererConstants.ACCOUNTLESS_START_URL
+        return getConnectionStartUrl(connection) ?: CodeWhispererConstants.ACCOUNTLESS_START_URL
     }
 
     fun isAutoEnabled(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.IsAutoEnabled, true)
 
     fun setAutoEnabled(isAutoEnabled: Boolean) {
         actionState.value[CodeWhispererExploreStateType.IsAutoEnabled] = isAutoEnabled
+    }
+
+    fun isAutoEnabledForCodeScan(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.IsAutoCodeScanEnabled, true)
+
+    fun setAutoEnabledForCodeScan(isAutoEnabledForCodeScan: Boolean) {
+        actionState.value[CodeWhispererExploreStateType.IsAutoCodeScanEnabled] = isAutoEnabledForCodeScan
     }
 
     fun setHasShownNewOnboardingPage(hasShownNewOnboardingPage: Boolean) {
@@ -98,6 +104,13 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
         setAutoEnabled(isAutoEnabled)
         val autoSuggestionState = if (isAutoEnabled) CodeWhispererConstants.AutoSuggestion.ACTIVATED else CodeWhispererConstants.AutoSuggestion.DEACTIVATED
         AwsTelemetry.modifySetting(project, settingId = CodeWhispererConstants.AutoSuggestion.SETTING_ID, settingState = autoSuggestionState)
+    }
+
+    // Adding Auto CodeScan Function
+    fun setAutoCodeScan(project: Project, isAutoEnabledForCodeScan: Boolean) {
+        setAutoEnabledForCodeScan(isAutoEnabledForCodeScan)
+        val autoCodeScanState = if (isAutoEnabledForCodeScan) CodeWhispererConstants.AutoCodeScan.ACTIVATED else CodeWhispererConstants.AutoCodeScan.DEACTIVATED
+        AwsTelemetry.modifySetting(project, settingId = CodeWhispererConstants.AutoCodeScan.SETTING_ID, settingState = autoCodeScanState)
     }
 
     @Deprecated("Accountless credential will be removed soon")

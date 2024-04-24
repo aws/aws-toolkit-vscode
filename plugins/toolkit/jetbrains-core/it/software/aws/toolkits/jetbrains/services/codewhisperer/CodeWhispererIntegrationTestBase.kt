@@ -57,6 +57,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfigurationType
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.RunWithRealCredentials
@@ -204,7 +205,10 @@ open class CodeWhispererIntegrationTestBase(val projectRule: CodeInsightTestFixt
         return runBlocking {
             var issues = emptyList<CodeWhispererCodeScanIssue>()
             if (success) {
-                verify(scanManager, timeout(60000).atLeastOnce()).renderResponseOnUIThread(issuesCaptor.capture(), any(), any())
+                verify(
+                    scanManager,
+                    timeout(60000).atLeastOnce()
+                ).renderResponseOnUIThread(issuesCaptor.capture(), any(), any(), CodeWhispererConstants.SecurityScanType.PROJECT)
                 issues = issuesCaptor.lastValue
             }
             verify(telemetryServiceSpy, timeout(60000).atLeastOnce()).sendSecurityScanEvent(codeScanEventCaptor.capture(), anyOrNull())

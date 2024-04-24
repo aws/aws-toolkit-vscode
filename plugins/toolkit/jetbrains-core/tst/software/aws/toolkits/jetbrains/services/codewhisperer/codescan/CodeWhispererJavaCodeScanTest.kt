@@ -20,19 +20,18 @@ import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.core.compileProjectAndWait
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.JavaCodeScanSessionConfig
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PayloadMetadata
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
+import java.io.File
 import java.util.zip.ZipInputStream
 import kotlin.io.path.relativeTo
 import kotlin.test.assertNotNull
@@ -41,7 +40,9 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
     private lateinit var utilsJava: VirtualFile
     private lateinit var test1Java: VirtualFile
     private lateinit var test2Java: VirtualFile
-    private lateinit var sessionConfigSpy: JavaCodeScanSessionConfig
+    private lateinit var moduleFile: VirtualFile
+    private lateinit var sessionConfigSpy: CodeScanSessionConfig
+    private lateinit var sessionConfigSpy2: CodeScanSessionConfig
 
     private var totalSize: Long = 0
     private var totalLines: Long = 0
@@ -50,8 +51,11 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
     override fun setup() {
         super.setup()
         setupJavaProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(utilsJava, project) as JavaCodeScanSessionConfig)
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(utilsJava, project, CodeWhispererConstants.SecurityScanType.PROJECT))
         setupResponse(utilsJava.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
+
+        sessionConfigSpy2 = spy(CodeScanSessionConfig.create(utilsJava, project, CodeWhispererConstants.SecurityScanType.FILE))
+        setupResponse(utilsJava.toNioPath().relativeTo(sessionConfigSpy2.projectRoot.toNioPath()))
 
         mockClient.stub {
             onGeneric { createUploadUrl(any()) }.thenReturn(fakeCreateUploadUrlResponse)
@@ -64,10 +68,10 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
     @Test
     fun `test createPayload`() {
         val payload = sessionConfigSpy.createPayload()
-        assertThat(payload.context.totalFiles).isEqualTo(3)
+        assertThat(payload.context.totalFiles).isEqualTo(4)
 
-        assertThat(payload.context.scannedFiles.size).isEqualTo(3)
-        assertThat(payload.context.scannedFiles).containsExactly(utilsJava, test1Java, test2Java)
+        assertThat(payload.context.scannedFiles.size).isEqualTo(4)
+        assertThat(payload.context.scannedFiles).containsExactly(utilsJava, test1Java, test2Java, moduleFile)
 
         assertThat(payload.context.srcPayloadSize).isEqualTo(totalSize)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Java)
@@ -80,31 +84,27 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
         while (zis.nextEntry != null) {
             filesInZip += 1
         }
-        assertThat(filesInZip).isEqualTo(6)
+        assertThat(filesInZip).isEqualTo(4)
     }
 
     @Test
     fun `test getSourceFilesUnderProjectRoot`() {
-        getSourceFilesUnderProjectRoot(sessionConfigSpy, utilsJava, 3)
+        getSourceFilesUnderProjectRoot(sessionConfigSpy, utilsJava, 4)
     }
 
     @Test
-    fun `test parseImports()`() {
-        val utilsJavaImports = sessionConfigSpy.parseImports(utilsJava)
-        assertThat(utilsJavaImports.imports.size).isEqualTo(4)
-
-        val test1JavaImports = sessionConfigSpy.parseImports(test1Java)
-        assertThat(test1JavaImports.imports.size).isEqualTo(1)
+    fun `test getSourceFilesUnderProjectRootForFileScan`() {
+        getSourceFilesUnderProjectRootForFileScan(sessionConfigSpy2, utilsJava)
     }
 
     @Test
     fun `test includeDependencies()`() {
-        includeDependencies(sessionConfigSpy, 3, totalSize, this.totalLines, 3)
+        includeDependencies(sessionConfigSpy, 4, totalSize, this.totalLines, 0)
     }
 
     @Test
     fun `test getTotalProjectSizeInBytes()`() {
-        getTotalProjectSizeInBytes(sessionConfigSpy, this.totalSize)
+        getTotalProjectSizeInBytes(sessionConfigSpy, totalSize)
     }
 
     @Test
@@ -120,14 +120,14 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
         val payload = sessionConfigSpy.createPayload()
         assertNotNull(payload)
         assertThat(sessionConfigSpy.isProjectTruncated()).isTrue
-        assertThat(payload.context.totalFiles).isEqualTo(2)
+        assertThat(payload.context.totalFiles).isEqualTo(1)
 
-        assertThat(payload.context.scannedFiles.size).isEqualTo(2)
-        assertThat(payload.context.scannedFiles).containsExactly(utilsJava, test2Java)
+        assertThat(payload.context.scannedFiles.size).isEqualTo(1)
+        assertThat(payload.context.scannedFiles).containsExactly(utilsJava)
 
-        assertThat(payload.context.srcPayloadSize).isEqualTo(612)
+        assertThat(payload.context.srcPayloadSize).isEqualTo(346)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Java)
-        assertThat(payload.context.totalLines).isEqualTo(30)
+        assertThat(payload.context.totalLines).isEqualTo(16)
         assertNotNull(payload.srcZip)
 
         val bufferedInputStream = BufferedInputStream(payload.srcZip.inputStream())
@@ -136,23 +136,12 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
         while (zis.nextEntry != null) {
             filesInZip += 1
         }
-        assertThat(filesInZip).isEqualTo(4)
-    }
-
-    @Test
-    fun `create payload with no build files does not throw exception`() {
-        sessionConfigSpy.stub {
-            onGeneric { includeDependencies() }.thenReturn(PayloadMetadata(emptySet(), 0, 0, emptySet()))
-        }
-        assertDoesNotThrow {
-            val payload = sessionConfigSpy.createPayload()
-            assertThat(payload.context.buildPayloadSize).isEqualTo(0)
-        }
+        assertThat(filesInZip).isEqualTo(1)
     }
 
     @Test
     fun `e2e happy path integration test`() {
-        assertE2ERunsSuccessfully(sessionConfigSpy, project, totalLines, 3, totalSize, 2)
+        assertE2ERunsSuccessfully(sessionConfigSpy, project, totalLines, 4, totalSize, 2)
     }
 
     private fun compileProject() {
@@ -281,8 +270,15 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
         totalSize += test2Java.length
         totalLines += test2Java.toNioPath().toFile().readLines().size
 
-        projectRule.fixture.addFileToProject("/notIncluded.md", "### should NOT be included")
+        // Adding gitignore file and gitignore file member for testing.
+        projectRule.fixture.addFileToProject("/.gitignore", "node_modules\n.idea\n.vscode\n.DS_Store").virtualFile
+        projectRule.fixture.addFileToProject("test.idea", "ref: refs/heads/main")
 
         compileProject()
+        val moduleFilePath = module.moduleFilePath
+        val javaModule = File(moduleFilePath)
+        moduleFile = LocalFileSystem.getInstance().findFileByIoFile(javaModule) ?: error("Failed to find module file")
+        totalSize += moduleFile.length
+        totalLines += moduleFile.toNioPath().toFile().readLines().size
     }
 }

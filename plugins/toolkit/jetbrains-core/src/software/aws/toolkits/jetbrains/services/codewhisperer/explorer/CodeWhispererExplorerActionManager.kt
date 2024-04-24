@@ -28,6 +28,7 @@ class CodeWhispererExploreActionState : BaseState() {
 // TODO: Don't remove IsManualEnabled
 enum class CodeWhispererExploreStateType {
     IsAutoEnabled,
+    IsAutoCodeScanEnabled,
     IsManualEnabled,
     HasAcceptedTermsOfServices,
     HasShownHowToUseCodeWhisperer,
@@ -44,6 +45,10 @@ interface CodeWhispererActivationChangedListener {
 
 fun isCodeWhispererEnabled(project: Project) = with(CodeWhispererExplorerActionManager.getInstance()) {
     checkActiveCodeWhispererConnectionType(project) != CodeWhispererLoginType.Logout
+}
+
+fun isUserBuilderId(project: Project) = with(CodeWhispererExplorerActionManager.getInstance()) {
+    checkActiveCodeWhispererConnectionType(project) == CodeWhispererLoginType.Sono
 }
 
 /**

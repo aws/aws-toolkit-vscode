@@ -36,9 +36,11 @@ import java.util.Base64
 import kotlin.io.path.relativeTo
 import kotlin.test.assertNotNull
 
-class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsightTestFixtureRule()) {
+class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsightTestFixtureRule()) {
     private lateinit var psifile: PsiFile
+    private lateinit var psifile2: PsiFile
     private lateinit var file: File
+    private lateinit var file2: File
     private lateinit var sessionConfigSpy: CodeScanSessionConfig
     private val payloadContext = PayloadContext(CodewhispererLanguage.Python, 1, 1, 10, listOf(), 600, 200)
     private lateinit var codeScanSessionContext: CodeScanSessionContext
@@ -47,6 +49,24 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
     @Before
     override fun setup() {
         super.setup()
+
+        psifile2 = projectRule.fixture.addFileToProject(
+            "/subtract.java",
+            """public class MathOperations {
+                public static int subtract(int a, int b) {
+                    return a - b; 
+                    }
+                public static void main(String[] args) {    
+                    int num1 = 10;
+                    int num2 = 5;
+                    int result = subtract(num1, num2);
+                    System.out.println(result);
+                    }
+                }     
+            """.trimMargin()
+        )
+        file2 = psifile2.virtualFile.toNioPath().toFile()
+
         psifile = projectRule.fixture.addFileToProject(
             "/test.py",
             """import numpy as np
@@ -63,7 +83,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
             CodeScanSessionConfig.create(
                 psifile.virtualFile,
                 project,
-                CodeWhispererConstants.SecurityScanType.PROJECT
+                CodeWhispererConstants.SecurityScanType.FILE
             )
         )
         setupResponse(psifile.virtualFile.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
@@ -101,7 +121,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
             eq(fakeCreateUploadUrlResponse),
             eq(fakeCreateUploadUrlResponse.uploadId()),
             eq(file),
-            eq(fileMd5)
+            eq(fileMd5),
         )
     }
 
@@ -126,15 +146,6 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
         )
         val res = codeScanSessionSpy.mapToCodeScanIssues(recommendations)
         assertThat(res).hasSize(2)
-    }
-
-    @Test
-    fun `test mapToCodeScanIssues - handles index out of bounds`() {
-        val recommendations = listOf(
-            fakeListCodeScanFindingsOutOfBoundsIndexResponse.codeScanFindings(),
-        )
-        val res = codeScanSessionSpy.mapToCodeScanIssues(recommendations)
-        assertThat(res).hasSize(1)
     }
 
     @Test

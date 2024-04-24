@@ -24,7 +24,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
@@ -41,6 +40,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionco
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import java.nio.file.Path
@@ -225,8 +225,15 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         ]                
     """
     internal fun getSourceFilesUnderProjectRoot(sessionConfigSpy: CodeScanSessionConfig, testFile: VirtualFile, size: Int) = assertThat(
-        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile).size
+        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile, CodeWhispererConstants.SecurityScanType.PROJECT).size
     ).isEqualTo(size)
+
+    internal fun getSourceFilesUnderProjectRootForFileScan(
+        sessionConfigSpy: CodeScanSessionConfig,
+        testFile: VirtualFile
+    ) = assertThat(
+        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile, CodeWhispererConstants.SecurityScanType.FILE).size
+    ).isEqualTo(1)
 
     internal fun getTotalProjectSizeInBytes(sessionConfigSpy: CodeScanSessionConfig, totalSize: Long) = runBlocking {
         assertThat(sessionConfigSpy.getTotalProjectSizeInBytes()).isEqualTo(totalSize)
@@ -268,7 +275,7 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
     ) {
         val codeScanContext = CodeScanSessionContext(project, sessionConfigSpy)
         val sessionMock = spy(CodeWhispererCodeScanSession(codeScanContext))
-        doNothing().`when`(sessionMock).uploadArtifactToS3(any(), any(), any(), any(), isNull())
+        doNothing().`when`(sessionMock).uploadArtifactToS3(any(), any(), any(), any())
         doNothing().`when`(sessionMock).sleepThread()
 
         ToolWindowManager.getInstance(project).registerToolWindow(

@@ -213,13 +213,12 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
         LOG.debug { "Fetching presigned URL for uploading $artifactType." }
         val createUploadUrlResponse = createUploadUrl(fileMd5, artifactType)
         LOG.debug { "Successfully fetched presigned URL for uploading $artifactType." }
-        val url = createUploadUrlResponse.uploadUrl()
         LOG.debug { "Uploading $artifactType using the presigned URL." }
-        uploadArtifactToS3(url, createUploadUrlResponse.uploadId(), zipFile, fileMd5, createUploadUrlResponse.kmsKeyArn())
+        uploadArtifactToS3(createUploadUrlResponse, createUploadUrlResponse.uploadId(), zipFile, fileMd5)
         createUploadUrlResponse
     } catch (e: Exception) {
         LOG.error { "Security scan failed. Something went wrong uploading artifacts: ${e.message}" }
-        throw e
+        uploadArtifactFailedError()
     }
 
     fun createUploadUrl(md5Content: String, artifactType: String): CreateUploadUrlResponse = clientAdaptor.createUploadUrl(
@@ -230,16 +229,22 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
     )
 
     @Throws(IOException::class)
-    fun uploadArtifactToS3(url: String, uploadId: String, fileToUpload: File, md5: String, kmsArn: String?) {
+    fun uploadArtifactToS3(createUploadUrlResponse: CreateUploadUrlResponse, uploadId: String, fileToUpload: File, md5: String) {
         val uploadIdJson = """{"uploadId":"$uploadId"}"""
-        HttpRequests.put(url, "application/zip").userAgent(AwsClientManager.userAgent).tuner {
-            it.setRequestProperty(CONTENT_MD5, md5)
-            it.setRequestProperty(SERVER_SIDE_ENCRYPTION, AWS_KMS)
-            it.setRequestProperty(CONTENT_TYPE, APPLICATION_ZIP)
-            if (kmsArn?.isNotEmpty() == true) {
-                it.setRequestProperty(SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID, kmsArn)
+        HttpRequests.put(createUploadUrlResponse.uploadUrl(), "application/zip").userAgent(AwsClientManager.userAgent).tuner {
+            if (createUploadUrlResponse.requestHeaders() != null && createUploadUrlResponse.requestHeaders().isNotEmpty()) {
+                for ((key, value) in createUploadUrlResponse.requestHeaders()) {
+                    it.setRequestProperty(key, value)
+                }
+            } else {
+                it.setRequestProperty(CONTENT_MD5, md5)
+                it.setRequestProperty(SERVER_SIDE_ENCRYPTION, AWS_KMS)
+                it.setRequestProperty(CONTENT_TYPE, APPLICATION_ZIP)
+                if (createUploadUrlResponse.kmsKeyArn()?.isNotEmpty() == true) {
+                    it.setRequestProperty(SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID, createUploadUrlResponse.kmsKeyArn())
+                }
+                it.setRequestProperty(SERVER_SIDE_ENCRYPTION_CONTEXT, Base64.getEncoder().encodeToString(uploadIdJson.toByteArray()))
             }
-            it.setRequestProperty(SERVER_SIDE_ENCRYPTION_CONTEXT, Base64.getEncoder().encodeToString(uploadIdJson.toByteArray()))
         }.connect {
             val connection = it.connection as HttpURLConnection
             connection.setFixedLengthStreamingMode(fileToUpload.length())

@@ -672,7 +672,10 @@
             "members":{
                 "uploadId":{"shape":"UploadId"},
                 "uploadUrl":{"shape":"PreSignedUrl"},
-                "kmsKeyArn":{"shape":"ResourceArn"}
+                "kmsKeyArn":{"shape":"ResourceArn"},
+                "requestHeaders": {
+                    "shape": "RequestHeaders"
+                }
             }
         },
         "CursorState":{
@@ -1247,6 +1250,27 @@
             "max":1224,
             "min":0,
             "pattern":"arn:([-.a-z0-9]{1,63}:){2}([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
+        },
+        "RequestHeaderKey": {
+            "type": "string",
+            "max": 64,
+            "min": 1
+        },
+        "RequestHeaderValue": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "RequestHeaders": {
+            "type": "map",
+            "key": {
+                "shape": "RequestHeaderKey"
+            },
+            "value": {
+                "shape": "RequestHeaderValue"
+            },
+            "max": 16,
+            "min": 1
         },
         "ResourceNotFoundException":{
             "type":"structure",
