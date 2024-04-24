@@ -104,7 +104,7 @@ export function createReconnect(type: 'item' | 'tree'): any {
 }
 
 export function createLearnMore(): DataQuickPickItem<'learnMore'> {
-    const label = localize('AWS.codewhisperer.learnMoreNode.label', 'Learn more about CodeWhisperer')
+    const label = localize('AWS.codewhisperer.learnMoreNode.label', 'Learn more about Amazon Q')
     const icon = getIcon('vscode-question')
 
     return {
