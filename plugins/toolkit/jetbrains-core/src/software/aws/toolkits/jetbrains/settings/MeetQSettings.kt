@@ -4,11 +4,14 @@
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.RoamingType
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 
-@State(name = "meetQPage", storages = [Storage("aws.xml")])
+@Service
+@State(name = "meetQPage", storages = [Storage("aws.xml", roamingType = RoamingType.DISABLED)])
 class MeetQSettings : PersistentStateComponent<MeetQSettingsConfiguration> {
     private var state = MeetQSettingsConfiguration()
     override fun getState(): MeetQSettingsConfiguration? = state

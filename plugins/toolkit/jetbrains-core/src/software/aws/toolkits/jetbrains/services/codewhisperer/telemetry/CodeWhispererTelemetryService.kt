@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.telemetry
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.project.Project
@@ -50,6 +51,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Queue
 
+@Service
 class CodeWhispererTelemetryService {
     // store previous 5 userTrigger decisions
     private val previousUserTriggerDecisions = CircularFifoQueue<CodewhispererPreviousSuggestionState>(5)

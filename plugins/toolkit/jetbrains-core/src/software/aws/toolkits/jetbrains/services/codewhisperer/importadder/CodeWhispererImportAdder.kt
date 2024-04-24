@@ -105,7 +105,7 @@ abstract class CodeWhispererImportAdder {
     abstract fun addImport(psiFile: PsiFile, editor: Editor, newImport: PsiElement): Boolean
 
     companion object {
-        private val EP = ExtensionPointName.create<CodeWhispererImportAdder>("aws.toolkit.codewhisperer.importAdder")
+        private val EP = ExtensionPointName.create<CodeWhispererImportAdder>("amazon.q.codewhisperer.importAdder")
         internal val LOG = getLogger<CodeWhispererImportAdder>()
 
         fun get(language: CodeWhispererProgrammingLanguage): CodeWhispererImportAdder? =

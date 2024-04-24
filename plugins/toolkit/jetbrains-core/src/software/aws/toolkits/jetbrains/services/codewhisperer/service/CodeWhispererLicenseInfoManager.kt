@@ -6,10 +6,12 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.service
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
 
+@Service
 class CodeWhispererLicenseInfoManager {
     private val licenseLinks by lazy {
         runUnderProgressIfNeeded(null, message("codewhisperer.loading_licenses"), cancelable = false) {

@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.telemetry
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -55,6 +56,7 @@ data class AcceptedSuggestionEntry(
     val connection: ToolkitConnection?
 ) : UserModificationTrackingEntry
 
+@Service(Service.Level.PROJECT)
 class CodeWhispererUserModificationTracker(private val project: Project) : Disposable {
     private val acceptedSuggestions = LinkedBlockingDeque<UserModificationTrackingEntry>(DEFAULT_MAX_QUEUE_SIZE)
     private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, this)

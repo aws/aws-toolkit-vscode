@@ -12,10 +12,4 @@
 
     <depends>aws.toolkit.core</depends>
     <xi:include href="/META-INF/module-amazonq.xml" />
-
-    <extensions defaultExtensionNs="com.intellij">
-        <!-- each plugin needs its own instance of these -->
-<!--        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>-->
-<!--        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>-->
-    </extensions>
 </idea-plugin>

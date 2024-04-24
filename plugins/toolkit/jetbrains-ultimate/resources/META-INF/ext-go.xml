@@ -22,7 +22,7 @@
     <extensions defaultExtensionNs="aws.toolkit">
         <experiment implementation="software.aws.toolkits.jetbrains.core.execution.GoAwsConnectionExperiment"/>
     </extensions>
-    <extensions defaultExtensionNs="aws.toolkit.codewhisperer">
+    <extensions defaultExtensionNs="amazon.q.codewhisperer">
         <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererGo"/>
     </extensions>
 </idea-plugin>

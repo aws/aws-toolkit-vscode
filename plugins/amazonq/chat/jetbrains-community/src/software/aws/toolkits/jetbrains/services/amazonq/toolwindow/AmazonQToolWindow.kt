@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.amazonq.toolwindow
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
@@ -17,7 +18,7 @@ import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
-import software.aws.toolkits.jetbrains.services.amazonq.WebviewPanel
+import software.aws.toolkits.jetbrains.services.amazonq.QWebviewPanel
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AppConnection
 import software.aws.toolkits.jetbrains.services.amazonq.commands.MessageTypeRegistry
@@ -42,6 +43,7 @@ fun isQConnected(project: Project): Boolean {
     return isQEnabled && isCWEnabled
 }
 
+@Service(Service.Level.PROJECT)
 class AmazonQToolWindow @NonInjectable constructor(
     private val project: Project,
     private val appSource: AppSource,
@@ -50,7 +52,7 @@ class AmazonQToolWindow @NonInjectable constructor(
 ) : Disposable {
 
     private val chatPanel = AmazonQPanel(parent = this)
-    private val loginPanel = WebviewPanel(project = project)
+    private val loginPanel = QWebviewPanel(project = project)
 
     val component: JComponent = chatPanel.component
 

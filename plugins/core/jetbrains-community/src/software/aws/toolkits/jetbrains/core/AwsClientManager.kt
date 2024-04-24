@@ -94,7 +94,7 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
             "AWS-Toolkit-For-JetBrains/$pluginVersion $platformName/$platformVersion ClientId/${AwsSettings.getInstance().clientId}"
         }
 
-        val CUSTOMIZER_EP = ExtensionPointName<ToolkitClientCustomizer>("aws.toolkit.sdk.clientCustomizer")
+        val CUSTOMIZER_EP = ExtensionPointName<ToolkitClientCustomizer>("aws.toolkit.core.sdk.clientCustomizer")
     }
 }
 

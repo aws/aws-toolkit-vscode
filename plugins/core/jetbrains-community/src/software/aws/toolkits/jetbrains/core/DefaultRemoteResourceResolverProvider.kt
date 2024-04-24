@@ -12,6 +12,8 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 
+typealias RemoteResourceResolverProvider = migration.software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
+
 class DefaultRemoteResourceResolverProvider : RemoteResourceResolverProvider {
     override fun get() = RESOLVER_INSTANCE
 
