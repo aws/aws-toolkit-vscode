@@ -35,7 +35,7 @@ const config = {
     experiments: { asyncWebAssembly: true },
     module: {
         rules: [
-            {test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader']},
+            {test: /\.(sa|sc|c)ss$/, use: ['style-loader', 'css-loader', 'sass-loader']},
             {
                 test: /\.ts$/,
                 exclude: /node_modules/,
