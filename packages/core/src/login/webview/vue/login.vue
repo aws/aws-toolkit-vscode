@@ -72,17 +72,19 @@
             </svg>
         </div>
         <template v-if="stage === 'START'">
-            <button class="back-button" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
-                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
-                        fill="#21A2FF"
-                    />
-                </svg>
-            </button>
+            <div>
+                <button class="back-button" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
+                    <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                            fill="#21A2FF"
+                        />
+                    </svg>
+                </button>
+            </div>
             <div class="auth-container-section">
                 <div class="existing-logins" v-if="existingLogins.length > 0">
-                    <div class="title">Connect with an existing account:</div>
+                    <div class="header">Connect with an existing account:</div>
                     <div v-for="(existingLogin, index) in existingLogins" :key="index">
                         <SelectableItem
                             @toggle="toggleItemSelection"
@@ -93,16 +95,16 @@
                             class="selectable-item"
                         ></SelectableItem>
                     </div>
-                    <div class="title">Or, choose a sign-in option:</div>
+                    <div class="header">Or, choose a sign-in option:</div>
                 </div>
-                <div class="title" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
+                <div class="header" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
                     :itemId="LoginOption.BUILDER_ID"
                     :itemText="'No AWS account required'"
-                    :itemTitle="'Use for free'"
+                    :itemTitle="'Use For Free'"
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem
@@ -111,7 +113,7 @@
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Sign in to AWS with single sign-on'"
-                    :itemTitle="'Use professional license'"
+                    :itemTitle="'Use Professional License'"
                     class="selectable-item"
                 ></SelectableItem>
                 <SelectableItem
@@ -129,7 +131,7 @@
                     :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
                     :itemId="LoginOption.IAM_CREDENTIAL"
                     :itemText="'Store keys for use with AWS CLI tools'"
-                    :itemTitle="'IAM Credential'"
+                    :itemTitle="'IAM Credentials'"
                     class="selectable-item"
                 ></SelectableItem>
                 <button
@@ -142,16 +144,18 @@
             </div>
         </template>
         <template v-if="stage === 'SSO_FORM'">
-            <button class="back-button" @click="handleBackButtonClick">
-                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
-                        fill="#21A2FF"
-                    />
-                </svg>
-            </button>
+            <div>
+                <button class="back-button" @click="handleBackButtonClick">
+                    <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                            fill="#21A2FF"
+                        />
+                    </svg>
+                </button>
+            </div>
             <div class="auth-container-section">
-                <div class="title">Sign in with SSO:</div>
+                <div class="header" style="padding-bottom: 5%">Sign in with SSO:</div>
                 <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
                     <div class="h4">
                         Using CodeCatalyst with AWS Builder ID?
@@ -188,23 +192,25 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="title">Connecting to IAM...</div>
-                <div v-else class="title">Authenticating in browser...</div>
+                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header">Connecting to IAM...</div>
+                <div v-else class="header">Authenticating in browser...</div>
                 <button class="continue-button" v-on:click="handleCancelButtom()">Cancel</button>
             </div>
         </template>
 
         <template v-if="stage === 'CONNECTED'"> </template>
         <template v-if="stage === 'AWS_PROFILE'">
-            <button class="back-button" @click="handleBackButtonClick">
-                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
-                        fill="#21A2FF"
-                    />
-                </svg>
-            </button>
-            <div class="title">IAM Credentials:</div>
+            <div>
+                <button class="back-button" @click="handleBackButtonClick">
+                    <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                            fill="#21A2FF"
+                        />
+                    </svg>
+                </button>
+            </div>
+            <div class="header">IAM Credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
             <div style="margin-bottom: 8px"></div>
             <div class="title">Profile Name</div>
@@ -227,6 +233,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import SelectableItem from './selectableItem.vue'
+import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
@@ -235,13 +242,6 @@ const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
 type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
-enum LoginOption {
-    NONE,
-    BUILDER_ID,
-    ENTERPRISE_SSO,
-    IAM_CREDENTIAL,
-    EXISTING_LOGINS,
-}
 
 function validateSsoUrlFormat(url: string) {
     const regex = /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-.*)$/
@@ -280,7 +280,7 @@ export default defineComponent({
             stage: 'START' as Stage,
             regions: [] as Region[],
             startUrlError: '',
-            selectedRegion: '',
+            selectedRegion: 'us-east-1',
             startUrl: '',
             app: this.app,
             LoginOption,
@@ -433,6 +433,7 @@ export default defineComponent({
 .selectable-item {
     margin-bottom: 10px;
     margin-top: 10px;
+    cursor: pointer;
 }
 .logoIcon {
     display: flex;
@@ -464,11 +465,23 @@ export default defineComponent({
     justify-content: center;
 }
 
-.title {
+.header {
     margin-bottom: 3px;
     margin-top: 3px;
     font-size: 12px;
     font-weight: bold;
+}
+.header.vscode-dark {
+    color: white;
+}
+.header.vscode-light {
+    color: black;
+}
+
+.title {
+    margin-bottom: 3px;
+    margin-top: 3px;
+    font-size: 12px;
 }
 .title.vscode-dark {
     color: white;
@@ -491,18 +504,20 @@ export default defineComponent({
     font-weight: bold;
     margin-bottom: 3px;
     margin-top: 3px;
+    cursor: pointer;
 }
 .back-button {
     background: none;
     border: none;
     cursor: pointer;
     color: var(--vscode-button-foreground);
-    padding: 0;
+    padding: 7.5% 0 10% 0;
     height: 13px;
 }
 .continue-button:disabled {
     background-color: var(--vscode-input-background);
     color: #6f6f6f;
+    cursor: not-allowed;
 }
 .urlInput {
     background-color: var(--vscode-input-background);

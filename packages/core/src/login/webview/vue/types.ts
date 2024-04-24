@@ -31,3 +31,11 @@ export const AuthFlowStates = {
     REAUTHENTICATING: 'REAUTHENTICATING',
 } as const
 export type AuthFlowState = (typeof AuthFlowStates)[keyof typeof AuthFlowStates]
+
+export enum LoginOption {
+    NONE,
+    BUILDER_ID,
+    ENTERPRISE_SSO,
+    IAM_CREDENTIAL,
+    EXISTING_LOGINS,
+}

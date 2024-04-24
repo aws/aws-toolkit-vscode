@@ -1,8 +1,14 @@
 <template>
-    <div class="item-container" :class="{ selected: isSelected }" @click="toggleSelection">
+    <div
+        class="item-container"
+        :class="{ selected: isSelected, hovering: isHovering }"
+        @click="toggleSelection"
+        @mouseover="isHovering = true"
+        @mouseout="isHovering = false"
+    >
         <div class="icon">
             <svg
-                v-if="itemTitle == 'Use for free'"
+                v-if="itemTitle == 'Use For Free'"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -17,7 +23,7 @@
                 />
             </svg>
             <svg
-                v-if="itemTitle == 'Workforce' || itemTitle == 'Use professional license'"
+                v-if="itemTitle == 'Workforce' || itemTitle == 'Use Professional License'"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -32,7 +38,7 @@
                 />
             </svg>
             <svg
-                v-if="itemTitle == 'IAM Credential'"
+                v-if="itemTitle == 'IAM Credentials'"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -55,22 +61,28 @@
 </template>
 
 <script lang="ts">
+import { LoginOption } from './types'
 import { defineComponent } from 'vue'
 export default defineComponent({
     name: 'SelectableItem',
     components: {},
     props: {
+        itemId: Number,
         itemText: String,
         itemTitle: String,
         isSelected: Boolean,
-        itemId: Number,
+        isHovering: Boolean,
     },
     data() {
         return {
-            itemText: this.itemText,
-            isSelected: this.isSelected,
             itemId: this.itemId,
             itemTitle: this.itemTitle,
+            itemText: this.itemText,
+            isSelected: this.isSelected,
+            isHovering: false,
+
+            // v-ifs above should be based on itemId with LoginOption, but that doesn't cover existing connections whose LoginOption > than the max option
+            LoginOption,
         }
     },
     async created() {},
@@ -93,8 +105,13 @@ export default defineComponent({
     border-radius: 3px;
 }
 
-.selected {
+.hovering {
     border: 2px solid #0e639c;
+    user-select: none;
+}
+
+.selected {
+    border: 2px solid #3675f4;
     user-select: none;
 }
 
