@@ -521,6 +521,7 @@ export default defineComponent({
 
     /* Stretches our overall container to the whole screen */
     height: 100%;
+    width: 100%;
     /* Centers all content in to middle of page since the height is the whole screen*/
     justify-content: center;
 }
