@@ -9,7 +9,7 @@
     </description>
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
     <version>1.0</version>
-    <idea-version since-build="231" />
+    <idea-version since-build="232" />
     <depends>com.intellij.modules.platform</depends>
 
     <xi:include href="/META-INF/module-core.xml" />
