@@ -8,7 +8,7 @@
     >
         <div class="icon">
             <svg
-                v-if="itemId === LoginOption.BUILDER_ID"
+                v-if="itemTitle == 'Use For Free'"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -23,7 +23,7 @@
                 />
             </svg>
             <svg
-                v-if="itemId === LoginOption.ENTERPRISE_SSO"
+                v-if="itemTitle == 'Workforce' || itemTitle == 'Use Professional License'"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -38,7 +38,7 @@
                 />
             </svg>
             <svg
-                v-if="itemId === LoginOption.IAM_CREDENTIAL"
+                v-if="itemTitle == 'IAM Credentials'"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -80,6 +80,8 @@ export default defineComponent({
             itemText: this.itemText,
             isSelected: this.isSelected,
             isHovering: false,
+
+            // v-ifs above should be based on itemId with LoginOption, but that doesn't cover existing connections whose LoginOption > than the max option
             LoginOption,
         }
     },
