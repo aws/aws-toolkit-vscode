@@ -83,7 +83,7 @@ export function createSecurityDiagnostic(securityIssue: CodeScanIssue) {
 export function createSecurityDiagnosticCollection() {
     if (securityScanRender.securityDiagnosticCollection === undefined) {
         securityScanRender.securityDiagnosticCollection =
-            vscode.languages.createDiagnosticCollection('CodeWhisperer Security Scan')
+            vscode.languages.createDiagnosticCollection('Amazon Q Security Scan')
     }
     return securityScanRender.securityDiagnosticCollection
 }

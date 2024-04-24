@@ -97,7 +97,7 @@ export class AuthUtil {
     public readonly secondaryAuth = getSecondaryAuth(
         this.auth,
         'codewhisperer',
-        'CodeWhisperer',
+        'Amazon Q',
         isValidCodeWhispererCoreConnection
     )
     public readonly restore = () => this.secondaryAuth.restoreConnection()

@@ -601,6 +601,6 @@ export async function enableDefaultConfigCloud9() {
         await editorSettings.update('acceptSuggestionOnEnter', 'on', vscode.ConfigurationTarget.Global)
         await editorSettings.update('snippetSuggestions', 'top', vscode.ConfigurationTarget.Global)
     } catch (error) {
-        getLogger().error('codewhisperer: Failed to update user settings', error)
+        getLogger().error('amazonq: Failed to update user settings', error)
     }
 }

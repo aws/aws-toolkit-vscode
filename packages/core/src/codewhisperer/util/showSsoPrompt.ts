@@ -59,7 +59,7 @@ export async function awsIdSignIn() {
 
 export const createCodeWhispererIamItem = () => {
     const item = createIamItem()
-    item.detail = 'Not supported by CodeWhisperer.'
+    item.detail = 'Not supported by Amazon Q'
     item.description = 'not supported'
     item.invalidSelection = true
 

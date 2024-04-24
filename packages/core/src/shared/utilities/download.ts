@@ -33,7 +33,7 @@ export async function downloadExportResultArchive(
     const buffer = []
 
     if (result.body === undefined) {
-        throw new ToolkitError('Empty response from CodeWhisperer Streaming service.')
+        throw new ToolkitError('Empty response from Amazon Q inline suggestions streaming service')
     }
 
     for await (const chunk of result.body) {
