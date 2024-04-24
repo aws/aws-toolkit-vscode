@@ -129,7 +129,7 @@ export async function activate(ctx: vscode.ExtensionContext, contextPrefix: stri
 
     ctx.subscriptions.push(
         devSettings.onDidChangeActiveSettings(updateMode),
-        vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider(ctx)),
+        vscode.workspace.registerTextDocumentContentProvider(`aws-${contextPrefix}-dev2`, new DevDocumentProvider(ctx)),
         // "AWS (Developer): Open Developer Menu"
         openStorageCommand.register(editor),
         vscode.commands.registerCommand(`aws.${contextPrefix}.dev.openMenu`, () => openMenu(ctx, menuOptions)),
