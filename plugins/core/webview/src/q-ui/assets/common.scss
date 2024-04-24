@@ -65,7 +65,7 @@ a {
 
 /* Theme specific css */
 body.jb-dark {
-    .login-flow-button, .title, .text, .back-button, .confirmation-code, .url-part {
+    .login-flow-button, .title, .text, .back-button, .confirmation-code {
         color: white;
     }
     .cancel-button {
@@ -78,7 +78,7 @@ body.jb-dark {
 }
 
 body.jb-light {
-    .title, .text, .back-button, .confirmation-code, .url-part {
+    .title, .text, .back-button, .confirmation-code {
         color: black;
     }
     .login-flow-button {
@@ -92,6 +92,10 @@ body.jb-light {
         background-color: #0000001A !important;
         color: #6f6f6f !important;
     }
+}
+
+button, .item-container {
+    cursor: pointer;
 }
 
 

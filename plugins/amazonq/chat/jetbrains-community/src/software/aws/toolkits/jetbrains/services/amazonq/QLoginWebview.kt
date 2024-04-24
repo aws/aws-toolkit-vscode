@@ -44,7 +44,7 @@ import javax.swing.JButton
 import javax.swing.JComponent
 
 @Service(Service.Level.PROJECT)
-class QWebviewPanel(val project: Project) {
+class QWebviewPanel private constructor(val project: Project) {
     private val webviewContainer = Wrapper()
     var browser: QWebviewBrowser? = null
         private set

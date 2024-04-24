@@ -24,7 +24,7 @@
             <div class="title no-bold">Start URL</div>
             <div class="hint">URL for your organization, provided by an admin or help desk</div>
             <input
-                class="url-input font-amazon url-part"
+                class="url-input font-amazon"
                 type="text"
                 id="startUrl"
                 name="startUrl"

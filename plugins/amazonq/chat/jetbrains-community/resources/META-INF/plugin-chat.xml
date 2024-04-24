@@ -16,6 +16,8 @@
 
         <toolWindow id="amazon.q.window" anchor="right"
                     factoryClass="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory" icon="AwsIcons.Logos.AWS_Q" />
+
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.amazonq.startup.AmazonQStartupActivity"/>
     </extensions>
 
     <extensions defaultExtensionNs="amazon.q">

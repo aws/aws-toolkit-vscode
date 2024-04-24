@@ -52,7 +52,7 @@ class AmazonQToolWindow @NonInjectable constructor(
 ) : Disposable {
 
     private val chatPanel = AmazonQPanel(parent = this)
-    private val loginPanel = QWebviewPanel(project = project)
+    private val loginPanel = QWebviewPanel.getInstance(project)
 
     val component: JComponent = chatPanel.component
 
