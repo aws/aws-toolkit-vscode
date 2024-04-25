@@ -137,7 +137,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 second: '2-digit',
             })
             const stepDuration = convertToTimeString(endTime.getTime() - startTime.getTime())
-            const isAllStepsComplete = isLastStep && stepProgress === StepProgress.Succeeded
+            const isAllStepsComplete = isLastStep && (stepProgress === StepProgress.Succeeded || StepProgress.Failed)
             return `
                 <p class="step ${isAllStepsComplete ? 'active' : ''}" id="step-${stepId}">
                     ${this.getProgressIconMarkup(stepProgress)} ${name} 
