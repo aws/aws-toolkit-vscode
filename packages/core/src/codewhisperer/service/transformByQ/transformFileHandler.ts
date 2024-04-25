@@ -127,7 +127,7 @@ async function addDiagnosticOverview(
                             documentUri,
                             new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 50))
                         ),
-                        'Use Amazon Q chat to upgrade the version of this dependency'
+                        'This dependency is not compatible with a Java 17 upgrade. Use Amazon Q chat to upgrade the version of this dependency to a Java 17 compatible version.'
                     ),
                 ],
                 tags: [1, 2],
