@@ -12,8 +12,8 @@ and the final results are retrieved by the frontend. For this Component to updat
         <div id="icon-container">
             <svg
                 v-if="app === 'AMAZONQ'"
-                width="100"
-                height="100"
+                width="71"
+                height="71"
                 viewBox="0 0 71 71"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"

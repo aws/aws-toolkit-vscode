@@ -101,8 +101,7 @@ export default defineComponent({
 }
 
 .item-container {
-    border: 2px solid #625f5f;
-    border-radius: 3px;
+    border: 1px solid #625f5f;
 }
 
 .hovering {
@@ -111,7 +110,7 @@ export default defineComponent({
 }
 
 .selected {
-    border: 2px solid #3675f4;
+    border: 1px solid #3675f4;
     user-select: none;
 }
 
@@ -133,7 +132,8 @@ export default defineComponent({
     color: black;
 }
 .icon {
-    padding-right: 10px;
+    padding-left: 8px;
+    padding-right: 11px;
     display: flex;
     align-items: center;
 }

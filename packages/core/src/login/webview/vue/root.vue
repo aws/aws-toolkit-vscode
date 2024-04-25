@@ -69,5 +69,7 @@ export default defineComponent({
     flex-direction: column;
     /* All items are centered horizontally */
     align-items: center;
+    position: absolute;
+    left: 20px;
 }
 </style>
