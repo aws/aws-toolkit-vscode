@@ -93,7 +93,7 @@ export async function highlightPomIssueInProject(
 
     // Find line number for "latestVersion" or set to first line in file
     const highlightLineNumberDependency = findLineNumber(pomFileVirtualFileReference, '<dependency>') || 1
-    const highlightLineNumberVersion = findLineNumber(pomFileVirtualFileReference, currentVersion)
+    const highlightLineNumberVersion = findLineNumber(pomFileVirtualFileReference, '1.0')
     if (highlightLineNumberDependency) {
         await setAnnotationObjectDetails(highlightLineNumberDependency)
     }
@@ -145,7 +145,7 @@ export async function getCodeIssueSnippetFromPom(pomFileVirtualFileReference: vs
     const match = dependencyRegEx.exec(pomFileContents)
     const snippet = match ? match[0] : ''
 
-    return snippet
+    return snippet.trim()
 }
 
 async function setAnnotationObjectDetails(lineNumber: number = 0) {
