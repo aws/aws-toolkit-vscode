@@ -127,7 +127,7 @@ export class CodeScansState {
         return (this.#instance ??= new this())
     }
 
-    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = false) {
+    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = true) {
         this.#context = context
         this.#fallback = fallback
     }

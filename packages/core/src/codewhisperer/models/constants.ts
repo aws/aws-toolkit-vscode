@@ -189,7 +189,7 @@ export const referenceLogText = (
     `with code ${code} provided with reference under ${license} from repository ${repository}. Added to ${filePath} ${lineInfo}.`
 
 export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in
-    <a href="#" onclick="openSettings();return false;">Amazon Q Settings</a>`
+    <a href="#" onclick="openSettings();return false;">Amazon Q: Settings</a>`
 
 export const referenceLogPromptTextEnterpriseSSO =
     'Your organization controls whether suggestions include code with references. To update these settings, please contact your admin.'
@@ -283,17 +283,17 @@ export const freeTierLimitReached = 'You have reached the monthly fair use limit
 
 export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
 
-export const fileScansLimitReached = 'You have reached the monthly quota of automatic file scans.'
+export const fileScansLimitReached = 'You have reached the monthly quota of auto-scans.'
 
-export const projectScansLimitReached = 'You have reached the monthly quota of full project scans.'
+export const projectScansLimitReached = 'You have reached the monthly quota of project scans.'
 
 export const throttlingLearnMore = `Learn More`
 
 export const throttlingMessage = `Maximum recommendation count reached for this month`
 
-export const fileScansThrottlingMessage = `Maximum automatic file scan count reached for this month`
+export const fileScansThrottlingMessage = `Maximum auto-scans count reached for this month`
 
-export const projectScansThrottlingMessage = `Maximum full project scan count reached for this month`
+export const projectScansThrottlingMessage = `Maximum project scan count reached for this month`
 
 export const connectionChangeMessage = `Keep using Amazon Q with `
 

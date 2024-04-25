@@ -217,7 +217,7 @@ export async function startSecurityScan(
         if (codeScanState.isCancelling()) {
             codeScanTelemetryEntry.result = 'Cancelled'
         } else {
-            errorPromptHelper(error as Error)
+            errorPromptHelper(error as Error, scope)
             codeScanTelemetryEntry.result = 'Failed'
         }
 
@@ -233,7 +233,7 @@ export async function startSecurityScan(
                 scope === CodeAnalysisScope.FILE &&
                 error.message.includes(CodeWhispererConstants.fileScansThrottlingMessage)
             ) {
-                void vscode.window.showErrorMessage(CodeWhispererConstants.fileScansLimitReached)
+                getLogger().error(CodeWhispererConstants.fileScansLimitReached)
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
@@ -287,8 +287,10 @@ export async function emitCodeScanTelemetry(editor: vscode.TextEditor, codeScanT
     telemetry.codewhisperer_securityScan.emit(codeScanTelemetryEntry)
 }
 
-export function errorPromptHelper(error: Error) {
-    void vscode.window.showWarningMessage(`Security scan failed. ${error}`, ok)
+export function errorPromptHelper(error: Error, scope: CodeAnalysisScope) {
+    if (scope === CodeAnalysisScope.PROJECT) {
+        void vscode.window.showWarningMessage(`Security scan failed. ${error}`, ok)
+    }
 }
 
 function populateCodeScanLogStream(scannedFiles: Set<string>) {

@@ -4,7 +4,7 @@
     <div class="mb-16">
         <div class="container button-container" style="justify-content: space-between">
             <h1>{{ title }} <img class="severity" :src="severityImage" :alt="severity" /></h1>
-            <input v-if="isFixAvailable" class="mt-4 ml-16" type="submit" @click="applyFix" value="Fix with Amazon Q" />
+            <input v-if="isFixAvailable" class="mt-4 ml-16" type="submit" @click="applyFix" value="Fix" />
         </div>
 
         <div class="mt-16">
@@ -70,7 +70,7 @@
     <hr />
 
     <div class="mt-16">
-        <input type="submit" class="mr-8" @click="explainWithQ" value="Explain with Amazon Q" />
+        <input type="submit" class="mr-8" @click="explainWithQ" value="Explain" />
     </div>
 </template>
 

@@ -251,7 +251,6 @@ describe('startSecurityScan', function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
         const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
-        const testWindow = getTestWindow()
         await model.CodeScansState.instance.setScansEnabled(true)
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
@@ -264,8 +263,6 @@ describe('startSecurityScan', function () {
         await scanPromise
         assert.ok(securityScanRenderSpy.notCalled)
         assert.ok(securityScanStoppedErrorSpy.calledOnce)
-        const warnings = testWindow.shownMessages.filter(m => m.severity === SeverityLevel.Warning)
-        assert.ok(warnings.map(m => m.message).includes('Security scan failed. Error: Security scan stopped by user.'))
     })
 
     it('Should highlight files after scan is completed', async function () {

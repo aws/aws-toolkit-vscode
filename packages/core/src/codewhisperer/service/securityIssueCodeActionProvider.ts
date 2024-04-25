@@ -33,7 +33,10 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                 if (issueRange.contains(range)) {
                     const [suggestedFix] = issue.suggestedFixes
                     if (suggestedFix) {
-                        const fixIssue = new vscode.CodeAction('Fix with Amazon Q', vscode.CodeActionKind.QuickFix)
+                        const fixIssue = new vscode.CodeAction(
+                            `Amazon Q: Fix "${issue.title}"`,
+                            vscode.CodeActionKind.QuickFix
+                        )
                         const args: [CodeScanIssue, string, Component] = [issue, group.filePath, 'quickfix']
                         fixIssue.command = {
                             title: 'Fix with Amazon Q',
@@ -42,7 +45,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                         }
                         codeActions.push(fixIssue)
                     }
-                    const openIssue = new vscode.CodeAction(`View details for "${issue.title}"`)
+                    const openIssue = new vscode.CodeAction(`Amazon Q: View details for "${issue.title}"`)
                     const args: [CodeScanIssue, string] = [issue, group.filePath]
                     openIssue.command = {
                         title: 'Open "Amazon Q Security Issue"',
@@ -51,7 +54,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     }
                     codeActions.push(openIssue)
 
-                    const explainWithQ = new vscode.CodeAction('Explain with Amazon Q')
+                    const explainWithQ = new vscode.CodeAction(`Amazon Q: Explain "${issue.title}"`)
                     const explainWithQArgs = [issue]
                     explainWithQ.command = {
                         title: 'Explain with Amazon Q',

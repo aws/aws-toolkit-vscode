@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "codecatalyst: fix extension activation in new dev environments"
+}

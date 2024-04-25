@@ -204,7 +204,7 @@
     "AWS.command.resources.copyIdentifier": "Copy Identifier",
     "AWS.command.resources.configure": "Show Resources...",
     "AWS.command.codewhisperer.introduction": "What is Amazon Q?",
-    "AWS.command.codewhisperer.configure": "Amazon Q Settings",
+    "AWS.command.codewhisperer.configure": "Settings",
     "AWS.command.codewhisperer.signout": "Sign Out",
     "AWS.command.codewhisperer.reconnect": "Reconnect",
     "AWS.command.codewhisperer.openReferencePanel": "Open Code Reference Log",

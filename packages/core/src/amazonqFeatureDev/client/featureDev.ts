@@ -17,6 +17,7 @@ import {
     ApiError,
     CodeIterationLimitError,
     ContentLengthError,
+    MonthlyConversationLimitError,
     PlanIterationLimitError,
     UnknownApiError,
 } from '../errors'
@@ -78,6 +79,9 @@ export class FeatureDevClient {
                 getLogger().error(
                     `${featureName}: failed to start conversation: ${e.message} RequestId: ${e.requestId}`
                 )
+                if (e.code === 'ServiceQuotaExceededException') {
+                    throw new MonthlyConversationLimitError(e.message)
+                }
                 throw new ApiError(e.message, 'CreateConversation', e.code, e.statusCode ?? 400)
             }
 
