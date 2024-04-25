@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.telemetry
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
 import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
@@ -26,7 +27,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 data class MetricEventMetadata(
     val awsAccount: String = METADATA_NA,
-    val awsRegion: String = METADATA_NA
+    val awsRegion: String = METADATA_NA,
+    var awsProduct: AWSProduct = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
+    var awsVersion: String = METADATA_NA
 )
 
 interface TelemetryListener {
@@ -49,6 +52,9 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
             )
             else -> MetricEventMetadata()
         }
+        val pluginResolver = PluginResolver.fromCurrentThread()
+        metricEventMetadata.awsProduct = pluginResolver.product
+        metricEventMetadata.awsVersion = pluginResolver.version
         record(metricEventMetadata, buildEvent)
     }
 
@@ -69,6 +75,9 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
         } else {
             MetricEventMetadata()
         }
+        val pluginResolver = PluginResolver.fromCurrentThread()
+        metricEventMetadata.awsProduct = pluginResolver.product
+        metricEventMetadata.awsVersion = pluginResolver.version
         record(metricEventMetadata, buildEvent)
     }
 
@@ -102,6 +111,8 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
         val builder = DefaultMetricEvent.builder()
         builder.awsAccount(metricEventMetadata.awsAccount)
         builder.awsRegion(metricEventMetadata.awsRegion)
+        builder.awsProduct(metricEventMetadata.awsProduct)
+        builder.awsVersion(metricEventMetadata.awsVersion)
 
         buildEvent(builder)
 

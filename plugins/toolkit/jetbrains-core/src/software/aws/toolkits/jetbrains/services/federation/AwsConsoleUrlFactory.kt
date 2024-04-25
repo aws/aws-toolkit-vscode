@@ -118,7 +118,7 @@ object AwsConsoleUrlFactory {
             }
 
         val result = httpClientBuilder
-            .setUserAgent(AwsClientManager.userAgent)
+            .setUserAgent(AwsClientManager.getUserAgent())
             .build().use { c ->
                 c.execute(
                     request
@@ -154,7 +154,7 @@ object AwsConsoleUrlFactory {
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val encodedArn = URLEncoder.encode(arn, Charsets.UTF_8)
-                val encodedUa = URLEncoder.encode(AwsClientManager.userAgent, Charsets.UTF_8)
+                val encodedUa = URLEncoder.encode(AwsClientManager.getUserAgent(), Charsets.UTF_8)
                 val url = AwsConsoleUrlFactory.getSigninUrl(
                     connectionSettings,
                     "/go/view?arn=$encodedArn&source=$encodedUa"

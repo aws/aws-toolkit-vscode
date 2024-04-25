@@ -22,7 +22,7 @@ import java.net.HttpURLConnection
 private val logger = getLogger<FeatureDevClient>()
 fun uploadArtifactToS3(url: String, fileToUpload: File, checksumSha256: String, contentLength: Long, kmsArn: String?) {
     try {
-        HttpRequests.put(url, APPLICATION_ZIP).userAgent(AwsClientManager.userAgent).tuner {
+        HttpRequests.put(url, APPLICATION_ZIP).userAgent(AwsClientManager.getUserAgent()).tuner {
             it.setRequestProperty("Content-Type", APPLICATION_ZIP)
             it.setRequestProperty("Content-Length", contentLength.toString())
             it.setRequestProperty(CONTENT_SHA256, checksumSha256)

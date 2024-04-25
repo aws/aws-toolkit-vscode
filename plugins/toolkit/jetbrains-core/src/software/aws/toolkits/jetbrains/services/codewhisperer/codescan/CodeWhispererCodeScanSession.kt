@@ -232,7 +232,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
     @Throws(IOException::class)
     fun uploadArtifactToS3(url: String, uploadId: String, fileToUpload: File, md5: String, kmsArn: String?) {
         val uploadIdJson = """{"uploadId":"$uploadId"}"""
-        HttpRequests.put(url, "application/zip").userAgent(AwsClientManager.userAgent).tuner {
+        HttpRequests.put(url, "application/zip").userAgent(AwsClientManager.getUserAgent()).tuner {
             it.setRequestProperty(CONTENT_MD5, md5)
             it.setRequestProperty(SERVER_SIDE_ENCRYPTION, AWS_KMS)
             it.setRequestProperty(CONTENT_TYPE, APPLICATION_ZIP)

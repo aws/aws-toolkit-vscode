@@ -139,7 +139,7 @@ class GumbyClient(private val project: Project) {
      * Adapted from [CodeWhispererCodeScanSession]
      */
     fun uploadArtifactToS3(url: String, fileToUpload: File, checksum: String, kmsArn: String, shouldStop: () -> Boolean) {
-        HttpRequests.put(url, APPLICATION_ZIP).userAgent(AwsClientManager.userAgent).tuner {
+        HttpRequests.put(url, APPLICATION_ZIP).userAgent(AwsClientManager.getUserAgent()).tuner {
             it.setRequestProperty(CONTENT_SHA256, checksum)
             if (kmsArn.isNotEmpty()) {
                 it.setRequestProperty(SERVER_SIDE_ENCRYPTION, AWS_KMS)
