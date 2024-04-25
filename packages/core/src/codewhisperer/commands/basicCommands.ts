@@ -471,7 +471,7 @@ export const registerToolkitApiCallback = Commands.declare(
  * - switchToAmazonQCommand
  * - switchToAmazonQSignInCommand
  */
-export async function _switchToAmazonQ(source: CodeWhispererSource, signIn: boolean) {
+async function switchToAmazonQ(source: CodeWhispererSource, signIn: boolean) {
     if (signIn) {
         await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', true)
         CommonAuthWebview.authSource = source
@@ -496,10 +496,10 @@ export const switchToAmazonQCommand = Commands.declare(
     { id: '_aws.amazonq.focusView', compositeKey: { 0: 'source' } },
     () =>
         (source: CodeWhispererSource, signIn: boolean = false) =>
-            _switchToAmazonQ(source, false)
+            switchToAmazonQ(source, false)
 )
 
 export const switchToAmazonQSignInCommand = Commands.declare(
     { id: '_aws.amazonq.signIn.focusView', compositeKey: { 0: 'source' } },
-    () => (source: CodeWhispererSource) => _switchToAmazonQ(source, true)
+    () => (source: CodeWhispererSource) => switchToAmazonQ(source, true)
 )
