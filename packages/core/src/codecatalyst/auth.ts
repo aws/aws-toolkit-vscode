@@ -371,17 +371,22 @@ export class CodeCatalystAuthenticationProvider {
         }
     }
 
-    private getState(): Record<string, ConnectionState> {
+    private getStates(): Record<string, ConnectionState> {
         return this.memento.get(this.mementoKey, {} as Record<string, ConnectionState>)
     }
 
     public getConnectionState(conn: SsoConnection): ConnectionState {
-        return this.getState()[conn.id]
+        return (
+            this.getStates()[conn.id] ?? {
+                onboarded: false,
+                scopeExpired: false,
+            }
+        )
     }
 
     private async setConnectionState(conn: SsoConnection, state: ConnectionState) {
         await this.memento.update(this.mementoKey, {
-            ...this.getState(),
+            ...this.getStates(),
             [conn.id]: state,
         })
     }

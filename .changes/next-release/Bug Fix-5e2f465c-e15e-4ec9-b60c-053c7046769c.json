@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "codecatalyst: fix heartbeat activity registration"
+}
