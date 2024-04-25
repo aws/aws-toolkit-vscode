@@ -1,7 +1,7 @@
 <!-- This Vue File is the login webview of AWS Toolkit and Amazon Q.-->
 <template>
     <div v-bind:class="[disabled ? 'disabled-form' : '']" class="auth-container" @click="handleDocumentClick">
-        <div class="logoIcon">
+        <div class="logoIcon bottomMargin">
             <!-- Icon -->
 
             <svg
@@ -71,7 +71,6 @@
                 />
             </svg>
         </div>
-        <div style="margin-bottom: 12px"></div>
         <template v-if="stage === 'START'">
             <button class="back-button" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
                 <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -83,8 +82,7 @@
             </button>
             <div class="auth-container-section">
                 <div class="existing-logins" v-if="existingLogins.length > 0">
-                    <div class="header">Connect with an existing account:</div>
-                    <div style="margin-bottom: 12px"></div>
+                    <div class="header bottomMargin">Connect with an existing account:</div>
                     <div v-for="(existingLogin, index) in existingLogins" :key="index">
                         <SelectableItem
                             @toggle="toggleItemSelection"
@@ -92,14 +90,12 @@
                             :itemId="LoginOption.EXISTING_LOGINS + index"
                             :itemText="existingLogin.text"
                             :itemTitle="existingLogin.title"
-                            class="selectable-item"
+                            class="selectable-item bottomMargin"
                         ></SelectableItem>
-                        <div style="margin-bottom: 12px"></div>
                     </div>
                     <div class="header">Or, choose a sign-in option:</div>
                 </div>
-                <div class="header" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
-                <div style="margin-bottom: 12px"></div>
+                <div class="header bottomMargin" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
@@ -107,9 +103,8 @@
                     :itemId="LoginOption.BUILDER_ID"
                     :itemText="'No AWS account required'"
                     :itemTitle="'Use For Free'"
-                    class="selectable-item"
+                    class="selectable-item bottomMargin"
                 ></SelectableItem>
-                <div v-if="app === 'AMAZONQ'" style="margin-bottom: 12px"></div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
@@ -117,7 +112,7 @@
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Sign in to AWS with single sign-on'"
                     :itemTitle="'Use Professional License'"
-                    class="selectable-item"
+                    class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
                     v-if="app === 'TOOLKIT'"
@@ -126,9 +121,8 @@
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Sign in to AWS with single sign-on'"
                     :itemTitle="'Workforce'"
-                    class="selectable-item"
+                    class="selectable-item bottomMargin"
                 ></SelectableItem>
-                <div v-if="app === 'TOOLKIT'" style="margin-bottom: 12px"></div>
                 <SelectableItem
                     v-if="app === 'TOOLKIT'"
                     @toggle="toggleItemSelection"
@@ -136,9 +130,8 @@
                     :itemId="LoginOption.IAM_CREDENTIAL"
                     :itemText="'Store keys for use with AWS CLI tools'"
                     :itemTitle="'IAM Credentials'"
-                    class="selectable-item"
+                    class="selectable-item bottomMargin"
                 ></SelectableItem>
-                <div style="margin-bottom: 12px"></div>
                 <button
                     class="continue-button"
                     :disabled="selectedLoginOption === 0"
@@ -149,7 +142,7 @@
             </div>
         </template>
         <template v-if="stage === 'SSO_FORM'">
-            <button class="back-button" @click="handleBackButtonClick">
+            <button class="back-button bottomMargin" @click="handleBackButtonClick">
                 <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                         d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
@@ -157,7 +150,6 @@
                     />
                 </svg>
             </button>
-            <div style="margin-bottom: 12px"></div>
             <div class="auth-container-section">
                 <div class="header">Sign in with SSO:</div>
                 <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
@@ -167,8 +159,7 @@
                         <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
                     </div>
                 </div>
-                <div style="margin-bottom: 12px"></div>
-                <div class="title">Start URL</div>
+                <div class="title topMargin">Start URL</div>
                 <div class="hint">URL for your organization, provided by an admin or help desk</div>
                 <input
                     class="urlInput"
@@ -179,9 +170,7 @@
                     v-model="startUrl"
                 />
                 <h4 class="start-url-error">{{ startUrlError }}</h4>
-
-                <div style="margin-bottom: 12px"></div>
-                <div class="title">Region</div>
+                <div class="title topMargin">Region</div>
                 <div class="hint">AWS Region that hosts identity directory</div>
                 <select
                     class="regionSelect"
@@ -194,9 +183,8 @@
                         {{ `${region.name} (${region.id})` }}
                     </option>
                 </select>
-                <div style="margin-bottom: 12px"></div>
                 <button
-                    class="continue-button"
+                    class="continue-button topMargin"
                     :disabled="startUrl.length == 0 || startUrlError.length > 0 || !selectedRegion"
                     v-on:click="handleContinueClick()"
                 >
@@ -207,9 +195,10 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header">Connecting to IAM...</div>
-                <div v-else class="header">Authenticating in browser...</div>
-                <div style="margin-bottom: 12px"></div>
+                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header bottomMargin">
+                    Connecting to IAM...
+                </div>
+                <div v-else class="header bottomMargin">Authenticating in browser...</div>
                 <button
                     class="continue-button"
                     v-on:click="handleCancelButtom()"
@@ -222,7 +211,7 @@
 
         <template v-if="stage === 'CONNECTED'"> </template>
         <template v-if="stage === 'AWS_PROFILE'">
-            <button class="back-button" @click="handleBackButtonClick">
+            <button class="back-button bottomMargin" @click="handleBackButtonClick">
                 <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                         d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
@@ -230,20 +219,21 @@
                     />
                 </svg>
             </button>
-            <div style="margin-bottom: 12px"></div>
             <div class="header">IAM Credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
-            <div style="margin-bottom: 12px"></div>
-            <div class="title">Profile Name</div>
+            <div class="title topMargin">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
-            <input class="iamInput" type="text" id="profileName" name="profileName" v-model="profileName" />
-            <div style="margin-bottom: 12px"></div>
+            <input
+                class="iamInput bottomMargin"
+                type="text"
+                id="profileName"
+                name="profileName"
+                v-model="profileName"
+            />
             <div class="title">Access Key</div>
-            <input class="iamInput" type="text" id="accessKey" name="accessKey" v-model="accessKey" />
-            <div style="margin-bottom: 12px"></div>
+            <input class="iamInput bottomMargin" type="text" id="accessKey" name="accessKey" v-model="accessKey" />
             <div class="title">Secret Key</div>
-            <input class="iamInput" type="text" id="secretKey" name="secretKey" v-model="secretKey" />
-            <div style="margin-bottom: 12px"></div>
+            <input class="iamInput bottomMargin" type="text" id="secretKey" name="secretKey" v-model="secretKey" />
             <button
                 class="continue-button"
                 :disabled="profileName.length <= 0 || accessKey.length <= 0 || secretKey.length <= 0"
@@ -664,5 +654,11 @@ body.vscode-dark #logo-text {
 }
 body.vscode-light #logo-text {
     fill: #232f3e; /* squid ink */
+}
+.bottomMargin {
+    margin-bottom: 12px;
+}
+.topMargin {
+    margin-top: 12px;
 }
 </style>
