@@ -19,6 +19,7 @@ import {
     compileProject,
     finishHumanInTheLoop,
     getValidCandidateProjects,
+    openHilPomFile,
     processTransformFormInput,
     shortCircuitHiL,
     startTransformByQ,
@@ -260,6 +261,9 @@ export class GumbyController {
                 break
             case ButtonActions.CANCEL_DEPENDENCY_FORM:
                 await this.continueJobWithoutHIL({ tabID: message.tabId })
+                break
+            case ButtonActions.OPEN_FILE:
+                await openHilPomFile()
                 break
         }
     }

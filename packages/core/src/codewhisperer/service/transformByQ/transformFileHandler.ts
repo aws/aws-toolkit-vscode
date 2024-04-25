@@ -79,17 +79,27 @@ export interface IHighlightPomIssueParams {
     latestMajorVersion: string
 }
 
-export async function highlightPomIssueInProject(pomFileVirtualFileReference: vscode.Uri, currentVersion: string) {
-    const collection = vscode.languages.createDiagnosticCollection(pomFileVirtualFileReference.path)
+export async function highlightPomIssueInProject(
+    pomFileVirtualFileReference: vscode.Uri,
+    collection: vscode.DiagnosticCollection,
+    currentVersion: string
+) {
     const diagnostics = vscode.languages.getDiagnostics(pomFileVirtualFileReference)
 
     // Open the editor and set this pom to activeTextEditor
-    await vscode.window.showTextDocument(pomFileVirtualFileReference)
+    await vscode.window.showTextDocument(pomFileVirtualFileReference, {
+        preview: true,
+    })
 
     // Find line number for "latestVersion" or set to first line in file
-    const highlightLineNumber = findLineNumber(pomFileVirtualFileReference, '<dependency>') || 1
-    await setAnnotationObjectDetails(highlightLineNumber)
-    await addDiagnosticOverview(collection, diagnostics, highlightLineNumber)
+    const highlightLineNumberDependency = findLineNumber(pomFileVirtualFileReference, '<dependency>') || 1
+    const highlightLineNumberVersion = findLineNumber(pomFileVirtualFileReference, currentVersion)
+    if (highlightLineNumberDependency) {
+        await setAnnotationObjectDetails(highlightLineNumberDependency)
+    }
+    if (highlightLineNumberVersion) {
+        await addDiagnosticOverview(collection, diagnostics, highlightLineNumberVersion)
+    }
 }
 
 async function addDiagnosticOverview(
@@ -100,41 +110,30 @@ async function addDiagnosticOverview(
     // Get the diff editor
     const documentUri = vscode.window.activeTextEditor?.document?.uri
     if (documentUri) {
-        collection.clear() // clear the collection
-        diagnostics = []
-        diagnostics.push({
-            code: 'code1',
-            message: 'There is an issue with your pom 1p related dependency',
-            range: new vscode.Range(new vscode.Position(lineNumber - 1, 0), new vscode.Position(lineNumber - 1, 50)),
-            severity: vscode.DiagnosticSeverity.Error,
-            source: 'This is a test diagnostic',
-            relatedInformation: [
-                new vscode.DiagnosticRelatedInformation(
-                    new vscode.Location(
-                        documentUri,
-                        new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 50))
-                    ),
-                    'This is the first instance we found'
+        collection.clear()
+        diagnostics = [
+            {
+                code: 'Remote transformation',
+                message: 'Amazon Q experienced an issue with upgrading this dependency version',
+                range: new vscode.Range(
+                    new vscode.Position(lineNumber - 1, 0),
+                    new vscode.Position(lineNumber - 1, 50)
                 ),
-            ],
-            tags: [1, 2],
-        })
-
+                severity: vscode.DiagnosticSeverity.Error,
+                source: 'Amazon Q',
+                relatedInformation: [
+                    new vscode.DiagnosticRelatedInformation(
+                        new vscode.Location(
+                            documentUri,
+                            new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 50))
+                        ),
+                        'Use Amazon Q chat to upgrade the version of this dependency'
+                    ),
+                ],
+                tags: [1, 2],
+            },
+        ]
         collection.set(documentUri, diagnostics)
-        // Get first diagnostic to display
-        const diffEditor = vscode.window.activeTextEditor
-        const diffEditorDocument = diffEditor?.document
-        if (diffEditor && diffEditorDocument) {
-            const firstDiagnostic = collection.get(documentUri)?.[0]
-            if (firstDiagnostic) {
-                // Convert diagnostic to vscode Location
-                new vscode.Location(diffEditor.document.uri, firstDiagnostic.range)
-
-                // Reveal and select first diagnostic
-                diffEditor.selection = new vscode.Selection(firstDiagnostic.range.start, firstDiagnostic.range.end)
-                diffEditor.revealRange(firstDiagnostic.range)
-            }
-        }
     }
 }
 
@@ -166,11 +165,9 @@ async function setAnnotationObjectDetails(lineNumber: number = 0) {
     diffEditor?.setDecorations(highlightDecorationType, [
         {
             range: new vscode.Range(lineNumber, 0, lineNumber, 50),
-            hoverMessage: `
-            ### This dependency version needs to be updated
-            
-            Use the Q Chat to select a valid version upgrade
-        `,
+            hoverMessage: `### This dependency version needs to be updated
+            Use Amazon Q Chat to select a valid version upgrade to continue the transformation process.
+            `,
         },
     ])
 }

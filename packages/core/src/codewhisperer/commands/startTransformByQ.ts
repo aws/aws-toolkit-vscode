@@ -279,6 +279,8 @@ const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
 const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
 const tmpDownloadsDir = path.join(osTmpDir, tmpDownloadsFolderName)
 const pomReplacementDelimiter = '*****'
+const diagnosticCollection = vscode.languages.createDiagnosticCollection('hilFileDiagnostics')
+let newPomFileVirtualFileReference: vscode.Uri
 
 export async function initiateHumanInTheLoopPrompt(jobId: string) {
     const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
@@ -308,7 +310,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
 
         // 3) We need to replace version in pom.xml
-        const newPomFileVirtualFileReference = await createPomCopy(
+        newPomFileVirtualFileReference = await createPomCopy(
             tmpDependencyListDir,
             pomFileVirtualFileReference,
             'pom.xml'
@@ -348,8 +350,6 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             throw error
         }
 
-        await highlightPomIssueInProject(newPomFileVirtualFileReference, manifestFileValues.sourcePomVersion)
-
         const dependencies = new DependencyVersions(
             latestVersion,
             majorVersions,
@@ -380,6 +380,14 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         await sleep(5000)
     }
     return false
+}
+
+export async function openHilPomFile() {
+    await highlightPomIssueInProject(
+        newPomFileVirtualFileReference,
+        diagnosticCollection,
+        manifestFileValues.sourcePomVersion
+    )
 }
 
 export async function shortCircuitHiL(jobID: string) {
