@@ -189,7 +189,7 @@ export const referenceLogText = (
     `with code ${code} provided with reference under ${license} from repository ${repository}. Added to ${filePath} ${lineInfo}.`
 
 export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in
-    <a href="#" onclick="openSettings();return false;">Amazon Q Settings</a>`
+    <a href="#" onclick="openSettings();return false;">Amazon Q: Settings</a>`
 
 export const referenceLogPromptTextEnterpriseSSO =
     'Your organization controls whether suggestions include code with references. To update these settings, please contact your admin.'
