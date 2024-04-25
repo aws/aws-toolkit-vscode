@@ -72,7 +72,7 @@
             </svg>
         </div>
         <template v-if="stage === 'START'">
-            <button class="back-button" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
+            <button class="back-button bottomMargin" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
                 <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                         d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
@@ -151,7 +151,7 @@
                 </svg>
             </button>
             <div class="auth-container-section">
-                <div class="header">Sign in with SSO:</div>
+                <div class="header">Sign in with AWS IAM Identity Center:</div>
                 <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
                     <div style="margin-bottom: 4px"></div>
                     <div class="h4">
@@ -594,53 +594,58 @@ export default defineComponent({
 .urlInput {
     background-color: var(--vscode-input-background);
     width: 244px;
-    height: 15px;
-    color: white;
+    height: 28px;
+    box-sizing: border-box;
     border: none;
     padding-left: 8px;
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
+    font-size: 13px;
+    font-weight: 400;
 }
-.vscode-light .urlInput {
+body.vscode-light .urlInput {
     color: black;
 }
-.vscode-dark .urlInput {
-    color: white;
+body.vscode-dark .urlInput {
+    color: #cccccc;
 }
 .iamInput {
     background-color: var(--vscode-input-background);
     width: 244px;
-    height: 15px;
-    color: white;
+    height: 28px;
+    box-sizing: border-box;
     border: none;
     padding-left: 8px;
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
+    font-size: 13px;
+    font-weight: 400;
 }
-.vscode-light .iamInput {
+body.vscode-light .iamInput {
     color: black;
 }
-.vscode-dark .iamInput {
-    color: white;
+body.vscode-dark .iamInput {
+    color: #cccccc;
 }
 .regionSelect {
     background-color: var(--vscode-input-background);
     width: 244px;
-    color: white;
     margin-bottom: 5px;
     margin-top: 2px;
     padding-left: 8px;
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
+    font-size: 13px;
+    font-weight: 400;
 }
-.vscode-light .regionSelect {
+body.vscode-light .regionSelect {
     color: black;
 }
-.vscode-dark .regionSelect {
-    color: white;
+body.vscode-dark .regionSelect {
+    color: #cccccc;
 }
 .start-url-error {
     color: #ff0000;
