@@ -385,9 +385,6 @@ export const applySecurityFix = Commands.declare(
 export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.amazonq.signout', compositeKey: { 1: 'source' } },
     (auth: AuthUtil) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        if (_ !== placeholder) {
-            source = 'ellipsesMenu'
-        }
         await auth.secondaryAuth.deleteConnection()
         return focusAmazonQPanel.execute(placeholder, source)
     }
