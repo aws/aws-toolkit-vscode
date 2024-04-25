@@ -1,0 +1,10 @@
+body,
+html {
+    background-color: var(--mynah-color-bg);
+    color: var(--mynah-color-text-default);
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}

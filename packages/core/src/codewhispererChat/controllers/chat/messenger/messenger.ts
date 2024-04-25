@@ -30,6 +30,8 @@ import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/mo
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
+import { marked } from 'marked'
+import { JSDOM } from 'jsdom'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -88,6 +90,24 @@ export class Messenger {
             )
         )
     }
+
+    public async countTotalNumberOfCodeBlocks(message: string): Promise<number> {
+        if (message === undefined) {
+            return 0
+        }
+
+        // // To Convert Markdown text to HTML using marked library
+        const html = await marked(message)
+
+        const dom = new JSDOM(html)
+        const document = dom.window.document
+
+        // Search for <pre> elements containing <code> elements
+        const codeBlocks = document.querySelectorAll('pre > code')
+
+        return codeBlocks.length
+    }
+
     public async sendAIResponse(
         response: GenerateAssistantResponseCommandOutput,
         session: ChatSession,
@@ -214,7 +234,7 @@ export class Messenger {
                 relatedSuggestions = []
                 this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
             })
-            .finally(() => {
+            .finally(async () => {
                 if (relatedSuggestions.length !== 0) {
                     this.dispatcher.sendChatMessage(
                         new ChatMessage(
@@ -264,6 +284,7 @@ export class Messenger {
                     messageID,
                     responseCode,
                     codeReferenceCount: codeReference.length,
+                    totalNumberOfCodeBlocksInResponse: await this.countTotalNumberOfCodeBlocks(message),
                 })
             })
     }
