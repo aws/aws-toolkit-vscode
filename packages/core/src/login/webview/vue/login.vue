@@ -258,7 +258,8 @@ const client = WebviewClientFactory.create<CommonAuthWebview>()
 type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
 
 function validateSsoUrlFormat(url: string) {
-    const regex = /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-.*)$/
+    const regex =
+        /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-[\da-zA-Z]{16})$/
     return regex.test(url)
 }
 
