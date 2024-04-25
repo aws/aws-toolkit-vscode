@@ -5,15 +5,14 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { Commands, placeholder } from '../../shared/vscode/commands2'
+import { Commands } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
-import { installAmazonQExtension, reconnect } from '../../codewhisperer/commands/basicCommands'
+import { installAmazonQExtension } from '../../codewhisperer/commands/basicCommands'
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { globals } from '../../shared'
 import { amazonQDismissedKey } from '../../codewhisperer/models/constants'
-import { _switchToAmazonQ } from './commonNodes'
 import { ExtStartUpSources, telemetry } from '../../shared/telemetry'
 import { ExtensionUse } from '../../auth/utils'
 
@@ -64,16 +63,3 @@ export function createDismissNode() {
         iconPath: getIcon('vscode-close'),
     })
 }
-
-/*
- * This node is meant to be displayed when the user's active connection is missing scopes required for Amazon Q.
- * For example, users with active CodeWhisperer connections who updates to a toolkit version with Amazon Q (Preview)
- * will be missing these scopes.
- */
-export const enableAmazonQNode = () =>
-    // Simply trigger re-auth to obtain the proper scopes- same functionality as if requested in the chat window.
-    reconnect.build(placeholder, cwTreeNodeSource, true).asTreeNode({
-        label: localize('AWS.amazonq.enable', 'Enable'),
-        iconPath: getIcon('vscode-debug-start'),
-        contextValue: 'awsEnableAmazonQ',
-    })

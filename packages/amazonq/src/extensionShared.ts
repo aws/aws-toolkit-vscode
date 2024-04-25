@@ -11,7 +11,6 @@ import {
     activate as activateCodeWhisperer,
     shutdown as codewhispererShutdown,
     amazonQDismissedKey,
-    refreshToolkitQState,
     AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import {
@@ -33,7 +32,7 @@ import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { CommonAuthViewProvider, CommonAuthWebview } from 'aws-core-vscode/login'
-import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
+import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
 
@@ -113,19 +112,8 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
         registerSubmitFeedback(context, 'Amazon Q', contextPrefix)
     )
 
-    // If the toolkit extension is active, we can let the toolkit extension know
-    // that we are installed and can report our connection status.
-    if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
-        /**
-         * In case the user has dismissed the Q tree node (prior to install), we will want to show it again
-         * once we realize that we have to publish Q connection state.
-         * Note: We do not update the memento back to false, which would show the tree again if Q is uninstalled.
-         * The user is already aware of Q and has tried it so no need to show it again.
-         */
-        await vscode.commands.executeCommand('setContext', amazonQDismissedKey, false)
-
-        await refreshToolkitQState.execute()
-    }
+    // Hide the Amazon Q tree in toolkit explorer
+    await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
 
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')

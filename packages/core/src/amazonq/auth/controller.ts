@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { reconnect } from '../../codewhisperer/commands/basicCommands'
+import { reconnect, switchToAmazonQSignInCommand } from '../../codewhisperer/commands/basicCommands'
 import { amazonQChatSource } from '../../codewhisperer/commands/types'
 import { recordTelemetryChatRunCommand } from '../../codewhispererChat/controllers/chat/telemetryHelper'
 import { placeholder } from '../../shared/vscode/commands2'
-import { switchToAmazonQSignInCommand } from '../explorer/commonNodes'
 import { AuthFollowUpType } from './model'
 
 export class AuthController {
