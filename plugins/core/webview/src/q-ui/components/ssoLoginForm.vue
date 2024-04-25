@@ -26,6 +26,9 @@
                 spellcheck="false"
             />
         </div>
+        <div>
+            <div class="hint invalid-start-url" v-if="!isInputValid && this.startUrl !== ''">Invalid Start URL format</div>
+        </div>
         <br/>
         <div>
             <div class="title no-bold">Region</div>
@@ -35,7 +38,7 @@
                 id="regions"
                 name="regions"
                 v-model="selectedRegion"
-                @change="handleUrlInput"
+                @change="handleRegionInput"
                 tabindex="0"
             >
                 <option v-for="region in regions" :key="region.id" :value="region.id">
@@ -63,6 +66,12 @@ export default defineComponent({
     name: "ssoForm",
     props: {
         app: String
+    },
+    data() {
+        return {
+            startUrlRegex: /^https:\/\/(([\w-]+(?:\.gamma)?\.awsapps\.com\/start(?:-beta|-alpha)?[\/#]?)|(start\.(?:us-gov-home|us-gov-east-1\.us-gov-home|us-gov-west-1\.us-gov-home)\.awsapps\.com|start\.(?:home|cn-north-1\.home|cn-northwest-1\.home)\.awsapps\.cn)\/directory\/[\w-]+[\/#]?)$/,
+            issueUrlRegex: /^https:\/\/([\w-]+\.)?identitycenter\.(amazonaws\.com|amazonaws\.com\.cn|us-gov\.amazonaws\.com)\/[\w\/-]+[\/#]?$/
+        }
     },
     computed: {
         regions(): Region[] {
@@ -93,22 +102,43 @@ export default defineComponent({
                 })
             }
         },
-        isInputValid:  {
+        isStartUrlValid: {
             get() {
-                return this.startUrl != "" && this.selectedRegion != ""
+                return this.startUrlRegex.test(this.startUrl) || this.issueUrlRegex.test(this.startUrl)
+            },
+            set() {}
+        },
+        isRegionValid: {
+            get() {
+                return this.selectedRegion != "";
+            },
+            set() {}
+        },
+        isInputValid: {
+            get() {
+                return this.isStartUrlValid && this.isRegionValid
             },
             set() {}
         }
     },
     methods: {
         handleUrlInput() {
-            this.isInputValid = this.startUrl != "" && this.selectedRegion != "";
+            this.isStartUrlValid = this.startUrlRegex.test(this.startUrl) || this.issueUrlRegex.test(this.startUrl)
+        },
+        handleRegionInput() {
+            this.isRegionValid = this.selectedRegion != "";
         },
         async handleContinueClick() {
             if (!this.isInputValid) {
                 return
             }
-            this.$emit('login', new IdC(this.startUrl, this.selectedRegion))
+
+            // To make our lives easier with telemetry processing
+            let processedUrl = this.startUrl;
+            if (processedUrl.endsWith('/') || processedUrl.endsWith('#')) {
+                processedUrl = processedUrl.slice(0, -1);
+            }
+            this.$emit('login', new IdC(processedUrl, this.selectedRegion))
         },
         handleCodeCatalystSignin() {
             this.$emit('login', new BuilderId())
@@ -126,6 +156,11 @@ export default defineComponent({
     margin-bottom: 5px;
     margin-top: 5px;
     font-size: 12px;
+}
+
+.invalid-start-url {
+    color: red !important;
+    margin-left: 3px;
 }
 
 /* Theme specific styles */

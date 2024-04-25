@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.explorer.webview
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -40,7 +41,7 @@ import java.util.function.Function
 import javax.swing.JButton
 import javax.swing.JComponent
 
-class ToolkitWebviewPanel(val project: Project) {
+class ToolkitWebviewPanel(val project: Project) : Disposable {
     private val webviewContainer = Wrapper()
     var browser: ToolkitWebviewBrowser? = null
         private set
@@ -75,7 +76,7 @@ class ToolkitWebviewPanel(val project: Project) {
             webviewContainer.add(JBTextArea("JCEF not supported"))
             browser = null
         } else {
-            browser = ToolkitWebviewBrowser(project).also {
+            browser = ToolkitWebviewBrowser(project, this).also {
                 webviewContainer.add(it.component())
             }
         }
@@ -84,14 +85,20 @@ class ToolkitWebviewPanel(val project: Project) {
     companion object {
         fun getInstance(project: Project?) = project?.service<ToolkitWebviewPanel>() ?: error("")
     }
+
+    override fun dispose() {}
 }
 
 // TODO: STILL WIP thus duplicate code / pending move to plugins/toolkit
-class ToolkitWebviewBrowser(val project: Project) : LoginBrowser(project, ToolkitWebviewBrowser.DOMAIN, ToolkitWebviewBrowser.WEB_SCRIPT_URI) {
+class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: Disposable) : LoginBrowser(
+    project,
+    ToolkitWebviewBrowser.DOMAIN,
+    ToolkitWebviewBrowser.WEB_SCRIPT_URI
+) {
     // TODO: confirm if we need such configuration or the default is fine
     override val jcefBrowser: JBCefBrowserBase by lazy {
         val client = JBCefApp.getInstance().createClient()
-        Disposer.register(project, client)
+        Disposer.register(parentDisposable, client)
         JBCefBrowserBuilder()
             .setClient(client)
             .setOffScreenRendering(true)

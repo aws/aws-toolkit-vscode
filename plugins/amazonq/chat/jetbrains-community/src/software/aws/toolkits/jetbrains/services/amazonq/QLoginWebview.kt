@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.amazonq
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.components.Service
@@ -44,7 +45,7 @@ import javax.swing.JButton
 import javax.swing.JComponent
 
 @Service(Service.Level.PROJECT)
-class QWebviewPanel private constructor(val project: Project) {
+class QWebviewPanel private constructor(val project: Project) : Disposable {
     private val webviewContainer = Wrapper()
     var browser: QWebviewBrowser? = null
         private set
@@ -79,7 +80,7 @@ class QWebviewPanel private constructor(val project: Project) {
             webviewContainer.add(JBTextArea("JCEF not supported"))
             browser = null
         } else {
-            browser = QWebviewBrowser(project).also {
+            browser = QWebviewBrowser(project, this).also {
                 webviewContainer.add(it.component())
             }
         }
@@ -88,11 +89,18 @@ class QWebviewPanel private constructor(val project: Project) {
     companion object {
         fun getInstance(project: Project) = project.service<QWebviewPanel>()
     }
+
+    override fun dispose() {
+    }
 }
 
-class QWebviewBrowser(val project: Project) : LoginBrowser(project, QWebviewBrowser.DOMAIN, QWebviewBrowser.WEB_SCRIPT_URI) {
+class QWebviewBrowser(val project: Project, private val parentDisposable: Disposable) : LoginBrowser(
+    project,
+    QWebviewBrowser.DOMAIN,
+    QWebviewBrowser.WEB_SCRIPT_URI
+) {
     // TODO: confirm if we need such configuration or the default is fine
-    override val jcefBrowser = createBrowser(project)
+    override val jcefBrowser = createBrowser(parentDisposable)
     override val query = JBCefJSQuery.create(jcefBrowser)
     private val objectMapper = jacksonObjectMapper()
 

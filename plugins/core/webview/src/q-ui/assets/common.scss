@@ -6,8 +6,6 @@ input, select {
     height: 37px;
     border-radius: 4px;
     width: 100%;
-    margin-left: 3px;
-    margin-right: 3px;
 }
 
 input {
@@ -94,7 +92,7 @@ body.jb-light {
     }
 }
 
-button, .item-container {
+button:not([disabled]), .item-container {
     cursor: pointer;
 }
 
