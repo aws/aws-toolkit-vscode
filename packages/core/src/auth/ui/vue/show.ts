@@ -35,7 +35,6 @@ import {
     hasSso,
     BuilderIdKind,
     findSsoConnections,
-    AuthSource,
     authCommands,
 } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
@@ -45,7 +44,7 @@ import { awsIdSignIn, showCodeWhispererConnectionPrompt } from '../../../codewhi
 import { AuthError, ServiceItemId, isServiceItemId, authFormTelemetryMapping, userCancelled } from './types'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
-import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
+import { CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
 import { Commands, RegisteredCommand, VsCodeCommandArg, placeholder } from '../../../shared/vscode/commands2'
@@ -54,7 +53,14 @@ import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { ExtStartUpSources } from '../../../shared/telemetry'
+import { CommonAuthWebview } from '../../../login/webview/vue/backend'
+import { AuthSource, AuthSources } from '../../../login/webview/util'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
+
+// This file has some used functions, but most of it should be removed soon. We have a new
+// auth page located at src/login/
+// Until we can clean this up, we will just disable this type check.
+type FeatureId = any
 
 export class AuthWebview extends VueWebview {
     public static readonly sourcePath: string = 'src/auth/ui/vue/index.js'
@@ -557,13 +563,13 @@ export class AuthWebview extends VueWebview {
         telemetry.auth_addConnection.emit({
             source: this.#authSource ?? '',
             credentialSourceId: authType,
-            featureId: featureType,
+            // featureId: featureType,
             result: args.reason === userCancelled ? 'Cancelled' : 'Failed',
             reason: args.reason,
-            invalidInputFields: args.invalidInputFields
-                ? buildCommaDelimitedString(args.invalidInputFields)
-                : undefined,
-            isAggregated: false,
+            // invalidInputFields: args.invalidInputFields
+            //     ? buildCommaDelimitedString(args.invalidInputFields)
+            //     : undefined,
+            // isAggregated: false,
         })
 
         if (
@@ -643,12 +649,12 @@ export class AuthWebview extends VueWebview {
         telemetry.auth_addConnection.emit({
             source: this.#authSource ?? '',
             credentialSourceId: args.authType,
-            featureId: args.featureType,
+            // featureId: args.featureType,
             result: args.result,
             reason: args.reason,
-            invalidInputFields: args.invalidFields ? buildCommaDelimitedString(args.invalidFields) : undefined,
-            attempts: args.attempts,
-            isAggregated: true,
+            // invalidInputFields: args.invalidFields ? buildCommaDelimitedString(args.invalidFields) : undefined,
+            // attempts: args.attempts,
+            // isAggregated: true,
         })
 
         this.#totalAuthAttempts += args.attempts
@@ -721,7 +727,7 @@ export function registerCommands(context: vscode.ExtensionContext, prefix: strin
         { id: `aws.${prefix}.auth.manageConnections`, compositeKey: { 1: 'source' } },
         async (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
             if (_ !== placeholder) {
-                source = 'vscodeComponent'
+                source = AuthSources.vscodeComponent
             }
 
             // The auth webview page does not make sense to use in C9,
@@ -740,6 +746,7 @@ export function registerCommands(context: vscode.ExtensionContext, prefix: strin
 
             // TODO: hack
             if (prefix === 'toolkit') {
+                CommonAuthWebview.authSource = source
                 await vscode.commands.executeCommand('aws.explorer.setLoginService', serviceToShow)
                 await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
                 await vscode.commands.executeCommand('aws.toolkit.AmazonCommonAuth.focus')

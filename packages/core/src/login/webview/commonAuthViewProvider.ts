@@ -42,6 +42,7 @@ import { AmazonQLoginWebview } from './vue/amazonq/backend_amazonq'
 import { ToolkitLoginWebview } from './vue/toolkit/backend_toolkit'
 import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { AuthSources } from './util'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
     public readonly viewType: string
@@ -77,6 +78,13 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
         context: WebviewViewResolveContext,
         _token: CancellationToken
     ) {
+        // Our callback won't fire on the first view.
+        if (webviewView.visible) {
+            telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
+        }
+
+        // This will fire whenever the user opens or closes the login page from 'somewhere else'
+        // i.e. NOT when switching from/to the chat window, which uses the same view area.
         webviewView.onDidChangeVisibility(async () => {
             this.onDidChangeVisibility?.fire(webviewView.visible)
             // force webview to reload
@@ -86,6 +94,14 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
                 telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
             } else {
                 telemetry.auth_signInPageClosed.emit({ result: 'Succeeded', passive: true })
+
+                // Count leaving the webview as a user cancellation.
+                this.webView!.server.emitCancelledMetric()
+
+                // Set after emitting. If users use side bar to return to login, this source is correct
+                // for the next iteration. Otherwise, other sources will be set accordingly by whatever
+                // shows the login page.
+                this.webView!.server.authSource = AuthSources.vscodeComponent
             }
         })
 

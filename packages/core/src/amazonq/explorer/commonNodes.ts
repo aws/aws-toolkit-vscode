@@ -11,6 +11,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { CodeWhispererSource } from '../../codewhisperer/commands/types'
+import { CommonAuthWebview } from '../../login/webview/vue/backend'
 
 const localize = nls.loadMessageBundle()
 
@@ -20,9 +21,10 @@ const localize = nls.loadMessageBundle()
  * - switchToAmazonQCommand
  * - switchToAmazonQSignInCommand
  */
-export async function _switchToAmazonQ(signIn: boolean) {
+export async function _switchToAmazonQ(source: CodeWhispererSource, signIn: boolean) {
     if (signIn) {
         await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', true)
+        CommonAuthWebview.authSource = source
         telemetry.ui_click.emit({
             elementId: 'amazonq_switchToQSignIn',
             passive: false,
@@ -44,12 +46,12 @@ export const switchToAmazonQCommand = Commands.declare(
     { id: '_aws.amazonq.focusView', compositeKey: { 0: 'source' } },
     () =>
         (source: CodeWhispererSource, signIn: boolean = false) =>
-            _switchToAmazonQ(false)
+            _switchToAmazonQ(source, false)
 )
 
 export const switchToAmazonQSignInCommand = Commands.declare(
     { id: '_aws.amazonq.signIn.focusView', compositeKey: { 0: 'source' } },
-    () => (source: CodeWhispererSource) => _switchToAmazonQ(true)
+    () => (source: CodeWhispererSource) => _switchToAmazonQ(source, true)
 )
 
 /**

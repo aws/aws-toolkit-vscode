@@ -3,9 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CredentialSourceId, FeatureId } from '../../../shared/telemetry/telemetry.gen'
+import { CredentialSourceId } from '../../../shared/telemetry/telemetry.gen'
 import { AuthFormId } from './authForms/types'
 import { AuthAddConnection } from '../../../shared/telemetry/telemetry.gen'
+
+// This file may have some used functions, but most of it should be removed soon. We have a new
+// auth page located at src/login/
+// Until we can clean this up, we will just disable this type check.
+type FeatureId = any
 
 export type AuthError = { id: string; text: string }
 export type ServiceItemId = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'

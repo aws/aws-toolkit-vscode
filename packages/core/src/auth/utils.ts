@@ -44,13 +44,14 @@ import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { getLogger } from '../shared/logger'
 import { isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
-import { cwQuickPickSource, cwTreeNodeSource, amazonQChatSource } from '../codewhisperer/commands/types'
 import { authHelpUrl } from '../shared/constants'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { extensionVersion } from '../shared/vscode/env'
 import { ExtStartUpSources } from '../shared/telemetry'
+import { CommonAuthWebview } from '../login/webview/vue/backend'
+import { AuthSource } from '../login/webview/util'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 let showConnectionsPageCommand: string | undefined
@@ -473,6 +474,9 @@ export class AuthNode implements TreeNode<Auth> {
         this.resource
             .tryAutoConnect()
             .then(() => {
+                CommonAuthWebview.authSource = ExtensionUse.instance.isFirstUse()
+                    ? ExtStartUpSources.firstStartUp
+                    : ExtStartUpSources.reload
                 void vscode.commands.executeCommand(
                     'setContext',
                     'aws.explorer.showAuthView',
@@ -690,24 +694,6 @@ export type AuthSimpleId =
     | 'identityCenterCodeWhisperer'
     | 'identityCenterCodeCatalyst'
     | 'identityCenterExplorer'
-
-/**
- * Different places the Add Connection command could be executed from.
- *
- * Useful for telemetry.
- */
-export const AuthSources = {
-    addConnectionQuickPick: 'addConnectionQuickPick',
-    firstStartup: ExtStartUpSources.firstStartUp,
-    codecatalystDeveloperTools: 'codecatalystDeveloperTools',
-    vscodeComponent: vscodeComponent,
-    cwQuickPick: cwQuickPickSource,
-    cwTreeNode: cwTreeNodeSource,
-    amazonQChat: amazonQChatSource,
-    authNode: 'authNode',
-} as const
-
-export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]
 
 type AuthCommands = {
     switchConnections: RegisteredCommand<(auth: Auth | TreeNode | unknown) => Promise<void>>

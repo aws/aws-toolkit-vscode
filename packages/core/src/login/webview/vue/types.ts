@@ -39,3 +39,22 @@ export enum LoginOption {
     IAM_CREDENTIAL,
     EXISTING_LOGINS,
 }
+
+/**
+ * 'elementId' for auth telemetry
+ */
+export type AuthUiClick =
+    | 'auth_backButton'
+    | 'auth_cancelButton'
+    | 'auth_continueButton'
+    | 'auth_idcOption'
+    | 'auth_builderIdOption'
+    | 'auth_credentialsOption'
+    | 'auth_codecatalystOption'
+    | 'auth_existingAuthOption'
+    | 'auth_regionSelection'
+    | 'auth_codeCatalystSignIn'
+    | 'auth_toolkitCloseButton'
+    | 'amazonq_switchToQSignIn'
+
+export const userCancelled = 'userCancelled'

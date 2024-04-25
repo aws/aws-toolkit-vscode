@@ -36,6 +36,7 @@ import { CommonAuthViewProvider } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
+import { CommonAuthWebview } from '../../core/dist/src/login/webview/vue/backend'
 
 export async function activateShared(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
@@ -134,6 +135,7 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
 
     if (AuthUtils.ExtensionUse.instance.isFirstUse()) {
+        CommonAuthWebview.authSource = ExtStartUpSources.firstStartUp
         await vscode.commands.executeCommand('workbench.view.extension.amazonq')
     }
 

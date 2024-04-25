@@ -29,7 +29,7 @@ import { applyPatch } from 'diff'
 import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
 import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
-import { CodeWhispererSource, cwSignOut } from './types'
+import { CodeWhispererSource } from './types'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
@@ -186,6 +186,17 @@ export const connectWithCustomization = Commands.declare(
             } else {
                 await getStartUrl()
             }
+
+            // This shortcut is unusual, and currently would only be used if another extension
+            // triggered a connection to Amazon Q. We should still capture and emit the event.
+            telemetry.auth_addConnection.emit({
+                source,
+                isReAuth: false,
+                credentialStartUrl: startUrl,
+                region,
+                authEnabledFeatures: 'codewhisperer',
+                credentialSourceId: 'iamIdentityCenter',
+            })
 
             // No customization match information given, exit early.
             if (!customizationArn && !customizationNamePrefix) {
@@ -378,7 +389,7 @@ export const signoutCodeWhisperer = Commands.declare(
             source = 'ellipsesMenu'
         }
         await auth.secondaryAuth.deleteConnection()
-        return switchToAmazonQSignInCommand.execute(cwSignOut)
+        return switchToAmazonQSignInCommand.execute(source)
     }
 )
 

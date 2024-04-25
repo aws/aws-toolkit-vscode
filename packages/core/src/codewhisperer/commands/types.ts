@@ -14,8 +14,6 @@ export const cwQuickPickSource = 'codewhispererQuickPick'
 export const amazonQChatSource = 'amazonQChat'
 /** Indicates a CodeWhisperer command was executed during the first start of the extension */
 export const firstStartUpSource = ExtStartUpSources.firstStartUp
-/** Indicates a CodeWhisperer command was executed as a result of signing out */
-export const cwSignOut = 'codewhispererSignOut'
 /** Indicates a CodeWhisperer command was executed as a result of selecting an ellipses menu item */
 export const cwEllipsesMenu = 'ellipsesMenu'
 
@@ -33,5 +31,4 @@ export type CodeWhispererSource =
     | typeof vscodeComponent
     | typeof amazonQChatSource
     | typeof firstStartUpSource
-    | typeof cwSignOut
     | typeof cwEllipsesMenu
