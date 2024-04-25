@@ -209,6 +209,7 @@
             <div class="auth-container-section">
                 <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header">Connecting to IAM...</div>
                 <div v-else class="header">Authenticating in browser...</div>
+                <div style="margin-bottom: 12px"></div>
                 <button
                     class="continue-button"
                     v-on:click="handleCancelButtom()"
@@ -557,6 +558,7 @@ export default defineComponent({
     margin-bottom: 3px;
     margin-top: 3px;
     font-size: 11px;
+    font-weight: 500;
 }
 .title.vscode-dark {
     color: white;
