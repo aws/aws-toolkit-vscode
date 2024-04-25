@@ -60,13 +60,17 @@ export class SystemUtilities {
 
         const env = process.env as EnvironmentVariables
 
-        if (env.HOME !== undefined) {
+        if (env.HOME !== undefined && env.HOME?.length !== 0 && fs.existsSync(path.resolve(env.HOME))) {
             return env.HOME
         }
-        if (env.USERPROFILE !== undefined) {
+        if (
+            env.USERPROFILE !== undefined &&
+            env.USERPROFILE?.length !== 0 &&
+            fs.existsSync(path.resolve(env.USERPROFILE))
+        ) {
             return env.USERPROFILE
         }
-        if (env.HOMEPATH !== undefined) {
+        if (env.HOMEPATH !== undefined && env.HOMEPATH?.length !== 0 && fs.existsSync(path.resolve(env.HOMEPATH))) {
             const homeDrive: string = env.HOMEDRIVE || 'C:'
 
             return path.join(homeDrive, env.HOMEPATH)
