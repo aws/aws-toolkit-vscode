@@ -84,7 +84,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
             'aws.amazonq.explainIssue',
             [issue],
             'comment',
-            'Explain with Q',
+            'Explain',
             'Explain with Amazon Q'
         )
         markdownString.appendMarkdown(' | ' + explainWithQCommand)
@@ -94,7 +94,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
                 'aws.amazonq.applySecurityFix',
                 [issue, filePath, 'hover'],
                 'wrench',
-                'Fix with Q',
+                'Fix',
                 'Fix with Amazon Q'
             )
             markdownString.appendMarkdown(' | ' + applyFixCommand)
