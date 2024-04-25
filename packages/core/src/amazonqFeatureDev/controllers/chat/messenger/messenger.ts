@@ -46,10 +46,13 @@ export class Messenger {
         )
     }
 
-    public sendMonthlyLimitError(errorMessage: string, tabID: string) {
-        this.dispatcher.sendErrorMessage(
-            new ErrorMessage(`Sorry, we encountered a problem when processing your request.`, errorMessage, tabID)
-        )
+    public sendMonthlyLimitError(tabID: string) {
+        this.sendAnswer({
+            type: 'answer',
+            tabID: tabID,
+            message: `Sorry, you have reached the monthly limit for feature development. You can try again next month.`,
+        })
+        this.sendUpdatePlaceholder(tabID, 'Chat input is disabled')
     }
 
     public sendErrorMessage(errorMessage: string, tabID: string, retries: number, phase?: SessionStatePhase) {
