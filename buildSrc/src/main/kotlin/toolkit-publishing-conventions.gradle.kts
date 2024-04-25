@@ -8,11 +8,8 @@ plugins {
 
 val ideProfile = IdeVersions.ideProfile(project)
 
-val toolkitVersion: String by project
 val publishToken: String by project
 val publishChannel: String by project
-
-version = "$toolkitVersion-${ideProfile.shortName}"
 
 intellij {
     version.set(ideProfile.community.version())

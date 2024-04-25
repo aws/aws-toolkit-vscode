@@ -3,9 +3,12 @@
 
 package software.aws.toolkits.gradle.intellij
 
+import org.gradle.api.Action
+import org.gradle.api.Project
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
+import org.gradle.kotlin.dsl.getByType
 
 abstract class ToolkitIntelliJExtension(private val providers: ProviderFactory) {
     abstract val ideFlavor: Property<IdeFlavor>
@@ -29,3 +32,6 @@ abstract class ToolkitIntelliJExtension(private val providers: ProviderFactory) 
         }
     }
 }
+
+val Project.toolkitIntelliJ
+    get() = extensions.getByType<ToolkitIntelliJExtension>()

@@ -35,8 +35,6 @@ val remoteRobotPort: String by project
 val ideProfile = IdeVersions.ideProfile(project)
 
 val toolkitVersion: String by project
-val publishToken: String by project
-val publishChannel: String by project
 
 // please check changelog generation logic if this format is changed
 // also sync with gateway version

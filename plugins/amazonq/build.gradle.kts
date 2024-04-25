@@ -6,6 +6,7 @@ import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
     id("toolkit-publishing-conventions")
+    id("toolkit-patch-plugin-xml-conventions")
 }
 
 intellij {
