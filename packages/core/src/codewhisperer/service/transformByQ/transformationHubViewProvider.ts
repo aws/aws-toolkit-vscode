@@ -124,6 +124,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         endTime: Date | undefined,
         previousStatus: string,
         isFirstStep: boolean,
+        isLastStep: boolean,
         stepProgress: StepProgress,
         stepId: number,
         isCurrentlyProcessing: boolean
@@ -136,10 +137,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 second: '2-digit',
             })
             const stepDuration = convertToTimeString(endTime.getTime() - startTime.getTime())
+            const isAllStepsComplete = isLastStep && (stepProgress === StepProgress.Succeeded || StepProgress.Failed)
             return `
-                <p class="step" id="step-${stepId}">
-                    ${this.getProgressIconMarkup(stepProgress)} ${name} [finished on ${stepTime}] 
-                    <span>${stepDuration}</span>
+                <p class="step ${isAllStepsComplete ? 'active' : ''}" id="step-${stepId}">
+                    ${this.getProgressIconMarkup(stepProgress)} ${name} 
+                    <span id="step-duration">[finished on ${stepTime}] ${stepDuration}</span>
                 </p>`
         } else if (previousStatus !== 'CREATED' && isCurrentlyProcessing) {
             return `
@@ -170,14 +172,14 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 // In case transform is cancelled by user, the state transitions to not started after some time.
                 // This may contradict the last result from the API, so need to be handled here.
                 if (transformByQState.isNotStarted()) {
-                    return '<p><span class="status-FAILED"> ⓧ </span></p>'
+                    return '<p><span class="status-FAILED"> 𐔧 </span></p>'
                 }
                 return '<p><span class="spinner status-PENDING"> ↻ </span></p>'
             case 'COMPLETED':
                 return '<p><span class="status-COMPLETED"> ✓ </span></p>'
             case 'FAILED':
             default:
-                return '<p><span class="status-FAILED"> ⓧ </span></p>'
+                return '<p><span class="status-FAILED"> 𐔧 </span></p>'
         }
     }
 
@@ -189,7 +191,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 <div class="substep-icon">${this.selectSubstepIcon(subStep.status)}</div>
                 <div>
                     <p>${subStep.name}</p>
-                    ${subStep.description ? `<p class="status-${subStep.status}">- ${subStep.description}</p>` : ''}
+                    ${subStep.description ? `<p class="status-${subStep.status}"> ${subStep.description}</p>` : ''}
                 </div>
             </div>
             `)
@@ -229,6 +231,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     step.endTime,
                     stepStatuses[i - 1],
                     i === 0,
+                    i === planSteps.length - 1,
                     stepProgress,
                     i,
                     lastPendingStep === i
@@ -297,20 +300,19 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             transformByQState.setPlanSteps(planSteps)
         }
         let progressHtml
-        if (planProgress['transformCode'] !== StepProgress.NotStarted) {
-            const isTransformFailed = planProgress['transformCode'] === StepProgress.Failed
+        // for each step that has succeeded, increment activeStepId by 1
+        let activeStepId = [
+            planProgress.startJob,
+            planProgress.buildCode,
+            planProgress.generatePlan,
+            planProgress.transformCode,
+        ]
+            .map(it => (it === StepProgress.Succeeded ? 1 : 0) as number)
+            .reduce((prev, current) => prev + current)
+        // When we receive plan step details, we want those to be active -> increment activeStepId
+        activeStepId += planSteps === undefined || planSteps.length === 0 ? 0 : 1
 
-            // for each step that has succeeded, increment activeStepId by 1
-            let activeStepId = [
-                planProgress.startJob,
-                planProgress.buildCode,
-                planProgress.generatePlan,
-                planProgress.transformCode,
-            ]
-                .map(it => (it === StepProgress.Succeeded ? 1 : 0) as number)
-                .reduce((prev, current) => prev + current)
-            // When we receive plan step details, we want those to be active -> increment activeStepId
-            activeStepId += planSteps === undefined || planSteps.length === 0 ? 0 : 1
+        if (planProgress['transformCode'] !== StepProgress.NotStarted) {
             const waitingMarkup = simpleStep(
                 this.getProgressIconMarkup(planProgress['startJob']),
                 'Waiting for job to start',
@@ -341,12 +343,12 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                       )
                     : ''
 
+            const isTransformFailed = planProgress['transformCode'] === StepProgress.Failed
             const progress = this.getTransformationStepProgressMarkup(planSteps, isTransformFailed)
             const latestGenericStepDetails = this.getLatestGenericStepDetails(transformByQState.getPolledJobStatus())
             progressHtml = `
-            <div class="column">
-                <div id="runningTime" style="flex:1; overflow: auto;"></div>
-                <p><b>Transformation Progress</b></p>
+            <div id="progress" class="column">
+                <p><b>Transformation Progress</b> <span id="runningTime"></span></p>
                 ${waitingMarkup}
                 ${buildMarkup}
                 ${planMarkup}
@@ -367,7 +369,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             `
         } else {
             progressHtml = `
-            <div class="column">
+            <div id="progress" class="column">
                 <p><b>Transformation Progress</b></p>
                 <p>No job ongoing</p>
             </div>`
@@ -430,10 +432,15 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 }
 
                 #stepdetails {
-                    padding-left: 20px;
-                    border-left: solid lightgray;
+                    width: 40%;
+                    padding: 0 20px;
+                    border-left: solid rgba(229,229,229, .5);
                     min-height: 100vh;
-                    ${transformByQState.isRunning() || !transformByQState.isNotStarted() ? '' : 'display: none;'}
+                    display: block;
+                }
+
+                #progress {
+                    width: 60%;
                 }
 
                 .status-PENDING {
@@ -470,6 +477,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                }
+
+                #step-duration {
+                    color: rgba(59, 59, 59, .75);
                 }
             </style>
             </head>
@@ -520,23 +531,13 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 function showStepDetails(item) {
                     const visibleSubSteps = document.querySelectorAll(".visible");
                     const substep = document.getElementById(item.id.replace("step-", "substep-"))
-                    document.getElementById("stepdetails").style.display = "none"
-                    let substepWasAlreadyVisible = false
                     clearActiveSteps()
                     for(const visibleSubStep of visibleSubSteps){                
                         visibleSubStep.classList.remove("visible")
                         document.getElementById(visibleSubStep.id.replace("substep-", "step-")).classList.remove("active")
-                        if(visibleSubStep === substep){
-                            substepWasAlreadyVisible = true
-                        }
-                    }
-
-                    if(substepWasAlreadyVisible){
-                        return
                     }
                     
                     substep.classList.add("visible")
-                    document.getElementById("stepdetails").style.display = "block"
                     item.classList.add("active")
                     document.getElementById("generic-step-details").classList.add("blocked")
                 }
@@ -547,7 +548,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     if(document.getElementById("generic-step-details").classList.contains("blocked")){
                         return
                     }
-                    document.getElementById("stepdetails").style.display = "block"
                     document.getElementById("generic-step-details").classList.add("visible")
                 }
 
@@ -583,6 +583,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 addShowSubstepEventListeners();
                 addHighlightStepWithoutSubstepListeners();
                 showCurrentActiveSubstep();
+                updateTimer()
             </script>
             </body>
             </html>`
