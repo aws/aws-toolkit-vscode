@@ -95,6 +95,12 @@ export class CodeIterationLimitError extends ToolkitError {
     }
 }
 
+export class MonthlyConversationLimitError extends ToolkitError {
+    constructor(message: string) {
+        super(message, { code: 'MonthlyConversationLimitError' })
+    }
+}
+
 export class UnknownApiError extends ToolkitError {
     constructor(message: string, api: string) {
         super(message, { code: `${api}-Unknown` })
