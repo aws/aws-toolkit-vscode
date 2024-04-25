@@ -258,16 +258,16 @@ class SsoAccessTokenProvider(
         _authorization.set(PendingAuthorization.PKCEAuthorization(future, progressIndicator))
 
         while (true) {
-            if (progressIndicator.isCanceled()) {
-                future.cancel(true)
-                throw ProcessCanceledException(IllegalStateException("Login canceled by user"))
-            }
-
             if (future.isDone) {
                 return future.get()
             }
 
-            sleepWithCancellation(Duration.ofMillis(100), progressIndicator)
+            try {
+                sleepWithCancellation(Duration.ofMillis(100), progressIndicator)
+            } catch (e: ProcessCanceledException) {
+                future.cancel(true)
+                throw ProcessCanceledException(IllegalStateException("Login canceled by user"))
+            }
         }
     }
 
