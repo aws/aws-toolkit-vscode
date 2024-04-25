@@ -38,7 +38,6 @@ export interface ConnectorProps {
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
     onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => void
     onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
-    onCWCOnboardingPageInteractionMessage: (message: ChatItem) => string | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => void
@@ -206,11 +205,23 @@ export class Connector {
         messageId: string,
         code?: string,
         type?: 'selection' | 'block',
-        codeReference?: CodeReference[]
+        codeReference?: CodeReference[],
+        eventId?: string,
+        codeBlockIndex?: number,
+        totalCodeBlocks?: number
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCodeInsertToCursorPosition(tabID, messageId, code, type, codeReference)
+                this.cwChatConnector.onCodeInsertToCursorPosition(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks
+                )
                 break
             case 'featuredev':
                 this.featureDevChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
@@ -223,11 +234,23 @@ export class Connector {
         messageId: string,
         code?: string,
         type?: 'selection' | 'block',
-        codeReference?: CodeReference[]
+        codeReference?: CodeReference[],
+        eventId?: string,
+        codeBlockIndex?: number,
+        totalCodeBlocks?: number
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCopyCodeToClipboard(tabID, messageId, code, type, codeReference)
+                this.cwChatConnector.onCopyCodeToClipboard(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks
+                )
                 break
             case 'featuredev':
                 this.featureDevChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)

@@ -42,7 +42,6 @@ import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHe
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
-import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../../common/crypto'
@@ -60,7 +59,6 @@ export interface ChatControllerMessagePublishers {
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessagePublisher<UIFocusMessage>
-    readonly processOnboardingPageInteraction: MessagePublisher<OnboardingPageInteraction>
     readonly processSourceLinkClick: MessagePublisher<SourceLinkClickMessage>
     readonly processResponseBodyLinkClick: MessagePublisher<ResponseBodyLinkClickMessage>
     readonly processFooterInfoLinkClick: MessagePublisher<FooterInfoLinkClick>
@@ -79,7 +77,6 @@ export interface ChatControllerMessageListeners {
     readonly processChatItemVotedMessage: MessageListener<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessageListener<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessageListener<UIFocusMessage>
-    readonly processOnboardingPageInteraction: MessageListener<OnboardingPageInteraction>
     readonly processSourceLinkClick: MessageListener<SourceLinkClickMessage>
     readonly processResponseBodyLinkClick: MessageListener<ResponseBodyLinkClickMessage>
     readonly processFooterInfoLinkClick: MessageListener<FooterInfoLinkClick>
@@ -168,9 +165,6 @@ export class ChatController {
             return this.processUIFocusMessage(data)
         })
 
-        this.chatControllerMessageListeners.processOnboardingPageInteraction.onMessage(data => {
-            return this.processOnboardingPageInteraction(data)
-        })
         this.chatControllerMessageListeners.processSourceLinkClick.onMessage(data => {
             return this.processSourceLinkClick(data)
         })
@@ -223,51 +217,6 @@ export class ChatController {
                     recordTelemetryChatRunCommand('help')
                     return
                 }
-            })
-            .catch(e => {
-                this.processException(e, '')
-            })
-    }
-
-    private processOnboardingPageInteraction(interaction: OnboardingPageInteraction) {
-        this.editorContextExtractor
-            .extractContextForTrigger('OnboardingPageInteraction')
-            .then(context => {
-                const triggerID = randomUUID()
-
-                const prompt = this.promptGenerator.generateForOnboardingPageInteraction(interaction)
-
-                this.messenger.sendOnboardingPageInteractionMessage(interaction, triggerID)
-
-                this.triggerEventsStorage.addTriggerEvent({
-                    id: triggerID,
-                    tabID: undefined,
-                    message: prompt,
-                    type: 'onboarding_page_interaction',
-                    context,
-                    onboardingPageInteraction: interaction,
-                })
-
-                if (interaction.type === 'onboarding-page-cwc-button-clicked') {
-                    void this.generateStaticTextResponse('onboarding-help', triggerID)
-                    return
-                }
-
-                return this.generateResponse(
-                    {
-                        message: prompt,
-                        trigger: ChatTriggerType.ChatMessage,
-                        query: undefined,
-                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
-                        fileText: context?.focusAreaContext?.extendedCodeBlock,
-                        fileLanguage: context?.activeFileContext?.fileLanguage,
-                        filePath: context?.activeFileContext?.filePath,
-                        matchPolicy: context?.activeFileContext?.matchPolicy,
-                        codeQuery: context?.focusAreaContext?.names,
-                        userIntent: this.userIntentRecognizer.getFromOnboardingPageInteraction(interaction),
-                    },
-                    triggerID
-                )
             })
             .catch(e => {
                 this.processException(e, '')
@@ -394,11 +343,23 @@ export class ChatController {
 
                 const prompt = this.promptGenerator.generateForContextMenuCommand(command)
 
-                this.messenger.sendEditorContextCommandMessage(
-                    command.type,
-                    context?.focusAreaContext?.codeBlock ?? '',
-                    triggerID
-                )
+                if (command.type === 'aws.amazonq.explainIssue') {
+                    this.messenger.sendEditorContextCommandMessage(
+                        command.type,
+                        context.activeFileContext?.fileText
+                            ?.split('\n')
+                            .slice(command.issue.startLine, command.issue.endLine)
+                            .join('') ?? '',
+                        triggerID,
+                        command.issue
+                    )
+                } else {
+                    this.messenger.sendEditorContextCommandMessage(
+                        command.type,
+                        context?.focusAreaContext?.codeBlock ?? '',
+                        triggerID
+                    )
+                }
 
                 if (command.type === 'aws.amazonq.sendToPrompt') {
                     // No need for response if send the code to prompt

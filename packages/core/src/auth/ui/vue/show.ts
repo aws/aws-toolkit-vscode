@@ -55,6 +55,7 @@ import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { ExtStartUpSources } from '../../../shared/telemetry'
 import { CommonAuthWebview } from '../../../login/webview/vue/backend'
 import { AuthSource, AuthSources } from '../../../login/webview/util'
+import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 
 // This file has some used functions, but most of it should be removed soon. We have a new
 // auth page located at src/login/
@@ -189,7 +190,7 @@ export class AuthWebview extends VueWebview {
     }
 
     async showAmazonQChat(): Promise<void> {
-        return focusAmazonQPanel()
+        return focusAmazonQPanel.execute(placeholder, 'addConnectionPage')
     }
 
     async getIdentityCenterRegion(): Promise<Region | undefined> {
@@ -863,13 +864,4 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
 
         return result
     }
-}
-
-/**
- * Forces focus to Amazon Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
- * Used on first load, and any time we want to directly populate chat.
- */
-export async function focusAmazonQPanel(): Promise<void> {
-    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-    await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
 }

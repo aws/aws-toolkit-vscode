@@ -86,7 +86,7 @@ export class InlineCompletionService {
         if (vsCodeState.isCodeWhispererEditing || RecommendationHandler.instance.isSuggestionVisible()) {
             return {
                 result: 'Failed',
-                errorMessage: 'codewhisperer already is running',
+                errorMessage: 'Amazon Q is already running',
                 recommendationCount: 0,
             }
         }
@@ -223,10 +223,11 @@ export class CodeWhispererStatusBar {
         statusBar.command = listCodeWhispererCommandsId
         statusBar.backgroundColor = undefined
 
+        const title = 'Amazon Q'
         switch (status) {
             case 'loading': {
                 const selectedCustomization = getSelectedCustomization()
-                statusBar.text = codicon` ${getIcon('vscode-loading~spin')} CodeWhisperer${
+                statusBar.text = codicon` ${getIcon('vscode-loading~spin')} ${title}${
                     selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
                 }`
                 break
@@ -234,19 +235,19 @@ export class CodeWhispererStatusBar {
             case 'ok': {
                 const selectedCustomization = getSelectedCustomization()
                 const icon = isSuggestionsEnabled ? getIcon('vscode-debug-start') : getIcon('vscode-debug-pause')
-                statusBar.text = codicon`${icon} CodeWhisperer${
+                statusBar.text = codicon`${icon} ${title}${
                     selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
                 }`
                 break
             }
 
             case 'expired': {
-                statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} CodeWhisperer`
+                statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} ${title}`
                 statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
                 break
             }
             case 'notConnected':
-                statusBar.text = codicon` ${getIcon('vscode-chrome-close')} CodeWhisperer`
+                statusBar.text = codicon` ${getIcon('vscode-chrome-close')} ${title}`
                 break
         }
 

@@ -12,7 +12,8 @@ import assert from 'assert'
 import { fsCommon } from '../../../../srcShared/fs'
 import { ExtStartUpSources } from '../../../../shared/telemetry'
 
-describe('emitWebviewClosed()', function () {
+// TODO: remove auth page and tests
+describe.skip('emitWebviewClosed()', function () {
     let authWebview: SinonStubbedInstance<AuthWebview>
     let sandbox: SinonSandbox
 

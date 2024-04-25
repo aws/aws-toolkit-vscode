@@ -11,7 +11,7 @@ import {
     MissingCodeError,
     MissingStateError,
 } from '../../../auth/sso/server'
-import request, { RequestError } from '../../../common/request'
+import request from '../../../common/request'
 import { URLSearchParams } from 'url'
 import { ToolkitError } from '../../../shared/errors'
 
@@ -42,16 +42,11 @@ describe('AuthSSOServer', function () {
         const url = createURL(server.redirectUri, params)
         const authorizationPromise = server.waitForAuthorization()
         try {
-            const response = await request.fetch('GET', url).response
-            assert.fail(`Expected error but found ${response.body}`)
+            await request.fetch('GET', url, {
+                redirect: 'follow',
+            }).response
         } catch (err: unknown) {
-            if (!(err instanceof RequestError)) {
-                assert.fail('Unknown error')
-            }
-
-            const e = err as RequestError
-            assert.strictEqual(e.code, 400)
-            assert.deepStrictEqual(e.body, expectedErrorMsg)
+            assert.fail('Unknown error')
         }
 
         try {

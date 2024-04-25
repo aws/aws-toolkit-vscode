@@ -5,7 +5,7 @@
 
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { getLogger } from '../../shared/logger'
-import { AggregatedCodeScanIssue, codeScanState, CodeScanStoppedError } from '../models/model'
+import { AggregatedCodeScanIssue, CodeScansState, codeScanState, CodeScanStoppedError } from '../models/model'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
@@ -14,10 +14,15 @@ import { RawCodeScanIssue } from '../models/model'
 import * as crypto from 'crypto'
 import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
-import { ArtifactMap, CreateUploadUrlRequest, CreateUploadUrlResponse } from '../client/codewhispereruserclient'
-import { Truncation } from '../util/dependencyGraph/dependencyGraph'
+import {
+    ArtifactMap,
+    CreateUploadUrlRequest,
+    CreateUploadUrlResponse,
+    UploadIntent,
+} from '../client/codewhispereruserclient'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import request from '../../common/request'
+import { ZipMetadata } from '../util/zipUtil'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -94,12 +99,16 @@ function mapToAggregatedList(
     })
 }
 
-export async function pollScanJobStatus(client: DefaultCodeWhispererClient, jobId: string) {
+export async function pollScanJobStatus(
+    client: DefaultCodeWhispererClient,
+    jobId: string,
+    scope: CodeWhispererConstants.CodeAnalysisScope
+) {
     getLogger().verbose(`Polling scan job status...`)
     let status: string = 'Pending'
     let timer: number = 0
     while (true) {
-        throwIfCancelled()
+        throwIfCancelled(scope)
         const req: codewhispererClient.GetCodeScanRequest = {
             jobId: jobId,
         }
@@ -111,10 +120,14 @@ export async function pollScanJobStatus(client: DefaultCodeWhispererClient, jobI
             getLogger().verbose(`Complete Polling scan job status.`)
             break
         }
-        throwIfCancelled()
+        throwIfCancelled(scope)
         await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
         timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
-        if (timer > CodeWhispererConstants.codeScanJobTimeoutSeconds) {
+        const timeoutSeconds =
+            scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+                ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
+                : CodeWhispererConstants.codeScanJobTimeoutSeconds
+        if (timer > timeoutSeconds) {
             getLogger().verbose(`Scan job status: ${status}`)
             getLogger().verbose(`Scan job timeout.`)
             throw new Error('Scan job timeout.')
@@ -126,7 +139,9 @@ export async function pollScanJobStatus(client: DefaultCodeWhispererClient, jobI
 export async function createScanJob(
     client: DefaultCodeWhispererClient,
     artifactMap: codewhispererClient.ArtifactMap,
-    languageId: string
+    languageId: string,
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    scanName: string
 ) {
     getLogger().verbose(`Creating scan job...`)
     const req: codewhispererClient.CreateCodeScanRequest = {
@@ -134,32 +149,57 @@ export async function createScanJob(
         programmingLanguage: {
             languageName: languageId,
         },
+        scope: scope,
+        codeScanName: scanName,
     }
-    const resp = await client.createCodeScan(req)
+    const resp = await client.createCodeScan(req).catch(err => {
+        getLogger().error(`Failed creating scan job. Request id: ${err.requestId}`)
+        throw err
+    })
     getLogger().verbose(`Request id: ${resp.$response.requestId}`)
     TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$response.requestId)
     return resp
 }
 
-export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClient, truncation: Truncation) {
-    if (truncation.zipFilePath === '') {
-        throw new Error("Truncation failure: can't find valid source zip.")
+export async function getPresignedUrlAndUpload(
+    client: DefaultCodeWhispererClient,
+    zipMetadata: ZipMetadata,
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    scanName: string
+) {
+    if (zipMetadata.zipFilePath === '') {
+        throw new Error("Zip failure: can't find valid source zip.")
     }
     const srcReq: CreateUploadUrlRequest = {
-        contentMd5: getMd5(truncation.zipFilePath),
+        contentMd5: getMd5(zipMetadata.zipFilePath),
         artifactType: 'SourceCode',
+        uploadIntent: getUploadIntent(scope),
+        uploadContext: {
+            codeAnalysisUploadContext: {
+                codeScanName: scanName,
+            },
+        },
     }
     getLogger().verbose(`Prepare for uploading src context...`)
-    const srcResp = await client.createUploadUrl(srcReq)
+    const srcResp = await client.createUploadUrl(srcReq).catch(err => {
+        getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
+        throw err
+    })
     getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
     getLogger().verbose(`Uploading src context...`)
-    await uploadArtifactToS3(truncation.zipFilePath, srcResp)
+    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp)
     getLogger().verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,
     }
     return artifactMap
+}
+
+function getUploadIntent(scope: CodeWhispererConstants.CodeAnalysisScope): UploadIntent {
+    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+        ? CodeWhispererConstants.fileScanUploadIntent
+        : CodeWhispererConstants.projectScanUploadIntent
 }
 
 function getMd5(fileName: string) {
@@ -168,9 +208,21 @@ function getMd5(fileName: string) {
     return hasher.digest('base64')
 }
 
-export function throwIfCancelled() {
-    if (codeScanState.isCancelling()) {
-        throw new CodeScanStoppedError()
+export function throwIfCancelled(scope: CodeWhispererConstants.CodeAnalysisScope) {
+    switch (scope) {
+        case CodeWhispererConstants.CodeAnalysisScope.PROJECT:
+            if (codeScanState.isCancelling()) {
+                throw new CodeScanStoppedError()
+            }
+            break
+        case CodeWhispererConstants.CodeAnalysisScope.FILE:
+            if (!CodeScansState.instance.isScansEnabled()) {
+                throw new CodeScanStoppedError()
+            }
+            break
+        default:
+            getLogger().warn(`Unknown code analysis scope: ${scope}`)
+            break
     }
 }
 
@@ -187,9 +239,18 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
         headersObj['x-amz-server-side-encryption-aws-kms-key-id'] = resp.kmsKeyArn
     }
 
-    const response = await request.fetch('PUT', resp.uploadUrl, {
-        body: readFileSync(fileName),
-        headers: headersObj,
-    }).response
-    getLogger().debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
+    try {
+        const response = await request.fetch('PUT', resp.uploadUrl, {
+            body: readFileSync(fileName),
+            headers: resp?.requestHeaders ?? headersObj,
+        }).response
+        getLogger().debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
+    } catch (error) {
+        getLogger().error(
+            `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the Amazon Q documentation or contact your network or organization administrator.`
+        )
+        throw new Error(
+            `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html) or contact your network or organization administrator.`
+        )
+    }
 }

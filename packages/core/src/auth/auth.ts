@@ -404,6 +404,10 @@ export class Auth implements AuthService, ConnectionManager {
         return this.store.getProfile(connection.id)?.metadata.connectionState
     }
 
+    public getConnectionSource(connection: Pick<Connection, 'id'>): 'amazonq' | 'toolkit' | undefined {
+        return this.store.getProfile(connection.id)?.metadata.source
+    }
+
     public getInvalidationReason(connection: Pick<Connection, 'id'>): Error | undefined {
         return this.#validationErrors.get(connection.id)
     }
@@ -926,10 +930,21 @@ export class Auth implements AuthService, ConnectionManager {
         } as SsoProfile
         if (profile === undefined) {
             await this.store.addProfile(id, newProfile)
+            await this.store.updateMetadata(id, {
+                label: connection.label,
+                connectionState: connection.state,
+                source: 'amazonq',
+            })
         } else {
             await this.store.updateProfile(connection.id, newProfile)
+            await this.updateConnectionState(id, connection.state)
+            if (!this.getConnectionSource({ id: id })) {
+                await this.store.updateMetadata(id, {
+                    source: 'amazonq',
+                    connectionState: connection.state,
+                })
+            }
         }
-        await this.updateConnectionState(id, connection.state)
     }
 
     // Used by Amazon Q to update connection status & scope when this connection is updated by AWS Toolkit

@@ -8,18 +8,14 @@ import globals from '../../shared/extensionGlobals'
 import path from 'path'
 import { MessagePublisher } from '../messages/messagePublisher'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { focusAmazonQPanel } from '../../auth/ui/vue/show'
 import { getLogger } from '../../shared/logger'
+import { placeholder } from '../../shared/vscode/commands2'
+import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 
 export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublisher: MessagePublisher<any>): void {
-    const panel = vscode.window.createWebviewPanel(
-        'amazonQWelcome',
-        'Meet Amazon Q (Preview)',
-        vscode.ViewColumn.Active,
-        {
-            enableScripts: true,
-        }
-    )
+    const panel = vscode.window.createWebviewPanel('amazonQWelcome', 'Meet Amazon Q', vscode.ViewColumn.Active, {
+        enableScripts: true,
+    })
 
     // TODO: get svg gradient icon and use `getIcon` (currently only works with svg)
     panel.iconPath = vscode.Uri.file(
@@ -35,7 +31,7 @@ export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublis
                 switch (message.command) {
                     case 'sendToQ':
                         telemetry.record({ elementId: 'amazonq_meet_askq' })
-                        focusAmazonQPanel().then(
+                        focusAmazonQPanel.execute(placeholder, 'sendToQ').then(
                             () => {
                                 cwcWebViewToAppsPublisher.publish({
                                     type: 'onboarding-page-cwc-button-clicked',
@@ -51,7 +47,7 @@ export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublis
 
                     case 'goToHelp':
                         telemetry.record({ elementId: 'amazonq_tryExamples' })
-                        void vscode.commands.executeCommand('aws.amazonq.gettingStarted')
+                        void vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
                         return
                 }
             })

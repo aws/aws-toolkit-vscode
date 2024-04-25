@@ -18,11 +18,12 @@ import {
     createFeedbackNode,
     createGitHubNode,
     createDocumentationNode,
+    createAutoScans,
 } from './codeWhispererNodes'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
 import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompter'
-import { CodeSuggestionsState, vsCodeState } from '../models/model'
+import { CodeScansState, CodeSuggestionsState, vsCodeState } from '../models/model'
 import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -32,7 +33,7 @@ import { createSignIn, switchToAmazonQNode } from '../../amazonq/explorer/common
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
-
+    const autoScansEnabled = CodeScansState.instance.isScansEnabled()
     if (AuthUtil.instance.isConnectionExpired()) {
         return [createReconnect('item'), createLearnMore()]
     }
@@ -67,10 +68,14 @@ function getAmazonQCodeWhispererNodes() {
         createOpenReferenceLog(),
         createGettingStarted(), // "Learn" node : opens Learn CodeWhisperer page
 
+        // Security scans
+        createSeparator('Security Scans'),
+        createAutoScans(autoScansEnabled),
+        createSecurityScan(),
+
         // Amazon Q + others
         createSeparator('Other Features'),
         switchToAmazonQNode('item'),
-        createSecurityScan(),
     ]
 }
 
@@ -104,7 +109,7 @@ export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispere
             )
         })
     return createQuickPick(getQuickPickItems(), {
-        title: 'Amazon Q (Preview) + CodeWhisperer',
+        title: 'Amazon Q',
         buttons: [createExitButton()],
         ignoreFocusOut: false,
     }).prompt()

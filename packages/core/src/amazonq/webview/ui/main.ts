@@ -16,6 +16,7 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
+import '../../../../resources/css/amazonq-webview.css'
 
 export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
@@ -110,9 +111,6 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             } else if (command === 'aws.awsq.clearchat') {
                 quickActionHandler.handle({ command: '/clear' }, tabID)
             }
-        },
-        onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
-            return messageController.sendMessageToTab(message, 'cwc')
         },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
             if (command === 'aws.amazonq.sendToPrompt') {
@@ -367,8 +365,26 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             })
         },
         onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
-        onCopyCodeToClipboard: (tabId, messageId, code, type, referenceTrackerInfo) => {
-            connector.onCopyCodeToClipboard(tabId, messageId, code, type, referenceTrackerInfo)
+        onCopyCodeToClipboard: (
+            tabId,
+            messageId,
+            code,
+            type,
+            referenceTrackerInfo,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks
+        ) => {
+            connector.onCopyCodeToClipboard(
+                tabId,
+                messageId,
+                code,
+                type,
+                referenceTrackerInfo,
+                eventId,
+                codeBlockIndex,
+                totalCodeBlocks
+            )
             mynahUI.notify({
                 type: NotificationType.SUCCESS,
                 content: 'Selected code is copied to clipboard',

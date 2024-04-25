@@ -16,8 +16,9 @@ import { AwsConnection, Connection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 import { telemetry } from '../../../shared/telemetry'
-import { AuthSources, AuthUiClick } from '../util'
+import { AuthSources } from '../util'
 import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
+import { AuthFlowState, AuthUiClick } from './types'
 
 const userCancelled = 'userCancelled'
 type Writeable<T> = { -readonly [U in keyof T]: T[U] }
@@ -126,6 +127,9 @@ export abstract class CommonAuthWebview extends VueWebview {
         return result
     }
 
+    /** Allows the frontend to subscribe to events emitted by the backend regarding the ACTIVE auth connection changing in some way. */
+    abstract onActiveConnectionModified: vscode.EventEmitter<void>
+
     abstract startBuilderIdSetup(app: string): Promise<AuthError | undefined>
 
     abstract startEnterpriseSetup(startUrl: string, region: string, app: string): Promise<AuthError | undefined>
@@ -153,6 +157,22 @@ export abstract class CommonAuthWebview extends VueWebview {
     abstract errorNotification(e: AuthError): void
 
     abstract quitLoginScreen(): Promise<void>
+
+    /**
+     * NOTE: If we eventually need to be able to specify the connection to reauth, it should
+     * be an arg in this function
+     */
+    abstract reauthenticateConnection(): Promise<void>
+    abstract getReauthError(): Promise<AuthError | undefined>
+
+    abstract getActiveConnection(): Promise<Connection | undefined>
+
+    /** Refreshes the current state of the auth flow, determining what you see in the UI */
+    abstract refreshAuthState(): Promise<void>
+    /** Use {@link refreshAuthState} first to ensure this returns the latest state */
+    abstract getAuthState(): Promise<AuthFlowState>
+
+    abstract signout(): Promise<void>
 
     async listConnections(): Promise<Connection[]> {
         return Auth.instance.listConnections()

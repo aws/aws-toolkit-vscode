@@ -221,7 +221,7 @@ export class RecommendationHandler {
                 )
                 const languageName = request.fileContext.programmingLanguage.languageName
                 if (!runtimeLanguageContext.isLanguageSupported(languageName)) {
-                    errorMessage = `${languageName} is currently not supported by CodeWhisperer`
+                    errorMessage = `${languageName} is currently not supported by Amazon Q inline suggestions`
                 }
                 return Promise.resolve<GetRecommendationsResponse>({
                     result: invocationResult,
@@ -263,7 +263,7 @@ export class RecommendationHandler {
             if (latency === 0) {
                 latency = startTime !== 0 ? performance.now() - startTime : 0
             }
-            getLogger().error('CodeWhisperer Invocation Exception : %s', (error as Error).message)
+            getLogger().error('amazonq inline-suggest: Invocation Exception : %s', (error as Error).message)
             if (isAwsError(error)) {
                 errorMessage = error.message
                 requestId = error.requestId || ''
@@ -272,7 +272,7 @@ export class RecommendationHandler {
                 await this.onThrottlingException(error, triggerType)
 
                 if (error?.code === 'AccessDeniedException' && errorMessage?.includes('no identity-based policy')) {
-                    getLogger().error('CodeWhisperer AccessDeniedException : %s', (error as Error).message)
+                    getLogger().error('amazonq inline-suggest: AccessDeniedException : %s', (error as Error).message)
                     void vscode.window
                         .showErrorMessage(`CodeWhisperer: ${error?.message}`, CodeWhispererConstants.settingsLearnMore)
                         .then(async resp => {

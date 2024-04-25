@@ -26,6 +26,7 @@ import {
     globals,
     RegionProvider,
     getLogger,
+    getMachineId,
 } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-core-vscode/auth'
 import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
@@ -76,9 +77,7 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
         }
     }
 
-    const extContext = {
-        extensionContext: context,
-    }
+    globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
     globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
@@ -95,6 +94,9 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
 
     await initializeAuth(context, globals.loginManager, contextPrefix, undefined)
 
+    const extContext = {
+        extensionContext: context,
+    }
     await activateCodeWhisperer(extContext as ExtContext)
     await activateCWChat(context)
     await activateQGumby(extContext as ExtContext)

@@ -7,20 +7,6 @@ import { cwQuickPickSource, cwTreeNodeSource, amazonQChatSource } from '../../co
 import { ExtStartUpSources } from '../../shared/telemetry'
 import { vscodeComponent } from '../../shared/vscode/commands2'
 
-export type AuthUiClick =
-    | 'auth_backButton'
-    | 'auth_cancelButton'
-    | 'auth_continueButton'
-    | 'auth_idcOption'
-    | 'auth_builderIdOption'
-    | 'auth_credentialsOption'
-    | 'auth_codecatalystOption'
-    | 'auth_existingAuthOption'
-    | 'auth_regionSelection'
-    | 'auth_codeCatalystSignIn'
-    | 'auth_toolkitCloseButton'
-    | 'amazonq_switchToQSignIn'
-
 /**
  * Different places the Add Connection command could be executed from.
  *

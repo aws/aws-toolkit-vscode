@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { scopesCodeWhispererChat, AwsConnection } from '../../../../auth/connection'
+import { scopesCodeWhispererChat, AwsConnection, Connection } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
-import { AuthError, CommonAuthWebview } from '../backend'
+import { AuthError, CommonAuthWebview, userCancelled } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
 import { activateExtension, isExtensionInstalled } from '../../../../shared/utilities/vsCodeUtils'
@@ -13,13 +13,19 @@ import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
 import { getLogger } from '../../../../shared/logger'
 import { Auth } from '../../../../auth'
 import { ToolkitError } from '../../../../shared/errors'
+import { debounce } from 'lodash'
+import { AuthFlowState } from '../types'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/amazonq/index.js'
 
+    override onActiveConnectionModified = new vscode.EventEmitter<void>()
+
     constructor() {
         super(AmazonQLoginWebview.sourcePath)
+
+        this.setupConnectionEventEmitter()
     }
 
     async fetchConnections(): Promise<AwsConnection[] | undefined> {
@@ -137,6 +143,64 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         )
     }
 
+    async reauthenticateConnection(): Promise<void> {
+        this.isReauthenticating = true
+        this.reauthError = undefined
+
+        try {
+            /**
+             * IMPORTANT: During this process {@link this.onActiveConnectionModified} is triggered. This
+             * causes the reauth page to refresh before the user is actually done the whole reauth flow.
+             */
+            this.reauthError = await this.ssoSetup('reauthenticate', async () => AuthUtil.instance.reauthenticate(true))
+        } finally {
+            this.isReauthenticating = false
+        }
+
+        if (this.reauthError?.id === userCancelled) {
+            // Since reauth was not successful it did not trigger an update in the connection.
+            // We need to pretend it changed so our frontend triggers an update.
+            this.onActiveConnectionModified.fire()
+        }
+    }
+
+    private reauthError: AuthError | undefined = undefined
+    override async getReauthError(): Promise<AuthError | undefined> {
+        return this.reauthError
+    }
+
+    async getActiveConnection(): Promise<Connection | undefined> {
+        return AuthUtil.instance.conn
+    }
+
+    /**
+     * `true` if the actual reauth flow is in progress.
+     *
+     * We need this state since the reauth process triggers
+     * {@link this.onActiveConnectionModified} before it is actually done.
+     * This causes the UI to refresh, and we need to remember that we are
+     * still in the process of reauthenticating.
+     */
+    isReauthenticating: boolean = false
+    private authState: AuthFlowState = 'LOGIN'
+    override async refreshAuthState(): Promise<void> {
+        const featureAuthStates = await AuthUtil.instance.getChatAuthState()
+        if (featureAuthStates.amazonQ === 'expired') {
+            this.authState = this.isReauthenticating ? 'REAUTHENTICATING' : 'REAUTHNEEDED'
+            return
+        }
+        this.authState = 'LOGIN'
+    }
+
+    override async getAuthState(): Promise<AuthFlowState> {
+        return this.authState
+    }
+
+    override async signout(): Promise<void> {
+        await AuthUtil.instance.secondaryAuth.deleteConnection()
+        this.reauthError = undefined
+    }
+
     async errorNotification(e: AuthError) {
         await vscode.window.showInformationMessage(`${e.text}`)
     }
@@ -151,4 +215,19 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
     /** If users are unauthenticated in Q/CW, we should always display the auth screen. */
     async quitLoginScreen() {}
+
+    private setupConnectionEventEmitter(): void {
+        // allows the frontend to listen to Amazon Q auth events from the backend
+        const codeWhispererConnectionChanged = createThrottle(() => this.onActiveConnectionModified.fire())
+        AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(codeWhispererConnectionChanged)
+
+        /**
+         * Multiple events can be received in rapid succession and if
+         * we execute on the first one it is possible to get a stale
+         * state.
+         */
+        function createThrottle(callback: () => void) {
+            return debounce(callback, 500)
+        }
+    }
 }

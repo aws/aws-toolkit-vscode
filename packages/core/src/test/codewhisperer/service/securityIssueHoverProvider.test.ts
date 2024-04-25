@@ -48,9 +48,12 @@ describe('securityIssueHoverProvider', () => {
                 `[$(eye) View Details](command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName])
                 )} 'Open "Amazon Q Security Issue"')\n` +
-                ` | [$(wrench) Apply Fix](command:aws.amazonq.applySecurityFix?${encodeURIComponent(
+                ` | [$(comment) Explain with Q](command:aws.amazonq.explainIssue?${encodeURIComponent(
+                    JSON.stringify([issues[0]])
+                )} 'Explain with Amazon Q')\n` +
+                ` | [$(wrench) Fix with Q](command:aws.amazonq.applySecurityFix?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
-                )} "Apply suggested fix")\n` +
+                )} 'Fix with Amazon Q')\n` +
                 '### Suggested Fix Preview\n\n' +
                 '<span class="codicon codicon-none" style="background-color:var(--vscode-editorMarkerNavigationInfo-headerBackground);">\n\n' +
                 '```undefined\n' +
@@ -88,7 +91,10 @@ describe('securityIssueHoverProvider', () => {
                 'recommendationText\n\n' +
                 `[$(eye) View Details](command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[1], mockDocument.fileName])
-                )} 'Open "Amazon Q Security Issue"')\n`
+                )} 'Open "Amazon Q Security Issue"')\n` +
+                ` | [$(comment) Explain with Q](command:aws.amazonq.explainIssue?${encodeURIComponent(
+                    JSON.stringify([issues[1]])
+                )} 'Explain with Amazon Q')\n`
         )
         assertTelemetry('codewhisperer_codeScanIssueHover', [
             { findingId: 'finding-1', detectorId: 'language/detector-1', ruleId: 'Rule-123', includesFix: true },
