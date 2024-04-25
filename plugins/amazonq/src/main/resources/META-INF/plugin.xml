@@ -5,7 +5,7 @@
     <id>amazon.q</id>
     <name>Amazon Q</name>
     <description>
-        This is the Amazon Q plugin. Placeholder until final copy is available
+        Amazon Q is an interactive, generative AI-powered assistant that gives you expert guidance when building, troubleshooting, and transforming applications on AWS.
     </description>
     <version>1.0</version>
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
