@@ -32,7 +32,7 @@ const cdn = 'https://ide-toolkits.threat-composer.aws.dev'
  *
  */
 export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProvider {
-    private static readonly viewType = 'threatComposer.tc.json'
+    public static readonly viewType = 'threatComposer.tc.json'
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
         const provider = new ThreatComposerEditorProvider(context)
         const providerRegistration = vscode.window.registerCustomEditorProvider(

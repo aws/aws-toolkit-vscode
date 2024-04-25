@@ -5,7 +5,11 @@
 
 import * as vscode from 'vscode'
 import { ThreatComposerEditorProvider } from './editorWebviewManager'
+import { CreateNewThreatComposer } from './commands/createNewThreatCompoerFile'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    extensionContext.subscriptions.push(ThreatComposerEditorProvider.register(extensionContext))
+    extensionContext.subscriptions.push(
+        ThreatComposerEditorProvider.register(extensionContext),
+        CreateNewThreatComposer.register()
+    )
 }

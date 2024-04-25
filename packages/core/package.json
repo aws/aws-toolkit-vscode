@@ -3777,6 +3777,16 @@
                 "command": "aws.amazonq.showTransformationPlanInHub",
                 "title": "Show Transformation Plan",
                 "enablement": "gumby.isPlanAvailable"
+            },
+            {
+                "command": "aws.createNewThreatComposer",
+                "title": "%AWS.command.threatComposer.createNew%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             }
         ],
         "jsonValidation": [
