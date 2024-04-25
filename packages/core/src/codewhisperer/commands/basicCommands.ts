@@ -15,7 +15,7 @@ import { CodeScanIssue, CodeScansState, codeScanState, CodeSuggestionsState, vsC
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
-import { AuthUtil, refreshToolkitQState } from '../util/authUtil'
+import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
 import { isExtensionActive, isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -35,7 +35,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
-import { _switchToAmazonQ, switchToAmazonQSignInCommand } from '../../amazonq/explorer/commonNodes'
+import { CommonAuthWebview } from '../../login/webview/vue/backend'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -432,15 +432,11 @@ const registerToolkitApiCallbackOnce = once(async () => {
             async (connection: AwsConnection) => {
                 getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
                 await AuthUtil.instance.onUpdateConnection(connection)
-                // If the connection was properly updated, then calling this with (true) shouldn't
-                // trigger an event. But, just to be safe...
-                await refreshToolkitQState.execute(false)
             },
 
             async (id: string) => {
                 getLogger().info(`toolkitApi: connection delete callback ${id}`)
                 await AuthUtil.instance.onDeleteConnection(id)
-                await refreshToolkitQState.execute(false)
             }
         )
     }
@@ -467,4 +463,43 @@ export const registerToolkitApiCallback = Commands.declare(
             }
         }
     }
+)
+
+/**
+ * Do not call this function directly, use the necessary equivalent commands below,
+ * which areregistered by the Amazon Q extension.
+ * - switchToAmazonQCommand
+ * - switchToAmazonQSignInCommand
+ */
+export async function _switchToAmazonQ(source: CodeWhispererSource, signIn: boolean) {
+    if (signIn) {
+        await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', true)
+        CommonAuthWebview.authSource = source
+        telemetry.ui_click.emit({
+            elementId: 'amazonq_switchToQSignIn',
+            passive: false,
+        })
+    } else {
+        telemetry.ui_click.emit({
+            elementId: 'amazonq_switchToQChat',
+            passive: false,
+        })
+    }
+
+    // Attempt to show both, in case something is wrong with the state of the webviews.
+    // Only the active one will be shown.
+    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+    await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
+}
+
+export const switchToAmazonQCommand = Commands.declare(
+    { id: '_aws.amazonq.focusView', compositeKey: { 0: 'source' } },
+    () =>
+        (source: CodeWhispererSource, signIn: boolean = false) =>
+            _switchToAmazonQ(source, false)
+)
+
+export const switchToAmazonQSignInCommand = Commands.declare(
+    { id: '_aws.amazonq.signIn.focusView', compositeKey: { 0: 'source' } },
+    () => (source: CodeWhispererSource) => _switchToAmazonQ(source, true)
 )

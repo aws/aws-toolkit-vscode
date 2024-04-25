@@ -32,8 +32,6 @@ import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
 import { onceChanged, once } from '../../shared/utilities/functionUtils'
 import { indent } from '../../shared/utilities/textUtilities'
-import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { isExtensionActive } from '../../shared/utilities'
 import { showReauthenticateMessage } from '../../shared/utilities/messages'
 import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
 
@@ -112,9 +110,6 @@ export class AuthUtil {
             }
 
             await this.setVscodeContextProps()
-            if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
-                await refreshToolkitQState.execute()
-            }
         })
 
         this.secondaryAuth.onDidChangeActiveConnection(async () => {
@@ -128,9 +123,6 @@ export class AuthUtil {
                 Commands.tryExecute('aws.amazonq.refreshStatusBar'),
                 Commands.tryExecute('aws.amazonq.updateReferenceLog'),
             ])
-            if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
-                await refreshToolkitQState.execute()
-            }
 
             await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
 
@@ -498,26 +490,3 @@ function buildFeatureAuthState(state: AuthState): FeatureAuthState {
         amazonQ: state,
     }
 }
-
-/**
- * Refreshes toolkit's Amazon Q tree view with the current Amazon Q connection state.
- * Can be called by Amazon Q or Toolkit.
- *
- * `getChatAuthState()` has the ability to update the active connection/state. If this
- * is called in a connection update callback, we could potentially be in an infinite loop.
- * However, the callbacks only trigger if there is a change to the active connection/state.
- * This means that our loop would converge immediately, or within a few iterations of the
- * state is being updated rapidly due to race conditions.
- */
-export const refreshToolkitQState = Commands.declare(
-    '_aws.amazonq.refreshToolkitQTreeState',
-    () =>
-        async (shouldRefresh: boolean = true) => {
-            await vscode.commands.executeCommand(
-                '_aws.toolkit.amazonq.refreshTreeNode',
-                (
-                    await AuthUtil.instance.getChatAuthState(shouldRefresh)
-                ).codewhispererChat
-            )
-        }
-)

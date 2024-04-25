@@ -7,7 +7,7 @@ import vscode from 'vscode'
 import { addColor, codicon, getIcon } from '../../shared/icons'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Command, Commands, placeholder } from '../../shared/vscode/commands2'
+import { Commands, placeholder } from '../../shared/vscode/commands2'
 import {
     toggleCodeSuggestions,
     showReferenceLog,
@@ -19,15 +19,15 @@ import {
     signoutCodeWhisperer,
     showIntroduction,
     toggleCodeScans,
+    switchToAmazonQCommand,
+    switchToAmazonQSignInCommand,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { CodeScansState, codeScanState } from '../models/model'
 import { getNewCustomizationsAvailable, getSelectedCustomization } from '../util/customizationUtil'
-import { cwQuickPickSource, cwTreeNodeSource } from '../commands/types'
+import { cwQuickPickSource } from '../commands/types'
 import { AuthUtil } from '../util/authUtil'
-import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
-import { _switchToAmazonQ } from '../../amazonq/explorer/commonNodes'
 
 export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
@@ -81,25 +81,14 @@ export function createSecurityScan(): DataQuickPickItem<'securityScan'> {
     } as DataQuickPickItem<'securityScan'>
 }
 
-export function createReconnect(type: 'item'): DataQuickPickItem<'reconnect'>
-export function createReconnect(type: 'tree'): TreeNode<Command>
-export function createReconnect(type: 'item' | 'tree'): DataQuickPickItem<'reconnect'> | TreeNode<Command>
-export function createReconnect(type: 'item' | 'tree'): any {
+export function createReconnect(): DataQuickPickItem<'reconnect'> {
     const label = localize('aws.amazonq.reconnectNode.label', 'Re-authenticate to connect')
     const icon = addColor(getIcon('vscode-debug-disconnect'), 'notificationsErrorIcon.foreground')
 
-    switch (type) {
-        case 'tree':
-            return reconnect.build(placeholder, cwTreeNodeSource).asTreeNode({
-                label: label,
-                iconPath: icon,
-            })
-        case 'item':
-            return {
-                data: 'reconnect',
-                label: codicon`${icon} ${label}`,
-                onClick: () => reconnect.execute(placeholder, cwQuickPickSource),
-            } as DataQuickPickItem<'reconnect'>
+    return {
+        data: 'reconnect',
+        label: codicon`${icon} ${label}`,
+        onClick: () => reconnect.execute(placeholder, cwQuickPickSource),
     }
 }
 
@@ -114,30 +103,14 @@ export function createLearnMore(): DataQuickPickItem<'learnMore'> {
     } as DataQuickPickItem<'learnMore'>
 }
 
-export function createFreeTierLimitMet(type: 'item'): DataQuickPickItem<'freeTierLimitMet'>
-export function createFreeTierLimitMet(type: 'tree'): TreeNode<Command>
-export function createFreeTierLimitMet(type: 'item' | 'tree'): DataQuickPickItem<'freeTierLimitMet'> | TreeNode<Command>
-export function createFreeTierLimitMet(type: 'tree' | 'item'): any {
-    const now = new Date()
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toLocaleDateString('en-US')
-
+export function createFreeTierLimitMet(): DataQuickPickItem<'freeTierLimitMet'> {
     const label = localize('AWS.codewhisperer.freeTierLimitMetNode.label', 'Free Tier Limit Met')
     const icon = getIcon('vscode-error')
 
-    switch (type) {
-        case 'tree':
-            return showFreeTierLimit.build(placeholder, cwTreeNodeSource).asTreeNode({
-                label: label,
-                iconPath: icon,
-                description: localize('AWS.explorerNode.freeTierLimitMet.tooltip', `paused until ${nextMonth}`),
-            })
-
-        case 'item':
-            return {
-                data: 'freeTierLimitMet',
-                label: codicon`${icon} ${label}`,
-                onClick: () => showFreeTierLimit.execute(placeholder, cwQuickPickSource),
-            } as DataQuickPickItem<'freeTierLimitMet'>
+    return {
+        data: 'freeTierLimitMet',
+        label: codicon`${icon} ${label}`,
+        onClick: () => showFreeTierLimit.execute(placeholder, cwQuickPickSource),
     }
 }
 
@@ -228,5 +201,25 @@ export function createSeparator(label: string = ''): DataQuickPickItem<'separato
         kind: vscode.QuickPickItemKind.Separator,
         data: 'separator',
         label,
+    }
+}
+
+export function switchToAmazonQNode(): DataQuickPickItem<'openChatPanel'> {
+    return {
+        data: 'openChatPanel',
+        label: 'Open Chat Panel',
+        iconPath: getIcon('vscode-comment'),
+        onClick: () => switchToAmazonQCommand.execute('codewhispererQuickPick'),
+    }
+}
+
+export function createSignIn(): DataQuickPickItem<'signIn'> {
+    const label = localize('AWS.codewhisperer.signInNode.label', 'Sign in to get started')
+    const icon = getIcon('vscode-account')
+
+    return {
+        data: 'signIn',
+        label: codicon`${icon} ${label}`,
+        onClick: () => switchToAmazonQSignInCommand.execute('codewhispererQuickPick'),
     }
 }

@@ -19,6 +19,8 @@ import {
     createGitHubNode,
     createDocumentationNode,
     createAutoScans,
+    createSignIn,
+    switchToAmazonQNode,
 } from './codeWhispererNodes'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
@@ -29,25 +31,24 @@ import { createExitButton } from '../../shared/ui/buttons'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { once } from '../../shared/utilities/functionUtils'
 import { getLogger } from '../../shared/logger'
-import { createSignIn, switchToAmazonQNode } from '../../amazonq/explorer/commonNodes'
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
     const autoScansEnabled = CodeScansState.instance.isScansEnabled()
     if (AuthUtil.instance.isConnectionExpired()) {
-        return [createReconnect('item'), createLearnMore()]
+        return [createReconnect(), createLearnMore()]
     }
 
     if (!AuthUtil.instance.isConnected()) {
-        return [createSignIn('item'), createLearnMore()]
+        return [createSignIn(), createLearnMore()]
     }
 
     if (vsCodeState.isFreeTierLimitReached) {
         if (hasVendedIamCredentials()) {
-            return [createFreeTierLimitMet('item'), createOpenReferenceLog()]
+            return [createFreeTierLimitMet(), createOpenReferenceLog()]
         }
         return [
-            createFreeTierLimitMet('item'),
+            createFreeTierLimitMet(),
             createOpenReferenceLog(),
             createSeparator('Other Features'),
             createSecurityScan(),
@@ -75,7 +76,7 @@ function getAmazonQCodeWhispererNodes() {
 
         // Amazon Q + others
         createSeparator('Other Features'),
-        switchToAmazonQNode('item'),
+        switchToAmazonQNode(),
     ]
 }
 

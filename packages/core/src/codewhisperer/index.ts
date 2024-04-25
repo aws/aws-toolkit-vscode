@@ -4,6 +4,6 @@
  */
 
 export { activate, shutdown } from './activation'
-export { AuthUtil, AuthState, refreshToolkitQState } from './util/authUtil'
+export { AuthUtil, AuthState } from './util/authUtil'
 export { CodeSuggestionsState } from './models/model'
 export { amazonQDismissedKey } from './models/constants'

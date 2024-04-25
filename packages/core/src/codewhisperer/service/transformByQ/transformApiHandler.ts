@@ -506,7 +506,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 })
             }
             transformByQState.setPolledJobStatus(status)
-            await vscode.commands.executeCommand('_aws.toolkit.amazonq.refreshTreeNode')
+
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
                 transformByQState.setJobFailureErrorChatMessage(errorMessage)

@@ -41,6 +41,8 @@ import {
     fetchFeatureConfigsCmd,
     toggleCodeScans,
     registerToolkitApiCallback,
+    switchToAmazonQSignInCommand,
+    switchToAmazonQCommand,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -53,7 +55,7 @@ import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2
 import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
-import { AuthUtil, refreshToolkitQState } from './util/authUtil'
+import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
@@ -66,7 +68,6 @@ import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
 import { debounceStartSecurityScan } from './commands/startSecurityScan'
 import { securityScanLanguageContext } from './util/securityScanLanguageContext'
-import { switchToAmazonQCommand, switchToAmazonQSignInCommand } from '../amazonq/explorer/commonNodes'
 
 export async function activate(context: ExtContext): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance
@@ -112,7 +113,6 @@ export async function activate(context: ExtContext): Promise<void> {
         // register toolkit api callback
         registerToolkitApiCallback.register(),
         signoutCodeWhisperer.register(auth),
-        refreshToolkitQState.register(),
         /**
          * Configuration change
          */

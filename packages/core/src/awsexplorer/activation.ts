@@ -109,7 +109,7 @@ export async function activate(args: {
     const amazonQViewNode: ToolView[] = []
     if (!isCloud9()) {
         if (
-            !isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) &&
+            isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) ||
             globals.context.globalState.get<boolean>(amazonQDismissedKey)
         ) {
             await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)

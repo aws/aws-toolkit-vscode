@@ -44,7 +44,9 @@ import {
     createSecurityScan,
     createSelectCustomization,
     createSettingsNode,
+    createSignIn,
     createSignout,
+    switchToAmazonQNode,
 } from '../../../codewhisperer/ui/codeWhispererNodes'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
@@ -52,7 +54,6 @@ import { CodeScansState, CodeSuggestionsState } from '../../../codewhisperer/mod
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
-import { createSignIn, switchToAmazonQNode } from '../../../amazonq/explorer/commonNodes'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -317,7 +318,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertContainsItems(createSignIn('item'), createLearnMore(), ...genericItems())
+                e.assertContainsItems(createSignIn(), createLearnMore(), ...genericItems())
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -329,7 +330,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
 
             getTestWindow().onDidShowQuickPick(e => {
-                e.assertContainsItems(createReconnect('item'), createLearnMore(), ...genericItems(), createSignout())
+                e.assertContainsItems(createReconnect(), createLearnMore(), ...genericItems(), createSignout())
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -347,7 +348,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     createGettingStarted(),
                     createAutoScans(false),
                     createSecurityScan(),
-                    switchToAmazonQNode('item'),
+                    switchToAmazonQNode(),
                     ...genericItems(),
                     createSettingsNode(),
                     createSignout()
@@ -372,7 +373,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     createGettingStarted(),
                     createAutoScans(false),
                     createSecurityScan(),
-                    switchToAmazonQNode('item'),
+                    switchToAmazonQNode(),
                     ...genericItems(),
                     createSettingsNode(),
                     createSignout()
