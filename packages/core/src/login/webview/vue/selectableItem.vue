@@ -132,7 +132,8 @@ export default defineComponent({
     color: black;
 }
 .icon {
-    padding-right: 10px;
+    padding-left: 8px;
+    padding-right: 11px;
     display: flex;
     align-items: center;
 }

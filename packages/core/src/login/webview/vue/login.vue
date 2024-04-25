@@ -6,8 +6,8 @@
 
             <svg
                 v-if="app === 'AMAZONQ' && stage !== 'CONNECTED'"
-                width="100"
-                height="100"
+                width="71"
+                height="71"
                 viewBox="0 0 71 71"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -71,20 +71,20 @@
                 />
             </svg>
         </div>
+        <div style="margin-bottom: 12px"></div>
         <template v-if="stage === 'START'">
-            <div>
-                <button class="back-button" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
-                    <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
-                            fill="#21A2FF"
-                        />
-                    </svg>
-                </button>
-            </div>
+            <button class="back-button" v-if="app === 'TOOLKIT'" @click="handleBackButtonClick">
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                        fill="#21A2FF"
+                    />
+                </svg>
+            </button>
             <div class="auth-container-section">
                 <div class="existing-logins" v-if="existingLogins.length > 0">
                     <div class="header">Connect with an existing account:</div>
+                    <div style="margin-bottom: 12px"></div>
                     <div v-for="(existingLogin, index) in existingLogins" :key="index">
                         <SelectableItem
                             @toggle="toggleItemSelection"
@@ -94,10 +94,12 @@
                             :itemTitle="existingLogin.title"
                             class="selectable-item"
                         ></SelectableItem>
+                        <div style="margin-bottom: 12px"></div>
                     </div>
                     <div class="header">Or, choose a sign-in option:</div>
                 </div>
                 <div class="header" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
+                <div style="margin-bottom: 12px"></div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
@@ -107,6 +109,7 @@
                     :itemTitle="'Use For Free'"
                     class="selectable-item"
                 ></SelectableItem>
+                <div v-if="app === 'AMAZONQ'" style="margin-bottom: 12px"></div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
@@ -125,6 +128,7 @@
                     :itemTitle="'Workforce'"
                     class="selectable-item"
                 ></SelectableItem>
+                <div v-if="app === 'TOOLKIT'" style="margin-bottom: 12px"></div>
                 <SelectableItem
                     v-if="app === 'TOOLKIT'"
                     @toggle="toggleItemSelection"
@@ -134,6 +138,7 @@
                     :itemTitle="'IAM Credentials'"
                     class="selectable-item"
                 ></SelectableItem>
+                <div style="margin-bottom: 12px"></div>
                 <button
                     class="continue-button"
                     :disabled="selectedLoginOption === 0"
@@ -144,24 +149,25 @@
             </div>
         </template>
         <template v-if="stage === 'SSO_FORM'">
-            <div>
-                <button class="back-button" @click="handleBackButtonClick">
-                    <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
-                            fill="#21A2FF"
-                        />
-                    </svg>
-                </button>
-            </div>
+            <button class="back-button" @click="handleBackButtonClick">
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                        fill="#21A2FF"
+                    />
+                </svg>
+            </button>
+            <div style="margin-bottom: 12px"></div>
             <div class="auth-container-section">
-                <div class="header" style="padding-bottom: 5%">Sign in with SSO:</div>
+                <div class="header">Sign in with SSO:</div>
                 <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
+                    <div style="margin-bottom: 4px"></div>
                     <div class="h4">
                         Using CodeCatalyst with AWS Builder ID?
                         <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
                     </div>
                 </div>
+                <div style="margin-bottom: 12px"></div>
                 <div class="title">Start URL</div>
                 <div class="hint">URL for your organization, provided by an admin or help desk</div>
                 <input
@@ -173,6 +179,8 @@
                     v-model="startUrl"
                 />
                 <h4 class="start-url-error">{{ startUrlError }}</h4>
+
+                <div style="margin-bottom: 12px"></div>
                 <div class="title">Region</div>
                 <div class="hint">AWS Region that hosts identity directory</div>
                 <select
@@ -186,6 +194,7 @@
                         {{ `${region.name} (${region.id})` }}
                     </option>
                 </select>
+                <div style="margin-bottom: 12px"></div>
                 <button
                     class="continue-button"
                     :disabled="startUrl.length == 0 || startUrlError.length > 0 || !selectedRegion"
@@ -200,32 +209,40 @@
             <div class="auth-container-section">
                 <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header">Connecting to IAM...</div>
                 <div v-else class="header">Authenticating in browser...</div>
-                <button class="continue-button" v-on:click="handleCancelButton()">Cancel</button>
+                <button
+                    class="continue-button"
+                    v-on:click="handleCancelButtom()"
+                    style="color: #6f6f6f; background-color: var(--vscode-input-background)"
+                >
+                    Cancel
+                </button>
             </div>
         </template>
 
         <template v-if="stage === 'CONNECTED'"> </template>
         <template v-if="stage === 'AWS_PROFILE'">
-            <div>
-                <button class="back-button" @click="handleBackButtonClick">
-                    <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
-                            fill="#21A2FF"
-                        />
-                    </svg>
-                </button>
-            </div>
+            <button class="back-button" @click="handleBackButtonClick">
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                        fill="#21A2FF"
+                    />
+                </svg>
+            </button>
+            <div style="margin-bottom: 12px"></div>
             <div class="header">IAM Credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
-            <div style="margin-bottom: 8px"></div>
+            <div style="margin-bottom: 12px"></div>
             <div class="title">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
             <input class="iamInput" type="text" id="profileName" name="profileName" v-model="profileName" />
+            <div style="margin-bottom: 12px"></div>
             <div class="title">Access Key</div>
             <input class="iamInput" type="text" id="accessKey" name="accessKey" v-model="accessKey" />
+            <div style="margin-bottom: 12px"></div>
             <div class="title">Secret Key</div>
             <input class="iamInput" type="text" id="secretKey" name="secretKey" v-model="secretKey" />
+            <div style="margin-bottom: 12px"></div>
             <button
                 class="continue-button"
                 :disabled="profileName.length <= 0 || accessKey.length <= 0 || secretKey.length <= 0"
@@ -518,17 +535,14 @@ export default defineComponent({
 .auth-container {
     display: flex;
     flex-direction: column;
-
     /* Stretches our overall container to the whole screen */
     height: 100%;
-    width: 100%;
+    width: 260px;
     /* Centers all content in to middle of page since the height is the whole screen*/
     justify-content: center;
 }
 
 .header {
-    margin-bottom: 3px;
-    margin-top: 3px;
     font-size: 12px;
     font-weight: bold;
 }
@@ -542,7 +556,7 @@ export default defineComponent({
 .title {
     margin-bottom: 3px;
     margin-top: 3px;
-    font-size: 12px;
+    font-size: 11px;
 }
 .title.vscode-dark {
     color: white;
@@ -572,8 +586,13 @@ export default defineComponent({
     border: none;
     cursor: pointer;
     color: var(--vscode-button-foreground);
-    padding: 7.5% 0 10% 0;
     height: 13px;
+    display: flex;
+    align-items: center;
+    padding-left: 0;
+}
+.back-button svg {
+    margin-left: 0px;
 }
 .continue-button:disabled {
     background-color: var(--vscode-input-background);
@@ -582,10 +601,14 @@ export default defineComponent({
 }
 .urlInput {
     background-color: var(--vscode-input-background);
-    width: 100%;
+    width: 244px;
     height: 15px;
     color: white;
     border: none;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
 }
 .vscode-light .urlInput {
     color: black;
@@ -595,12 +618,14 @@ export default defineComponent({
 }
 .iamInput {
     background-color: var(--vscode-input-background);
-    width: 100%;
+    width: 244px;
     height: 15px;
     color: white;
     border: none;
-    margin-bottom: 5px;
-    margin-top: 2px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
 }
 .vscode-light .iamInput {
     color: black;
@@ -610,10 +635,14 @@ export default defineComponent({
 }
 .regionSelect {
     background-color: var(--vscode-input-background);
-    width: 100%;
+    width: 244px;
     color: white;
     margin-bottom: 5px;
     margin-top: 2px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
 }
 .vscode-light .regionSelect {
     color: black;
