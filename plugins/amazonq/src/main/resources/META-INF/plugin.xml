@@ -1,7 +1,7 @@
 <!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude" require-restart="true">
     <id>amazon.q</id>
     <name>Amazon Q</name>
     <description>

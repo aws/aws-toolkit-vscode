@@ -1,7 +1,7 @@
 <!-- Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude" require-restart="false">
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude" require-restart="true">
     <id>aws.toolkit</id>
     <name>AWS Toolkit - Amazon Q, CodeWhisperer, and more</name>
     <version>1.0</version>
