@@ -233,7 +233,7 @@ export async function startSecurityScan(
                 scope === CodeAnalysisScope.FILE &&
                 error.message.includes(CodeWhispererConstants.fileScansThrottlingMessage)
             ) {
-                void vscode.window.showErrorMessage(CodeWhispererConstants.fileScansLimitReached)
+                getLogger().error(CodeWhispererConstants.fileScansLimitReached)
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
