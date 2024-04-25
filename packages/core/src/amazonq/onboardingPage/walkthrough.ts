@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import globals from '../../shared/extensionGlobals'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { Commands } from '../../shared/vscode/commands2'
+import { Commands, placeholder } from '../../shared/vscode/commands2'
 import vscode from 'vscode'
 
 /**
@@ -38,5 +39,5 @@ export const openAmazonQWalkthrough = Commands.declare(`_aws.amazonq.walkthrough
 
 /** For use by the walkthrough page only. We need this for telemetry. */
 export const focusAmazonQChatWalkthrough = Commands.declare('_aws.amazonq.walkthrough.focusChat', () => async () => {
-    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+    await focusAmazonQPanel.execute(placeholder, 'walkthrough')
 })

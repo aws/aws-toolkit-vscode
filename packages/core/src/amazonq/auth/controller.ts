@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { reconnect, switchToAmazonQSignInCommand } from '../../codewhisperer/commands/basicCommands'
+import { reconnect } from '../../codewhisperer/commands/basicCommands'
 import { amazonQChatSource } from '../../codewhisperer/commands/types'
+import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { recordTelemetryChatRunCommand } from '../../codewhispererChat/controllers/chat/telemetryHelper'
 import { placeholder } from '../../shared/vscode/commands2'
 import { AuthFollowUpType } from './model'
@@ -26,7 +27,7 @@ export class AuthController {
     }
 
     private handleFullAuth() {
-        void switchToAmazonQSignInCommand.execute('amazonQChat')
+        void focusAmazonQPanel.execute(placeholder, 'amazonQChat')
     }
 
     private handleReAuth() {
