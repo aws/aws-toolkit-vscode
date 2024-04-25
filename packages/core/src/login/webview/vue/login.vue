@@ -201,7 +201,7 @@
                 <div v-else class="header bottomMargin">Authenticating in browser...</div>
                 <button
                     class="continue-button"
-                    v-on:click="handleCancelButtom()"
+                    v-on:click="handleCancelButton()"
                     style="color: #6f6f6f; background-color: var(--vscode-input-background)"
                 >
                     Cancel
