@@ -14,6 +14,7 @@ import { featureDevScheme } from '../../constants'
 import {
     CodeIterationLimitError,
     ContentLengthError,
+    MonthlyConversationLimitError,
     PlanIterationLimitError,
     SelectedFolderNotInWorkspaceFolderError,
     createUserFacingErrorMessage,
@@ -242,6 +243,8 @@ export class FeatureDevController {
                         },
                     ],
                 })
+            } else if (err instanceof MonthlyConversationLimitError) {
+                this.messenger.sendErrorMessage(err.message, message.tabID, 0, undefined, true)
             } else if (err instanceof PlanIterationLimitError) {
                 this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
                 this.messenger.sendAnswer({

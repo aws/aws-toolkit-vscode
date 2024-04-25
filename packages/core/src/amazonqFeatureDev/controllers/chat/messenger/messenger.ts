@@ -46,7 +46,20 @@ export class Messenger {
         )
     }
 
-    public sendErrorMessage(errorMessage: string, tabID: string, retries: number, phase?: SessionStatePhase) {
+    public sendErrorMessage(
+        errorMessage: string,
+        tabID: string,
+        retries: number,
+        phase?: SessionStatePhase,
+        monthlyLimitError: boolean = false
+    ) {
+        if (monthlyLimitError) {
+            this.dispatcher.sendErrorMessage(
+                new ErrorMessage(`Sorry, we encountered a problem when processing your request.`, errorMessage, tabID)
+            )
+            return
+        }
+
         if (retries === 0) {
             this.dispatcher.sendErrorMessage(
                 new ErrorMessage(
