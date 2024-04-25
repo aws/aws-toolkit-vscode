@@ -448,7 +448,13 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
             // Temporary delay to make sure the auth ui was displayed to the user before closing
             // inspired by https://github.com/microsoft/vscode/blob/a49c81edea6647684eee87d204e50feed9c455f6/extensions/github-authentication/src/flows.ts#L262
             setTimeout(() => {
-                void authServer.close()
+                authServer.close().catch(e => {
+                    getLogger().error(
+                        'AuthFlowAuthorization: AuthSSOServer.close() failed: %s: %s',
+                        (e as Error).name,
+                        (e as Error).message
+                    )
+                })
             }, 5000)
         }
     }
