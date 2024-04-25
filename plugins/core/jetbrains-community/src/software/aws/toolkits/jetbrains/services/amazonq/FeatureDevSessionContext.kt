@@ -58,7 +58,11 @@ class FeatureDevSessionContext(val project: Project) {
         return ZipCreationResult(zippedProject, checkSum256, zippedProject.length())
     }
 
-    fun ignoreFile(file: File): Boolean = ignorePatternsWithGitIgnore.any { p -> p.containsMatchIn(file.path) }
+    fun ignoreFile(file: File): Boolean = try {
+        ignorePatternsWithGitIgnore.any { p -> p.containsMatchIn(file.path) }
+    } catch (e: Exception) {
+        true
+    }
 
     fun ignoreFile(file: VirtualFile): Boolean = ignoreFile(File(file.path))
 

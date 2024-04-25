@@ -16,7 +16,6 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.amazonq.FeatureDevSessionContext
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileFormatNotSupported
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLarge
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS
@@ -220,22 +219,7 @@ class CodeScanSessionConfig(
     companion object {
         private val LOG = getLogger<CodeScanSessionConfig>()
         private const val TELEMETRY_TIMEOUT_IN_SECONDS: Long = 10
-        const val FILE_SEPARATOR = '/'
-        fun create(file: VirtualFile, project: Project, scope: CodeAnalysisScope): CodeScanSessionConfig =
-            when (file.programmingLanguage().toTelemetryType()) {
-                CodewhispererLanguage.Java,
-                CodewhispererLanguage.Python,
-                CodewhispererLanguage.Javascript,
-                CodewhispererLanguage.Typescript,
-                CodewhispererLanguage.Csharp,
-                CodewhispererLanguage.Yaml,
-                CodewhispererLanguage.Json,
-                CodewhispererLanguage.Tf,
-                CodewhispererLanguage.Hcl,
-                CodewhispererLanguage.Go,
-                CodewhispererLanguage.Ruby -> CodeScanSessionConfig(file, project, scope)
-                else -> fileFormatNotSupported(file.extension ?: "")
-            }
+        fun create(file: VirtualFile, project: Project, scope: CodeAnalysisScope): CodeScanSessionConfig = CodeScanSessionConfig(file, project, scope)
     }
 }
 

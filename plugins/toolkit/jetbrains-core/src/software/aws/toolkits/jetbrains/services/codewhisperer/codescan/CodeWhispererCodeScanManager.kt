@@ -345,6 +345,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
      */
     fun addCodeScanUI(setSelected: Boolean = false) = runInEdt {
         reset()
+        EditorFactory.getInstance().eventMulticaster.addDocumentListener(documentListener, project)
         val problemsWindow = getProblemsWindow()
         if (!problemsWindow.contentManager.contents.contains(codeScanIssuesContent)) {
             problemsWindow.contentManager.addContent(codeScanIssuesContent)
@@ -433,7 +434,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
 
     private fun reset() = runInEdt {
         // Remove previous document listeners before starting a new scan.
-        removeListeners()
         fileNodeLookup.clear()
         // Erase all range highlighter before cleaning up.
         scanNodesLookup.apply {
@@ -462,20 +462,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
             editorMouseListener,
             codeScanIssuesContent
         )
-    }
-
-    private fun removeListeners() {
-        fileNodeLookup.keys.forEach { file ->
-            runInEdt {
-                val document = FileDocumentManager.getInstance().getDocument(file)
-                if (document == null) {
-                    LOG.error { message("codewhisperer.codescan.file_not_found", file.path) }
-                    return@runInEdt
-                }
-                document.removeDocumentListener(documentListener)
-            }
-        }
-        EditorFactory.getInstance().eventMulticaster.removeEditorMouseMotionListener(editorMouseListener)
     }
 
     private fun beforeCodeScan() {

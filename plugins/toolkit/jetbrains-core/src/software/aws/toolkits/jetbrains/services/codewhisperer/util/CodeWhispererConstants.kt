@@ -81,10 +81,10 @@ object CodeWhispererConstants {
     const val EXTEND: String = "extend"
     const val AS: String = " as "
 
-    const val FILE_SCANS_LIMIT_REACHED = "You have reached the monthly quota of automatic file scans."
-    const val PROJECT_SCANS_LIMIT_REACHED = "You have reached the monthly quota of full project scans."
-    const val FILE_SCANS_THROTTLING_MESSAGE = "Maximum automatic file scan count reached for this month"
-    const val PROJECT_SCANS_THROTTLING_MESSAGE = "Maximum full project scan count reached for this month"
+    const val FILE_SCANS_LIMIT_REACHED = "You have reached the monthly quota of auto-scans."
+    const val PROJECT_SCANS_LIMIT_REACHED = "You have reached the monthly quota of project scans."
+    const val FILE_SCANS_THROTTLING_MESSAGE = "Maximum auto-scans count reached for this month"
+    const val PROJECT_SCANS_THROTTLING_MESSAGE = "Maximum project scan count reached for this month"
 
     // Date when Accountless is not supported
     val EXPIRE_DATE = SimpleDateFormat("yyyy-MM-dd").parse("2023-01-31")
