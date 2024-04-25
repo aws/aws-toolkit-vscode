@@ -14,7 +14,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
-import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
 import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.services.amazonq.QWebviewPanel
@@ -77,7 +76,7 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
         val contentManager = toolWindow.contentManager
         val isNewConnectionForQ = newConnection?.let {
             (it as? AwsBearerTokenConnection)?.let { conn ->
-                val scopeShouldHave = Q_SCOPES + CODEWHISPERER_SCOPES
+                val scopeShouldHave = Q_SCOPES
 
                 LOG.debug { "newConnection: ${conn.id}; scope: ${conn.scopes}; scope must-have: $scopeShouldHave" }
 

@@ -29,7 +29,7 @@ import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRul
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerState
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
-import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
@@ -99,8 +99,8 @@ class CodeWhispererModelConfiguratorTest {
     fun `loadState should load the correct values into memory`() {
         credManager.clear()
 
-        val conn1 = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = CODEWHISPERER_SCOPES))
-        val conn2 = spy(LegacyManagedBearerSsoConnection(region = "us-east-2", startUrl = "url 2", scopes = CODEWHISPERER_SCOPES))
+        val conn1 = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = Q_SCOPES))
+        val conn2 = spy(LegacyManagedBearerSsoConnection(region = "us-east-2", startUrl = "url 2", scopes = Q_SCOPES))
 
         val custom1 = CodeWhispererCustomization("arn-1", "name-1", "description-1")
         val custom2 = CodeWhispererCustomization("arn-2", "name-2", "description-2")
@@ -149,7 +149,7 @@ class CodeWhispererModelConfiguratorTest {
     @Test
     fun `switchCustomization takes no effect if user is using builder id`() {
         credManager.clear()
-        val builderIdConn = spy(LegacyManagedBearerSsoConnection(region = SONO_REGION, startUrl = SONO_URL, scopes = CODEWHISPERER_SCOPES))
+        val builderIdConn = spy(LegacyManagedBearerSsoConnection(region = SONO_REGION, startUrl = SONO_URL, scopes = Q_SCOPES))
 
         ToolkitConnectionManager.getInstance(projectRule.project).switchConnection(builderIdConn)
 
@@ -162,7 +162,7 @@ class CodeWhispererModelConfiguratorTest {
     fun `switchCustomization will update customization for identityCenter users`() {
         credManager.clear()
 
-        val ssoConn = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = CODEWHISPERER_SCOPES))
+        val ssoConn = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = Q_SCOPES))
 
         ToolkitConnectionManager.getInstance(projectRule.project).switchConnection(ssoConn)
         assertThat(ssoConn.isSono()).isFalse
@@ -175,8 +175,8 @@ class CodeWhispererModelConfiguratorTest {
     @Test
     fun `activeCustomization should return customization used by active connection`() {
         credManager.clear()
-        val conn1 = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = CODEWHISPERER_SCOPES))
-        val conn2 = spy(LegacyManagedBearerSsoConnection(region = "us-east-2", startUrl = "url 2", scopes = CODEWHISPERER_SCOPES))
+        val conn1 = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = Q_SCOPES))
+        val conn2 = spy(LegacyManagedBearerSsoConnection(region = "us-east-2", startUrl = "url 2", scopes = Q_SCOPES))
 
         ToolkitConnectionManager.getInstance(projectRule.project).switchConnection(conn2)
 
@@ -201,9 +201,9 @@ class CodeWhispererModelConfiguratorTest {
 
     @Test
     fun `invalidateCustomization should remove all`() {
-        val conn1 = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = CODEWHISPERER_SCOPES))
-        val conn2 = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = CODEWHISPERER_SCOPES))
-        val conn3 = spy(LegacyManagedBearerSsoConnection(region = "us-east-2", startUrl = "url 2", scopes = CODEWHISPERER_SCOPES))
+        val conn1 = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = Q_SCOPES))
+        val conn2 = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = Q_SCOPES))
+        val conn3 = spy(LegacyManagedBearerSsoConnection(region = "us-east-2", startUrl = "url 2", scopes = Q_SCOPES))
 
         sut.loadState(
             CodeWhispererCustomizationState().apply {
@@ -234,7 +234,7 @@ class CodeWhispererModelConfiguratorTest {
     @Test
     fun `listCustomization return null if buildId connection`() {
         val connectionManager = ToolkitConnectionManager.getInstance(projectRule.project)
-        val builderIdConn = LegacyManagedBearerSsoConnection(region = SONO_REGION, startUrl = SONO_URL, scopes = CODEWHISPERER_SCOPES)
+        val builderIdConn = LegacyManagedBearerSsoConnection(region = SONO_REGION, startUrl = SONO_URL, scopes = Q_SCOPES)
         connectionManager.switchConnection(builderIdConn)
 
         assertThat(connectionManager.activeConnectionForFeature(CodeWhispererConnection.getInstance()).isSono()).isTrue

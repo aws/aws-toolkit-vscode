@@ -24,7 +24,7 @@ import software.aws.toolkits.jetbrains.core.credentials.MockToolkitAuthManagerRu
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
-import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceAuthorizationGrantToken
 import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceGrantAccessTokenCacheKey
@@ -187,7 +187,7 @@ class CodeWhispererExplorerActionManagerTest {
             DeviceGrantAccessTokenCacheKey(
                 connectionId = "us-east-1",
                 startUrl = startUrl,
-                scopes = CODEWHISPERER_SCOPES
+                scopes = Q_SCOPES
             ),
             DeviceAuthorizationGrantToken(
                 startUrl = startUrl,
@@ -201,7 +201,7 @@ class CodeWhispererExplorerActionManagerTest {
         val myConnection = LegacyManagedBearerSsoConnection(
             startUrl,
             "us-east-1",
-            CODEWHISPERER_SCOPES,
+            Q_SCOPES,
             testDiskCache
         )
 
