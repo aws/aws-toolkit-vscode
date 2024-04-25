@@ -35,3 +35,8 @@ export const openAmazonQWalkthrough = Commands.declare(`_aws.amazonq.walkthrough
         `${VSCODE_EXTENSION_ID.amazonq}#aws.amazonq.walkthrough`
     )
 })
+
+/** For use by the walkthrough page only. We need this for telemetry. */
+export const focusAmazonQChatWalkthrough = Commands.declare('_aws.amazonq.walkthrough.focusChat', () => async () => {
+    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+})
