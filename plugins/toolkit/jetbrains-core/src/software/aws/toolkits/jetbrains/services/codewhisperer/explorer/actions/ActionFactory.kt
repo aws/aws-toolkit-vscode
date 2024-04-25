@@ -53,9 +53,6 @@ fun<T> buildActionListForInlineSuggestions(project: Project, actionProvider: Act
 
 fun<T> buildActionListForCodeScan(project: Project, actionProvider: ActionProvider<T>): List<T> =
     buildList {
-        if (!isRunningOnRemoteBackend()) {
-            add(actionProvider.openChatPanel)
-        }
         val codeScanManager = CodeWhispererCodeScanManager.getInstance(project)
         val manager = CodeWhispererExplorerActionManager.getInstance()
         if (!isUserBuilderId(project)) {
@@ -74,7 +71,9 @@ fun<T> buildActionListForCodeScan(project: Project, actionProvider: ActionProvid
 
 fun<T> buildActionListForOtherFeatures(actionProvider: ActionProvider<T>): List<T> =
     buildList {
-        add(actionProvider.openChatPanel)
+        if (!isRunningOnRemoteBackend()) {
+            add(actionProvider.openChatPanel)
+        }
     }
 
 fun<T> buildActionListForConnectHelp(actionProvider: ActionProvider<T>): List<T> =

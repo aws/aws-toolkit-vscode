@@ -51,10 +51,10 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
     override fun setup() {
         super.setup()
         setupJavaProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(utilsJava, project, CodeWhispererConstants.SecurityScanType.PROJECT))
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(utilsJava, project, CodeWhispererConstants.CodeAnalysisScope.PROJECT))
         setupResponse(utilsJava.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
-        sessionConfigSpy2 = spy(CodeScanSessionConfig.create(utilsJava, project, CodeWhispererConstants.SecurityScanType.FILE))
+        sessionConfigSpy2 = spy(CodeScanSessionConfig.create(utilsJava, project, CodeWhispererConstants.CodeAnalysisScope.FILE))
         setupResponse(utilsJava.toNioPath().relativeTo(sessionConfigSpy2.projectRoot.toNioPath()))
 
         mockClient.stub {

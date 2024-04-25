@@ -46,6 +46,7 @@ import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.ChatReque
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.FollowUpType
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.TriggerType
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.v1.ChatSessionFactoryV1
+import software.aws.toolkits.jetbrains.services.cwc.commands.CodeScanIssueActionMessage
 import software.aws.toolkits.jetbrains.services.cwc.commands.ContextMenuActionMessage
 import software.aws.toolkits.jetbrains.services.cwc.commands.EditorContextCommand
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.StaticPrompt
@@ -69,7 +70,6 @@ import software.aws.toolkits.jetbrains.services.cwc.messages.IncomingCwcMessage
 import software.aws.toolkits.jetbrains.services.cwc.messages.OnboardingPageInteractionMessage
 import software.aws.toolkits.jetbrains.services.cwc.messages.QuickActionMessage
 import software.aws.toolkits.jetbrains.services.cwc.storage.ChatSessionStorage
-import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CwsprChatCommandType
 import java.time.Instant
 import java.util.UUID
@@ -84,7 +84,6 @@ class ChatController private constructor(
 
     private val messagePublisher: MessagePublisher = context.messagesFromAppToUi
     private val telemetryHelper = TelemetryHelper(context, chatSessionStorage)
-
     constructor(
         context: AmazonQAppInitContext,
     ) : this(
@@ -250,6 +249,25 @@ class ChatController private constructor(
         )
     }
 
+    override suspend fun processCodeScanIssueAction(message: CodeScanIssueActionMessage) {
+        logger.info { "Code Scan Explain issue with Q message received for issue: ${message.issue["title"]}" }
+        // Extract context
+        val fileContext = contextExtractor.extractContextForTrigger(ExtractionTriggerType.CodeScanButton)
+        val triggerId = UUID.randomUUID().toString()
+        val codeSelection = "\n```\n${message.issue["code"]?.trimIndent()?.trim()}\n```\n"
+
+        val prompt = "Explain the following part of my code \n\n " +
+            "Issue:    \"${message.issue["title"]}\" \n" +
+            "Code:    $codeSelection"
+
+        val modelPrompt = "Explain the following part of my code \n\n " +
+            "Issue:    \"${message.issue["title"]}\" \n" +
+            "Description:    ${message.issue["description"]} \n" +
+            "Code:    $codeSelection"
+
+        processPromptActions(prompt, ContextMenuActionMessage(message.command), triggerId, fileContext, modelPrompt)
+    }
+
     // JB specific (not in vscode)
     override suspend fun processContextMenuCommand(message: ContextMenuActionMessage) {
         // Extract context
@@ -271,7 +289,16 @@ class ChatController private constructor(
         // Create prompt
         val prompt = "${message.command} the following part of my code for me: $codeSelection"
 
-        // Update UI with prompt
+        processPromptActions(prompt, message, triggerId, fileContext)
+    }
+
+    private suspend fun processPromptActions(
+        prompt: String,
+        message: ContextMenuActionMessage,
+        triggerId: String,
+        fileContext: ActiveFileContext,
+        modelPrompt: String? = null
+    ) {
         messagePublisher.publish(
             EditorContextCommandMessage(
                 message = prompt,
@@ -285,17 +312,18 @@ class ChatController private constructor(
 
         if (tabId == NO_TAB_AVAILABLE) {
             logger.info { "No tab is available to handle action" }
+            // exit the function without any further actions
             return
         }
 
-        // Get the AI response
+        val inputPrompt = modelPrompt ?: prompt
         handleChat(
             tabId = tabId,
             triggerId = triggerId,
-            message = prompt,
+            message = inputPrompt,
             activeFileContext = fileContext,
-            userIntent = intentRecognizer.getUserIntentFromContextMenuCommand(message.command),
-            message.command.triggerType,
+            userIntent = intentRecognizer.getUserIntentFromContextMenuCommand(EditorContextCommand.ExplainCodeScanIssue),
+            TriggerType.CodeScanButton,
         )
     }
 

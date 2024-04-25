@@ -21,7 +21,7 @@ class RunCodeScanNode(nodeProject: Project) : CodeWhispererActionNode(
         if (codeScanManager.isCodeScanInProgress()) {
             codeScanManager.stopCodeScan()
         } else {
-            codeScanManager.runCodeScan(CodeWhispererConstants.SecurityScanType.PROJECT)
+            codeScanManager.runCodeScan(CodeWhispererConstants.CodeAnalysisScope.PROJECT)
         }
     }
 }

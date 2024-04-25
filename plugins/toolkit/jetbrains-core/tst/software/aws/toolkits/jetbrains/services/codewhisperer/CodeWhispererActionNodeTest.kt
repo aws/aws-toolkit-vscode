@@ -91,6 +91,6 @@ class CodeWhispererActionNodeTest {
 
         sut.onDoubleClick(mock())
 
-        verify(codeScanManager).runCodeScan(CodeWhispererConstants.SecurityScanType.PROJECT)
+        verify(codeScanManager).runCodeScan(CodeWhispererConstants.CodeAnalysisScope.PROJECT)
     }
 }

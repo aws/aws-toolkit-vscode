@@ -27,22 +27,31 @@ import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanResponse
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsRequest
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.CodeAnalysisUploadContext
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.UploadContext
+import software.amazon.awssdk.services.codewhispererruntime.model.UploadIntent
 import software.amazon.awssdk.utils.IoUtils
 import software.aws.toolkits.core.utils.Waiters.waitUntil
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PayloadContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanServiceInvocationContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODE_SCAN_POLLING_INTERVAL_IN_SECONDS
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.FILE_SCANS_THROTTLING_MESSAGE
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.PROJECT_SCANS_THROTTLING_MESSAGE
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_BYTES_IN_KB
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_MILLIS_IN_SECOND
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyErrorCodeWhispererUsageLimit
 import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.File
@@ -103,7 +112,8 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
             currentCoroutineContext.ensureActive()
             LOG.debug { "Uploading source zip located at ${sourceZip.path} to s3" }
             val artifactsUploadStartTime = now()
-            val sourceZipUploadResponse = createUploadUrlAndUpload(sourceZip, "SourceCode")
+            val codeScanName = UUID.randomUUID().toString()
+            val sourceZipUploadResponse = createUploadUrlAndUpload(sourceZip, "SourceCode", codeScanName)
             LOG.debug {
                 "Successfully uploaded source zip to s3: " +
                     "Upload id: ${sourceZipUploadResponse.uploadId()} " +
@@ -120,7 +130,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
             currentCoroutineContext.ensureActive()
             LOG.debug { "Requesting security scan for the uploaded artifacts, language: ${payloadContext.language}" }
             val serviceInvocationStartTime = now()
-            val createCodeScanResponse = createCodeScan(payloadContext.language.toString())
+            val createCodeScanResponse = createCodeScan(payloadContext.language.toString(), codeScanName)
             LOG.debug {
                 "Successfully created security scan with " +
                     "status: ${createCodeScanResponse.status()} " +
@@ -192,11 +202,23 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
             codeScanResponseContext = codeScanResponseContext.copy(reason = "Succeeded")
             return CodeScanResponse.Success(issues, codeScanResponseContext)
         } catch (e: Exception) {
-            val errorCode = (e as? CodeWhispererException)?.awsErrorDetails()?.errorCode()
-            val requestId = if (e is CodeWhispererException) e.requestId() else null
+            val exception = e as? CodeWhispererException
+            val awsError = exception?.awsErrorDetails()
+
+            if (awsError != null) {
+                if (awsError.errorCode() == "ThrottlingException" && awsError.errorMessage() != null) {
+                    if (awsError.errorMessage()!!.contains(PROJECT_SCANS_THROTTLING_MESSAGE)) {
+                        LOG.info { "Project Scans limit reached" }
+                        notifyErrorCodeWhispererUsageLimit(sessionContext.project, true)
+                    } else if (awsError.errorMessage()!!.contains(FILE_SCANS_THROTTLING_MESSAGE)) {
+                        LOG.info { "File Scans limit reached" }
+                        CodeWhispererExplorerActionManager.getInstance().setMonthlyQuotaForCodeScansExceeded(true)
+                    }
+                }
+            }
             LOG.error {
-                "Failed to run security scan and display results. Caused by: ${e.message}, status code: $errorCode, " +
-                    "exception: ${e::class.simpleName}, request ID: $requestId " +
+                "Failed to run security scan and display results. Caused by: ${e.message}, status code: ${awsError?.errorCode()}, " +
+                    "exception: ${e::class.simpleName}, request ID: ${exception?.requestId()}" +
                     "Jetbrains IDE: ${ApplicationInfo.getInstance().fullApplicationName}, " +
                     "IDE version: ${ApplicationInfo.getInstance().apiVersion}, " +
                     "stacktrace: ${e.stackTrace.contentDeepToString()}"
@@ -208,42 +230,43 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
     /**
      * Creates an upload URL and uplaods the zip file to the presigned URL
      */
-    fun createUploadUrlAndUpload(zipFile: File, artifactType: String): CreateUploadUrlResponse = try {
+    fun createUploadUrlAndUpload(zipFile: File, artifactType: String, codeScanName: String): CreateUploadUrlResponse = try {
         val fileMd5: String = Base64.getEncoder().encodeToString(DigestUtils.md5(FileInputStream(zipFile)))
         LOG.debug { "Fetching presigned URL for uploading $artifactType." }
-        val createUploadUrlResponse = createUploadUrl(fileMd5, artifactType)
+        val createUploadUrlResponse = createUploadUrl(fileMd5, artifactType, codeScanName)
         LOG.debug { "Successfully fetched presigned URL for uploading $artifactType." }
+        val url = createUploadUrlResponse.uploadUrl()
         LOG.debug { "Uploading $artifactType using the presigned URL." }
-        uploadArtifactToS3(createUploadUrlResponse, createUploadUrlResponse.uploadId(), zipFile, fileMd5)
+        uploadArtifactToS3(
+            url,
+            zipFile,
+            createUploadUrlResponse.requestHeaders()
+        )
         createUploadUrlResponse
     } catch (e: Exception) {
         LOG.error { "Security scan failed. Something went wrong uploading artifacts: ${e.message}" }
         uploadArtifactFailedError()
     }
 
-    fun createUploadUrl(md5Content: String, artifactType: String): CreateUploadUrlResponse = clientAdaptor.createUploadUrl(
+    fun createUploadUrl(md5Content: String, artifactType: String, codeScanName: String): CreateUploadUrlResponse = clientAdaptor.createUploadUrl(
         CreateUploadUrlRequest.builder()
             .contentMd5(md5Content)
             .artifactType(artifactType)
+            .uploadIntent(getUploadIntent(sessionContext.codeAnalysisScope))
+            .uploadContext(UploadContext.fromCodeAnalysisUploadContext(CodeAnalysisUploadContext.builder().codeScanName(codeScanName).build()))
             .build()
     )
 
+    private fun getUploadIntent(scope: CodeWhispererConstants.CodeAnalysisScope): UploadIntent = when (scope) {
+        CodeWhispererConstants.CodeAnalysisScope.FILE -> UploadIntent.AUTOMATIC_FILE_SECURITY_SCAN
+        CodeWhispererConstants.CodeAnalysisScope.PROJECT -> UploadIntent.FULL_PROJECT_SECURITY_SCAN
+    }
+
     @Throws(IOException::class)
-    fun uploadArtifactToS3(createUploadUrlResponse: CreateUploadUrlResponse, uploadId: String, fileToUpload: File, md5: String) {
-        val uploadIdJson = """{"uploadId":"$uploadId"}"""
-        HttpRequests.put(createUploadUrlResponse.uploadUrl(), "application/zip").userAgent(AwsClientManager.userAgent).tuner {
-            if (createUploadUrlResponse.requestHeaders() != null && createUploadUrlResponse.requestHeaders().isNotEmpty()) {
-                for ((key, value) in createUploadUrlResponse.requestHeaders()) {
-                    it.setRequestProperty(key, value)
-                }
-            } else {
-                it.setRequestProperty(CONTENT_MD5, md5)
-                it.setRequestProperty(SERVER_SIDE_ENCRYPTION, AWS_KMS)
-                it.setRequestProperty(CONTENT_TYPE, APPLICATION_ZIP)
-                if (createUploadUrlResponse.kmsKeyArn()?.isNotEmpty() == true) {
-                    it.setRequestProperty(SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID, createUploadUrlResponse.kmsKeyArn())
-                }
-                it.setRequestProperty(SERVER_SIDE_ENCRYPTION_CONTEXT, Base64.getEncoder().encodeToString(uploadIdJson.toByteArray()))
+    fun uploadArtifactToS3(url: String, fileToUpload: File, requestHeaders: Map<String, String>?) {
+        HttpRequests.put(url, "application/zip").userAgent(AwsClientManager.userAgent).tuner {
+            requestHeaders?.forEach { entry ->
+                it.setRequestProperty(entry.key, entry.value)
             }
         }.connect {
             val connection = it.connection as HttpURLConnection
@@ -252,7 +275,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
         }
     }
 
-    fun createCodeScan(language: String): CreateCodeScanResponse {
+    fun createCodeScan(language: String, codeScanName: String): CreateCodeScanResponse {
         val artifactsMap = mapOf(
             ArtifactType.SOURCE_CODE to urlResponse[ArtifactType.SOURCE_CODE]?.uploadId(),
             ArtifactType.BUILT_JARS to urlResponse[ArtifactType.BUILT_JARS]?.uploadId()
@@ -264,6 +287,8 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
                     .clientToken(clientToken.toString())
                     .programmingLanguage { it.languageName(language) }
                     .artifacts(artifactsMap)
+                    .scope(sessionContext.codeAnalysisScope.value)
+                    .codeScanName(codeScanName)
                     .build()
             )
         } catch (e: Exception) {
@@ -406,7 +431,8 @@ data class SuggestedFix(val description: String, val code: String)
 
 data class CodeScanSessionContext(
     val project: Project,
-    val sessionConfig: CodeScanSessionConfig
+    val sessionConfig: CodeScanSessionConfig,
+    val codeAnalysisScope: CodeWhispererConstants.CodeAnalysisScope
 )
 
 internal fun defaultPayloadContext() = PayloadContext(CodewhispererLanguage.Unknown, 0, 0, 0, listOf(), 0, 0)

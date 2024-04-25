@@ -19,9 +19,12 @@ class ResumeCodeScanNode(nodeProject: Project) : CodeWhispererActionNode(
 ) {
 
     override fun onDoubleClick(event: MouseEvent) {
-        CodeWhispererExplorerActionManager.getInstance().setAutoCodeScan(project, true)
+        val actionManager = CodeWhispererExplorerActionManager.getInstance()
+        actionManager.setAutoCodeScan(project, true)
 
         //  Run Proactive Code File Scan once toggle is enabled
-        CodeWhispererCodeScanManager.getInstance(project).debouncedRunCodeScan(CodeWhispererConstants.SecurityScanType.FILE)
+        if (!actionManager.isMonthlyQuotaForCodeScansExceeded()) {
+            CodeWhispererCodeScanManager.getInstance(project).debouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
+        }
     }
 }

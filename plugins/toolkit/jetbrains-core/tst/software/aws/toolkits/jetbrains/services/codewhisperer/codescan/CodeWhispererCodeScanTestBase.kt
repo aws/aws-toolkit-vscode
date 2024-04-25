@@ -225,14 +225,14 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         ]                
     """
     internal fun getSourceFilesUnderProjectRoot(sessionConfigSpy: CodeScanSessionConfig, testFile: VirtualFile, size: Int) = assertThat(
-        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile, CodeWhispererConstants.SecurityScanType.PROJECT).size
+        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile, CodeWhispererConstants.CodeAnalysisScope.PROJECT).size
     ).isEqualTo(size)
 
     internal fun getSourceFilesUnderProjectRootForFileScan(
         sessionConfigSpy: CodeScanSessionConfig,
         testFile: VirtualFile
     ) = assertThat(
-        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile, CodeWhispererConstants.SecurityScanType.FILE).size
+        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile, CodeWhispererConstants.CodeAnalysisScope.FILE).size
     ).isEqualTo(1)
 
     internal fun getTotalProjectSizeInBytes(sessionConfigSpy: CodeScanSessionConfig, totalSize: Long) = runBlocking {
@@ -273,9 +273,9 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         expectedTotalSize: Long,
         expectedTotalIssues: Int
     ) {
-        val codeScanContext = CodeScanSessionContext(project, sessionConfigSpy)
+        val codeScanContext = CodeScanSessionContext(project, sessionConfigSpy, CodeWhispererConstants.CodeAnalysisScope.PROJECT)
         val sessionMock = spy(CodeWhispererCodeScanSession(codeScanContext))
-        doNothing().`when`(sessionMock).uploadArtifactToS3(any(), any(), any(), any())
+        doNothing().`when`(sessionMock).uploadArtifactToS3(any(), any(), any())
         doNothing().`when`(sessionMock).sleepThread()
 
         ToolWindowManager.getInstance(project).registerToolWindow(

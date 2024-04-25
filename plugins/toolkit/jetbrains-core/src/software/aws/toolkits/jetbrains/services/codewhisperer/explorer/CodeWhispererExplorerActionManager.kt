@@ -29,6 +29,7 @@ class CodeWhispererExploreActionState : BaseState() {
 enum class CodeWhispererExploreStateType {
     IsAutoEnabled,
     IsAutoCodeScanEnabled,
+    IsMonthlyQuotaForCodeScansExceeded,
     IsManualEnabled,
     HasAcceptedTermsOfServices,
     HasShownHowToUseCodeWhisperer,

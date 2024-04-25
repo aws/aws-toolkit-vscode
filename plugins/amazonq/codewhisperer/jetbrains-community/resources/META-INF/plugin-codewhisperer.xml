@@ -96,5 +96,12 @@
 
         <group id="aws.toolkit.jetbrains.core.services.codewhisperer.suggestions"
                class="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.QStatusBarLoggedInActionGroup" />
+
+        <group id = "aws.toolkit.explorer.codewhisperer.codescan">
+            <action
+                id="aws.amazonq.explainCodeScanIssue"
+                class= "software.aws.toolkits.jetbrains.services.cwc.commands.codescan.actions.ExplainCodeIssueAction"/>
+        </group>
+
     </actions>
 </idea-plugin>

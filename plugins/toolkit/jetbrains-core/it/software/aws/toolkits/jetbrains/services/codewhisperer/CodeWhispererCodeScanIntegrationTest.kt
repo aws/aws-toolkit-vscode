@@ -63,7 +63,7 @@ class CodeWhispererCodeScanIntegrationTest : CodeWhispererIntegrationTestBase() 
                 CodeScanSessionConfig.create(
                     file.virtualFile,
                     projectRule.project,
-                    CodeWhispererConstants.SecurityScanType.PROJECT
+                    CodeWhispererConstants.CodeAnalysisScope.PROJECT
                 ).getPresentablePayloadLimit()
             )
         )

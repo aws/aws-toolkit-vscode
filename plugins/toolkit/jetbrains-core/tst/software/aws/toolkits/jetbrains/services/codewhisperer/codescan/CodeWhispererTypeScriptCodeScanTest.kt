@@ -39,7 +39,7 @@ class CodeWhispererTypeScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
             CodeScanSessionConfig.create(
                 testTs,
                 project,
-                CodeWhispererConstants.SecurityScanType.PROJECT
+                CodeWhispererConstants.CodeAnalysisScope.PROJECT
             )
         )
         setupResponse(testTs.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
@@ -81,7 +81,7 @@ class CodeWhispererTypeScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
         assertThat(
             sessionConfigSpy.getSourceFilesUnderProjectRoot(
                 testTs,
-                CodeWhispererConstants.SecurityScanType.PROJECT
+                CodeWhispererConstants.CodeAnalysisScope.PROJECT
             ).size
         ).isEqualTo(4)
     }

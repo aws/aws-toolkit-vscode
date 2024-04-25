@@ -38,6 +38,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getGettingStartedTaskType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
 import software.aws.toolkits.jetbrains.settings.AwsSettings
+import software.aws.toolkits.telemetry.CodewhispererCodeScanScope
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererGettingStartedTask
 import software.aws.toolkits.telemetry.CodewhispererLanguage
@@ -290,6 +291,7 @@ class CodeWhispererTelemetryService {
         val issuesWithFixes = codeScanEvent.codeScanResponseContext.codeScanIssuesWithFixes
         val reason = codeScanEvent.codeScanResponseContext.reason
         val startUrl = getConnectionStartUrl(codeScanEvent.connection)
+        val codeAnalysisScope = codeScanEvent.codeAnalysisScope
 
         LOG.debug {
             "Recording code security scan event. \n" +
@@ -305,7 +307,8 @@ class CodeWhispererTelemetryService {
                 "Artifacts upload duration in milliseconds: ${serviceInvocationContext.artifactsUploadDuration}, \n" +
                 "Service invocation duration in milliseconds: ${serviceInvocationContext.serviceInvocationDuration}, \n" +
                 "Total number of lines scanned: ${payloadContext.totalLines}, \n" +
-                "Reason: $reason \n"
+                "Reason: $reason \n" +
+                "Scope: ${codeAnalysisScope.value} \n"
         }
         CodewhispererTelemetry.securityScan(
             project = project,
@@ -324,7 +327,8 @@ class CodeWhispererTelemetryService {
             codeScanServiceInvocationsDuration = serviceInvocationContext.serviceInvocationDuration.toInt(),
             reason = reason,
             result = codeScanEvent.result,
-            credentialStartUrl = startUrl
+            credentialStartUrl = startUrl,
+            codewhispererCodeScanScope = CodewhispererCodeScanScope.from(codeAnalysisScope.value)
         )
     }
 

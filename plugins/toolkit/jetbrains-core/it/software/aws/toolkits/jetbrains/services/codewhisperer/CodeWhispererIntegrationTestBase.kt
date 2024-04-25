@@ -208,7 +208,7 @@ open class CodeWhispererIntegrationTestBase(val projectRule: CodeInsightTestFixt
                 verify(
                     scanManager,
                     timeout(60000).atLeastOnce()
-                ).renderResponseOnUIThread(issuesCaptor.capture(), any(), any(), CodeWhispererConstants.SecurityScanType.PROJECT)
+                ).renderResponseOnUIThread(issuesCaptor.capture(), any(), any(), CodeWhispererConstants.CodeAnalysisScope.PROJECT)
                 issues = issuesCaptor.lastValue
             }
             verify(telemetryServiceSpy, timeout(60000).atLeastOnce()).sendSecurityScanEvent(codeScanEventCaptor.capture(), anyOrNull())

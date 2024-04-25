@@ -57,8 +57,9 @@ object CodeWhispererConstants {
 
     // Code scan feature constants
     val ISSUE_HIGHLIGHT_TEXT_ATTRIBUTES = TextAttributes(null, null, JBColor.YELLOW, EffectType.WAVE_UNDERSCORE, Font.PLAIN)
+    const val CODE_SCAN_ISSUE_TITLE_MAX_LENGTH = 60
     const val DEFAULT_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60 * 10 // 10 minutes
-    const val DEFAULT_PAYLOAD_LIMIT_IN_BYTES: Long = 5 * 1024 * 1024 * 1024 // 5 GB
+    const val DEFAULT_PAYLOAD_LIMIT_IN_BYTES: Long = 500 * 1024 * 1024 // 500 MB
     const val CODE_SCAN_POLLING_INTERVAL_IN_SECONDS: Long = 1
     const val CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS: Long = 10
     const val FILE_SCAN_TIMEOUT_IN_SECONDS: Long = 60 // 60 seconds
@@ -80,6 +81,11 @@ object CodeWhispererConstants {
     const val EXTEND: String = "extend"
     const val AS: String = " as "
 
+    const val FILE_SCANS_LIMIT_REACHED = "You have reached the monthly quota of automatic file scans."
+    const val PROJECT_SCANS_LIMIT_REACHED = "You have reached the monthly quota of full project scans."
+    const val FILE_SCANS_THROTTLING_MESSAGE = "Maximum automatic file scan count reached for this month"
+    const val PROJECT_SCANS_THROTTLING_MESSAGE = "Maximum full project scan count reached for this month"
+
     // Date when Accountless is not supported
     val EXPIRE_DATE = SimpleDateFormat("yyyy-MM-dd").parse("2023-01-31")
 
@@ -98,9 +104,9 @@ object CodeWhispererConstants {
         const val DEACTIVATED = "Deactivated"
     }
 
-    enum class SecurityScanType {
-        FILE,
-        PROJECT
+    enum class CodeAnalysisScope(val value: String) {
+        FILE("FILE"),
+        PROJECT("PROJECT")
     }
 
     object Config {

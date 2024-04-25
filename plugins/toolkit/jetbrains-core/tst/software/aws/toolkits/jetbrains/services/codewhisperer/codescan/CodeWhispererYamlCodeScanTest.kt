@@ -38,7 +38,7 @@ class CodeWhispererYamlCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
             CodeScanSessionConfig.create(
                 testYaml,
                 project,
-                CodeWhispererConstants.SecurityScanType.PROJECT
+                CodeWhispererConstants.CodeAnalysisScope.PROJECT
             )
         )
         setupResponse(testYaml.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))

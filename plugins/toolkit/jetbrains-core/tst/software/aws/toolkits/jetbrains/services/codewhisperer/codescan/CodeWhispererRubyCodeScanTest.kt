@@ -34,7 +34,7 @@ class CodeWhispererRubyCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     override fun setup() {
         super.setup()
         setupRubyProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testRuby, project, CodeWhispererConstants.SecurityScanType.PROJECT))
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(testRuby, project, CodeWhispererConstants.CodeAnalysisScope.PROJECT))
         setupResponse(testRuby.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {

@@ -455,6 +455,13 @@
             "type":"string",
             "enum":["codeanalysis/findings/1.0"]
         },
+        "CodeAnalysisScope": {
+            "type": "string",
+            "enum": [
+                "FILE",
+                "PROJECT"
+            ]
+        },
         "CodeAnalysisStatus":{
             "type":"string",
             "enum":[
@@ -462,6 +469,13 @@
                 "Pending",
                 "Failed"
             ]
+        },
+        "CodeAnalysisUploadContext": {
+            "type": "structure",
+            "required": ["codeScanName"],
+            "members": {
+                "codeScanName": { "shape": "CodeScanName" }
+            }
         },
         "CodeCoverageEvent":{
             "type":"structure",
@@ -521,13 +535,20 @@
             "members":{
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
                 "codeScanJobId":{"shape":"CodeScanJobId"},
-                "timestamp":{"shape":"Timestamp"}
+                "timestamp":{"shape":"Timestamp"},
+                "codeAnalysisScope": {"shape": "CodeAnalysisScope"}
             }
         },
         "CodeScanJobId":{
             "type":"string",
             "max":128,
             "min":1
+        },
+        "CodeScanName": {
+            "type": "string",
+            "documentation": "<p>Code analysis scan name</p>",
+            "max": 128,
+            "min": 1
         },
         "CodeScanRemediationsEvent": {
             "type": "structure",
@@ -1356,7 +1377,9 @@
                 "clientToken":{
                     "shape":"StartCodeAnalysisRequestClientTokenString",
                     "idempotencyToken":true
-                }
+                },
+                "scope": {"shape": "CodeAnalysisScope"},
+                "codeScanName":{"shape":"CodeScanName"}
             }
         },
         "StartCodeAnalysisRequestClientTokenString":{
@@ -1731,6 +1754,21 @@
             "type":"string",
             "enum":["LANGUAGE_UPGRADE"]
         },
+        "TransformationUploadArtifactType":{
+            "type":"string",
+            "enum":["Dependencies"]
+        },
+        "TransformationUploadContext":{
+            "type":"structure",
+            "required":[
+                "jobId",
+                "uploadArtifactType"
+            ],
+            "members":{
+                "jobId":{"shape":"TransformationJobId"},
+                "uploadArtifactType":{"shape":"TransformationUploadArtifactType"}
+            }
+        },
         "TaskAssistPlanningUploadContext": {
             "type": "structure",
             "required": ["conversationId"],
@@ -1746,7 +1784,9 @@
         "UploadContext":{
             "type":"structure",
             "members":{
-                "taskAssistPlanningUploadContext": {"shape": "TaskAssistPlanningUploadContext"}
+                "taskAssistPlanningUploadContext":{"shape":"TaskAssistPlanningUploadContext"},
+                "transformationUploadContext":{"shape":"TransformationUploadContext"},
+                "codeAnalysisUploadContext":{"shape":"CodeAnalysisUploadContext"}
             },
             "union":true
         },
@@ -1759,7 +1799,9 @@
             "type":"string",
             "enum":[
                 "TRANSFORMATION",
-                "TASK_ASSIST_PLANNING"
+                "TASK_ASSIST_PLANNING",
+                "AUTOMATIC_FILE_SECURITY_SCAN",
+                "FULL_PROJECT_SECURITY_SCAN"
             ]
         },
         "UserContext":{

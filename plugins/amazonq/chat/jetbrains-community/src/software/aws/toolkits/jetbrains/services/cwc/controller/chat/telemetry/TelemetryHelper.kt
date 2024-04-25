@@ -54,7 +54,7 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
     }
 
     private fun getTelemetryTriggerType(triggerType: TriggerType): CwsprChatTriggerInteraction = when (triggerType) {
-        TriggerType.Click -> CwsprChatTriggerInteraction.Click
+        TriggerType.Click, TriggerType.CodeScanButton -> CwsprChatTriggerInteraction.Click
         TriggerType.ContextMenu, TriggerType.Hotkeys -> CwsprChatTriggerInteraction.ContextMenu
     }
 

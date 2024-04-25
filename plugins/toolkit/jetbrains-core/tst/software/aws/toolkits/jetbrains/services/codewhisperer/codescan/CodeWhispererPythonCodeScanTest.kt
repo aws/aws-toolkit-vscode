@@ -33,7 +33,7 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
     override fun setup() {
         super.setup()
         setupPythonProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testPy, project, CodeWhispererConstants.SecurityScanType.PROJECT))
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(testPy, project, CodeWhispererConstants.CodeAnalysisScope.PROJECT))
         setupResponse(testPy.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {
@@ -132,7 +132,7 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
             CodeScanSessionConfig.create(
                 fileOutsideProjectPy,
                 project,
-                CodeWhispererConstants.SecurityScanType.PROJECT
+                CodeWhispererConstants.CodeAnalysisScope.PROJECT
             )
         )
 

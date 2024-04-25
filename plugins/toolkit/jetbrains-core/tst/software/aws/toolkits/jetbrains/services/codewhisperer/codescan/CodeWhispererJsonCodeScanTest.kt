@@ -38,7 +38,7 @@ class CodeWhispererJsonCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
             CodeScanSessionConfig.create(
                 testJson,
                 project,
-                CodeWhispererConstants.SecurityScanType.PROJECT
+                CodeWhispererConstants.CodeAnalysisScope.PROJECT
             )
         )
         setupResponse(testJson.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))

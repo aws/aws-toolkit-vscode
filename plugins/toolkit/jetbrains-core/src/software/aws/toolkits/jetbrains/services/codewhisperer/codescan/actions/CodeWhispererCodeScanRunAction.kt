@@ -28,6 +28,6 @@ class CodeWhispererCodeScanRunAction : DumbAwareAction(
 
     override fun actionPerformed(event: AnActionEvent) {
         val project = event.project ?: return
-        CodeWhispererCodeScanManager.getInstance(project).runCodeScan(CodeWhispererConstants.SecurityScanType.PROJECT)
+        CodeWhispererCodeScanManager.getInstance(project).runCodeScan(CodeWhispererConstants.CodeAnalysisScope.PROJECT)
     }
 }

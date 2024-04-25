@@ -11,6 +11,7 @@ import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitConte
 import software.aws.toolkits.jetbrains.services.amazonq.messages.AmazonQMessage
 import software.aws.toolkits.jetbrains.services.amazonq.onboarding.OnboardingPageInteraction
 import software.aws.toolkits.jetbrains.services.cwc.commands.ActionRegistrar
+import software.aws.toolkits.jetbrains.services.cwc.commands.CodeScanIssueActionMessage
 import software.aws.toolkits.jetbrains.services.cwc.commands.ContextMenuActionMessage
 import software.aws.toolkits.jetbrains.services.cwc.controller.ChatController
 import software.aws.toolkits.jetbrains.services.cwc.messages.IncomingCwcMessage
@@ -75,6 +76,7 @@ class App : AmazonQApp {
 
             // JB specific (not in vscode)
             is ContextMenuActionMessage -> inboundAppMessagesHandler.processContextMenuCommand(message)
+            is CodeScanIssueActionMessage -> inboundAppMessagesHandler.processCodeScanIssueAction(message)
             is IncomingCwcMessage.ClickedLink -> inboundAppMessagesHandler.processLinkClick(message)
         }
     }

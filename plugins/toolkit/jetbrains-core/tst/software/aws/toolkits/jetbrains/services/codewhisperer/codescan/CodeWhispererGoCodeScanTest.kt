@@ -32,7 +32,7 @@ class CodeWhispererGoCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsi
     override fun setup() {
         super.setup()
         setupGoProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(mainGo, project, CodeWhispererConstants.SecurityScanType.PROJECT))
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(mainGo, project, CodeWhispererConstants.CodeAnalysisScope.PROJECT))
         setupResponse(mainGo.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {

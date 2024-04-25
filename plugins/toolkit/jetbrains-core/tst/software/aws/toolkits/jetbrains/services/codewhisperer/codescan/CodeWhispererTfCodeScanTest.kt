@@ -34,7 +34,7 @@ class CodeWhispererTfCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsi
     override fun setup() {
         super.setup()
         setupTfProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testTf, project, CodeWhispererConstants.SecurityScanType.PROJECT))
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(testTf, project, CodeWhispererConstants.CodeAnalysisScope.PROJECT))
         setupResponse(testTf.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {
