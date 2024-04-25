@@ -364,7 +364,7 @@ export default defineComponent({
                 void client.emitUiClick('auth_toolkitCloseButton')
                 void client.quitLoginScreen()
             } else {
-                void client.emitCancelledMetric()
+                void client.emitCancelledMetric(false)
                 void client.emitUiClick('auth_backButton')
                 this.stage = 'START'
             }
@@ -449,7 +449,7 @@ export default defineComponent({
             void client.emitUiClick('auth_regionSelection')
         },
         handleCancelButton() {
-            void client.emitCancelledMetric()
+            void client.emitCancelledMetric(false)
             void client.emitUiClick('auth_cancelButton')
 
             this.stage = 'START'

@@ -120,12 +120,14 @@ export default defineComponent({
     },
     methods: {
         async reauthenticate() {
+            client.emitUiClick('auth_reauthenticate')
             // NOTE: the following puts the underlying connection in to an "authenticating" state
             // which triggers our connection change event listener. This triggers the UI to refresh
             // before it is actually done.
             await client.reauthenticateConnection()
         },
         async signout() {
+            client.emitUiClick('auth_signout')
             await client.signout()
         },
     },
