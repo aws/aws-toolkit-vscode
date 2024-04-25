@@ -407,7 +407,8 @@
                 "timeBetweenChunks": { "shape": "timeBetweenChunks" },
                 "fullResponselatency": { "shape": "Double" },
                 "requestLength": { "shape": "Integer" },
-                "responseLength": { "shape": "Integer" }
+                "responseLength": { "shape": "Integer" },
+                "numberOfCodeBlocks": { "shape": "Integer" }
             }
         },
         "ChatHistory": {
@@ -426,6 +427,7 @@
                 "interactionType": { "shape": "ChatMessageInteractionType" },
                 "interactionTarget": { "shape": "ChatInteractWithMessageEventInteractionTargetString" },
                 "acceptedCharacterCount": { "shape": "Integer" },
+                "acceptedLineCount": { "shape": "Integer" },
                 "acceptedSnippetHasReference": { "shape": "Boolean" }
             }
         },
