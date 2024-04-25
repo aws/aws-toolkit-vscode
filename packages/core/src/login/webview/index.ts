@@ -4,3 +4,4 @@
  */
 
 export { CommonAuthViewProvider } from './commonAuthViewProvider'
+export { CommonAuthWebview } from './vue/backend'
