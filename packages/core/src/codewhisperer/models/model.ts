@@ -580,6 +580,10 @@ export class TransformByQState {
         this.planSteps = steps
     }
 
+    public resetPlanSteps() {
+        this.planSteps = undefined
+    }
+
     public getPrefixTextForButton() {
         switch (this.transformByQState) {
             case TransformByQStatus.NotStarted:
