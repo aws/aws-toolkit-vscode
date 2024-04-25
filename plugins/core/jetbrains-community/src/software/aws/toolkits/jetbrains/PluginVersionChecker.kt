@@ -17,6 +17,8 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.AwsToolkit.TOOLKIT_PLUGIN_ID
 import software.aws.toolkits.jetbrains.core.plugin.PluginUpdateManager
 import software.aws.toolkits.resources.message
 
@@ -47,7 +49,19 @@ class PluginVersionChecker : ApplicationInitializedListener {
             }
         }
 
-        if (updated.isNotEmpty()) {
+        // defensively disable the old toolkit if we couldn't update it because we might deadlock during project open
+        val toolkit = mismatch.firstOrNull { it.id == TOOLKIT_PLUGIN_ID && it.version?.startsWith("2.") == true }
+        val shouldDisableToolkit = (toolkit != null && updated.none { it == toolkit })
+        if (shouldDisableToolkit) {
+            LOG.info { "Attempting to disable aws.toolkit due to known incompatibility" }
+            val descriptor = toolkit?.descriptor as? IdeaPluginDescriptor
+
+            descriptor?.let {
+                PluginEnabler.getInstance().disable(listOf(descriptor))
+            } ?: LOG.warn { "Expected toolkit descriptor to be IdeaPluginDescriptor, but was ${toolkit?.descriptor}" }
+        }
+
+        if (shouldDisableToolkit || updated.isNotEmpty()) {
             LOG.info { "Restarting due to forced update of plugins" }
             ApplicationManagerEx.getApplicationEx().restart(true)
             return
