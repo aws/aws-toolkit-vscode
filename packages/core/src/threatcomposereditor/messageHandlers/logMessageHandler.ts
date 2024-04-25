@@ -30,14 +30,14 @@ export async function logMessageHandler(message: LogMessage, context: WebviewCon
                     const selection = await vscode.window.showErrorMessage(
                         message.logMessage +
                             '. Please re-open the file in a text editor or overwrite the contents of the file with Threat Composer JSON.',
-                        'Reopen',
+                        'Open in default editor',
                         'Overwrite'
                     )
 
-                    if (selection === 'Reopen') {
+                    if (selection === 'Open in default editor') {
                         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
                         await vscode.commands.executeCommand('vscode.openWith', context.textDocument.uri, 'default')
-                    } else {
+                    } else if (selection === 'Overwrite') {
                         const broadcastMessage: Message = {
                             messageType: MessageType.BROADCAST,
                             command: Command.OVERWRITE_FILE,

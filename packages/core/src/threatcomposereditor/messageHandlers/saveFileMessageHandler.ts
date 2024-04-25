@@ -15,13 +15,13 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
     const filePath = context.defaultTemplatePath
 
     await telemetry.threatcomposer_fileSaved.run(async span => {
-        const previousFileContent = context.fileWatches[filePath].fileContents
         const previousAutoSaveFileContent = context.autoSaveFileWatches[filePath].fileContents
 
         try {
             if (context.fileWatches[filePath] && context.fileWatches[filePath].fileContents !== request.fileContents) {
-                context.fileWatches[filePath] = { fileContents: request.fileContents }
                 context.autoSaveFileWatches[filePath] = { fileContents: request.fileContents }
+
+                await saveWorkspace(context, request.fileContents)
 
                 await vscode.commands.executeCommand('workbench.action.files.save')
 
@@ -39,17 +39,18 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
                 }
             }
         } catch (e) {
-            context.fileWatches[filePath] = { fileContents: previousFileContent }
             context.autoSaveFileWatches[filePath] = { fileContents: previousAutoSaveFileContent }
+            const errorMessage = (e as Error).message
 
             saveFileResponseMessage = {
                 messageType: MessageType.RESPONSE,
                 command: Command.SAVE_FILE,
                 filePath: filePath,
                 isSuccess: false,
-                failureReason: (e as Error).message,
+                failureReason: errorMessage,
             }
-            throw new ToolkitError((e as Error).message, { code: 'Failed to Save' })
+            await vscode.window.showErrorMessage(errorMessage)
+            throw new ToolkitError(errorMessage, { code: 'Failed to Save' })
         }
     })
 
@@ -74,16 +75,7 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
             ) {
                 context.autoSaveFileWatches[filePath] = { fileContents: request.fileContents }
 
-                const edit = new vscode.WorkspaceEdit()
-                // Just replace the entire document every time for this example extension.
-                // A more complete extension should compute minimal edits instead.
-                edit.replace(
-                    context.textDocument.uri,
-                    new vscode.Range(0, 0, context.textDocument.lineCount, 0),
-                    request.fileContents
-                )
-
-                await vscode.workspace.applyEdit(edit)
+                await saveWorkspace(context, request.fileContents)
 
                 saveFileResponseMessage = {
                     messageType: MessageType.RESPONSE,
@@ -94,19 +86,31 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
             }
         } catch (e) {
             context.autoSaveFileWatches[filePath] = { fileContents: previousAutoSaveFileContent }
+            const errorMessage = (e as Error).message
 
             saveFileResponseMessage = {
                 messageType: MessageType.RESPONSE,
                 command: Command.SAVE_FILE,
                 filePath: filePath,
                 isSuccess: false,
-                failureReason: (e as Error).message,
+                failureReason: errorMessage,
             }
-            throw new ToolkitError((e as Error).message, { code: 'Failed to Save' })
+            await vscode.window.showErrorMessage(errorMessage)
+            throw new ToolkitError(errorMessage, { code: 'Failed to Save' })
         }
     })
 
     if (saveFileResponseMessage) {
         await context.panel.webview.postMessage(saveFileResponseMessage)
     }
+}
+async function saveWorkspace(context: WebviewContext, fileContents: string) {
+    context.autoSaveFileWatches[context.defaultTemplatePath] = { fileContents: fileContents }
+
+    const edit = new vscode.WorkspaceEdit()
+    // Just replace the entire document every time for this example extension.
+    // A more complete extension should compute minimal edits instead.
+    edit.replace(context.textDocument.uri, new vscode.Range(0, 0, context.textDocument.lineCount, 0), fileContents)
+
+    await vscode.workspace.applyEdit(edit)
 }

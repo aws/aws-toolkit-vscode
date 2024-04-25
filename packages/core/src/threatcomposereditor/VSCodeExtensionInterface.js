@@ -18,32 +18,46 @@ function handelMessage(event) {
     const message = event.data // The json data that the extension sent
     console.log('message')
     console.log(event)
-    switch (message.command) {
-        case 'FILE_CHANGED':
-            console.log('FILE_CHANGED')
-            const fileContents = message.fileContents
 
-            // Persist state information.
-            // This state is returned in the call to `vscode.getState` below when a webview is reloaded.
-            vscode.setState({
-                fileName: message.fileName,
-                filePath: message.filePath,
-                fileContents: fileContents,
-            })
+    if (message.messageType === 'BROADCAST') {
+        switch (message.command) {
+            case 'FILE_CHANGED':
+                console.log('FILE_CHANGED')
+                const fileContents = message.fileContents
 
-            // Update our webview's content
-            updateContent(fileContents)
-            break
+                // Persist state information.
+                // This state is returned in the call to `vscode.getState` below when a webview is reloaded.
+                vscode.setState({
+                    fileName: message.fileName,
+                    filePath: message.filePath,
+                    fileContents: fileContents,
+                })
 
-        case 'THEME_CHANGED':
-            console.log('THEME_CHANGED')
-            applyTheme(message.newTheme)
-            break
+                // Update our webview's content
+                updateContent(fileContents)
+                break
 
-        case 'OVERWRITE_FILE':
-            console.log('OVERWRITE_FILE')
-            disableAutoSave = false
-            break
+            case 'THEME_CHANGED':
+                console.log('THEME_CHANGED')
+                applyTheme(message.newTheme)
+                break
+
+            case 'OVERWRITE_FILE':
+                console.log('OVERWRITE_FILE')
+                disableAutoSave = false
+                break
+        }
+    } else if (message.messageType === 'RESPONSE') {
+        switch (message.command) {
+            case 'SAVE_FILE':
+                if (message.isSuccess) {
+                    console.log('File Saved successfully')
+                    disableAutoSave = false
+                } else {
+                    console.log('File Save unsuccessful')
+                }
+                break
+        }
     }
 }
 
@@ -92,7 +106,7 @@ async function render(/** @type {string} */ text) {
         const currentState = vscode.getState()
         currentState.fileContents = stringyfiedData
         vscode.setState(currentState)
-        disableAutoSave = false
+        disableAutoSave = true
 
         vscode.postMessage({
             command: 'SAVE_FILE',
