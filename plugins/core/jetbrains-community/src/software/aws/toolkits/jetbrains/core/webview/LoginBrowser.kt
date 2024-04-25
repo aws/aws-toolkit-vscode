@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.Login
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
@@ -36,6 +37,9 @@ abstract class LoginBrowser(
     abstract val handler: Function<String, JBCefJSQuery.Response>
 
     protected var currentAuthorization: PendingAuthorization? = null
+
+    protected data class BearerConnectionSelectionSettings(val currentSelection: AwsBearerTokenConnection, val onChange: (AwsBearerTokenConnection) -> Unit)
+    protected val selectionSettings = mutableMapOf<String, BearerConnectionSelectionSettings>()
 
     // TODO: figure out a better way to do this UI update
     protected val onPendingProfile: (InteractiveBearerTokenProvider) -> Unit = { provider ->

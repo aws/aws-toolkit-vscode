@@ -48,7 +48,7 @@ import SsoLoginForm from "./ssoLoginForm.vue";
 import LoginOptions from "./loginOptions.vue";
 import AwsProfileForm from "./awsProfileForm.vue";
 import Reauth from "./reauth.vue";
-import {BuilderId, Feature, IdC, LoginIdentifier, LoginOption, LongLivedIAM, Stage} from "../../model";
+import {BuilderId, ExistConnection, Feature, IdC, LoginIdentifier, LoginOption, LongLivedIAM, Stage} from "../../model";
 
 export default defineComponent({
     name: 'Login',
@@ -151,6 +151,8 @@ export default defineComponent({
                     accessKey: type.accessKey,
                     secretKey: type.secret
                 })
+            } else if (type instanceof ExistConnection) {
+                window.ideApi.postMessage({ command: 'selectConnection', connectionId:  type.pluginConnectionId})
             }
         }
     },

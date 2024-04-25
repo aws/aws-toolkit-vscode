@@ -29,7 +29,7 @@ import software.aws.toolkits.jetbrains.core.explorer.webview.ToolkitWebviewPanel
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
-import software.aws.toolkits.jetbrains.utils.inspectExistingConnection
+import software.aws.toolkits.jetbrains.utils.inspectExistingConnectionForToolkit
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.FeatureId
 
@@ -71,9 +71,11 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
 
         val contentManager = toolWindow.contentManager
 
-        val component = if (inspectExistingConnection(project)) {
+        val component = if (inspectExistingConnectionForToolkit(project)) {
+            LOG.debug { "Rendering explorer tree" }
             AwsToolkitExplorerToolWindow.getInstance(project)
         } else {
+            LOG.debug { "Rendering signin webview" }
             ToolkitWebviewPanel.getInstance(project).component
         }
 
@@ -128,7 +130,7 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
             else -> false
         }
 
-        val isToolkitConnected = isNewConnToolkitConnection || inspectExistingConnection(project)
+        val isToolkitConnected = isNewConnToolkitConnection || inspectExistingConnectionForToolkit(project)
 
         toolWindow.reload(isToolkitConnected)
     }
@@ -137,7 +139,7 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
         val isToolkitConnected = if (newState is ConnectionState.ValidConnection) {
             true
         } else {
-            inspectExistingConnection(project)
+            inspectExistingConnectionForToolkit(project)
         }
 
         LOG.debug { "settingsStateChanged: ${newState::class.simpleName}; isToolkitConnected=$isToolkitConnected" }

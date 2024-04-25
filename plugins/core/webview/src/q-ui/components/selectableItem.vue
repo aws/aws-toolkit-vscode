@@ -5,7 +5,7 @@
     <div class="item-container" :class="{ selected: isSelected }" @click="toggleSelection" @focus="toggleSelection" tabindex="0">
         <div class="icon">
             <svg
-                v-if="itemId === LoginOption.BUILDER_ID"
+                v-if="loginType === LoginOption.BUILDER_ID"
                 width="20"
                 height="20"
                 viewBox="0 0 16 16"
@@ -20,7 +20,7 @@
                 />
             </svg>
             <svg
-                v-if="itemId === LoginOption.ENTERPRISE_SSO"
+                v-if="loginType === LoginOption.ENTERPRISE_SSO"
                 width="20"
                 height="20"
                 viewBox="0 0 16 16"
@@ -35,7 +35,7 @@
                 />
             </svg>
             <svg
-                v-if="itemId === LoginOption.IAM_CREDENTIAL"
+                v-if="loginType === LoginOption.IAM_CREDENTIAL"
                 width="15"
                 height="15"
                 viewBox="0 0 15 15"
@@ -58,14 +58,21 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import {LoginIdentifier} from "../..//model";
+import login from "@/q-ui/components/login.vue";
 export default defineComponent({
     name: 'SelectableItem',
+    computed: {
+        login() {
+            return login
+        }
+    },
     components: {},
     props: {
         itemText: String,
         itemTitle: String,
         isSelected: Boolean,
         itemId: Number,
+        loginType: String
     },
     data() {
         return {

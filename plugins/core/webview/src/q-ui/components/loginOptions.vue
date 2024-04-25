@@ -31,26 +31,11 @@ export default defineComponent({
         }
     },
     methods: {
-        toggleItemSelection(itemId: number) {
-            this.selectedLoginOption = itemId
-        },
         stageChanged(stage: Stage) {
             this.$emit('stageChanged', stage)
         },
         login(type: LoginOption) {
             this.$emit('login', type)
-        },
-        async handleContinueClick() {
-            if (this.selectedLoginOption === LoginIdentifier.BUILDER_ID) {
-                this.$emit('stageChanged', 'AUTHENTICATING', new BuilderId())
-                window.ideApi.postMessage({ command: 'loginBuilderId' })
-            } else if (this.selectedLoginOption === LoginIdentifier.ENTERPRISE_SSO) {
-                this.$emit('stageChanged', 'SSO_FORM')
-            } else if (this.selectedLoginOption === LoginIdentifier.EXISTING_LOGINS) {
-                this.$emit('stageChanged', 'START')
-            } else if (this.selectedLoginOption === LoginIdentifier.IAM_CREDENTIAL) {
-                this.$emit('stageChanged', 'AWS_PROFILE')
-            }
         },
     }
 })

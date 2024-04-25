@@ -32,6 +32,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.auth.isFeature
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.isCodeTransformAvailable
 import javax.swing.JComponent
 
+// TODO: move to somewhere else utils
 fun isQConnected(project: Project): Boolean {
     val manager = ToolkitConnectionManager.getInstance(project)
     val isQEnabled = manager.isFeatureEnabled(QConnection.getInstance())

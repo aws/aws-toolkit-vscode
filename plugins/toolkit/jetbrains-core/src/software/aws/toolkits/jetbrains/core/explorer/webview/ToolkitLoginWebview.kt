@@ -23,10 +23,12 @@ import software.aws.toolkits.core.credentials.validatedSsoIdentifierFromUrl
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.Login
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
+import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.explorer.showExplorerTree
 import software.aws.toolkits.jetbrains.core.gettingstarted.IdcRolePopup
 import software.aws.toolkits.jetbrains.core.gettingstarted.IdcRolePopupState
@@ -35,6 +37,7 @@ import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.core.webview.LoginBrowser
 import software.aws.toolkits.jetbrains.core.webview.WebviewResourceHandlerFactory
 import software.aws.toolkits.jetbrains.isDeveloperMode
+import software.aws.toolkits.jetbrains.utils.inspectExistingConnectionForToolkit
 import software.aws.toolkits.telemetry.FeatureId
 import java.awt.event.ActionListener
 import java.util.function.Function
@@ -119,6 +122,13 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
                 this.prepareBrowser(BrowserState(FeatureId.AwsExplorer))
             }
 
+            "selectConnection" -> {
+                val connId = jsonTree.get("connectionId").asText()
+                this.selectionSettings[connId]?.let { settings ->
+                    settings.onChange(settings.currentSelection)
+                }
+            }
+
             "loginBuilderId" -> {
                 loginBuilderId(CODECATALYST_SCOPES)
             }
@@ -195,6 +205,28 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
     }
 
     override fun prepareBrowser(state: BrowserState) {
+        selectionSettings.clear()
+
+        if (!inspectExistingConnectionForToolkit(project)) {
+            // existing connections
+            val bearerCreds = ToolkitAuthManager.getInstance().listConnections()
+                .filterIsInstance<AwsBearerTokenConnection>()
+                .associate {
+                    it.id to BearerConnectionSelectionSettings(it) { conn ->
+                        if (conn.isSono()) {
+                            loginBuilderId(CODECATALYST_SCOPES)
+                        } else {
+                            // TODO: rewrite scope logic, it's short term solution only
+                            AwsRegionProvider.getInstance()[conn.region]?.let { region ->
+                                loginIdC(conn.startUrl, region, listOf(IDENTITY_CENTER_ROLE_ACCESS_SCOPE))
+                            }
+                        }
+                    }
+                }
+
+            selectionSettings.putAll(bearerCreds)
+        }
+
         // previous login
         val lastLoginIdcInfo = ToolkitAuthManager.getInstance().getLastLoginIdcInfo()
 
@@ -220,7 +252,8 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
                     region: '${lastLoginIdcInfo.region}'
                 },
                 cancellable: ${state.browserCancellable},
-                feature: '${state.feature}'
+                feature: '${state.feature}',
+                existConnections: ${objectMapper.writeValueAsString(selectionSettings.values.map { it.currentSelection }.toList())}
             }
         """.trimIndent()
         executeJS("window.ideClient.prepareUi($jsonData)")
