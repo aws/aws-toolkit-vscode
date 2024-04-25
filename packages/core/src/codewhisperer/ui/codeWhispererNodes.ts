@@ -44,9 +44,9 @@ export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSu
 }
 
 export function createAutoScans(pause: boolean): DataQuickPickItem<'autoScans'> {
-    const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Automatic File Scanning')
+    const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Scans')
     const iconResume = getIcon('vscode-debug-alt')
-    const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Automatic File Scanning')
+    const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Auto-Scans')
     const iconPause = getIcon('vscode-debug-pause')
     const monthlyQuotaExceeded = CodeScansState.instance.isMonthlyQuotaExceeded()
 
@@ -71,7 +71,7 @@ export function createOpenReferenceLog(): DataQuickPickItem<'openReferenceLog'> 
 
 export function createSecurityScan(): DataQuickPickItem<'securityScan'> {
     const prefix = codeScanState.getPrefixTextForButton()
-    const label = `${prefix} Full Project Scan`
+    const label = `${prefix} Project Scan`
     const icon = codeScanState.getIconForButton()
 
     return {
