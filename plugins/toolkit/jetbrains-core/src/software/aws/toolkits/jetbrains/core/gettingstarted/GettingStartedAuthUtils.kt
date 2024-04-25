@@ -439,3 +439,5 @@ fun requestCredentialsForExplorer(
 }
 
 const val CODEWHISPERER_AUTH_LEARN_MORE_LINK = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/codewhisperer-auth.html"
+
+fun shouldShowNonWebviewUI(): Boolean = !JBCefApp.isSupported()
