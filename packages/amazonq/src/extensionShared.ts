@@ -32,11 +32,10 @@ import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-c
 import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
-import { CommonAuthViewProvider } from 'aws-core-vscode/login'
+import { CommonAuthViewProvider, CommonAuthWebview } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
-import { CommonAuthWebview } from '../../core/dist/src/login/webview/vue/backend'
 
 export async function activateShared(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
