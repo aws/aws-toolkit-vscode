@@ -11,6 +11,7 @@ import { handleMessage } from './handleMessage'
 import { FileWatchInfo } from './types'
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
 import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 export class ThreatComposer {
     public readonly documentUri: vscode.Uri
@@ -104,21 +105,24 @@ export class ThreatComposer {
         )
 
         // When the panel is closed, dispose of any disposables/remove subscriptions
-        const disposePanel = () => {
+        const disposePanel = async () => {
             if (this.isPanelDisposed) {
                 return
             }
-            this.isPanelDisposed = true
-            this.onVisualizationDisposeEmitter.fire()
-            this.disposables.forEach(disposable => {
-                disposable.dispose()
+
+            await telemetry.threatcomposer_closed.run(async span => {
+                this.isPanelDisposed = true
+                this.onVisualizationDisposeEmitter.fire()
+                this.disposables.forEach(disposable => {
+                    disposable.dispose()
+                })
+                this.onVisualizationDisposeEmitter.dispose()
             })
-            this.onVisualizationDisposeEmitter.dispose()
         }
 
         this.disposables.push(
-            this.webviewPanel.onDidDispose(() => {
-                disposePanel()
+            this.webviewPanel.onDidDispose(async () => {
+                await disposePanel()
             })
         )
 

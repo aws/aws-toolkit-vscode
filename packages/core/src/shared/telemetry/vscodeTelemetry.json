@@ -1078,6 +1078,10 @@
             "description": "Called after a threat composer file has been saved"
         },
         {
+            "name": "threatcomposer_closed",
+            "description": "Called after closing a threat composer file"
+        },
+        {
             "name": "threatcomposer_error",
             "description": "Called after an error is thrown"
         }
