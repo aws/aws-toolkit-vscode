@@ -298,6 +298,7 @@ export async function setTransformationToRunningState() {
     sessionPlanProgress['buildCode'] = StepProgress.Pending
     sessionPlanProgress['generatePlan'] = StepProgress.Pending
     sessionPlanProgress['transformCode'] = StepProgress.Pending
+    transformByQState.resetPlanSteps()
 
     codeTransformTelemetryState.setStartTime()
 
