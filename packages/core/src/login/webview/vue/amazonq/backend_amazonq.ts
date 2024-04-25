@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import { scopesCodeWhispererChat, AwsConnection, Connection } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
-import { AuthError, CommonAuthWebview, userCancelled } from '../backend'
+import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
 import { activateExtension, isExtensionInstalled } from '../../../../shared/utilities/vsCodeUtils'
@@ -14,7 +14,7 @@ import { getLogger } from '../../../../shared/logger'
 import { Auth } from '../../../../auth'
 import { ToolkitError } from '../../../../shared/errors'
 import { debounce } from 'lodash'
-import { AuthFlowState } from '../types'
+import { AuthFlowState, userCancelled } from '../types'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
@@ -152,7 +152,11 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
              * IMPORTANT: During this process {@link this.onActiveConnectionModified} is triggered. This
              * causes the reauth page to refresh before the user is actually done the whole reauth flow.
              */
-            this.reauthError = await this.ssoSetup('reauthenticate', async () => AuthUtil.instance.reauthenticate(true))
+            this.reauthError = await this.ssoSetup(
+                'reauthenticate',
+                undefined, // todo: add telemetry
+                async () => AuthUtil.instance.reauthenticate(true)
+            )
         } finally {
             this.isReauthenticating = false
         }

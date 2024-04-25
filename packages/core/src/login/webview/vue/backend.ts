@@ -18,9 +18,8 @@ import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/crede
 import { telemetry } from '../../../shared/telemetry'
 import { AuthSources } from '../util'
 import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
-import { AuthFlowState, AuthUiClick } from './types'
+import { AuthFlowState, AuthUiClick, userCancelled } from './types'
 
-const userCancelled = 'userCancelled'
 type Writeable<T> = { -readonly [U in keyof T]: T[U] }
 export type TelemetryMetadata = Partial<Writeable<AuthAddConnection>>
 export type AuthError = { id: string; text: string }
