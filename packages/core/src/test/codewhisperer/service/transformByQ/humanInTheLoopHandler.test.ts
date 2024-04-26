@@ -141,9 +141,10 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
                     endTime: new Date(),
                 },
             ]
-            const transformationStepFound = findDownloadArtifactStep(transformationStepsFixture)
+            const { transformationStep, progressUpdate } = findDownloadArtifactStep(transformationStepsFixture)
 
-            assert.strictEqual(transformationStepFound, undefined)
+            assert.strictEqual(transformationStep, undefined)
+            assert.strictEqual(progressUpdate, undefined)
         })
     })
 })
