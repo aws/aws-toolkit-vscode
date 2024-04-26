@@ -160,7 +160,7 @@
                     </div>
                 </div>
                 <div class="title topMargin">Start URL</div>
-                <div class="hint">URL for your organization, provided by an admin or help desk</div>
+                <div class="hint">Provided by your admin or help desk</div>
                 <input
                     class="urlInput"
                     type="text"
@@ -515,7 +515,8 @@ export default defineComponent({
     color: #c6c6c6;
     margin-bottom: 5px;
     margin-top: 5px;
-    font-size: 8px;
+    font-size: 10px;
+    font-weight: 500;
 }
 .vscode-light .hint {
     color: #3d3a3a;
