@@ -17,15 +17,23 @@ import { featureName } from '../../models/constants'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import {
     compileProject,
+    finishHumanInTheLoop,
     getValidCandidateProjects,
+    openHilPomFile,
     processTransformFormInput,
+    shortCircuitHiL,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
 } from '../../../codewhisperer/commands/startTransformByQ'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
+import {
+    AlternateDependencyVersionsNotFoundError,
+    JavaHomeNotSetError,
+    NoJavaProjectsFoundError,
+    NoMavenJavaProjectsFoundError,
+} from '../../errors'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
 import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
@@ -33,6 +41,7 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { codeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
+import DependencyVersions from '../../models/dependencies'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -46,6 +55,10 @@ export interface ChatControllerEventEmitters {
     readonly transformationFinished: vscode.EventEmitter<any>
     readonly processHumanChatMessage: vscode.EventEmitter<any>
     readonly linkClicked: vscode.EventEmitter<any>
+    readonly startHumanInTheLoopIntervention: vscode.EventEmitter<any>
+    readonly promptForDependencyHIL: vscode.EventEmitter<any>
+    readonly HILSelectionUploaded: vscode.EventEmitter<any>
+    readonly errorThrown: vscode.EventEmitter<any>
 }
 
 export class GumbyController {
@@ -96,6 +109,22 @@ export class GumbyController {
 
         this.chatControllerMessageListeners.linkClicked.event(data => {
             this.openLink(data)
+        })
+
+        this.chatControllerMessageListeners.startHumanInTheLoopIntervention.event(data => {
+            return this.startHILIntervention(data)
+        })
+
+        this.chatControllerMessageListeners.promptForDependencyHIL.event(data => {
+            return this.HILPromptForDependency(data)
+        })
+
+        this.chatControllerMessageListeners.HILSelectionUploaded.event(data => {
+            return this.HILDependencySelectionUploaded(data)
+        })
+
+        this.chatControllerMessageListeners.errorThrown.event(data => {
+            return this.reportError(data)
         })
     }
 
@@ -227,6 +256,15 @@ export class GumbyController {
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
                 await this.transformInitiated({ ...message, tabID: message.tabId })
                 break
+            case ButtonActions.CONFIRM_DEPENDENCY_FORM:
+                await this.continueJobWithSelectedDependency({ ...message, tabID: message.tabId })
+                break
+            case ButtonActions.CANCEL_DEPENDENCY_FORM:
+                await this.continueJobWithoutHIL({ tabID: message.tabId })
+                break
+            case ButtonActions.OPEN_FILE:
+                await openHilPomFile()
+                break
         }
     }
 
@@ -310,10 +348,24 @@ export class GumbyController {
         await this.prepareProjectForSubmission(message)
     }
 
-    private async transformationFinished(data: { message: string; tabID: string }) {
+    private async transformationFinished(data: { message?: string; tabID: string }) {
         this.sessionStorage.getSession().conversationState = ConversationState.IDLE
         // at this point job is either completed, partially_completed, cancelled, or failed
         this.messenger.sendJobFinishedMessage(data.tabID, data.message)
+    }
+
+    private startHILIntervention(data: { tabID: string; codeSnippet: string }) {
+        this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_INPUT
+        this.messenger.sendHumanInTheLoopInitialMessage(data.tabID, data.codeSnippet)
+    }
+
+    private HILPromptForDependency(data: { tabID: string; dependencies: DependencyVersions }) {
+        this.messenger.sendDependencyVersionsFoundMessage(data.dependencies, data.tabID)
+    }
+
+    private HILDependencySelectionUploaded(data: { tabID: string }) {
+        this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
+        this.messenger.sendHILResumeMessage(data.tabID)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
@@ -338,8 +390,35 @@ export class GumbyController {
         }
     }
 
+    private async continueJobWithSelectedDependency(message: { tabID: string; formSelectedValues: any }) {
+        const selectedDependency = message.formSelectedValues['GumbyTransformDependencyForm']
+        this.messenger.sendHILContinueMessage(message.tabID, selectedDependency)
+        await finishHumanInTheLoop(selectedDependency)
+    }
+
     private openLink(message: { link: string }) {
         void openUrl(vscode.Uri.parse(message.link))
+    }
+
+    private reportError(message: { error: Error; tabID: string }) {
+        if (message.error instanceof AlternateDependencyVersionsNotFoundError) {
+            this.messenger.sendUnrecoverableError('no-alternate-dependencies-found', message.tabID)
+        } else {
+            this.messenger.sendErrorMessage(message.error.message, message.tabID)
+        }
+    }
+
+    private async continueJobWithoutHIL(message: { tabID: string }) {
+        const jobID = transformByQState.getJobId()
+        this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
+
+        try {
+            await shortCircuitHiL(jobID)
+        } catch (err: any) {
+            await this.transformationFinished({ tabID: message.tabID })
+        }
+
+        this.messenger.sendStaticTextResponse('end-HIL-early', message.tabID)
     }
 }
 

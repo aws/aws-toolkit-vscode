@@ -27,12 +27,14 @@ import {
 } from '../../views/connector/connector'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import MessengerUtils, { ButtonActions } from './messengerUtils'
+import DependencyVersions from '../../../models/dependencies'
 
 export type StaticTextResponseType =
     | 'transform'
     | 'java-home-not-set'
     | 'start-transformation-confirmed'
     | 'job-transmitted'
+    | 'end-HIL-early'
 
 export type ErrorTextResponseType =
     | 'no-project-found'
@@ -41,6 +43,8 @@ export type ErrorTextResponseType =
     | 'could-not-compile-project'
     | 'invalid-java-home'
     | 'unsupported-source-jdk-version'
+
+export type UnrecoverableErrorResponseType = 'no-alternate-dependencies-found'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -220,8 +224,10 @@ export class Messenger {
         )
     }
 
-    public sendJobSubmittedMessage(tabID: string, disableJobActions: boolean = false) {
-        const message = CodeWhispererConstants.jobStartedChatMessage
+    public sendJobSubmittedMessage(tabID: string, disableJobActions: boolean = false, message?: string) {
+        if (!message) {
+            message = CodeWhispererConstants.jobStartedChatMessage
+        }
 
         const buttons: ChatItemButton[] = []
 
@@ -272,6 +278,9 @@ export class Messenger {
         switch (type) {
             case 'java-home-not-set':
                 message = MessengerUtils.createJavaHomePrompt()
+                break
+            case 'end-HIL-early':
+                message = `I will continue transforming your code without being able to build successfully.`
                 break
         }
 
@@ -328,6 +337,28 @@ export class Messenger {
         )
     }
 
+    public sendUnrecoverableError(type: UnrecoverableErrorResponseType, tabID: string) {
+        let message = '...'
+
+        switch (type) {
+            case 'no-alternate-dependencies-found':
+                message = `I couldn't find any other versions of this dependency in your local Maven repository. Try transforming the depedency to make it compatible with Java 17, and then try transforming this module again.`
+                break
+        }
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
+                },
+                tabID
+            )
+        )
+
+        this.sendInProgressMessage(tabID, 'Stopping job...')
+    }
+
     public sendCommandMessage(message: any) {
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabId, message.eventId))
     }
@@ -381,5 +412,116 @@ export class Messenger {
     `
 
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+    }
+
+    public sendHumanInTheLoopInitialMessage(tabID: string, codeSnippet: string) {
+        let message = `I was not able to upgrade all dependencies. To resolve it, I'll try to find an updated depedency in your local Maven repository. I'll need additional information from you to continue.`
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
+                },
+                tabID
+            )
+        )
+
+        if (codeSnippet !== '') {
+            message = `Here is the dependency causing the issue: 
+\`\`\`
+${codeSnippet}
+\`\`\`
+`
+
+            const buttons: ChatItemButton[] = []
+            buttons.push({
+                keepCardAfterClick: true,
+                text: 'Open File',
+                id: ButtonActions.OPEN_FILE,
+            })
+
+            this.dispatcher.sendChatMessage(
+                new ChatMessage(
+                    {
+                        message,
+                        messageType: 'ai-prompt',
+                        buttons,
+                    },
+                    tabID
+                )
+            )
+        }
+
+        message = `I am searching for other dependency versions available in your Maven repository...`
+
+        this.sendInProgressMessage(tabID, message)
+    }
+
+    public sendInProgressMessage(tabID: string, message: string, messageName?: string) {
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, { inProgress: true, message: undefined })
+        )
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message,
+            })
+        )
+    }
+
+    public sendDependencyVersionsFoundMessage(versions: DependencyVersions, tabID: string) {
+        const message = MessengerUtils.createAvailableDependencyVersionString(versions)
+
+        const valueFormOptions: { value: any; label: string }[] = []
+
+        versions.allVersions.forEach(version => {
+            valueFormOptions.push({
+                value: version,
+                label: version,
+            })
+        })
+
+        const formItems: ChatItemFormItem[] = []
+        formItems.push({
+            id: 'GumbyTransformDependencyForm',
+            type: 'select',
+            title: 'Choose which version I should use:',
+            mandatory: true,
+
+            options: valueFormOptions,
+        })
+
+        this.dispatcher.sendChatPrompt(
+            new ChatPrompt(
+                {
+                    message,
+                    formItems: formItems,
+                },
+                'TransformDependencyForm',
+                tabID,
+                false
+            )
+        )
+    }
+
+    public sendHILContinueMessage(tabID: string, selectedDependencyVersion: string) {
+        let message = `### Dependency Details
+-------------
+| | |
+| :------------------- | -------: |
+| **Dependency Version**             |   ${selectedDependencyVersion}   |
+`
+
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+
+        message = `I recieved your target version dependency.`
+        this.sendInProgressMessage(tabID, message)
+    }
+
+    public sendHILResumeMessage(tabID: string) {
+        const message = `I'll continue transforming your code. You can monitor progress in the Transformation Hub.`
+        this.sendJobSubmittedMessage(tabID, false, message)
     }
 }
