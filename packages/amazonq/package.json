@@ -84,15 +84,10 @@
                         }
                     }
                 },
-                "aws.telemetry": {
+                "aws.amazonQ.telemetry": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%AWS.configuration.description.telemetry%",
-                    "cloud9": {
-                        "cn": {
-                            "markdownDescription": "%AWS.configuration.description.telemetry.cn%"
-                        }
-                    }
+                    "markdownDescription": "%AWS.configuration.description.amazonq.telemetry%"
                 },
                 "aws.amazonQ.suppressPrompts": {
                     "type": "object",

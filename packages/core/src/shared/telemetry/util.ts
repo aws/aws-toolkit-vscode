@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { env, Memento, version } from 'vscode'
 import { getLogger } from '../logger'
-import { fromExtensionManifest } from '../settings'
+import { fromExtensionManifest, migrateSetting } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { isInDevEnv, extensionVersion, isAutomation } from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
@@ -26,9 +26,26 @@ const TelemetryFlag = addTypeName('boolean', convertLegacy)
 const telemetryClientIdGlobalStatekey = 'telemetryClientId'
 const telemetryClientIdEnvKey = '__TELEMETRY_CLIENT_ID'
 
-export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: TelemetryFlag }) {
+export class TelemetryConfig extends fromExtensionManifest('aws', {
+    telemetry: TelemetryFlag,
+    'amazonQ.telemetry': TelemetryFlag,
+}) {
+    private readonly amazonQSettingMigratedKey = 'aws.amazonq.telemetry.migrated'
+
     public isEnabled(): boolean {
-        return this.get(`${globals.contextPrefix}telemetry` as any, true)
+        if (globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq) {
+            return this.get(`amazonQ.telemetry`, true)
+        }
+        return this.get(`telemetry`, true)
+    }
+
+    public async initAmazonQSetting() {
+        if (globals.context.globalState.get<boolean>(this.amazonQSettingMigratedKey)) {
+            return
+        }
+        // aws.telemetry isn't deprecated, we are just initializing aws.amazonQ.telemetry with its value
+        await migrateSetting({ key: 'aws.telemetry', type: Boolean }, { key: 'aws.amazonQ.telemetry' })
+        await globals.context.globalState.update(this.amazonQSettingMigratedKey, true)
     }
 }
 

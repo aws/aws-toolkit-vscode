@@ -124,6 +124,11 @@
                         }
                     }
                 },
+                "aws.amazonQ.telemetry": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%AWS.configuration.description.amazonq.telemetry%"
+                },
                 "aws.stepfunctions.asl.format.enable": {
                     "type": "boolean",
                     "scope": "window",
