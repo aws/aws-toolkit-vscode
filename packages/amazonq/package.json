@@ -794,40 +794,34 @@
                     {
                         "id": "aws.amazonq.walkthrough.chat",
                         "title": "Ask using chat",
-                        "description": "Amazon Q answers software development questions, writes code based on your current file, and cites sources.\n\nUse the right-click menu for quick commands.\n\n[Open Chat](command:_aws.amazonq.walkthrough.focusChat)",
+                        "description": "Amazon Q answers software development questions, writes code based on your current file, and cites sources.\n\nUse the right-click menu for quick commands.\n\n**TIP: Drag and drop the Q panel to dock on the right**",
                         "media": {
-                            "image": "placeholder.jpg",
-                            "altText": "Gif of the right click context menu opening Amazon Q chat"
+                            "markdown": "./resources/walkthrough/amazonq/chat.md"
                         },
-                        "completionEvents": [
-                            "onCommand:_aws.amazonq.walkthrough.focusChat"
-                        ]
+                        "completionEvents": []
                     },
                     {
                         "id": "aws.amazonq.walkthrough.inlineSuggestions",
                         "title": "Get inline code suggestions",
-                        "description": "Amazon Q suggests code as you type based on your open files. Accepted suggestions from licensed code will go into the 'Code Reference Log'.",
+                        "description": "Amazon Q suggests code as you type based on your open files. Accepted suggestions from licensed code will go into the Code Reference Log.\n\n[Try inline code examples](command:aws.amazonq.gettingStarted)\n\n**TIP: Invoke manually with opt/alt + c**",
                         "media": {
-                            "image": "placeholder.jpg",
-                            "altText": "Gif of Amazon Q Inline Suggestions feature"
+                            "markdown": "./resources/walkthrough/amazonq/inline.md"
                         }
                     },
                     {
                         "id": "aws.amazonq.walkthrough.securityScan",
                         "title": "Check for security vulnerabilities",
-                        "description": "Amazon Q scans your code to identify security vulnerabilities and suggests fixes.",
+                        "description": "Amazon Q scans your code to identify security vulnerabilities and suggests fixes.\n\nStart a scan from the status bar menu.\n\n**TIP: identifies vulnerabilities in Python, Typescript, Ruby, AWS CDK, and more**",
                         "media": {
-                            "image": "placeholder.jpg",
-                            "altText": "Gif of a security scan"
+                            "markdown": "./resources/walkthrough/amazonq/scans.md"
                         }
                     },
                     {
                         "id": "aws.amazonq.walkthrough.settings",
-                        "title": "Access settings and options",
+                        "title": "Access actions and options",
                         "description": "Pause inline suggestions, open the Code Reference Log, access Settings, and more from the Amazon Q menu.\n\n[Open the status bar menu](command:_aws.amazonq.walkthrough.listCommands)",
                         "media": {
-                            "image": "placeholder.jpg",
-                            "altText": "Gif of opening the Amazon Q status bar menu"
+                            "markdown": "./resources/walkthrough/amazonq/menu.md"
                         },
                         "completionEvents": [
                             "onCommand:_aws.amazonq.walkthrough.listCommands"
