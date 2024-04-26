@@ -16,9 +16,9 @@ import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
-import { VSCODE_EXTENSION_ID } from '../utilities'
+import { isExtensionInstalled, VSCODE_EXTENSION_ID } from '../utilities'
 import { randomUUID } from '../../common/crypto'
-
+import { activateExtension } from '../utilities/vsCodeUtils'
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
 
@@ -179,9 +179,17 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
                 if (extensionContext.extension.id === VSCODE_EXTENSION_ID.awstoolkit) {
                     getLogger().debug(`telemetry: Store telemetry client id to env ${currentClientId}`)
                     process.env[telemetryClientIdEnvKey] = currentClientId
+                    // notify amazon q to use this stored client id
+                    // if amazon q activates first. Do not block on activate amazon q
+                    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
+                        void activateExtension(VSCODE_EXTENSION_ID.amazonq).then(async () => {
+                            getLogger().debug(`telemetry: notifying Amazon Q to adopt client id ${currentClientId}`)
+                            await vscode.commands.executeCommand('aws.amazonq.setupTelemetryId')
+                        })
+                    }
                 } else if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
-                    getLogger().debug(`telemetry: Set telemetry client id to ${currentClientId}`)
-                    await globals.context.globalState.update(telemetryClientIdGlobalStatekey, currentClientId)
+                    getLogger().debug(`telemetry: Set telemetry client id to ${storedClientId}`)
+                    await globals.context.globalState.update(telemetryClientIdGlobalStatekey, storedClientId)
                 } else {
                     getLogger().error(`Unexpected extension id ${extensionContext.extension.id}`)
                 }

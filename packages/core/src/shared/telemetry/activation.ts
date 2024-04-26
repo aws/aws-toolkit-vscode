@@ -18,6 +18,8 @@ import { TelemetryConfig, setupTelemetryId } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
 import { AWSProduct } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
+import { Commands } from '../vscode/commands2'
+import { VSCODE_EXTENSION_ID } from '../utilities'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -55,6 +57,14 @@ export async function activate(
                 }
             })
         )
+
+        if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
+            extensionContext.subscriptions.push(
+                Commands.register('aws.amazonq.setupTelemetryId', async () => {
+                    await setupTelemetryId(extensionContext)
+                })
+            )
+        }
 
         // Prompt user about telemetry if they haven't been
         if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
