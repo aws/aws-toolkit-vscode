@@ -180,8 +180,8 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
                     getLogger().debug(`telemetry: Store telemetry client id to env ${currentClientId}`)
                     process.env[telemetryClientIdEnvKey] = currentClientId
                 } else if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
-                    getLogger().debug(`telemetry: Set telemetry client id to ${currentClientId}`)
-                    await globals.context.globalState.update(telemetryClientIdGlobalStatekey, currentClientId)
+                    getLogger().debug(`telemetry: Set telemetry client id to ${storedClientId}`)
+                    await globals.context.globalState.update(telemetryClientIdGlobalStatekey, storedClientId)
                 } else {
                     getLogger().error(`Unexpected extension id ${extensionContext.extension.id}`)
                 }
