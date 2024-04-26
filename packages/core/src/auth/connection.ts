@@ -60,7 +60,7 @@ export const isValidCodeCatalystConnection = (conn?: Connection): conn is SsoCon
     isSsoConnection(conn) && hasScopes(conn, scopesCodeCatalyst)
 
 export function hasScopes(target: SsoConnection | SsoProfile | string[], scopes: string[]): boolean {
-    return scopes?.every(s => (Array.isArray(target) ? target : target.scopes!).includes(s))
+    return scopes?.every(s => (Array.isArray(target) ? target : target.scopes)?.includes(s))
 }
 
 export function createBuilderIdProfile(
