@@ -38,7 +38,7 @@
             Java, and C#.
             <a
                 class="generateSuggestionLearnMore"
-                href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/language-ide-support.html"
+                href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-language-ide-support.html"
                 @click="emitUiClick('codewhisperer_GenerateSuggestions_LearnMore')"
                 >Learn more</a
             >
