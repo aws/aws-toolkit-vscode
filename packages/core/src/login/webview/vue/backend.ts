@@ -12,18 +12,24 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { trustedDomainCancellation } from '../../../auth/sso/model'
 import { handleWebviewError } from '../../../webviews/server'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
-import { AwsConnection, Connection, SsoConnection } from '../../../auth/connection'
+import {
+    AwsConnection,
+    Connection,
+    hasScopes,
+    isBuilderIdConnection,
+    isIamConnection,
+    isIdcSsoConnection,
+    scopesCodeCatalyst,
+    scopesCodeWhispererChat,
+    scopesSsoAccountAccess,
+    SsoConnection,
+} from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 import { telemetry } from '../../../shared/telemetry'
 import { AuthSources } from '../util'
-import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
-import { AuthFlowState, AuthUiClick, userCancelled } from './types'
+import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, TelemetryMetadata, userCancelled } from './types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-
-type Writeable<T> = { -readonly [U in keyof T]: T[U] }
-export type TelemetryMetadata = Partial<Writeable<AuthAddConnection>>
-export type AuthError = { id: string; text: string }
 
 export abstract class CommonAuthWebview extends VueWebview {
     private metricMetadata: TelemetryMetadata = {}
@@ -57,13 +63,10 @@ export abstract class CommonAuthWebview extends VueWebview {
      *
      * @param methodName A value that will help identify which high level function called this method.
      * @param setupFunc The function which will be executed in a try/catch so that we can handle common errors.
+     * @param postMetrics Whether to emit telemetry.
      * @returns
      */
-    async ssoSetup(
-        methodName: string,
-        telemetryMetadata: TelemetryMetadata | undefined,
-        setupFunc: () => Promise<any>
-    ) {
+    async ssoSetup(methodName: string, setupFunc: () => Promise<any>, postMetrics: boolean = true) {
         const runSetup = async () => {
             try {
                 await setupFunc()
@@ -121,9 +124,13 @@ export abstract class CommonAuthWebview extends VueWebview {
         }
 
         const result = await runSetup()
-        if (telemetryMetadata !== undefined) {
-            this.emitAuthMetric({ ...telemetryMetadata, ...this.getResultForMetrics(result) })
+
+        if (postMetrics) {
+            this.storeMetricMetadata(this.getResultForMetrics(result))
+            this.emitAuthMetric()
         }
+        this.authSource = AuthSources.vscodeComponent
+
         return result
     }
 
@@ -150,11 +157,18 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract fetchConnections(): Promise<AwsConnection[] | undefined>
 
-    abstract useConnection(connectionId: string): Promise<AuthError | undefined>
+    /**
+     * Re-use connection that is pushed from Amazon Q to Toolkit.
+     * @param connectionId ID of the connection to re-use
+     * @param auto indicate whether this happened automatically (true), or the result of user action (false)
+     */
+    abstract useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined>
 
     abstract findConnection(connections: AwsConnection[]): AwsConnection | undefined
 
-    abstract errorNotification(e: AuthError): void
+    async errorNotification(e: AuthError) {
+        void vscode.window.showInformationMessage(`${e.text}`)
+    }
 
     abstract quitLoginScreen(): Promise<void>
 
@@ -179,41 +193,27 @@ export abstract class CommonAuthWebview extends VueWebview {
     }
 
     /**
-     * Emit metric metadata.
+     * Emit stored metric metadata. Does not reset the stored metric metadata, because it
+     * may be used for additional emits (e.g. user cancels multiple times, user cancels then logs in)
      */
-    emitAuthMetric(metadata: Partial<AuthAddConnection>) {
+    emitAuthMetric() {
+        // We shouldn't report startUrl or region if we aren't reporting IdC
+        if (this.metricMetadata.credentialSourceId !== 'iamIdentityCenter') {
+            this.metricMetadata.region = undefined
+            this.metricMetadata.credentialStartUrl = undefined
+        }
         telemetry.auth_addConnection.emit({
-            ...metadata,
+            ...this.metricMetadata,
             source: this.authSource,
         })
     }
 
     /**
-     * To be used by login.vue to report incremental changes about the auth flow. E.g., record 'startUrl' when
-     * a startUrl is entered by the user.
-     * Generally, telemetry is reported after a connection is established, so incremental reporting is not needed.
-     * However, UI elements can indicate that a user cancelled the flow, e.g. leaving, back button, etc.
-     * For these cases, we dump everything that we have reported via the login form since we wouldn't otherwise
-     * be know what the form was going to submit.
+     * Incrementally store auth metric data during vue, backend sign in logic,
+     * and cancellation flows.
      */
     storeMetricMetadata(data: TelemetryMetadata) {
-        // We shouldn't report startUrl or region if we aren't reporting IdC
-        if (data.credentialSourceId !== 'iamIdentityCenter') {
-            data.region = undefined
-            data.credentialStartUrl = undefined
-        }
         this.metricMetadata = { ...this.metricMetadata, ...data }
-    }
-
-    /**
-     * Emit stored metric metadata in the event of an auth form cancellation.
-     */
-    emitCancelledMetric(reauth: boolean) {
-        if (reauth) {
-            this.emitAuthMetric({ ...this.getMetadataForReauthMetrics(), isReAuth: false, result: 'Cancelled' })
-        } else {
-            this.emitAuthMetric({ ...this.metricMetadata, result: 'Cancelled' })
-        }
     }
 
     /**
@@ -245,20 +245,24 @@ export abstract class CommonAuthWebview extends VueWebview {
     /**
      * Get metadata about the current auth for reauthentication telemetry.
      */
-    getMetadataForReauthMetrics(): TelemetryMetadata {
-        return {
-            authEnabledFeatures: 'codewhisperer',
-            isReAuth: true,
-            ...(AuthUtil.instance.isBuilderIdInUse()
-                ? {
-                      credentialSourceId: 'awsId',
-                  }
-                : {
-                      credentialSourceId: 'iamIdentityCenter',
-                      credentialStartUrl: (AuthUtil.instance.conn as SsoConnection).startUrl,
-                      region: (AuthUtil.instance.conn as SsoConnection).ssoRegion,
-                  }),
+    getMetadataForExistingConn(conn = AuthUtil.instance.conn): TelemetryMetadata {
+        if (isBuilderIdConnection(conn)) {
+            return {
+                credentialSourceId: 'awsId',
+            }
+        } else if (isIdcSsoConnection(conn)) {
+            return {
+                credentialSourceId: 'iamIdentityCenter',
+                credentialStartUrl: (conn as SsoConnection).startUrl,
+                region: (conn as SsoConnection).ssoRegion,
+            }
+        } else if (isIamConnection(conn)) {
+            return {
+                credentialSourceId: 'sharedCredentials',
+            }
         }
+
+        throw new Error('getMetadataForExistingConn() called with unknown connection type')
     }
 
     /**
@@ -268,5 +272,23 @@ export abstract class CommonAuthWebview extends VueWebview {
         telemetry.ui_click.emit({
             elementId: id,
         })
+    }
+
+    /**
+     * Return a comma-delimited list of features for which the connection has access to.
+     */
+    getAuthEnabledFeatures(conn: SsoConnection | AwsConnection) {
+        const authEnabledFeatures: AuthEnabledFeatures[] = []
+        if (hasScopes(conn.scopes!, scopesCodeWhispererChat)) {
+            authEnabledFeatures.push('codewhisperer')
+        }
+        if (hasScopes(conn.scopes!, scopesCodeCatalyst)) {
+            authEnabledFeatures.push('codecatalyst')
+        }
+        if (hasScopes(conn.scopes!, scopesSsoAccountAccess)) {
+            authEnabledFeatures.push('awsExplorer')
+        }
+
+        return authEnabledFeatures.join(',')
     }
 }

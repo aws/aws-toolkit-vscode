@@ -336,6 +336,9 @@ export default defineComponent({
     mounted() {
         this.fetchRegions()
         void this.updateExistingConnections()
+
+        // Reset gathered telemetry data each time we view the login page.
+        // The webview panel is reset on each view of the login page by design.
         void client.resetStoredMetricMetadata()
     },
     methods: {
@@ -356,7 +359,7 @@ export default defineComponent({
                 this.selectedLoginOption = 0
             }
         },
-        handleBackButtonClick() {
+        async handleBackButtonClick() {
             // Count hitting the back button as a user auth cancellation.
             // This will return the user to select a different login option.
             if (this.stage === 'START') {
@@ -365,7 +368,8 @@ export default defineComponent({
                 void client.emitUiClick('auth_toolkitCloseButton')
                 void client.quitLoginScreen()
             } else {
-                void client.emitCancelledMetric(false)
+                await client.storeMetricMetadata({ isReAuth: false, result: 'Cancelled' })
+                void client.emitAuthMetric()
                 void client.emitUiClick('auth_backButton')
                 this.stage = 'START'
             }
@@ -384,11 +388,12 @@ export default defineComponent({
                     }
                 } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                     this.stage = 'SSO_FORM'
+                    await client.storeMetricMetadata({ region: this.selectedRegion })
                 } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
                     this.stage = 'AUTHENTICATING'
                     const selectedConnection =
                         this.existingLogins[this.selectedLoginOption - LoginOption.EXISTING_LOGINS]
-                    const error = await client.useConnection(selectedConnection.connectionId)
+                    const error = await client.useConnection(selectedConnection.connectionId, false)
                     if (error) {
                         this.stage = 'START'
                         void client.errorNotification(error)
@@ -449,8 +454,9 @@ export default defineComponent({
             })
             void client.emitUiClick('auth_regionSelection')
         },
-        handleCancelButton() {
-            void client.emitCancelledMetric(false)
+        async handleCancelButton() {
+            await client.storeMetricMetadata({ isReAuth: false, result: 'Cancelled' })
+            void client.emitAuthMetric()
             void client.emitUiClick('auth_cancelButton')
 
             this.stage = 'START'
@@ -488,7 +494,7 @@ export default defineComponent({
             if (connections.length === 0 && sharedConnections && sharedConnections.length > 0) {
                 const conn = await client.findConnection(sharedConnections)
                 if (conn) {
-                    await client.useConnection(conn.id)
+                    await client.useConnection(conn.id, true)
                 }
             }
 

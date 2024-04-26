@@ -94,9 +94,16 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
 
                 // Count leaving the webview as a user cancellation.
                 const authState = await this.webView!.server.getAuthState()
-                this.webView!.server.emitCancelledMetric(
-                    authState === AuthFlowStates.REAUTHNEEDED || authState === AuthFlowStates.REAUTHENTICATING
-                )
+                this.webView!.server.storeMetricMetadata({ result: 'Cancelled' })
+                if (authState === AuthFlowStates.REAUTHNEEDED || authState === AuthFlowStates.REAUTHENTICATING) {
+                    this.webView!.server.storeMetricMetadata({
+                        isReAuth: true,
+                        ...this.webView!.server.getMetadataForExistingConn(),
+                    })
+                } else {
+                    this.webView!.server.storeMetricMetadata({ isReAuth: false })
+                }
+                this.webView!.server.emitAuthMetric()
 
                 // Set after emitting. If users use side bar to return to login, this source is correct
                 // for the next iteration. Otherwise, other sources will be set accordingly by whatever
