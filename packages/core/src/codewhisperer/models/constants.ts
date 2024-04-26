@@ -492,6 +492,14 @@ export const planHeaderMessage = 'Planned transformation changes'
 export const planDisclaimerMessage =
     'Amazon Q will use the proposed changes as guidance during the transformation. The final code updates might differ from this plan.'
 
+export const planLinesOfCodeMessage = 'Lines of code in your application:'
+
+export const planDependenciesToBeReplacedMessage = 'Dependencies to be replaced:'
+
+export const planDeprecatedCodeToBeReplacedMessage = 'Deprecated code instances to be replaced:'
+
+export const planFilesToBeChangedMessage = 'Files to be changed:'
+
 // end of QCT Strings
 
 export enum UserGroup {

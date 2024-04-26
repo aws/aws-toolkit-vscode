@@ -390,7 +390,7 @@ export function getImageAsBase64(filePath: string) {
  * ex. getIcon('transform-file') returns the 'transform-file-light.svg' icon if user has a light theme enabled,
  * otherwise 'transform-file-dark.svg' is returned.
  */
-export function getIcon(iconName: string) {
+export function getTransformationIcon(iconName: string) {
     let iconPath = iconName
     const themeColor = vscode.window.activeColorTheme.kind
     if (themeColor === vscode.ColorThemeKind.Light || themeColor === vscode.ColorThemeKind.HighContrastLight) {
@@ -398,15 +398,40 @@ export function getIcon(iconName: string) {
     } else {
         iconPath += '-dark.svg'
     }
-    return getImageAsBase64(globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', iconPath)))
+    return getImageAsBase64(globals.context.asAbsolutePath(path.join('resources/icons/aws/amazonq', iconPath)))
+}
+
+export function getFormattedColumnName(columnName: string) {
+    switch (columnName) {
+        case 'dependencyName':
+            return 'Dependency'
+        case 'action':
+            return 'Action'
+        case 'currentVersion':
+            return 'Current version'
+        case 'targetVersion':
+            return 'Target version'
+        case 'relativePath':
+            return 'File'
+        case 'apiFullyQualifiedName':
+            return 'Deprecated code'
+        case 'numChangedFiles':
+            return 'Files to be changed'
+        default:
+            return 'Column'
+    }
 }
 
 export function addTableMarkdown(plan: string, tableObj: any) {
+    if (!tableObj.description) {
+        // no table present
+        return plan
+    }
     plan += `\n\n\n${tableObj.name}\n|`
     const table = JSON.parse(tableObj.description)
     const columns = table.columnNames
     columns.forEach((columnName: string) => {
-        plan += ` ${columnName} |`
+        plan += ` ${getFormattedColumnName(columnName)} |`
     })
     plan += '\n|'
     columns.forEach((_: any) => {
@@ -415,7 +440,7 @@ export function addTableMarkdown(plan: string, tableObj: any) {
     table.rows.forEach((row: any) => {
         plan += '\n|'
         columns.forEach((columnName: string) => {
-            if (columnName === 'File name') {
+            if (columnName === 'relativePath') {
                 plan += ` [${row[columnName]}](${row[columnName]}) |` // add MD link only for files
             } else {
                 plan += ` ${row[columnName]} |`
@@ -427,92 +452,23 @@ export function addTableMarkdown(plan: string, tableObj: any) {
 }
 
 export async function getTransformationPlan(jobId: string) {
-    console.log('calling getPlan!')
     let response = undefined
     try {
-        // response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
-        //     transformationJobId: jobId,
-        // })
-        // const apiStartTime = Date.now()
-        // if (response.$response.requestId) {
-        //     transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-        // }
-        // telemetry.codeTransform_logApiLatency.emit({
-        //     codeTransformApiNames: 'GetTransformationPlan',
-        //     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-        //     codeTransformJobId: jobId,
-        //     codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-        //     codeTransformRequestId: response.$response.requestId,
-        //     result: MetadataResult.Pass,
-        // })
-
-        response = {
-            transformationPlan: {
-                transformationSteps: [
-                    {
-                        id: '0_SupplementInfo',
-                        name: 'Supplemental info',
-                        description: 'Supplemental info',
-                        status: 'COMPLETED',
-                        progressUpdates: [
-                            {
-                                name: 'Job statistics',
-                                status: 'COMPLETED',
-                                description:
-                                    '{"columnNames":["Name","Value"],"rows":[{"Name":"Lines of code in your application","Value":"3000"},{"Name":"Dependencies to be replaced","Value":"5"},{"Name":"Deprecated code instances to be replaced","Value":"10"},{"Name":"Files to be updated","Value":"7"}]}',
-                            },
-                            {
-                                name: 'Dependency changes (2)',
-                                status: 'COMPLETED',
-                                description:
-                                    '{"columnNames":["Dependency","Action","Current version","Target version"],"rows":[{"Dependency":"org.springboot.com","Action":"Update","Current version":"2.1","Target version":"2.4"}, {"Dependency":"com.lombok.java","Action":"Remove","Current version":"1.7","Target version":"-"}]}',
-                            },
-                            {
-                                name: 'Deprecated code changes (2)',
-                                status: 'COMPLETED',
-                                description:
-                                    '{"columnNames":["Deprecated code","Suggested replacement","Files to be changed"],"rows":[{"Deprecated code":"java.lang.Thread.stop()","Suggested replacement":"java.lang.Thread.alternative()","Files to be changed":"6"}, {"Deprecated code":"java.math.bad()","Suggested replacement":"java.math.good()","Files to be changed":"3"}]}',
-                            },
-                            {
-                                name: 'Files to be changed (2)',
-                                status: 'COMPLETED',
-                                description:
-                                    '{"columnNames":["File name","Action"],"rows":[{"File name":"pom.xml","Action":"Update"}, {"File name":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","Action":"Update"}]}',
-                            },
-                        ],
-                    },
-                    {
-                        id: '1_OpenRewriteAndPythonDepKnowledge_V1',
-                        name: 'Step 1: Update JDK version, dependencies, and related code',
-                        description:
-                            'Amazon Q will attempt to update the JDK version and change the following dependencies and related code.',
-                        status: 'COMPLETED',
-                    },
-                    {
-                        id: '2_UpdateDeprecatedAPI',
-                        name: 'Step 2: Update deprecated code',
-                        description: 'Amazon Q will attempt to replace the following instances of deprecated code.',
-                        status: 'COMPLETED',
-                    },
-                    {
-                        id: '3_PythonErrorsKnowledgeAndLlmDebugPom_V1',
-                        name: 'Step 3: Build in Java 17 and fix any issues',
-                        description:
-                            'Amazon Q will build the upgraded code in Java 17 and iteratively fix any build errors encountered.',
-                        status: 'COMPLETED',
-                    },
-                    {
-                        id: '4_PassThroughValidation_V2',
-                        name: 'Step 4: Finalize code changes and generate transformation summary',
-                        description:
-                            'Amazon Q will generate code changes for you to review and accept. It will also summarize the changes made and will copy over build logs for future reference and troubleshooting.',
-                        status: 'COMPLETED',
-                    },
-                ],
-            },
+        response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
+            transformationJobId: jobId,
+        })
+        const apiStartTime = Date.now()
+        if (response.$response.requestId) {
+            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
-
-        // console.log("response = " + JSON.stringify(response))
+        telemetry.codeTransform_logApiLatency.emit({
+            codeTransformApiNames: 'GetTransformationPlan',
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformJobId: jobId,
+            codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+            codeTransformRequestId: response.$response.requestId,
+            result: MetadataResult.Pass,
+        })
 
         const progressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
 
@@ -525,30 +481,38 @@ export async function getTransformationPlan(jobId: string) {
 
         // get logo directly since we only use one logo regardless of color theme
         const logoIcon = getImageAsBase64(
-            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'transform-logo.svg'))
+            globals.context.asAbsolutePath('resources/icons/aws/amazonq/transform-logo.svg')
         )
 
-        const clockIcon = getIcon('transform-clock')
-        const dependenciesIcon = getIcon('transform-dependencies')
-        const stepIntoIcon = getIcon('transform-step-into')
-        const fileIcon = getIcon('transform-file')
-        const arrowIcon = getIcon('transform-arrow')
+        const clockIcon = getTransformationIcon('transform-clock')
+        const dependenciesIcon = getTransformationIcon('transform-dependencies')
+        const stepIntoIcon = getTransformationIcon('transform-step-into')
+        const fileIcon = getTransformationIcon('transform-file')
+        const arrowIcon = getTransformationIcon('transform-arrow')
 
-        let plan = `<style>table {border: 1px solid grey;}</style>\n\n<a id="top"></a><br><p style="font-size: 32px"><img src="${logoIcon}" style="margin-right: 15px"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
+        let plan = `<style>table {border: 1px solid #424750;}</style>\n\n<a id="top"></a><br><p style="font-size: 24px; color: white;"><img src="${logoIcon}" style="margin-right: 15px; vertical-align: middle;"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
         plan += `<div style="display: flex;">
-            <div style="flex: 1; border: 1px solid grey; border-radius: 10px; padding: 10px;">
+            <div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;">
                 <p>${CodeWhispererConstants.planIntroductionMessage}</p>
             </div>
-            <div style="flex: 1; margin-left: 20px; border: 1px solid grey; border-radius: 10px; padding: 10px;">
-                <p><img src="${clockIcon}"> ${jobStatistics[0].Name}: ${jobStatistics[0].Value ?? '-'}</p>
-                <p><img src="${dependenciesIcon}"> ${jobStatistics[1].Name}: ${jobStatistics[1].Value ?? '-'}</p>
-                <p><img src="${stepIntoIcon}"> ${jobStatistics[2].Name}: ${jobStatistics[2].Value ?? '-'}</p>
-                <p><img src="${fileIcon}"> ${jobStatistics[3].Name}: ${jobStatistics[3].Value ?? '-'}</p>
+            <div style="flex: 1; margin-left: 20px; border: 1px solid #424750; border-radius: 8px; padding: 10px;">
+                <p style="margin-bottom: 4px;"><img src="${clockIcon}" style="vertical-align: middle;"> ${
+            CodeWhispererConstants.planLinesOfCodeMessage
+        } ${jobStatistics[0].value ?? '-'}</p>
+                <p style="margin-bottom: 4px;"><img src="${dependenciesIcon}" style="vertical-align: middle;"> ${
+            CodeWhispererConstants.planDependenciesToBeReplacedMessage
+        } ${jobStatistics[1].value ?? '-'}</p>
+                <p style="margin-bottom: 4px;"><img src="${stepIntoIcon}" style="vertical-align: middle;"> ${
+            CodeWhispererConstants.planDeprecatedCodeToBeReplacedMessage
+        } ${jobStatistics[2].value ?? '-'}</p>
+                <p style="margin-bottom: 4px;"><img src="${fileIcon}" style="vertical-align: middle;"> ${
+            CodeWhispererConstants.planFilesToBeChangedMessage
+        } ${jobStatistics[3].value ?? '-'}</p>
             </div>
         </div>`
-        plan += `<div style="margin-top: 20px; border: 1px solid grey; border-radius: 10px; padding: 10px;"><p style="font-size: 21px"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
+        plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; color: white; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
         response.transformationPlan.transformationSteps.slice(1).forEach((step, index) => {
-            plan += `<div style="border: 1px solid grey; border-radius: 10px; padding: 10px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 18px">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}"></a></div><p>${step.description}</p>`
+            plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; color: white; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`
             if (index === 0) {
                 plan = addTableMarkdown(plan, progressUpdates[1]) // add the dependency changes table in step 1
             } else if (index === 1) {
@@ -556,11 +520,10 @@ export async function getTransformationPlan(jobId: string) {
             }
             plan += `</div><br>`
         })
-        plan += `</div><br><p style="font-size: 21px"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}"></a></p>`
+        plan += `</div><br><p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
         plan = addTableMarkdown(plan, progressUpdates[3]) // add the files changed table in appendix
         return plan
     } catch (e: any) {
-        console.log('getPlan error = ' + e)
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
@@ -574,7 +537,7 @@ export async function getTransformationPlan(jobId: string) {
         })
 
         /* Means API call failed
-         *  If reponse is defined, means a display/parsing error occurred, so continue transformation
+         * If reponse is defined, means a display/parsing error occurred, so continue transformation
          */
         if (response === undefined) {
             throw new Error('Get plan API call failed')
@@ -600,7 +563,7 @@ export async function getTransformationSteps(jobId: string) {
             codeTransformRequestId: response.$response.requestId,
             result: MetadataResult.Pass,
         })
-        return response.transformationPlan.transformationSteps
+        return response.transformationPlan.transformationSteps.slice(1) // skip step 0 (contains supplemental info)
     } catch (e: any) {
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
