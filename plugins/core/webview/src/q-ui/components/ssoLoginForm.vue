@@ -27,7 +27,7 @@
             />
         </div>
         <div>
-            <div class="hint invalid-start-url" v-if="!isInputValid && this.startUrl !== ''">Invalid Start URL format</div>
+            <div class="hint invalid-start-url" v-if="!isStartUrlValid && this.startUrl !== ''">Invalid Start URL format</div>
         </div>
         <br/>
         <div>

@@ -60,10 +60,10 @@ class QMigrationActivity : StartupActivity.DumbAware {
                 project = project,
                 notificationActions = listOf(
                     NotificationAction.createSimpleExpiring(message("aws.q.migration.action.read_more.text")) {
-                        installQPlugin(project, autoInstall = false)
                     },
                     NotificationAction.createSimple(message("aws.q.migration.action.install.text")) {
                         // TODO: open url
+                        installQPlugin(project, autoInstall = false)
                     }
                 )
             )
@@ -94,8 +94,7 @@ class QMigrationActivity : StartupActivity.DumbAware {
                                 // TODO: change text
                                 notificationActions = listOf(
                                     NotificationAction.createSimple(message("aws.q.migration.action.read_more.text")) {
-                                        // TODO: change this
-                                        BrowserUtil.browse(URI(CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI))
+                                        BrowserUtil.browse(URI(CodeWhispererConstants.Q_MARKETPLACE_URI))
                                     },
                                     NotificationAction.createSimple(message("aws.q.migration.action.manage_plugins.text")) {
                                         ShowSettingsUtil.getInstance().showSettingsDialog(

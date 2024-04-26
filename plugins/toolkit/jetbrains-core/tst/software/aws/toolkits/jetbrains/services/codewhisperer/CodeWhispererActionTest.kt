@@ -52,7 +52,7 @@ class CodeWhispererActionTest : CodeWhispererTestBase() {
     @Test
     fun `CodeWhispererLearnMoreAction actionPerformed should open correct URI`() {
         val action = CodeWhispererLearnMoreAction()
-        testBrowserActionHelper(action, CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI)
+        testBrowserActionHelper(action, CodeWhispererConstants.Q_MARKETPLACE_URI)
     }
 
     @Test
@@ -86,7 +86,7 @@ class CodeWhispererActionTest : CodeWhispererTestBase() {
     @Test
     fun `CodeWhispererWhatIsAction actionPerformed should open correct URI`() {
         val action = CodeWhispererWhatIsAction()
-        testBrowserActionHelper(action, CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI)
+        testBrowserActionHelper(action, CodeWhispererConstants.Q_MARKETPLACE_URI)
     }
 
     @Test

@@ -39,7 +39,7 @@ object CodeWhispererConstants {
     // avoid ThrottlingException as much as possible.
     const val INVOCATION_INTERVAL: Long = 2050
 
-    const val CODEWHISPERER_LEARN_MORE_URI = "https://aws.amazon.com/codewhisperer"
+    const val Q_MARKETPLACE_URI = "https://aws.amazon.com/q/developer/"
     const val CODEWHISPERER_SSO_LEARN_MORE_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisperer-auth.html"
 
     // update link in HelpIds

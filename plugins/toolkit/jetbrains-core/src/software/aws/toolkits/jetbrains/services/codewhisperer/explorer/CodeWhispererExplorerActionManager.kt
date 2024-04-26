@@ -31,6 +31,7 @@ enum class CodeWhispererExploreStateType {
     IsAutoCodeScanEnabled,
     IsMonthlyQuotaForCodeScansExceeded,
     IsManualEnabled,
+    IsFirstRestartAfterQInstall,
     HasAcceptedTermsOfServices,
     HasShownHowToUseCodeWhisperer,
     HasShownNewOnboardingPage,

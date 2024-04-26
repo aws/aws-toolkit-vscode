@@ -126,7 +126,7 @@ class SsoAccessTokenProviderTest {
                 ssoOidcClient.registerClient(
                     RegisterClientRequest.builder()
                         .clientType("public")
-                        .clientName("AWS Toolkit for JetBrains")
+                        .clientName("AWS IDE Plugins for JetBrains")
                         .scopes(emptyList())
                         .build()
                 )

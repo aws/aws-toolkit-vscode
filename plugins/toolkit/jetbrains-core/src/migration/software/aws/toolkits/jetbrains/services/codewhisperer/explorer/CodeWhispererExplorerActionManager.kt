@@ -119,6 +119,12 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
         AwsTelemetry.modifySetting(project, settingId = CodeWhispererConstants.AutoCodeScan.SETTING_ID, settingState = autoCodeScanState)
     }
 
+    fun getIsFirstRestartAfterQInstall(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.IsFirstRestartAfterQInstall, true)
+
+    fun setIsFirstRestartAfterQInstall(isFirstRestartAfterQInstall: Boolean) {
+        actionState.value[CodeWhispererExploreStateType.IsFirstRestartAfterQInstall] = isFirstRestartAfterQInstall
+    }
+
     @Deprecated("Accountless credential will be removed soon")
     @ApiStatus.ScheduledForRemoval
     // Will keep it for existing accountless users

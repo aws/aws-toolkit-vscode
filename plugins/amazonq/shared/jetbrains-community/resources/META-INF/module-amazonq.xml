@@ -6,4 +6,7 @@
     <xi:include href="/META-INF/plugin-codetransform.xml" />
     <xi:include href="/META-INF/plugin-codewhisperer.xml" />
 
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="migration.software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager"/>
+    </extensions>
 </idea-plugin>

@@ -123,7 +123,7 @@ class SsoAccessTokenProvider(
         val registerResponse = client.registerClient {
             it.clientType(PUBLIC_CLIENT_REGISTRATION_TYPE)
             it.scopes(scopes)
-            it.clientName("AWS Toolkit for JetBrains")
+            it.clientName("AWS IDE Plugins for JetBrains")
         }
 
         val registeredClient = DeviceAuthorizationClientRegistration(
