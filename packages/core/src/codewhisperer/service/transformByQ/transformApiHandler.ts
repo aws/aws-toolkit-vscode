@@ -298,9 +298,7 @@ interface IZipManifestParams {
     hilZipParams?: IHilZipManifestParams
 }
 export function createZipManifest({ dependenciesFolder, hilZipParams }: IZipManifestParams) {
-    const zipManifest = hilZipParams
-        ? new HilZipManifest(hilZipParams, dependenciesFolder)
-        : new ZipManifest(dependenciesFolder)
+    const zipManifest = hilZipParams ? new HilZipManifest(hilZipParams, dependenciesFolder) : new ZipManifest()
     return zipManifest
 }
 

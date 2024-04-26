@@ -39,7 +39,7 @@ describe('transformByQ', async function () {
                 name: tempFileName,
             },
             modulePath: tempDir,
-            zipManifest: new ZipManifest(undefined),
+            zipManifest: new ZipManifest(),
         })
     })
 

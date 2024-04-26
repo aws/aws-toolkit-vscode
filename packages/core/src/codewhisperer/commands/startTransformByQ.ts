@@ -246,7 +246,7 @@ export async function preTransformationUploadCode() {
         payloadFilePath = await zipCode({
             dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
             modulePath: transformByQState.getProjectPath(),
-            zipManifest: new ZipManifest(transformByQState.getDependencyFolderInfo()),
+            zipManifest: new ZipManifest(),
         })
         transformByQState.setPayloadFilePath(payloadFilePath)
         uploadId = await uploadPayload(payloadFilePath)

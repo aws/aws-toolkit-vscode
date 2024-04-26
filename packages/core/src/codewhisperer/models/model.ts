@@ -262,12 +262,6 @@ export class ZipManifest {
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    constructor(dependencyPath?: FolderInfo) {
-        if (dependencyPath) {
-            // this.dependenciesRoot = `dependencies/${dependencyPath.name}/`
-            console.log(dependencyPath)
-        }
-    }
 }
 
 export interface IHilZipManifestParams {
