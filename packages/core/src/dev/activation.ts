@@ -16,11 +16,11 @@ import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
 import { watchBetaVSIX } from './beta'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { entries } from '../shared/utilities/tsUtils'
 import { isReleaseVersion } from '../shared/vscode/env'
 import { isAnySsoConnection } from '../auth/connection'
 import { Auth } from '../auth/auth'
 import { getLogger } from '../shared/logger'
+import { entries } from '../shared/utilities/tsUtils'
 
 interface MenuOption {
     readonly label: string
@@ -29,6 +29,18 @@ interface MenuOption {
     readonly executor: (ctx: vscode.ExtensionContext) => Promise<unknown> | unknown
 }
 
+export type DevFunction =
+    | 'installVsix'
+    | 'openTerminal'
+    | 'deleteDevEnv'
+    | 'editStorage'
+    | 'editStorage'
+    | 'showEnvVars'
+    | 'deleteSsoConnections'
+    | 'expireSsoConnections'
+
+let targetContext: vscode.ExtensionContext
+
 /**
  * Defines AWS Toolkit developer tools.
  *
@@ -36,7 +48,7 @@ interface MenuOption {
  * on selection. There is no support for name-spacing. Just add the relevant
  * feature/module as a description so it can be moved around easier.
  */
-const menuOptions: Record<string, MenuOption> = {
+const menuOptions: Record<DevFunction, MenuOption> = {
     installVsix: {
         label: 'Install VSIX on Remote Environment',
         description: 'CodeCatalyst',
@@ -91,18 +103,17 @@ const menuOptions: Record<string, MenuOption> = {
  * re-appears after vscode restart. Ideally there should be only one scheme (aws-dev:/).
  */
 export class DevDocumentProvider implements vscode.TextDocumentContentProvider {
-    constructor(private readonly ctx: vscode.ExtensionContext) {}
     provideTextDocumentContent(uri: vscode.Uri): string {
-        if (uri.path === '/envvars') {
+        if (uri.path.startsWith('/envvars')) {
             let s = 'Environment variables known to AWS Toolkit:\n\n'
             for (const [k, v] of Object.entries(process.env)) {
                 s += `${k}=${v}\n`
             }
             return s
-        } else if (uri.path === '/globalstate') {
+        } else if (uri.path.startsWith('/globalstate')) {
             // lol hax
             // as of November 2023, all of a memento's properties are stored as property `f` when minified
-            return JSON.stringify((this.ctx.globalState as any).f, undefined, 4)
+            return JSON.stringify((targetContext.globalState as any).f, undefined, 4)
         } else {
             return `unknown URI path: ${uri}`
         }
@@ -119,15 +130,25 @@ export class DevDocumentProvider implements vscode.TextDocumentContentProvider {
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     const devSettings = DevSettings.instance
 
-    async function updateMode() {
-        await vscode.commands.executeCommand('setContext', 'aws.isDevMode', devSettings.isDevMode())
-    }
-
     ctx.subscriptions.push(
-        devSettings.onDidChangeActiveSettings(updateMode),
-        vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider(ctx)),
+        devSettings.onDidChangeActiveSettings(updateDevMode),
+        vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider()),
         // "AWS (Developer): Open Developer Menu"
-        vscode.commands.registerCommand('aws.dev.openMenu', () => openMenu(ctx, menuOptions)),
+        vscode.commands.registerCommand('aws.dev.openMenu', async () => {
+            await vscode.commands.executeCommand('_aws.dev.invokeMenu', ctx)
+        }),
+        // Internal command to open dev menu for a specific context and options
+        vscode.commands.registerCommand(
+            '_aws.dev.invokeMenu',
+            (ctx: vscode.ExtensionContext, options: DevFunction[] = Object.keys(menuOptions) as DevFunction[]) => {
+                targetContext = ctx
+                void openMenu(
+                    entries(menuOptions)
+                        .filter(e => options.includes(e[0]))
+                        .map(e => e[1])
+                )
+            }
+        ),
         // "AWS (Developer): Watch Logs"
         Commands.register('aws.dev.viewLogs', async () => {
             // HACK: Use startDebugging() so we can use the DEBUG CONSOLE (which supports
@@ -144,9 +165,9 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         })
     )
 
-    await updateMode()
+    await updateDevMode()
 
-    const editor = new ObjectEditor(ctx)
+    const editor = new ObjectEditor()
     ctx.subscriptions.push(openStorageCommand.register(editor))
 
     if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
@@ -154,13 +175,13 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     }
 }
 
-async function openMenu(ctx: vscode.ExtensionContext, options: typeof menuOptions): Promise<void> {
-    const items = entries(options).map(([_, v]) => ({
+async function openMenu(options: MenuOption[]): Promise<void> {
+    const items = options.map(v => ({
         label: v.label,
         detail: v.detail,
         description: v.description,
         skipEstimate: true,
-        data: v.executor.bind(undefined, ctx),
+        data: v.executor,
     }))
 
     const prompter = createQuickPick(items, {
@@ -234,7 +255,7 @@ class ObjectEditor {
     private readonly fs = new VirtualFileSystem()
     private readonly tabs: Map<string, Tab> = new Map()
 
-    public constructor(private readonly context: vscode.ExtensionContext) {
+    public constructor() {
         vscode.workspace.onDidCloseTextDocument(doc => {
             const key = this.fs.uriToKey(doc.uri)
             this.tabs.get(key)?.dispose()
@@ -249,9 +270,9 @@ class ObjectEditor {
             case 'globalsView':
                 return showState('globalstate')
             case 'globals':
-                return this.openState(this.context.globalState, key)
+                return this.openState(targetContext.globalState, key)
             case 'secrets':
-                return this.openState(this.context.secrets, key)
+                return this.openState(targetContext.secrets, key)
         }
     }
 
@@ -295,12 +316,12 @@ class ObjectEditor {
         const prefix = isSecrets(storage) ? 'secrets' : 'globals'
 
         return vscode.Uri.parse(`${ObjectEditor.scheme}:`, true).with({
-            path: `/${prefix}/${key}`,
+            path: `/${prefix}/${key}-${targetContext.extension.id}`,
         })
     }
 }
 
-async function openStorageFromInput(ctx: vscode.ExtensionContext) {
+async function openStorageFromInput() {
     const wizard = new (class extends Wizard<{ target: 'globalsView' | 'globals' | 'secrets'; key: string }> {
         constructor() {
             super()
@@ -327,7 +348,7 @@ async function openStorageFromInput(ctx: vscode.ExtensionContext) {
                     return new SkipPrompter('')
                 } else if (target === 'globals') {
                     // List all globalState keys in the quickpick menu.
-                    const items = ctx.globalState
+                    const items = targetContext.globalState
                         .keys()
                         .map(key => {
                             return {
@@ -369,9 +390,13 @@ async function expireSsoConnections() {
 }
 
 async function showState(path: string) {
-    const uri = vscode.Uri.parse(`aws-dev2://state/${path}`)
+    const uri = vscode.Uri.parse(`aws-dev2://state/${path}-${targetContext.extension.id}`)
     const doc = await vscode.workspace.openTextDocument(uri)
     await vscode.window.showTextDocument(doc, { preview: false })
 }
 
 export const openStorageCommand = Commands.from(ObjectEditor).declareOpenStorage('_aws.dev.openStorage')
+
+export async function updateDevMode() {
+    await vscode.commands.executeCommand('setContext', 'aws.isDevMode', DevSettings.instance.isDevMode())
+}
