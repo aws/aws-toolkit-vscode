@@ -117,5 +117,21 @@ describe('zipUtil', function () {
                 new ToolkitError('Unknown code analysis scope: unknown')
             )
         })
+
+        it('Should read file content instead of from disk if file is dirty', async function () {
+            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT)
+
+            const document = await vscode.workspace.openTextDocument(appCodePath)
+            await vscode.window.showTextDocument(document)
+            void vscode.window.activeTextEditor?.edit(editBuilder => {
+                editBuilder.insert(new vscode.Position(0, 0), '// a comment\n')
+            })
+
+            const zipMetadata2 = await new ZipUtil().generateZip(
+                vscode.Uri.file(appCodePath),
+                CodeAnalysisScope.PROJECT
+            )
+            assert.equal(zipMetadata2.lines, zipMetadata.lines + 1)
+        })
     })
 })
