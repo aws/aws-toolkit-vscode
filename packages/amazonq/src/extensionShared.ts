@@ -32,9 +32,10 @@ import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { CommonAuthViewProvider, CommonAuthWebview } from 'aws-core-vscode/login'
-import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
+import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
+import { DevFunction, updateDevMode } from 'aws-core-vscode/dev'
 
 export async function activateShared(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
@@ -104,6 +105,18 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
 
     const authProvider = new CommonAuthViewProvider(context, contextPrefix)
     context.subscriptions.push(
+        vscode.commands.registerCommand('amazonq.dev.openMenu', async () => {
+            if (!isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
+                void vscode.window.showErrorMessage('AWS Toolkit must be installed to access the Developer Menu.')
+                return
+            }
+            await vscode.commands.executeCommand('_aws.dev.invokeMenu', context, [
+                'editStorage',
+                'showEnvVars',
+                'deleteSsoConnections',
+                'expireSsoConnections',
+            ] as DevFunction[])
+        }),
         vscode.window.registerWebviewViewProvider(authProvider.viewType, authProvider, {
             webviewOptions: {
                 retainContextWhenHidden: true,
@@ -111,6 +124,9 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
         }),
         registerSubmitFeedback(context, 'Amazon Q', contextPrefix)
     )
+
+    // Check for dev mode
+    await updateDevMode()
 
     // Hide the Amazon Q tree in toolkit explorer
     await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)

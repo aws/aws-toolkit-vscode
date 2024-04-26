@@ -259,7 +259,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.dev.openMenu",
+                    "command": "amazonq.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 },
                 {
@@ -607,15 +607,10 @@
                 "category": "%AWS.amazonq.title%"
             },
             {
-                "command": "aws.dev.openMenu",
+                "command": "amazonq.dev.openMenu",
                 "title": "Open Developer Menu",
-                "category": "AWS (Developer)",
+                "category": "Amazon Q (Developer)",
                 "enablement": "aws.isDevMode"
-            },
-            {
-                "command": "aws.dev.viewLogs",
-                "title": "Watch Logs",
-                "category": "AWS (Developer)"
             },
             {
                 "command": "aws.amazonq.startTransformationInHub",
