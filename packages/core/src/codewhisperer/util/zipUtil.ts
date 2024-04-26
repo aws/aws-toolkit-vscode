@@ -91,14 +91,11 @@ export class ZipUtil {
     protected async zipFile(uri: vscode.Uri) {
         const zip = new admZip()
 
-        const projectName = this.getProjectName(uri)
-        const relativePath = vscode.workspace.asRelativePath(uri)
-
         const content = await this.getTextContent(uri)
 
-        zip.addFile(path.join(projectName, relativePath), Buffer.from(content, 'utf-8'))
+        zip.addFile(this.getZipPath(uri), Buffer.from(content, 'utf-8'))
 
-        this._pickedSourceFiles.add(relativePath)
+        this._pickedSourceFiles.add(uri.fsPath)
         this._totalSize += (await fsCommon.stat(uri.fsPath)).size
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
@@ -114,7 +111,6 @@ export class ZipUtil {
     protected async zipProject(uri: vscode.Uri) {
         const zip = new admZip()
 
-        const projectName = this.getProjectName(uri)
         const projectPath = this.getProjectPath(uri)
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         if (!workspaceFolder) {
@@ -123,7 +119,10 @@ export class ZipUtil {
 
         const files = await collectFiles([projectPath], [workspaceFolder])
         for (const file of files) {
-            const fileSize = (await fsCommon.stat(file.fileUri.fsPath)).size
+            const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
+            const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
+
+            const fileSize = Buffer.from(fileContent).length
             if (this.isJavaClassFile(file.fileUri)) {
                 this._pickedBuildFiles.add(file.fileUri.fsPath)
                 this._totalBuildSize += fileSize
@@ -136,14 +135,29 @@ export class ZipUtil {
                 }
                 this._pickedSourceFiles.add(file.fileUri.fsPath)
                 this._totalSize += fileSize
-                this._totalLines += file.fileContent.split(ZipConstants.newlineRegex).length
+                this._totalLines += fileContent.split(ZipConstants.newlineRegex).length
             }
-            zip.addLocalFile(file.fileUri.fsPath, path.join(projectName, path.dirname(file.zipFilePath)))
+
+            if (isFileOpenAndDirty) {
+                zip.addFile(this.getZipPath(file.fileUri), Buffer.from(fileContent, 'utf-8'))
+            } else {
+                zip.addLocalFile(file.fileUri.fsPath, path.dirname(this.getZipPath(file.fileUri)))
+            }
         }
 
         const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
         zip.writeZip(zipFilePath)
         return zipFilePath
+    }
+
+    protected isFileOpenAndDirty(uri: vscode.Uri) {
+        return vscode.workspace.textDocuments.some(document => document.uri.fsPath === uri.fsPath && document.isDirty)
+    }
+
+    protected getZipPath(uri: vscode.Uri) {
+        const projectName = this.getProjectName(uri)
+        const relativePath = vscode.workspace.asRelativePath(uri)
+        return path.join(projectName, relativePath)
     }
 
     protected getZipDirPath(): string {
