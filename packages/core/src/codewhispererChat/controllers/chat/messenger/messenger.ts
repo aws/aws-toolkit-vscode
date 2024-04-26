@@ -340,7 +340,7 @@ export class Messenger {
                 \n\n### Things to note:
                 \n\n- I may not always provide completely accurate or current information.
                 \n\n- Provide feedback by choosing the like or dislike buttons that appear below answers.
-                \n\n- When you use Amazon Q, AWS may, for service improvement purposes, store data about your usage and content. You can opt-out of sharing this data by following the steps in AI services opt-out policies. See <a href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/sharing-data.html">here</a>
+                \n\n- When you use Amazon Q, AWS may, for service improvement purposes, store data about your usage and content. You can opt-out of sharing this data by following the steps in AI services opt-out policies. See <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/opt-out-IDE.html">here</a>
                 \n\n- Do not enter any confidential, sensitive, or personal information.
                 \n\n*For additional help, visit the [Amazon Q User Guide](${userGuideURL}).*`
                 break
