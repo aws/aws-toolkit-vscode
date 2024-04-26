@@ -30,6 +30,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhisp
 import software.aws.toolkits.jetbrains.services.telemetry.AwsCognitoCredentialsProvider
 import java.net.Proxy
 import java.net.URI
+import java.time.Duration
 import javax.net.ssl.TrustManager
 
 // TODO: move this file to package /client
@@ -67,7 +68,7 @@ class CodeWhispererEndpointCustomizer : ToolkitClientCustomizer {
             if (builder is CodeWhispererStreamingAsyncClientBuilder) {
                 val proxy = CommonProxy.getInstance().select(endpoint).first()
                 val address = proxy.address()
-                val clientBuilder = NettyNioAsyncHttpClient.builder()
+                val clientBuilder = NettyNioAsyncHttpClient.builder().readTimeout(Duration.ofMinutes(3))
 
                 // proxy.type is one of {DIRECT, HTTP, SOCKS}, and is definitely a InetSocketAddress in the HTTP/SOCKS case
                 // and is null in DIRECT case
