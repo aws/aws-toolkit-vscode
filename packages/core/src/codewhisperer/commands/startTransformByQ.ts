@@ -330,9 +330,8 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             path: tmpDependencyListDir,
         }
         runMavenDependencyUpdateCommands(compileFolderInfo)
-        const { latestVersion, majorVersions, minorVersions, status } = await parseVersionsListFromPomFile(
-            path.join(tmpDependencyListDir, localPathToXmlDependencyList)
-        )
+        const xmlString = await fsCommon.readFileAsString(path.join(tmpDependencyListDir, localPathToXmlDependencyList))
+        const { latestVersion, majorVersions, minorVersions, status } = await parseVersionsListFromPomFile(xmlString)
 
         if (status === dependencyNoAvailableVersions) {
             // let user know and early exit for human in the loop happened because no upgrade versions available

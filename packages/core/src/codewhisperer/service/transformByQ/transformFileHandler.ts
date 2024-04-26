@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as os from 'os'
 import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, writeFileSync } from 'fs'
 import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import { fsCommon } from '../../../srcShared/fs'
@@ -52,7 +52,7 @@ export async function createPomCopy(
 }
 
 export async function replacePomVersion(pomFileVirtualFileReference: vscode.Uri, version: string, delimiter: string) {
-    const pomFileText = readFileSync(pomFileVirtualFileReference.fsPath, 'utf-8')
+    const pomFileText = await fsCommon.readFileAsString(pomFileVirtualFileReference.fsPath)
     const pomFileTextWithNewVersion = pomFileText.replace(delimiter, version)
     writeFileSync(pomFileVirtualFileReference.fsPath, pomFileTextWithNewVersion)
 }
@@ -60,7 +60,7 @@ export async function replacePomVersion(pomFileVirtualFileReference: vscode.Uri,
 export async function getJsonValuesFromManifestFile(
     manifestFileVirtualFileReference: vscode.Uri
 ): Promise<IManifestFile> {
-    const manifestFileContents = readFileSync(manifestFileVirtualFileReference.fsPath, 'utf-8')
+    const manifestFileContents = await fsCommon.readFileAsString(manifestFileVirtualFileReference.fsPath)
     const jsonValues = JSON.parse(manifestFileContents.toString())
     return {
         hilCapability: jsonValues?.hilType,
@@ -138,7 +138,7 @@ async function addDiagnosticOverview(
 
 export async function getCodeIssueSnippetFromPom(pomFileVirtualFileReference: vscode.Uri) {
     // TODO[gumby]: not great that we read this file multiple times
-    const pomFileContents = readFileSync(pomFileVirtualFileReference.fsPath, 'utf8')
+    const pomFileContents = await fsCommon.readFileAsString(pomFileVirtualFileReference.fsPath)
 
     const dependencyRegEx = /<dependencies\b[^>]*>(.*?)<\/dependencies>/ms
     const match = dependencyRegEx.exec(pomFileContents)
@@ -192,8 +192,7 @@ export interface IParsedXmlDependencyOutput {
     minorVersions: string[]
     status?: string
 }
-export async function parseVersionsListFromPomFile(pathToXmlOutput: string): Promise<IParsedXmlDependencyOutput> {
-    const xmlString = readFileSync(pathToXmlOutput, 'utf-8')
+export async function parseVersionsListFromPomFile(xmlString: string): Promise<IParsedXmlDependencyOutput> {
     const parser = new xml2js.Parser()
     const parsedOutput = await parser.parseStringPromise(xmlString)
 
