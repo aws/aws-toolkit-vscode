@@ -92,15 +92,12 @@ export async function highlightPomIssueInProject(
     })
 
     // Find line number for "latestVersion" or set to first line in file
-    const highlightLineNumberDependency = findLineNumber(pomFileVirtualFileReference, '<dependency>') || 1
     const highlightLineNumberVersion = findLineNumber(
         pomFileVirtualFileReference,
         `<version>${currentVersion}</version>`
     )
-    if (highlightLineNumberDependency) {
-        await setHilAnnotationObjectDetails(highlightLineNumberDependency)
-    }
     if (highlightLineNumberVersion) {
+        await setHilAnnotationObjectDetails(highlightLineNumberVersion)
         await addDiagnosticOverview(collection, diagnostics, highlightLineNumberVersion)
     }
 }
@@ -164,7 +161,7 @@ async function setHilAnnotationObjectDetails(lineNumber: number = 0) {
     // Set the decorations
     diffEditor?.setDecorations(highlightDecorationType, [
         {
-            range: new vscode.Range(lineNumber, 0, lineNumber + 4, 50),
+            range: new vscode.Range(lineNumber, 0, lineNumber, 50),
         },
     ])
 }
