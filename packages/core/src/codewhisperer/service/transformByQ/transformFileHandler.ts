@@ -93,9 +93,12 @@ export async function highlightPomIssueInProject(
 
     // Find line number for "latestVersion" or set to first line in file
     const highlightLineNumberDependency = findLineNumber(pomFileVirtualFileReference, '<dependency>') || 1
-    const highlightLineNumberVersion = findLineNumber(pomFileVirtualFileReference, '1.0')
+    const highlightLineNumberVersion = findLineNumber(
+        pomFileVirtualFileReference,
+        `<version>${currentVersion}</version>`
+    )
     if (highlightLineNumberDependency) {
-        await setAnnotationObjectDetails(highlightLineNumberDependency)
+        await setHilAnnotationObjectDetails(highlightLineNumberDependency)
     }
     if (highlightLineNumberVersion) {
         await addDiagnosticOverview(collection, diagnostics, highlightLineNumberVersion)
@@ -113,14 +116,13 @@ async function addDiagnosticOverview(
         collection.clear()
         diagnostics = [
             {
-                code: 'Remote transformation',
-                message: 'Amazon Q experienced an issue with upgrading this dependency version',
+                code: 'Amazon Q',
+                message: 'Amazon Q experienced an issue upgrading this dependency version',
                 range: new vscode.Range(
                     new vscode.Position(lineNumber - 1, 0),
                     new vscode.Position(lineNumber - 1, 50)
                 ),
                 severity: vscode.DiagnosticSeverity.Error,
-                source: 'Amazon Q',
                 relatedInformation: [
                     new vscode.DiagnosticRelatedInformation(
                         new vscode.Location(
@@ -145,29 +147,24 @@ export async function getCodeIssueSnippetFromPom(pomFileVirtualFileReference: vs
     const match = dependencyRegEx.exec(pomFileContents)
     const snippet = match ? match[0] : ''
 
+    // Remove white space and convert to 2 space indented code snippet
     return snippet.trim()
 }
 
-async function setAnnotationObjectDetails(lineNumber: number = 0) {
+async function setHilAnnotationObjectDetails(lineNumber: number = 0) {
     // Get active diff editor
     const diffEditor = vscode.window.activeTextEditor
 
     const highlightDecorationType = vscode.window.createTextEditorDecorationType({
         backgroundColor: 'lightyellow',
         isWholeLine: true,
-        gutterIconPath: '/packages/toolkit/resources/icons/cloud9/generated/dark/vscode-bug.svg',
-        gutterIconSize: '20',
         overviewRulerColor: new vscode.ThemeColor('warning'),
-        overviewRulerLane: vscode.OverviewRulerLane.Center,
     })
 
     // Set the decorations
     diffEditor?.setDecorations(highlightDecorationType, [
         {
-            range: new vscode.Range(lineNumber, 0, lineNumber, 50),
-            hoverMessage: `### This dependency version needs to be updated
-            Use Amazon Q Chat to select a valid version upgrade to continue the transformation process.
-            `,
+            range: new vscode.Range(lineNumber, 0, lineNumber + 4, 50),
         },
     ])
 }
