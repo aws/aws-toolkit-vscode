@@ -599,7 +599,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Pass,
             })
             status = response.transformationJob.status!
-            console.log('status = ' + status)
             // must be series of ifs, not else ifs
             if (CodeWhispererConstants.validStatesForJobStarted.includes(status)) {
                 sessionPlanProgress['startJob'] = StepProgress.Succeeded
