@@ -164,7 +164,7 @@ export abstract class CommonAuthWebview extends VueWebview {
      */
     abstract useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined>
 
-    abstract findConnection(connections: AwsConnection[]): AwsConnection | undefined
+    abstract findUsableConnection(connections: AwsConnection[]): AwsConnection | undefined
 
     async errorNotification(e: AuthError) {
         void vscode.window.showInformationMessage(`${e.text}`)
