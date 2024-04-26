@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.telemetry
 
+import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NA
 import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
 import software.aws.toolkits.core.telemetry.MetricEvent
@@ -13,7 +14,9 @@ typealias TelemetryService = migration.software.aws.toolkits.jetbrains.services.
 
 data class MetricEventMetadata(
     val awsAccount: String = METADATA_NA,
-    val awsRegion: String = METADATA_NA
+    val awsRegion: String = METADATA_NA,
+    var awsProduct: AWSProduct = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
+    var awsVersion: String = METADATA_NA
 )
 
 interface TelemetryListener {

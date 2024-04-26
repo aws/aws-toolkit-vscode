@@ -19,7 +19,7 @@ object ExecutableCommon {
         path: String,
         executableName: String,
         executableType: ExecutableType<*>? = null,
-        clientMetadata: ClientMetadata = ClientMetadata.DEFAULT_METADATA
+        clientMetadata: ClientMetadata = ClientMetadata.getDefault()
     ): GeneralCommandLine {
         val sanitizedPath = path.nullize(true)
             ?: throw RuntimeException(message("executableCommon.cli_not_configured", executableName))
@@ -45,7 +45,7 @@ object ExecutableCommon {
                 // we're not setting PYTHONIOENCODING because we might break SAM on py2.7
             }
             if (executableType is SamExecutable) {
-                this["AWS_TOOLING_USER_AGENT"] = "${clientMetadata.productName}/${clientMetadata.productVersion}"
+                this["AWS_TOOLING_USER_AGENT"] = "${clientMetadata.awsProduct}/${clientMetadata.awsVersion}"
             }
         }
 

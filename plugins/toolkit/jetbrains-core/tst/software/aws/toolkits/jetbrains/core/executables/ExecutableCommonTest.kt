@@ -37,8 +37,8 @@ class ExecutableCommonTest {
         val path = "/foo/bar"
         val name = "sam.cmd"
         val clientMetadata = ClientMetadata(
-            productName = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
-            productVersion = "1.0",
+            awsProduct = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
+            awsVersion = "1.0",
             clientId = "foo",
             parentProduct = "JetBrains",
             parentProductVersion = "191",

@@ -264,7 +264,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
 
     @Throws(IOException::class)
     fun uploadArtifactToS3(url: String, fileToUpload: File, requestHeaders: Map<String, String>?) {
-        HttpRequests.put(url, "application/zip").userAgent(AwsClientManager.userAgent).tuner {
+        HttpRequests.put(url, "application/zip").userAgent(AwsClientManager.getUserAgent()).tuner {
             requestHeaders?.forEach { entry ->
                 it.setRequestProperty(entry.key, entry.value)
             }
