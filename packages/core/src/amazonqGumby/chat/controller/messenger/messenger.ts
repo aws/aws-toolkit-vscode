@@ -342,7 +342,7 @@ export class Messenger {
 
         switch (type) {
             case 'no-alternate-dependencies-found':
-                message = `I wasn't able to find any other version for this dependency in your local maven repository. You may want to first transform your 1p dependency to make it Java 17 compatible before upgrading this module .`
+                message = `I couldn't find any other versions of this dependency in your local Maven repository. Try transforming the depedency to make it compatible with Java 17, and then try transforming this module again.`
                 break
         }
 
@@ -415,7 +415,7 @@ export class Messenger {
     }
 
     public sendHumanInTheLoopInitialMessage(tabID: string, codeSnippet: string) {
-        let message = `I ran into a dependency issue and was not able to successfully complete the transformation.`
+        let message = `I was not able to upgrade all dependencies. To resolve it, I'll try to find an updated depedency in your local Maven repository. I'll need additional information from you to continue.`
 
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -428,7 +428,7 @@ export class Messenger {
         )
 
         if (codeSnippet !== '') {
-            message = `Here is the dependency causing the error: 
+            message = `Here is the dependency causing the issue: 
 \`\`\`
 ${codeSnippet}
 \`\`\`
@@ -453,7 +453,7 @@ ${codeSnippet}
             )
         }
 
-        message = `I am searching for other versions available in your maven repository for this dependency...`
+        message = `I am searching for other dependency versions available in your Maven repository...`
 
         this.sendInProgressMessage(tabID, message)
     }
@@ -487,7 +487,7 @@ ${codeSnippet}
         formItems.push({
             id: 'GumbyTransformDependencyForm',
             type: 'select',
-            title: 'Please select the version to use:',
+            title: 'Choose which version I should use:',
             mandatory: true,
 
             options: valueFormOptions,
@@ -507,7 +507,7 @@ ${codeSnippet}
     }
 
     public sendHILContinueMessage(tabID: string, selectedDependencyVersion: string) {
-        let message = `### Resume Transformation Job
+        let message = `### Dependency Details
 -------------
 | | |
 | :------------------- | -------: |
@@ -516,12 +516,12 @@ ${codeSnippet}
 
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
 
-        message = `Okay. Uploading the relevant jar and resuming the job.`
+        message = `I recieved your target version dependency.`
         this.sendInProgressMessage(tabID, message)
     }
 
     public sendHILResumeMessage(tabID: string) {
-        const message = `I resumed your job. You can track detailed progress in the transformation hub.`
+        const message = `I'll continue transforming your code. You can monitor progress in the Transformation Hub.`
         this.sendJobSubmittedMessage(tabID, false, message)
     }
 }

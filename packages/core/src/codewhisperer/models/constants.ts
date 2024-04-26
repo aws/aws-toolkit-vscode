@@ -324,8 +324,9 @@ export const amazonQFeedbackKey = 'Amazon Q'
 
 export const amazonQFeedbackText = 'Submit feedback'
 
-export const jobStartedChatMessage =
-    "I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub."
+export const jobStartedChatMessage = `I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.
+    
+If I run into any issues, I might pause the transformation to get input from you on how to proceed.`
 
 export const jobStartedNotification =
     'Amazon Q is transforming your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.'
