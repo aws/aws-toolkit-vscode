@@ -157,10 +157,10 @@ class SsoAccessTokenProvider(
         }
 
         val registeredClient = PKCEClientRegistration(
-            registerResponse.clientId(),
-            registerResponse.clientSecret(),
-            Instant.ofEpochSecond(registerResponse.clientSecretExpiresAt()),
-            scopes,
+            clientId = registerResponse.clientId(),
+            clientSecret = registerResponse.clientSecret(),
+            expiresAt = Instant.ofEpochSecond(registerResponse.clientSecretExpiresAt()),
+            scopes = scopes,
             issuerUrl = ssoUrl,
             region = ssoRegion,
             clientType = PUBLIC_CLIENT_REGISTRATION_TYPE,
