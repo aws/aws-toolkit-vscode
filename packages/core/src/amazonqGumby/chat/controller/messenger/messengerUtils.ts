@@ -82,7 +82,7 @@ export default class MessengerUtils {
     }
 
     static createAvailableDependencyVersionString = (versions: DependencyVersions): string => {
-        let message = `I found ${versions.length} other versions which are higher than the one in your code ${versions.currentVersion}.
+        let message = `I found ${versions.length} other dependency versions that are more recent than the dependency in your code that's causing an error: ${versions.currentVersion}.
 
 `
 
