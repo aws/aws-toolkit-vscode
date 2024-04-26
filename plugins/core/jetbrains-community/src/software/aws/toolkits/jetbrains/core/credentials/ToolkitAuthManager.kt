@@ -87,7 +87,7 @@ interface ToolkitConnectionManager : Disposable {
 
     fun activeConnectionForFeature(feature: FeatureWithPinnedConnection): ToolkitConnection?
 
-    fun isFeatureEnabled(feature: FeatureWithPinnedConnection): Boolean
+    fun connectionStateForFeature(feature: FeatureWithPinnedConnection): BearerTokenAuthState
 
     fun switchConnection(newConnection: ToolkitConnection?)
 
@@ -114,10 +114,7 @@ fun loginSso(
         val authManager = ToolkitAuthManager.getInstance()
         val connection = try {
             authManager.tryCreateTransientSsoConnection(profile) { transientConnection ->
-                (transientConnection.getConnectionSettings().tokenProvider.delegate as? InteractiveBearerTokenProvider)?.let {
-                    onPendingToken(it)
-                }
-                reauthConnectionIfNeeded(project, transientConnection)
+                reauthConnectionIfNeeded(project, transientConnection, onPendingToken)
             }
         } catch (e: Exception) {
             val message = ssoErrorMessageFromException(e)
@@ -210,8 +207,15 @@ fun AwsBearerTokenConnection.lazyIsUnauthedBearerConnection(): Boolean {
     return false
 }
 
-fun reauthConnectionIfNeeded(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
+fun reauthConnectionIfNeeded(
+    project: Project?,
+    connection: ToolkitConnection,
+    onPendingToken: (InteractiveBearerTokenProvider) -> Unit = {}
+): BearerTokenProvider {
     val tokenProvider = (connection.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider
+    if (tokenProvider is InteractiveBearerTokenProvider) {
+        onPendingToken(tokenProvider)
+    }
     return reauthProviderIfNeeded(project, tokenProvider)
 }
 

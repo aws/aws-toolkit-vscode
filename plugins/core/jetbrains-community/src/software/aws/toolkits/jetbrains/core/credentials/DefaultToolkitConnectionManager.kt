@@ -86,7 +86,7 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
         }
     }
 
-    override fun isFeatureEnabled(feature: FeatureWithPinnedConnection): Boolean {
+    override fun connectionStateForFeature(feature: FeatureWithPinnedConnection): BearerTokenAuthState {
         val conn = activeConnectionForFeature(feature) as? AwsBearerTokenConnection? ?: run {
             getLogger<DefaultToolkitConnectionManager>().debug {
                 """
@@ -94,17 +94,13 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
                     ActiveConnectionForFeature=${activeConnectionForFeature(feature)}
                 """.trimIndent()
             }
-            return false
+            return BearerTokenAuthState.NOT_AUTHENTICATED
         }
         val provider = conn.getConnectionSettings().tokenProvider.delegate as? BearerTokenProvider ?: run {
             getLogger<DefaultToolkitConnectionManager>().debug { "isFeatureEnabled: provider can't be cast to BearerTokenProvider" }
-            return false
+            return BearerTokenAuthState.NOT_AUTHENTICATED
         }
-        return when (provider.state()) {
-            BearerTokenAuthState.AUTHORIZED -> true
-            BearerTokenAuthState.NEEDS_REFRESH -> true
-            BearerTokenAuthState.NOT_AUTHENTICATED -> false
-        }
+        return provider.state()
     }
 
     override fun getState() = ToolkitConnectionManagerState(

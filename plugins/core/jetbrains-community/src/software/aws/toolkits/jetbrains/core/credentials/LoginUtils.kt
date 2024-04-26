@@ -178,10 +178,7 @@ fun authAndUpdateConfig(
 
     val connection = try {
         ToolkitAuthManager.getInstance().tryCreateTransientSsoConnection(updatedProfile) { connection ->
-            (connection.getConnectionSettings().tokenProvider.delegate as? InteractiveBearerTokenProvider)?.let {
-                onPendingToken(it)
-            }
-            reauthConnectionIfNeeded(project, connection)
+            reauthConnectionIfNeeded(project, connection, onPendingToken)
         }
     } catch (e: Exception) {
         val message = ssoErrorMessageFromException(e)

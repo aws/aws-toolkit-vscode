@@ -45,6 +45,7 @@ interface CodeWhispererActivationChangedListener {
     fun activationChanged(value: Boolean) {}
 }
 
+@Deprecated("remove it, use isQConnected")
 fun isCodeWhispererEnabled(project: Project) = with(CodeWhispererExplorerActionManager.getInstance()) {
     checkActiveCodeWhispererConnectionType(project) != CodeWhispererLoginType.Logout
 }
@@ -58,6 +59,7 @@ fun isUserBuilderId(project: Project) = with(CodeWhispererExplorerActionManager.
  *  the reasoning is we need handling specifically for a "Expired" condition thus excluding logout from here
  *  If callers rather need a predicate "isInvalidConnection", please use the combination of the two (!isCodeWhispererEnabled() || isCodeWhispererExpired())
  */
+@Deprecated("remove it, use isQExpired")
 fun isCodeWhispererExpired(project: Project) = with(CodeWhispererExplorerActionManager.getInstance()) {
     checkActiveCodeWhispererConnectionType(project) == CodeWhispererLoginType.Expired
 }

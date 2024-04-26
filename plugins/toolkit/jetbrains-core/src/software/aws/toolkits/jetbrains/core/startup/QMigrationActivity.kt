@@ -46,8 +46,8 @@ class QMigrationActivity : StartupActivity.DumbAware {
     private fun displayQMigrationInfo(project: Project) {
         if (AwsSettings.getInstance().isQMigrationNotificationShownOnce) return
 
-        val hasUsedCodeWhisperer = ToolkitConnectionManager.getInstance(project).isFeatureEnabled(CodeWhispererConnection.getInstance())
-        val hasUsedQ = ToolkitConnectionManager.getInstance(project).isFeatureEnabled(QConnection.getInstance())
+        val hasUsedCodeWhisperer = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance()) != null
+        val hasUsedQ = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance()) != null
         if (hasUsedCodeWhisperer || hasUsedQ) {
             // do auto-install
             installQPlugin(project, autoInstall = true)

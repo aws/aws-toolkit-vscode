@@ -13,12 +13,18 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
+import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.services.amazonq.QWebviewPanel
 import software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.openMeetQPage
 import software.aws.toolkits.jetbrains.services.amazonq.isQSupportedInThisVersion
+import software.aws.toolkits.jetbrains.utils.isQConnected
+import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.FeatureId
@@ -38,7 +44,26 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
             }
         )
 
-        val component = if (isQConnected(project)) {
+        project.messageBus.connect().subscribe(
+            BearerTokenProviderListener.TOPIC,
+            object : BearerTokenProviderListener {
+                override fun onChange(providerId: String, newScopes: List<String>?) {
+                    if (ToolkitConnectionManager.getInstance(project).connectionStateForFeature(QConnection.getInstance()) == BearerTokenAuthState.AUTHORIZED) {
+                        val content = contentManager.factory.createContent(AmazonQToolWindow.getInstance(project).component, null, false).also {
+                            it.isCloseable = true
+                            it.isPinnable = true
+                        }
+
+                        runInEdt {
+                            contentManager.removeAllContents(true)
+                            contentManager.addContent(content)
+                        }
+                    }
+                }
+            }
+        )
+
+        val component = if (isQConnected(project) && !isQExpired(project)) {
             AmazonQToolWindow.getInstance(project).component
         } else {
             QWebviewPanel.getInstance(project).browser?.prepareBrowser(BrowserState(FeatureId.Q))
@@ -91,7 +116,7 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
         QWebviewPanel.getInstance(project).browser?.prepareBrowser(BrowserState(FeatureId.Q))
 
         // isQConnected alone is not robust and there is race condition (read/update connection states)
-        val component = if (isNewConnectionForQ || isQConnected(project)) {
+        val component = if (isNewConnectionForQ || (isQConnected(project) && !isQExpired(project))) {
             LOG.debug { "returning Q-chat window; isQConnection=$isNewConnectionForQ; hasPinnedConnection=$isNewConnectionForQ" }
             AmazonQToolWindow.getInstance(project).component
         } else {

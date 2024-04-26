@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.FeatureValue
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
+import software.aws.toolkits.jetbrains.utils.isQExpired
 
 @Service
 class CodeWhispererFeatureConfigService {
@@ -19,7 +19,7 @@ class CodeWhispererFeatureConfigService {
 
     @RequiresBackgroundThread
     fun fetchFeatureConfigs(project: Project) {
-        if (isCodeWhispererExpired(project)) return
+        if (isQExpired(project)) return
 
         LOG.debug { "Fetching feature configs" }
         try {

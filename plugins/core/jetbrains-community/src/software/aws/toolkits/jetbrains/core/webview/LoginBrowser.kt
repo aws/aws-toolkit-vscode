@@ -13,16 +13,12 @@ import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.Login
-import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
-import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
-import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
-import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
+import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.sso.PendingAuthorization
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.utils.pollFor
@@ -47,32 +43,12 @@ abstract class LoginBrowser(
     protected data class BearerConnectionSelectionSettings(val currentSelection: AwsBearerTokenConnection, val onChange: (AwsBearerTokenConnection) -> Unit)
     protected val selectionSettings = mutableMapOf<String, BearerConnectionSelectionSettings>()
 
-    // TODO: figure out a better way to do this UI update
-    protected val onPendingProfile: (InteractiveBearerTokenProvider) -> Unit = { provider ->
+    protected val onPendingToken: (InteractiveBearerTokenProvider) -> Unit = { provider ->
         projectCoroutineScope(project).launch {
             val authorization = pollForAuthorization(provider)
             if (authorization != null) {
                 executeJS("window.ideClient.updateAuthorization(\"${userCodeFromAuthorization(authorization)}\")")
                 currentAuthorization = authorization
-            }
-        }
-    }
-
-    // TODO: remove it
-    // TODO: figure out a better way to do this UI update
-    protected val onPendingAwsId: () -> Unit = {
-        projectCoroutineScope(project).launch {
-            val conn = pollForConnection(ToolkitBearerTokenProvider.ssoIdentifier(SONO_URL, SONO_REGION))
-
-            conn?.let { c ->
-                val provider = (c as ManagedBearerSsoConnection).getConnectionSettings().tokenProvider.delegate
-                val authorization = pollForAuthorization(provider as InteractiveBearerTokenProvider)
-
-                if (authorization != null) {
-                    executeJS("window.ideClient.updateAuthorization(\"${userCodeFromAuthorization(authorization)}\")")
-                    currentAuthorization = authorization
-                    return@launch
-                }
             }
         }
     }
@@ -100,13 +76,9 @@ abstract class LoginBrowser(
         else -> ""
     }
 
-    fun resetBrowserState() {
-        executeJS("window.ideClient.reset()")
-    }
-
     open fun loginBuilderId(scopes: List<String>) {
         loginWithBackgroundContext {
-            Login.BuilderId(scopes, onPendingProfile) {}.loginBuilderId(project)
+            Login.BuilderId(scopes, onPendingToken) {}.loginBuilderId(project)
             // TODO: telemetry
         }
     }
@@ -116,7 +88,7 @@ abstract class LoginBrowser(
             // TODO: telemetry
         }
         loginWithBackgroundContext {
-            Login.IdC(url, region, scopes, onPendingProfile, onError).loginIdc(project)
+            Login.IdC(url, region, scopes, onPendingToken, onError).loginIdc(project)
             // TODO: telemetry
         }
     }
@@ -142,6 +114,14 @@ abstract class LoginBrowser(
                 }
             }
         }
+
+    protected fun reauth(connection: ToolkitConnection?) {
+        if (connection is AwsBearerTokenConnection) {
+            loginWithBackgroundContext {
+                reauthConnectionIfNeeded(project, connection, onPendingToken)
+            }
+        }
+    }
 
     protected fun loadWebView() {
         jcefBrowser.loadHTML(getWebviewHTML())
@@ -176,10 +156,6 @@ abstract class LoginBrowser(
                 </body>
             </html>
         """.trimIndent()
-    }
-
-    protected suspend fun pollForConnection(connectionId: String): ToolkitConnection? = pollFor {
-        ToolkitAuthManager.getInstance().getConnection(connectionId)
     }
 
     protected suspend fun pollForAuthorization(provider: InteractiveBearerTokenProvider): PendingAuthorization? = pollFor {

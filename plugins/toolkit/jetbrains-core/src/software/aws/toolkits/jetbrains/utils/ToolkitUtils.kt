@@ -14,7 +14,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROL
 
 private val LOG = LoggerFactory.getLogger("ToolkitUtils")
 
-fun inspectExistingConnectionForToolkit(project: Project): Boolean =
+fun isTookitConnected(project: Project): Boolean =
     ToolkitConnectionManager.getInstance(project).let {
         if (CredentialManager.getInstance().getCredentialIdentifiers().isNotEmpty()) {
             LOG.debug { "inspecting existing connection and found IAM credentials" }

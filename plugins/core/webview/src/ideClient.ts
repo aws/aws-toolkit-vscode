@@ -33,6 +33,7 @@ export class IdeClient {
 
     updateAuthorization(code: string | undefined) {
         this.store.commit('setAuthorizationCode', code)
+        // TODO: mutage stage to AUTHing here probably makes life easier
     }
 
     updateLastLoginIdcInfo(idcInfo: IdcInfo) {
