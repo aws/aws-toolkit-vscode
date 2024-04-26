@@ -124,7 +124,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
     /**
      * Code scan job is active when the [Job] is started and is in active state.
      */
-    fun isCodeScanJobActive(): Boolean = this::codeScanJob.isInitialized && codeScanJob.isActive
+    fun isCodeScanJobActive(): Boolean = this::codeScanJob.isInitialized && codeScanJob.isActive && isCodeScanInProgress()
 
     fun getRunActionButtonIcon(): Icon = if (isCodeScanInProgress()) AllIcons.Process.Step_1 else AllIcons.Actions.Execute
 
@@ -139,7 +139,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
         if (!isCodeWhispererEnabled(project)) return
 
         // Return if a scan is already in progress.
-        if (isCodeScanInProgress.getAndSet(true)) return
+        if (isCodeScanInProgress.getAndSet(scope == CodeWhispererConstants.CodeAnalysisScope.PROJECT)) return
         if (promptReAuth(project)) {
             isCodeScanInProgress.set(false)
             return

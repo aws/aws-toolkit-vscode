@@ -94,7 +94,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
             currentCoroutineContext.ensureActive()
             val startTime = now()
             val (payloadContext, sourceZip) = withTimeout(Duration.ofSeconds(sessionContext.sessionConfig.createPayloadTimeoutInSeconds())) {
-                runReadAction { sessionContext.sessionConfig.createPayload() }
+                sessionContext.sessionConfig.createPayload()
             }
 
             LOG.debug {
