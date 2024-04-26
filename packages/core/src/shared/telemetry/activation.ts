@@ -44,6 +44,8 @@ export async function activate(
     productName: AWSProduct
 ) {
     const config = new TelemetryConfig(settings)
+    await config.initAmazonQSetting() // TODO: Remove after a few releases.
+
     DefaultTelemetryClient.productName = productName
     globals.telemetry = await DefaultTelemetryService.create(extensionContext, awsContext, getComputeRegion())
 
@@ -52,6 +54,12 @@ export async function activate(
 
         extensionContext.subscriptions.push(
             config.onDidChange(event => {
+                if (globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq) {
+                    if (event.key === 'amazonQ.telemetry') {
+                        globals.telemetry.telemetryEnabled = config.isEnabled()
+                    }
+                    return
+                }
                 if (event.key === 'telemetry') {
                     globals.telemetry.telemetryEnabled = config.isEnabled()
                 }
