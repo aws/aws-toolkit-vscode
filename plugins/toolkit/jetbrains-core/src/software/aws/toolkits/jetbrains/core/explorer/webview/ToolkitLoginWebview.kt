@@ -162,14 +162,7 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
             }
 
             "cancelLogin" -> {
-                // TODO:   AwsTelemetry.loginWithBrowser
-
-                // Essentially Authorization becomes a mutable that allows browser and auth to communicate canceled
-                // status. There might be a risk of race condition here by changing this global, for which effort
-                // has been made to avoid it (e.g. Cancel button is only enabled if Authorization has been given
-                // to browser.). The worst case is that the user will see a stale user code displayed, but not
-                // affecting the current login flow.
-                currentAuthorization?.progressIndicator?.cancel()
+                cancelLogin()
             }
 
             "signout" -> {

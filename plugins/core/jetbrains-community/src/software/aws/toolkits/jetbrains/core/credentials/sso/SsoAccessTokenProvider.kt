@@ -248,7 +248,12 @@ class SsoAccessTokenProvider(
                 throw e
             }
 
-            sleepWithCancellation(backOffTime, progressIndicator)
+            try {
+                sleepWithCancellation(backOffTime, progressIndicator)
+            } catch (e: ProcessCanceledException) {
+                _authorization.set(null)
+                throw ProcessCanceledException(IllegalStateException("Login canceled by user"))
+            }
         }
     }
 
@@ -259,6 +264,7 @@ class SsoAccessTokenProvider(
 
         while (true) {
             if (future.isDone) {
+                _authorization.set(null)
                 return future.get()
             }
 
@@ -266,6 +272,7 @@ class SsoAccessTokenProvider(
                 sleepWithCancellation(Duration.ofMillis(100), progressIndicator)
             } catch (e: ProcessCanceledException) {
                 future.cancel(true)
+                _authorization.set(null)
                 throw ProcessCanceledException(IllegalStateException("Login canceled by user"))
             }
         }

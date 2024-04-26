@@ -36,10 +36,7 @@ import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.amazonq.toolwindow.isQConnected
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
-import software.aws.toolkits.telemetry.AwsTelemetry
-import software.aws.toolkits.telemetry.CredentialType
 import software.aws.toolkits.telemetry.FeatureId
-import software.aws.toolkits.telemetry.Result
 import java.awt.event.ActionListener
 import java.util.function.Function
 import javax.swing.JButton
@@ -138,15 +135,7 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
             }
 
             "cancelLogin" -> {
-                // TODO: differentiate BearerToken vs. SsoProfile cred type
-                AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = CredentialType.BearerToken)
-
-                // Essentially Authorization becomes a mutable that allows browser and auth to communicate canceled
-                // status. There might be a risk of race condition here by changing this global, for which effort
-                // has been made to avoid it (e.g. Cancel button is only enabled if Authorization has been given
-                // to browser.). The worst case is that the user will see a stale user code displayed, but not
-                // affecting the current login flow.
-                currentAuthorization?.progressIndicator?.cancel()
+                cancelLogin()
             }
 
             "signout" -> {
