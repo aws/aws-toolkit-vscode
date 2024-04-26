@@ -359,7 +359,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             tabID: ChatSessionManager.Instance.getSession().tabID,
             dependencies,
         })
-    } catch (err) {
+    } catch (err: any) {
         try {
             // Regardless of the error,
             // Continue transformation flow
@@ -371,9 +371,19 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
                 tabID: ChatSessionManager.Instance.getSession().tabID,
             })
         }
+        codeTransformTelemetryState.setCodeTransformMetaDataField({
+            errorMessage: err.message,
+        })
+        telemetry.codeTransform_humanInTheLoop.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformJobId: jobId,
+            codeTransformMetadata: codeTransformTelemetryState.getCodeTransformMetaDataString(),
+            result: MetadataResult.Fail,
+            reason: codeTransformTelemetryState.getCodeTransformMetaData().errorMessage,
+        })
         return true
     } finally {
-        await sleep(5000)
+        await sleep(1000)
     }
     return false
 }
@@ -395,9 +405,12 @@ export async function shortCircuitHiL(jobID: string) {
 export async function finishHumanInTheLoop(selectedDependency: string) {
     let successfulFeedbackLoop = true
     const jobId = transformByQState.getJobId()
+    let hilResult: MetadataResult = MetadataResult.Pass
     try {
         const getUserInputValue = selectedDependency
-
+        codeTransformTelemetryState.setCodeTransformMetaDataField({
+            dependencyVersionSelected: selectedDependency,
+        })
         // 6) We need to add user input to that pom.xml,
         // original pom.xml is intact somewhere, and run maven compile
         const userInputPomFileVirtualFileReference = await createPomCopy(
@@ -448,16 +461,27 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         await sleep(1500)
 
         void humanInTheLoopRetryLogic(jobId)
-    } catch (err) {
+    } catch (err: any) {
         // If anything went wrong in HIL state, we should restart the job
         // with the rejected state
         await resumeTransformationJob(jobId, 'REJECTED')
         successfulFeedbackLoop = false
+        codeTransformTelemetryState.setCodeTransformMetaDataField({
+            errorMessage: err.message,
+        })
+        hilResult = MetadataResult.Fail
     } finally {
         // Always delete the dependency directories
         await fsCommon.delete(userDependencyUpdateDir)
         await fsCommon.delete(tmpDependencyListDir)
         await fsCommon.delete(tmpDownloadsDir)
+        telemetry.codeTransform_humanInTheLoop.emit({
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformJobId: jobId,
+            codeTransformMetadata: codeTransformTelemetryState.getCodeTransformMetaDataString(),
+            result: hilResult,
+            reason: codeTransformTelemetryState.getCodeTransformMetaData().errorMessage,
+        })
     }
 
     return successfulFeedbackLoop
@@ -706,6 +730,7 @@ export async function cleanupTransformationJob() {
         'aws.amazonq.showPlanProgressInHub',
         codeTransformTelemetryState.getStartTime()
     )
+    codeTransformTelemetryState.resetCodeTransformMetaDataField()
 }
 
 export function processHistory(

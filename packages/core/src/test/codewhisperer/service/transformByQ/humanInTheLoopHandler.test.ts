@@ -53,11 +53,14 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
                 </dependencies>
                 </DependencyUpdatesReport>
                 `
-            const { latestVersion, majorVersions, minorVersions } = await parseVersionsListFromPomFile(testXmlReport)
+            const { latestVersion, majorVersions, minorVersions, status } = await parseVersionsListFromPomFile(
+                testXmlReport
+            )
 
             assert.strictEqual(latestVersion, '1.18.32')
             assert.strictEqual(minorVersions[0], '0.12.0')
             assert.strictEqual(majorVersions[0], '1.12.2')
+            assert.strictEqual(status, 'incremental available')
         })
     })
     describe('getArtifactIdentifiers', function () {
@@ -80,7 +83,7 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
             const { artifactId, artifactType } = getArtifactsFromProgressUpdate(transformationStepsFixture)
 
             assert.strictEqual(artifactId, downloadArtifactId)
-            assert.strictEqual(artifactType, downloadArtifactId)
+            assert.strictEqual(artifactType, downloadArtifactType)
         })
     })
     describe('findDownloadArtifactStep', function () {
@@ -112,9 +115,10 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
                     endTime: new Date(),
                 },
             ]
-            const transformationStepFound = findDownloadArtifactStep(transformationStepsFixture)
+            const { transformationStep, progressUpdate } = findDownloadArtifactStep(transformationStepsFixture)
 
-            assert.strictEqual(transformationStepFound, transformationStepsFixture[0])
+            assert.strictEqual(transformationStep, transformationStepsFixture[0])
+            assert.strictEqual(progressUpdate, transformationStepsFixture[0].progressUpdates?.[0])
         })
         it('will return undefined if no downloadArtifactId found', function () {
             const transformationStepsFixture: TransformationStep[] = [
