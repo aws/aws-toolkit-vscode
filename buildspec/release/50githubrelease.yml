@@ -37,7 +37,7 @@ phases:
             - PKG_DISPLAY_NAME=$(grep -m 1 displayName packages/${TARGET_EXTENSION}/package.json | grep -o '[a-zA-z][^\"]\+' | tail -n1)
             - RELEASE_MESSAGE="${PKG_DISPLAY_NAME} for VS Code $VERSION"
             - |
-                if [ "$STAGE" = "prod" ] && [ "$TARGET_EXTENSION" = "toolkit" ]; then
+                if [ "$STAGE" = "prod" ]; then
                   gh release create --repo $REPO --title "$PKG_DISPLAY_NAME $VERSION" --notes "$RELEASE_MESSAGE" -- "v$VERSION" "$UPLOAD_TARGET" "$HASH_UPLOAD_TARGET"
                 else
                   echo "SKIPPED: 'gh release create --repo $REPO'"
