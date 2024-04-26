@@ -18,7 +18,6 @@ import { isValidationExemptMetric } from './exemptMetrics'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { VSCODE_EXTENSION_ID } from '../utilities'
 import { randomUUID } from '../../common/crypto'
-
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
 
@@ -179,6 +178,11 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
                 if (extensionContext.extension.id === VSCODE_EXTENSION_ID.awstoolkit) {
                     getLogger().debug(`telemetry: Store telemetry client id to env ${currentClientId}`)
                     process.env[telemetryClientIdEnvKey] = currentClientId
+                    // notify amazon q to use this stored client id
+                    // if amazon q activates first.
+                    setTimeout(() => {
+                        vscode.commands.executeCommand('aws.amazonq.setupTelemetryId')
+                    }, 3000)
                 } else if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
                     getLogger().debug(`telemetry: Set telemetry client id to ${storedClientId}`)
                     await globals.context.globalState.update(telemetryClientIdGlobalStatekey, storedClientId)
