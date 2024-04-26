@@ -54,6 +54,7 @@ import { CodeScansState, CodeSuggestionsState } from '../../../codewhisperer/mod
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
+import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -297,10 +298,14 @@ describe('CodeWhisperer-basicCommands', function () {
         })
 
         it('includes the "source" in the command execution metric', async function () {
+            tryRegister(focusAmazonQPanel)
             sinon.stub(AuthUtil.instance.secondaryAuth, 'deleteConnection')
             targetCommand = testCommand(signoutCodeWhisperer, AuthUtil.instance)
             await targetCommand.execute(placeholder, cwQuickPickSource)
-            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+            assertTelemetry('vscode_executeCommand', [
+                { source: cwQuickPickSource, command: focusAmazonQPanel.id },
+                { source: cwQuickPickSource, command: targetCommand.id },
+            ])
         })
     })
 

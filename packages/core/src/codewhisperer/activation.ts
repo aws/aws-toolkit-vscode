@@ -41,8 +41,6 @@ import {
     fetchFeatureConfigsCmd,
     toggleCodeScans,
     registerToolkitApiCallback,
-    switchToAmazonQSignInCommand,
-    switchToAmazonQCommand,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -222,9 +220,6 @@ export async function activate(context: ExtContext): Promise<void> {
         applySecurityFix.register(),
         // quick pick with codewhisperer options
         listCodeWhispererCommands.register(),
-        // switch to Q node for status bar menu
-        switchToAmazonQCommand.register(),
-        switchToAmazonQSignInCommand.register(),
         // manual trigger
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             invokeRecommendation(

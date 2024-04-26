@@ -19,8 +19,6 @@ import {
     signoutCodeWhisperer,
     showIntroduction,
     toggleCodeScans,
-    switchToAmazonQCommand,
-    switchToAmazonQSignInCommand,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { CodeScansState, codeScanState } from '../models/model'
@@ -28,6 +26,7 @@ import { getNewCustomizationsAvailable, getSelectedCustomization } from '../util
 import { cwQuickPickSource } from '../commands/types'
 import { AuthUtil } from '../util/authUtil'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
+import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 
 export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
@@ -209,7 +208,7 @@ export function switchToAmazonQNode(): DataQuickPickItem<'openChatPanel'> {
         data: 'openChatPanel',
         label: 'Open Chat Panel',
         iconPath: getIcon('vscode-comment'),
-        onClick: () => switchToAmazonQCommand.execute('codewhispererQuickPick'),
+        onClick: () => focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick'),
     }
 }
 
@@ -220,6 +219,6 @@ export function createSignIn(): DataQuickPickItem<'signIn'> {
     return {
         data: 'signIn',
         label: codicon`${icon} ${label}`,
-        onClick: () => switchToAmazonQSignInCommand.execute('codewhispererQuickPick'),
+        onClick: () => focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick'),
     }
 }

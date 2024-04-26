@@ -21,8 +21,6 @@ import { MessagePublisher } from '../messages/messagePublisher'
 import { TabType } from './ui/storages/tabsStorage'
 import { deactivateInitialViewBadge, shouldShowBadge } from '../util/viewBadgeHandler'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { Commands } from '../../shared/vscode/commands2'
-import vscode from 'vscode'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AmazonQChatView'
@@ -81,8 +79,3 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         deactivateInitialViewBadge()
     }
 }
-
-/** For use by the walkthrough page only. We need this for telemetry. */
-export const focusAmazonQChatWalkthrough = Commands.declare('_aws.amazonq.walkthrough.focusChat', () => async () => {
-    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-})

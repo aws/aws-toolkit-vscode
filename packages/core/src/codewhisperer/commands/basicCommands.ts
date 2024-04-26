@@ -35,7 +35,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
-import { CommonAuthWebview } from '../../login/webview/vue/backend'
+import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -385,11 +385,8 @@ export const applySecurityFix = Commands.declare(
 export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.amazonq.signout', compositeKey: { 1: 'source' } },
     (auth: AuthUtil) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        if (_ !== placeholder) {
-            source = 'ellipsesMenu'
-        }
         await auth.secondaryAuth.deleteConnection()
-        return switchToAmazonQSignInCommand.execute(source)
+        return focusAmazonQPanel.execute(placeholder, source)
     }
 )
 
@@ -463,43 +460,4 @@ export const registerToolkitApiCallback = Commands.declare(
             }
         }
     }
-)
-
-/**
- * Do not call this function directly, use the necessary equivalent commands below,
- * which areregistered by the Amazon Q extension.
- * - switchToAmazonQCommand
- * - switchToAmazonQSignInCommand
- */
-export async function _switchToAmazonQ(source: CodeWhispererSource, signIn: boolean) {
-    if (signIn) {
-        await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', true)
-        CommonAuthWebview.authSource = source
-        telemetry.ui_click.emit({
-            elementId: 'amazonq_switchToQSignIn',
-            passive: false,
-        })
-    } else {
-        telemetry.ui_click.emit({
-            elementId: 'amazonq_switchToQChat',
-            passive: false,
-        })
-    }
-
-    // Attempt to show both, in case something is wrong with the state of the webviews.
-    // Only the active one will be shown.
-    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-    await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
-}
-
-export const switchToAmazonQCommand = Commands.declare(
-    { id: '_aws.amazonq.focusView', compositeKey: { 0: 'source' } },
-    () =>
-        (source: CodeWhispererSource, signIn: boolean = false) =>
-            _switchToAmazonQ(source, false)
-)
-
-export const switchToAmazonQSignInCommand = Commands.declare(
-    { id: '_aws.amazonq.signIn.focusView', compositeKey: { 0: 'source' } },
-    () => (source: CodeWhispererSource) => _switchToAmazonQ(source, true)
 )
