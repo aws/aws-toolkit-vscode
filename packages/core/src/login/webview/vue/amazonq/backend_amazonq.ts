@@ -3,9 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { scopesCodeWhispererChat, AwsConnection, Connection, isSsoConnection } from '../../../../auth/connection'
+import {
+    scopesCodeWhispererChat,
+    AwsConnection,
+    Connection,
+    isSsoConnection,
+    SsoConnection,
+} from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
-import { AuthError, CommonAuthWebview } from '../backend'
+import { CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
 import { activateExtension, isExtensionInstalled } from '../../../../shared/utilities/vsCodeUtils'
@@ -14,7 +20,8 @@ import { getLogger } from '../../../../shared/logger'
 import { Auth } from '../../../../auth'
 import { ToolkitError } from '../../../../shared/errors'
 import { debounce } from 'lodash'
-import { AuthFlowState, userCancelled } from '../types'
+import { AuthError, AuthFlowState, userCancelled } from '../types'
+import { builderIdStartUrl } from '../../../../auth/sso/model'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
@@ -59,10 +66,9 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return undefined
     }
 
-    async useConnection(connectionId: string): Promise<AuthError | undefined> {
+    async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
         return this.ssoSetup(
             'useConnection',
-            undefined, // We will not send an auth_addConnection event for this case. The connection already exists and was captured by auth_userState.
             async () => {
                 if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
                     return
@@ -75,11 +81,22 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                         const connections: AwsConnection[] = await importedApi?.listConnections()
                         for (const conn of connections) {
                             if (conn.id === connectionId) {
+                                if (!auto) {
+                                    this.storeMetricMetadata({
+                                        // Hacky way to check for builder ID with AwsConnection interface
+                                        credentialSourceId:
+                                            conn.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
+                                        credentialStartUrl: conn.startUrl,
+                                        region: conn.ssoRegion,
+                                        authEnabledFeatures: this.getAuthEnabledFeatures(conn),
+                                    })
+                                }
+                                let newConn: SsoConnection
                                 if (conn.scopes?.includes(scopesCodeWhispererChat[0])) {
                                     getLogger().info(
                                         `auth: re-use connection from existing connection id ${connectionId}`
                                     )
-                                    const newConn = await Auth.instance.createConnectionFromApi(conn)
+                                    newConn = await Auth.instance.createConnectionFromApi(conn)
                                     await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
                                 } else {
                                     getLogger().info(
@@ -91,7 +108,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                     // if failed, connection is set to invalid
                                     const oldScopes = conn?.scopes ? conn.scopes : []
                                     const newScopes = Array.from(new Set([...oldScopes, ...amazonQScopes]))
-                                    const newConn = await Auth.instance.createConnectionFromApi({
+                                    newConn = await Auth.instance.createConnectionFromApi({
                                         type: conn.type,
                                         ssoRegion: conn.ssoRegion,
                                         scopes: newScopes,
@@ -103,6 +120,13 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                     await Auth.instance.reauthenticate(newConn)
                                     await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
                                 }
+                                if (!auto) {
+                                    this.storeMetricMetadata({
+                                        credentialStartUrl: conn.startUrl,
+                                        region: conn.ssoRegion,
+                                        authEnabledFeatures: this.getAuthEnabledFeatures(newConn),
+                                    })
+                                }
                             }
                         }
                     }
@@ -111,36 +135,37 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                         code: 'FailedToConnect',
                     })
                 }
-            }
+            },
+            !auto
         )
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
-        return this.ssoSetup(
-            'startCodeWhispererBuilderIdSetup',
-            { credentialSourceId: 'awsId', authEnabledFeatures: 'codewhisperer', isReAuth: false },
-            async () => {
-                await awsIdSignIn()
-                await vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
-            }
-        )
+        return await this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
+            this.storeMetricMetadata({
+                credentialSourceId: 'awsId',
+                authEnabledFeatures: 'codewhisperer',
+                isReAuth: false,
+            })
+
+            await awsIdSignIn()
+            void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
+        })
     }
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
-        return this.ssoSetup(
-            'startCodeWhispererEnterpriseSetup',
-            {
+        return await this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
+            this.storeMetricMetadata({
                 credentialStartUrl: startUrl,
                 region,
                 credentialSourceId: 'iamIdentityCenter',
                 authEnabledFeatures: 'codewhisperer',
                 isReAuth: false,
-            },
-            async () => {
-                await connectToEnterpriseSso(startUrl, region)
-                void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
-            }
-        )
+            })
+
+            await connectToEnterpriseSso(startUrl, region)
+            void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
+        })
     }
 
     async reauthenticateConnection(): Promise<void> {
@@ -149,21 +174,26 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
         try {
             // Sanity checks
-            if (AuthUtil.instance.isConnected()) {
-                throw new Error('amazon Q reauthenticate called on a non-existant connection')
+            if (!AuthUtil.instance.isConnected()) {
+                getLogger().error('amazon Q reauthenticate called on a non-existant connection')
             }
 
             if (!isSsoConnection(AuthUtil.instance.conn)) {
-                throw new Error('amazon Q reauthenticate called, but the connection is not SSO')
+                getLogger().error('amazon Q reauthenticate called, but the connection is not SSO')
             }
 
             /**
              * IMPORTANT: During this process {@link this.onActiveConnectionModified} is triggered. This
              * causes the reauth page to refresh before the user is actually done the whole reauth flow.
              */
-            this.reauthError = await this.ssoSetup('reauthenticate', this.getMetadataForReauthMetrics(), async () =>
-                AuthUtil.instance.reauthenticate(true)
-            )
+            this.reauthError = await this.ssoSetup('reauthenticate', async () => {
+                this.storeMetricMetadata({
+                    authEnabledFeatures: this.getAuthEnabledFeatures(AuthUtil.instance.conn as SsoConnection),
+                    isReAuth: true,
+                    ...this.getMetadataForExistingConn(),
+                })
+                await AuthUtil.instance.reauthenticate(true)
+            })
         } finally {
             this.isReauthenticating = false
         }
@@ -208,12 +238,19 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     override async signout(): Promise<void> {
+        this.storeMetricMetadata({
+            authEnabledFeatures: this.getAuthEnabledFeatures(
+                AuthUtil.instance.secondaryAuth.activeConnection as SsoConnection
+            ),
+            isReAuth: true,
+            ...this.getMetadataForExistingConn(),
+            result: 'Cancelled',
+        })
+
         await AuthUtil.instance.secondaryAuth.deleteConnection()
         this.reauthError = undefined
-    }
 
-    async errorNotification(e: AuthError) {
-        await vscode.window.showInformationMessage(`${e.text}`)
+        this.emitAuthMetric()
     }
 
     override startIamCredentialSetup(

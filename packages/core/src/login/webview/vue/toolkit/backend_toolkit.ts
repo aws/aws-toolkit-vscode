@@ -6,11 +6,11 @@
 import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
-import { AuthError, CommonAuthWebview, TelemetryMetadata } from '../backend'
+import { CommonAuthWebview } from '../backend'
 import { AwsConnection, Connection, createSsoProfile } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
-import { AuthFlowState } from '../types'
+import { AuthError, AuthFlowState, TelemetryMetadata } from '../types'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -33,30 +33,27 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             credentialStartUrl: startUrl,
             region,
         }
+
         if (this.isCodeCatalystLogin) {
-            return this.ssoSetup(
-                'startCodeCatalystSSOSetup',
-                { ...metadata, authEnabledFeatures: 'codecatalyst' },
-                async () => {
-                    await this.codeCatalystAuth.connectToEnterpriseSso(startUrl, region)
-                    await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
-                    await this.showResourceExplorer()
-                }
-            )
+            return this.ssoSetup('startCodeCatalystSSOSetup', async () => {
+                this.storeMetricMetadata({ ...metadata, authEnabledFeatures: 'codecatalyst' })
+
+                await this.codeCatalystAuth.connectToEnterpriseSso(startUrl, region)
+                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+                await this.showResourceExplorer()
+            })
         }
 
-        return this.ssoSetup(
-            'createIdentityCenterConnection',
-            { ...metadata, authEnabledFeatures: 'awsExplorer' },
-            async () => {
-                const ssoProfile = createSsoProfile(startUrl, region)
-                const conn = await Auth.instance.createConnection(ssoProfile)
-                await Auth.instance.useConnection(conn)
-                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
-                void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
-                void this.showResourceExplorer()
-            }
-        )
+        return this.ssoSetup('createIdentityCenterConnection', async () => {
+            this.storeMetricMetadata({ ...metadata, authEnabledFeatures: 'awsExplorer' })
+
+            const ssoProfile = createSsoProfile(startUrl, region)
+            const conn = await Auth.instance.createConnection(ssoProfile)
+            await Auth.instance.useConnection(conn)
+            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+            void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
+            void this.showResourceExplorer()
+        })
     }
 
     async startIamCredentialSetup(
@@ -82,30 +79,26 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         }
 
         const result = await runAuth()
-        this.emitAuthMetric({
+        this.storeMetricMetadata({
             credentialSourceId: 'sharedCredentials',
             authEnabledFeatures: 'awsExplorer',
             ...this.getResultForMetrics(result),
         })
+        this.emitAuthMetric()
 
         return result
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
-        return this.ssoSetup(
-            'startCodeCatalystBuilderIdSetup',
-            { credentialSourceId: 'awsId', authEnabledFeatures: 'codecatalyst' },
-            async () => {
-                await this.codeCatalystAuth.connectToAwsBuilderId()
-                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
-                await this.showResourceExplorer()
-            }
-        )
+        return this.ssoSetup('startCodeCatalystBuilderIdSetup', async () => {
+            this.storeMetricMetadata({ credentialSourceId: 'awsId', authEnabledFeatures: 'codecatalyst' })
+
+            await this.codeCatalystAuth.connectToAwsBuilderId()
+            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+            await this.showResourceExplorer()
+        })
     }
 
-    async errorNotification(e: AuthError) {
-        await vscode.window.showInformationMessage(`${e.text}`)
-    }
     /**
      * Returns list of connections that are pushed from Amazon Q to Toolkit
      */
@@ -131,24 +124,26 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     /**
      * Re-use connection that is pushed from Amazon Q to Toolkit.
      */
-    async useConnection(connectionId: string): Promise<AuthError | undefined> {
-        return this.ssoSetup(
-            'useConnection',
-            undefined, // todo: provide telemetry
-            async () => {
-                const conn = await Auth.instance.getConnection({ id: connectionId })
-                if (conn === undefined || conn.type !== 'sso') {
-                    return
-                }
-                if (this.isCodeCatalystLogin) {
-                    await this.codeCatalystAuth.tryUseConnection(conn)
-                } else {
-                    await Auth.instance.useConnection({ id: connectionId })
-                }
-                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
-                await this.showResourceExplorer()
+    async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
+        return this.ssoSetup('useConnection', async () => {
+            const conn = await Auth.instance.getConnection({ id: connectionId })
+            if (conn === undefined || conn.type !== 'sso') {
+                return
             }
-        )
+
+            this.storeMetricMetadata(this.getMetadataForExistingConn(conn))
+
+            if (this.isCodeCatalystLogin) {
+                await this.codeCatalystAuth.tryUseConnection(conn)
+            } else {
+                await Auth.instance.useConnection({ id: connectionId })
+            }
+
+            this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
+
+            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+            await this.showResourceExplorer()
+        })
     }
 
     findConnection(connections: AwsConnection[]): AwsConnection | undefined {
