@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { AggregatedCodeScanIssue } from '../models/model'
+import { AggregatedCodeScanIssue, CodeScansState } from '../models/model'
 export abstract class SecurityIssueProvider {
     private _issues: AggregatedCodeScanIssue[] = []
     public get issues() {
@@ -32,9 +32,18 @@ export abstract class SecurityIssueProvider {
                 ...group,
                 issues: group.issues
                     .filter(issue => {
-                        const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                        const range = new vscode.Range(
+                            issue.startLine,
+                            event.document.lineAt(issue.startLine)?.range.start.character ?? 0,
+                            issue.endLine,
+                            event.document.lineAt(issue.endLine - 1)?.range.end.character ?? 0
+                        )
                         const intersection = changedRange.intersection(range)
-                        return !(intersection && (/\S/.test(changedText) || changedText === ''))
+                        return !(
+                            intersection &&
+                            (/\S/.test(changedText) || changedText === '') &&
+                            !CodeScansState.instance.isScansEnabled()
+                        )
                     })
                     .map(issue => {
                         if (issue.startLine < changedRange.end.line) {

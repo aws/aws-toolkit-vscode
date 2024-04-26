@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { SecurityIssueProvider } from '../../../codewhisperer/service/securityIssueProvider'
 import { createCodeScanIssue, createMockDocument, createTextDocumentChangeEvent } from '../testUtil'
 import assert from 'assert'
+import { CodeScansState } from '../../../codewhisperer/models/model'
 
 class MockProvider extends SecurityIssueProvider {}
 
@@ -19,7 +20,8 @@ describe('securityIssueProvider', () => {
         mockDocument = createMockDocument('def two_sum(nums, target):\nfor', 'test.py', 'python')
     })
 
-    it('removes the issue if the document change on the same line', () => {
+    it('removes the issue if the document change on the same line if auto scan is disabled', async () => {
+        await CodeScansState.instance.setScansEnabled(false)
         mockProvider.issues = [{ filePath: mockDocument.fileName, issues: [createCodeScanIssue()] }]
 
         assert.strictEqual(mockProvider.issues[0].issues.length, 1)

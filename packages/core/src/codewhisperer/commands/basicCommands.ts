@@ -351,15 +351,6 @@ export const applySecurityFix = Commands.declare(
 
             // writing the patch applied version of document into the file
             await fsCommon.writeFile(filePath, updatedContent)
-            void vscode.window
-                .showInformationMessage(CodeWhispererConstants.codeFixAppliedSuccessMessage, {
-                    title: CodeWhispererConstants.runSecurityScanButtonTitle,
-                })
-                .then(res => {
-                    if (res?.title === CodeWhispererConstants.runSecurityScanButtonTitle) {
-                        void vscode.commands.executeCommand('aws.amazonq.security.scan')
-                    }
-                })
             await closeSecurityIssueWebview(issue.findingId)
         } catch (err) {
             getLogger().error(`Apply fix command failed. ${err}`)

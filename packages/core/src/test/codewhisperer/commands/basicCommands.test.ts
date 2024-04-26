@@ -431,10 +431,6 @@ describe('CodeWhisperer-basicCommands', function () {
             assert.ok(saveStub.calledOnce)
             assert.ok(writeFileMock.calledOnceWith(fileName, 'first line\n third line\n fourth line'))
 
-            assert.strictEqual(
-                getTestWindow().shownMessages[0].message,
-                'Code fix was applied. Run a security scan to validate the fix.'
-            )
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
                 findingId: codeScanIssue.findingId,
