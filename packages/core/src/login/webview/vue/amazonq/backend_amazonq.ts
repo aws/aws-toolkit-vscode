@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { scopesCodeWhispererChat, AwsConnection, Connection } from '../../../../auth/connection'
+import { scopesCodeWhispererChat, AwsConnection, Connection, isSsoConnection } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 import { AuthError, CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
@@ -148,14 +148,21 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         this.reauthError = undefined
 
         try {
+            // Sanity checks
+            if (AuthUtil.instance.isConnected()) {
+                throw new Error('amazon Q reauthenticate called on a non-existant connection')
+            }
+
+            if (!isSsoConnection(AuthUtil.instance.conn)) {
+                throw new Error('amazon Q reauthenticate called, but the connection is not SSO')
+            }
+
             /**
              * IMPORTANT: During this process {@link this.onActiveConnectionModified} is triggered. This
              * causes the reauth page to refresh before the user is actually done the whole reauth flow.
              */
-            this.reauthError = await this.ssoSetup(
-                'reauthenticate',
-                undefined, // todo: add telemetry
-                async () => AuthUtil.instance.reauthenticate(true)
+            this.reauthError = await this.ssoSetup('reauthenticate', this.getMetadataForReauthMetrics(), async () =>
+                AuthUtil.instance.reauthenticate(true)
             )
         } finally {
             this.isReauthenticating = false

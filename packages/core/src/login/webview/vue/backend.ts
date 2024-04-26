@@ -12,13 +12,14 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { trustedDomainCancellation } from '../../../auth/sso/model'
 import { handleWebviewError } from '../../../webviews/server'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
-import { AwsConnection, Connection } from '../../../auth/connection'
+import { AwsConnection, Connection, SsoConnection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 import { telemetry } from '../../../shared/telemetry'
 import { AuthSources } from '../util'
 import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
 import { AuthFlowState, AuthUiClick, userCancelled } from './types'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 type Writeable<T> = { -readonly [U in keyof T]: T[U] }
 export type TelemetryMetadata = Partial<Writeable<AuthAddConnection>>
@@ -207,8 +208,12 @@ export abstract class CommonAuthWebview extends VueWebview {
     /**
      * Emit stored metric metadata in the event of an auth form cancellation.
      */
-    emitCancelledMetric() {
-        this.emitAuthMetric({ ...this.metricMetadata, isReAuth: false, result: 'Cancelled' })
+    emitCancelledMetric(reauth: boolean) {
+        if (reauth) {
+            this.emitAuthMetric({ ...this.getMetadataForReauthMetrics(), isReAuth: false, result: 'Cancelled' })
+        } else {
+            this.emitAuthMetric({ ...this.metricMetadata, result: 'Cancelled' })
+        }
     }
 
     /**
@@ -235,6 +240,25 @@ export abstract class CommonAuthWebview extends VueWebview {
         }
 
         return metadata
+    }
+
+    /**
+     * Get metadata about the current auth for reauthentication telemetry.
+     */
+    getMetadataForReauthMetrics(): TelemetryMetadata {
+        return {
+            authEnabledFeatures: 'codewhisperer',
+            isReAuth: true,
+            ...(AuthUtil.instance.isBuilderIdInUse()
+                ? {
+                      credentialSourceId: 'awsId',
+                  }
+                : {
+                      credentialSourceId: 'iamIdentityCenter',
+                      credentialStartUrl: (AuthUtil.instance.conn as SsoConnection).startUrl,
+                      region: (AuthUtil.instance.conn as SsoConnection).ssoRegion,
+                  }),
+        }
     }
 
     /**
