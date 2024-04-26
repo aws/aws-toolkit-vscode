@@ -11,7 +11,6 @@ import {
     activate as activateCodeWhisperer,
     shutdown as codewhispererShutdown,
     amazonQDismissedKey,
-    AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import {
     ExtContext,
@@ -36,6 +35,7 @@ import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { DevFunction, updateDevMode } from 'aws-core-vscode/dev'
+import { getAuthStatus } from './auth/util'
 
 export async function activateShared(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
@@ -156,7 +156,6 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
             telemetry.record({ source: ExtStartUpSources.reload })
         }
 
-        const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat
         const authKinds: AuthUtils.AuthSimpleId[] = []
         if (await AuthUtils.hasBuilderId('codewhisperer')) {
             authKinds.push('builderIdCodeWhisperer')
@@ -164,8 +163,11 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
         if (await AuthUtils.hasSso('codewhisperer')) {
             authKinds.push('identityCenterCodeWhisperer')
         }
+
+        const authStatus = await getAuthStatus()
+
         telemetry.record({
-            authStatus: authState === 'connected' || authState === 'expired' ? authState : 'notConnected',
+            authStatus,
             enabledAuthConnections: authKinds.join(','),
         })
     })

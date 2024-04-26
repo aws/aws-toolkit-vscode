@@ -55,15 +55,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
      * @returns Amazon Q connection, or undefined if none of the given connections have scopes required for Amazon Q.
      */
     findUsableConnection(connections: AwsConnection[]): AwsConnection | undefined {
-        const hasQScopes = (c: AwsConnection) => amazonQScopes.every(s => c.scopes?.includes(s))
-        const score = (c: AwsConnection) => Number(hasQScopes(c)) * 10 + Number(c.state === 'valid')
-        connections.sort(function (a, b) {
-            return score(b) - score(a)
-        })
-        if (hasQScopes(connections[0])) {
-            return connections[0]
-        }
-        return undefined
+        return AuthUtil.instance.findUsableQConnection(connections)
     }
 
     async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
