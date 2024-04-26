@@ -205,11 +205,11 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
             val bearerCreds = ToolkitAuthManager.getInstance().listConnections().filterIsInstance<AwsBearerTokenConnection>().associate {
                 it.id to BearerConnectionSelectionSettings(it) { conn ->
                     if (conn.isSono()) {
-                        loginBuilderId(CODEWHISPERER_SCOPES + Q_SCOPES)
+                        loginBuilderId(Q_SCOPES)
                     } else {
                         // TODO: rewrite scope logic, it's short term solution only
                         AwsRegionProvider.getInstance()[conn.region]?.let { region ->
-                            loginIdC(conn.startUrl, region, CODEWHISPERER_SCOPES + Q_SCOPES)
+                            loginIdC(conn.startUrl, region, Q_SCOPES)
                         }
                     }
                 }
