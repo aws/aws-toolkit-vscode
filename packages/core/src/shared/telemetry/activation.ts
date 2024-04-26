@@ -53,13 +53,10 @@ export async function activate(
         globals.telemetry.telemetryEnabled = config.isEnabled()
 
         extensionContext.subscriptions.push(
-            config.onDidChange(event => {
-                if (globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq) {
-                    if (event.key === 'amazonQ.telemetry') {
-                        globals.telemetry.telemetryEnabled = config.isEnabled()
-                    }
-                    return
-                }
+            (globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq
+                ? config.amazonQConfig
+                : config.toolkitConfig
+            ).onDidChange(event => {
                 if (event.key === 'telemetry') {
                     globals.telemetry.telemetryEnabled = config.isEnabled()
                 }

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { env, Memento, version } from 'vscode'
 import { getLogger } from '../logger'
-import { fromExtensionManifest, migrateSetting } from '../settings'
+import { fromExtensionManifest, migrateSetting, Settings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { isInDevEnv, extensionVersion, isAutomation } from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
@@ -19,6 +19,8 @@ import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from '../utilities'
 import { randomUUID } from '../../common/crypto'
 import { activateExtension } from '../utilities/vsCodeUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
+
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
 
@@ -26,17 +28,36 @@ const TelemetryFlag = addTypeName('boolean', convertLegacy)
 const telemetryClientIdGlobalStatekey = 'telemetryClientId'
 const telemetryClientIdEnvKey = '__TELEMETRY_CLIENT_ID'
 
-export class TelemetryConfig extends fromExtensionManifest('aws', {
-    telemetry: TelemetryFlag,
-    'amazonQ.telemetry': TelemetryFlag,
-}) {
-    private readonly amazonQSettingMigratedKey = 'aws.amazonq.telemetry.migrated'
+export class TelemetryConfig {
+    private readonly amazonQSettingMigratedKey = 'amazonq.telemetry.migrated'
+    private readonly _toolkitConfig
+    private readonly _amazonQConfig
+
+    public get toolkitConfig() {
+        return this._toolkitConfig
+    }
+
+    public get amazonQConfig() {
+        return this._amazonQConfig
+    }
+
+    constructor(settings?: ClassToInterfaceType<Settings>) {
+        class ToolkitConfig extends fromExtensionManifest('aws', {
+            telemetry: TelemetryFlag,
+        }) {}
+
+        class AmazonQConfig extends fromExtensionManifest('amazonQ', {
+            telemetry: TelemetryFlag,
+        }) {}
+
+        this._toolkitConfig = new ToolkitConfig(settings)
+        this._amazonQConfig = new AmazonQConfig(settings)
+    }
 
     public isEnabled(): boolean {
-        if (globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq) {
-            return this.get(`amazonQ.telemetry`, true)
-        }
-        return this.get(`telemetry`, true)
+        return (
+            globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq ? this.amazonQConfig : this.toolkitConfig
+        ).get(`telemetry`, true)
     }
 
     public async initAmazonQSetting() {
@@ -44,7 +65,7 @@ export class TelemetryConfig extends fromExtensionManifest('aws', {
             return
         }
         // aws.telemetry isn't deprecated, we are just initializing aws.amazonQ.telemetry with its value
-        await migrateSetting({ key: 'aws.telemetry', type: Boolean }, { key: 'aws.amazonQ.telemetry' })
+        await migrateSetting({ key: 'aws.telemetry', type: Boolean }, { key: 'amazonQ.telemetry' })
         await globals.context.globalState.update(this.amazonQSettingMigratedKey, true)
     }
 }
