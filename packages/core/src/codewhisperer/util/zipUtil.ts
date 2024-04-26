@@ -122,7 +122,7 @@ export class ZipUtil {
             const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
             const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
 
-            const fileSize = new Blob([fileContent]).size
+            const fileSize = Buffer.from(fileContent).length
             if (this.isJavaClassFile(file.fileUri)) {
                 this._pickedBuildFiles.add(file.fileUri.fsPath)
                 this._totalBuildSize += fileSize
