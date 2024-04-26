@@ -84,14 +84,24 @@ abstract class FeedbackDialog(
                 row {
                     icon(AllIcons.Toolwindows.ToolWindowDebugger)
                     link(message("feedback.report.issue.link")) {
-                        BrowserUtil.browse("${GITHUB_LINK_BASE}${URLEncoder.encode("${comment.component.text}\n\n$toolkitMetadata", Charsets.UTF_8.name())}")
+                        BrowserUtil.browse(
+                            "${GITHUB_LINK_BASE}${URLEncoder.encode(
+                                "${comment.component.text}\n\n${getToolkitMetadata()}",
+                                Charsets.UTF_8.name()
+                            )}"
+                        )
                     }
                 }
                 row {
                     icon(AllIcons.Actions.IntentionBulbGrey)
 
                     link(message("feedback.request.feature.link")) {
-                        BrowserUtil.browse("${GITHUB_LINK_BASE}${URLEncoder.encode("${comment.component.text}\n\n$toolkitMetadata", Charsets.UTF_8.name())}")
+                        BrowserUtil.browse(
+                            "${GITHUB_LINK_BASE}${URLEncoder.encode(
+                                "${comment.component.text}\n\n${getToolkitMetadata()}",
+                                Charsets.UTF_8.name()
+                            )}"
+                        )
                     }
                 }
                 row {
@@ -212,12 +222,13 @@ abstract class FeedbackDialog(
         const val MAX_LENGTH = 2000 // backend restriction
         private const val TOOLKIT_REPOSITORY_LINK = AwsToolkit.GITHUB_URL
         private const val GITHUB_LINK_BASE = "$TOOLKIT_REPOSITORY_LINK/issues/new?body="
-        private val toolkitMetadata = ClientMetadata.DEFAULT_METADATA.let {
-            """
+        private fun getToolkitMetadata(): String {
+            val metadata = ClientMetadata.getDefault()
+            return """
                 ---
-                Toolkit: ${it.productName} ${it.productVersion}
-                OS: ${it.os} ${it.osVersion}
-                IDE: ${it.parentProduct} ${it.parentProductVersion}
+                Toolkit: ${metadata.awsProduct} ${metadata.awsVersion}
+                OS: ${metadata.os} ${metadata.osVersion}
+                IDE: ${metadata.parentProduct} ${metadata.parentProductVersion}
             """.trimIndent()
         }
     }

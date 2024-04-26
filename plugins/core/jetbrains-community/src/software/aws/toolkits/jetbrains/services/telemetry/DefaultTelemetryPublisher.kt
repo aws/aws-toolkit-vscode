@@ -9,6 +9,7 @@ import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClient
 import software.amazon.awssdk.services.toolkittelemetry.ToolkitTelemetryClient
+import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 import software.amazon.awssdk.services.toolkittelemetry.model.MetadataEntry
 import software.amazon.awssdk.services.toolkittelemetry.model.MetricDatum
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
@@ -20,34 +21,43 @@ import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
 
 class DefaultTelemetryPublisher(
-    private val clientMetadata: ClientMetadata = ClientMetadata.DEFAULT_METADATA,
-    private val clientProvider: () -> ToolkitTelemetryClient
+    private val clientProvider: () -> ToolkitTelemetryClient,
+    private val clientMetadataProvider: (AWSProduct, String) -> ClientMetadata
 ) : TelemetryPublisher {
-    constructor() : this(clientProvider = { createDefaultTelemetryClient() })
+    constructor() : this(
+        clientProvider = { createDefaultTelemetryClient() },
+        clientMetadataProvider = { product, version -> ClientMetadata(product, version) }
+    )
 
     private val lazyClient = lazy { clientProvider() }
     private val client by lazyClient
 
     override suspend fun publish(metricEvents: Collection<MetricEvent>) {
         withContext(getCoroutineBgContext()) {
-            client.postMetrics {
-                it.awsProduct(clientMetadata.productName)
-                it.awsProductVersion(clientMetadata.productVersion)
-                it.clientID(clientMetadata.clientId)
-                it.os(clientMetadata.os)
-                it.osVersion(clientMetadata.osVersion)
-                it.parentProduct(clientMetadata.parentProduct)
-                it.parentProductVersion(clientMetadata.parentProductVersion)
-                it.metricData(metricEvents.toMetricData())
-            }
+            metricEvents.groupBy { Pair(it.awsProduct, it.awsVersion) }
+                .forEach { (productName, productVersion), events ->
+                    val clientMetadata = clientMetadataProvider(productName, productVersion)
+                    client.postMetrics {
+                        it.awsProduct(clientMetadata.awsProduct)
+                        it.awsProductVersion(clientMetadata.awsVersion)
+                        it.clientID(clientMetadata.clientId)
+                        it.os(clientMetadata.os)
+                        it.osVersion(clientMetadata.osVersion)
+                        it.parentProduct(clientMetadata.parentProduct)
+                        it.parentProductVersion(clientMetadata.parentProductVersion)
+                        it.metricData(events.toMetricData())
+                    }
+                }
         }
     }
 
     override suspend fun sendFeedback(sentiment: Sentiment, comment: String, metadata: Map<String, String>) {
         withContext(getCoroutineBgContext()) {
+            val pluginResolver = PluginResolver.fromCurrentThread()
+            val clientMetadata = clientMetadataProvider(pluginResolver.product, pluginResolver.version)
             client.postFeedback {
-                it.awsProduct(clientMetadata.productName)
-                it.awsProductVersion(clientMetadata.productVersion)
+                it.awsProduct(clientMetadata.awsProduct)
+                it.awsProductVersion(clientMetadata.awsVersion)
                 it.os(clientMetadata.os)
                 it.osVersion(clientMetadata.osVersion)
                 it.parentProduct(clientMetadata.parentProduct)

@@ -14,7 +14,9 @@ import org.mockito.kotlin.verify
 import software.amazon.awssdk.services.toolkittelemetry.ToolkitTelemetryClient
 import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 import software.amazon.awssdk.services.toolkittelemetry.model.MetadataEntry
+import software.amazon.awssdk.services.toolkittelemetry.model.PostFeedbackRequest
 import software.amazon.awssdk.services.toolkittelemetry.model.PostMetricsRequest
+import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.utils.delegateMock
 
@@ -23,24 +25,14 @@ class DefaultTelemetryPublisherTest {
     @JvmField
     val projectRule = ProjectRule()
 
-    private val clientMetadata = ClientMetadata(
-        productName = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
-        productVersion = "1.0",
-        clientId = "foo",
-        parentProduct = "JetBrains",
-        parentProductVersion = "191",
-        os = "mac",
-        osVersion = "1.0"
-    )
-
     @Test
-    fun testPublish_withNamespace() {
+    fun testPublishWithNamespace() {
         val mockPostMetricsRequestCaptor = argumentCaptor<PostMetricsRequest>()
 
         val mockTelemetryClient = delegateMock<ToolkitTelemetryClient>()
         val publisher = DefaultTelemetryPublisher(
-            clientMetadata = clientMetadata,
-            clientProvider = { mockTelemetryClient }
+            clientProvider = { mockTelemetryClient },
+            clientMetadataProvider = { product, version -> defaultMetadata }
         )
 
         runBlocking {
@@ -102,13 +94,13 @@ class DefaultTelemetryPublisherTest {
     }
 
     @Test
-    fun testPublish_withoutNamespace() {
+    fun testPublishWithoutNamespace() {
         val mockPostMetricsRequestCaptor = argumentCaptor<PostMetricsRequest>()
 
         val mockTelemetryClient = delegateMock<ToolkitTelemetryClient>()
         val publisher = DefaultTelemetryPublisher(
-            clientMetadata = clientMetadata,
-            clientProvider = { mockTelemetryClient }
+            clientProvider = { mockTelemetryClient },
+            clientMetadataProvider = { product, version -> defaultMetadata }
         )
 
         runBlocking {
@@ -168,4 +160,116 @@ class DefaultTelemetryPublisherTest {
             )
         }
     }
+
+    @Test
+    fun testPublishMultipleProductsAndVersions() {
+        val mockPostMetricsRequestCaptor = argumentCaptor<PostMetricsRequest>()
+
+        val mockTelemetryClient = delegateMock<ToolkitTelemetryClient>()
+        val publisher = DefaultTelemetryPublisher(
+            clientProvider = { mockTelemetryClient },
+            clientMetadataProvider = { product, version -> getClientMetadata(product, version) }
+        )
+
+        runBlocking {
+            publisher.publish(
+                listOf(
+                    DefaultMetricEvent.builder()
+                        .awsProduct(AWSProduct.AMAZON_Q_FOR_JET_BRAINS)
+                        .awsVersion("1.0")
+                        .awsAccount("111111111111")
+                        .awsRegion("us-west-2")
+                        .datum("foobar") { this.count() }
+                        .build(),
+                    DefaultMetricEvent.builder()
+                        .awsProduct(AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS)
+                        .awsVersion("2.0")
+                        .awsAccount("111111111111")
+                        .awsRegion("us-west-2")
+                        .datum("spam") { this.count() }
+                        .build(),
+                    DefaultMetricEvent.builder()
+                        .awsProduct(AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS)
+                        .awsVersion("2.0")
+                        .awsAccount("111111111111")
+                        .awsRegion("us-west-2")
+                        .datum("baz") { this.count() }
+                        .build(),
+                    DefaultMetricEvent.builder()
+                        .awsProduct(AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS)
+                        .awsVersion("3.0")
+                        .awsAccount("111111111111")
+                        .awsRegion("us-west-2")
+                        .datum("random") { this.count() }
+                        .build()
+                )
+            )
+        }
+
+        verify(mockTelemetryClient, times(3)).postMetrics(mockPostMetricsRequestCaptor.capture())
+        val firstPostMetricsRequest = mockPostMetricsRequestCaptor.firstValue
+
+        assertThat(firstPostMetricsRequest.awsProduct()).isEqualTo(AWSProduct.AMAZON_Q_FOR_JET_BRAINS)
+        assertThat(firstPostMetricsRequest.awsProductVersion()).isEqualTo("1.0")
+        assertThat(firstPostMetricsRequest.metricData()).hasSize(1)
+
+        val secondPostMetricsRequest = mockPostMetricsRequestCaptor.secondValue
+        assertThat(secondPostMetricsRequest.awsProduct()).isEqualTo(AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS)
+        assertThat(secondPostMetricsRequest.awsProductVersion()).isEqualTo("2.0")
+        assertThat(secondPostMetricsRequest.metricData()).hasSize(2)
+
+        val thirdPostMetricsRequest = mockPostMetricsRequestCaptor.thirdValue
+        assertThat(thirdPostMetricsRequest.awsProduct()).isEqualTo(AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS)
+        assertThat(thirdPostMetricsRequest.awsProductVersion()).isEqualTo("3.0")
+        assertThat(thirdPostMetricsRequest.metricData()).hasSize(1)
+    }
+
+    @Test
+    fun testSendFeedback() {
+        val mockPostFeedbackRequest = argumentCaptor<PostFeedbackRequest>()
+
+        val mockTelemetryClient = delegateMock<ToolkitTelemetryClient>()
+        val publisher = DefaultTelemetryPublisher(
+            clientProvider = { mockTelemetryClient },
+            clientMetadataProvider = { product, version -> defaultMetadata }
+        )
+
+        val metadata = mapOf("foo" to "bar")
+
+        runBlocking {
+            publisher.sendFeedback(
+                Sentiment.POSITIVE,
+                "fooBar",
+                metadata
+            )
+        }
+
+        verify(mockTelemetryClient, times(1)).postFeedback(mockPostFeedbackRequest.capture())
+        val postFeedbackRequest = mockPostFeedbackRequest.firstValue
+
+        assertThat(postFeedbackRequest.awsProduct()).isEqualTo(AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS)
+        assertThat(postFeedbackRequest.awsProductVersion()).isEqualTo("1.0")
+        assertThat(postFeedbackRequest.parentProduct()).isEqualTo("JetBrains")
+        assertThat(postFeedbackRequest.parentProductVersion()).isEqualTo("191")
+        assertThat(postFeedbackRequest.os()).isEqualTo("mac")
+        assertThat(postFeedbackRequest.osVersion()).isEqualTo("1.0")
+        assertThat(postFeedbackRequest.sentiment()).isEqualTo(Sentiment.POSITIVE)
+        assertThat(postFeedbackRequest.comment()).isEqualTo("fooBar")
+        assertThat(postFeedbackRequest.metadata()).hasSize(1)
+        assertThat(postFeedbackRequest.metadata().get(0).key()).isEqualTo("foo")
+        assertThat(postFeedbackRequest.metadata().get(0).value()).isEqualTo("bar")
+    }
+
+    private val defaultMetadata = getClientMetadata(AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS, "1.0")
+
+    private fun getClientMetadata(product: AWSProduct, version: String): ClientMetadata =
+        ClientMetadata(
+            awsProduct = product,
+            awsVersion = version,
+            clientId = "foo",
+            parentProduct = "JetBrains",
+            parentProductVersion = "191",
+            os = "mac",
+            osVersion = "1.0"
+        )
 }

@@ -18,6 +18,7 @@ import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettings
 import software.aws.toolkits.jetbrains.core.getResourceIfPresent
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.services.telemetry.MetricEventMetadata
+import software.aws.toolkits.jetbrains.services.telemetry.PluginResolver
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryListener
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.util.concurrent.atomic.AtomicBoolean
@@ -38,6 +39,9 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
             )
             else -> MetricEventMetadata()
         }
+        val pluginResolver = PluginResolver.fromCurrentThread()
+        metricEventMetadata.awsProduct = pluginResolver.product
+        metricEventMetadata.awsVersion = pluginResolver.version
         record(metricEventMetadata, buildEvent)
     }
 
@@ -58,6 +62,9 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
         } else {
             MetricEventMetadata()
         }
+        val pluginResolver = PluginResolver.fromCurrentThread()
+        metricEventMetadata.awsProduct = pluginResolver.product
+        metricEventMetadata.awsVersion = pluginResolver.version
         record(metricEventMetadata, buildEvent)
     }
 
@@ -91,6 +98,8 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
         val builder = DefaultMetricEvent.builder()
         builder.awsAccount(metricEventMetadata.awsAccount)
         builder.awsRegion(metricEventMetadata.awsRegion)
+        builder.awsProduct(metricEventMetadata.awsProduct)
+        builder.awsVersion(metricEventMetadata.awsVersion)
 
         buildEvent(builder)
 

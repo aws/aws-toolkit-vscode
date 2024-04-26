@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.core.telemetry
 
+import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 import software.aws.toolkits.core.telemetry.MetricEvent.Companion.illegalCharsRegex
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
@@ -13,6 +14,8 @@ interface MetricEvent {
     val createTime: Instant
     val awsAccount: String
     val awsRegion: String
+    val awsProduct: AWSProduct
+    val awsVersion: String
     val data: Iterable<Datum>
 
     interface Builder {
@@ -21,6 +24,10 @@ interface MetricEvent {
         fun awsAccount(awsAccount: String): Builder
 
         fun awsRegion(awsRegion: String): Builder
+
+        fun awsProduct(product: AWSProduct): Builder
+
+        fun awsVersion(version: String): Builder
 
         fun datum(name: String, buildDatum: Datum.Builder.() -> Unit = {}): Builder
 
@@ -68,6 +75,8 @@ data class DefaultMetricEvent internal constructor(
     override val createTime: Instant,
     override val awsAccount: String,
     override val awsRegion: String,
+    override val awsProduct: AWSProduct,
+    override val awsVersion: String,
     override val data: Iterable<MetricEvent.Datum>
 ) : MetricEvent {
 
@@ -75,6 +84,9 @@ data class DefaultMetricEvent internal constructor(
         private var createTime: Instant = Instant.now()
         private var awsAccount: String = METADATA_NA
         private var awsRegion: String = METADATA_NA
+        private var awsProduct: AWSProduct = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS
+        private var awsVersion: String = METADATA_NA
+
         private val data: MutableCollection<MetricEvent.Datum> = mutableListOf()
 
         override fun createTime(createTime: Instant): MetricEvent.Builder {
@@ -92,6 +104,16 @@ data class DefaultMetricEvent internal constructor(
             return this
         }
 
+        override fun awsProduct(awsProduct: AWSProduct): MetricEvent.Builder {
+            this.awsProduct = awsProduct
+            return this
+        }
+
+        override fun awsVersion(awsVersion: String): MetricEvent.Builder {
+            this.awsVersion = awsVersion
+            return this
+        }
+
         override fun datum(name: String, buildDatum: MetricEvent.Datum.Builder.() -> Unit): MetricEvent.Builder {
             val builder = DefaultDatum.builder(name)
             buildDatum(builder)
@@ -99,7 +121,7 @@ data class DefaultMetricEvent internal constructor(
             return this
         }
 
-        override fun build(): MetricEvent = DefaultMetricEvent(createTime, awsAccount, awsRegion, data)
+        override fun build(): MetricEvent = DefaultMetricEvent(createTime, awsAccount, awsRegion, awsProduct, awsVersion, data)
     }
 
     companion object {
