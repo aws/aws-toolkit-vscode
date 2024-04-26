@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run AWS Toolkit - Ultimate [2023.3]" type="GradleRunConfiguration" factoryName="Gradle" folderName="2023.3">
-    <log_file alias="idea.log" path="$PROJECT_DIR$/plugins/toolkit/intellij-standalone/build/idea-sandbox/system/log/idea.log" />
+  <configuration default="false" name="Run All - Ultimate [2023.3]" type="GradleRunConfiguration" factoryName="Gradle" folderName="2023.3">
+    <log_file alias="idea.log" path="$PROJECT_DIR$/plugins/sandbox-all/build/idea-sandbox/system/log/idea.log" />
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -11,7 +11,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value=":plugin-toolkit:intellij-standalone:runIde" />
+          <option value=":sandbox-all:runIde" />
         </list>
       </option>
       <option name="vmOptions" />
