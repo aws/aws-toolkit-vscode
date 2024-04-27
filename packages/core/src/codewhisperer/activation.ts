@@ -176,10 +176,10 @@ export async function activate(context: ExtContext): Promise<void> {
             if (id === 'codewhisperer') {
                 await vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    `@id:aws.amazonQ.includeSuggestionsWithCodeReferences`
+                    `@id:amazonQ.includeSuggestionsWithCodeReferences`
                 )
             } else {
-                await vscode.commands.executeCommand('workbench.action.openSettings', `aws.amazonQ`)
+                await vscode.commands.executeCommand('workbench.action.openSettings', `amazonQ`)
             }
         }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean = false) => {
