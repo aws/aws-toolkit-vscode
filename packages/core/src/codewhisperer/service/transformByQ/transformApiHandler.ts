@@ -484,7 +484,9 @@ export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
 
 export function getJobStatisticsHtml(jobStatistics: any) {
     let htmlString = ''
-    if (jobStatistics.length === 0) return htmlString
+    if (jobStatistics.length === 0) {
+        return htmlString
+    }
     htmlString += `<div style="flex: 1; margin-left: 20px; border: 1px solid #424750; border-radius: 8px; padding: 10px;">`
     jobStatistics.forEach((stat: { name: string; value: string }) => {
         htmlString += `<p style="margin-bottom: 4px"><img src="${getTransformationIcon(
