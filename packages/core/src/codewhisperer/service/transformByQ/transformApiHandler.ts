@@ -18,7 +18,7 @@ import {
     ZipManifest,
 } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
-import { CreateUploadUrlResponse } from '../../client/codewhispereruserclient'
+import { CreateUploadUrlResponse, ProgressUpdates } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
@@ -390,8 +390,28 @@ export function getImageAsBase64(filePath: string) {
  * ex. getIcon('transform-file') returns the 'transform-file-light.svg' icon if user has a light theme enabled,
  * otherwise 'transform-file-dark.svg' is returned.
  */
-export function getTransformationIcon(iconName: string) {
-    let iconPath = iconName
+export function getTransformationIcon(name: string) {
+    let iconPath = ''
+    switch (name) {
+        case 'Lines of code in your application':
+            iconPath = 'transform-clock'
+            break
+        case 'Dependencies to be replaced':
+            iconPath = 'transform-dependencies'
+            break
+        case 'Deprecated code instances to be replaced':
+            iconPath = 'transform-step-into'
+            break
+        case 'Files to be updated':
+            iconPath = 'transform-file'
+            break
+        case 'up-arrow':
+            iconPath = 'transform-arrow'
+            break
+        default:
+            iconPath = 'transform-default'
+            break
+    }
     const themeColor = vscode.window.activeColorTheme.kind
     if (themeColor === vscode.ColorThemeKind.Light || themeColor === vscode.ColorThemeKind.HighContrastLight) {
         iconPath += '-light.svg'
@@ -422,13 +442,14 @@ export function getFormattedColumnName(columnName: string) {
     }
 }
 
-export function addTableMarkdown(plan: string, tableObj: any) {
-    if (!tableObj.description) {
-        // no table present
+export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [key: string]: string }) {
+    const tableObj = tableMapping[stepId]
+    if (!tableObj) {
+        // no table present for this step
         return plan
     }
-    plan += `\n\n\n${tableObj.name}\n|`
-    const table = JSON.parse(tableObj.description)
+    const table = JSON.parse(tableObj)
+    plan += `\n\n\n${table.name}\n|`
     const columns = table.columnNames
     columns.forEach((columnName: string) => {
         plan += ` ${getFormattedColumnName(columnName)} |`
@@ -451,6 +472,29 @@ export function addTableMarkdown(plan: string, tableObj: any) {
     return plan
 }
 
+export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
+    const map: { [key: string]: string } = {}
+    stepZeroProgressUpdates.forEach(update => {
+        // description should never be undefined since even if no data we show an empty table
+        // but just in case, empty string allows us to skip this table without errors when rendering
+        map[update.name] = update.description ?? ''
+    })
+    return map
+}
+
+export function getJobStatisticsHtml(jobStatistics: any) {
+    let htmlString = ''
+    if (jobStatistics.length === 0) return htmlString
+    htmlString += `<div style="flex: 1; margin-left: 20px; border: 1px solid #424750; border-radius: 8px; padding: 10px;">`
+    jobStatistics.forEach((stat: { name: string; value: string }) => {
+        htmlString += `<p style="margin-bottom: 4px"><img src="${getTransformationIcon(
+            stat.name
+        )}" style="vertical-align: middle;"> ${stat.name}: ${stat.value}</p>`
+    })
+    htmlString += `</div>`
+    return htmlString
+}
+
 export async function getTransformationPlan(jobId: string) {
     let response = undefined
     try {
@@ -470,58 +514,38 @@ export async function getTransformationPlan(jobId: string) {
             result: MetadataResult.Pass,
         })
 
-        const progressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
+        const stepZeroProgressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
 
-        if (!progressUpdates || !progressUpdates[0].description) {
-            throw new Error('Null or incomplete progress updates found in step 0') // means backend API response wrong
+        if (!stepZeroProgressUpdates || stepZeroProgressUpdates.length === 0) {
+            // means backend API response wrong and table data is missing
+            throw new Error('No progress updates found in step 0')
         }
 
-        // handle these 4 statistics manually since there are specific icons to display next to each one
-        const jobStatistics = JSON.parse(progressUpdates[0].description).rows
+        // gets a mapping between the ID ('name' field) of each progressUpdate (substep) and the associated table
+        const tableMapping = getTableMapping(stepZeroProgressUpdates)
+
+        const jobStatistics = JSON.parse(tableMapping['0']).rows // ID of '0' reserved for job statistics table
 
         // get logo directly since we only use one logo regardless of color theme
         const logoIcon = getImageAsBase64(
             globals.context.asAbsolutePath('resources/icons/aws/amazonq/transform-logo.svg')
         )
 
-        const clockIcon = getTransformationIcon('transform-clock')
-        const dependenciesIcon = getTransformationIcon('transform-dependencies')
-        const stepIntoIcon = getTransformationIcon('transform-step-into')
-        const fileIcon = getTransformationIcon('transform-file')
-        const arrowIcon = getTransformationIcon('transform-arrow')
+        const arrowIcon = getTransformationIcon('up-arrow')
 
         let plan = `<style>table {border: 1px solid #424750;}</style>\n\n<a id="top"></a><br><p style="font-size: 24px; color: white;"><img src="${logoIcon}" style="margin-right: 15px; vertical-align: middle;"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
-        plan += `<div style="display: flex;">
-            <div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;">
-                <p>${CodeWhispererConstants.planIntroductionMessage}</p>
-            </div>
-            <div style="flex: 1; margin-left: 20px; border: 1px solid #424750; border-radius: 8px; padding: 10px;">
-                <p style="margin-bottom: 4px;"><img src="${clockIcon}" style="vertical-align: middle;"> ${
-            CodeWhispererConstants.planLinesOfCodeMessage
-        } ${jobStatistics[0].value ?? '-'}</p>
-                <p style="margin-bottom: 4px;"><img src="${dependenciesIcon}" style="vertical-align: middle;"> ${
-            CodeWhispererConstants.planDependenciesToBeReplacedMessage
-        } ${jobStatistics[1].value ?? '-'}</p>
-                <p style="margin-bottom: 4px;"><img src="${stepIntoIcon}" style="vertical-align: middle;"> ${
-            CodeWhispererConstants.planDeprecatedCodeToBeReplacedMessage
-        } ${jobStatistics[2].value ?? '-'}</p>
-                <p style="margin-bottom: 4px;"><img src="${fileIcon}" style="vertical-align: middle;"> ${
-            CodeWhispererConstants.planFilesToBeChangedMessage
-        } ${jobStatistics[3].value ?? '-'}</p>
-            </div>
-        </div>`
+        plan += `<div style="display: flex;"><div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p>${
+            CodeWhispererConstants.planIntroductionMessage
+        }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
         plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; color: white; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
-        response.transformationPlan.transformationSteps.slice(1).forEach((step, index) => {
+        response.transformationPlan.transformationSteps.slice(1).forEach(step => {
             plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; color: white; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`
-            if (index === 0) {
-                plan = addTableMarkdown(plan, progressUpdates[1]) // add the dependency changes table in step 1
-            } else if (index === 1) {
-                plan = addTableMarkdown(plan, progressUpdates[2]) // add the deprecated code table in step 2
-            }
+            plan = addTableMarkdown(plan, step.id, tableMapping)
             plan += `</div><br>`
         })
-        plan += `</div><br><p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
-        plan = addTableMarkdown(plan, progressUpdates[3]) // add the files changed table in appendix
+        plan += `</div><br>`
+        plan += `<p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
+        plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table
         return plan
     } catch (e: any) {
         const errorMessage = (e as Error).message
@@ -537,7 +561,7 @@ export async function getTransformationPlan(jobId: string) {
         })
 
         /* Means API call failed
-         * If reponse is defined, means a display/parsing error occurred, so continue transformation
+         * If response is defined, means a display/parsing error occurred, so continue transformation
          */
         if (response === undefined) {
             throw new Error('Get plan API call failed')
