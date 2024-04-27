@@ -34,6 +34,7 @@ import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../common/crypto'
 import { CodeAnalysisScope } from '../models/constants'
+import { getNullLogger } from '../../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -82,6 +83,10 @@ export const debounceStartSecurityScan = debounce(
     CodeWhispererConstants.autoScanDebounceDelaySeconds * 1000
 )
 
+export function getLoggerForScope(scope: CodeAnalysisScope) {
+    return scope === CodeAnalysisScope.FILE ? getNullLogger() : getLogger()
+}
+
 export async function startSecurityScan(
     securityPanelViewProvider: SecurityPanelViewProvider,
     editor: vscode.TextEditor,
@@ -89,6 +94,7 @@ export async function startSecurityScan(
     context: vscode.ExtensionContext,
     scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
+    const logger = getLoggerForScope(scope)
     /**
      * Step 0: Initial Code Scan telemetry
      */
@@ -113,7 +119,7 @@ export async function startSecurityScan(
         codewhispererCodeScanScope: scope,
     }
     try {
-        getLogger().verbose(`Starting security scan `)
+        logger.verbose(`Starting security scan `)
         /**
          * Step 1: Generate zip
          */
@@ -124,7 +130,7 @@ export async function startSecurityScan(
 
         const contextTruncationStartTime = performance.now()
         codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
-        getLogger().verbose(`Complete project context processing.`)
+        logger.verbose(`Complete project context processing.`)
         codeScanTelemetryEntry.codewhispererCodeScanSrcPayloadBytes = zipMetadata.srcPayloadSizeInBytes
         codeScanTelemetryEntry.codewhispererCodeScanBuildPayloadBytes = zipMetadata.buildPayloadSizeInBytes
         codeScanTelemetryEntry.codewhispererCodeScanSrcZipFileBytes = zipMetadata.zipFileSizeInBytes
@@ -139,11 +145,8 @@ export async function startSecurityScan(
         const scanName = randomUUID()
         try {
             artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, scanName)
-        } catch (error) {
-            getLogger().error('Failed to upload code artifacts', error)
-            throw error
         } finally {
-            await zipUtil.removeTmpFiles(zipMetadata)
+            await zipUtil.removeTmpFiles(zipMetadata, scope)
             codeScanTelemetryEntry.artifactsUploadDuration = performance.now() - uploadStartTime
         }
 
@@ -162,7 +165,7 @@ export async function startSecurityScan(
         if (scanJob.status === 'Failed') {
             throw new Error(scanJob.errorMessage)
         }
-        getLogger().verbose(`Created security scan job.`)
+        logger.verbose(`Created security scan job.`)
         codeScanTelemetryEntry.codewhispererCodeScanJobId = scanJob.jobId
 
         /**
@@ -178,12 +181,13 @@ export async function startSecurityScan(
          * Step 5: Process and render scan results
          */
         throwIfCancelled(scope)
-        getLogger().verbose(`Security scan job succeeded and start processing result.`)
+        logger.verbose(`Security scan job succeeded and start processing result.`)
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
-            projectPath
+            projectPath,
+            scope
         )
         const { total, withFixes } = securityRecommendationCollection.reduce(
             (accumulator, current) => ({
@@ -195,7 +199,7 @@ export async function startSecurityScan(
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
         codeScanTelemetryEntry.codewhispererCodeScanIssuesWithFixes = withFixes
         throwIfCancelled(scope)
-        getLogger().verbose(`Security scan totally found ${total} issues. ${withFixes} of them have fixes.`)
+        logger.verbose(`Security scan totally found ${total} issues. ${withFixes} of them have fixes.`)
         if (codeScanStartTime > securityScanRender.lastUpdated) {
             showSecurityScanResults(
                 securityPanelViewProvider,
@@ -208,10 +212,10 @@ export async function startSecurityScan(
                 codeScanStartTime
             )
         } else {
-            getLogger().verbose('Received issues from older scan, discarding the results')
+            logger.verbose('Received issues from older scan, discarding the results')
         }
 
-        getLogger().verbose(`Security scan completed.`)
+        logger.verbose(`Security scan completed.`)
     } catch (error) {
         getLogger().error('Security scan failed.', error)
         if (codeScanState.isCancelling()) {

@@ -23,13 +23,16 @@ import {
 import { TelemetryHelper } from '../util/telemetryHelper'
 import request from '../../common/request'
 import { ZipMetadata } from '../util/zipUtil'
+import { getLoggerForScope } from '../commands/startSecurityScan'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
     jobId: string,
     codeScanFindingsSchema: string,
-    projectPath: string
+    projectPath: string,
+    scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
+    const logger = getLoggerForScope(scope)
     const codeScanIssueMap: Map<string, RawCodeScanIssue[]> = new Map()
     const aggregatedCodeScanIssueList: AggregatedCodeScanIssue[] = []
     const requester = (request: codewhispererClient.ListCodeScanFindingsRequest) => client.listCodeScanFindings(request)
@@ -37,7 +40,7 @@ export async function listScanResults(
     const issues = await collection
         .flatten()
         .map(resp => {
-            getLogger().verbose(`Request id: ${resp.$response.requestId}`)
+            logger.verbose(`Request id: ${resp.$response.requestId}`)
             if ('codeScanFindings' in resp) {
                 return resp.codeScanFindings
             }
@@ -104,7 +107,8 @@ export async function pollScanJobStatus(
     jobId: string,
     scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
-    getLogger().verbose(`Polling scan job status...`)
+    const logger = getLoggerForScope(scope)
+    logger.verbose(`Polling scan job status...`)
     let status: string = 'Pending'
     let timer: number = 0
     while (true) {
@@ -113,11 +117,11 @@ export async function pollScanJobStatus(
             jobId: jobId,
         }
         const resp = await client.getCodeScan(req)
-        getLogger().verbose(`Request id: ${resp.$response.requestId}`)
+        logger.verbose(`Request id: ${resp.$response.requestId}`)
         if (resp.status !== 'Pending') {
             status = resp.status
-            getLogger().verbose(`Scan job status: ${status}`)
-            getLogger().verbose(`Complete Polling scan job status.`)
+            logger.verbose(`Scan job status: ${status}`)
+            logger.verbose(`Complete Polling scan job status.`)
             break
         }
         throwIfCancelled(scope)
@@ -128,8 +132,8 @@ export async function pollScanJobStatus(
                 ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
                 : CodeWhispererConstants.codeScanJobTimeoutSeconds
         if (timer > timeoutSeconds) {
-            getLogger().verbose(`Scan job status: ${status}`)
-            getLogger().verbose(`Scan job timeout.`)
+            logger.verbose(`Scan job status: ${status}`)
+            logger.verbose(`Scan job timeout.`)
             throw new Error('Scan job timeout.')
         }
     }
@@ -143,7 +147,8 @@ export async function createScanJob(
     scope: CodeWhispererConstants.CodeAnalysisScope,
     scanName: string
 ) {
-    getLogger().verbose(`Creating scan job...`)
+    const logger = getLoggerForScope(scope)
+    logger.verbose(`Creating scan job...`)
     const req: codewhispererClient.CreateCodeScanRequest = {
         artifacts: artifactMap,
         programmingLanguage: {
@@ -156,7 +161,7 @@ export async function createScanJob(
         getLogger().error(`Failed creating scan job. Request id: ${err.requestId}`)
         throw err
     })
-    getLogger().verbose(`Request id: ${resp.$response.requestId}`)
+    logger.verbose(`Request id: ${resp.$response.requestId}`)
     TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$response.requestId)
     return resp
 }
@@ -167,6 +172,7 @@ export async function getPresignedUrlAndUpload(
     scope: CodeWhispererConstants.CodeAnalysisScope,
     scanName: string
 ) {
+    const logger = getLoggerForScope(scope)
     if (zipMetadata.zipFilePath === '') {
         throw new Error("Zip failure: can't find valid source zip.")
     }
@@ -180,16 +186,16 @@ export async function getPresignedUrlAndUpload(
             },
         },
     }
-    getLogger().verbose(`Prepare for uploading src context...`)
+    logger.verbose(`Prepare for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq).catch(err => {
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
         throw err
     })
-    getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
-    getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
-    getLogger().verbose(`Uploading src context...`)
-    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp)
-    getLogger().verbose(`Complete uploading src context.`)
+    logger.verbose(`Request id: ${srcResp.$response.requestId}`)
+    logger.verbose(`Complete Getting presigned Url for uploading src context.`)
+    logger.verbose(`Uploading src context...`)
+    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, scope)
+    logger.verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,
     }
@@ -226,7 +232,12 @@ export function throwIfCancelled(scope: CodeWhispererConstants.CodeAnalysisScope
     }
 }
 
-export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
+export async function uploadArtifactToS3(
+    fileName: string,
+    resp: CreateUploadUrlResponse,
+    scope: CodeWhispererConstants.CodeAnalysisScope
+) {
+    const logger = getLoggerForScope(scope)
     const encryptionContext = `{"uploadId":"${resp.uploadId}"}`
     const headersObj: Record<string, string> = {
         'Content-MD5': getMd5(fileName),
@@ -244,7 +255,7 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
             body: readFileSync(fileName),
             headers: resp?.requestHeaders ?? headersObj,
         }).response
-        getLogger().debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
+        logger.debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
     } catch (error) {
         getLogger().error(
             `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the Amazon Q documentation or contact your network or organization administrator.`
