@@ -17,8 +17,8 @@
         "url": "https://github.com/aws/aws-toolkit-vscode/issues"
     },
     "galleryBanner": {
-        "color": "#FF9900",
-        "theme": "light"
+        "color": "#232F3E",
+        "theme": "dark"
     },
     "categories": [
         "Debuggers",
