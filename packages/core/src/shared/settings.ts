@@ -637,10 +637,10 @@ export class ToolkitPromptSettings extends Settings.define(
     }
 }
 
-export const amazonQPrompts = settingsProps['aws.amazonQ.suppressPrompts'].properties
+export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts'].properties
 type amazonQPromptName = keyof typeof amazonQPrompts
 export class AmazonQPromptSettings extends Settings.define(
-    'aws.amazonQ.suppressPrompts',
+    'amazonQ.suppressPrompts',
     toRecord(keys(amazonQPrompts), () => Boolean)
 ) {
     public async isPromptEnabled(promptName: amazonQPromptName): Promise<boolean> {

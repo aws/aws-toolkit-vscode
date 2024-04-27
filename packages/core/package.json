@@ -124,11 +124,6 @@
                         }
                     }
                 },
-                "aws.amazonQ.telemetry": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%AWS.configuration.description.amazonq.telemetry%"
-                },
                 "aws.stepfunctions.asl.format.enable": {
                     "type": "boolean",
                     "scope": "window",
@@ -243,7 +238,12 @@
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
                 },
-                "aws.amazonQ.suppressPrompts": {
+                "amazonQ.telemetry": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%AWS.configuration.description.amazonq.telemetry%"
+                },
+                "amazonQ.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
                     "default": {},
@@ -267,17 +267,17 @@
                     },
                     "additionalProperties": false
                 },
-                "aws.amazonQ.showInlineCodeSuggestionsWithCodeReferences": {
+                "amazonQ.showInlineCodeSuggestionsWithCodeReferences": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.amazonq%",
                     "default": true
                 },
-                "aws.amazonQ.importRecommendationForInlineCodeSuggestions": {
+                "amazonQ.importRecommendationForInlineCodeSuggestions": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.amazonq.importRecommendation%",
                     "default": true
                 },
-                "aws.amazonQ.shareContentWithAWS": {
+                "amazonQ.shareContentWithAWS": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.amazonq.shareContentWithAWS%",
                     "default": true,

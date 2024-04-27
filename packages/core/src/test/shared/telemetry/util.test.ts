@@ -21,7 +21,7 @@ describe('TelemetryConfig', function () {
     })
 
     afterEach(async function () {
-        await sut.reset()
+        await sut.toolkitConfig.reset()
     })
 
     const scenarios = [
