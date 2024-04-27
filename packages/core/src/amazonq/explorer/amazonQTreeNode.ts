@@ -69,12 +69,6 @@ export class AmazonQNode implements TreeNode {
     }
 }
 
-/**
- * Refreshes the Amazon Q Tree node. If Amazon Q's connection state is provided, it will also internally
- * update the connection state.
- *
- * This command is meant to be called by Amazon Q. It doesn't serve much purpose being called otherwise.
- */
 export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
     Commands.register({ id: '_aws.toolkit.amazonq.refreshTreeNode', logging: false }, () => {
         AmazonQNode.instance.refresh()

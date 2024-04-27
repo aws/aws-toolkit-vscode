@@ -113,14 +113,13 @@ export async function activate(args: {
             globals.context.globalState.get<boolean>(amazonQDismissedKey)
         ) {
             await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+        } else {
+            amazonQViewNode.push({
+                nodes: [AmazonQNode.instance],
+                view: 'aws.amazonq.codewhisperer',
+                refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
+            })
         }
-
-        // We should create the tree even if it's dismissed, in case the user installs Amazon Q later.
-        amazonQViewNode.push({
-            nodes: [AmazonQNode.instance],
-            view: 'aws.amazonq.codewhisperer',
-            refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
-        })
     }
     const viewNodes: ToolView[] = [
         ...amazonQViewNode,
