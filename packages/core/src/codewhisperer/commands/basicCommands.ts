@@ -27,7 +27,6 @@ import {
 } from '../util/customizationUtil'
 import { applyPatch } from 'diff'
 import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
-import { fsCommon } from '../../srcShared/fs'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
@@ -36,6 +35,9 @@ import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
+import { removeDiagnostic } from '../service/diagnosticsProvider'
+import { SecurityIssueHoverProvider } from '../service/securityIssueHoverProvider'
+import { SecurityIssueCodeActionProvider } from '../service/securityIssueCodeActionProvider'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -343,14 +345,23 @@ export const applySecurityFix = Commands.declare(
                 throw Error('Failed to get updated content from applying diff patch')
             }
 
-            // saving the document text if not save
-            const isSaved = await document.save()
-            if (!isSaved) {
-                throw Error('Failed to save editor text changes into the file.')
+            const edit = new vscode.WorkspaceEdit()
+            edit.replace(
+                document.uri,
+                new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end),
+                updatedContent
+            )
+            const isApplied = await vscode.workspace.applyEdit(edit)
+            if (!isApplied) {
+                throw Error('Failed to apply edit to the workspace.')
             }
 
-            // writing the patch applied version of document into the file
-            await fsCommon.writeFile(filePath, updatedContent)
+            if (CodeScansState.instance.isScansEnabled()) {
+                removeDiagnostic(document.uri, issue)
+                SecurityIssueHoverProvider.instance.removeIssue(document.uri, issue)
+                SecurityIssueCodeActionProvider.instance.removeIssue(document.uri, issue)
+            }
+
             await closeSecurityIssueWebview(issue.findingId)
         } catch (err) {
             getLogger().error(`Apply fix command failed. ${err}`)
