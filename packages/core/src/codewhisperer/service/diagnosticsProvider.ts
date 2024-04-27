@@ -128,3 +128,19 @@ function getLineOffset(range: vscode.Range, text: string) {
     const changedLines = text.split('\n').length
     return changedLines - originLines
 }
+
+export function removeDiagnostic(uri: vscode.Uri, issue: CodeScanIssue) {
+    const currentSecurityDiagnostics = securityScanRender.securityDiagnosticCollection?.get(uri)
+    if (currentSecurityDiagnostics) {
+        const newSecurityDiagnostics = currentSecurityDiagnostics.filter(diagnostic => {
+            return (
+                typeof diagnostic.code !== 'string' &&
+                typeof diagnostic.code !== 'number' &&
+                diagnostic.code?.value !== issue.detectorId &&
+                diagnostic.message !== issue.title &&
+                diagnostic.range !== new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+            )
+        })
+        securityScanRender.securityDiagnosticCollection?.set(uri, newSecurityDiagnostics)
+    }
+}
