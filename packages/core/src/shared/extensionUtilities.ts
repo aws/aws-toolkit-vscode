@@ -26,7 +26,7 @@ const notInitialized = 'notInitialized'
 
 function _isAmazonQ() {
     const id = globals.context.extension.id
-    const isToolkit = id === VSCODE_EXTENSION_ID.amazonq || id === VSCODE_EXTENSION_ID.awstoolkitcore
+    const isToolkit = id === VSCODE_EXTENSION_ID.awstoolkit || id === VSCODE_EXTENSION_ID.awstoolkitcore
     const isQ = id === VSCODE_EXTENSION_ID.amazonq
     if (!isToolkit && !isQ) {
         throw Error(`unexpected extension id: ${id}`) // sanity check
