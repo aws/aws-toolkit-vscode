@@ -100,7 +100,7 @@ describe('CodeWhisperer security scan', async function () {
         try {
             artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, codeScanName)
         } finally {
-            await zipUtil.removeTmpFiles(zipMetadata)
+            await zipUtil.removeTmpFiles(zipMetadata, scope)
         }
         return {
             artifactMap: artifactMap,
@@ -135,7 +135,8 @@ describe('CodeWhisperer security scan', async function () {
             client,
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
-            projectPath
+            projectPath,
+            scope
         )
 
         assert.deepStrictEqual(jobStatus, 'Completed')
@@ -169,7 +170,8 @@ describe('CodeWhisperer security scan', async function () {
             client,
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
-            projectPath
+            projectPath,
+            scope
         )
 
         assert.deepStrictEqual(jobStatus, 'Completed')

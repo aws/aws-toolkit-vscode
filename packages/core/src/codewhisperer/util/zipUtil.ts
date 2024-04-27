@@ -11,6 +11,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fsCommon } from '../../srcShared/fs'
 import { collectFiles } from '../../amazonqFeatureDev/util/files'
+import { getLoggerForScope } from '../service/securityScanHandler'
 
 export interface ZipMetadata {
     rootDir: string
@@ -182,7 +183,7 @@ export class ZipUtil {
                 throw new ToolkitError(`Unknown code analysis scope: ${scope}`)
             }
 
-            getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
+            getLoggerForScope(scope).debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
             const zipFileSize = (await fsCommon.stat(zipFilePath)).size
             return {
                 rootDir: zipDirPath,
@@ -199,10 +200,11 @@ export class ZipUtil {
         }
     }
 
-    public async removeTmpFiles(zipMetadata: ZipMetadata) {
-        getLogger().verbose(`Cleaning up temporary files...`)
+    public async removeTmpFiles(zipMetadata: ZipMetadata, scope: CodeWhispererConstants.CodeAnalysisScope) {
+        const logger = getLoggerForScope(scope)
+        logger.verbose(`Cleaning up temporary files...`)
         await fsCommon.delete(zipMetadata.zipFilePath)
         await fsCommon.delete(zipMetadata.rootDir)
-        getLogger().verbose(`Complete cleaning up temporary files.`)
+        logger.verbose(`Complete cleaning up temporary files.`)
     }
 }
