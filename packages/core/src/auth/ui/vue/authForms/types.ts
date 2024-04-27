@@ -11,6 +11,7 @@ export type AuthFormId =
     | 'identityCenterCodeCatalyst'
     | 'identityCenterExplorer'
     | 'aggregateExplorer'
+    | 'unknown'
 
 export function isBuilderIdAuth(id: AuthFormId): boolean {
     return id.startsWith('builderId')
@@ -24,4 +25,5 @@ export const AuthFormDisplayName: Record<AuthFormId, string> = {
     identityCenterCodeWhisperer: 'Amazon Q with IAM Identity Center',
     identityCenterExplorer: 'AWS Explorer with IAM Identity Center',
     aggregateExplorer: '',
+    unknown: '',
 } as const

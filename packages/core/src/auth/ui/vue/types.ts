@@ -35,4 +35,5 @@ export const authFormTelemetryMapping: {
     identityCenterCodeCatalyst: { featureType: 'codecatalyst', authType: 'iamIdentityCenter' },
     identityCenterExplorer: { featureType: 'awsExplorer', authType: 'iamIdentityCenter' },
     aggregateExplorer: { featureType: 'awsExplorer', authType: 'other' }, // this should never actually be used
+    unknown: { featureType: 'unknown', authType: 'other' }, // this should never actually be used
 }
