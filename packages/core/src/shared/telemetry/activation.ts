@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
-import { getComputeRegion, getIdeProperties, isAmazonQ, isCloud9 } from '../extensionUtilities'
+import { getComputeRegion, isAmazonQ, isCloud9, productName } from '../extensionUtilities'
 import { openSettings, Settings } from '../settings'
 import { TelemetryConfig, setupTelemetryId } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
@@ -110,8 +110,8 @@ function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
 
     const telemetryNoticeText: string = localize(
         'AWS.telemetry.notificationMessage',
-        'AWS IDE Extensions collects anonymous usage metrics to improve the product. You can opt-out in settings.',
-        getIdeProperties().company
+        '{0} collects anonymous usage metrics to improve the product. You can opt-out in settings.',
+        productName()
     )
 
     // Don't wait for a response
