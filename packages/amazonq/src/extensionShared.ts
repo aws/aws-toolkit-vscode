@@ -130,8 +130,12 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
     await updateDevMode()
 
     // Hide the Amazon Q tree in toolkit explorer
-    await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
-    await Commands.tryExecute('_aws.amazonq.refreshRootNode')
+    try {
+        // Commands.tryExcute only works on commands registered by this extension
+        getLogger().debug('hiding Amazon Q view in Toolkit, if it is installed.')
+        await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+        await vscode.commands.executeCommand('_aws.amazonq.refreshRootNode')
+    } catch {}
 
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
