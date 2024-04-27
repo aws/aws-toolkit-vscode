@@ -3,7 +3,7 @@
 
 <idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude" require-restart="true">
     <id>aws.toolkit</id>
-    <name>AWS Toolkit - Amazon Q, CodeWhisperer, and more</name>
+    <name>AWS Toolkit</name>
     <version>1.0</version>
 
     <!-- delete when fully split -->
@@ -263,7 +263,6 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.webview.ToolkitWebviewPanel"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow"/>
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>

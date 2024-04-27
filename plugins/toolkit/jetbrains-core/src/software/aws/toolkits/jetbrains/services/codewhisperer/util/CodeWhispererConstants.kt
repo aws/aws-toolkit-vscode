@@ -40,18 +40,13 @@ object CodeWhispererConstants {
     const val INVOCATION_INTERVAL: Long = 2050
 
     const val Q_MARKETPLACE_URI = "https://aws.amazon.com/q/developer/"
-    const val CODEWHISPERER_SSO_LEARN_MORE_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisperer-auth.html"
 
-    // update link in HelpIds
-    const val CODEWHISPERER_LOGIN_LEARN_MORE_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisper-setup-general.html"
     const val CODEWHISPERER_LOGIN_HELP_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/setup-credentials.html"
-    const val CODEWHISPERER_CUSTOM_LEARN_MORE_URI = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/customizations.html"
-    const val CODEWHISPERER_WORKSHOP_URI =
-        "https://catalog.us-east-1.prod.workshops.aws/workshops/6838a1a5-4516-4153-90ce-ac49ca8e1357/03-getting-started/03-02-prompts"
-    const val CODEWHISPERER_SUPPORTED_LANG_URI = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/language-ide-support.html"
+    const val Q_CUSTOM_LEARN_MORE_URI = "https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/customizations.html"
+    const val Q_SUPPORTED_LANG_URI = "https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-language-ide-support.html"
     const val CODEWHISPERER_CODE_SCAN_LEARN_MORE_URI = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html"
     const val CODEWHISPERER_ONBOARDING_DOCUMENTATION_URI = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/features.html"
-    const val CODEWHISPERER_GITHUB_URI = "https://github.com/aws/aws-toolkit-jetbrains/issues"
+    const val Q_GITHUB_URI = "https://github.com/aws/aws-toolkit-jetbrains/issues"
 
     const val THROTTLING_MESSAGE = "Maximum recommendation count reached for this month."
 
@@ -182,7 +177,7 @@ public class S3Uploader {
 }"""
 
         private const val UNIT_TEST_CONTENT_JAVA =
-"""// TODO: Ask CodeWhisperer to write unit tests.
+"""// TODO: Ask Amazon Q to write unit tests.
 
 // Write a test case for the sum function.
 

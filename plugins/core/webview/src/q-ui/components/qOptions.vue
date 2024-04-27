@@ -34,8 +34,7 @@
             :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
             :itemId="LoginOption.ENTERPRISE_SSO"
             :login-type="LoginOption.ENTERPRISE_SSO"
-            :itemTitle="'Use professional license'"
-            :itemText="'Sign in to AWS with single sign-on'"
+            :itemTitle="'Use with Pro license'"
             class="font-amazon bottom-small-gap"
         ></SelectableItem>
         <button

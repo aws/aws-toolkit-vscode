@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.amazonq.gettingstarted
 
 import com.intellij.testFramework.LightVirtualFile
+import software.aws.toolkits.jetbrains.services.codewhisperer.learn.QFileType
 import software.aws.toolkits.resources.message
 
 class QGettingStartedVirtualFile : LightVirtualFile(
@@ -16,4 +17,6 @@ class QGettingStartedVirtualFile : LightVirtualFile(
 
     override fun hashCode() = toString().hashCode()
     override fun equals(other: Any?) = other is QGettingStartedVirtualFile && name == other.name
+
+    override fun getFileType() = QFileType()
 }

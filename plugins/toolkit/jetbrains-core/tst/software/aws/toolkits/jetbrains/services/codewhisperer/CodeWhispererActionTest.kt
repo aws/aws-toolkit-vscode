@@ -24,9 +24,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererLearnMoreAction
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererLoginLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererShowSettingsAction
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererSsoLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererWhatIsAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfigurable
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
@@ -53,18 +51,6 @@ class CodeWhispererActionTest : CodeWhispererTestBase() {
     fun `CodeWhispererLearnMoreAction actionPerformed should open correct URI`() {
         val action = CodeWhispererLearnMoreAction()
         testBrowserActionHelper(action, CodeWhispererConstants.Q_MARKETPLACE_URI)
-    }
-
-    @Test
-    fun `CodeWhispererSsoLearnMoreAction actionPerformed should open correct URI`() {
-        val action = CodeWhispererSsoLearnMoreAction()
-        testBrowserActionHelper(action, CodeWhispererConstants.CODEWHISPERER_SSO_LEARN_MORE_URI)
-    }
-
-    @Test
-    fun `CodeWhispererLoginLearnMoreAction actionPerformed should open correct URI`() {
-        val action = CodeWhispererLoginLearnMoreAction()
-        testBrowserActionHelper(action, CodeWhispererConstants.CODEWHISPERER_LOGIN_LEARN_MORE_URI)
     }
 
     @Test

@@ -59,10 +59,10 @@ class QMigrationActivity : StartupActivity.DumbAware {
                 content = message("aws.q.migration.new_users.notify.message"),
                 project = project,
                 notificationActions = listOf(
-                    NotificationAction.createSimpleExpiring(message("aws.q.migration.action.read_more.text")) {
-                    },
-                    NotificationAction.createSimple(message("aws.q.migration.action.install.text")) {
+                    NotificationAction.createSimple(message("aws.q.migration.action.read_more.text")) {
                         // TODO: open url
+                    },
+                    NotificationAction.createSimpleExpiring(message("aws.q.migration.action.install.text")) {
                         installQPlugin(project, autoInstall = false)
                     }
                 )

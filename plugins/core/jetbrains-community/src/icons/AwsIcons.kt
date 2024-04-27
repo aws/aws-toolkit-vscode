@@ -33,6 +33,8 @@ object AwsIcons {
         @JvmField val AWS_Q = load("/icons/logos/AWS_Q.svg") // 13x13
 
         @JvmField val AWS_Q_GRADIENT = load("/icons/logos/Amazon-Q-Icon_Gradient_Large.svg") // 54x54
+
+        @JvmField val AWS_Q_GRADIENT_SMALL = load("/icons/logos/Amazon-Q-Icon_Gradient_Medium.svg") // 54x54
     }
 
     object Misc {

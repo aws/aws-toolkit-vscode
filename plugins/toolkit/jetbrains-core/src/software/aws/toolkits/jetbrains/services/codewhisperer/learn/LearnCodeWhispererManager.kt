@@ -22,9 +22,9 @@ class LearnCodeWhispererManager(private val project: Project) {
     companion object {
         fun getInstance(project: Project) = project.service<LearnCodeWhispererManager>()
         val taskTypeToFilename = mapOf(
-            CodewhispererGettingStartedTask.AutoTrigger to "CodeWhisperer_generate_suggestion",
-            CodewhispererGettingStartedTask.ManualTrigger to "CodeWhisperer_manual_invoke",
-            CodewhispererGettingStartedTask.UnitTest to "CodeWhisperer_generate_unit_tests",
+            CodewhispererGettingStartedTask.AutoTrigger to "AmazonQ_generate_suggestion",
+            CodewhispererGettingStartedTask.ManualTrigger to "AmazonQ_manual_invoke",
+            CodewhispererGettingStartedTask.UnitTest to "AmazonQ_generate_unit_tests",
         )
     }
 }

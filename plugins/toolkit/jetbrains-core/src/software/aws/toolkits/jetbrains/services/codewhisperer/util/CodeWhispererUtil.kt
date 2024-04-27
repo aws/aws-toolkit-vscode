@@ -192,13 +192,11 @@ object CodeWhispererUtil {
             message("toolkit.sso_expire.dialog_message"),
             project,
             listOf(
-                NotificationAction.create(message("toolkit.sso_expire.dialog.yes_button")) { _, notification ->
+                NotificationAction.createSimpleExpiring(message("toolkit.sso_expire.dialog.yes_button")) {
                     reconnectCodeWhisperer(project)
-                    notification.expire()
                 },
-                NotificationAction.create(message("toolkit.sso_expire.dialog.no_button")) { _, notification ->
+                NotificationAction.createSimpleExpiring(message("toolkit.sso_expire.dialog.no_button")) {
                     CodeWhispererExplorerActionManager.getInstance().setConnectionExpiredDoNotShowAgain(true)
-                    notification.expire()
                 }
             )
         )

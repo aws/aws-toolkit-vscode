@@ -1045,7 +1045,7 @@ class GettingStartedPanel(
                     .withHeader(message("codewhisperer.explorer.tooltip.title"))
                     .withPosition(Balloon.Position.above)
 
-                showGotIt(AwsToolkitExplorerToolWindow.CODEWHISPERER_Q_TAB_ID, message("action.q.openchat.text"), tooltip)
+                showGotIt(AwsToolkitExplorerToolWindow.Q_TAB_ID, message("action.q.openchat.text"), tooltip)
             } else {
                 controlPanelVisibility(panelConnectionInProgress, revertToPanel)
             }

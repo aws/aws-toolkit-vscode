@@ -20,6 +20,6 @@ class CodeWhispererConnectOnGithubAction :
     ),
     DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
-        BrowserUtil.browse(URI(CodeWhispererConstants.CODEWHISPERER_GITHUB_URI))
+        BrowserUtil.browse(URI(CodeWhispererConstants.Q_GITHUB_URI))
     }
 }

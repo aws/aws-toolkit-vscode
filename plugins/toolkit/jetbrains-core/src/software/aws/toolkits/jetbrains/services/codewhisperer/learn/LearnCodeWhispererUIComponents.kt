@@ -28,7 +28,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.TryExampleRo
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.POPUP_BUTTON_BORDER
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.TRY_EXAMPLE_EVEN_ROW_COLOR
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODEWHISPERER_SUPPORTED_LANG_URI
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.Q_SUPPORTED_LANG_URI
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TryExampleFileContent.tryExampleFileContexts
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererGettingStartedTask
@@ -120,7 +120,7 @@ object LearnCodeWhispererUIComponents {
         add(
             BrowserLink(
                 message("codewhisperer.learn_page.examples.description.part_2"),
-                CODEWHISPERER_SUPPORTED_LANG_URI
+                Q_SUPPORTED_LANG_URI
             ).apply {
                 addActionListener {
                     UiTelemetry.click(null as Project?, "codewhisperer_GenerateSuggestions_LearnMore")
@@ -137,7 +137,7 @@ object LearnCodeWhispererUIComponents {
         val systemPath = PathManager.getSystemPath()
 
         // Create the "codewhisperer" directory if it doesn't exist
-        val directory = File("$systemPath/codewhisperer")
+        val directory = File("$systemPath/amazonq")
         if (!directory.exists()) {
             directory.mkdirs()
         }

@@ -26,7 +26,7 @@ import software.amazon.awssdk.arns.Arn
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODEWHISPERER_CUSTOM_LEARN_MORE_URI
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.Q_CUSTOM_LEARN_MORE_URI
 import software.aws.toolkits.jetbrains.ui.AsyncComboBox
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
@@ -40,9 +40,10 @@ private val NoDataToDisplay = CustomizationUiItem(
 )
 
 private fun notifyCustomizationIsSelected(project: Project, customizationUiItem: CustomizationUiItem?) {
+    // TODO: localize
     val content = customizationUiItem?.let {
-        "CodeWhisperer suggestions are now coming from the ${it.customization.name} customization"
-    } ?: "CodeWhisperer suggestions are now coming from the ${message("codewhisperer.custom.dialog.option.default")}"
+        "Amazon Q inline suggestions are now coming from the ${it.customization.name} customization"
+    } ?: "Amazon Q inline suggestions are now coming from the ${message("codewhisperer.custom.dialog.option.default")}"
 
     notifyInfo(
         title = message("codewhisperer.custom.dialog.title"),
@@ -161,7 +162,7 @@ class CodeWhispererCustomizationDialog(
             lateinit var customizationComment: Row
             indent {
                 noCustomizationComment = row("") {
-                    rowComment(message("codewhisperer.custom.dialog.option.customization.description.no_customization", CODEWHISPERER_CUSTOM_LEARN_MORE_URI))
+                    rowComment(message("codewhisperer.custom.dialog.option.customization.description.no_customization", Q_CUSTOM_LEARN_MORE_URI))
                 }.visible(false)
 
                 customizationComment = row("") {

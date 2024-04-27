@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.amazonq.gettingstarted
 
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
@@ -14,17 +15,19 @@ fun openMeetQPage(project: Project): Boolean {
     if (!meetQSettings.shouldDisplayPage) {
         return false
     } else {
-        FileEditorManager.getInstance(
-            project
-        ).openTextEditor(
-            OpenFileDescriptor(
-                project,
-                QGettingStartedVirtualFile()
-            ),
-            true
-        )
-        meetQSettings.shouldDisplayPage = false
-        UiTelemetry.click(project, "toolkit_openedWelcomeToAmazonQPage")
+        runInEdt {
+            FileEditorManager.getInstance(
+                project
+            ).openTextEditor(
+                OpenFileDescriptor(
+                    project,
+                    QGettingStartedVirtualFile()
+                ),
+                true
+            )
+            meetQSettings.shouldDisplayPage = false
+            UiTelemetry.click(project, "toolkit_openedWelcomeToAmazonQPage")
+        }
     }
     return true
 }

@@ -97,6 +97,7 @@ export default defineComponent({
     padding: 15px;
     display: flex;
     align-items: center;
+    height: 38px;
 }
 
 .selected {
