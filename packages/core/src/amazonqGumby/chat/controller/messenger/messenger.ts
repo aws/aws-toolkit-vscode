@@ -36,7 +36,7 @@ export type StaticTextResponseType =
     | 'job-transmitted'
     | 'end-HIL-early'
 
-export type ErrorTextResponseType =
+export type UnrecoverableErrorType =
     | 'no-project-found'
     | 'no-java-project-found'
     | 'no-maven-java-project-found'
@@ -44,7 +44,7 @@ export type ErrorTextResponseType =
     | 'invalid-java-home'
     | 'unsupported-source-jdk-version'
 
-export type UnrecoverableErrorResponseType = 'no-alternate-dependencies-found'
+export type ErrorResponseType = 'no-alternate-dependencies-found' | 'upload-to-s3-failed'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -280,7 +280,7 @@ export class Messenger {
                 message = MessengerUtils.createJavaHomePrompt()
                 break
             case 'end-HIL-early':
-                message = `I will continue transforming your code without being able to build successfully.`
+                message = `I will continue transforming your code without upgrading this dependency.`
                 break
         }
 
@@ -295,7 +295,13 @@ export class Messenger {
         )
     }
 
-    public sendRetryableErrorResponse(type: ErrorTextResponseType, tabID: string) {
+    /**
+     * This method renders an error message with a button at the end that will try the
+     * transformation again from the beginning. This message is meant for errors that are
+     * completely unrecoverable: the job cannot be completed in its current state,
+     * and the flow must be tried again.
+     */
+    public sendUnrecoverableErrorResponse(type: UnrecoverableErrorType, tabID: string) {
         let message = '...'
 
         switch (type) {
@@ -337,12 +343,15 @@ export class Messenger {
         )
     }
 
-    public sendUnrecoverableError(type: UnrecoverableErrorResponseType, tabID: string) {
+    public sendKnownErrorResponse(type: ErrorResponseType, tabID: string) {
         let message = '...'
 
         switch (type) {
             case 'no-alternate-dependencies-found':
-                message = `I couldn't find any other versions of this dependency in your local Maven repository. Try transforming the depedency to make it compatible with Java 17, and then try transforming this module again.`
+                message = `I could not find any other versions of this dependency in your local Maven repository. Try transforming the depedency to make it compatible with Java 17, and then try transforming this module again.`
+                break
+            case 'upload-to-s3-failed':
+                message = `I was not able to upload your module to be transformed. Please try again later.`
                 break
         }
 
@@ -355,8 +364,6 @@ export class Messenger {
                 tabID
             )
         )
-
-        this.sendInProgressMessage(tabID, 'Stopping job...')
     }
 
     public sendCommandMessage(message: any) {
@@ -364,6 +371,10 @@ export class Messenger {
     }
 
     public sendJobFinishedMessage(tabID: string, message: string = '') {
+        if (message === '') {
+            message = CodeWhispererConstants.jobCancelledChatMessage
+        }
+
         const buttons: ChatItemButton[] = []
         buttons.push({
             keepCardAfterClick: false,
@@ -415,7 +426,7 @@ export class Messenger {
     }
 
     public sendHumanInTheLoopInitialMessage(tabID: string, codeSnippet: string) {
-        let message = `I was not able to upgrade all dependencies. To resolve it, I'll try to find an updated depedency in your local Maven repository. I'll need additional information from you to continue.`
+        let message = `I was not able to upgrade all dependencies. To resolve it, I will try to find an updated depedency in your local Maven repository. I will need additional information from you to continue.`
 
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -521,7 +532,7 @@ ${codeSnippet}
     }
 
     public sendHILResumeMessage(tabID: string) {
-        const message = `I'll continue transforming your code. You can monitor progress in the Transformation Hub.`
+        const message = `I will continue transforming your code. You can monitor progress in the Transformation Hub.`
         this.sendJobSubmittedMessage(tabID, false, message)
     }
 }
