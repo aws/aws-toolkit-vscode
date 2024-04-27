@@ -8,6 +8,9 @@ import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resour
 import { AuthState, isPreviousQUser } from '../../codewhisperer/util/authUtil'
 import { createLearnMoreNode, createInstallQNode, createDismissNode } from './amazonQChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
+import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
+import { amazonQDismissedKey } from '../../codewhisperer/models/constants'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -81,7 +84,10 @@ export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
     })
 
 export const refreshAmazonQRootNode = (provider?: ResourceTreeDataProvider) =>
-    Commands.register({ id: '_aws.amazonq.refreshRootNode', logging: false }, () => {
+    Commands.register({ id: '_aws.amazonq.refreshRootNode', logging: false }, async () => {
+        if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
+            await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+        }
         AmazonQNode.instance.refreshRootNode()
         if (provider) {
             provider.refresh()

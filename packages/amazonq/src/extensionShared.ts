@@ -26,6 +26,7 @@ import {
     RegionProvider,
     getLogger,
     getMachineId,
+    Commands,
 } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-core-vscode/auth'
 import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
@@ -130,6 +131,7 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
 
     // Hide the Amazon Q tree in toolkit explorer
     await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+    await Commands.tryExecute('_aws.amazonq.refreshRootNode')
 
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
