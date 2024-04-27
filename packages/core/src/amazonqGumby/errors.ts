@@ -47,3 +47,9 @@ export class JobStoppedError extends Error {
         super('Job was rejected, stopped, or failed')
     }
 }
+
+export class ModuleUploadError extends Error {
+    constructor() {
+        super('Failed to upload module to S3')
+    }
+}
