@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
-import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
+import { getComputeRegion, getIdeProperties, isAmazonQ, isCloud9 } from '../extensionUtilities'
 import { openSettings, Settings } from '../settings'
 import { TelemetryConfig, setupTelemetryId } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
@@ -137,7 +137,7 @@ export async function handleTelemetryNoticeResponse(
         // noticeResponseOk is a no-op
 
         if (response === noticeResponseViewSettings) {
-            await openSettings('aws.telemetry')
+            await openSettings(isAmazonQ() ? 'amazonQ.telemetry' : 'aws.telemetry')
         }
     } catch (err) {
         getLogger().error('Error while handling response from telemetry notice: %O', err as Error)
