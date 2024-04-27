@@ -18,6 +18,7 @@ import {
     pollScanJobStatus,
     listScanResults,
     throwIfCancelled,
+    getLoggerForScope,
 } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AggregatedCodeScanIssue, CodeScansState, codeScanState, CodeScanTelemetryEntry } from '../models/model'
@@ -34,7 +35,6 @@ import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../common/crypto'
 import { CodeAnalysisScope } from '../models/constants'
-import { getNullLogger } from '../../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -82,10 +82,6 @@ export const debounceStartSecurityScan = debounce(
     startSecurityScan,
     CodeWhispererConstants.autoScanDebounceDelaySeconds * 1000
 )
-
-export function getLoggerForScope(scope: CodeAnalysisScope) {
-    return scope === CodeAnalysisScope.FILE ? getNullLogger() : getLogger()
-}
 
 export async function startSecurityScan(
     securityPanelViewProvider: SecurityPanelViewProvider,

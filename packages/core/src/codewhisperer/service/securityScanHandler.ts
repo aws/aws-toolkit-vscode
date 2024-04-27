@@ -23,7 +23,7 @@ import {
 import { TelemetryHelper } from '../util/telemetryHelper'
 import request from '../../common/request'
 import { ZipMetadata } from '../util/zipUtil'
-import { getLoggerForScope } from '../commands/startSecurityScan'
+import { getNullLogger } from '../../shared/logger/logger'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -264,4 +264,8 @@ export async function uploadArtifactToS3(
             `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html) or contact your network or organization administrator.`
         )
     }
+}
+
+export function getLoggerForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
+    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE ? getNullLogger() : getLogger()
 }

@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fsCommon } from '../../srcShared/fs'
 import { collectFiles } from '../../amazonqFeatureDev/util/files'
-import { getLoggerForScope } from '../commands/startSecurityScan'
+import { getLoggerForScope } from '../service/securityScanHandler'
 
 export interface ZipMetadata {
     rootDir: string
