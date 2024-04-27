@@ -25,7 +25,8 @@ phases:
             # - '>/dev/null apt-get -qq update'
             # - '>/dev/null apt-get -qq install -y ca-certificates'
             # - 'apt-get install --reinstall ca-certificates'
-            - bash buildspec/shared/linux-install.sh
+            # - bash buildspec/shared/linux-install.sh
+            - echo 'skipped until failure is fixed \#4804'
 
     pre_build:
         commands:
