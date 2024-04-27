@@ -17,6 +17,5 @@ fun createBrowser(parent: Disposable): JBCefBrowserBase {
     return JBCefBrowserBuilder()
         .setClient(client)
         .setOffScreenRendering(true)
-        .setCreateImmediately(true)
         .build()
 }
