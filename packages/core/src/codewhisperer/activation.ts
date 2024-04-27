@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
 import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
@@ -66,8 +67,13 @@ import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
 import { debounceStartSecurityScan } from './commands/startSecurityScan'
 import { securityScanLanguageContext } from './util/securityScanLanguageContext'
+import { registerWebviewErrorHandler } from '../webviews/server'
+import { logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
+
+let localize: nls.LocalizeFunc
 
 export async function activate(context: ExtContext): Promise<void> {
+    localize = nls.loadMessageBundle()
     const codewhispererSettings = CodeWhispererSettings.instance
 
     // Import old CodeWhisperer settings into Amazon Q
@@ -96,6 +102,13 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     const securityPanelViewProvider = new SecurityPanelViewProvider(context.extensionContext)
     activateSecurityScan()
+
+    /**
+     * Register the webview error handler for Amazon Q
+     */
+    registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
+        logAndShowWebviewError(localize, error, webviewId, command)
+    })
 
     /**
      * Service control
