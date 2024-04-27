@@ -15,7 +15,7 @@ import { mapMetadata } from './telemetryLogger'
 import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from '../utilities'
 import { randomUUID } from '../../common/crypto'
 import { activateExtension } from '../utilities/vsCodeUtils'
@@ -55,9 +55,7 @@ export class TelemetryConfig {
     }
 
     public isEnabled(): boolean {
-        return (
-            globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq ? this.amazonQConfig : this.toolkitConfig
-        ).get(`telemetry`, true)
+        return (isAmazonQ() ? this.amazonQConfig : this.toolkitConfig).get(`telemetry`, true)
     }
 
     public async initAmazonQSetting() {
@@ -119,10 +117,9 @@ export async function getUserAgent(
     opt?: { includePlatform?: boolean; includeClientId?: boolean },
     globalState = globals.context.globalState
 ): Promise<string> {
-    const pairs =
-        globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq
-            ? [`AmazonQ-For-VSCode/${extensionVersion}`]
-            : [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
+    const pairs = isAmazonQ()
+        ? [`AmazonQ-For-VSCode/${extensionVersion}`]
+        : [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
 
     if (opt?.includePlatform) {
         pairs.push(platformPair())
@@ -225,7 +222,7 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
                             await vscode.commands.executeCommand('aws.amazonq.setupTelemetryId')
                         })
                     }
-                } else if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
+                } else if (isAmazonQ()) {
                     getLogger().debug(`telemetry: Set telemetry client id to ${storedClientId}`)
                     await globals.context.globalState.update(telemetryClientIdGlobalStatekey, storedClientId)
                 } else {

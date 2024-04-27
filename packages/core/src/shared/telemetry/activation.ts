@@ -19,7 +19,6 @@ import { isAutomation, isReleaseVersion } from '../vscode/env'
 import { AWSProduct } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
 import { Commands } from '../vscode/commands2'
-import { VSCODE_EXTENSION_ID } from '../utilities'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -53,17 +52,14 @@ export async function activate(
         globals.telemetry.telemetryEnabled = config.isEnabled()
 
         extensionContext.subscriptions.push(
-            (globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq
-                ? config.amazonQConfig
-                : config.toolkitConfig
-            ).onDidChange(event => {
+            (isAmazonQ() ? config.amazonQConfig : config.toolkitConfig).onDidChange(event => {
                 if (event.key === 'telemetry') {
                     globals.telemetry.telemetryEnabled = config.isEnabled()
                 }
             })
         )
 
-        if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
+        if (isAmazonQ()) {
             extensionContext.subscriptions.push(
                 Commands.register('aws.amazonq.setupTelemetryId', async () => {
                     await setupTelemetryId(extensionContext)
