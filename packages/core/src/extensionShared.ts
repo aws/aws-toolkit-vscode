@@ -223,7 +223,7 @@ async function logAndShowError(error: unknown, topic: string, defaultMessage: st
  * @param webviewId Arbitrary value that identifies which webview had the error
  * @param command The high level command/function that was run which triggered the error
  */
-function logAndShowWebviewError(err: unknown, webviewId: string, command: string) {
+export function logAndShowWebviewError(err: unknown, webviewId: string, command: string) {
     // HACK: The following implementation is a hack, influenced by the implementation of handleError().
     // The userFacingError message will be seen in the UI, and the detailedError message will provide the
     // detailed information in the logs.

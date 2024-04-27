@@ -66,6 +66,8 @@ import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
 import { debounceStartSecurityScan } from './commands/startSecurityScan'
 import { securityScanLanguageContext } from './util/securityScanLanguageContext'
+import { registerWebviewErrorHandler } from '../webviews/server'
+import { logAndShowWebviewError } from '../extensionShared'
 
 export async function activate(context: ExtContext): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance
@@ -96,6 +98,13 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     const securityPanelViewProvider = new SecurityPanelViewProvider(context.extensionContext)
     activateSecurityScan()
+
+    /**
+     * Register the webview error handler for Amazon Q
+     */
+    registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
+        logAndShowWebviewError(error, webviewId, command)
+    })
 
     /**
      * Service control
