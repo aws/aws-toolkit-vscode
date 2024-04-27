@@ -25,7 +25,6 @@ import software.aws.toolkits.jetbrains.utils.pollFor
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.FeatureId
 import java.util.concurrent.Future
-import java.util.function.Function
 
 data class BrowserState(val feature: FeatureId, val browserCancellable: Boolean = false, val requireReauth: Boolean = false)
 
@@ -35,12 +34,11 @@ abstract class LoginBrowser(
     val webScriptUri: String
 ) {
     abstract val jcefBrowser: JBCefBrowserBase
-    abstract val query: JBCefJSQuery
-    abstract val handler: Function<String, JBCefJSQuery.Response>
 
     protected var currentAuthorization: PendingAuthorization? = null
 
     protected data class BearerConnectionSelectionSettings(val currentSelection: AwsBearerTokenConnection, val onChange: (AwsBearerTokenConnection) -> Unit)
+
     protected val selectionSettings = mutableMapOf<String, BearerConnectionSelectionSettings>()
 
     protected val onPendingToken: (InteractiveBearerTokenProvider) -> Unit = { provider ->
@@ -104,7 +102,7 @@ abstract class LoginBrowser(
         }
     }
 
-    protected fun<T> loginWithBackgroundContext(action: () -> T): Future<T> =
+    protected fun <T> loginWithBackgroundContext(action: () -> T): Future<T> =
         ApplicationManager.getApplication().executeOnPooledThread<T> {
             runBlocking {
                 withBackgroundProgress(project, message("credentials.pending.title")) {
@@ -115,6 +113,12 @@ abstract class LoginBrowser(
             }
         }
 
+    abstract fun loadWebView(query: JBCefJSQuery)
+
+    protected suspend fun pollForAuthorization(provider: InteractiveBearerTokenProvider): PendingAuthorization? = pollFor {
+        provider.pendingAuthorization
+    }
+
     protected fun reauth(connection: ToolkitConnection?) {
         if (connection is AwsBearerTokenConnection) {
             loginWithBackgroundContext {
@@ -123,15 +127,12 @@ abstract class LoginBrowser(
         }
     }
 
-    protected fun loadWebView() {
-        jcefBrowser.loadHTML(getWebviewHTML())
-    }
+    companion object {
+        fun getWebviewHTML(webScriptUri: String, query: JBCefJSQuery): String {
+            val colorMode = if (JBColor.isBright()) "jb-light" else "jb-dark"
+            val postMessageToJavaJsCode = query.inject("JSON.stringify(message)")
 
-    protected fun getWebviewHTML(): String {
-        val colorMode = if (JBColor.isBright()) "jb-light" else "jb-dark"
-        val postMessageToJavaJsCode = query.inject("JSON.stringify(message)")
-
-        val jsScripts = """
+            val jsScripts = """
             <script>
                 (function() {
                     window.ideApi = {
@@ -142,9 +143,9 @@ abstract class LoginBrowser(
                 }())
             </script>
             <script type="text/javascript" src="$webScriptUri"></script>
-        """.trimIndent()
+            """.trimIndent()
 
-        return """
+            return """
             <!DOCTYPE html>
             <html>
                 <head>
@@ -155,10 +156,7 @@ abstract class LoginBrowser(
                     $jsScripts
                 </body>
             </html>
-        """.trimIndent()
-    }
-
-    protected suspend fun pollForAuthorization(provider: InteractiveBearerTokenProvider): PendingAuthorization? = pollFor {
-        provider.pendingAuthorization
+            """.trimIndent()
+        }
     }
 }

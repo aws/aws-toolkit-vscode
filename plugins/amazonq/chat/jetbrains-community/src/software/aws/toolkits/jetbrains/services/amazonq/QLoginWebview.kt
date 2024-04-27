@@ -102,10 +102,10 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
 ) {
     // TODO: confirm if we need such configuration or the default is fine
     override val jcefBrowser = createBrowser(parentDisposable)
-    override val query = JBCefJSQuery.create(jcefBrowser)
+    private val query = JBCefJSQuery.create(jcefBrowser)
     private val objectMapper = jacksonObjectMapper()
 
-    override val handler = Function<String, JBCefJSQuery.Response> {
+    private val handler = Function<String, JBCefJSQuery.Response> {
         val jsonTree = objectMapper.readTree(it)
         val command = jsonTree.get("command").asText()
         LOG.debug { "Data received from Q browser: ${jsonTree.asText()}" }
@@ -185,7 +185,7 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
                 ),
             )
 
-        loadWebView()
+        loadWebView(query)
 
         query.addHandler(handler)
     }
@@ -250,6 +250,10 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
     override fun loginIAM(profileName: String, accessKey: String, secretKey: String) {
         LOG.error { "IAM is not supported by Q" }
         return
+    }
+
+    override fun loadWebView(query: JBCefJSQuery) {
+        jcefBrowser.loadHTML(getWebviewHTML(webScriptUri, query))
     }
 
     companion object {

@@ -23,6 +23,7 @@ import com.intellij.ui.dsl.gridLayout.VerticalAlign
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefBrowserBuilder
+import com.intellij.ui.jcef.JBCefClient
 import com.intellij.ui.jcef.JBCefJSQuery
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
@@ -145,18 +146,21 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
     ToolkitWebviewBrowser.WEB_SCRIPT_URI
 ) {
     // TODO: confirm if we need such configuration or the default is fine
+    // TODO: move JcefBrowserUtils to core
     override val jcefBrowser: JBCefBrowserBase by lazy {
-        val client = JBCefApp.getInstance().createClient()
+        val client = JBCefApp.getInstance().createClient().apply {
+            setProperty(JBCefClient.Properties.JS_QUERY_POOL_SIZE, 5)
+        }
         Disposer.register(parentDisposable, client)
         JBCefBrowserBuilder()
             .setClient(client)
             .setOffScreenRendering(true)
             .build()
     }
-    override val query: JBCefJSQuery = JBCefJSQuery.create(jcefBrowser)
+    private val query: JBCefJSQuery = JBCefJSQuery.create(jcefBrowser)
     private val objectMapper = jacksonObjectMapper()
 
-    override val handler = Function<String, JBCefJSQuery.Response> {
+    private val handler = Function<String, JBCefJSQuery.Response> {
         val jsonTree = objectMapper.readTree(it)
         val command = jsonTree.get("command").asText()
         LOG.debug { "Data received from Toolkit browser: ${jsonTree.toPrettyString()}" }
@@ -246,7 +250,7 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
                 ),
             )
 
-        loadWebView()
+        loadWebView(query)
 
         query.addHandler(handler)
     }
@@ -333,6 +337,10 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
                 }
             }
         }
+    }
+
+    override fun loadWebView(query: JBCefJSQuery) {
+        jcefBrowser.loadHTML(getWebviewHTML(webScriptUri, query))
     }
 
     fun component(): JComponent? = jcefBrowser.component
