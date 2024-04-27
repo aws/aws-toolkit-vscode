@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.uitests.tests
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.waitFor
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
@@ -21,6 +22,7 @@ import software.aws.toolkits.resources.message
 import java.nio.file.Path
 import java.time.Duration
 
+@Disabled("Needs to be moved to accomodate plugin split")
 @TestInstance(Lifecycle.PER_CLASS)
 class DynamicResourcesSettingsTest {
     @TempDir

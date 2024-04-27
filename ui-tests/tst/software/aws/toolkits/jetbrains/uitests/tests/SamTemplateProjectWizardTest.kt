@@ -7,6 +7,7 @@ import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
@@ -21,6 +22,7 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
 import software.aws.toolkits.jetbrains.uitests.utils.setupSamCli
 import java.nio.file.Path
 
+@Disabled("Needs to be moved to accomodate plugin split")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisabledIfSystemProperty(named = "org.gradle.project.ideProfileName", matches = "202*.*", disabledReason = "Flakes on 231 above")
 class SamTemplateProjectWizardTest {

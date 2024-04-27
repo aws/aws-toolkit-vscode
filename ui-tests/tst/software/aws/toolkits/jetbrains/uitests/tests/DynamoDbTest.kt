@@ -12,6 +12,7 @@ import com.intellij.remoterobot.utils.waitForIgnoringError
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.io.TempDir
@@ -37,6 +38,7 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlin.random.Random
 
+@Disabled("Needs to be moved to accomodate plugin split")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DynamoDbTest {
 
