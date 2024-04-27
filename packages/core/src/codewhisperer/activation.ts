@@ -132,9 +132,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 EditorContext.updateTabSize(getTabSizeSetting())
             }
 
-            if (
-                configurationChangeEvent.affectsConfiguration('aws.amazonQ.showInlineCodeSuggestionsWithCodeReferences')
-            ) {
+            if (configurationChangeEvent.affectsConfiguration('amazonQ.showInlineCodeSuggestionsWithCodeReferences')) {
                 ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
@@ -150,7 +148,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             }
 
-            if (configurationChangeEvent.affectsConfiguration('aws.amazonQ.shareContentWithAWS')) {
+            if (configurationChangeEvent.affectsConfiguration('amazonQ.shareContentWithAWS')) {
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
                         .showInformationMessage(
