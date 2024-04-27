@@ -15,7 +15,7 @@ import { ToolkitError } from '../errors'
 import crypto from 'crypto'
 import { keysAsInt } from '../utilities/tsUtils'
 import { partialClone } from '../utilities/collectionUtils'
-import { VSCODE_EXTENSION_ID } from '../utilities'
+import { isAmazonQ } from '../extensionUtilities'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -636,7 +636,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 
     try {
         if (info.autoconnect === true) {
-            const prefix = globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq ? 'amazonq' : 'toolkit'
+            const prefix = isAmazonQ() ? 'amazonq' : 'toolkit'
             await vscode.commands.executeCommand(`_aws.${prefix}.auth.autoConnect`)
         }
 
