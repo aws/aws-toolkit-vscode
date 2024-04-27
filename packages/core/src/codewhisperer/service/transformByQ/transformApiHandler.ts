@@ -393,21 +393,23 @@ export function getImageAsBase64(filePath: string) {
 export function getTransformationIcon(name: string) {
     let iconPath = ''
     switch (name) {
-        case 'Lines of code in your application':
+        case 'linesOfCode':
             iconPath = 'transform-clock'
             break
-        case 'Dependencies to be replaced':
+        case 'plannedDependencyChanges':
             iconPath = 'transform-dependencies'
             break
-        case 'Deprecated code instances to be replaced':
+        case 'plannedDeprecatedApiChanges':
             iconPath = 'transform-step-into'
             break
-        case 'Files to be updated':
+        case 'plannedFileChanges':
             iconPath = 'transform-file'
             break
-        case 'up-arrow':
+        case 'upArrow':
             iconPath = 'transform-arrow'
             break
+        case 'transformLogo':
+            return getImageAsBase64(globals.context.asAbsolutePath('resources/icons/aws/amazonq/transform-logo.svg'))
         default:
             iconPath = 'transform-default'
             break
@@ -421,24 +423,32 @@ export function getTransformationIcon(name: string) {
     return getImageAsBase64(globals.context.asAbsolutePath(path.join('resources/icons/aws/amazonq', iconPath)))
 }
 
-export function getFormattedColumnName(columnName: string) {
-    switch (columnName) {
+export function getFormattedString(s: string) {
+    switch (s) {
+        case 'linesOfCode':
+            return CodeWhispererConstants.linesOfCodeMessage
+        case 'plannedDependencyChanges':
+            return CodeWhispererConstants.dependenciesToBeReplacedMessage
+        case 'plannedDeprecatedApiChanges':
+            return CodeWhispererConstants.deprecatedCodeToBeReplacedMessage
+        case 'plannedFileChanges':
+            return CodeWhispererConstants.filesToBeChangedMessage
         case 'dependencyName':
-            return 'Dependency'
+            return CodeWhispererConstants.dependencyNameColumn
         case 'action':
-            return 'Action'
+            return CodeWhispererConstants.actionColumn
         case 'currentVersion':
-            return 'Current version'
+            return CodeWhispererConstants.currentVersionColumn
         case 'targetVersion':
-            return 'Target version'
+            return CodeWhispererConstants.targetVersionColumn
         case 'relativePath':
-            return 'File'
+            return CodeWhispererConstants.relativePathColumn
         case 'apiFullyQualifiedName':
-            return 'Deprecated code'
+            return CodeWhispererConstants.apiNameColumn
         case 'numChangedFiles':
-            return 'Files to be changed'
+            return CodeWhispererConstants.numChangedFilesColumn
         default:
-            return 'Column'
+            return s
     }
 }
 
@@ -452,7 +462,7 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
     plan += `\n\n\n${table.name}\n|`
     const columns = table.columnNames
     columns.forEach((columnName: string) => {
-        plan += ` ${getFormattedColumnName(columnName)} |`
+        plan += ` ${getFormattedString(columnName)} |`
     })
     plan += '\n|'
     columns.forEach((_: any) => {
@@ -491,7 +501,7 @@ export function getJobStatisticsHtml(jobStatistics: any) {
     jobStatistics.forEach((stat: { name: string; value: string }) => {
         htmlString += `<p style="margin-bottom: 4px"><img src="${getTransformationIcon(
             stat.name
-        )}" style="vertical-align: middle;"> ${stat.name}: ${stat.value}</p>`
+        )}" style="vertical-align: middle;"> ${getFormattedString(stat.name)}: ${stat.value}</p>`
     })
     htmlString += `</div>`
     return htmlString
@@ -529,11 +539,9 @@ export async function getTransformationPlan(jobId: string) {
         const jobStatistics = JSON.parse(tableMapping['0']).rows // ID of '0' reserved for job statistics table
 
         // get logo directly since we only use one logo regardless of color theme
-        const logoIcon = getImageAsBase64(
-            globals.context.asAbsolutePath('resources/icons/aws/amazonq/transform-logo.svg')
-        )
+        const logoIcon = getTransformationIcon('transformLogo')
 
-        const arrowIcon = getTransformationIcon('up-arrow')
+        const arrowIcon = getTransformationIcon('upArrow')
 
         let plan = `<style>table {border: 1px solid #424750;}</style>\n\n<a id="top"></a><br><p style="font-size: 24px; color: white;"><img src="${logoIcon}" style="margin-right: 15px; vertical-align: middle;"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
         plan += `<div style="display: flex;"><div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p>${
