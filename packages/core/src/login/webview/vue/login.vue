@@ -110,8 +110,8 @@
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
                     :itemId="LoginOption.ENTERPRISE_SSO"
-                    :itemText="'Sign in to AWS with single sign-on'"
-                    :itemTitle="'Use Professional License'"
+                    :itemText="''"
+                    :itemTitle="'Use with Pro license'"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
