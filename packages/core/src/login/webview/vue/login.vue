@@ -154,7 +154,7 @@
                 <div class="header bottomMargin">Sign in with AWS IAM Identity Center:</div>
                 <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
                     <div style="margin-bottom: 4px"></div>
-                    <div class="h4">
+                    <div class="subHeader">
                         Using AWS Builder ID?
                         <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
                     </div>
@@ -565,7 +565,7 @@ export default defineComponent({
     color: black;
 }
 
-.h4 {
+.subHeader {
     font-size: 10px;
 }
 .continue-button {
