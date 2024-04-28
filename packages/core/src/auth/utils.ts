@@ -685,7 +685,9 @@ export class ExtensionUse {
 }
 
 /**
- *  Simple readable ID for telemetry reporting
+ * @deprecated
+ * Remove in favor of AuthFormId
+ * Simple readable ID for telemetry reporting
  */
 export type AuthSimpleId =
     | 'sharedCredentials'

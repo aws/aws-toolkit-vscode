@@ -17,7 +17,7 @@ import { Commands } from './shared/vscode/commands2'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { getIdeProperties, aboutExtension, isCloud9 } from './shared/extensionUtilities'
 import { logAndShowError, logAndShowWebviewError } from './shared/utilities/logAndShowUtils'
-import { telemetry } from './shared/telemetry/telemetry'
+import { AuthStatus, telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 import { activateViewsShared } from './awsexplorer/activationShared'
 
@@ -42,6 +42,10 @@ import { UriHandler } from './shared/vscode/uriHandler'
 import { disableAwsSdkWarning } from './shared/awsClientBuilder'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { ResourceFetcher } from './shared/resourcefetcher/resourcefetcher'
+import { ExtStartUpSources, getAuthFormIdsFromConnection } from './shared/telemetry/util'
+import { ExtensionUse } from './auth/utils'
+import { Auth } from './auth'
+import { AuthFormId } from './auth/ui/vue/authForms/types'
 
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
@@ -233,4 +237,39 @@ function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscod
             return task(newProgress, token)
         })
     }
+}
+
+export async function emitUserState() {
+    await telemetry.auth_userState.run(async () => {
+        telemetry.record({ passive: true })
+
+        const firstUse = ExtensionUse.instance.isFirstUse()
+        const wasUpdated = ExtensionUse.instance.wasUpdated()
+
+        if (firstUse) {
+            telemetry.record({ source: ExtStartUpSources.firstStartUp })
+        } else if (wasUpdated) {
+            telemetry.record({ source: ExtStartUpSources.update })
+        } else {
+            telemetry.record({ source: ExtStartUpSources.reload })
+        }
+
+        let authStatus: AuthStatus = 'notConnected'
+        const enabledConnections: Set<AuthFormId> = new Set()
+        if (Auth.instance.hasConnections) {
+            authStatus = 'expired'
+            ;(await Auth.instance.listConnections()).forEach(conn => {
+                const state = Auth.instance.getConnectionState(conn)
+                if (state === 'valid') {
+                    authStatus = 'connected'
+                }
+
+                getAuthFormIdsFromConnection(conn).forEach(id => enabledConnections.add(id))
+            })
+        }
+        telemetry.record({
+            authStatus,
+            authEnabledConnections: [...enabledConnections].join(','),
+        })
+    })
 }

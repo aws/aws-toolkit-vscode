@@ -166,7 +166,7 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
         }
         telemetry.record({
             authStatus: authState === 'connected' || authState === 'expired' ? authState : 'notConnected',
-            enabledAuthConnections: authKinds.join(','),
+            authEnabledConnections: authKinds.join(','),
         })
     })
 }
