@@ -369,15 +369,15 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
                 tabID: ChatSessionManager.Instance.getSession().tabID,
             })
         }
-        codeTransformTelemetryState.setCodeTransformMetaDataField({
+        CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
             errorMessage: err.message,
         })
         telemetry.codeTransform_humanInTheLoop.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
-            codeTransformMetadata: codeTransformTelemetryState.getCodeTransformMetaDataString(),
+            codeTransformMetadata: CodeTransformTelemetryState.instance.getCodeTransformMetaDataString(),
             result: MetadataResult.Fail,
-            reason: codeTransformTelemetryState.getCodeTransformMetaData().errorMessage,
+            reason: CodeTransformTelemetryState.instance.getCodeTransformMetaData().errorMessage,
         })
         return true
     } finally {
@@ -406,7 +406,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
     let hilResult: MetadataResult = MetadataResult.Pass
     try {
         const getUserInputValue = selectedDependency
-        codeTransformTelemetryState.setCodeTransformMetaDataField({
+        CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
             dependencyVersionSelected: selectedDependency,
         })
         // 6) We need to add user input to that pom.xml,
@@ -464,7 +464,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         // with the rejected state
         await resumeTransformationJob(jobId, 'REJECTED')
         successfulFeedbackLoop = false
-        codeTransformTelemetryState.setCodeTransformMetaDataField({
+        CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
             errorMessage: err.message,
         })
         hilResult = MetadataResult.Fail
@@ -474,11 +474,11 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         await fsCommon.delete(tmpDependencyListDir)
         await fsCommon.delete(tmpDownloadsDir)
         telemetry.codeTransform_humanInTheLoop.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
-            codeTransformMetadata: codeTransformTelemetryState.getCodeTransformMetaDataString(),
+            codeTransformMetadata: CodeTransformTelemetryState.instance.getCodeTransformMetaDataString(),
             result: hilResult,
-            reason: codeTransformTelemetryState.getCodeTransformMetaData().errorMessage,
+            reason: CodeTransformTelemetryState.instance.getCodeTransformMetaData().errorMessage,
         })
     }
 
@@ -723,7 +723,7 @@ export async function cleanupTransformationJob() {
         'aws.amazonq.showPlanProgressInHub',
         CodeTransformTelemetryState.instance.getStartTime()
     )
-    codeTransformTelemetryState.resetCodeTransformMetaDataField()
+    CodeTransformTelemetryState.instance.resetCodeTransformMetaDataField()
 }
 
 export function processHistory(
