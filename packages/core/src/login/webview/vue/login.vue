@@ -566,7 +566,7 @@ export default defineComponent({
 }
 
 .h4 {
-    font-size: 8px;
+    font-size: 10px;
     margin-bottom: 8px;
 }
 .continue-button {
