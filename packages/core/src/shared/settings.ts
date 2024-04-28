@@ -894,11 +894,16 @@ export async function migrateSetting<T, U = T>(
     await migrateForScope(vscode.ConfigurationTarget.Global)
 }
 
+/** Opens the settings UI filtered by the given prefix. */
+export async function openSettings(prefix: string): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.openSettings', prefix)
+}
+
 /**
  * Opens the settings UI at the specified key.
  *
  * This only works for keys that are considered "top-level", e.g. keys of {@link settingsProps}.
  */
-export async function openSettings<K extends keyof SettingsProps>(key: K): Promise<void> {
+export async function openSettingsId<K extends keyof SettingsProps>(key: K): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.openSettings', `@id:${key}`)
 }

@@ -90,30 +90,6 @@
                     "default": false,
                     "markdownDescription": "%AWS.configuration.description.samcli.legacyDeploy%"
                 },
-                "aws.logLevel": {
-                    "type": "string",
-                    "default": "debug",
-                    "enum": [
-                        "error",
-                        "warn",
-                        "info",
-                        "verbose",
-                        "debug"
-                    ],
-                    "enumDescriptions": [
-                        "Errors Only",
-                        "Errors and Warnings",
-                        "Errors, Warnings, and Info",
-                        "Errors, Warnings, Info, and Verbose",
-                        "Errors, Warnings, Info, Verbose, and Debug"
-                    ],
-                    "markdownDescription": "%AWS.configuration.description.logLevel%",
-                    "cloud9": {
-                        "cn": {
-                            "markdownDescription": "%AWS.configuration.description.logLevel.cn%"
-                        }
-                    }
-                },
                 "aws.telemetry": {
                     "type": "boolean",
                     "default": true,

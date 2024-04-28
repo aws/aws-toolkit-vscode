@@ -69,6 +69,7 @@ import { debounceStartSecurityScan } from './commands/startSecurityScan'
 import { securityScanLanguageContext } from './util/securityScanLanguageContext'
 import { registerWebviewErrorHandler } from '../webviews/server'
 import { logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
+import { openSettings } from '../shared/settings'
 
 let localize: nls.LocalizeFunc
 
@@ -190,7 +191,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     `@id:amazonQ.showInlineCodeSuggestionsWithCodeReferences`
                 )
             } else {
-                await vscode.commands.executeCommand('workbench.action.openSettings', `amazonQ`)
+                await openSettings('amazonQ')
             }
         }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean = false) => {

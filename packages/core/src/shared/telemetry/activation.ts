@@ -13,7 +13,7 @@ import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, isAmazonQ, isCloud9, productName } from '../extensionUtilities'
-import { openSettings, Settings } from '../settings'
+import { openSettingsId, Settings } from '../settings'
 import { TelemetryConfig, setupTelemetryId } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
 import { AWSProduct } from './clienttelemetry'
@@ -133,7 +133,7 @@ export async function handleTelemetryNoticeResponse(
         // noticeResponseOk is a no-op
 
         if (response === noticeResponseViewSettings) {
-            await openSettings(isAmazonQ() ? 'amazonQ.telemetry' : 'aws.telemetry')
+            await openSettingsId(isAmazonQ() ? 'amazonQ.telemetry' : 'aws.telemetry')
         }
     } catch (err) {
         getLogger().error('Error while handling response from telemetry notice: %O', err as Error)
